@@ -1,10 +1,6 @@
 package com.hazelcast.security.impl;
 
-import java.security.AccessControlException;
-import java.security.Permission;
-
 import com.hazelcast.impl.Node;
-import com.hazelcast.security.SecurityUtil;
 
 abstract class SecureProxySupport {
 

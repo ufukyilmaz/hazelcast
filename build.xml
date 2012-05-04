@@ -1,6 +1,6 @@
 <project basedir="../../../" name="Elastic Memory" default="help">
 
-    <property file="${basedir}/elastic-memory/trunk/java/build.properties"/>
+    <property file="${basedir}/elastic-memory/build.properties"/>
 
     <target name="help">
         <echo message="clean: Clean release directory."/>

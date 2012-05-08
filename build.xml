@@ -1,4 +1,4 @@
-<project basedir="../../../" name="Elastic Memory" default="help">
+<project basedir="../" name="Elastic Memory" default="help">
 
     <property file="${basedir}/elastic-memory/build.properties"/>
 

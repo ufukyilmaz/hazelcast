@@ -197,6 +197,10 @@ final class SecureMProxy extends SecureProxySupport implements MProxy {
         proxy.lock(key);
     }
 
+    public boolean isLocked(final Object key) {
+        return proxy.isLocked(key);
+    }
+
     public Object put(Object key, Object value) {
         checkPut();
         return (Object) proxy.put(key, value);

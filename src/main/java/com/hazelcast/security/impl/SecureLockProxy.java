@@ -46,6 +46,10 @@ final class SecureLockProxy extends SecureProxySupport implements LockProxy {
         return proxy.getLocalLockStats();
     }
 
+    public boolean isLocked() {
+        return proxy.isLocked();
+    }
+
     public InstanceType getInstanceType() {
         return proxy.getInstanceType();
     }

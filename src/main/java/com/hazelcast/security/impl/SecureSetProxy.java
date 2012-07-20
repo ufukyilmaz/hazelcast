@@ -1,8 +1,5 @@
 package com.hazelcast.security.impl;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ItemListener;
 import com.hazelcast.impl.MProxy;
@@ -11,6 +8,9 @@ import com.hazelcast.impl.SetProxy;
 import com.hazelcast.security.SecurityConstants;
 import com.hazelcast.security.SecurityUtil;
 import com.hazelcast.security.permission.SetPermission;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 final class SecureSetProxy<E> extends SecureProxySupport implements SetProxy<E> {
 	
@@ -141,4 +141,9 @@ final class SecureSetProxy<E> extends SecureProxySupport implements SetProxy<E> 
 	public MProxy getMProxy() {
 		return proxy.getMProxy();
 	}
+
+    public boolean removeKey(final Object key) {
+        checkRemove();
+        return proxy.removeKey(key);
+    }
 }

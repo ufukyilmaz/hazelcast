@@ -4,18 +4,21 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.impl.GroupProperties;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-@RunWith(com.hazelcast.util.RandomBlockJUnit4ClassRunner.class)
+@RunWith(EnterpriseJUnitClassRunner.class)
 public class LicenseTest {
+
+    @BeforeClass
+    @AfterClass
+    public static void cleanupClass() {
+        Hazelcast.shutdownAll();
+    }
 
     @Before
     @After
@@ -110,7 +113,7 @@ public class LicenseTest {
     public void testLicenseExpired() {
         final String systemKey = System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
         try {
-            System. setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
             Config config = new Config();
             config.setLicenseKey(new String(KeyGenUtil.generateKey(false, false, 1, 1, 2011, 10)));
             Hazelcast.newHazelcastInstance(config);

@@ -10,20 +10,24 @@ import com.hazelcast.elasticmemory.storage.OffHeapStorage;
 import com.hazelcast.elasticmemory.storage.Storage;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
+import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
 import com.hazelcast.impl.GroupProperties;
 import com.hazelcast.nio.Data;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
 
 import static org.junit.Assert.*;
 
-@RunWith(com.hazelcast.util.RandomBlockJUnit4ClassRunner.class)
+@RunWith(EnterpriseJUnitClassRunner.class)
 public class OffHeapStorageTest {
+
+    @BeforeClass
+    @AfterClass
+    public static void cleanupClass() {
+        Hazelcast.shutdownAll();
+    }
 
     @Before
     @After

@@ -11,9 +11,8 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.Serializable;
@@ -24,9 +23,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-@RunWith(com.hazelcast.util.RandomBlockJUnit4ClassRunner.class)
+@RunWith(EnterpriseJUnitClassRunner.class)
 public class ClientSecurityTest {
-    
+
+    @BeforeClass
+    @AfterClass
+    public static void cleanupClass() {
+        HazelcastClient.shutdownAll();
+        Hazelcast.shutdownAll();
+    }
+
     @Before
     @After
     public void cleanup() {

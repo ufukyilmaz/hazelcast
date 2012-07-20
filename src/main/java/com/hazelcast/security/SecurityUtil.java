@@ -1,13 +1,12 @@
 package com.hazelcast.security;
 
-import java.security.Permission;
-import java.util.Arrays;
-
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.impl.AddressPicker;
 import com.hazelcast.impl.ThreadContext;
 import com.hazelcast.security.permission.*;
+import com.hazelcast.util.AddressUtil;
+
+import java.security.Permission;
 
 public final class SecurityUtil {
 	
@@ -104,7 +103,7 @@ public final class SecurityUtil {
     }
 	
 	public static boolean addressMatches(final String address, final String pattern) {
-		return AddressPicker.matchAddress(address, Arrays.asList(pattern));
+		return AddressUtil.matchInterface(address, pattern);
 	}
 	
 	public static String getCredentialsFullName(Credentials credentials) {

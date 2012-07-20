@@ -8,7 +8,7 @@ import com.hazelcast.impl.GroupProperties;
 /**
  * @mdogan 4/6/12
  */
-public class Test {
+public class TestApp {
 
     public static void main(String[] args) {
         Config c = new Config();

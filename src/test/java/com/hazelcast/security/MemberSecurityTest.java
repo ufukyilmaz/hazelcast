@@ -6,9 +6,8 @@ import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.DataInput;
@@ -18,8 +17,14 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(com.hazelcast.util.RandomBlockJUnit4ClassRunner.class)
+@RunWith(EnterpriseJUnitClassRunner.class)
 public class MemberSecurityTest {
+
+    @BeforeClass
+    @AfterClass
+    public static void cleanupClass() {
+        Hazelcast.shutdownAll();
+    }
 
     @Before
     @After

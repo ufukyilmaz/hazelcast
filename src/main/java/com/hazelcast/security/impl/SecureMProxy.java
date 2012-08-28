@@ -364,6 +364,10 @@ final class SecureMProxy extends SecureProxySupport implements MProxy {
         return proxy.containsEntry(key, value);
     }
 
+    public boolean putFromLoad(final Object key, final Object value) {
+        return proxy.putFromLoad(key, value);
+    }
+
     public boolean putMulti(Object key, Object value) {
         return proxy.putMulti(key, value);
     }

@@ -1,17 +1,18 @@
 package com.hazelcast.security.impl;
 
-import java.util.Collection;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.impl.MProxy;
 import com.hazelcast.impl.MultiMapProxy;
 import com.hazelcast.impl.Node;
+import com.hazelcast.monitor.LocalMapStats;
 import com.hazelcast.security.SecurityConstants;
 import com.hazelcast.security.SecurityUtil;
 import com.hazelcast.security.permission.MultiMapPermission;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 final class SecureMultimapProxy extends SecureProxySupport implements MultiMapProxy {
 
@@ -52,7 +53,11 @@ final class SecureMultimapProxy extends SecureProxySupport implements MultiMapPr
 		return new SecureMProxy(node, proxy.getMProxy());
 	}
 
-	public String getName() {
+    public String getLongName() {
+        return proxy.getLongName();
+    }
+
+    public String getName() {
 		return proxy.getName();
 	}
 
@@ -192,8 +197,12 @@ final class SecureMultimapProxy extends SecureProxySupport implements MultiMapPr
 	public void unlockMap() {
 		proxy.unlockMap();
 	}
-	
-	public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
+
+    public LocalMapStats getLocalMultiMapStats() {
+        return proxy.getLocalMultiMapStats();
+    }
+
+    public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
 		proxy.setHazelcastInstance(hazelcastInstance);
 	}
 }

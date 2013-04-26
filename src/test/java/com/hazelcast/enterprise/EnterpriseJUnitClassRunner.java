@@ -10,7 +10,7 @@ import org.junit.runners.model.InitializationError;
 public class EnterpriseJUnitClassRunner extends RandomBlockJUnit4ClassRunner {
 
     static {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "OFCDJMNIB9L121Q031S1S601U01206");
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "HIEMN9DJPCG824Y8142U0010Q82060");
     }
 
     public EnterpriseJUnitClassRunner(Class<?> klass) throws InitializationError {

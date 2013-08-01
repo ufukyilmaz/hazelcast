@@ -175,6 +175,11 @@ final class SecureMProxy extends SecureProxySupport implements MProxy {
         proxy.set(key, value, ttl, timeunit);
     }
 
+    public void set(Object key, Object value) {
+        checkPut();
+        proxy.set(key, value);
+    }
+
     public Object tryLockAndGet(Object key, long time, TimeUnit timeunit)
             throws TimeoutException {
         checkGet();

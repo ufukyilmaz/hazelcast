@@ -2,9 +2,9 @@ package com.hazelcast.security;
 
 import com.hazelcast.config.*;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
-import com.hazelcast.impl.Node;
+import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Serializer;
+import com.hazelcast.nio.ClassLoaderUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.Configuration;
@@ -77,8 +77,7 @@ public class SecurityContextImpl implements SecurityContext {
 
     private Object createImplInstance(final String className) {
         try {
-            Class klass = Serializer.loadClass(className);
-            return Serializer.newInstance(klass);
+            return ClassLoaderUtil.newInstance(className);
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not create instance of '" + className
                     + "', cause: " + e.getMessage(), e);

@@ -5,11 +5,11 @@
     <groupId>com.hazelcast</groupId>
     <artifactId>elastic-memory</artifactId>
     <packaging>jar</packaging>
-    <version>2.5</version>
+    <version>3.1-SNAPSHOT</version>
     <properties>
-        <hazelcast.version>2.6.1-SNAPSHOT</hazelcast.version>
+        <hazelcast.version>3.1-SNAPSHOT</hazelcast.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>1.5</jdk.version>
+        <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
     </properties>
     <licenses>

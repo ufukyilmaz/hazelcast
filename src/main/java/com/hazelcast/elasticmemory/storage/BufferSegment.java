@@ -1,12 +1,10 @@
 package com.hazelcast.elasticmemory.storage;
 
-import com.hazelcast.cluster.NodeAware;
 import com.hazelcast.elasticmemory.error.OffHeapError;
 import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
-import com.hazelcast.impl.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.nio.Data;
+import com.hazelcast.nio.serialization.Data;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
@@ -16,12 +14,12 @@ import java.util.logging.Level;
 
 import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
 
-public class BufferSegment implements Closeable, NodeAware {
+public class BufferSegment implements Closeable {
 
     private static final ILogger logger = Logger.getLogger(BufferSegment.class.getName());
 
-    public final static int _1K = 1024;
-    public final static int _1M = _1K * _1K;
+    public final static int _1K = Storage._1K;
+    public final static int _1M = Storage._1M;
 
     private static int ID = 0;
 
@@ -33,10 +31,8 @@ public class BufferSegment implements Closeable, NodeAware {
     private final int totalSize;
     private final int chunkSize;
     private final int chunkCount;
-    private AddressQueue chunks;
     private volatile ByteBuffer mainBuffer; // used only for duplicates; no read, no write
-    private ByteBuffer serviceThreadBuffer;
-    private Node node;
+    private AddressQueue chunks;
 
     public BufferSegment(int totalSizeInMb, int chunkSizeInKb) {
         super();
@@ -52,17 +48,16 @@ public class BufferSegment implements Closeable, NodeAware {
 
         chunks = new AddressQueue(chunkCount);
         mainBuffer = ByteBuffer.allocateDirect(totalSize);
-        serviceThreadBuffer = mainBuffer.duplicate();
         for (int i = 0; i < chunkCount; i++) {
             chunks.offer(i);
         }
         logger.log(Level.INFO, "BufferSegment[" + index + "] started!");
     }
 
-    public EntryRef put(final Data data) {
-        final byte[] value = data != null ? data.buffer : null;
+    public DataRef put(final Data data) {
+        final byte[] value = data != null ? data.getBuffer() : null;
         if (value == null || value.length == 0) {
-            return EntryRef.EMPTY_DATA_REF;
+            return DataRef.EMPTY_DATA_REF;
         }
 
         final int count = divideByAndCeil(value.length, chunkSize);
@@ -78,10 +73,10 @@ public class BufferSegment implements Closeable, NodeAware {
             buffer.put(value, offset, len);
             offset += len;
         }
-        return new EntryRef(indexes, value.length); // volatile write
+        return new DataRef(data.getType(), indexes, value.length, data.getClassDefinition()); // volatile write
     }
 
-    public OffHeapData get(final EntryRef ref) {
+    public Data get(final DataRef ref) {
         if (!isEntryRefValid(ref)) {  // volatile read
             return null;
         }
@@ -99,19 +94,23 @@ public class BufferSegment implements Closeable, NodeAware {
             buffer.get(value, offset, len);
             offset += len;
         }
-        // volatile read
-        return isEntryRefValid(ref) ? new OffHeapData(value, OffHeapData.VALID)
-                : OffHeapData.INVALID_OFF_HEAP_DATA;
+
+        if (isEntryRefValid(ref)) { // volatile read
+            Data data = new Data(ref.type, value);
+//            data.cd = ref.getClassDefinition();
+            return data;
+        }
+        return null;
     }
 
     private ByteBuffer getBuffer(boolean readonly) { // volatile read
         return mainBuffer != null ?
-                (isServiceThread() ? serviceThreadBuffer :
+                (isOperationThread() ? null :
                         (readonly ? mainBuffer.asReadOnlyBuffer() : mainBuffer.duplicate())
                 ) : null;
     }
 
-    public void remove(final EntryRef ref) {
+    public void remove(final DataRef ref) {
         if (!isEntryRefValid(ref)) { // volatile read
             return;
         }
@@ -124,7 +123,7 @@ public class BufferSegment implements Closeable, NodeAware {
         assertTrue(release(indexes), "Could not offer released indexes! Error in queue...");
     }
 
-    private boolean isEntryRefValid(final EntryRef ref) {
+    private boolean isEntryRefValid(final DataRef ref) {
         return ref != null && !ref.isEmpty() && ref.isValid();  //isValid() volatile read
     }
 
@@ -134,8 +133,8 @@ public class BufferSegment implements Closeable, NodeAware {
         }
     }
 
-    private boolean isServiceThread() {
-        return node != null && node.isServiceThread();
+    private boolean isOperationThread() {
+        return false;
     }
 
     public void close() {
@@ -143,7 +142,6 @@ public class BufferSegment implements Closeable, NodeAware {
         try {
             chunks = null;
             mainBuffer = null; // volatile write
-            serviceThreadBuffer = null;
         } finally {
             lock.unlock();
         }
@@ -174,14 +172,6 @@ public class BufferSegment implements Closeable, NodeAware {
         } finally {
             lock.unlock();
         }
-    }
-
-    public Node getNode() {
-        return node;
-    }
-
-    public void setNode(final Node node) {
-        this.node = node;
     }
 
     private class AddressQueue {

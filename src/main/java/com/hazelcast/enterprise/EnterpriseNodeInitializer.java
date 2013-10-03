@@ -1,19 +1,14 @@
 package com.hazelcast.enterprise;
 
-import com.hazelcast.elasticmemory.ElasticRecordFactory;
 import com.hazelcast.elasticmemory.storage.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.storage.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.storage.Storage;
 import com.hazelcast.elasticmemory.storage.StorageFactory;
-import com.hazelcast.impl.DefaultProxyFactory;
-import com.hazelcast.impl.Node;
-import com.hazelcast.impl.ProxyFactory;
-import com.hazelcast.impl.base.DefaultNodeInitializer;
-import com.hazelcast.impl.base.NodeInitializer;
-import com.hazelcast.impl.concurrentmap.RecordFactory;
+import com.hazelcast.instance.DefaultNodeInitializer;
+import com.hazelcast.instance.Node;
+import com.hazelcast.instance.NodeInitializer;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
-import com.hazelcast.security.impl.SecureProxyFactory;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -61,7 +56,6 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         parseSystemProps();
         securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
 
-        simpleRecord = node.groupProperties.CONCURRENT_MAP_SIMPLE_RECORD.getBoolean();
         if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
             logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
             storageFactory = new SingletonStorageFactory();
@@ -87,20 +81,12 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
             node.shutdown(true, true);
             return;
         }
-        final int count = node.getClusterImpl().getMembers().size();
+        final int count = node.getClusterService().getSize();
         if (count > license.nodes) {
             logger.log(Level.SEVERE, "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! " +
                     "Max: " + license.nodes + ", Current: " + count);
             node.shutdown(true, true);
         }
-    }
-
-    public ProxyFactory getProxyFactory() {
-        return securityEnabled ? new SecureProxyFactory(node) : new DefaultProxyFactory(node.factory);
-    }
-
-    public RecordFactory getRecordFactory() {
-        return new ElasticRecordFactory(storage, simpleRecord);
     }
 
     public SecurityContext getSecurityContext() {

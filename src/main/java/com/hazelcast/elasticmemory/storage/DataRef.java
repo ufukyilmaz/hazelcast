@@ -1,16 +1,24 @@
 package com.hazelcast.elasticmemory.storage;
 
-public class EntryRef {
+import com.hazelcast.nio.serialization.ClassDefinition;
+import com.hazelcast.nio.serialization.SerializationConstants;
 
-    public static final EntryRef EMPTY_DATA_REF = new EntryRef(null, 0);
+public class DataRef {
+
+    public static final DataRef EMPTY_DATA_REF = new DataRef(SerializationConstants.CONSTANT_TYPE_DATA, null, 0, null);
 
     public final int length;
+    public final int type;
     private final int[] chunks;
+    private final ClassDefinition classDefinition;
+
     private volatile boolean valid;
 
-    EntryRef(int[] indexes, int length) {
+    DataRef(int type, int[] indexes, int length, ClassDefinition cd) {
+        this.type = type;
         this.chunks = indexes;
         this.length = length;
+        this.classDefinition = cd;
         this.valid = true; // volatile write
     }
 
@@ -32,6 +40,10 @@ public class EntryRef {
 
     void invalidate() {
         valid = false;  // volatile write
+    }
+
+    ClassDefinition getClassDefinition() {
+        return classDefinition;
     }
 
     protected Object clone() throws CloneNotSupportedException {

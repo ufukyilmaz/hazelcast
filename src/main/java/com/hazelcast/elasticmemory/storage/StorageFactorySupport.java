@@ -3,6 +3,7 @@ package com.hazelcast.elasticmemory.storage;
 import com.hazelcast.elasticmemory.util.MathUtil;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
+import com.hazelcast.logging.ILogger;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -14,15 +15,15 @@ public abstract class StorageFactorySupport implements StorageFactory {
     static final String MAX_HEAP_MEMORY_PARAM = "-Xmx";
     static final String MAX_DIRECT_MEMORY_PARAM = "-XX:MaxDirectMemorySize";
 
-    static Storage createStorage(final String total, final String chunk) {
+    static Storage createStorage(final String total, final String chunk, ILogger logger) {
         final MemorySize totalSize = MemorySize.parse(total, MemoryUnit.MEGABYTES);
         logger.log(Level.INFO, "Elastic-Memory off-heap storage total size: " + totalSize.megaBytes() + " MB");
         final MemorySize chunkSize = MemorySize.parse(chunk, MemoryUnit.KILOBYTES);
         logger.log(Level.INFO, "Elastic-Memory off-heap storage chunk size: " + chunkSize.kiloBytes() + " KB");
 
-        MemorySize jvmSize = getJvmDirectMemorySize();
+        MemorySize jvmSize = getJvmDirectMemorySize(logger);
         if (jvmSize == null) {
-            jvmSize = getJvmHeapMemorySize();
+            jvmSize = getJvmHeapMemorySize(logger);
         }
         if (jvmSize == null) {
             logger.log(Level.WARNING, "Either JVM max memory argument (" + MAX_HEAP_MEMORY_PARAM + ") or" +
@@ -67,7 +68,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
         }
     }
 
-    static MemorySize getJvmDirectMemorySize() {
+    static MemorySize getJvmDirectMemorySize(ILogger logger) {
         RuntimeMXBean rmx = ManagementFactory.getRuntimeMXBean();
         List<String> args = rmx.getInputArguments();
         for (String arg : args) {
@@ -84,7 +85,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
         return null;
     }
 
-    static MemorySize getJvmHeapMemorySize() {
+    static MemorySize getJvmHeapMemorySize(ILogger logger) {
         RuntimeMXBean rmx = ManagementFactory.getRuntimeMXBean();
         List<String> args = rmx.getInputArguments();
         for (String arg : args) {

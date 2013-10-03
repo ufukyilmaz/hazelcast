@@ -41,11 +41,11 @@ package com.hazelcast.elasticmemory.storage.kv;
 	private class StorageSegment<K> extends ReentrantLock implements Closeable {
 		
 		private BufferSegment buffer;
-		private final Map<K, EntryRef> space;
+		private final Map<K, DataRef> space;
 
 		StorageSegment(int totalSizeInMb, int chunkSizeInKb) {
 			super();
-			space = new HashMap<K, EntryRef>(divideByAndCeil(totalSizeInMb * Storage._1K, chunkSizeInKb * 2));
+			space = new HashMap<K, DataRef>(divideByAndCeil(totalSizeInMb * Storage._1K, chunkSizeInKb * 2));
 			buffer = new BufferSegment(totalSizeInMb, chunkSizeInKb);
 		}
 
@@ -53,7 +53,7 @@ package com.hazelcast.elasticmemory.storage.kv;
 			lock();
 			try {
 				remove0(key);
-				EntryRef ref = buffer.put(value);
+				DataRef ref = buffer.put(value);
 				space.put(key, ref);
 			} finally {
 				unlock();
@@ -64,7 +64,7 @@ package com.hazelcast.elasticmemory.storage.kv;
 		byte[] get(final K key) {
 			lock();
 			try {
-				final EntryRef ref = space.get(key);
+				final DataRef ref = space.get(key);
 				if (ref == null || ref.isEmpty()) {
 					space.remove(key);
 					return null;
@@ -86,7 +86,7 @@ package com.hazelcast.elasticmemory.storage.kv;
 		}
 		
 		private void remove0(final K key) {
-			final EntryRef ref = space.remove(key);
+			final DataRef ref = space.remove(key);
 			buffer.remove(ref);
 		}
 		

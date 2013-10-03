@@ -1,7 +1,9 @@
 package com.hazelcast.elasticmemory.storage;
 
-import com.hazelcast.impl.GroupProperties;
-import com.hazelcast.nio.Data;
+import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
+import com.hazelcast.nio.serialization.Data;
 
 import java.util.logging.Level;
 
@@ -10,6 +12,7 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
     private static Storage STORAGE = null;
     private static int REF_COUNT = 0;
     private static final Object MUTEX = SingletonStorageFactory.class;
+    private static final ILogger logger = Logger.getLogger(StorageFactory.class);
 
     public SingletonStorageFactory() {
         super();
@@ -33,15 +36,15 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
             this.storage = storage;
         }
 
-        public EntryRef put(int hash, Data data) {
+        public DataRef put(int hash, Data data) {
             return storage.put(hash, data);
         }
 
-        public OffHeapData get(int hash, EntryRef entry) {
+        public Data get(int hash, DataRef entry) {
             return storage.get(hash, entry);
         }
 
-        public void remove(int hash, EntryRef entry) {
+        public void remove(int hash, DataRef entry) {
             storage.remove(hash, entry);
         }
 
@@ -71,7 +74,7 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
             logger.log(Level.FINEST, "Read " + GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE + " as: " + total);
             logger.log(Level.FINEST, "Read " + GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE + " as: " + chunk);
             logger.log(Level.INFO, "Initializing Singleton Storage...");
-            STORAGE = createStorage(total, chunk);
+            STORAGE = createStorage(total, chunk, logger);
         }
     }
 

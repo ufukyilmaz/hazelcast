@@ -3,7 +3,7 @@ package com.hazelcast.enterprise;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.impl.GroupProperties;
+import com.hazelcast.instance.GroupProperties;
 
 /**
  * @mdogan 4/6/12

@@ -1,7 +1,7 @@
 package com.hazelcast.security;
 
-import com.hazelcast.client.ClientConfig;
 import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.PermissionConfig.PermissionType;
@@ -12,6 +12,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import com.hazelcast.security.permission.ActionConstants;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
@@ -44,7 +45,7 @@ public class ClientSecurityTest {
     public void testDenyAll() {
         final Config config = createConfig();
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getMap("test").size();
         } finally {
@@ -58,7 +59,7 @@ public class ClientSecurityTest {
         addPermission(config, PermissionType.ALL, "", null);
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getMap("test").size();
             client.getMap("test").size();
@@ -76,7 +77,7 @@ public class ClientSecurityTest {
         pc.addEndpoint("10.10.10.*");
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getMap("test").size();
         } finally {
@@ -88,10 +89,10 @@ public class ClientSecurityTest {
     public void testMapAllPermission() {
         final Config config = createConfig();
         PermissionConfig perm = addPermission(config, PermissionType.MAP, "test", "dev");
-        perm.addAction(SecurityConstants.ACTION_ALL);
+        perm.addAction(ActionConstants.ACTION_ALL);
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             IMap map = client.getMap("test");
             map.put("1", "A");
@@ -108,12 +109,12 @@ public class ClientSecurityTest {
     public void testMapPermissionActions() {
         final Config config = createConfig();
         addPermission(config, PermissionType.MAP, "test", "dev")
-                .addAction(SecurityConstants.ACTION_PUT)
-                .addAction(SecurityConstants.ACTION_GET)
-                .addAction(SecurityConstants.ACTION_REMOVE);
+                .addAction(ActionConstants.ACTION_PUT)
+                .addAction(ActionConstants.ACTION_GET)
+                .addAction(ActionConstants.ACTION_REMOVE);
 
         Hazelcast.newHazelcastInstance(config).getMap("test"); // create map
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             IMap map = client.getMap("test");
             assertNull(map.put("1", "A"));
@@ -125,9 +126,9 @@ public class ClientSecurityTest {
         }
     }
 
-    private HazelcastClient createHazelcastClient() {
+    private HazelcastInstance createHazelcastClient() {
         ClientConfig config = new ClientConfig().addAddress("127.0.0.1");
-        HazelcastClient client = HazelcastClient.newHazelcastClient(config);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
         return client;
     }
 
@@ -135,9 +136,9 @@ public class ClientSecurityTest {
     public void testQueuePermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.QUEUE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_OFFER).addAction(SecurityConstants.ACTION_CREATE);
+                .addAction(ActionConstants.ACTION_OFFER).addAction(ActionConstants.ACTION_CREATE);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             assertTrue(client.getQueue("test").offer("value"));
         } finally {
@@ -150,7 +151,7 @@ public class ClientSecurityTest {
         final Config config = createConfig();
         addPermission(config, PermissionType.QUEUE, "test", "dev");
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getQueue("test").offer("value");
         } finally {
@@ -162,9 +163,9 @@ public class ClientSecurityTest {
     public void testLockPermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE).addAction(SecurityConstants.ACTION_LOCK);
+                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_LOCK);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             assertTrue(client.getLock("test").tryLock());
             client.getLock("test").unlock();
@@ -177,9 +178,9 @@ public class ClientSecurityTest {
     public void testLockPermissionFail() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
-                .addAction(SecurityConstants.ACTION_LOCK);
+                .addAction(ActionConstants.ACTION_LOCK);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getLock("test").unlock();
         } finally {
@@ -191,9 +192,9 @@ public class ClientSecurityTest {
     public void testLockPermissionFail2() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE);
+                .addAction(ActionConstants.ACTION_CREATE);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getLock("test").tryLock();
         } finally {
@@ -205,14 +206,14 @@ public class ClientSecurityTest {
     public void testExecutorPermission() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE).addAction(SecurityConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
 
         addPermission(config, PermissionType.LIST, "list", null)
-                .addAction(SecurityConstants.ACTION_ADD).addAction(SecurityConstants.ACTION_CREATE)
-                .addAction(SecurityConstants.ACTION_GET);
+                .addAction(ActionConstants.ACTION_ADD).addAction(ActionConstants.ACTION_CREATE)
+                .addAction(ActionConstants.ACTION_GET);
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             assertEquals(new Integer(1), client.getExecutorService("test").submit(new DummyCallable()).get());
         } finally {
@@ -224,9 +225,9 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE);
+                .addAction(ActionConstants.ACTION_CREATE);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getExecutorService("test").submit(new DummyCallable()).get();
         } finally {
@@ -238,9 +239,9 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail2() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_EXECUTE);
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getExecutorService("test").submit(new DummyCallable()).get();
         } finally {
@@ -252,10 +253,10 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail3() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE).addAction(SecurityConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             client.getExecutorService("test").submit(new DummyCallable()).get();
         } finally {
@@ -267,10 +268,10 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail4() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(SecurityConstants.ACTION_CREATE).addAction(SecurityConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
 
         Hazelcast.newHazelcastInstance(config);
-        HazelcastClient client = createHazelcastClient();
+        HazelcastInstance client = createHazelcastClient();
         try {
             assertNull(client.getExecutorService("test").submit(new DummyCallableNewThread()).get());
         } finally {

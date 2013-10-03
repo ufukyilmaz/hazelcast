@@ -12,7 +12,7 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import java.security.AccessControlException;
 import java.security.Permission;
-import java.security.PrivilegedExceptionAction;
+import java.security.PermissionCollection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
@@ -25,7 +25,6 @@ public class SecurityContextImpl implements SecurityContext {
     private final ICredentialsFactory credentialsFactory;
     private final Configuration memberConfiguration;
     private final Configuration clientConfiguration;
-    private final IAccessController accessController;
 
     public SecurityContextImpl(Node node) {
         super();
@@ -41,7 +40,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
         IPermissionPolicy tmpPolicy = policyConfig.getImplementation();
         if (tmpPolicy == null) {
-            tmpPolicy = (IPermissionPolicy) createImplInstance(policyConfig.getClassName());
+            tmpPolicy = (IPermissionPolicy) createImplInstance(node.getConfigClassLoader(), policyConfig.getClassName());
         }
         policy = tmpPolicy;
         policy.configure(securityConfig, policyConfig.getProperties());
@@ -52,7 +51,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
         ICredentialsFactory tmpCredentialsFactory = credentialsFactoryConfig.getImplementation();
         if (tmpCredentialsFactory == null) {
-            tmpCredentialsFactory = (ICredentialsFactory) createImplInstance(credentialsFactoryConfig.getClassName());
+            tmpCredentialsFactory = (ICredentialsFactory) createImplInstance(node.getConfigClassLoader(), credentialsFactoryConfig.getClassName());
         }
         credentialsFactory = tmpCredentialsFactory;
         credentialsFactory.configure(node.config.getGroupConfig(), credentialsFactoryConfig.getProperties());
@@ -60,7 +59,6 @@ public class SecurityContextImpl implements SecurityContext {
         memberConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
         clientConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
 
-        accessController = new AccessControllerImpl(this, policy);
     }
 
     public LoginContext createMemberLoginContext(Credentials credentials) throws LoginException {
@@ -75,9 +73,9 @@ public class SecurityContextImpl implements SecurityContext {
                 new Subject(), new ClusterCallbackHandler(credentials), clientConfiguration);
     }
 
-    private Object createImplInstance(final String className) {
+    private Object createImplInstance(ClassLoader cl, final String className) {
         try {
-            return ClassLoaderUtil.newInstance(className);
+            return ClassLoaderUtil.newInstance(cl, className);
         } catch (Exception e) {
             throw new IllegalArgumentException("Could not create instance of '" + className
                     + "', cause: " + e.getMessage(), e);
@@ -104,18 +102,12 @@ public class SecurityContextImpl implements SecurityContext {
         return credentialsFactory;
     }
 
-    public void checkPermission(Permission permission)
-            throws AccessControlException {
-        accessController.checkPermission(permission);
-    }
-
-    public <T> T doAsPrivileged(Subject subject,
-                                PrivilegedExceptionAction<T> action) throws Exception, SecurityException {
-        return accessController.doAsPrivileged(subject, action);
-    }
-
-    public boolean checkPermission(Subject subject, Permission permission) {
-        return accessController.checkPermission(subject, permission);
+    public void checkPermission(Subject subject, Permission permission) throws SecurityException {
+        PermissionCollection coll = policy.getPermissions(subject, permission.getClass());
+        final boolean b = coll != null && coll.implies(permission);
+        if (!b) {
+            throw new AccessControlException("Permission " + permission + " denied!", permission);
+        }
     }
 
     public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {

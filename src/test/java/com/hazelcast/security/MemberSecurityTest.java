@@ -10,9 +10,6 @@ import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -62,7 +59,7 @@ public class MemberSecurityTest {
         CredentialsFactoryConfig credentialsFactoryConfig = new CredentialsFactoryConfig();
         credentialsFactoryConfig.setImplementation(new ICredentialsFactory() {
             public Credentials newCredentials() {
-                return new InValidCredentials();
+                return new UsernamePasswordCredentials("invalid","credentials");
             }
 
             public void destroy() {
@@ -75,18 +72,6 @@ public class MemberSecurityTest {
 
         Hazelcast.newHazelcastInstance(config); // master
         Hazelcast.newHazelcastInstance(config);
-    }
-
-    public static class InValidCredentials extends AbstractCredentials {
-        public InValidCredentials() {
-            super("invalid-group-name");
-        }
-
-        protected void writeDataInternal(DataOutput out) throws IOException {
-        }
-
-        protected void readDataInternal(DataInput in) throws IOException {
-        }
     }
 
     @Test(expected = IllegalStateException.class)

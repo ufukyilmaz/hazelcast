@@ -2,11 +2,8 @@ package com.hazelcast.security;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
-import com.hazelcast.impl.ThreadContext;
 import com.hazelcast.security.permission.*;
 import com.hazelcast.util.AddressUtil;
-
-import java.security.Permission;
 
 public final class SecurityUtil {
 	
@@ -31,20 +28,6 @@ public final class SecurityUtil {
 		return value != null && value.booleanValue();
 	}
 	
-	public static void checkPermission(SecurityContext context, Permission permission) {
-		if (context != null && (ThreadContext.get().isClient() || isSecureCall())) {
-			context.checkPermission(permission);
-		}
-	}
-	
-	public static String getShortInstanceName(String name) {
-		int ix = name.lastIndexOf(':');
-		if (ix > -1) {
-			return name.substring(ix + 1);
-		}
-		return name;
-	}
-
 	public static ClusterPermission createPermission(PermissionConfig permissionConfig) {
 		final String[] actions = permissionConfig.getActions().toArray(new String[0]);
 		switch (permissionConfig.getType()) {
@@ -54,7 +37,7 @@ public final class SecurityUtil {
 		case QUEUE:
 			return new QueuePermission(permissionConfig.getName(), actions);
 			
-		case ATOMIC_NUMBER:
+		case ATOMIC_LONG:
 			return new AtomicNumberPermission(permissionConfig.getName(), actions);
 			
 		case COUNTDOWN_LATCH:

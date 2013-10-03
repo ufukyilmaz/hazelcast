@@ -1,12 +1,12 @@
 package com.hazelcast.security;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.DataSerializable;
+
 import java.io.IOException;
 import java.security.Principal;
 
-import com.hazelcast.nio.DataSerializable;
-import com.hazelcast.nio.SerializationHelper;
 
 public final class ClusterPrincipal implements Principal, DataSerializable {
 	
@@ -37,16 +37,15 @@ public final class ClusterPrincipal implements Principal, DataSerializable {
 		return credentials;
 	}
 	
-	@Override
 	public String toString() {
 		return "ClusterPrincipal [principal=" + getPrincipal() + ", endpoint=" + getEndpoint() + "]";
 	}
 
-	public void writeData(DataOutput out) throws IOException {
-		SerializationHelper.writeObject(out, credentials);
-	}
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeObject(credentials);
+    }
 
-	public void readData(DataInput in) throws IOException {
-		credentials = (Credentials) SerializationHelper.readObject(in);
-	}
+    public void readData(ObjectDataInput in) throws IOException {
+        credentials = in.readObject();
+    }
 }

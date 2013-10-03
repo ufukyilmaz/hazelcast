@@ -3,7 +3,7 @@ package com.hazelcast.enterprise;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
-import com.hazelcast.impl.GroupProperties;
+import com.hazelcast.instance.GroupProperties;
 import org.junit.*;
 import org.junit.runner.RunWith;
 

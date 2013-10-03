@@ -7,9 +7,12 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import com.hazelcast.nio.serialization.PortableReader;
+import com.hazelcast.nio.serialization.PortableWriter;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
@@ -72,6 +75,30 @@ public class MemberSecurityTest {
 
         Hazelcast.newHazelcastInstance(config); // master
         Hazelcast.newHazelcastInstance(config);
+    }
+
+    public static class InValidCredentials extends AbstractCredentials {
+        public InValidCredentials() {
+            super("invalid-group-name");
+        }
+
+        @Override
+        protected void writePortableInternal(PortableWriter writer) throws IOException {
+        }
+
+        @Override
+        protected void readPortableInternal(PortableReader reader) throws IOException {
+        }
+
+        @Override
+        public int getFactoryId() {
+            return 1234;
+        }
+
+        @Override
+        public int getClassId() {
+            return 1;
+        }
     }
 
     @Test(expected = IllegalStateException.class)

@@ -128,8 +128,7 @@ public class ClientSecurityTest {
 
     private HazelcastInstance createHazelcastClient() {
         ClientConfig config = new ClientConfig().addAddress("127.0.0.1");
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
-        return client;
+        return HazelcastClient.newHazelcastClient(config);
     }
 
     @Test

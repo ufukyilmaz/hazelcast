@@ -4,12 +4,25 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.elasticmemory.storage.DataRef;
+import com.hazelcast.elasticmemory.storage.OffHeapStorage;
+import com.hazelcast.elasticmemory.storage.Storage;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.SerializationConstants;
 import org.junit.*;
 import org.junit.runner.RunWith;
+
+import java.util.Random;
+
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseJUnitClassRunner.class)
 public class OffHeapStorageTest {
@@ -26,52 +39,52 @@ public class OffHeapStorageTest {
         Hazelcast.shutdownAll();
     }
 
-//    @Test
-//    public void testPutGetRemove() {
-//        final int chunkSize = 2;
-//        final Storage s = new OffHeapStorage(32, chunkSize);
-//        final Random rand = new Random();
-//        final int k = 3072;
-//
-//        byte[] data = new byte[k];
-//        rand.nextBytes(data);
-//        final int hash = rand.nextInt();
-//
-//        final EntryRef ref = s.put(hash, new Data(data));
-//        assertEquals(k, ref.length);
-//        assertEquals((int) Math.ceil((double) k / (chunkSize * 1024)), ref.getChunkCount());
-//
-//        Data resultData = s.get(hash, ref);
-//        assertNotNull(resultData);
-//        byte[] result = resultData.buffer;
-//        assertArrayEquals(data, result);
-//
-//        s.remove(hash, ref);
-//        assertNull(s.get(hash, ref));
-//    }
+    @Test
+    public void testPutGetRemove() {
+        final int chunkSize = 2;
+        final Storage s = new OffHeapStorage(32, chunkSize);
+        final Random rand = new Random();
+        final int k = 3072;
+
+        byte[] data = new byte[k];
+        rand.nextBytes(data);
+        final int hash = rand.nextInt();
+
+        final DataRef ref = s.put(hash, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
+        assertEquals(k, ref.length);
+        assertEquals((int) Math.ceil((double) k / (chunkSize * 1024)), ref.getChunkCount());
+
+        Data resultData = s.get(hash, ref);
+        assertNotNull(resultData);
+        byte[] result = resultData.getBuffer();
+        assertArrayEquals(data, result);
+
+        s.remove(hash, ref);
+        assertNull(s.get(hash, ref));
+    }
 
     final MemorySize total = new MemorySize(32, MemoryUnit.MEGABYTES);
     final MemorySize chunk = new MemorySize(1, MemoryUnit.KILOBYTES);
-//
-//    @Test
-//    public void testFillUpBuffer() {
-//        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
-//        fillUpBuffer(count);
-//    }
-//
-//    @Test(expected = OffHeapOutOfMemoryError.class)
-//    public void testBufferOverFlow() {
-//        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
-//        fillUpBuffer(count + 1);
-//    }
 
-//    private void fillUpBuffer(int count) {
-//        final Storage s = new OffHeapStorage((int) total.megaBytes(), 2, (int) chunk.kiloBytes());
-//        byte[] data = new byte[(int) chunk.bytes()];
-//        for (int i = 0; i < count; i++) {
-//            s.put(i, new Data(data));
-//        }
-//    }
+    @Test
+    public void testFillUpBuffer() {
+        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
+        fillUpBuffer(count);
+    }
+
+    @Test(expected = OffHeapOutOfMemoryError.class)
+    public void testBufferOverFlow() {
+        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
+        fillUpBuffer(count + 1);
+    }
+
+    private void fillUpBuffer(int count) {
+        final Storage s = new OffHeapStorage((int) total.megaBytes(), 2, (int) chunk.kiloBytes());
+        byte[] data = new byte[(int) chunk.bytes()];
+        for (int i = 0; i < count; i++) {
+            s.put(i, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
+        }
+    }
 
     @Test
     public void testMapStorageFull() {

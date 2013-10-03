@@ -36,7 +36,7 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
             if (licenseKey == null || "".equals(licenseKey)) {
                 licenseKey = node.getConfig().getLicenseKey();
             }
-            license = KeyGenUtil.extractLicense(licenseKey != null ? licenseKey.toCharArray() : null);
+            license = KG.ex(licenseKey != null ? licenseKey.toCharArray() : null);
             Calendar cal = Calendar.getInstance();
             cal.set(license.year, license.month, license.day, 23, 59, 59);
             validUntil = cal.getTime();

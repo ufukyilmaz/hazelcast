@@ -2,7 +2,7 @@ package com.hazelcast.enterprise;
 
 import java.util.Random;
 
-public class KeyGenUtil {
+public class KG {
 
     private static final Random rand = new Random();
     static final char[] chars = "QRSTUVWXYZ6789ABCDEFGHIJKLMNOP".toCharArray();
@@ -11,7 +11,7 @@ public class KeyGenUtil {
     private static final int reserved = 12;
     static final int yearBase = 2010;
 
-    public static License extractLicense(char[] originalKey) {
+    public static License ex(char[] originalKey) {
         if (originalKey == null || length != originalKey.length) {
             throw new IllegalArgumentException("Invalid key!");
         }
@@ -55,8 +55,8 @@ public class KeyGenUtil {
         return new License(full, enterprise, day, month, year, nodes);
     }
 
-    public static char[] generateKey(boolean full, boolean enterprise,
-                                     int day, int month, int year, int nodes) {
+    public static char[] gen(boolean full, boolean enterprise,
+                             int day, int month, int year, int nodes) {
         char[] key = new char[length];
         int ix = 0;
         int mode = pick(key);

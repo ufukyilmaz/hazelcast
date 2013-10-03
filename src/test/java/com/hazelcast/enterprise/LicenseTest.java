@@ -64,11 +64,11 @@ public class LicenseTest {
             boolean enterprise = rand.nextBoolean();
             int day = rand.nextInt(30) + 1;
             int month = rand.nextInt(12);
-            int year = KeyGenUtil.yearBase + rand.nextInt(10);
+            int year = KG.yearBase + rand.nextInt(10);
             int nodes = rand.nextInt(9999);
             License expected = new License(full, enterprise, day, month, year, nodes);
-            char[] key = KeyGenUtil.generateKey(full, enterprise, day, month, year, nodes);
-            License license = KeyGenUtil.extractLicense(key);
+            char[] key = KG.gen(full, enterprise, day, month, year, nodes);
+            License license = KG.ex(key);
             Assert.assertEquals(expected, license);
         }
     }
@@ -84,7 +84,7 @@ public class LicenseTest {
         int year = 2012;
         int nodes = 9876;
         for (int i = 0; i < count; i++) {
-            char[] key = KeyGenUtil.generateKey(full, enterprise, day, month, year, nodes);
+            char[] key = KG.gen(full, enterprise, day, month, year, nodes);
             Assert.assertTrue(keys.add(new String(key)));
         }
     }
@@ -92,7 +92,7 @@ public class LicenseTest {
     @Test
     public void testLicenseValid() {
         Config config = new Config();
-        config.setLicenseKey(new String(KeyGenUtil.generateKey(false, false, 1, 1, 2015, 10)));
+        config.setLicenseKey(new String(KG.gen(false, false, 1, 1, 2015, 10)));
         Hazelcast.newHazelcastInstance(config);
     }
 
@@ -115,7 +115,7 @@ public class LicenseTest {
         try {
             System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
             Config config = new Config();
-            config.setLicenseKey(new String(KeyGenUtil.generateKey(false, false, 1, 1, 2011, 10)));
+            config.setLicenseKey(new String(KG.gen(false, false, 1, 1, 2011, 10)));
             Hazelcast.newHazelcastInstance(config);
         } finally {
             System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, systemKey);

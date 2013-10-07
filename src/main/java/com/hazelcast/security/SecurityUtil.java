@@ -1,5 +1,6 @@
 package com.hazelcast.security;
 
+import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.*;
@@ -38,7 +39,7 @@ public final class SecurityUtil {
 			return new QueuePermission(permissionConfig.getName(), actions);
 			
 		case ATOMIC_LONG:
-			return new AtomicNumberPermission(permissionConfig.getName(), actions);
+			return new AtomicLongPermission(permissionConfig.getName(), actions);
 			
 		case COUNTDOWN_LATCH:
 			return new CountDownLatchPermission(permissionConfig.getName(), actions);
@@ -65,8 +66,8 @@ public final class SecurityUtil {
 			return new TopicPermission(permissionConfig.getName(), actions);
 			
 		case ID_GENERATOR:
-			return new IdGeneratorPermission(permissionConfig.getName(), actions);
-		
+            return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME+permissionConfig.getName(), actions);
+
 		case LISTENER:
 			return new ListenerPermission(permissionConfig.getName());
 			

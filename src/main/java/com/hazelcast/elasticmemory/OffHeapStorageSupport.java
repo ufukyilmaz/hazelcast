@@ -1,4 +1,4 @@
-package com.hazelcast.elasticmemory.storage;
+package com.hazelcast.elasticmemory;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;

@@ -1,9 +1,10 @@
-package com.hazelcast.elasticmemory.storage;
+package com.hazelcast.elasticmemory;
 
 
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.NodeAware;
+import com.hazelcast.storage.Storage;
 
 import java.util.logging.Level;
 

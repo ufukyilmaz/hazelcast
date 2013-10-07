@@ -4,7 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.*;
 import com.hazelcast.util.AddressUtil;
-import com.sun.jmx.snmp.ThreadContext;
 
 public final class SecurityUtil {
 	

@@ -1,14 +1,15 @@
-package com.hazelcast.elasticmemory.storage;
+package com.hazelcast.elasticmemory;
 
 
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.storage.Storage;
 
 import java.util.logging.Level;
 
 import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
 
 
-public class OffHeapStorage extends OffHeapStorageSupport implements Storage {
+public class OffHeapStorage extends OffHeapStorageSupport implements Storage<DataRefImpl> {
 
     private final BufferSegment[] segments;
 
@@ -29,16 +30,16 @@ public class OffHeapStorage extends OffHeapStorageSupport implements Storage {
         return segments[(hash == Integer.MIN_VALUE) ? 0 : Math.abs(hash) % segmentCount];
     }
 
-    public DataRef put(int hash, Data value) {
+    public DataRefImpl put(int hash, Data value) {
         return getSegment(hash).put(value);
     }
 
-    public Data get(int hash, DataRef entry) {
-        return getSegment(hash).get(entry);
+    public Data get(int hash, DataRefImpl ref) {
+        return getSegment(hash).get(ref);
     }
 
-    public void remove(int hash, DataRef entry) {
-        getSegment(hash).remove(entry);
+    public void remove(int hash, DataRefImpl ref) {
+        getSegment(hash).remove(ref);
     }
 
     public void destroy() {

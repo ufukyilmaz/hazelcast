@@ -1,14 +1,14 @@
 package com.hazelcast.enterprise;
 
-import com.hazelcast.elasticmemory.storage.InstanceStorageFactory;
-import com.hazelcast.elasticmemory.storage.SingletonStorageFactory;
-import com.hazelcast.elasticmemory.storage.Storage;
-import com.hazelcast.elasticmemory.storage.StorageFactory;
+import com.hazelcast.elasticmemory.InstanceStorageFactory;
+import com.hazelcast.elasticmemory.SingletonStorageFactory;
+import com.hazelcast.elasticmemory.StorageFactory;
 import com.hazelcast.instance.DefaultNodeInitializer;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeInitializer;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.storage.Storage;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -16,7 +16,6 @@ import java.util.logging.Level;
 
 public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements NodeInitializer {
 
-    private StorageFactory storageFactory;
     private Storage storage;
     private volatile License license;
     private SecurityContext securityContext;
@@ -29,7 +28,7 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     public void beforeInitialize(Node node) {
         this.node = node;
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
-        Date validUntil = null;
+        Date validUntil;
         try {
             logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
             String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
@@ -56,6 +55,7 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         parseSystemProps();
         securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
 
+        StorageFactory storageFactory;
         if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
             logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
             storageFactory = new SingletonStorageFactory();
@@ -97,6 +97,10 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     }
 
     public Storage getOffHeapStorage() {
+        if (storage == null) {
+            throw new IllegalStateException("Offheap storage is not enabled! " +
+                    "Please set 'hazelcast.elastic.memory.enabled' to true");
+        }
         return storage;
     }
 

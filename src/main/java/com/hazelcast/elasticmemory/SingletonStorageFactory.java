@@ -1,5 +1,7 @@
-package com.hazelcast.elasticmemory.storage;
+package com.hazelcast.elasticmemory;
 
+import com.hazelcast.storage.DataRef;
+import com.hazelcast.storage.Storage;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;

@@ -1,9 +1,10 @@
-package com.hazelcast.elasticmemory.storage;
+package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.util.MathUtil;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.storage.Storage;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -15,7 +16,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
     static final String MAX_HEAP_MEMORY_PARAM = "-Xmx";
     static final String MAX_DIRECT_MEMORY_PARAM = "-XX:MaxDirectMemorySize";
 
-    static Storage createStorage(final String total, final String chunk, ILogger logger) {
+    static Storage<DataRefImpl> createStorage(final String total, final String chunk, ILogger logger) {
         final MemorySize totalSize = MemorySize.parse(total, MemoryUnit.MEGABYTES);
         logger.log(Level.INFO, "Elastic-Memory off-heap storage total size: " + totalSize.megaBytes() + " MB");
         final MemorySize chunkSize = MemorySize.parse(chunk, MemoryUnit.KILOBYTES);

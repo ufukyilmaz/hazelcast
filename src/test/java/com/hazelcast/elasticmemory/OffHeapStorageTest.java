@@ -5,15 +5,13 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
-import com.hazelcast.elasticmemory.storage.DataRef;
-import com.hazelcast.elasticmemory.storage.OffHeapStorage;
-import com.hazelcast.elasticmemory.storage.Storage;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationConstants;
+import com.hazelcast.storage.Storage;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
@@ -42,7 +40,7 @@ public class OffHeapStorageTest {
     @Test
     public void testPutGetRemove() {
         final int chunkSize = 2;
-        final Storage s = new OffHeapStorage(32, chunkSize);
+        final Storage<DataRefImpl> s = new OffHeapStorage(32, chunkSize);
         final Random rand = new Random();
         final int k = 3072;
 
@@ -50,8 +48,8 @@ public class OffHeapStorageTest {
         rand.nextBytes(data);
         final int hash = rand.nextInt();
 
-        final DataRef ref = s.put(hash, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
-        assertEquals(k, ref.length);
+        final DataRefImpl ref = s.put(hash, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
+        assertEquals(k, ref.size());
         assertEquals((int) Math.ceil((double) k / (chunkSize * 1024)), ref.getChunkCount());
 
         Data resultData = s.get(hash, ref);

@@ -32,8 +32,8 @@ public abstract class StorageFactorySupport implements StorageFactory {
                     MAX_DIRECT_MEMORY_PARAM + ") should be configured in order to use " +
                     "Hazelcast Elastic Memory! " +
                     "(Ex: java " + MAX_DIRECT_MEMORY_PARAM + "=1G -Xmx1G -cp ...)" +
-                    " Using default parameters...");
-            jvmSize = new MemorySize(64, MemoryUnit.MEGABYTES);
+                    " Using defaults...");
+            jvmSize = totalSize;
         }
         checkOffHeapParams(jvmSize, totalSize, chunkSize);
 

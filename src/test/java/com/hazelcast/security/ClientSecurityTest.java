@@ -17,6 +17,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.io.Serializable;
+import java.security.AccessControlException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -173,7 +174,7 @@ public class ClientSecurityTest {
         }
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = AccessControlException.class)
     public void testLockPermissionFail() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")
@@ -187,7 +188,7 @@ public class ClientSecurityTest {
         }
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test(expected = AccessControlException.class)
     public void testLockPermissionFail2() {
         final Config config = createConfig();
         addPermission(config, PermissionType.LOCK, "test", "dev")

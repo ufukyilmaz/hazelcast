@@ -1,5 +1,7 @@
 package com.hazelcast.security;
 
+import com.hazelcast.concurrent.idgen.IdGeneratorService;
+import com.hazelcast.concurrent.lock.proxy.LockProxy;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.*;
 import com.hazelcast.instance.Node;
@@ -7,22 +9,20 @@ import com.hazelcast.logging.LoggingService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.security.permission.*;
 import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionalTask;
-import com.hazelcast.util.ExceptionUtil;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.security.Permission;
 import java.security.Principal;
-import java.security.PrivilegedExceptionAction;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
@@ -95,126 +95,98 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 	public void setNode(Node node) {
 		this.node = node;
 	}
-	
+
 	private class HazelcastInstanceDelegate implements HazelcastInstance {
-		private final HazelcastInstance hazelcast;
-		HazelcastInstanceDelegate(HazelcastInstance hazelcast) {
+		private final HazelcastInstance instance;
+		HazelcastInstanceDelegate(HazelcastInstance instance) {
 			super();
-			this.hazelcast = hazelcast;
+			this.instance = instance;
 		}
         public ILock getLock(String key) {
-            return null;
+            checkPermission(new LockPermission(key, ActionConstants.ACTION_CREATE));
+            return getProxy(new ILockInvocationHandler(instance.getLock(key)));
         }
         public <T> T executeTransaction(TransactionalTask<T> task) throws TransactionException {
-            return null;
+            checkPermission(new TransactionPermission());
+            return instance.executeTransaction(task);
         }
         public <T> T executeTransaction(TransactionOptions options, TransactionalTask<T> task) throws TransactionException {
-            return null;
+            checkPermission(new TransactionPermission());
+            return instance.executeTransaction(options, task);
         }
         public TransactionContext newTransactionContext() {
-            return null;
+            checkPermission(new TransactionPermission());
+            return instance.newTransactionContext();
         }
         public TransactionContext newTransactionContext(TransactionOptions options) {
-            return null;
+            checkPermission(new TransactionPermission());
+            return instance.newTransactionContext(options);
         }
         public <T extends DistributedObject> T getDistributedObject(String serviceName, Object id) {
+            //TODO
             return null;
         }
         public <T extends DistributedObject> T getDistributedObject(String serviceName, String name) {
+            //TODO
             return null;
         }
         public ConcurrentMap<String, Object> getUserContext() {
-            return null;
+            return instance.getUserContext();
         }
         public <E> IQueue<E> getQueue(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IQueue<E>>() {
-				public IQueue<E> run() throws Exception {
-					return hazelcast.getQueue(name);
-				}
-			});
+            checkPermission(new QueuePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IQueueInvocationHandler(instance.getQueue(name)));
 		}
 		public <E> ITopic<E> getTopic(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<ITopic<E>>() {
-				public ITopic<E> run() throws Exception {
-					return hazelcast.getTopic(name);
-				}
-			});
+            checkPermission(new TopicPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ITopicInvocationHandler(instance.getTopic(name)));
 		}
 		public <E> ISet<E> getSet(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<ISet<E>>() {
-				public ISet<E> run() throws Exception {
-					return hazelcast.getSet(name);
-				}
-			});
+            checkPermission(new SetPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ISetInvocationHandler(instance.getSet(name)));
 		}
 		public <E> IList<E> getList(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IList<E>>() {
-				public IList<E> run() throws Exception {
-					return hazelcast.getList(name);
-				}
-			});
+            checkPermission(new ListPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IListInvocationHandler(instance.getList(name)));
 		}
 		public <K, V> IMap<K, V> getMap(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IMap<K, V>>() {
-				public IMap<K, V> run() throws Exception {
-					return hazelcast.getMap(name);
-				}
-			});
+            checkPermission(new MapPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IMapInvocationHandler(instance.getMap(name)));
 		}
 		public <K, V> MultiMap<K, V> getMultiMap(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<MultiMap<K, V>>() {
-				public MultiMap<K, V> run() throws Exception {
-					return hazelcast.getMultiMap(name);
-				}
-			});
+            checkPermission(new MultiMapPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new MultiMapInvocationHandler(instance.getMultiMap(name)));
 		}
 		public ILock getLock(final Object key) {
-			return getInstanceProxy(new PrivilegedExceptionAction<ILock>() {
-				public ILock run() throws Exception {
-					return hazelcast.getLock(key);
-				}
-			});
+            final String name = LockProxy.convertToStringKey(key, node.getSerializationService());
+            checkPermission(new LockPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ILockInvocationHandler(instance.getLock(name)));
 		}
 		public IExecutorService getExecutorService(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IExecutorService>() {
-				public IExecutorService run() throws Exception {
-					return hazelcast.getExecutorService(name);
-				}
-			});
+            checkPermission(new ExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ExecutorServiceInvocationHandler(instance.getExecutorService(name)));
 		}
 		public IdGenerator getIdGenerator(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IdGenerator>() {
-				public IdGenerator run() throws Exception {
-					return hazelcast.getIdGenerator(name);
-				}
-			});
+            checkPermission(new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME+name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IdGeneratorInvocationHandler(instance.getIdGenerator(name)));
 		}
 		public IAtomicLong getAtomicLong(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<IAtomicLong>() {
-				public IAtomicLong run() throws Exception {
-					return hazelcast.getAtomicLong(name);
-				}
-			});
+            checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IAtomicLongInvocationHandler(instance.getAtomicLong(name)));
 		}
 		public ICountDownLatch getCountDownLatch(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<ICountDownLatch>() {
-				public ICountDownLatch run() throws Exception {
-					return hazelcast.getCountDownLatch(name);
-				}
-			});
+            checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ICountDownLatchInvocationHandler(instance.getCountDownLatch(name)));
 		}
 		public ISemaphore getSemaphore(final String name) {
-			return getInstanceProxy(new PrivilegedExceptionAction<ISemaphore>() {
-				public ISemaphore run() throws Exception {
-					return hazelcast.getSemaphore(name);
-				}
-			});
+            checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
 		}
 		public Cluster getCluster() {
-			return hazelcast.getCluster();
+			return instance.getCluster();
 		}
 		public String getName() {
-			return hazelcast.getName();
+			return instance.getName();
 		}
 		public void shutdown() {
 			throw new UnsupportedOperationException();
@@ -223,7 +195,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 			throw new UnsupportedOperationException();
 		}
 		public Collection<DistributedObject> getDistributedObjects() {
-			return hazelcast.getDistributedObjects();
+			return instance.getDistributedObjects();
 		}
         public String addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
             throw new UnsupportedOperationException();
@@ -232,45 +204,33 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             throw new UnsupportedOperationException();
         }
 		public Config getConfig() {
-			return hazelcast.getConfig();
+			return instance.getConfig();
 		}
         public PartitionService getPartitionService() {
-            return hazelcast.getPartitionService();
+            return instance.getPartitionService();
         }
 
         public ClientService getClientService() {
-            return hazelcast.getClientService();
+            return instance.getClientService();
         }
         public LoggingService getLoggingService() {
-			return hazelcast.getLoggingService();
+			return instance.getLoggingService();
 		}
 		public LifecycleService getLifecycleService() {
 			throw new UnsupportedOperationException();
 		}
 	}
-	
-	private <T> T getInstanceProxy(PrivilegedExceptionAction<T> action) {
-		try {
-			SecurityUtil.setSecureCall();
-			T instance = null;
-			try {
-                //TODO @ali come up with an idea
-//				instance = node.securityContext.doAsPrivileged(subject, action);
-			} finally {
-				SecurityUtil.resetSecureCall();
-			}
-			return createInstanceProxy(instance);
-		} catch (Exception e) {
-            ExceptionUtil.rethrow(e);
-			return null;
-		}
-	}
-	
-	private <T> T createInstanceProxy(Object instance) {
-		final Object instanceProxy = Proxy.newProxyInstance(getClass().getClassLoader(), 
-				getAllInterfaces(instance), new SecureInstanceProxy(instance));
-		return (T) instanceProxy;
-	}
+
+    private <T> T getProxy(SecureInvocationHandler handler) {
+        final DistributedObject distributedObject = handler.getDistributedObject();
+        final Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), getAllInterfaces(distributedObject), handler);
+        return (T) proxy;
+    }
+
+    public void checkPermission(Permission permission){
+        node.securityContext.checkPermission(subject, permission);
+    }
+
 	
 	public static Class[] getAllInterfaces(Object instance) {
 		Class clazz = instance.getClass();
@@ -284,35 +244,325 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		}
 		return (Class[]) all.toArray(new Class[all.size()]);
 	}
-	
-	private class SecureInstanceProxy implements InvocationHandler {
-		private final Object instance;
-		SecureInstanceProxy(Object instance) {
-			super();
-			this.instance = instance;
+
+    static final Map<String, Map<String,String>> structureMethodMap = new HashMap<String, Map<String, String>>();
+    static {
+        final String toParse =
+            ">lock:read=isLocked,isLockedByCurrentThread,getLockCount,getRemainingLeaseTime;" +
+                "lock=lock,forceUnlock,lockInterruptibly,tryLock,unlock;" +
+            ">queue:read=remainingCapacity,contains,element,peek,size,isEmpty,iterator,toArray,containsAll;" +
+                "add=add,offer,put,addAll;" +
+                "remove=take,poll,remove,drainTo,removeAll,retainAll,clear;" +
+                "listen=addItemListener;" +
+            ">topic:listen=addMessageListener;publish=publish;" +
+            ">set:read=size,isEmpty,contains,iterator,toArray,containsAll;" +
+                "add=add,addAll;" +
+                "listen=addItemListener;" +
+                "remove=remove,compareAndRemove,retainAll,removeAll;" +
+            ">list:read=size,isEmpty,contains,iterator,toArray,containsAll,get,lastIndexOf,indexOf,listIterator,subList;" +
+                "add=add,addAll,set;" +
+                "remove=remove,compareAndRemove,retainAll,removeAll;" +
+                "listen=addItemListener;" +
+            ">map:read=containsKey,containsValue,get,getAsync,getEntryView,keySet,values,getAll,entrySet,size,isEmpty;" +
+                "put=put,flush,putAsync,tryPut,putTransient,putIfAbsent,replace,set,putAll;" +
+                "remove=remove,delete,removeAsync,tryRemove,evict,clear;" +
+                "lock=lock,isLocked,tryLock,unlock,forceUnlock;"+
+                "intercept=addInterceptor,removeInterceptor;"+
+                "index=addIndex;" +
+                "listen=addEntryListener;" +
+            ">multiMap:read=get,keySet,values,entrySet,containsKey,containsValue,containsEntry,size,valueCount;" +
+                "put=put;" +
+                "remove=remove,clear;" +
+                "lock=lock,isLocked,tryLock,unlock,forceUnlock;"+
+                "listen=addEntryListener;" +
+            ">atomicLong:read=get;modify=addAndGet,compareAndSet,decrementAndGet,getAndAdd,getAndSet,incrementAndGet,getAndIncrement,set;"+
+            ">countDownLatch:read=await,getCount;modify=countDown,trySetCount;"+
+            ">semaphore:read=availablePermits;release=init,release;acquire=acquire,drainPermits,reducePermits,tryAcquire;"
+            ;
+
+        final String[] mapStrings = toParse.split(">");
+        for (String mapString: mapStrings){
+            int index = mapString.indexOf(':');
+            if(index == -1){continue;}
+            String structure = mapString.substring(0,index);
+            final String[] actionMaps = mapString.substring(index + 1).split(";");
+            final Map<String, String> map = new HashMap<String, String>();
+            for (String actionMap: actionMaps){
+                final int actionIndex = actionMap.indexOf('=');
+                String action = actionMap.substring(0, actionIndex);
+                final String[] methods = actionMap.substring(actionIndex + 1).split(",");
+                for (String method: methods){
+                    map.put(method.trim(), action.trim());
+                }
+            }
+            map.put("destroy",ActionConstants.ACTION_DESTROY);
+            structureMethodMap.put(structure, map);
+        }
+
+
+    }
+
+    public static void main(String[] args) {
+        final String s = structureMethodMap.get("topic").get("destroy");
+        System.err.println("s: " + s);
+    }
+
+    private abstract class SecureInvocationHandler implements InvocationHandler {
+
+		protected final DistributedObject distributedObject;
+        private final Map<String, String> methodMap;
+
+		SecureInvocationHandler(DistributedObject distributedObject) {
+			this.distributedObject = distributedObject;
+            methodMap = structureMethodMap.get(getStructureName());
 		}
-		
-		public Object invoke(Object proxy, final Method method, final Object[] args) throws Throwable {
-			SecurityUtil.setSecureCall();
-			try {
-                return null;
-                //TODO @ali come up with an idea
-//				return node.securityContext.doAsPrivileged(subject, new PrivilegedExceptionAction<Object>() {
-//					public Object run() throws Exception {
-//						try {
-//							return method.invoke(instance, args);
-//						} catch (InvocationTargetException e) {
-//							final Throwable cause = e.getCause();
-//							if(cause instanceof Exception) {
-//								throw (Exception) cause;
-//							}
-//							throw new Exception(cause);
-//						}
-//					}
-//				});
-			} finally {
-				SecurityUtil.resetSecureCall();
-			}
-		}
+
+        public DistributedObject getDistributedObject() {
+            return distributedObject;
+        }
+
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            final Permission permission = getPermission(method, args);
+            if (permission != null){
+                checkPermission(permission);
+            }
+            return method.invoke(distributedObject, args);
+        }
+
+        public abstract Permission getPermission(Method method, Object[] args);
+        public abstract String getStructureName();
+        public String getAction(String methodName){
+            return methodMap.get(methodName);
+        }
+
 	}
+
+    private class ILockInvocationHandler extends SecureInvocationHandler {
+
+        ILockInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new LockPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "lock";
+        }
+    }
+
+    private class IQueueInvocationHandler extends SecureInvocationHandler {
+
+        IQueueInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new QueuePermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "queue";
+        }
+    }
+
+    private class ITopicInvocationHandler extends SecureInvocationHandler {
+
+        ITopicInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new TopicPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "topic";
+        }
+    }
+
+    private class ISetInvocationHandler extends SecureInvocationHandler {
+
+        ISetInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new SetPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "set";
+        }
+    }
+
+    private class IListInvocationHandler extends SecureInvocationHandler {
+
+        IListInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new ListPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "list";
+        }
+    }
+
+    private class IMapInvocationHandler extends SecureInvocationHandler {
+
+        IMapInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            if (method.getName().equals("executeOnKey") || method.getName().equals("executeOnEntries")){
+                return new MapPermission(distributedObject.getName(), ActionConstants.ACTION_PUT, ActionConstants.ACTION_REMOVE);
+            }
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new MapPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "map";
+        }
+    }
+
+    private class MultiMapInvocationHandler extends SecureInvocationHandler {
+
+        MultiMapInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new MultiMapPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "multiMap";
+        }
+    }
+
+    private class ExecutorServiceInvocationHandler extends SecureInvocationHandler {
+
+        ExecutorServiceInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            if (method.getName().equals("destroy")){
+                return new ExecutorServicePermission(distributedObject.getName(), ActionConstants.ACTION_DESTROY);
+            }
+            return null;
+        }
+
+        public String getStructureName() {
+            return "executorService";
+        }
+    }
+
+    private class IAtomicLongInvocationHandler extends SecureInvocationHandler {
+
+        IAtomicLongInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new AtomicLongPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "atomicLong";
+        }
+    }
+
+    private class ICountDownLatchInvocationHandler extends SecureInvocationHandler {
+
+        ICountDownLatchInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new CountDownLatchPermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "countDownLatch";
+        }
+    }
+
+    private class ISemaphoreInvocationHandler extends SecureInvocationHandler {
+
+        ISemaphoreInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new SemaphorePermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "semaphore";
+        }
+    }
+
+    private class IdGeneratorInvocationHandler extends SecureInvocationHandler {
+
+        IdGeneratorInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            if (method.getName().equals("destroy")){
+                return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME+distributedObject.getName(), ActionConstants.ACTION_DESTROY);
+            }
+            return null;
+        }
+
+        public String getStructureName() {
+            return "idGenerator";
+        }
+    }
 }

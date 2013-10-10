@@ -111,7 +111,7 @@ public class ClientSecurityTest {
         final Config config = createConfig();
         addPermission(config, PermissionType.MAP, "test", "dev")
                 .addAction(ActionConstants.ACTION_PUT)
-                .addAction(ActionConstants.ACTION_GET)
+                .addAction(ActionConstants.ACTION_READ)
                 .addAction(ActionConstants.ACTION_REMOVE);
 
         Hazelcast.newHazelcastInstance(config).getMap("test"); // create map
@@ -136,7 +136,7 @@ public class ClientSecurityTest {
     public void testQueuePermission() {
         final Config config = createConfig();
         addPermission(config, PermissionType.QUEUE, "test", "dev")
-                .addAction(ActionConstants.ACTION_OFFER).addAction(ActionConstants.ACTION_CREATE);
+                .addAction(ActionConstants.ACTION_ADD).addAction(ActionConstants.ACTION_CREATE);
         Hazelcast.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
         try {
@@ -206,11 +206,11 @@ public class ClientSecurityTest {
     public void testExecutorPermission() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE);
 
         addPermission(config, PermissionType.LIST, "list", null)
                 .addAction(ActionConstants.ACTION_ADD).addAction(ActionConstants.ACTION_CREATE)
-                .addAction(ActionConstants.ACTION_GET);
+                .addAction(ActionConstants.ACTION_READ);
 
         Hazelcast.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
@@ -235,11 +235,10 @@ public class ClientSecurityTest {
         }
     }
 
-    @Test(expected = ExecutionException.class)
+    @Test(expected = AccessControlException.class)
     public void testExecutorPermissionFail2() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
-        addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(ActionConstants.ACTION_EXECUTE);
+        addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev");
         Hazelcast.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
         try {
@@ -253,7 +252,7 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail3() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE);
 
         Hazelcast.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
@@ -268,7 +267,7 @@ public class ClientSecurityTest {
     public void testExecutorPermissionFail4() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
-                .addAction(ActionConstants.ACTION_CREATE).addAction(ActionConstants.ACTION_EXECUTE);
+                .addAction(ActionConstants.ACTION_CREATE);
 
         Hazelcast.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();

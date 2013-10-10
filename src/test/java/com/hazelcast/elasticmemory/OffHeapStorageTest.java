@@ -39,9 +39,47 @@ public class OffHeapStorageTest {
     }
 
     @Test
-    public void testPutGetRemove() {
-        final int chunkSize = 2;
-        final Storage<DataRefImpl> s = new OffHeapStorage(32, chunkSize);
+    public void testPutGetRemove1() {
+        testPutGetRemove(1, 1, false);
+    }
+
+    @Test
+    public void testPutGetRemove2() {
+        testPutGetRemove(2, 2, false);
+    }
+
+    @Test
+    public void testPutGetRemove4() {
+        testPutGetRemove(4, 4, true);
+    }
+
+    @Test
+    public void testPutGetRemove5() {
+        testPutGetRemove(5, 5, true);
+    }
+
+    @Test
+    public void testPutGetRemove8() {
+        testPutGetRemove(2, 8, true);
+    }
+
+    @Test
+    public void testPutGetRemove10() {
+        testPutGetRemove(3, 10, false);
+    }
+
+    @Test
+    public void testPutGetRemove15() {
+        testPutGetRemove(3, 15, true);
+    }
+
+    @Test
+    public void testPutGetRemove16() {
+        testPutGetRemove(2, 16, false);
+    }
+
+    private void testPutGetRemove(int segmentSize, int chunkSize, boolean useUnsafe) {
+        final Storage<DataRefImpl> s = useUnsafe ? new UnsafeStorage(segmentSize, chunkSize) : new ByteBufferStorage(segmentSize, chunkSize);
         final Random rand = new Random();
         final int k = 3072;
 
@@ -60,6 +98,8 @@ public class OffHeapStorageTest {
 
         s.remove(hash, ref);
         assertNull(s.get(hash, ref));
+
+        s.destroy();
     }
 
     final MemorySize total = new MemorySize(32, MemoryUnit.MEGABYTES);
@@ -68,30 +108,56 @@ public class OffHeapStorageTest {
     @Test
     public void testFillUpBuffer() {
         final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
-        fillUpBuffer(count);
+        fillUpBuffer(count, false);
+    }
+
+    @Test
+    public void testFillUpBuffer2() {
+        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
+        fillUpBuffer(count, true);
     }
 
     @Test(expected = OffHeapOutOfMemoryError.class)
     public void testBufferOverFlow() {
         final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
-        fillUpBuffer(count + 1);
+        fillUpBuffer(count + 1, false);
     }
 
-    private void fillUpBuffer(int count) {
-        final Storage s = new OffHeapStorage((int) total.megaBytes(), 2, (int) chunk.kiloBytes());
+    @Test(expected = OffHeapOutOfMemoryError.class)
+    public void testBufferOverFlow2() {
+        final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
+        fillUpBuffer(count + 1, true);
+    }
+
+    private void fillUpBuffer(int count, boolean useUnsafe) {
+        final Storage s = useUnsafe ? new UnsafeStorage((int) total.megaBytes(), (int) chunk.kiloBytes())
+                : new ByteBufferStorage((int) total.megaBytes(), (int) chunk.kiloBytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
             s.put(i, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
         }
+        s.destroy();
     }
 
     @Test
     public void testMapStorageFull() {
+        testMapStorageFull(false);
+    }
+
+    @Test
+    public void testMapStorageFull2() {
+        testMapStorageFull(true);
+    }
+
+    private void testMapStorageFull(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
         IMap map = hz.getMap("test");
@@ -109,11 +175,23 @@ public class OffHeapStorageTest {
 
     @Test(expected = HazelcastInstanceNotActiveException.class)
     public void testMapStorageOom() {
+        testMapStorageOom(false);
+    }
+
+    @Test(expected = HazelcastInstanceNotActiveException.class)
+    public void testMapStorageOom2() {
+        testMapStorageOom(true);
+    }
+
+    private void testMapStorageOom(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
         IMap map = hz.getMap("test");
@@ -126,11 +204,23 @@ public class OffHeapStorageTest {
 
     @Test
     public void testMapStorageAfterDestroy() {
+        testMapStorageAfterDestroy(false);
+    }
+
+    @Test
+    public void testMapStorageAfterDestroy2() {
+        testMapStorageAfterDestroy(true);
+    }
+
+    private void testMapStorageAfterDestroy(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
         final byte[] value = new byte[1000];
@@ -150,11 +240,23 @@ public class OffHeapStorageTest {
 
     @Test
     public void testMapStorageAfterRemove() {
+        testMapStorageAfterRemove(false);
+    }
+
+    @Test
+    public void testMapStorageAfterRemove2() {
+        testMapStorageAfterRemove(true);
+    }
+
+    private void testMapStorageAfterRemove(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
         IMap map = hz.getMap("test");
@@ -182,6 +284,15 @@ public class OffHeapStorageTest {
 
     @Test
     public void testMapStorageAfterTTL() throws InterruptedException {
+        testMapStorageAfterTTL(false);
+    }
+
+    @Test
+    public void testMapStorageAfterTTL2() throws InterruptedException {
+        testMapStorageAfterTTL(true);
+    }
+
+    private void testMapStorageAfterTTL(boolean useUnsafe) throws InterruptedException {
         Config c = new Config();
         MapConfig mapConfig = c.getMapConfig("default");
         mapConfig.setStorageFormat(StorageFormat.OFFHEAP);
@@ -190,6 +301,9 @@ public class OffHeapStorageTest {
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
         IMap map = hz.getMap("test");

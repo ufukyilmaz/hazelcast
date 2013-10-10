@@ -1,61 +1,86 @@
+/*
+ * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataAccessor;
+import com.hazelcast.storage.Storage;
+import sun.misc.Unsafe;
 
-import java.io.Closeable;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
 
-public class BufferSegment implements Closeable {
+// Not used at the moment...
+class UnsafeStorage implements Storage<DataRefImpl> {
 
-    private static final ILogger logger = Logger.getLogger(BufferSegment.class.getName());
-
-    private static int ID = 0;
-
-    private static synchronized int nextId() {
-        return ID++;
-    }
+    private static final ILogger logger = Logger.getLogger(UnsafeStorage.class.getName());
 
     private final Lock lock = new ReentrantLock();
-    private final int totalSize;
+    private final long totalSize;
     private final int chunkSize;
-    private final Queue<ByteBuffer> bufferPool;
-    private volatile ByteBuffer mainBuffer; // used only for duplicates; no read, no write
+    private final long baseAddress;
     private IntegerQueue chunks;
 
-    public BufferSegment(int totalSizeInKb, int chunkSizeInKb) {
+    public UnsafeStorage(int totalSizeInMb, int chunkSizeInKb) {
         super();
-        this.totalSize = (int) MemoryUnit.KILOBYTES.toBytes(totalSizeInKb);
+        if (totalSizeInMb <= 0) {
+            throw new IllegalArgumentException("Total size must be positive!");
+        }
+        if (chunkSizeInKb <= 0) {
+            throw new IllegalArgumentException("Chunk size must be positive!");
+        }
+
+        long totalSizeInKb =  MemoryUnit.MEGABYTES.toKiloBytes(totalSizeInMb);
+        if (totalSizeInKb % chunkSizeInKb != 0) {
+            totalSizeInKb = divideByAndCeil(totalSizeInKb, (long) chunkSizeInKb) * chunkSizeInKb;
+        }
+
+        this.totalSize = MemoryUnit.KILOBYTES.toBytes(totalSizeInKb);
         this.chunkSize = (int) MemoryUnit.KILOBYTES.toBytes(chunkSizeInKb);
 
-        assertTrue((totalSize % chunkSize == 0), "Segment size[" + totalSizeInKb
+        assertTrue((totalSize % chunkSize == 0), "Storage size[" + totalSizeInKb
                 + " MB] must be multitude of chunk size[" + chunkSizeInKb + " KB]!");
 
-        final int index = nextId();
-        int chunkCount = totalSize / chunkSize;
-        logger.finest("BufferSegment[" + index + "] starting with chunkCount=" + chunkCount);
+        long cc = totalSize / chunkSize;
+        if (cc > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Chunk count limit exceeded; max: " + Integer.MAX_VALUE
+                + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSizeInKb + "KB.");
+        }
 
+        Unsafe unsafe = UnsafeHelper.UNSAFE;
+        baseAddress = unsafe.allocateMemory(totalSize);
+        unsafe.setMemory(baseAddress, totalSize, (byte) 0);
+
+        int chunkCount = (int) cc;
         chunks = new IntegerQueue(chunkCount);
-        mainBuffer = ByteBuffer.allocateDirect(totalSize);
         for (int i = 0; i < chunkCount; i++) {
             chunks.offer(i);
         }
-        bufferPool = new ConcurrentLinkedQueue<ByteBuffer>();
-        logger.finest("BufferSegment[" + index + "] started!");
+        logger.finest("UnsafeStorage started!");
     }
 
-    public DataRefImpl put(final Data data) {
+    public DataRefImpl put(int hash, final Data data) {
         final byte[] value = data != null ? data.getBuffer() : null;
         if (value == null || value.length == 0) {
             return DataRefImpl.EMPTY_DATA_REF;
@@ -63,25 +88,18 @@ public class BufferSegment implements Closeable {
 
         final int count = divideByAndCeil(value.length, chunkSize);
         final int[] indexes = reserve(count);  // operation under lock
-        final ByteBuffer buffer = getBuffer();   // volatile read
-        if (buffer == null) {
-            throw new BufferSegmentClosedError();
-        }
-        try {
-            int offset = 0;
-            for (int i = 0; i < count; i++) {
-                buffer.position(indexes[i] * chunkSize);
-                int len = Math.min(chunkSize, (value.length - offset));
-                buffer.put(value, offset, len);
-                offset += len;
-            }
-        } finally {
-            bufferPool.offer(buffer);
+        Unsafe unsafe = UnsafeHelper.UNSAFE;
+        int offset = 0;
+        for (int i = 0; i < count; i++) {
+            int pos = indexes[i] * chunkSize;
+            int len = Math.min(chunkSize, (value.length - offset));
+            unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (baseAddress + pos), len);
+            offset += len;
         }
         return new DataRefImpl(data.getType(), indexes, value.length, data.getClassDefinition()); // volatile write
     }
 
-    public Data get(final DataRefImpl ref) {
+    public Data get(int hash, final DataRefImpl ref) {
         if (!isEntryRefValid(ref)) {  // volatile read
             return null;
         }
@@ -89,19 +107,12 @@ public class BufferSegment implements Closeable {
         final byte[] value = new byte[ref.size()];
         final int chunkCount = ref.getChunkCount();
         int offset = 0;
-        final ByteBuffer buffer = getBuffer();  // volatile read
-        if (buffer == null) {
-            throw new BufferSegmentClosedError();
-        }
-        try {
-            for (int i = 0; i < chunkCount; i++) {
-                buffer.position(ref.getChunk(i) * chunkSize);
-                int len = Math.min(chunkSize, (ref.size() - offset));
-                buffer.get(value, offset, len);
-                offset += len;
-            }
-        } finally {
-            bufferPool.offer(buffer);
+        Unsafe unsafe = UnsafeHelper.UNSAFE;
+        for (int i = 0; i < chunkCount; i++) {
+            int pos = ref.getChunk(i) * chunkSize;
+            int len = Math.min(chunkSize, (ref.size() - offset));
+            unsafe.copyMemory(null, (baseAddress + pos), value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, len);
+            offset += len;
         }
 
         if (isEntryRefValid(ref)) { // volatile read
@@ -112,19 +123,7 @@ public class BufferSegment implements Closeable {
         return null;
     }
 
-    private ByteBuffer getBuffer() { // volatile read
-        final ByteBuffer mb = mainBuffer;
-        if (mb != null) {
-            ByteBuffer buff = bufferPool.poll();
-            if (buff == null) {
-                return mb.duplicate();
-            }
-            return buff;
-        }
-        return  null;
-    }
-
-    public void remove(final DataRefImpl ref) {
+    public void remove(int hash, final DataRefImpl ref) {
         if (!isEntryRefValid(ref)) { // volatile read
             return;
         }
@@ -147,27 +146,17 @@ public class BufferSegment implements Closeable {
         }
     }
 
-    public void close() {
-        final ByteBuffer buff = mainBuffer;
-        mainBuffer = null; // volatile write
-        bufferPool.clear();
+    public void destroy() {
         lock.lock();
         try {
             chunks = null;
         } finally {
             lock.unlock();
         }
-
-        if (buff != null) {
-            try {
-                Class<?> directBufferClass = Class.forName("sun.nio.ch.DirectBuffer");
-                Method cleanerMethod = directBufferClass.getMethod("cleaner");
-                Object cleaner = cleanerMethod.invoke(buff);
-                System.err.println("cleaner = " + cleaner);
-                Method cleanMethod = cleaner.getClass().getMethod("clean");
-                cleanMethod.invoke(cleaner);
-            } catch (Throwable ignored) {
-            }
+        try {
+            UnsafeHelper.UNSAFE.freeMemory(baseAddress);
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
     }
 

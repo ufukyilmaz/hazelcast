@@ -48,13 +48,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		return callable.call();
 	}
 	
-	public Subject getSubject() {
-		return subject;
-	}
-
 	public String toString() {
-		return "SecureCallable [subject=" + subject + ", callable=" + callable
-				+ "]";
+		return "SecureCallable [subject=" + subject + ", callable=" + callable + "]";
 	}
 
     public void writeData(ObjectDataOutput out) throws IOException {
@@ -88,10 +83,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		if(callable instanceof HazelcastInstanceAware) {
 			((HazelcastInstanceAware) callable).setHazelcastInstance(new HazelcastInstanceDelegate(hazelcastInstance));
 		}
-	}
-
-	public Node getNode() {
-		return node;
 	}
 
 	public void setNode(Node node) {
@@ -191,11 +182,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		public void shutdown() {
 			throw new UnsupportedOperationException();
 		}
-		public void restart() {
-			throw new UnsupportedOperationException();
-		}
 		public Collection<DistributedObject> getDistributedObjects() {
-			return instance.getDistributedObjects();
+            throw new UnsupportedOperationException();
 		}
         public String addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
             throw new UnsupportedOperationException();
@@ -231,7 +219,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         node.securityContext.checkPermission(subject, permission);
     }
 
-	
 	public static Class[] getAllInterfaces(Object instance) {
 		Class clazz = instance.getClass();
 		Set<Class> all = new HashSet<Class>();

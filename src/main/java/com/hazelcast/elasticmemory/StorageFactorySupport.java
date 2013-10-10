@@ -1,6 +1,5 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.elasticmemory.util.MathUtil;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
@@ -16,7 +15,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
     static final String MAX_HEAP_MEMORY_PARAM = "-Xmx";
     static final String MAX_DIRECT_MEMORY_PARAM = "-XX:MaxDirectMemorySize";
 
-    static Storage<DataRefImpl> createStorage(final String total, final String chunk, ILogger logger) {
+    static Storage<DataRefImpl> createStorage(final String total, final String chunk, boolean useUnsafe, ILogger logger) {
         final MemorySize totalSize = MemorySize.parse(total, MemoryUnit.MEGABYTES);
         logger.log(Level.INFO, "Elastic-Memory off-heap storage total size: " + totalSize.megaBytes() + " MB");
         final MemorySize chunkSize = MemorySize.parse(chunk, MemoryUnit.KILOBYTES);
@@ -37,7 +36,11 @@ public abstract class StorageFactorySupport implements StorageFactory {
         }
         checkOffHeapParams(jvmSize, totalSize, chunkSize);
 
-        return new OffHeapStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
+        if (useUnsafe) {
+            logger.warning("Unsafe support is experimental. Use at your own risk!");
+            return new UnsafeStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
+        }
+        return new ByteBufferStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
     }
 
     static void checkOffHeapParams(MemorySize jvm, MemorySize total, MemorySize chunk) {
@@ -63,10 +66,10 @@ public abstract class StorageFactorySupport implements StorageFactory {
             throw new IllegalArgumentException("Elastic Memory total size must be greater than chunk size => "
                     + "Total: " + total.bytes() + " bytes, Chunk: " + chunk.bytes() + " bytes");
         }
-        if (!MathUtil.isPowerOf2(chunk.kiloBytes())) {
-            throw new IllegalArgumentException("Elastic Memory chunk size must be power of 2 in kilobytes! (Current: "
-                    + chunk.kiloBytes() + " kilobytes)");
-        }
+//        if (!MathUtil.isPowerOf2(chunk.kiloBytes())) {
+//            throw new IllegalArgumentException("Elastic Memory chunk size must be power of 2 in kilobytes! (Current: "
+//                    + chunk.kiloBytes() + " kilobytes)");
+//        }
     }
 
     static MemorySize getJvmDirectMemorySize(ILogger logger) {

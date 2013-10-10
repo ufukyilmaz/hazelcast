@@ -2,6 +2,7 @@ package com.hazelcast.elasticmemory;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.StorageFormat;
 import com.hazelcast.core.*;
 import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.elasticmemory.util.MemorySize;
@@ -87,7 +88,7 @@ public class OffHeapStorageTest {
     @Test
     public void testMapStorageFull() {
         Config c = new Config();
-        c.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -109,7 +110,7 @@ public class OffHeapStorageTest {
     @Test(expected = HazelcastInstanceNotActiveException.class)
     public void testMapStorageOom() {
         Config c = new Config();
-        c.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -126,7 +127,7 @@ public class OffHeapStorageTest {
     @Test
     public void testMapStorageAfterDestroy() {
         Config c = new Config();
-        c.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -150,7 +151,7 @@ public class OffHeapStorageTest {
     @Test
     public void testMapStorageAfterRemove() {
         Config c = new Config();
-        c.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -183,7 +184,7 @@ public class OffHeapStorageTest {
     public void testMapStorageAfterTTL() throws InterruptedException {
         Config c = new Config();
         MapConfig mapConfig = c.getMapConfig("default");
-        mapConfig.setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        mapConfig.setStorageFormat(StorageFormat.OFFHEAP);
         mapConfig.setTimeToLiveSeconds(1);
 
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
@@ -215,13 +216,13 @@ public class OffHeapStorageTest {
     @Test(expected = HazelcastInstanceNotActiveException.class)
     public void testSharedMapStorageOom() {
         Config c1 = new Config();
-        c1.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c1.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c1.getGroupConfig().setName("dev1");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
-        c2.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c2.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c2.getGroupConfig().setName("dev2");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
@@ -249,13 +250,13 @@ public class OffHeapStorageTest {
     @Test
     public void testSharedMapStorageAfterShutdown() {
         Config c1 = new Config();
-        c1.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c1.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c1.getGroupConfig().setName("dev1");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
-        c2.getMapConfig("default").setStorageFormat(MapConfig.StorageFormat.OFFHEAP);
+        c2.getMapConfig("default").setStorageFormat(StorageFormat.OFFHEAP);
         c2.getGroupConfig().setName("dev2");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");

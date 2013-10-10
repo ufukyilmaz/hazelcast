@@ -46,13 +46,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		return callable.call();
 	}
 	
-	public Subject getSubject() {
-		return subject;
-	}
-
 	public String toString() {
-		return "SecureCallable [subject=" + subject + ", callable=" + callable
-				+ "]";
+		return "SecureCallable [subject=" + subject + ", callable=" + callable + "]";
 	}
 
     public void writeData(ObjectDataOutput out) throws IOException {
@@ -88,10 +83,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		}
 	}
 
-	public Node getNode() {
-		return node;
-	}
-
 	public void setNode(Node node) {
 		this.node = node;
 	}
@@ -123,12 +114,10 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             return instance.newTransactionContext(options);
         }
         public <T extends DistributedObject> T getDistributedObject(String serviceName, Object id) {
-            //TODO
-            return null;
+            throw new UnsupportedOperationException();
         }
         public <T extends DistributedObject> T getDistributedObject(String serviceName, String name) {
-            //TODO
-            return null;
+            throw new UnsupportedOperationException();
         }
         public ConcurrentMap<String, Object> getUserContext() {
             return instance.getUserContext();
@@ -191,11 +180,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		public void shutdown() {
 			throw new UnsupportedOperationException();
 		}
-		public void restart() {
-			throw new UnsupportedOperationException();
-		}
 		public Collection<DistributedObject> getDistributedObjects() {
-			return instance.getDistributedObjects();
+            throw new UnsupportedOperationException();
 		}
         public String addDistributedObjectListener(DistributedObjectListener distributedObjectListener) {
             throw new UnsupportedOperationException();
@@ -231,7 +217,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         node.securityContext.checkPermission(subject, permission);
     }
 
-	
 	public static Class[] getAllInterfaces(Object instance) {
 		Class clazz = instance.getClass();
 		Set<Class> all = new HashSet<Class>();

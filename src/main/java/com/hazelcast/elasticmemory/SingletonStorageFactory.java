@@ -73,10 +73,12 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
                         + "' system properties are mandatory!");
             }
 
-            logger.log(Level.FINEST, "Read " + GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE + " as: " + total);
-            logger.log(Level.FINEST, "Read " + GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE + " as: " + chunk);
+            final String unsafe = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED);
+            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE + " as: " + total);
+            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE + " as: " + chunk);
+            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED + " as: " + unsafe);
             logger.log(Level.INFO, "Initializing Singleton Storage...");
-            STORAGE = createStorage(total, chunk, logger);
+            STORAGE = createStorage(total, chunk, Boolean.parseBoolean(unsafe), logger);
         }
     }
 

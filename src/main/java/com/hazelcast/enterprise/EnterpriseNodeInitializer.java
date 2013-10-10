@@ -55,15 +55,15 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         parseSystemProps();
         securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
 
-        StorageFactory storageFactory;
-        if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
-            logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
-            storageFactory = new SingletonStorageFactory();
-        } else {
-            storageFactory = new InstanceStorageFactory(node);
-        }
-
         if (node.groupProperties.ELASTIC_MEMORY_ENABLED.getBoolean()) {
+            StorageFactory storageFactory;
+            if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
+                logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
+                storageFactory = new SingletonStorageFactory();
+            } else {
+                storageFactory = new InstanceStorageFactory(node);
+            }
+
             logger.log(Level.INFO, "Initializing node off-heap storage.");
             storage = storageFactory.createStorage();
         }

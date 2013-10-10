@@ -24,7 +24,9 @@ public class InstanceStorageFactory extends StorageFactorySupport implements Sto
         logger.log(Level.FINEST, "Read " + node.groupProperties.ELASTIC_MEMORY_TOTAL_SIZE.getName() + " as: " + total);
         String chunk = node.groupProperties.ELASTIC_MEMORY_CHUNK_SIZE.getValue();
         logger.log(Level.FINEST, "Read " + node.groupProperties.ELASTIC_MEMORY_CHUNK_SIZE.getName() + " as: " + chunk);
-        Storage storage = createStorage(total, chunk, logger);
+        boolean useUnsafe = node.groupProperties.ELASTIC_MEMORY_UNSAFE_ENABLED.getBoolean();
+        logger.log(Level.FINEST, "Read " + node.groupProperties.ELASTIC_MEMORY_UNSAFE_ENABLED.getName() + " as: " + useUnsafe);
+        Storage storage = createStorage(total, chunk, useUnsafe, logger);
         if (storage instanceof NodeAware) {
             ((NodeAware) storage).setNode(node);
         }

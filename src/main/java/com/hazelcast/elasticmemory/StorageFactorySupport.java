@@ -37,6 +37,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
         checkOffHeapParams(jvmSize, totalSize, chunkSize);
 
         if (useUnsafe) {
+            logger.warning("Unsafe support is experimental. Use at your own risk!");
             return new UnsafeStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
         }
         return new ByteBufferStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());

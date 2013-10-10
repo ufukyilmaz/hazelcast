@@ -153,7 +153,11 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         } finally {
             lock.unlock();
         }
-        UnsafeHelper.UNSAFE.freeMemory(baseAddress);
+        try {
+            UnsafeHelper.UNSAFE.freeMemory(baseAddress);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
     }
 
     private int[] reserve(final int count) {

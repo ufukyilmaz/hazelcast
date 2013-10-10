@@ -8,6 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataAccessor;
 
 import java.io.Closeable;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -147,14 +148,27 @@ public class BufferSegment implements Closeable {
     }
 
     public void close() {
+        final ByteBuffer buff = mainBuffer;
         mainBuffer = null; // volatile write
+        bufferPool.clear();
         lock.lock();
         try {
             chunks = null;
         } finally {
             lock.unlock();
         }
-        bufferPool.clear();
+
+        if (buff != null) {
+            try {
+                Class<?> directBufferClass = Class.forName("sun.nio.ch.DirectBuffer");
+                Method cleanerMethod = directBufferClass.getMethod("cleaner");
+                Object cleaner = cleanerMethod.invoke(buff);
+                System.err.println("cleaner = " + cleaner);
+                Method cleanMethod = cleaner.getClass().getMethod("clean");
+                cleanMethod.invoke(cleaner);
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     private int[] reserve(final int count) {

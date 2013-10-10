@@ -14,9 +14,11 @@ import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
 import com.hazelcast.transaction.TransactionalTask;
+import com.hazelcast.util.ExceptionUtil;
 
 import javax.security.auth.Subject;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -232,63 +234,34 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 
     static final Map<String, Map<String,String>> structureMethodMap = new HashMap<String, Map<String, String>>();
     static {
-        final String toParse =
-            ">lock:read=isLocked,isLockedByCurrentThread,getLockCount,getRemainingLeaseTime;" +
-                "lock=lock,forceUnlock,lockInterruptibly,tryLock,unlock;" +
-            ">queue:read=remainingCapacity,contains,element,peek,size,isEmpty,iterator,toArray,containsAll;" +
-                "add=add,offer,put,addAll;" +
-                "remove=take,poll,remove,drainTo,removeAll,retainAll,clear;" +
-                "listen=addItemListener;" +
-            ">topic:listen=addMessageListener;publish=publish;" +
-            ">set:read=size,isEmpty,contains,iterator,toArray,containsAll;" +
-                "add=add,addAll;" +
-                "listen=addItemListener;" +
-                "remove=remove,compareAndRemove,retainAll,removeAll;" +
-            ">list:read=size,isEmpty,contains,iterator,toArray,containsAll,get,lastIndexOf,indexOf,listIterator,subList;" +
-                "add=add,addAll,set;" +
-                "remove=remove,compareAndRemove,retainAll,removeAll;" +
-                "listen=addItemListener;" +
-            ">map:read=containsKey,containsValue,get,getAsync,getEntryView,keySet,values,getAll,entrySet,size,isEmpty;" +
-                "put=put,flush,putAsync,tryPut,putTransient,putIfAbsent,replace,set,putAll;" +
-                "remove=remove,delete,removeAsync,tryRemove,evict,clear;" +
-                "lock=lock,isLocked,tryLock,unlock,forceUnlock;"+
-                "intercept=addInterceptor,removeInterceptor;"+
-                "index=addIndex;" +
-                "listen=addEntryListener;" +
-            ">multiMap:read=get,keySet,values,entrySet,containsKey,containsValue,containsEntry,size,valueCount;" +
-                "put=put;" +
-                "remove=remove,clear;" +
-                "lock=lock,isLocked,tryLock,unlock,forceUnlock;"+
-                "listen=addEntryListener;" +
-            ">atomicLong:read=get;modify=addAndGet,compareAndSet,decrementAndGet,getAndAdd,getAndSet,incrementAndGet,getAndIncrement,set;"+
-            ">countDownLatch:read=await,getCount;modify=countDown,trySetCount;"+
-            ">semaphore:read=availablePermits;release=init,release;acquire=acquire,drainPermits,reducePermits,tryAcquire;"
-            ;
-
-        final String[] mapStrings = toParse.split(">");
-        for (String mapString: mapStrings){
-            int index = mapString.indexOf(':');
-            if(index == -1){continue;}
-            String structure = mapString.substring(0,index);
-            final String[] actionMaps = mapString.substring(index + 1).split(";");
-            final Map<String, String> map = new HashMap<String, String>();
-            for (String actionMap: actionMaps){
-                final int actionIndex = actionMap.indexOf('=');
-                String action = actionMap.substring(0, actionIndex);
-                final String[] methods = actionMap.substring(actionIndex + 1).split(",");
-                for (String method: methods){
-                    map.put(method.trim(), action.trim());
-                }
-            }
-            map.put("destroy",ActionConstants.ACTION_DESTROY);
-            structureMethodMap.put(structure, map);
+        final Properties properties = new Properties();
+        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        final InputStream stream = cl.getResourceAsStream("META-INF/services/com.hazelcast.permission-mapping");
+        try {
+            properties.load(stream);
+        } catch (IOException e) {
+            ExceptionUtil.rethrow(e);
         }
-
-
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            final String key = (String)entry.getKey();
+            final String action = (String)entry.getValue();
+            final int dotIndex = key.indexOf('.');
+            if (dotIndex == -1){
+                continue;
+            }
+            final String structure = key.substring(0, dotIndex);
+            final String method = key.substring(dotIndex+1);
+            Map<String, String> methodMap = structureMethodMap.get(structure);
+            if (methodMap == null){
+                methodMap = new HashMap<String, String>();
+                structureMethodMap.put(structure, methodMap);
+            }
+            methodMap.put(method,action);
+        }
     }
 
     public static void main(String[] args) {
-        final String s = structureMethodMap.get("topic").get("destroy");
+        final String s = structureMethodMap.get("lock").get("isLocked");
         System.err.println("s: " + s);
     }
 

@@ -63,7 +63,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
             throw new IllegalArgumentException("Elastic Memory total size must be multitude of megabytes! (Current: "
                     + total.bytes() + " bytes)");
         }
-        if (total.megaBytes() >= jvm.megaBytes()) {
+        if (total.megaBytes() > jvm.megaBytes()) {
             throw new IllegalArgumentException(MAX_DIRECT_MEMORY_PARAM + " or " + MAX_HEAP_MEMORY_PARAM
                     + " must set to a greater value than Elastic Memory total size => "
                     + MAX_DIRECT_MEMORY_PARAM + "(" + MAX_HEAP_MEMORY_PARAM + "): " + jvm.megaBytes()

@@ -24,7 +24,7 @@ import static org.junit.Assert.*;
 @RunWith(EnterpriseJUnitClassRunner.class)
 public class OffHeapStorageTest {
 
-    public static final int SIZE = 1024;
+    public static final int ENTRY_COUNT = 1024;
 
     @BeforeClass
     @AfterClass
@@ -78,7 +78,10 @@ public class OffHeapStorageTest {
         testPutGetRemove(2, 16, false);
     }
 
-    private void testPutGetRemove(int segmentSize, int chunkSize, boolean useUnsafe) {
+    private void testPutGetRemove(long segmentSizeInMb, int chunkSizeInKb, boolean useUnsafe) {
+        long segmentSize = MemoryUnit.MEGABYTES.toBytes(segmentSizeInMb);
+        int chunkSize = (int) MemoryUnit.KILOBYTES.toBytes(chunkSizeInKb);
+
         final Storage<DataRefImpl> s = useUnsafe ? new UnsafeStorage(segmentSize, chunkSize) : new ByteBufferStorage(segmentSize, chunkSize);
         final Random rand = new Random();
         final int k = 3072;
@@ -89,7 +92,7 @@ public class OffHeapStorageTest {
 
         final DataRefImpl ref = s.put(hash, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
         assertEquals(k, ref.size());
-        assertEquals((int) Math.ceil((double) k / (chunkSize * SIZE)), ref.getChunkCount());
+        assertEquals((int) Math.ceil((double) k / chunkSize), ref.getChunkCount());
 
         Data resultData = s.get(hash, ref);
         assertNotNull(resultData);
@@ -130,8 +133,8 @@ public class OffHeapStorageTest {
     }
 
     private void fillUpBuffer(int count, boolean useUnsafe) {
-        final Storage s = useUnsafe ? new UnsafeStorage((int) total.megaBytes(), (int) chunk.kiloBytes())
-                : new ByteBufferStorage((int) total.megaBytes(), (int) chunk.kiloBytes());
+        final Storage s = useUnsafe ? new UnsafeStorage(total.bytes(), (int) chunk.bytes())
+                : new ByteBufferStorage(total.bytes(), (int) chunk.bytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
             s.put(i, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
@@ -162,15 +165,15 @@ public class OffHeapStorageTest {
 
         IMap map = hz.getMap("test");
         final byte[] value = new byte[1000];
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
 
         map.clear();
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
-        assertEquals(SIZE, map.size());
+        assertEquals(ENTRY_COUNT, map.size());
     }
 
     @Test(expected = HazelcastInstanceNotActiveException.class)
@@ -196,7 +199,7 @@ public class OffHeapStorageTest {
 
         IMap map = hz.getMap("test");
         final byte[] value = new byte[1000];
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
         map.put(-1, value);
@@ -226,16 +229,16 @@ public class OffHeapStorageTest {
         final byte[] value = new byte[1000];
 
         IMap map = hz.getMap("test");
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
         map.destroy();
 
         IMap map2 = hz.getMap("test2");
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map2.put(i, value);
         }
-        assertEquals(SIZE, map2.size());
+        assertEquals(ENTRY_COUNT, map2.size());
     }
 
     @Test
@@ -261,7 +264,7 @@ public class OffHeapStorageTest {
 
         IMap map = hz.getMap("test");
         final byte[] value = new byte[1000];
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
 
@@ -279,7 +282,7 @@ public class OffHeapStorageTest {
         for (int i = 0; i < 100; i++) {
             map.put(i, value);
         }
-        assertEquals(SIZE, map.size());
+        assertEquals(ENTRY_COUNT, map.size());
     }
 
     @Test
@@ -316,7 +319,7 @@ public class OffHeapStorageTest {
         }, true);
 
         final byte[] value = new byte[1000];
-        for (int i = 0; i < SIZE; i++) {
+        for (int i = 0; i < ENTRY_COUNT; i++) {
             map.put(i, value);
         }
 
@@ -350,7 +353,7 @@ public class OffHeapStorageTest {
             final byte[] value = new byte[1000];
 
             IMap map = hz.getMap("test");
-            for (int i = 0; i < SIZE; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++) {
                 map.put(i, value);
             }
 
@@ -384,13 +387,13 @@ public class OffHeapStorageTest {
             final byte[] value = new byte[1000];
 
             IMap map = hz.getMap("test");
-            for (int i = 0; i < SIZE; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++) {
                 map.put(i, value);
             }
             hz.getLifecycleService().shutdown();
 
             IMap map2 = hz2.getMap("test");
-            for (int i = 0; i < SIZE; i++) {
+            for (int i = 0; i < ENTRY_COUNT; i++) {
                 map2.put(i, value);
             }
 

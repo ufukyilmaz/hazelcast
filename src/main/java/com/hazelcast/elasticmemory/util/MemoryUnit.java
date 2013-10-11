@@ -6,23 +6,23 @@ public enum MemoryUnit {
 	BYTES {
 		public long convert(long value, MemoryUnit m) {return m.toBytes(value);}
 		public long toBytes(long value) {return value;}
-		public long toKiloBytes(long value) {return divideByAndRound(value, K);}
-		public long toMegaBytes(long value) {return divideByAndRound(value, M);}
-		public long toGigaBytes(long value) {return divideByAndRound(value, G);}
+		public long toKiloBytes(long value) {return divideByAndRoundToInt(value, K);}
+		public long toMegaBytes(long value) {return divideByAndRoundToInt(value, M);}
+		public long toGigaBytes(long value) {return divideByAndRoundToInt(value, G);}
 	},
 	KILOBYTES {
 		public long convert(long value, MemoryUnit m) {return m.toKiloBytes(value);}
 		public long toBytes(long value) {return value*K;}
 		public long toKiloBytes(long value) {return value;}
-		public long toMegaBytes(long value) {return divideByAndRound(value, K);}
-		public long toGigaBytes(long value) {return divideByAndRound(value, M);}
+		public long toMegaBytes(long value) {return divideByAndRoundToInt(value, K);}
+		public long toGigaBytes(long value) {return divideByAndRoundToInt(value, M);}
 	},
 	MEGABYTES {
 		public long convert(long value, MemoryUnit m) {return m.toMegaBytes(value);}
 		public long toBytes(long value) {return value*M;}
 		public long toKiloBytes(long value) {return value*K;}
 		public long toMegaBytes(long value) {return value;}
-		public long toGigaBytes(long value) {return divideByAndRound(value, K);}
+		public long toGigaBytes(long value) {return divideByAndRoundToInt(value, K);}
 	},
 	GIGABYTES {
 		public long convert(long value, MemoryUnit m) {return m.toGigaBytes(value);}

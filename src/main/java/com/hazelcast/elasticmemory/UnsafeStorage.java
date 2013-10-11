@@ -17,7 +17,7 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
-import com.hazelcast.elasticmemory.util.MemoryUnit;
+import com.hazelcast.elasticmemory.util.MathUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
@@ -29,48 +29,53 @@ import sun.misc.Unsafe;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
+import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
 
-// Not used at the moment...
 class UnsafeStorage implements Storage<DataRefImpl> {
 
     private static final ILogger logger = Logger.getLogger(UnsafeStorage.class.getName());
 
     private final Lock lock = new ReentrantLock();
-    private final long totalSize;
     private final int chunkSize;
-    private final long baseAddress;
+    private final long address;
+    private final Runnable cleaner;
     private IntegerQueue chunks;
 
-    public UnsafeStorage(int totalSizeInMb, int chunkSizeInKb) {
+    public UnsafeStorage(long capacity, int chunkSize) {
         super();
-        if (totalSizeInMb <= 0) {
-            throw new IllegalArgumentException("Total size must be positive!");
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Capacity must be positive!");
         }
-        if (chunkSizeInKb <= 0) {
+        if (chunkSize <= 0) {
             throw new IllegalArgumentException("Chunk size must be positive!");
         }
 
-        long totalSizeInKb =  MemoryUnit.MEGABYTES.toKiloBytes(totalSizeInMb);
-        if (totalSizeInKb % chunkSizeInKb != 0) {
-            totalSizeInKb = divideByAndCeil(totalSizeInKb, (long) chunkSizeInKb) * chunkSizeInKb;
+        this.chunkSize = chunkSize;
+        if (capacity % chunkSize != 0) {
+            capacity = MathUtil.divideByAndCeilToLong(capacity, chunkSize) * chunkSize;
         }
 
-        this.totalSize = MemoryUnit.KILOBYTES.toBytes(totalSizeInKb);
-        this.chunkSize = (int) MemoryUnit.KILOBYTES.toBytes(chunkSizeInKb);
+        assertTrue((capacity % chunkSize == 0), "Storage size[" + capacity
+                + "] must be multitude of chunk size[" + chunkSize + "]!");
 
-        assertTrue((totalSize % chunkSize == 0), "Storage size[" + totalSizeInKb
-                + " MB] must be multitude of chunk size[" + chunkSizeInKb + " KB]!");
-
-        long cc = totalSize / chunkSize;
+        long cc = capacity / chunkSize;
         if (cc > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Chunk count limit exceeded; max: " + Integer.MAX_VALUE
-                + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSizeInKb + "KB.");
+                + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSize + "KB.");
         }
 
         Unsafe unsafe = UnsafeHelper.UNSAFE;
-        baseAddress = unsafe.allocateMemory(totalSize);
-        unsafe.setMemory(baseAddress, totalSize, (byte) 0);
+        address = unsafe.allocateMemory(capacity);
+        unsafe.setMemory(address, capacity, (byte) 0);
+        cleaner = new Runnable() {
+            public void run() {
+                try {
+                    UnsafeHelper.UNSAFE.freeMemory(address);
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        };
 
         int chunkCount = (int) cc;
         chunks = new IntegerQueue(chunkCount);
@@ -86,14 +91,14 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             return DataRefImpl.EMPTY_DATA_REF;
         }
 
-        final int count = divideByAndCeil(value.length, chunkSize);
+        final int count = divideByAndCeilToInt(value.length, chunkSize);
         final int[] indexes = reserve(count);  // operation under lock
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         int offset = 0;
         for (int i = 0; i < count; i++) {
-            int pos = indexes[i] * chunkSize;
+            long pos = indexes[i] * (long) chunkSize;
             int len = Math.min(chunkSize, (value.length - offset));
-            unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (baseAddress + pos), len);
+            unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (address + pos), len);
             offset += len;
         }
         return new DataRefImpl(data.getType(), indexes, value.length, data.getClassDefinition()); // volatile write
@@ -109,9 +114,9 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         int offset = 0;
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < chunkCount; i++) {
-            int pos = ref.getChunk(i) * chunkSize;
+            long pos = ref.getChunk(i) * (long) chunkSize;
             int len = Math.min(chunkSize, (ref.size() - offset));
-            unsafe.copyMemory(null, (baseAddress + pos), value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, len);
+            unsafe.copyMemory(null, (address + pos), value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, len);
             offset += len;
         }
 
@@ -153,11 +158,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         } finally {
             lock.unlock();
         }
-        try {
-            UnsafeHelper.UNSAFE.freeMemory(baseAddress);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+        cleaner.run();
     }
 
     private int[] reserve(final int count) {

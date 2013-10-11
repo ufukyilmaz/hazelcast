@@ -9,57 +9,54 @@ import com.hazelcast.storage.Storage;
 import java.io.Closeable;
 import java.util.logging.Level;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
+import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
+import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToLong;
 
 class ByteBufferStorage implements Storage<DataRefImpl> {
 
     private static final int MIN_SEGMENT_COUNT = 2;
-    private static final int MAX_SEGMENT_SIZE_IN_MB = 1024;
+    private static final long MAX_SEGMENT_SIZE = MemoryUnit.GIGABYTES.toBytes(1);
 
     private final ILogger logger = Logger.getLogger(getClass().getName());
     private final int segmentCount;
     private final BufferSegment[] segments;
 
-    public ByteBufferStorage(int totalSizeInMb, int chunkSizeInKb) {
-        if (totalSizeInMb <= 0) {
-            throw new IllegalArgumentException("Total size must be positive!");
+    public ByteBufferStorage(long capacity, int chunkSize) {
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("Capacity must be positive!");
         }
-        if (chunkSizeInKb <= 0) {
+        if (chunkSize <= 0) {
             throw new IllegalArgumentException("Chunk size must be positive!");
         }
-        if (totalSizeInMb >= MAX_SEGMENT_SIZE_IN_MB * MIN_SEGMENT_COUNT) {
-            segmentCount = divideByAndCeil(totalSizeInMb, MAX_SEGMENT_SIZE_IN_MB);
+        if (capacity >= MAX_SEGMENT_SIZE * MIN_SEGMENT_COUNT) {
+            segmentCount = divideByAndCeilToInt(capacity, (int) MAX_SEGMENT_SIZE);
         } else {
-            segmentCount = totalSizeInMb >= MIN_SEGMENT_COUNT ? MIN_SEGMENT_COUNT : 1;
+            segmentCount = capacity >= MIN_SEGMENT_COUNT ? MIN_SEGMENT_COUNT : 1;
         }
         boolean sizeAdjusted = false;
-        if (totalSizeInMb % segmentCount != 0) {
-            totalSizeInMb = divideByAndCeil(totalSizeInMb, segmentCount) * segmentCount;
-            if (totalSizeInMb == 0) {
-                totalSizeInMb = MIN_SEGMENT_COUNT;
+        if (capacity % segmentCount != 0) {
+            capacity = divideByAndCeilToLong(capacity, segmentCount) * segmentCount;
+            if (capacity == 0) {
+                capacity = MIN_SEGMENT_COUNT;
             }
             sizeAdjusted = true;
         }
 
-        int segmentSizeInKb = (int) MemoryUnit.MEGABYTES.toKiloBytes(totalSizeInMb / segmentCount);
-        if (segmentSizeInKb % chunkSizeInKb != 0) {
-            segmentSizeInKb = divideByAndCeil(segmentSizeInKb, chunkSizeInKb) * chunkSizeInKb;
-            totalSizeInMb = ((int) MemoryUnit.KILOBYTES.toMegaBytes(segmentSizeInKb)) * segmentCount;
+        long segmentCapacity = capacity / segmentCount;
+        if (segmentCapacity % chunkSize != 0) {
+            segmentCapacity = divideByAndCeilToInt(segmentCapacity, chunkSize) * chunkSize;
+            capacity = segmentCapacity * segmentCount;
             sizeAdjusted = true;
         }
 
         if (sizeAdjusted) {
-            logger.info("Adjusting totalSize to: " + totalSizeInMb + "MB.");
+            logger.info("Adjusting capacity to: " + capacity + " bytes...");
         }
 
-        if (logger.isFinestEnabled()) {
-            logger.info(segmentCount + " off-heap segments (each " + segmentSizeInKb + "KB) will be created.");
-        } else {
-            logger.info(segmentCount + " off-heap segments (each " + totalSizeInMb / segmentCount + "MB) will be created.");
-        }
+        logger.info(segmentCount + " off-heap segments (each " + segmentCapacity + " bytes) will be created.");
         this.segments = new BufferSegment[segmentCount];
         for (int i = 0; i < segmentCount; i++) {
-            segments[i] = new BufferSegment(segmentSizeInKb, chunkSizeInKb);
+            segments[i] = new BufferSegment((int) segmentCapacity, chunkSize);
         }
     }
 

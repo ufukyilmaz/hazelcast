@@ -2,19 +2,19 @@ package com.hazelcast.elasticmemory.util;
 
 public final class MathUtil {
 
-	public static int divideByAndCeil(double d, int k) {
+	public static int divideByAndCeilToInt(double d, int k) {
 		return (int) Math.ceil(d / k);
 	}
 	
-	public static long divideByAndCeil(double d, long k) {
+	public static long divideByAndCeilToLong(double d, int k) {
 		return (long) Math.ceil(d / k);
 	}
 	
-	public static int divideByAndRound(double d, int k) {
+	public static int divideByAndRoundToInt(double d, int k) {
 		return (int) Math.rint(d / k);
 	}
 	
-	public static long divideByAndRound(double d, long k) {
+	public static long divideByAndRoundToLong(double d, int k) {
 		return (long) Math.rint(d / k);
 	}
 

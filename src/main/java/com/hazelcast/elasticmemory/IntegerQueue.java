@@ -47,8 +47,8 @@ class IntegerQueue {
     public int[] poll(final int[] indexes) {
         final int count = indexes.length;
         if (count > size) {
-            throw new OffHeapOutOfMemoryError("Segment has " + size + " available chunks. " +
-                    "Data requires " + count + " chunks. Segment is full!");
+            throw new OffHeapOutOfMemoryError("Queue has " + size + " available chunks. " +
+                    "Data requires " + count + " chunks. Storage is full!");
         }
 
         for (int i = 0; i < count; i++) {

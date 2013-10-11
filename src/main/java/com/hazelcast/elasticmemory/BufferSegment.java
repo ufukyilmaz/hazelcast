@@ -1,7 +1,6 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
-import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
@@ -15,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeil;
+import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
 
 public class BufferSegment implements Closeable {
 
@@ -28,26 +27,23 @@ public class BufferSegment implements Closeable {
     }
 
     private final Lock lock = new ReentrantLock();
-    private final int totalSize;
     private final int chunkSize;
     private final Queue<ByteBuffer> bufferPool;
     private volatile ByteBuffer mainBuffer; // used only for duplicates; no read, no write
     private IntegerQueue chunks;
 
-    public BufferSegment(int totalSizeInKb, int chunkSizeInKb) {
+    public BufferSegment(int capacity, int chunkSize) {
         super();
-        this.totalSize = (int) MemoryUnit.KILOBYTES.toBytes(totalSizeInKb);
-        this.chunkSize = (int) MemoryUnit.KILOBYTES.toBytes(chunkSizeInKb);
 
-        assertTrue((totalSize % chunkSize == 0), "Segment size[" + totalSizeInKb
-                + " MB] must be multitude of chunk size[" + chunkSizeInKb + " KB]!");
+        this.chunkSize = chunkSize;
+        assertTrue((capacity % chunkSize == 0), "Segment size[" + capacity + "] must be multitude of chunk size[" + chunkSize + "]!");
 
         final int index = nextId();
-        int chunkCount = totalSize / chunkSize;
+        int chunkCount = capacity / chunkSize;
         logger.finest("BufferSegment[" + index + "] starting with chunkCount=" + chunkCount);
 
         chunks = new IntegerQueue(chunkCount);
-        mainBuffer = ByteBuffer.allocateDirect(totalSize);
+        mainBuffer = ByteBuffer.allocateDirect(capacity);
         for (int i = 0; i < chunkCount; i++) {
             chunks.offer(i);
         }
@@ -61,7 +57,7 @@ public class BufferSegment implements Closeable {
             return DataRefImpl.EMPTY_DATA_REF;
         }
 
-        final int count = divideByAndCeil(value.length, chunkSize);
+        final int count = divideByAndCeilToInt(value.length, chunkSize);
         final int[] indexes = reserve(count);  // operation under lock
         final ByteBuffer buffer = getBuffer();   // volatile read
         if (buffer == null) {
@@ -163,7 +159,6 @@ public class BufferSegment implements Closeable {
                 Class<?> directBufferClass = Class.forName("sun.nio.ch.DirectBuffer");
                 Method cleanerMethod = directBufferClass.getMethod("cleaner");
                 Object cleaner = cleanerMethod.invoke(buff);
-                System.err.println("cleaner = " + cleaner);
                 Method cleanMethod = cleaner.getClass().getMethod("clean");
                 cleanMethod.invoke(cleaner);
             } catch (Throwable ignored) {

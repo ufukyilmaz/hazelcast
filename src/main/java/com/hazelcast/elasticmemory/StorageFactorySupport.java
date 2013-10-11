@@ -1,8 +1,8 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.util.MemorySize;
-import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.storage.Storage;
 
 import java.lang.management.ManagementFactory;
@@ -16,10 +16,10 @@ public abstract class StorageFactorySupport implements StorageFactory {
     static final String MAX_DIRECT_MEMORY_PARAM = "-XX:MaxDirectMemorySize";
 
     static Storage<DataRefImpl> createStorage(final String total, final String chunk, boolean useUnsafe, ILogger logger) {
-        final MemorySize totalSize = MemorySize.parse(total, MemoryUnit.MEGABYTES);
+        final MemorySize totalSize = MemorySize.parse(total);
         logger.log(Level.INFO, "Elastic-Memory off-heap storage total size: " + totalSize.megaBytes() + " MB");
-        final MemorySize chunkSize = MemorySize.parse(chunk, MemoryUnit.KILOBYTES);
-        logger.log(Level.INFO, "Elastic-Memory off-heap storage chunk size: " + chunkSize.kiloBytes() + " KB");
+        final MemorySize chunkSize = MemorySize.parse(chunk);
+        logger.log(Level.INFO, "Elastic-Memory off-heap storage chunk size: " + chunkSize.bytes() + " bytes");
 
         MemorySize jvmSize = getJvmDirectMemorySize(logger);
         if (jvmSize == null) {
@@ -37,10 +37,21 @@ public abstract class StorageFactorySupport implements StorageFactory {
         checkOffHeapParams(jvmSize, totalSize, chunkSize);
 
         if (useUnsafe) {
-            logger.warning("Unsafe support is experimental. Use at your own risk!");
-            return new UnsafeStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
+            if (unsafeAvailable()) {
+                return new UnsafeStorage(totalSize.bytes(), (int) chunkSize.bytes());
+            } else {
+                logger.warning("Could not load sun.misc.Unsafe! Falling back to ByteBuffer storage implementation...");
+            }
         }
-        return new ByteBufferStorage((int) totalSize.megaBytes(), (int) chunkSize.kiloBytes());
+        return new ByteBufferStorage(totalSize.bytes(), (int) chunkSize.bytes());
+    }
+
+    static boolean unsafeAvailable() {
+        try {
+            return UnsafeHelper.UNSAFE != null;
+        } catch (Throwable ignored) {
+        }
+        return false;
     }
 
     static void checkOffHeapParams(MemorySize jvm, MemorySize total, MemorySize chunk) {
@@ -54,22 +65,14 @@ public abstract class StorageFactorySupport implements StorageFactory {
         }
         if (total.megaBytes() >= jvm.megaBytes()) {
             throw new IllegalArgumentException(MAX_DIRECT_MEMORY_PARAM + " or " + MAX_HEAP_MEMORY_PARAM
-                    + " must be greater than Elastic Memory total size => "
+                    + " must set to a greater value than Elastic Memory total size => "
                     + MAX_DIRECT_MEMORY_PARAM + "(" + MAX_HEAP_MEMORY_PARAM + "): " + jvm.megaBytes()
                     + " megabytes, Total: " + total.megaBytes() + " megabytes");
-        }
-        if (chunk.kiloBytes() == 0) {
-            throw new IllegalArgumentException("Elastic Memory chunk size must be multitude of kilobytes! (Current: "
-                    + chunk.bytes() + " bytes)");
         }
         if (total.bytes() <= chunk.bytes()) {
             throw new IllegalArgumentException("Elastic Memory total size must be greater than chunk size => "
                     + "Total: " + total.bytes() + " bytes, Chunk: " + chunk.bytes() + " bytes");
         }
-//        if (!MathUtil.isPowerOf2(chunk.kiloBytes())) {
-//            throw new IllegalArgumentException("Elastic Memory chunk size must be power of 2 in kilobytes! (Current: "
-//                    + chunk.kiloBytes() + " kilobytes)");
-//        }
     }
 
     static MemorySize getJvmDirectMemorySize(ILogger logger) {

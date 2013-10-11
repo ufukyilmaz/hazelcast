@@ -235,8 +235,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
     static final Map<String, Map<String,String>> structureMethodMap = new HashMap<String, Map<String, String>>();
     static {
         final Properties properties = new Properties();
-        final ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        final InputStream stream = cl.getResourceAsStream("META-INF/services/com.hazelcast.permission-mapping");
+        final ClassLoader cl = SecureCallableImpl.class.getClassLoader();
+        final InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
         try {
             properties.load(stream);
         } catch (IOException e) {

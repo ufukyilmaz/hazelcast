@@ -68,9 +68,6 @@ public final class SecurityUtil {
 		case ID_GENERATOR:
             return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME+permissionConfig.getName(), actions);
 
-		case LISTENER:
-			return new ListenerPermission(permissionConfig.getName());
-			
 		case TRANSACTION:
 			return new TransactionPermission();
 			

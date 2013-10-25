@@ -176,7 +176,10 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		public Cluster getCluster() {
 			return instance.getCluster();
 		}
-		public String getName() {
+        public Endpoint getLocalEndpoint() {
+            return instance.getLocalEndpoint();
+        }
+        public String getName() {
 			return instance.getName();
 		}
 		public void shutdown() {

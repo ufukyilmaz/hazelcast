@@ -6,8 +6,6 @@ import com.hazelcast.nio.serialization.ClassDefinition;
 
 public class DataRefImpl implements DataRef {
 
-    public static final DataRefImpl EMPTY_DATA_REF = new DataRefImpl();
-
     private final int length;
     private final int type;
     private final int[] chunks;

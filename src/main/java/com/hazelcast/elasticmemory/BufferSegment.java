@@ -52,17 +52,21 @@ public class BufferSegment implements Closeable {
     }
 
     public DataRefImpl put(final Data data) {
-        final byte[] value = data != null ? data.getBuffer() : null;
+        if (data == null) {
+            return null;
+        }
+        final byte[] value = data.getBuffer();
         if (value == null || value.length == 0) {
-            return DataRefImpl.EMPTY_DATA_REF;
+            return new DataRefImpl(data.getType(), null, 0, data.getClassDefinition()); // volatile write;
         }
 
         final int count = divideByAndCeilToInt(value.length, chunkSize);
-        final int[] indexes = reserve(count);  // operation under lock
         final ByteBuffer buffer = getBuffer();   // volatile read
         if (buffer == null) {
             throw new BufferSegmentClosedError();
         }
+        final int[] indexes = reserve(count);  // operation under lock
+
         try {
             int offset = 0;
             for (int i = 0; i < count; i++) {
@@ -80,6 +84,11 @@ public class BufferSegment implements Closeable {
     public Data get(final DataRefImpl ref) {
         if (!isEntryRefValid(ref)) {  // volatile read
             return null;
+        }
+        if (ref.isEmpty()) {
+            Data data = new Data(ref.getType(), null);
+            DataAccessor.setCD(data, ref.getClassDefinition());
+            return data;
         }
 
         final byte[] value = new byte[ref.size()];
@@ -126,15 +135,17 @@ public class BufferSegment implements Closeable {
         }
         ref.invalidate(); // volatile write
         final int chunkCount = ref.getChunkCount();
-        final int[] indexes = new int[chunkCount];
-        for (int i = 0; i < chunkCount; i++) {
-            indexes[i] = ref.getChunk(i);
+        if (chunkCount > 0) {
+            final int[] indexes = new int[chunkCount];
+            for (int i = 0; i < chunkCount; i++) {
+                indexes[i] = ref.getChunk(i);
+            }
+            assertTrue(release(indexes), "Could not offer released indexes! Error in queue...");
         }
-        assertTrue(release(indexes), "Could not offer released indexes! Error in queue...");
     }
 
     private boolean isEntryRefValid(final DataRefImpl ref) {
-        return ref != null && !ref.isEmpty() && ref.isValid();  //isValid() volatile read
+        return ref != null && ref.isValid();  //isValid() volatile read
     }
 
     private static void assertTrue(boolean condition, String message) {

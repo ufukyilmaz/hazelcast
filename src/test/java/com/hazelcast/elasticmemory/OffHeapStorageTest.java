@@ -1,6 +1,7 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.GlobalSerializerConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.*;
@@ -9,12 +10,16 @@ import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationConstants;
+import com.hazelcast.nio.serialization.StreamSerializer;
 import com.hazelcast.storage.Storage;
 import org.junit.*;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -400,6 +405,68 @@ public class OffHeapStorageTest {
         } finally {
             System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE);
             System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE);
+        }
+    }
+
+
+    @Test
+    public void testEmptyData1() {
+        testEmptyData(false);
+    }
+
+    @Test
+    public void testEmptyData2() {
+        testEmptyData(true);
+    }
+
+    private void testEmptyData(boolean useUnsafe) {
+        final Config config = new Config();
+        config.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
+        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        if (useUnsafe) {
+            config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+        }
+
+        config.getSerializationConfig().setGlobalSerializerConfig(new GlobalSerializerConfig()
+                .setImplementation(new StreamSerializer() {
+                    public void write(ObjectDataOutput out, Object object) throws IOException {
+                    }
+
+                    public Object read(ObjectDataInput in) throws IOException {
+                        return new SingletonValue();
+                    }
+                    public int getTypeId() {
+                        return 123;
+                    }
+                    public void destroy() {
+                    }
+                }));
+
+        HazelcastInstance hz = Hazelcast.newHazelcastInstance(config);
+
+        IMap<Object, Object> map = hz.getMap("test");
+        for (int i = 0; i < 10; i++) {
+            map.put(i, new SingletonValue());
+        }
+        assertEquals(10, map.size());
+
+        HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(config);
+        IMap<Object, Object> map2 = hz2.getMap("test");
+        assertEquals(10, map2.size());
+        assertEquals(10, map.size());
+
+        for (int i = 0; i < 10; i++) {
+            Object o = map2.get(i);
+            assertNotNull(o);
+            assertEquals(new SingletonValue(), o);
+        }
+    }
+
+    private static class SingletonValue {
+        public boolean equals(Object obj) {
+            return obj instanceof SingletonValue;
         }
     }
 }

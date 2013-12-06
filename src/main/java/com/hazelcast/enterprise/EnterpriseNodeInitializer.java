@@ -78,14 +78,14 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     public void afterInitialize(Node node) {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
-            node.shutdown(true, true);
+            node.shutdown(true);
             return;
         }
         final int count = node.getClusterService().getSize();
         if (count > license.nodes) {
             logger.log(Level.SEVERE, "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! " +
                     "Max: " + license.nodes + ", Current: " + count);
-            node.shutdown(true, true);
+            node.shutdown(true);
         }
     }
 

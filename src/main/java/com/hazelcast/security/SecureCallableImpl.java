@@ -165,6 +165,10 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             checkPermission(new AtomicLongPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IAtomicLongInvocationHandler(instance.getAtomicLong(name)));
 		}
+        public <E> IAtomicReference<E> getAtomicReference(final String name) {
+            checkPermission(new AtomicReferencePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new IAtomicReferenceInvocationHandler(instance.getAtomicReference(name)));
+        }
 		public ICountDownLatch getCountDownLatch(final String name) {
             checkPermission(new CountDownLatchPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ICountDownLatchInvocationHandler(instance.getCountDownLatch(name)));
@@ -173,6 +177,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
 		}
+        public <K, V> ReplicatedMap<K, V> getReplicatedMap(String name) {
+            return getProxy(new ReplicatedMapInvocationHandler(instance.getReplicatedMap(name)));
+        }
 		public Cluster getCluster() {
 			return instance.getCluster();
 		}
@@ -471,6 +478,25 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         }
     }
 
+    private class IAtomicReferenceInvocationHandler extends SecureInvocationHandler {
+
+        IAtomicReferenceInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null){
+                return null;
+            }
+            return new AtomicReferencePermission(distributedObject.getName(), action);
+        }
+
+        public String getStructureName() {
+            return "atomicReference";
+        }
+    }
+
     private class ICountDownLatchInvocationHandler extends SecureInvocationHandler {
 
         ICountDownLatchInvocationHandler(DistributedObject distributedObject) {
@@ -524,6 +550,21 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 
         public String getStructureName() {
             return "idGenerator";
+        }
+    }
+
+    private class ReplicatedMapInvocationHandler extends SecureInvocationHandler {
+
+        ReplicatedMapInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            return null;
+        }
+
+        public String getStructureName() {
+            return "replicatedMap";
         }
     }
 }

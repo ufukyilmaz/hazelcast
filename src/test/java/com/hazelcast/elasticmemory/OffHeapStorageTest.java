@@ -8,7 +8,7 @@ import com.hazelcast.core.*;
 import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.elasticmemory.util.MemoryUnit;
-import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-@RunWith(EnterpriseJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class OffHeapStorageTest {
 
     public static final int ENTRY_COUNT = 1024;

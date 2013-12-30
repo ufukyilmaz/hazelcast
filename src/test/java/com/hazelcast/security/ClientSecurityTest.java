@@ -11,7 +11,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.security.permission.ActionConstants;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-@RunWith(EnterpriseJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class ClientSecurityTest {
 
     @BeforeClass

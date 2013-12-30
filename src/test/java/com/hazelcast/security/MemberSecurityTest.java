@@ -6,7 +6,7 @@ import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import org.junit.*;
@@ -17,7 +17,7 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class MemberSecurityTest {
 
     @BeforeClass

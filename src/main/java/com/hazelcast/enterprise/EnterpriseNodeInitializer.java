@@ -89,6 +89,10 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         }
     }
 
+    public License getLicense() {
+        return license;
+    }
+
     public SecurityContext getSecurityContext() {
         if (securityEnabled && securityContext == null) {
             securityContext = new SecurityContextImpl(node);

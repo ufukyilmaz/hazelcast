@@ -6,12 +6,14 @@
     <artifactId>elastic-memory</artifactId>
     <packaging>jar</packaging>
     <version>3.2-SNAPSHOT</version>
+
     <properties>
         <hazelcast.version>${pom.version}</hazelcast.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
     </properties>
+
     <licenses>
         <license>
             <name>Commercial License</name>
@@ -19,10 +21,21 @@
             <distribution>manual</distribution>
         </license>
     </licenses>
+
     <organization>
         <name>Hazelcast, Inc.</name>
         <url>http://www.hazelcast.com/</url>
     </organization>
+
+
+    <repositories>
+       <repository>
+           <id>snapshot-repository</id>
+           <name>Maven2 Snapshot Repository</name>
+           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+       </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -108,6 +121,7 @@
             </plugin>
         </plugins>
     </build>
+
     <dependencies>
         <dependency>
             <groupId>com.hazelcast</groupId>

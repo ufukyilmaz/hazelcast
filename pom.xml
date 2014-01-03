@@ -74,7 +74,8 @@
                     <archive>
                         <index>true</index>
                         <compress>true</compress>
-                        <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                        <!-- Not needed for now -->
+                        <!-- manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile -->
                     </archive>
                 </configuration>
             </plugin>

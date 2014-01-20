@@ -3,13 +3,49 @@ package com.hazelcast.security;
 import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.concurrent.lock.proxy.LockProxy;
 import com.hazelcast.config.Config;
-import com.hazelcast.core.*;
+import com.hazelcast.core.ClientService;
+import com.hazelcast.core.Cluster;
+import com.hazelcast.core.DistributedObject;
+import com.hazelcast.core.DistributedObjectListener;
+import com.hazelcast.core.Endpoint;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.ICountDownLatch;
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.IList;
+import com.hazelcast.core.ILock;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.IQueue;
+import com.hazelcast.core.ISemaphore;
+import com.hazelcast.core.ISet;
+import com.hazelcast.core.ITopic;
+import com.hazelcast.core.IdGenerator;
+import com.hazelcast.core.LifecycleService;
+import com.hazelcast.core.MultiMap;
+import com.hazelcast.core.PartitionService;
+import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.LoggingService;
+import com.hazelcast.mapreduce.JobTracker;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.security.permission.*;
+import com.hazelcast.security.permission.ActionConstants;
+import com.hazelcast.security.permission.AtomicLongPermission;
+import com.hazelcast.security.permission.AtomicReferencePermission;
+import com.hazelcast.security.permission.CountDownLatchPermission;
+import com.hazelcast.security.permission.ExecutorServicePermission;
+import com.hazelcast.security.permission.ListPermission;
+import com.hazelcast.security.permission.LockPermission;
+import com.hazelcast.security.permission.MapPermission;
+import com.hazelcast.security.permission.MultiMapPermission;
+import com.hazelcast.security.permission.QueuePermission;
+import com.hazelcast.security.permission.SemaphorePermission;
+import com.hazelcast.security.permission.SetPermission;
+import com.hazelcast.security.permission.TopicPermission;
+import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
@@ -24,7 +60,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.security.Permission;
 import java.security.Principal;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
@@ -179,6 +220,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		}
         public <K, V> ReplicatedMap<K, V> getReplicatedMap(String name) {
             return getProxy(new ReplicatedMapInvocationHandler(instance.getReplicatedMap(name)));
+        }
+        public JobTracker getJobTracker(String name) {
+            return getProxy(new JobTrackerInvocationHandler(instance.getJobTracker(name)));
         }
 		public Cluster getCluster() {
 			return instance.getCluster();
@@ -565,6 +609,21 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 
         public String getStructureName() {
             return "replicatedMap";
+        }
+    }
+
+    private class JobTrackerInvocationHandler extends SecureInvocationHandler {
+
+        JobTrackerInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        public Permission getPermission(Method method, Object[] args) {
+            return null;
+        }
+
+        public String getStructureName() {
+            return "jobTracker";
         }
     }
 }

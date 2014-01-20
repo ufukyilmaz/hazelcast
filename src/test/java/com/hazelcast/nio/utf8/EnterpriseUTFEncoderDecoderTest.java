@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class EnterpriseUTFEncoderDecoderTest {
 
-    private static final Random RANDOM = new Random(-System.nanoTime());
+    private static final Random RANDOM = new Random();
     private static final int BENCHMARK_ROUNDS = 10; // 100;
 
     private static final boolean[][] PARAMETERS = {

@@ -4,8 +4,8 @@ CLASS="com.hazelcast.examples.SimpleMapClientTest"
 
 CLASSPATH=$CLASSPATH:~/bin
 CLASSPATH=$CLASSPATH:./target/classes
-CLASSPATH=$CLASSPATH:../hazelcast/hazelcast/target/classes
-CLASSPATH=$CLASSPATH:../hazelcast/hazelcast-client/target/classes
+CLASSPATH=$CLASSPATH:~/.m2/repository/com/hazelcast/hazelcast/3.1.7-SNAPSHOT/hazelcast-3.1.7-SNAPSHOT.jar
+CLASSPATH=$CLASSPATH:~/.m2/repository/com/hazelcast/hazelcast-client/3.1.7-SNAPSHOT/hazelcast-client-3.1.7-SNAPSHOT.jar
 CLASSPATH=$CLASSPATH:~/.m2/repository/log4j/log4j/1.2.14/log4j-1.2.14.jar
 CLASSPATH=$CLASSPATH:~/.m2/repository/org/hdrhistogram/HdrHistogram/1.0.9/HdrHistogram-1.0.9.jar
 

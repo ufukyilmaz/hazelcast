@@ -88,7 +88,7 @@ public class SimpleMapClientTest {
         cfg.setProperty(GroupProperties.PROP_PARTITION_MIGRATION_ZIP_ENABLED, "false");
         cfg.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         cfg.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1k");
-        cfg.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "2G");
+        cfg.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "24G");
 
         SerializationConfig serializationConfig = cfg.getSerializationConfig();
         serializationConfig.setAllowUnsafe(true).setUseNativeByteOrder(true);

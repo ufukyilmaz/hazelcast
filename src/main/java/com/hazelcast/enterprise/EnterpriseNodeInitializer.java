@@ -72,7 +72,7 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     public void printNodeInfo(Node node) {
         systemLogger.log(Level.INFO, "Hazelcast Enterprise Edition " + version + " ("
                 + build + ") starting at " + node.getThisAddress());
-        systemLogger.log(Level.INFO, "Copyright (C) 2008-2011 Hazelcast.com");
+        systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
     }
 
     public void afterInitialize(Node node) {

@@ -10,6 +10,7 @@ import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.storage.Storage;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Level;
 
@@ -28,29 +29,27 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         this.node = node;
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
         Date validUntil;
-//        try {
-//            logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
-//            String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
-//            if (licenseKey == null || "".equals(licenseKey)) {
-//                licenseKey = node.getConfig().getLicenseKey();
-//            }
-//            license = KG.ex(licenseKey != null ? licenseKey.toCharArray() : null);
-//            Calendar cal = Calendar.getInstance();
-//            cal.set(license.year, license.month, license.day, 23, 59, 59);
-//            validUntil = cal.getTime();
-//            logger.log(Level.INFO, "Licensed type: " + (license.full ? "Full" : "Trial")
-//                    + ", Valid until: " + validUntil
-//                    + ", Max nodes: " + license.nodes);
-//        } catch (Exception e) {
-//            throw new InvalidLicenseError();
-//        }
-//
-//        if (license == null || validUntil == null ||
-//                System.currentTimeMillis() > validUntil.getTime()) {
-//            throw new TrialLicenseExpiredError();
-//        }
+        try {
+            logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
+            String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
+            if (licenseKey == null || "".equals(licenseKey)) {
+                licenseKey = node.getConfig().getLicenseKey();
+            }
+            license = KG.ex(licenseKey != null ? licenseKey.toCharArray() : null);
+            Calendar cal = Calendar.getInstance();
+            cal.set(license.year, license.month, license.day, 23, 59, 59);
+            validUntil = cal.getTime();
+            logger.log(Level.INFO, "Licensed type: " + (license.full ? "Full" : "Trial")
+                    + ", Valid until: " + validUntil
+                    + ", Max nodes: " + license.nodes);
+        } catch (Exception e) {
+            throw new InvalidLicenseError();
+        }
 
-        license = new License(true, true, 31, 0, 2015, 100);
+        if (license == null || validUntil == null ||
+                System.currentTimeMillis() > validUntil.getTime()) {
+            throw new TrialLicenseExpiredError();
+        }
 
         systemLogger = node.getLogger("com.hazelcast.system");
         parseSystemProps();

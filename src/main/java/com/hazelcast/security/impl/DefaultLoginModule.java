@@ -23,7 +23,7 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
                 return false;
             }
 
-            if (!pass.equals(new String(usernamePasswordCredentials.getRawPassword()))) {
+            if (!pass.equals(usernamePasswordCredentials.getPassword())) {
                 return false;
             }
             return true;

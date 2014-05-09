@@ -145,7 +145,13 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             checkPermission(new MapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new IMapInvocationHandler(instance.getMap(name)));
 		}
-		public <K, V> MultiMap<K, V> getMultiMap(final String name) {
+
+        public <K, V> ReplicatedMap<K, V> getReplicatedMap(String name) {
+            checkPermission(new ReplicatedMapPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ReplicatedMapInvocationHandler(instance.getReplicatedMap(name)));
+        }
+
+        public <K, V> MultiMap<K, V> getMultiMap(final String name) {
             checkPermission(new MultiMapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new MultiMapInvocationHandler(instance.getMultiMap(name)));
 		}

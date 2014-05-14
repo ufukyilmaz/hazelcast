@@ -17,6 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
+        <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
     </properties>
 
     <licenses>
@@ -43,6 +44,25 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${maven.assembly.plugin.version}</version>
+                <configuration>
+                    <finalName>hazelcast-${project.version}</finalName>
+                    <descriptors>
+                        <descriptor>./src/main/assembly/assembly-ee.xml</descriptor>
+                        <descriptor>./src/main/assembly/assembly-oss.xml</descriptor>
+                    </descriptors>
+                    <appendAssemblyId>true</appendAssemblyId>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -88,6 +108,9 @@
         </plugins>
     </build>
 
+    <scm>
+        <developerConnection>scm:git:git@github.com:hazelcast/elastic-memory.git</developerConnection>
+    </scm>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>

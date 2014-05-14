@@ -1,0 +1,6 @@
+[submodule "hazelcast-oss"]
+	path = hazelcast-oss
+	url = https://github.com/hazelcast/hazelcast.git
+[submodule "hazelcast-ee-mancenter"]
+	path = hazelcast-ee-mancenter
+	url = https://github.com/hazelcast/management-center.git

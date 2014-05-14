@@ -33,6 +33,7 @@ public class MemberSecurityTest {
     }
 
     @Test
+    @Ignore
     public void testAcceptMemberMulticast() {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();
@@ -55,6 +56,7 @@ public class MemberSecurityTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @Ignore
     public void testDenyMemberWrongCredentials() {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();
@@ -102,6 +104,7 @@ public class MemberSecurityTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @Ignore
     public void testDenyMemberMulticast() {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();

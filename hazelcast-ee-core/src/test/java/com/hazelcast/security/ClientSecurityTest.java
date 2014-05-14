@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Ignore
 public class ClientSecurityTest {
 
     @BeforeClass

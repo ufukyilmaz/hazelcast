@@ -44,7 +44,7 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
 
         long segmentCapacity = capacity / segmentCount;
         if (segmentCapacity % chunkSize != 0) {
-            segmentCapacity = divideByAndCeilToInt(segmentCapacity, chunkSize) * chunkSize;
+            segmentCapacity = (long) divideByAndCeilToInt(segmentCapacity, chunkSize) * chunkSize;
             capacity = segmentCapacity * segmentCount;
             sizeAdjusted = true;
         }

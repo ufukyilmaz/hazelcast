@@ -4,13 +4,13 @@
     <parent>
         <artifactId>elastic-memory</artifactId>
         <groupId>com.hazelcast</groupId>
-        <version>3.3-SNAPSHOT</version>
+        <version>3.3-EA</version>
     </parent>
 
     <name>hazelcast-ee-core</name>
     <artifactId>hazelcast-ee-core</artifactId>
     <packaging>jar</packaging>
-    <version>3.3-SNAPSHOT</version>
+    <version>3.3-EA</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

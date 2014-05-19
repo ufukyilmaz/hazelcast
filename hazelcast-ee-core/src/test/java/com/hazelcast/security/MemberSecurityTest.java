@@ -45,6 +45,7 @@ public class MemberSecurityTest {
     }
 
     @Test
+    @Ignore
     public void testAcceptMemberTcpIp() {
         final Config config = createTcpIpConfig();
         final SecurityConfig secCfg = config.getSecurityConfig();

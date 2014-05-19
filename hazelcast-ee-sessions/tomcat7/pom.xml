@@ -10,7 +10,7 @@
     <parent>
         <artifactId>hazelcast-sessions</artifactId>
         <groupId>com.hazelcast</groupId>
-        <version>3.3-EA</version>
+        <version>3.3-RC1-SNAPSHOT</version>
     </parent>
 
     <properties>

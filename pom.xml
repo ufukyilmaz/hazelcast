@@ -16,6 +16,9 @@
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
         <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
+        <findbugs.maven.plugin.version>2.5.3</findbugs.maven.plugin.version>
+        <checkstyle.maven.plugin.version>2.12</checkstyle.maven.plugin.version>
+        <main.basedir>${project.basedir}</main.basedir>
     </properties>
 
     <licenses>
@@ -77,6 +80,7 @@
                     <!--<completionGoals>clean verify org.codehaus.mojo:exec-maven-plugin:exec scm:checkin -Dmessage="updated non-pom versions to the next version"</completionGoals>-->
                 <!--</configuration>-->
             <!--</plugin>-->
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -133,6 +137,61 @@
 
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>qa</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${checkstyle.maven.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>checkstyle</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <configLocation>${main.basedir}/checkstyle/checkstyle.xml</configLocation>
+                            <suppressionsLocation>${main.basedir}/checkstyle/suppressions.xml</suppressionsLocation>
+                            <headerLocation>${main.basedir}/checkstyle/ClassHeader.txt</headerLocation>
+                            <enableRSS>false</enableRSS>
+                            <linkXRef>true</linkXRef>
+                            <consoleOutput>true</consoleOutput>
+                            <failsOnError>true</failsOnError>
+                            <failOnViolation>true</failOnViolation>
+                            <includeTestSourceDirectory>false</includeTestSourceDirectory>
+                            <enableRulesSummary>true</enableRulesSummary>
+                            <propertyExpansion>main.basedir=${main.basedir}</propertyExpansion>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>findbugs-maven-plugin</artifactId>
+                        <version>${findbugs.maven.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <phase>install</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <failOnError>true</failOnError>
+                            <excludeFilterFile>${main.basedir}/findbugs/findbugs-exclude.xml</excludeFilterFile>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
     <!--<scm>-->
         <!--<developerConnection>scm:git:git@github.com:hazelcast/elastic-memory.git</developerConnection>-->

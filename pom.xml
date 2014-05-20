@@ -19,6 +19,7 @@
         <findbugs.maven.plugin.version>2.5.3</findbugs.maven.plugin.version>
         <checkstyle.maven.plugin.version>2.12</checkstyle.maven.plugin.version>
         <main.basedir>${project.basedir}</main.basedir>
+        <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
     </properties>
 
     <licenses>
@@ -121,7 +122,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.11</version>
+                <version>${maven.surefire.plugin.version}</version>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
 
@@ -185,6 +186,30 @@
                         <configuration>
                             <failOnError>true</failOnError>
                             <excludeFilterFile>${main.basedir}/findbugs/findbugs-exclude.xml</excludeFilterFile>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>test-coverage</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven.surefire.plugin.version}</version>
+                        <configuration combine.self="override">
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <testFailureIgnore>true</testFailureIgnore>
+                            <argLine>
+                                -Xms128m -Xmx1G -XX:MaxPermSize=128M
+                                -Dhazelcast.version.check.enabled=false
+                                -Dhazelcast.mancenter.enabled=false
+                                -Dhazelcast.logging.type=none
+                                -Dhazelcast.test.use.network=false
+                            </argLine>
                         </configuration>
                     </plugin>
 

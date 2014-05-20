@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+
+    <!--comment out packages as they pass findbugs. e.g. examples now passes-->
+
+    <!-- all these issues below need to be resolved in 3.3-->
+    <Match>
+        <Package name="com.hazelcast.session" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.security" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.security.impl" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.security.permission" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.elasticmemory" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.nio.serialization" />
+    </Match>
+    <Match>
+        <Package name="com.hazelcast.enterprise" />
+    </Match>
+
+</FindBugsFilter>

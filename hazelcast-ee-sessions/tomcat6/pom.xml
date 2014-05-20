@@ -10,6 +10,8 @@
 
     <properties>
         <tomcat-version>6.0.39</tomcat-version>
+        <!-- needed for checkstyle/findbugs -->
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
     <parent>
         <groupId>com.hazelcast</groupId>

@@ -12,6 +12,10 @@
     <name>Hazelcast Session Replication Core Module</name>
     <groupId>com.hazelcast</groupId>
     <artifactId>sessions-core</artifactId>
+    <properties>
+        <!-- needed for checkstyle/findbugs -->
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
 
 
     <build>

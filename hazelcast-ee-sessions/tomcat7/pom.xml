@@ -15,6 +15,8 @@
 
     <properties>
         <tomcat-version>7.0.40</tomcat-version>
+        <!-- needed for checkstyle/findbugs -->
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
     <dependencies>

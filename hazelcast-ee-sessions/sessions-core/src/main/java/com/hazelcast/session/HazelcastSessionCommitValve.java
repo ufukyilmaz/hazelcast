@@ -12,18 +12,20 @@ import java.io.IOException;
 
 
 public class HazelcastSessionCommitValve extends ValveBase {
-  private final Log log = LogFactory.getLog(HazelcastSessionManager.class);
+  private final Log log = LogFactory.getLog(SessionManager.class);
 
-    private HazelcastSessionManager hazelcastSessionManager;
+    private SessionManager sessionManager;
 
+    public HazelcastSessionCommitValve(SessionManager sessionManager) {
+        this.sessionManager = sessionManager;
+    }
 
-  @Override
+    @Override
   public void invoke(Request request, Response response) throws IOException, ServletException {
     try {
       getNext().invoke(request, response);
     } catch (Exception e){
-        //TODO add logging
-        System.out.println(e.getMessage());
+        log.error(e.getMessage());
     } finally {
       final Session session = request.getSessionInternal(false);
       storeOrRemoveSession(session);
@@ -31,28 +33,20 @@ public class HazelcastSessionCommitValve extends ValveBase {
   }
 
   private void storeOrRemoveSession(Session session) {
-    try {
       if (session != null) {
         if (session.isValid()) {
           log.trace("Request with session completed, saving session " + session.getId());
           if (session.getSession() != null) {
             log.trace("HTTP Session present, saving " + session.getId());
-            hazelcastSessionManager.commit(session);
+            sessionManager.commit(session);
           } else {
             log.trace("No HTTP Session present, Not saving " + session.getId());
           }
         } else {
           log.trace("HTTP Session has been invalidated, removing :" + session.getId());
-          hazelcastSessionManager.remove(session);
+          sessionManager.remove(session);
         }
       }
-    } catch (Exception e) {
-      // Do nothing.
-    }
   }
-
-    public void setHazelcastSessionManager(HazelcastSessionManager hazelcastSessionManager) {
-        this.hazelcastSessionManager = hazelcastSessionManager;
-    }
 
 }

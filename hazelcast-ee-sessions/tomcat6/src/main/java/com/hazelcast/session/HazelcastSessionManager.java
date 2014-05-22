@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class HazelcastSessionManager extends ManagerBase implements Lifecycle,PropertyChangeListener {
+public class HazelcastSessionManager extends ManagerBase implements Lifecycle,PropertyChangeListener,SessionManager {
 
     private final Log log = LogFactory.getLog(com.hazelcast.session.HazelcastSessionManager.class);
 
@@ -94,8 +94,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle,Pr
             log.debug("Force random number initialization completed");
         }
 
-        HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve();
-        hazelcastSessionCommitValve.setHazelcastSessionManager(this);
+        HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
 
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 

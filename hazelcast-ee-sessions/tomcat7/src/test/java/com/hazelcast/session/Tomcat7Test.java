@@ -66,7 +66,7 @@ public class Tomcat7Test extends AbstractSessionReplicationTest {
 
 
 
-        context.setManager(new HazelcastSessionManager());
+        context.setManager(new Tomcat7SessionManager());
         context.setCookies(true);
         context.setBackgroundProcessorDelay(1);
         context.setReloadable(true);

@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class HazelcastSessionManager extends ManagerBase implements Lifecycle,PropertyChangeListener,SessionManager {
+public class Tomcat6SessionManager extends ManagerBase implements Lifecycle,PropertyChangeListener,SessionManager {
 
-    private final Log log = LogFactory.getLog(com.hazelcast.session.HazelcastSessionManager.class);
+    private final Log log = LogFactory.getLog(Tomcat6SessionManager.class);
 
     Map<String,HazelcastSession> localSessionMap = new ConcurrentHashMap<String,HazelcastSession>(1000);
 

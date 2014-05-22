@@ -94,7 +94,7 @@ public class Tomcat6Test extends AbstractSessionReplicationTest {
         final Context context = createContext( catalina, "/", "webapp" );
         host.addChild( context );
 
-        context.setManager( new HazelcastSessionManager());
+        context.setManager( new Tomcat6SessionManager());
         context.setBackgroundProcessorDelay( 1 );
         context.setCookies(true);
        // new File( "webapp" + File.separator + "webapp" ).mkdirs();

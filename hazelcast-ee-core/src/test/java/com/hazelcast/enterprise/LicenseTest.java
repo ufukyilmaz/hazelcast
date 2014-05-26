@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest {
 
     @BeforeClass

@@ -63,14 +63,29 @@ public class SecurityContextImpl implements SecurityContext {
 
     public LoginContext createMemberLoginContext(Credentials credentials) throws LoginException {
         logger.log(Level.FINEST, "Creating Member LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
-        return new LoginContext(node.getConfig().getGroupConfig().getName(),
-                new Subject(), new ClusterCallbackHandler(credentials), memberConfiguration);
+        Thread thread = Thread.currentThread();
+        ClassLoader tccl = thread.getContextClassLoader();
+        try {
+            thread.setContextClassLoader(SecurityContextImpl.class.getClassLoader());
+            String name = node.getConfig().getGroupConfig().getName();
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials);
+            return new LoginContext(name, new Subject(), callbackHandler, memberConfiguration);
+        } finally {
+            thread.setContextClassLoader(tccl);
+        }
     }
 
     public LoginContext createClientLoginContext(Credentials credentials) throws LoginException {
         logger.log(Level.FINEST, "Creating Client LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
-        return new LoginContext(node.getConfig().getGroupConfig().getName(),
-                new Subject(), new ClusterCallbackHandler(credentials), clientConfiguration);
+        Thread thread = Thread.currentThread();
+        ClassLoader tccl = thread.getContextClassLoader();
+        try {
+            String name = node.getConfig().getGroupConfig().getName();
+            ClusterCallbackHandler callbackHandler = new ClusterCallbackHandler(credentials);
+            return new LoginContext(name, new Subject(), callbackHandler, clientConfiguration);
+        } finally {
+            thread.setContextClassLoader(tccl);
+        }
     }
 
     private Object createImplInstance(ClassLoader cl, final String className) {

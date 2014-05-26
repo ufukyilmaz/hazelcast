@@ -10,7 +10,9 @@ import org.junit.runners.model.InitializationError;
 public class EnterpriseParallelJUnitClassRunner extends HazelcastParallelClassRunner {
 
     static {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+        if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+        }
     }
 
     public EnterpriseParallelJUnitClassRunner(Class<?> klass) throws InitializationError {

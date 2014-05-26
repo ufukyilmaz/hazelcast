@@ -9,11 +9,10 @@ import org.junit.runners.model.InitializationError;
  */
 public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner {
 
-    static {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
-    }
-
     public EnterpriseSerialJUnitClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
+        if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+        }
     }
 }

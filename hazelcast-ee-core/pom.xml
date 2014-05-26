@@ -78,7 +78,6 @@
                     <argLine>-Xms128m -Xmx512m -XX:MaxPermSize=128M
                         -Dhazelcast.version.check.enabled=false
                         -Dhazelcast.mancenter.enabled=false
-                        -Dhazelcast.enterprise.license.key=${license.key}
                         -Dhazelcast.elastic.memory.enabled=true
                         -Dhazelcast.elastic.memory.total.size=128m
                         -Dhazelcast.elastic.memory.chunk.size=1k

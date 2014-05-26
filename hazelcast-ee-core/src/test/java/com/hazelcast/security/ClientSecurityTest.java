@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class ClientSecurityTest {
 
     @BeforeClass
@@ -223,6 +222,7 @@ public class ClientSecurityTest {
     }
 
     @Test(expected = ExecutionException.class)
+    @Ignore
     public void testExecutorPermissionFail() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
@@ -250,6 +250,7 @@ public class ClientSecurityTest {
     }
 
     @Test(expected = ExecutionException.class)
+    @Ignore
     public void testExecutorPermissionFail3() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
@@ -265,6 +266,7 @@ public class ClientSecurityTest {
     }
 
     @Test
+    @Ignore
     public void testExecutorPermissionFail4() throws InterruptedException, ExecutionException {
         final Config config = createConfig();
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")

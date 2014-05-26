@@ -11,6 +11,9 @@
 
     <artifactId>hazelcast-ee-all</artifactId>
     <name>hazelcast-ee-all</name>
+    <properties>
+        <main.basedir>${project.parent.basedir}</main.basedir>
+    </properties>
     <build>
         <plugins>
             <plugin>

@@ -4,8 +4,8 @@ import org.apache.catalina.Session;
 
 public interface SessionManager {
 
-    public void remove(Session session);
+    void remove(Session session);
 
-    public void commit(Session session);
+    void commit(Session session);
 
 }

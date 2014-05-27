@@ -10,9 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class HazelcastSession extends StandardSession {
 
-    Map<String,Object> localAttributeCache = new ConcurrentHashMap<String,Object>();
-
     protected boolean dirty;
+    private Map<String, Object> localAttributeCache = new ConcurrentHashMap<String, Object>();
 
     public HazelcastSession(Manager manager) {
     super(manager);

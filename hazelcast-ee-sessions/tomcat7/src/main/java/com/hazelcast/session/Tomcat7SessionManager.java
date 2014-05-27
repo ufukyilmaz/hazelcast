@@ -24,11 +24,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,PropertyChangeListener,SessionManager {
+public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, PropertyChangeListener, SessionManager {
 
     private final Log log = LogFactory.getLog(Tomcat7SessionManager.class);
 
-    Map<String,HazelcastSession> localSessionMap = new ConcurrentHashMap<String,HazelcastSession>(1000);
+    Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(1000);
 
     private static String NAME = "HazelcastSessionManager";
     private static String INFO = "HazelcastSessionManager/1.0";
@@ -98,7 +98,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
 
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 
-        if (isClientOnly()){
+        if (isClientOnly()) {
             //TODO read client config from filesystem,classpath etc.
             //TODO throw lifecycleevent in case you can not connect to an existing cluster.
             instance = HazelcastClient.newHazelcastClient();
@@ -112,7 +112,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
             sessionMap = instance.getMap(getMapName());
         }
 
-        if (!isSticky()){
+        if (!isSticky()) {
             sessionMap.addEntryListener(new EntryListener<String, HazelcastSession>() {
                 public void entryAdded(EntryEvent<String, HazelcastSession> event) {
 
@@ -181,7 +181,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
         session.setId(sessionId);
         session.tellNew();
 
-        localSessionMap.put(sessionId,session);
+        localSessionMap.put(sessionId, session);
         sessionMap.put(sessionId, session);
         return session;
     }
@@ -199,7 +199,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
 
     @Override
     public Session findSession(String id) throws IOException {
-        log.info("sessionId:"+id);
+        log.info("sessionId:" + id);
         if (id == null) {
             return null;
         }
@@ -211,11 +211,11 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
         log.info("seems that sticky session is disabled or some failover occured.");
         // TODO check if session id is changed if failover occured...
         HazelcastSession hazelcastSession = sessionMap.get(id);
-        log.info("Thread name:"+Thread.currentThread().getName()+"key:"+hazelcastSession.getAttribute("key"));
+        log.info("Thread name:" + Thread.currentThread().getName() + "key:" + hazelcastSession.getAttribute("key"));
 
         hazelcastSession.setManager(this);
 
-        localSessionMap.put(id,hazelcastSession);
+        localSessionMap.put(id, hazelcastSession);
 
         // call remove method to trigger eviction Listener on each node to invalidate local sessions
         sessionMap.remove(id);
@@ -229,17 +229,17 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
 
         HazelcastSession hazelcastSession = (HazelcastSession) session;
 
-        if (hazelcastSession.isDirty()){
+        if (hazelcastSession.isDirty()) {
             hazelcastSession.setDirty(false);
             sessionMap.put(session.getId(), hazelcastSession);
-            log.info("Thread name:"+Thread.currentThread().getName()+" commited key:" + hazelcastSession.getAttribute("key"));
+            log.info("Thread name:" + Thread.currentThread().getName() + " commited key:" + hazelcastSession.getAttribute("key"));
         }
     }
 
     @Override
     public void remove(Session session) {
         remove(session.getId());
-   }
+    }
 
     @Override
     public void processExpires() {
@@ -280,8 +280,8 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle,Prop
     @Override
     public void propertyChange(PropertyChangeEvent evt) {
 
-       if (evt.getPropertyName().equals("sessionTimeout")){
-            setMaxInactiveInterval((Integer)evt.getNewValue() * 60);
+        if (evt.getPropertyName().equals("sessionTimeout")) {
+            setMaxInactiveInterval((Integer) evt.getNewValue() * 60);
         }
 
     }

@@ -24,7 +24,7 @@ public class HazelcastSessionCommitValve extends ValveBase {
   public void invoke(Request request, Response response) throws IOException, ServletException {
     try {
       getNext().invoke(request, response);
-    } catch (Exception e){
+    } catch (Exception e) {
         log.error(e.getMessage());
     } finally {
       final Session session = request.getSessionInternal(false);

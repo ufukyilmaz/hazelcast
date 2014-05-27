@@ -26,17 +26,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, PropertyChangeListener, SessionManager {
 
+    private static final String NAME = "HazelcastSessionManager";
+    private static final String INFO = "HazelcastSessionManager/1.0";
+
+    private static final int DEFAULT_MAP_SIZE = 1000;
+    private static final int DEFAULT_SESSION_TIMEOUT = 60;
+
+    protected LifecycleSupport lifecycle = new LifecycleSupport(this);
+
+
     private final Log log = LogFactory.getLog(Tomcat7SessionManager.class);
 
-    Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(1000);
+    private Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(DEFAULT_MAP_SIZE);
 
-    private static String NAME = "HazelcastSessionManager";
-    private static String INFO = "HazelcastSessionManager/1.0";
+    private HazelcastInstance instance;
 
-    HazelcastInstance instance;
-
-    IMap<String, HazelcastSession> sessionMap;
-    List<String> invalidSessions;
+    private IMap<String, HazelcastSession> sessionMap;
+    private List<String> invalidSessions;
 
     private boolean clientOnly;
 
@@ -53,8 +59,6 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
     public String getName() {
         return NAME;
     }
-
-    protected LifecycleSupport lifecycle = new LifecycleSupport(this);
 
     @Override
     public void load() throws ClassNotFoundException, IOException {
@@ -119,8 +123,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
                 }
 
                 public void entryRemoved(EntryEvent<String, HazelcastSession> entryEvent) {
-                    if (entryEvent.getMember() == null || // client events has no owner member
-                            !entryEvent.getMember().localMember()) {
+                    if (entryEvent.getMember() == null || !entryEvent.getMember().localMember()) {
                         localSessionMap.remove(entryEvent.getKey());
                     }
                 }
@@ -174,15 +177,16 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
         session.setCreationTime(System.currentTimeMillis());
         session.setMaxInactiveInterval(getMaxInactiveInterval());
 
-        if (sessionId == null) {
-            sessionId = generateSessionId();
+        String newSessionId = sessionId;
+        if (newSessionId == null) {
+            newSessionId = generateSessionId();
         }
 
-        session.setId(sessionId);
+        session.setId(newSessionId);
         session.tellNew();
 
-        localSessionMap.put(sessionId, session);
-        sessionMap.put(sessionId, session);
+        localSessionMap.put(newSessionId, session);
+        sessionMap.put(newSessionId, session);
         return session;
     }
 
@@ -281,7 +285,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
     public void propertyChange(PropertyChangeEvent evt) {
 
         if (evt.getPropertyName().equals("sessionTimeout")) {
-            setMaxInactiveInterval((Integer) evt.getNewValue() * 60);
+            setMaxInactiveInterval((Integer) evt.getNewValue() * DEFAULT_SESSION_TIMEOUT);
         }
 
     }

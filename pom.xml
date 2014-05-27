@@ -9,7 +9,7 @@
     <groupId>com.hazelcast</groupId>
     <artifactId>hazelcast-enterprise</artifactId>
     <packaging>pom</packaging>
-    <version>3.2.2</version>
+    <version>3.2.3-SNAPSHOT</version>
 
     <properties>
         <hazelcast.version>${project.version}</hazelcast.version>

@@ -1,17 +1,23 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>elastic-memory</name>
+    <name>hazelcast-enterprise</name>
+    <modules>
+        <module>hazelcast-ee-all</module>
+        <module>hazelcast-ee-core</module>
+    </modules>
     <groupId>com.hazelcast</groupId>
-    <artifactId>elastic-memory</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>hazelcast-enterprise</artifactId>
+    <packaging>pom</packaging>
     <version>3.2.2-SNAPSHOT</version>
 
     <properties>
-        <hazelcast.version>${pom.version}</hazelcast.version>
+        <hazelcast.version>${project.version}</hazelcast.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
+        <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
+        <maven.shade.plugin.version>2.2</maven.shade.plugin.version>
     </properties>
 
     <licenses>
@@ -38,24 +44,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>properties-maven-plugin</artifactId>
-                <version>1.0-alpha-2</version>
-                <executions>
-                    <execution>
-                        <phase>initialize</phase>
-                        <goals>
-                            <goal>read-project-properties</goal>
-                        </goals>
-                        <configuration>
-                            <files>
-                                <file>build.properties</file>
-                            </files>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

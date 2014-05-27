@@ -11,18 +11,19 @@
 
     <!--To enable checking on a module, comment out its suppression. e.g. mapreduce is enabled.-->
 
+    <suppress checks="" files="com.hazelcast.session[\\/]"/>
     <suppress checks="" files="com.hazelcast.elasticmemory[\\/]"/>
     <suppress checks="" files="com.hazelcast.enterprise[\\/]"/>
     <suppress checks="" files="com.hazelcast.nio.serialization[\\/]"/>
     <suppress checks="" files="com.hazelcast.security[\\/]"/>
 
     <!-- Sessions -->
-    <suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocType" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocVariable" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat6SessionManager"/>
-    <suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat7SessionManager"/>
+    <!--<suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>-->
+    <!--<suppress checks="JavadocType" files="com.hazelcast.session[\\/]"/>-->
+    <!--<suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>-->
+    <!--<suppress checks="JavadocVariable" files="com.hazelcast.session[\\/]"/>-->
+    <!--<suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat6SessionManager"/>-->
+    <!--<suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat7SessionManager"/>-->
 
 
 

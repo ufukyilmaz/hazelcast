@@ -170,6 +170,7 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
 
     @Override
     public Session createSession(String sessionId) {
+        checkMaxActiveSessions();
         HazelcastSession session = (HazelcastSession) createEmptySession();
 
         session.setNew(true);
@@ -296,6 +297,24 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
 
     public void setMapName(String mapName) {
         this.mapName = mapName;
+    }
+
+    private void checkMaxActiveSessions() {
+        if (getMaxActiveSessions() >= 0 && sessionMap.size() >= getMaxActiveSessions()) {
+            rejectedSessions++;
+            throw new IllegalStateException(sm.getString("standardManager.createSession.ise"));
+        }
+    }
+
+    public int getMaxActiveSessions() {
+        return this.maxActiveSessions;
+    }
+
+    public void setMaxActiveSessions(int maxActiveSessions) {
+        int oldMaxActiveSessions = this.maxActiveSessions;
+        this.maxActiveSessions = maxActiveSessions;
+        this.support.firePropertyChange("maxActiveSessions",
+                Integer.valueOf(oldMaxActiveSessions), Integer.valueOf(this.maxActiveSessions));
     }
 
 

@@ -37,6 +37,8 @@ public class Tomcat6SessionManager extends ManagerBase implements Lifecycle, Pro
 
     private Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(DEFAULT_MAP_SIZE);
 
+    private int rejectedSessions;
+    private int maxActiveSessions = -1;
 
     private HazelcastInstance instance;
 
@@ -52,6 +54,16 @@ public class Tomcat6SessionManager extends ManagerBase implements Lifecycle, Pro
     @Override
     public String getInfo() {
         return INFO;
+    }
+
+    @Override
+    public int getRejectedSessions() {
+        return rejectedSessions;
+    }
+
+    @Override
+    public void setRejectedSessions(int i) {
+
     }
 
     @Override
@@ -154,20 +166,9 @@ public class Tomcat6SessionManager extends ManagerBase implements Lifecycle, Pro
         log.info("HazelcastSessionManager stopped...");
     }
 
-
-    @Override
-    public int getRejectedSessions() {
-        // Essentially do nothing.
-        return 0;
-    }
-
-    public void setRejectedSessions(int i) {
-        // Do nothing.
-    }
-
-
     @Override
     public Session createSession(String sessionId) {
+        checkMaxActiveSessions();
         HazelcastSession session = (HazelcastSession) createEmptySession();
 
         session.setNew(true);
@@ -294,6 +295,23 @@ public class Tomcat6SessionManager extends ManagerBase implements Lifecycle, Pro
 
     public void setMapName(String mapName) {
         this.mapName = mapName;
+    }
+    private void checkMaxActiveSessions() {
+        if (getMaxActiveSessions() >= 0 && sessionMap.size() >= getMaxActiveSessions()) {
+            rejectedSessions++;
+            throw new IllegalStateException(sm.getString("standardManager.createSession.ise"));
+        }
+    }
+
+    public int getMaxActiveSessions() {
+        return this.maxActiveSessions;
+    }
+
+    public void setMaxActiveSessions(int maxActiveSessions) {
+        int oldMaxActiveSessions = this.maxActiveSessions;
+        this.maxActiveSessions = maxActiveSessions;
+        this.support.firePropertyChange("maxActiveSessions",
+                new Integer(oldMaxActiveSessions), new Integer(this.maxActiveSessions));
     }
 
 

@@ -21,8 +21,7 @@
     <suppress checks="JavadocType" files="com.hazelcast.session[\\/]"/>
     <suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>
     <suppress checks="JavadocVariable" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat6SessionManager"/>
-    <suppress checks="MethodCountCheck" files="com.hazelcast.session.Tomcat7SessionManager"/>
+    <suppress checks="MethodCountCheck" files="com.hazelcast.session.HazelcastSessionManager"/>
 
 
 

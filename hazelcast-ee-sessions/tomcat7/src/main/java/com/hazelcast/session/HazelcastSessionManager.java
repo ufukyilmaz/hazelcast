@@ -19,12 +19,11 @@ import org.apache.juli.logging.LogFactory;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, PropertyChangeListener, SessionManager {
+public class HazelcastSessionManager extends ManagerBase implements Lifecycle, PropertyChangeListener, SessionManager {
 
     private static final String NAME = "HazelcastSessionManager";
     private static final String INFO = "HazelcastSessionManager/1.0";
@@ -35,14 +34,13 @@ public class Tomcat7SessionManager extends ManagerBase implements Lifecycle, Pro
     protected LifecycleSupport lifecycle = new LifecycleSupport(this);
 
 
-    private final Log log = LogFactory.getLog(Tomcat7SessionManager.class);
+    private final Log log = LogFactory.getLog(HazelcastSessionManager.class);
 
     private Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(DEFAULT_MAP_SIZE);
 
     private HazelcastInstance instance;
 
     private IMap<String, HazelcastSession> sessionMap;
-    private List<String> invalidSessions;
 
     private boolean clientOnly;
 

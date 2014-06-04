@@ -44,7 +44,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     private boolean clientOnly;
 
-    private boolean sticky;
+    private boolean sticky = true;
 
     private String mapName;
 

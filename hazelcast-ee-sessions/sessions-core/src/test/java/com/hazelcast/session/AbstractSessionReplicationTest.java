@@ -50,7 +50,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         String value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("null", value);
 
-        executeRequest("write", SERVER_PORT_2, cookieStore);
+        executeRequest("write", SERVER_PORT_1, cookieStore);
 
         value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("value", value);
@@ -96,7 +96,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         value = executeRequest("update", SERVER_PORT_2, cookieStore);
         assertEquals("true", value);
 
-        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        value = executeRequest("read", SERVER_PORT_2, cookieStore);
         assertEquals("value-updated", value);
     }
 

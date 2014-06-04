@@ -4,6 +4,8 @@ import org.apache.catalina.Manager;
 import org.apache.catalina.session.StandardSession;
 
 import java.security.Principal;
+import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,7 +14,7 @@ public class HazelcastSession extends StandardSession {
 
     protected boolean dirty;
     private Map<String, Object> localAttributeCache = new ConcurrentHashMap<String, Object>();
-
+    private Map<String, Object> notes = new Hashtable<String, Object>();
     public HazelcastSession(Manager manager) {
     super(manager);
     }
@@ -58,5 +60,36 @@ public class HazelcastSession extends StandardSession {
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
     }
+
+    @Override
+    public Object getNote(String name) {
+
+        return (notes.get(name));
+
+    }
+
+
+    @Override
+    public Iterator<String> getNoteNames() {
+
+        return (notes.keySet().iterator());
+
+    }
+
+    @Override
+    public void removeNote(String name) {
+
+        notes.remove(name);
+
+    }
+
+    @Override
+    public void setNote(String name, Object value) {
+
+        notes.put(name, value);
+
+    }
+
+
 
 }

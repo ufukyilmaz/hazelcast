@@ -11,11 +11,14 @@ public class ClientNonStickyModeTest extends Tomcat6Test{
 
     @Before
     public void setup() throws Exception{
+        Hazelcast.newHazelcastInstance();
         HazelcastSessionManager manager = new HazelcastSessionManager();
         manager.setSticky(false);
         manager.setClientOnly(true);
-        Hazelcast.newHazelcastInstance();
         tomcat1 = createServer(TOMCAT_PORT_1, manager);
+        manager = new HazelcastSessionManager();
+        manager.setSticky(false);
+        manager.setClientOnly(true);
         tomcat2 = createServer(TOMCAT_PORT_2, manager);
         tomcat1.start();
         tomcat2.start();

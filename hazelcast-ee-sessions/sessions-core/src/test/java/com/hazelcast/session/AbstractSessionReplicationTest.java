@@ -23,7 +23,6 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
     protected static int SERVER_PORT_1 = 8899;
     protected static int SERVER_PORT_2 = 8999;
 
-
     @Test
     public void testContextReloadSticky() throws Exception{
         CookieStore cookieStore = new BasicCookieStore();
@@ -116,6 +115,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         IMap<Object, Object> map = instance.getMap("default");
         assertEquals(0, map.size());
     }
+
 
     public abstract void reload(int port);
 

@@ -7,21 +7,23 @@ import org.junit.Before;
 /**
  * Created by mesutcelik on 6/4/14.
  */
-public class ClientNonStickyModeTest extends Tomcat7Test{
+public class MapNameTest extends Tomcat7MapTest{
 
-    @Before
+     @Before
     public void setup() throws Exception{
-        Hazelcast.newHazelcastInstance();
+        instance = Hazelcast.newHazelcastInstance();
         HazelcastSessionManager manager = new HazelcastSessionManager();
-        manager.setSticky(false);
         manager.setClientOnly(true);
-        tomcat1 = createServer(TOMCAT_PORT_1, manager);
-        manager = new HazelcastSessionManager();
-        manager.setSticky(false);
-        manager.setClientOnly(true);
-        tomcat2 = createServer(TOMCAT_PORT_2, manager);
+        manager.setMapName(AbstractMapNameTest.SESSION_REPLICATION_MAP_NAME);
+        tomcat1 = createServer(TOMCAT_PORT_1,manager);
+         manager = new HazelcastSessionManager();
+         manager.setClientOnly(true);
+         manager.setMapName(AbstractMapNameTest.SESSION_REPLICATION_MAP_NAME);
+        tomcat2 = createServer(TOMCAT_PORT_2,manager);
         tomcat1.start();
         tomcat2.start();
+
+
     }
 
     @After

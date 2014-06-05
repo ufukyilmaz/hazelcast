@@ -13,8 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HazelcastSession extends StandardSession {
 
     protected boolean dirty;
+
     private Map<String, Object> localAttributeCache = new ConcurrentHashMap<String, Object>();
+
     private Map<String, Object> notes = new Hashtable<String, Object>();
+
     public HazelcastSession(Manager manager) {
     super(manager);
     }
@@ -88,6 +91,10 @@ public class HazelcastSession extends StandardSession {
 
         notes.put(name, value);
 
+    }
+
+    public Map<String, Object> getLocalAttributeCache() {
+        return localAttributeCache;
     }
 
 

@@ -14,6 +14,9 @@ public class P2PStickyModeTest extends Tomcat6Test{
         manager.setSticky(true);
         manager.setClientOnly(false);
         tomcat1 = createServer(TOMCAT_PORT_1, manager);
+        manager = new HazelcastSessionManager();
+        manager.setSticky(true);
+        manager.setClientOnly(false);
         tomcat2 = createServer(TOMCAT_PORT_2, manager);
         tomcat1.start();
         tomcat2.start();

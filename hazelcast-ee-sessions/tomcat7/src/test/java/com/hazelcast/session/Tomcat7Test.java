@@ -4,8 +4,6 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import javax.servlet.ServletException;
@@ -16,30 +14,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RunWith(HazelcastSerialClassRunner.class)
-public class Tomcat7Test extends AbstractSessionReplicationTest {
+public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
 
+    protected Tomcat tomcat1;
+    protected Tomcat tomcat2;
 
-
-    private Tomcat tomcat1;
-    private Tomcat tomcat2;
+    protected static int TOMCAT_PORT_1=8899;
+    protected static int TOMCAT_PORT_2=8999;
 
     private Map<Integer,Context> webApps = new ConcurrentHashMap<Integer,Context>();
 
-    @Before
-    public void setup() throws Exception{
-        tomcat1 = createServer(SERVER_PORT_1);
-        tomcat2 = createServer(SERVER_PORT_2);
-        tomcat1.start();
-        tomcat2.start();
-    }
-
-    @After
-    public void tearDown() throws Exception{
-        tomcat1.stop();
-        tomcat2.stop();
-    }
-
-    private Tomcat createServer(int port) throws MalformedURLException, ServletException {
+    protected Tomcat createServer(int port,HazelcastSessionManager manager) throws MalformedURLException, ServletException {
 
         final URL root = new URL( TestServlet.class.getResource( "/" ), "../../../sessions-core/target/test-classes" );
         // use file to get correct separator char, replace %20 introduced by URL for spaces
@@ -66,7 +51,7 @@ public class Tomcat7Test extends AbstractSessionReplicationTest {
 
 
 
-        context.setManager(new HazelcastSessionManager());
+        context.setManager(manager);
         context.setCookies(true);
         context.setBackgroundProcessorDelay(1);
         context.setReloadable(true);

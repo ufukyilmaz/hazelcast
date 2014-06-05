@@ -113,11 +113,13 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 
         if (isClientOnly()) {
-            //TODO read client config from filesystem,classpath etc.
-            //TODO throw lifecycleevent in case you can not connect to an existing cluster.
-            instance = HazelcastClient.newHazelcastClient();
+            try {
+                instance = HazelcastClient.newHazelcastClient();
+            } catch (Exception e) {
+                log.error("Hazelcast Client could not be created.", e);
+                throw new LifecycleException(e.getMessage());
+            }
         } else {
-            //TODO read client config from filesystem,classpath etc.
             instance = Hazelcast.newHazelcastInstance();
         }
         if (getMapName() == null) {
@@ -157,10 +159,13 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public void stop() throws LifecycleException {
+        log.info("stopping HazelcastSessionManager...");
 
         lifecycle.fireLifecycleEvent(STOP_EVENT, null);
 
-        instance.shutdown();
+        if (instance != null) {
+            instance.shutdown();
+        }
         log.info("HazelcastSessionManager stopped...");
     }
 

@@ -12,8 +12,6 @@ import org.apache.catalina.realm.UserDatabaseRealm;
 import org.apache.catalina.startup.Embedded;
 import org.apache.catalina.users.MemoryUserDatabase;
 import org.apache.naming.NamingContext;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.runner.RunWith;
 
 import javax.naming.NamingException;
@@ -25,36 +23,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @RunWith(HazelcastSerialClassRunner.class)
-public class Tomcat6Test extends AbstractSessionReplicationTest {
+public abstract class Tomcat6Test extends AbstractSessionReplicationTest {
 
 
     private static final String DEFAULT_HOST ="localhost" ;
 
-    private static int TOMCAT_PORT_1=8899;
-    private static int TOMCAT_PORT_2=8999;
+    protected static int TOMCAT_PORT_1=8899;
+    protected static int TOMCAT_PORT_2=8999;
 
-    private Embedded tomcat1;
-    private Embedded tomcat2;
+    protected Embedded tomcat1;
+    protected Embedded tomcat2;
 
     private Map<Integer,Embedded> webApps = new ConcurrentHashMap<Integer,Embedded>();
 
-    @Before
-    public void setup() throws Exception{
-        tomcat1 = createCatalina(TOMCAT_PORT_1);
-        tomcat2 = createCatalina(TOMCAT_PORT_2);
-        tomcat1.start();
-        tomcat2.start();
-
-
-    }
-
-    @After
-    public void tearDown() throws Exception{
-        tomcat1.stop();
-        tomcat2.stop();
-    }
-
-    private Embedded createCatalina(int port) throws MalformedURLException {
+    protected Embedded createServer(int port, HazelcastSessionManager manager) throws MalformedURLException {
         final Embedded catalina = new Embedded();
 
         final StandardServer server = new StandardServer();
@@ -94,7 +76,7 @@ public class Tomcat6Test extends AbstractSessionReplicationTest {
         final Context context = createContext( catalina, "/", "webapp" );
         host.addChild( context );
 
-        context.setManager( new HazelcastSessionManager());
+        context.setManager(manager);
         context.setBackgroundProcessorDelay( 1 );
         context.setCookies(true);
        // new File( "webapp" + File.separator + "webapp" ).mkdirs();

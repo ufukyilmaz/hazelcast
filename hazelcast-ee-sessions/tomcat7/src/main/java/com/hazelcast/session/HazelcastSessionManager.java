@@ -92,6 +92,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             log.debug("Force random number initialization starting");
         }
         super.generateSessionId();
+
         if (log.isDebugEnabled()) {
             log.debug("Force random number initialization completed");
         }
@@ -101,11 +102,13 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 
         if (isClientOnly()) {
-            //TODO read client config from filesystem,classpath etc.
-            //TODO throw lifecycleevent in case you can not connect to an existing cluster.
-            instance = HazelcastClient.newHazelcastClient();
+            try {
+                instance = HazelcastClient.newHazelcastClient();
+            } catch (Exception e) {
+                log.error("Hazelcast Client could not be created. ", e);
+                throw new LifecycleException(e.getMessage());
+            }
         } else {
-            //TODO read client config from filesystem,classpath etc.
             instance = Hazelcast.newHazelcastInstance();
         }
         if (getMapName() == null) {
@@ -146,12 +149,16 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public void stopInternal() throws LifecycleException {
+        log.info("stopping HazelcastSessionManager...");
 
         setState(LifecycleState.STOPPING);
 
-        instance.shutdown();
-        log.info("HazelcastSessionManager stopped...");
+        if (instance != null) {
+            instance.shutdown();
+        }
+
         super.stopInternal();
+        log.info("HazelcastSessionManager stopped...");
     }
 
 

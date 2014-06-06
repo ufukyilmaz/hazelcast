@@ -251,12 +251,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         remove(session.getId());
     }
 
-    @Override
-    public void processExpires() {
-        // Hazelcast TTL will do that
-    }
-
-
     private IMap<String, HazelcastSession> getSessionMap() {
         return sessionMap;
     }
@@ -284,6 +278,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public void expireSession(String sessionId) {
+        super.expireSession(sessionId);
         remove(sessionId);
     }
 

@@ -2,6 +2,7 @@ package com.hazelcast.session;
 
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.catalina.Context;
+import org.apache.catalina.Manager;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
 import org.junit.runner.RunWith;
@@ -23,6 +24,7 @@ public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
     protected static int TOMCAT_PORT_2=8999;
 
     private Map<Integer,Context> webApps = new ConcurrentHashMap<Integer,Context>();
+    private Map<Integer,Tomcat> tomcatInstances = new ConcurrentHashMap<Integer,Tomcat>();
 
     protected Tomcat createServer(int port,HazelcastSessionManager manager) throws MalformedURLException, ServletException {
 
@@ -57,6 +59,8 @@ public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
         context.setReloadable(true);
 
         webApps.put(port, context);
+        tomcatInstances.put(port,tomcat);
+
 
         return tomcat;
 
@@ -67,4 +71,14 @@ public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
     public void reload(int port) {
         webApps.get(port).reload();
     }
+
+    @Override
+    public void setSessionTimoutInSeconds(int timeout) {
+
+        for (Tomcat tomcat:tomcatInstances.values()){
+        Context ctx = (Context) tomcat.getHost().findChild("/");
+        Manager manager = ctx.getManager();
+        manager.setMaxInactiveInterval(timeout);
+        }
+   }
 }

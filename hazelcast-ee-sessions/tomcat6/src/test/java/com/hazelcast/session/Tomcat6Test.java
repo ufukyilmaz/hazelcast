@@ -4,6 +4,7 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.catalina.Context;
 import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
+import org.apache.catalina.Manager;
 import org.apache.catalina.Role;
 import org.apache.catalina.User;
 import org.apache.catalina.connector.Connector;
@@ -105,6 +106,16 @@ public abstract class Tomcat6Test extends AbstractSessionReplicationTest {
         Embedded tomcat = webApps.get(port);
         Context ctx = (Context)tomcat.getContainer().findChild(DEFAULT_HOST).findChild("/");
         ctx.reload();
+    }
+
+    @Override
+    public void setSessionTimoutInSeconds(int timeout) {
+
+        for (Embedded embedded:webApps.values()){
+            Context ctx = (Context)embedded.getContainer().findChild(DEFAULT_HOST).findChild("/");
+            Manager manager = ctx.getManager();
+            manager.setMaxInactiveInterval(timeout);
+        }
     }
 
 

@@ -116,8 +116,26 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         assertEquals(0, map.size());
     }
 
+    @Test
+    public void testSessionExpire() throws Exception {
+
+        int DEFAULT_SESSION_TIMEOUT = 10;
+        setSessionTimoutInSeconds(DEFAULT_SESSION_TIMEOUT);
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        sleepSeconds(DEFAULT_SESSION_TIMEOUT+10);
+
+
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("null", value);
+    }
+
 
     public abstract void reload(int port);
+    public abstract void setSessionTimoutInSeconds(int timeout);
 
 
     protected String executeRequest(String context, int serverPort, CookieStore cookieStore) throws Exception {

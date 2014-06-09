@@ -282,6 +282,9 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     }
 
     public void setSticky(boolean sticky) {
+        if (!sticky && getJvmRoute() != null ){
+            log.warn("setting JvmRoute with non-sticky sessions is not recommended and might cause unstable behaivour");
+        }
         this.sticky = sticky;
     }
 

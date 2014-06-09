@@ -12,7 +12,7 @@ import java.io.IOException;
 
 
 public class HazelcastSessionCommitValve extends ValveBase {
-  private final Log log = LogFactory.getLog(SessionManager.class);
+  private final Log log = LogFactory.getLog(HazelcastSessionCommitValve.class);
 
     private SessionManager sessionManager;
 

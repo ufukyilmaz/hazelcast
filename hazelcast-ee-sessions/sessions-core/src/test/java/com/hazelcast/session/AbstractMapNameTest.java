@@ -44,7 +44,9 @@ public abstract class AbstractMapNameTest extends HazelcastTestSupport {
         assertFalse(session.getLocalAttributeCache().isEmpty());
 
         executeRequest("remove", SERVER_PORT_2, cookieStore);
-        session = map.get(sessionId);
+        cookie = cookieStore.getCookies().get(0);
+        String newSessionId = cookie.getValue();
+        session = map.get(newSessionId);
 
         assertTrue(session.getLocalAttributeCache().isEmpty());
 

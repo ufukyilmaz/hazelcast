@@ -97,8 +97,9 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             log.debug("Force random number initialization completed");
         }
 
+        HazelcastSessionChangeValve hazelcastSessionChangeValve = new HazelcastSessionChangeValve(this);
+        getContainer().getPipeline().addValve(hazelcastSessionChangeValve);
         HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
-
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 
         if (isClientOnly()) {
@@ -244,6 +245,19 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             sessionMap.put(session.getId(), hazelcastSession);
             log.info("Thread name:" + Thread.currentThread().getName() + " commited key:" + hazelcastSession.getAttribute("key"));
         }
+    }
+
+    @Override
+    public String updateJvmRouteForSession(String sessionId, String newJvmRoute) throws IOException {
+        HazelcastSession session = sessionMap.get(sessionId);
+        int index = sessionId.indexOf(".");
+        String baseSessionId = sessionId.substring(0, index);
+        String newSessionId = baseSessionId + "." + newJvmRoute;
+        session.setId(newSessionId);
+
+        sessionMap.remove(sessionId);
+        sessionMap.put(newSessionId, session);
+        return newSessionId;
     }
 
     @Override

@@ -250,6 +250,9 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     @Override
     public String updateJvmRouteForSession(String sessionId, String newJvmRoute) throws IOException {
         HazelcastSession session = sessionMap.get(sessionId);
+        if (session.getManager() == null) {
+            session.setManager(this);
+        }
         int index = sessionId.indexOf(".");
         String baseSessionId = sessionId.substring(0, index);
         String newSessionId = baseSessionId + "." + newJvmRoute;
@@ -282,7 +285,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     }
 
     public void setSticky(boolean sticky) {
-        if (!sticky && getJvmRoute() != null ){
+        if (!sticky && getJvmRoute() != null) {
             log.warn("setting JvmRoute with non-sticky sessions is not recommended and might cause unstable behaivour");
         }
         this.sticky = sticky;

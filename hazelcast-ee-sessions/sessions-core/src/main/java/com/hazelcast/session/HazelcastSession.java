@@ -1,48 +1,40 @@
 package com.hazelcast.session;
 
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.DataSerializable;
 import org.apache.catalina.Manager;
 import org.apache.catalina.session.StandardSession;
 
+import java.io.IOException;
 import java.security.Principal;
-import java.util.Hashtable;
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
-public class HazelcastSession extends StandardSession {
+public class HazelcastSession extends StandardSession implements DataSerializable {
 
     protected boolean dirty;
 
-    private Map<String, Object> localAttributeCache = new ConcurrentHashMap<String, Object>();
-
-    private Map<String, Object> notes = new Hashtable<String, Object>();
-
     public HazelcastSession(Manager manager) {
-    super(manager);
+        super(manager);
     }
 
-
-  @Override
-  public void setAttribute(String key, Object value) {
-      dirty = true;
-      localAttributeCache.put(key, value);
-  }
+    public HazelcastSession() {
+        super(null);
+    }
 
     @Override
-    public Object getAttribute(String name) {
-       return localAttributeCache.get(name);
-    }
+  public void setAttribute(String key, Object value) {
+      dirty = true;
+      super.setAttribute(key, value);
+  }
+
 
     @Override
   public void removeAttribute(String name) {
     dirty = true;
-        localAttributeCache.remove(name);
-  }
-
-  @Override
-  public void setId(String id) {
-    this.id = id;
+        super.removeAttribute(name);
   }
 
   @Override
@@ -50,11 +42,6 @@ public class HazelcastSession extends StandardSession {
     dirty = true;
     super.setPrincipal(principal);
   }
-
-    @Override
-    public void invalidate() {
-        super.setValid(false);
-    }
 
     public boolean isDirty() {
         return dirty;
@@ -64,39 +51,41 @@ public class HazelcastSession extends StandardSession {
         this.dirty = dirty;
     }
 
-    @Override
-    public Object getNote(String name) {
-
-        return (notes.get(name));
-
-    }
-
-
-    @Override
-    public Iterator<String> getNoteNames() {
-
-        return (notes.keySet().iterator());
-
-    }
-
-    @Override
-    public void removeNote(String name) {
-
-        notes.remove(name);
-
-    }
-
-    @Override
-    public void setNote(String name, Object value) {
-
-        notes.put(name, value);
-
-    }
 
     public Map<String, Object> getLocalAttributeCache() {
-        return localAttributeCache;
+        return attributes;
     }
 
 
+    @Override
+    public void writeData(ObjectDataOutput objectDataOutput) throws IOException {
+        objectDataOutput.writeLong(creationTime);
+        objectDataOutput.writeLong(lastAccessedTime);
+        objectDataOutput.writeInt(maxInactiveInterval);
+        objectDataOutput.writeBoolean(isNew);
+        objectDataOutput.writeBoolean(isValid);
+        objectDataOutput.writeLong(thisAccessedTime);
+        objectDataOutput.writeObject(id);
+        objectDataOutput.writeObject(attributes);
+        objectDataOutput.writeObject(notes);
 
+    }
+
+    @Override
+    public void readData(ObjectDataInput objectDataInput) throws IOException {
+       this.creationTime = objectDataInput.readLong();
+       this.lastAccessedTime = objectDataInput.readLong();
+       this.maxInactiveInterval = objectDataInput.readInt();
+       this.isNew = objectDataInput.readBoolean();
+       this.isValid = objectDataInput.readBoolean();
+       this.thisAccessedTime = objectDataInput.readLong();
+       this.id = objectDataInput.readObject();
+       this.attributes = objectDataInput.readObject();
+        this.notes = objectDataInput.readObject();
+
+        if (this.listeners == null) {
+            this.listeners = new ArrayList();
+        }
+
+    }
 }

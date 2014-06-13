@@ -1,0 +1,129 @@
+package com.hazelcast.session.sticky;
+
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.hazelcast.session.AbstractHazelcastSessionsTest;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import org.apache.http.client.CookieStore;
+import org.apache.http.impl.client.BasicCookieStore;
+import org.junit.After;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.assertEquals;
+
+/**
+ * Created by mesutcelik on 5/5/14.
+ */
+@RunWith(HazelcastSerialClassRunner.class)
+public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessionsTest {
+
+
+
+    @After
+    public void cleanup() throws Exception{
+        instance1.stop();
+        instance2.stop();
+    }
+
+    @Test
+    public void testContextReloadSticky() throws Exception{
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+        instance1.reload();
+
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+    }
+
+    @Test
+    public void testReadWriteRead() throws Exception{
+        CookieStore cookieStore = new BasicCookieStore();
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("null", value);
+
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+    }
+
+    @Test(timeout = 60000)
+    public void testAttributeDistribution() throws Exception {
+
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+    }
+
+    @Test(timeout = 60000)
+    public void testAttributeRemoval() throws Exception {
+
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        value = executeRequest("remove", SERVER_PORT_1, cookieStore);
+        assertEquals("true", value);
+
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("null", value);
+    }
+
+    @Test(timeout = 60000)
+    public void testAttributeUpdate() throws Exception {
+
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        value = executeRequest("update", SERVER_PORT_1, cookieStore);
+        assertEquals("true", value);
+
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value-updated", value);
+    }
+
+    @Test(timeout = 60000)
+    public void testAttributeInvalidate() throws Exception {
+
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        value = executeRequest("invalidate", SERVER_PORT_1, cookieStore);
+        assertEquals("true", value);
+
+        HazelcastInstance instance = createHazelcastInstance();
+        IMap<Object, Object> map = instance.getMap("default");
+        assertEquals(0, map.size());
+    }
+
+    @Test
+    public void testSessionExpire() throws Exception {
+
+        int DEFAULT_SESSION_TIMEOUT = 10;
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        sleepSeconds(DEFAULT_SESSION_TIMEOUT+10);
+
+
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("null", value);
+    }
+
+
+}

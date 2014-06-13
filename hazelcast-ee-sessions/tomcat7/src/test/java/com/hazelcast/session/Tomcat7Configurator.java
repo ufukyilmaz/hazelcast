@@ -1,33 +1,23 @@
 package com.hazelcast.session;
 
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.catalina.Context;
-import org.apache.catalina.Manager;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
-import org.junit.runner.RunWith;
 
-import javax.servlet.ServletException;
 import java.io.File;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-@RunWith(HazelcastSerialClassRunner.class)
-public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
+/**
+ * Created by mesutcelik on 6/12/14.
+ */
+public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
-    protected Tomcat tomcat1;
-    protected Tomcat tomcat2;
+    private Tomcat tomcat;
+    private HazelcastSessionManager manager;
 
-    protected static int TOMCAT_PORT_1=8899;
-    protected static int TOMCAT_PORT_2=8999;
 
-    private Map<Integer,Context> webApps = new ConcurrentHashMap<Integer,Context>();
-    private Map<Integer,Tomcat> tomcatInstances = new ConcurrentHashMap<Integer,Tomcat>();
-
-    protected Tomcat createServer(int port,HazelcastSessionManager manager) throws MalformedURLException, ServletException {
-
+    @Override
+    public Tomcat configure() throws Exception{
         final URL root = new URL( TestServlet.class.getResource( "/" ), "../../../sessions-core/target/test-classes" );
         // use file to get correct separator char, replace %20 introduced by URL for spaces
         final String cleanedRoot = new File( root.getFile().replaceAll("%20", " ") ).toString();
@@ -36,6 +26,7 @@ public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
         final String docBase = cleanedRoot + File.separator + TestServlet.class.getPackage().getName().replaceAll( "\\.", fileSeparator );
 
         Tomcat tomcat = new Tomcat();
+        tomcat.getEngine().setJvmRoute("tomcat-"+port);
         tomcat.setBaseDir(docBase);
 
         tomcat.getEngine().setName("engine-"+port);
@@ -44,41 +35,46 @@ public abstract class Tomcat7Test extends AbstractSessionReplicationTest {
         connector.setPort(port);
         connector.setProperty("bindOnInit", "false");
 
-                Context context;
+        Context context;
         try {
             context = tomcat.addWebapp(tomcat.getHost(),"/", docBase + fileSeparator + "webapp");
         } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
 
-
-
+        this.manager = new HazelcastSessionManager();
         context.setManager(manager);
+        updateManager(this.manager);
         context.setCookies(true);
         context.setBackgroundProcessorDelay(1);
         context.setReloadable(true);
 
-        webApps.put(port, context);
-        tomcatInstances.put(port,tomcat);
-
-
         return tomcat;
-
-    }
-
-
-    @Override
-    public void reload(int port) {
-        webApps.get(port).reload();
     }
 
     @Override
-    public void setSessionTimoutInSeconds(int timeout) {
+    public void start() throws Exception{
+        tomcat = configure();
+        tomcat.start();
+    }
 
-        for (Tomcat tomcat:tomcatInstances.values()){
-        Context ctx = (Context) tomcat.getHost().findChild("/");
-        Manager manager = ctx.getManager();
-        manager.setMaxInactiveInterval(timeout);
-        }
-   }
+    @Override
+    public void stop() throws Exception {
+        tomcat.stop();
+    }
+
+    @Override
+    public void reload() {
+       Context context = (Context) tomcat.getHost().findChild("/");
+       context.reload();
+    }
+
+    private void updateManager(HazelcastSessionManager manager) {
+        manager.setSticky(sticky);
+        manager.setClientOnly(clientOnly);
+        manager.setMapName(mapName);
+        manager.setMaxInactiveInterval(sessionTimeout);
+    }
+
+
 }

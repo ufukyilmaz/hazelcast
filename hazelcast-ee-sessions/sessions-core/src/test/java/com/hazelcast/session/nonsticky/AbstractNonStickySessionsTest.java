@@ -1,43 +1,28 @@
-package com.hazelcast.session;
+package com.hazelcast.session.nonsticky;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.test.HazelcastTestSupport;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import com.hazelcast.session.AbstractHazelcastSessionsTest;
+import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by mesutcelik on 5/5/14.
  */
-public abstract class AbstractSessionReplicationTest extends HazelcastTestSupport {
+@RunWith(HazelcastSerialClassRunner.class)
+public abstract class AbstractNonStickySessionsTest extends AbstractHazelcastSessionsTest {
 
-    protected static int SERVER_PORT_1 = 8899;
-    protected static int SERVER_PORT_2 = 8999;
-
-    @Test
-    public void testContextReloadSticky() throws Exception{
-        CookieStore cookieStore = new BasicCookieStore();
-        executeRequest("write", SERVER_PORT_1, cookieStore);
-        reload(SERVER_PORT_1);
-
-        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
-        assertEquals("value", value);
-    }
 
     @Test
     public void testContextReloadNonSticky() throws Exception{
         CookieStore cookieStore = new BasicCookieStore();
         executeRequest("write", SERVER_PORT_1, cookieStore);
-        reload(SERVER_PORT_1);
+        instance1.reload();
 
         String value = executeRequest("read", SERVER_PORT_2, cookieStore);
         assertEquals("value", value);
@@ -51,7 +36,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
 
         executeRequest("write", SERVER_PORT_1, cookieStore);
 
-        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        value = executeRequest("read", SERVER_PORT_2, cookieStore);
         assertEquals("value", value);
 
     }
@@ -79,7 +64,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         value = executeRequest("remove", SERVER_PORT_2, cookieStore);
         assertEquals("true", value);
 
-        value = executeRequest("read", SERVER_PORT_2, cookieStore);
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("null", value);
     }
 
@@ -95,7 +80,7 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         value = executeRequest("update", SERVER_PORT_2, cookieStore);
         assertEquals("true", value);
 
-        value = executeRequest("read", SERVER_PORT_2, cookieStore);
+        value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("value-updated", value);
     }
 
@@ -120,7 +105,6 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
     public void testSessionExpire() throws Exception {
 
         int DEFAULT_SESSION_TIMEOUT = 10;
-        setSessionTimoutInSeconds(DEFAULT_SESSION_TIMEOUT);
         CookieStore cookieStore = new BasicCookieStore();
         executeRequest("write", SERVER_PORT_1, cookieStore);
         String value = executeRequest("read", SERVER_PORT_1, cookieStore);
@@ -129,21 +113,9 @@ public abstract class AbstractSessionReplicationTest extends HazelcastTestSuppor
         sleepSeconds(DEFAULT_SESSION_TIMEOUT+10);
 
 
-        value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        value = executeRequest("read", SERVER_PORT_2, cookieStore);
         assertEquals("null", value);
     }
 
-
-    public abstract void reload(int port);
-    public abstract void setSessionTimoutInSeconds(int timeout);
-
-
-    protected String executeRequest(String context, int serverPort, CookieStore cookieStore) throws Exception {
-        HttpClient client = HttpClientBuilder.create().setDefaultCookieStore(cookieStore).build();
-        HttpGet request = new HttpGet("http://localhost:" + serverPort + "/" + context);
-        HttpResponse response = client.execute(request);
-        HttpEntity entity = response.getEntity();
-        return EntityUtils.toString(entity);
-    }
 
 }

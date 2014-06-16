@@ -6,6 +6,7 @@ import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.MapEvent;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
@@ -136,6 +137,10 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
                 public void entryEvicted(EntryEvent<String, HazelcastSession> entryEvent) {
                     entryRemoved(entryEvent);
+                }
+
+                public void mapEvicted(MapEvent event) {
+
                 }
             }, false);
 

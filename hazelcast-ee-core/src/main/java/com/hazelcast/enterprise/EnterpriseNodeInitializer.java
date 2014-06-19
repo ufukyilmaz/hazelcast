@@ -71,7 +71,7 @@ public class EnterpriseNodeInitializer
 
     public void printNodeInfo(Node node) {
         systemLogger.log(Level.INFO,
-                "Hazelcast Enterprise Edition " + version + " (" + build + ") starting at " + node.getThisAddress());
+                "Hazelcast Enterprise " + version + " (" + build + ") starting at " + node.getThisAddress());
         systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
     }
 

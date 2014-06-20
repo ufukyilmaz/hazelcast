@@ -220,13 +220,16 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             return localSessionMap.get(id);
         }
 
-        log.info("seems that sticky session is disabled or some failover occured.");
-        // TODO check if session id is changed if failover occured...
+        if (isSticky()) {
+            log.info("Sticky Session is currently enabled."
+                    + "Some failover occured so reading session from Hazelcast map:" + getMapName());
+        }
+
         HazelcastSession hazelcastSession = sessionMap.get(id);
         if (hazelcastSession == null) {
+            log.info("No Session found for:" + id);
             return null;
         }
-        log.info("Thread name:" + Thread.currentThread().getName() + "key:" + hazelcastSession.getAttribute("key"));
 
         hazelcastSession.setManager(this);
 

@@ -215,7 +215,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public Session findSession(String id) throws IOException {
-        log.info("sessionId:" + id);
+        log.debug("sessionId:" + id);
         if (id == null) {
             return null;
         }
@@ -224,10 +224,15 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             return localSessionMap.get(id);
         }
 
-        log.info("seems that sticky session is disabled or some failover occured.");
-        // TODO check if session id is changed if failover occured...
+        if (isSticky()) {
+            log.info("Sticky Session is currently enabled."
+                    + "Some failover occured so reading session from Hazelcast map:" + getMapName());
+        }
         HazelcastSession hazelcastSession = sessionMap.get(id);
-        log.info("Thread name:" + Thread.currentThread().getName() + "key:" + hazelcastSession.getAttribute("key"));
+        if (hazelcastSession == null) {
+            log.info("No Session found for:" + id);
+            return null;
+        }
 
         hazelcastSession.setManager(this);
 

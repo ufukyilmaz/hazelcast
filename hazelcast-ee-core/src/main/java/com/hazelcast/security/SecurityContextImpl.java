@@ -1,10 +1,16 @@
 package com.hazelcast.security;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.CredentialsFactoryConfig;
+import com.hazelcast.config.GroupConfig;
+import com.hazelcast.config.LoginModuleConfig;
 import com.hazelcast.config.LoginModuleConfig.LoginModuleUsage;
+import com.hazelcast.config.PermissionPolicyConfig;
+import com.hazelcast.config.SecurityConfig;
+import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ClassLoaderUtil;
+import com.hazelcast.util.ExceptionUtil;
 
 import javax.security.auth.Subject;
 import javax.security.auth.login.Configuration;
@@ -13,11 +19,14 @@ import javax.security.auth.login.LoginException;
 import java.security.AccessControlException;
 import java.security.Permission;
 import java.security.PermissionCollection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 
 public class SecurityContextImpl implements SecurityContext {
+
+    private static ThreadLocal<ParametersImpl> threadLocal = new ThreadLocal<ParametersImpl>();
 
     private final ILogger logger;
     private final Node node;
@@ -25,6 +34,8 @@ public class SecurityContextImpl implements SecurityContext {
     private final ICredentialsFactory credentialsFactory;
     private final Configuration memberConfiguration;
     private final Configuration clientConfiguration;
+    private final List<SecurityInterceptor> interceptors;
+    private final Parameters emptyParameters = new EmptyParametersImpl();
 
     public SecurityContextImpl(Node node) {
         super();
@@ -58,7 +69,74 @@ public class SecurityContextImpl implements SecurityContext {
 
         memberConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
         clientConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
+        final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
+        interceptors = new ArrayList<SecurityInterceptor>(interceptorConfigs.size());
+        for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {
+            addInterceptors(interceptorConfig);
+        }
+    }
 
+    void addInterceptors(SecurityInterceptorConfig interceptorConfig) {
+        SecurityInterceptor interceptor = interceptorConfig.getImplementation();
+        final String className = interceptorConfig.getClassName();
+        if (interceptor == null && className != null) {
+            try {
+                interceptor = ClassLoaderUtil.newInstance(node.getConfigClassLoader(), className);
+            } catch (Exception e) {
+                throw ExceptionUtil.rethrow(e);
+            }
+        }
+        if (interceptor != null) {
+            interceptors.add(interceptor);
+        }
+    }
+
+    Parameters getArguments(Object[] args) {
+        if (args == null) {
+            return emptyParameters;
+        }
+        ParametersImpl arguments = threadLocal.get();
+        if (arguments == null) {
+            arguments = new ParametersImpl(node.getSerializationService());
+            threadLocal.set(arguments);
+        }
+        arguments.setArgs(args);
+        return arguments;
+    }
+
+    Parameters getArguments() {
+        return threadLocal.get();
+    }
+
+    @Override
+    public void interceptBefore(Credentials credentials, String serviceName, String methodName,
+                                Object[] args) throws AccessControlException {
+        if (interceptors.isEmpty()) {
+            return;
+        }
+        final Parameters parameters = getArguments(args);
+        for (SecurityInterceptor interceptor : interceptors) {
+            try {
+                interceptor.before(credentials, serviceName, methodName, parameters);
+            } catch (Throwable t) {
+                throw new AccessControlException(t.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void interceptAfter(Credentials credentials, String serviceName, String methodName) {
+        if (interceptors.isEmpty()) {
+            return;
+        }
+        final Parameters parameters = getArguments();
+        for (SecurityInterceptor interceptor : interceptors) {
+            try {
+                interceptor.after(credentials, serviceName, methodName, parameters);
+            } catch (Throwable t) {
+                logger.warning("Exception during interceptor.after " + interceptor);
+            }
+        }
     }
 
     public LoginContext createMemberLoginContext(Credentials credentials) throws LoginException {

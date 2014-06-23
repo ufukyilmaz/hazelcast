@@ -25,7 +25,9 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,9 +39,9 @@ import static com.hazelcast.config.PermissionConfig.PermissionType;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class SecurityInterceptorTest {
 
-    @BeforeClass
-    @AfterClass
-    public static void cleanupClass() {
+    @Before
+    @After
+    public void cleanupClass() {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }

@@ -1,5 +1,7 @@
 package com.hazelcast.enterprise;
 
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.elasticmemory.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
@@ -7,6 +9,8 @@ import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.DefaultNodeInitializer;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeInitializer;
+import com.hazelcast.nio.MemberSocketInterceptor;
+import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.storage.Storage;
@@ -31,6 +35,7 @@ public class EnterpriseNodeInitializer
     private volatile License license;
     private SecurityContext securityContext;
     private boolean securityEnabled;
+    private MemberSocketInterceptor memberSocketInterceptor;
 
     public EnterpriseNodeInitializer() {
         super();
@@ -67,6 +72,34 @@ public class EnterpriseNodeInitializer
             logger.log(Level.INFO, "Initializing node off-heap storage.");
             storage = storageFactory.createStorage();
         }
+        getSocketInterceptor(node.config.getNetworkConfig());
+    }
+
+    private void getSocketInterceptor(NetworkConfig networkConfig) {
+        SocketInterceptorConfig sic = networkConfig.getSocketInterceptorConfig();
+        SocketInterceptor implementation = null;
+        if (sic != null && sic.isEnabled()) {
+            implementation = (SocketInterceptor) sic.getImplementation();
+            if (implementation == null && sic.getClassName() != null) {
+                try {
+                    implementation = (SocketInterceptor) Class.forName(sic.getClassName()).newInstance();
+                } catch (Throwable e) {
+                    logger.severe("SocketInterceptor class cannot be instantiated!" + sic.getClassName(), e);
+                }
+            }
+            if (implementation != null) {
+                if (!(implementation instanceof MemberSocketInterceptor)) {
+                    logger.severe("SocketInterceptor must be instance of " + MemberSocketInterceptor.class.getName());
+                    implementation = null;
+                }
+            }
+        }
+
+        memberSocketInterceptor = (MemberSocketInterceptor) implementation;
+        if (memberSocketInterceptor != null) {
+            logger.info("SocketInterceptor is enabled");
+            memberSocketInterceptor.init(sic.getProperties());
+        }
     }
 
     public void printNodeInfo(Node node) {
@@ -100,6 +133,11 @@ public class EnterpriseNodeInitializer
             securityContext = new SecurityContextImpl(node);
         }
         return securityContext;
+    }
+
+    @Override
+    public MemberSocketInterceptor getMemberSocketInterceptor() {
+        return memberSocketInterceptor;
     }
 
     public Storage getOffHeapStorage() {

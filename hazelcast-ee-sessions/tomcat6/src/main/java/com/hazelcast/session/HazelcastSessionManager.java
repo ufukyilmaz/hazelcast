@@ -151,7 +151,9 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 }
 
                 public void mapEvicted(MapEvent event) {
+                }
 
+                public void mapCleared(MapEvent event){
                 }
             }, false);
 

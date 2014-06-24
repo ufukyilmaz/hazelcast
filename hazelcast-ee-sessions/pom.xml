@@ -47,14 +47,6 @@
         <module>tomcat7</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>snapshot-repository</id>
-            <name>Maven2 Snapshot Repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </repository>
-     </repositories>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

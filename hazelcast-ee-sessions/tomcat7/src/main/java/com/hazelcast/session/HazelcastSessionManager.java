@@ -132,7 +132,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 }
 
                 public void entryUpdated(EntryEvent<String, HazelcastSession> event) {
-
                 }
 
                 public void entryEvicted(EntryEvent<String, HazelcastSession> entryEvent) {
@@ -140,8 +139,11 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 }
 
                 public void mapEvicted(MapEvent event) {
-
                 }
+
+                public void mapCleared(MapEvent event) {
+                }
+
             }, false);
 
         }

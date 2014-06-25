@@ -17,6 +17,7 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.cluster.AuthorizationOperation;
+import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
@@ -55,7 +56,7 @@ public class WanNoDelayReplication
     private String password;
     private final LinkedBlockingQueue<String> addressQueue = new LinkedBlockingQueue<String>();
     private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
-    private final BlockingQueue<WanReplicationEvent> eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(100000);
+    private BlockingQueue<WanReplicationEvent> eventQueue;
     private volatile boolean running = true;
 
     public void init(Node node, String groupName, String password, String... targets) {
@@ -63,6 +64,10 @@ public class WanNoDelayReplication
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
         this.groupName = groupName;
         this.password = password;
+
+        int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUESIZE.getInteger();
+        this.eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(queueSize);
+
         addressQueue.addAll(Arrays.asList(targets));
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }

@@ -153,7 +153,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 public void mapEvicted(MapEvent event) {
                 }
 
-                public void mapCleared(MapEvent event){
+                public void mapCleared(MapEvent event) {
                 }
             }, false);
 
@@ -328,6 +328,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     public void setMapName(String mapName) {
         this.mapName = mapName;
     }
+
     private void checkMaxActiveSessions() {
         if (getMaxActiveSessions() >= 0 && sessionMap.size() >= getMaxActiveSessions()) {
             rejectedSessions++;

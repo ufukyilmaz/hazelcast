@@ -116,7 +116,7 @@
                         <version>${checkstyle.maven.plugin.version}</version>
                         <executions>
                             <execution>
-                                <phase>install</phase>
+                                <phase>validate</phase>
                                 <goals>
                                     <goal>checkstyle</goal>
                                 </goals>
@@ -143,7 +143,7 @@
                         <version>${findbugs.maven.plugin.version}</version>
                         <executions>
                             <execution>
-                                <phase>install</phase>
+                                <phase>compile</phase>
                                 <goals>
                                     <goal>check</goal>
                                 </goals>

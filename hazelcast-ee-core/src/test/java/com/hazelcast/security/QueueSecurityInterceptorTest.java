@@ -129,7 +129,7 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void test2_drainTo() throws InterruptedException {
-        final int max = (int) randomLong();
+        final int max = randomInt(200);
         getQueue().drainTo(new HashSet(), max);
         final String serviceName = getServiceName();
         interceptor.assertMethod(serviceName, "drainTo", null, max);

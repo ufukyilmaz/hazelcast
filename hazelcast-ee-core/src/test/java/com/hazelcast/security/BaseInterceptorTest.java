@@ -178,7 +178,11 @@ public abstract class BaseInterceptorTest {
     }
 
     public static long randomLong() {
-        return new Random(System.currentTimeMillis()).nextInt(1000);
+        return randomInt(1000);
+    }
+
+    public static int randomInt(int max) {
+        return new Random(System.currentTimeMillis()).nextInt(max);
     }
 
 }

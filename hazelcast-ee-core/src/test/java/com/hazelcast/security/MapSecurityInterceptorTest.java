@@ -40,27 +40,24 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     public void containsKey() {
         final String key = randomString();
         getMap().containsKey(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "containsKey", key);
     }
 
     @Test
     public void containsValue() {
         final String key = randomString();
         getMap().containsValue(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "containsValue", key);
     }
 
     @Test
     public void get() {
         final String key = randomString();
         getMap().get(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "get", key);
     }
 
     @Test
@@ -68,9 +65,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().put(key, val);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "put", key, val);
     }
 
     @Test
@@ -79,18 +75,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long ttl = randomLong();
         getMap().put(key, val, ttl, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_remove() {
         final String key = randomString();
         getMap().remove(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "remove", key);
     }
 
     @Test
@@ -98,35 +92,31 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().remove(key, val);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "remove", key, val);
     }
 
     @Test
     public void delete() {
         final String key = randomString();
         getMap().delete(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "delete", key);
     }
 
     @Test
     public void flush() {
         getMap().flush();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "flush");
     }
 
     @Test
     public void getAsync() {
         final String key = randomString();
         getMap().getAsync(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "getAsync", key);
     }
 
     @Test
@@ -134,9 +124,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().putAsync(key, val).get();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "putAsync", key, val);
     }
 
     @Test
@@ -145,18 +134,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long ttl = randomLong();
         getMap().putAsync(key, val, ttl, TimeUnit.MILLISECONDS).get();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "putAsync", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void removeAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         getMap().removeAsync(key).get();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "removeAsync", key);
     }
 
     @Test
@@ -164,9 +151,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         long timeout = randomLong();
         getMap().tryRemove(key, timeout, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "tryRemove", key, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -175,9 +161,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long timeout = randomLong();
         getMap().tryPut(key, val, timeout, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "tryPut", key, val, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -186,9 +171,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long ttl = randomLong();
         getMap().putTransient(key, val, ttl, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "putTransient", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -196,9 +180,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().putIfAbsent(key, val);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "putIfAbsent", key, val);
     }
 
     @Test
@@ -207,9 +190,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long ttl = randomLong();
         getMap().putIfAbsent(key, val, ttl, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "putIfAbsent", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -217,9 +199,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().replace(key, val);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "replace", key, val);
     }
 
     @Test
@@ -228,9 +209,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val1 = randomString();
         final String val2 = randomString();
         getMap().replace(key, val1, val2);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val1, val2);
+        interceptor.assertMethod(serviceName, "replace", key, val1, val2);
     }
 
     @Test
@@ -238,9 +218,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         getMap().set(key, val);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val);
+        interceptor.assertMethod(serviceName, "set", key, val);
     }
 
     @Test
@@ -249,18 +228,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String val = randomString();
         final long ttl = randomLong();
         getMap().set(key, val, ttl, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "set", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_lock() {
         final String key = randomString();
         getMap().lock(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "lock", key);
     }
 
     @Test
@@ -268,27 +245,24 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final long lease = randomLong();
         getMap().lock(key, lease, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, lease, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "lock", key, lease, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void isLocked() {
         final String key = randomString();
         getMap().isLocked(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "isLocked", key);
     }
 
     @Test
     public void test1_tryLock() {
         final String key = randomString();
         getMap().tryLock(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "tryLock", key);
     }
 
     @Test
@@ -296,9 +270,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final long timeout = randomLong();
         getMap().tryLock(key, timeout, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -308,45 +281,40 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         map.lock(key);
         interceptor.reset();
         map.unlock(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "unlock", key);
     }
 
     @Test
     public void forceUnlock() {
         final String key = randomString();
         getMap().forceUnlock(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "forceUnlock", key);
     }
 
     @Test
     public void addInterceptor() {
         final DummyMapInterceptor mapInterceptor = new DummyMapInterceptor(randomLong());
         getMap().addInterceptor(mapInterceptor);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, mapInterceptor);
+        interceptor.assertMethod(serviceName, "addInterceptor", mapInterceptor);
     }
 
     @Test
     public void removeInterceptor() {
         final String key = randomString();
         getMap().removeInterceptor(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "removeInterceptor", key);
     }
 
     @Test
     public void test1_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         getMap().addEntryListener(entryAdapter, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, false);
+        interceptor.assertMethod(serviceName, "addEntryListener", null, false);
     }
 
     @Test
@@ -354,9 +322,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
         getMap().addEntryListener(entryAdapter, key, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, key, false);
+        interceptor.assertMethod(serviceName, "addEntryListener", null, key, false);
     }
 
     @Test
@@ -364,9 +331,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         getMap().addEntryListener(entryAdapter, predicate, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, predicate, false);
+        interceptor.assertMethod(serviceName, "addEntryListener", null, predicate, false);
     }
 
     @Test
@@ -375,9 +341,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         getMap().addEntryListener(entryAdapter, predicate, key, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, predicate, key, false);
+        interceptor.assertMethod(serviceName, "addEntryListener", null, predicate, key, false);
     }
 
     @Test
@@ -387,86 +352,76 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String id = map.addEntryListener(entryAdapter, false);
         interceptor.reset();
         map.removeEntryListener(id);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, id);
+        interceptor.assertMethod(serviceName, "removeEntryListener", id);
     }
 
     @Test
     public void getEntryView() {
         final String key = randomString();
         getMap().getEntryView(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "getEntryView", key);
     }
 
     @Test
     public void evict() {
         final String key = randomString();
         getMap().evict(key);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key);
+        interceptor.assertMethod(serviceName, "evict", key);
     }
 
     @Test
     public void evictAll() {
         getMap().evictAll();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "evictAll");
     }
 
     @Test
     public void test1_keySet() {
         getMap().keySet();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "keySet");
     }
 
     @Test
     public void test2_keySet() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         getMap().keySet(predicate);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, predicate);
+        interceptor.assertMethod(serviceName, "keySet", predicate);
     }
 
     @Test
     public void test1_values() {
         getMap().values();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "values");
     }
 
     @Test
     public void test2_values() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         getMap().values(predicate);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, predicate);
+        interceptor.assertMethod(serviceName, "values", predicate);
     }
 
     @Test
     public void test1_entrySet() {
         getMap().entrySet();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "entrySet");
     }
 
     @Test
     public void test2_entrySet() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         getMap().entrySet(predicate);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, predicate);
+        interceptor.assertMethod(serviceName, "entrySet", predicate);
     }
 
     @Test
@@ -476,18 +431,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         keys.add(randomString());
         getMap().getAll(keys);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, keys);
+        interceptor.assertMethod(serviceName, "getAll", keys);
     }
 
     @Test
     public void addIndex() {
         final String key = randomString();
         getMap().addIndex(key, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, false);
+        interceptor.assertMethod(serviceName, "addIndex", key, false);
     }
 
     @Test
@@ -495,9 +448,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         getMap().executeOnKey(key, entryProcessor);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, entryProcessor);
+        interceptor.assertMethod(serviceName, "executeOnKey", key, entryProcessor);
     }
 
     @Test
@@ -505,18 +457,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         getMap().submitToKey(key, entryProcessor).get();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, key, entryProcessor);
+        interceptor.assertMethod(serviceName, "submitToKey", key, entryProcessor);
     }
 
     @Test
     public void test1_executeOnEntries() {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         getMap().executeOnEntries(entryProcessor);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, entryProcessor);
+        interceptor.assertMethod(serviceName, "executeOnEntries", entryProcessor);
     }
 
     @Test
@@ -524,9 +474,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         final DummyPredicate predicate = new DummyPredicate();
         getMap().executeOnEntries(entryProcessor, predicate);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, entryProcessor, predicate);
+        interceptor.assertMethod(serviceName, "executeOnEntries", entryProcessor, predicate);
     }
 
     @Test
@@ -537,33 +486,29 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         getMap().executeOnKeys(keys, entryProcessor);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, keys, entryProcessor);
+        interceptor.assertMethod(serviceName, "executeOnKeys", keys, entryProcessor);
     }
 
     @Test
     public void size() {
         getMap().size();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "size");
     }
 
     @Test
     public void isEmpty() {
         getMap().isEmpty();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "isEmpty");
     }
 
     @Test
     public void clear() {
         getMap().clear();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "clear");
     }
 
     @Test
@@ -573,18 +518,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         hashMap.put(randomString(), randomString());
         hashMap.put(randomString(), randomString());
         getMap().putAll(hashMap);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, hashMap);
+        interceptor.assertMethod(serviceName, "putAll", hashMap);
     }
 
     @Test
     public void test1_loadAll() {
         IMap<Object, Object> map = client.getMap("loadAll" + randomString());
         map.loadAll(true);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, true);
+        interceptor.assertMethod(serviceName, "loadAll", true);
     }
 
     @Test
@@ -595,9 +538,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         IMap<Object, Object> map = client.getMap("loadAll" + randomString());
         map.loadAll(keys, true);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, keys, true);
+        interceptor.assertMethod(serviceName, "loadAll", keys, true);
     }
 
     @Override

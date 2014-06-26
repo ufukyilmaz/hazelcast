@@ -55,16 +55,6 @@ public abstract class BaseInterceptorTest {
 
     abstract String getServiceName();
 
-    public static String getMethodName() {
-        final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
-        final String fullMethodName = ste[2].getMethodName();
-        final int i = fullMethodName.indexOf('_');
-        if (i == -1) {
-            return fullMethodName;
-        }
-        return fullMethodName.substring(i + 1);
-    }
-
     private static Config createConfig(TestSecurityInterceptor interceptor) {
         final Config config = new Config();
         PermissionConfig perm = new PermissionConfig(PermissionConfig.PermissionType.ALL, "", null);

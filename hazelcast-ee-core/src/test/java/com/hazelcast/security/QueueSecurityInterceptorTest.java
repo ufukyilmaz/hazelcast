@@ -18,9 +18,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
     public void addItemListener() {
         final DummyListener itemListener = new DummyListener();
         getQueue().addItemListener(itemListener, false);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, false);
+        interceptor.assertMethod(serviceName, "addItemListener", null, false);
     }
 
     @Test
@@ -30,18 +29,16 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         final String id = queue.addItemListener(itemListener, false);
         interceptor.reset();
         queue.removeItemListener(id);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, id);
+        interceptor.assertMethod(serviceName, "removeItemListener", id);
     }
 
     @Test
     public void test1_offer() {
         final String item = randomString();
         getQueue().offer(item);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, item);
+        interceptor.assertMethod(serviceName, "offer", item);
     }
 
     @Test
@@ -49,26 +46,23 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         final String item = randomString();
         final long timeout = randomLong();
         getQueue().offer(item, timeout, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, item, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "offer", item, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void put() throws InterruptedException {
         final String item = randomString();
         getQueue().put(item);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, item);
+        interceptor.assertMethod(serviceName, "put", item);
     }
 
     @Test
     public void test1_poll() throws InterruptedException {
         getQueue().poll();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "poll");
     }
 
     @Test
@@ -78,9 +72,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         interceptor.reset();
         final long timeout = randomLong();
         queue.poll(timeout, TimeUnit.MILLISECONDS);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(serviceName, "poll", timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -89,35 +82,31 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         queue.offer(randomString());
         interceptor.reset();
         queue.take();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "take");
     }
 
     @Test
     public void remainingCapacity() throws InterruptedException {
         getQueue().remainingCapacity();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "remainingCapacity");
     }
 
     @Test
     public void remove() throws InterruptedException {
         final String item = randomString();
         getQueue().remove(item);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, item);
+        interceptor.assertMethod(serviceName, "remove", item);
     }
 
     @Test
     public void contains() throws InterruptedException {
         final String item = randomString();
         getQueue().contains(item);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, item);
+        interceptor.assertMethod(serviceName, "contains", item);
     }
 
     @Test
@@ -127,58 +116,51 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getQueue().containsAll(items);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, items);
+        interceptor.assertMethod(serviceName, "containsAll", items);
     }
 
     @Test
     public void test1_drainTo() throws InterruptedException {
         getQueue().drainTo(new HashSet());
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, (String)null);
+        interceptor.assertMethod(serviceName, "drainTo", (String) null);
     }
 
     @Test
     public void test2_drainTo() throws InterruptedException {
-        final int max = (int)randomLong();
+        final int max = (int) randomLong();
         getQueue().drainTo(new HashSet(), max);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, null, max);
+        interceptor.assertMethod(serviceName, "drainTo", null, max);
     }
 
     @Test
     public void peek() throws InterruptedException {
         getQueue().peek();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "peek");
     }
 
     @Test
     public void size() throws InterruptedException {
         getQueue().size();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "size");
     }
 
     @Test
     public void isEmpty() throws InterruptedException {
         getQueue().isEmpty();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "isEmpty");
     }
 
     @Test
     public void iterator() throws InterruptedException {
         getQueue().iterator();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "iterator");
     }
 
     @Test
@@ -188,9 +170,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getQueue().addAll(items);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, items);
+        interceptor.assertMethod(serviceName, "addAll", items);
     }
 
     @Test
@@ -200,9 +181,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getQueue().removeAll(items);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, items);
+        interceptor.assertMethod(serviceName, "removeAll", items);
     }
 
     @Test
@@ -212,17 +192,15 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getQueue().retainAll(items);
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName, items);
+        interceptor.assertMethod(serviceName, "retainAll", items);
     }
 
     @Test
     public void clear() throws InterruptedException {
         getQueue().clear();
-        final String methodName = getMethodName();
         final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, methodName);
+        interceptor.assertMethod(serviceName, "clear");
     }
 
     @Override

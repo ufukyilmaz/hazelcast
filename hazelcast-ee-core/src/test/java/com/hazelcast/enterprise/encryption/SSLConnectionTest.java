@@ -73,8 +73,9 @@ public class SSLConnectionTest {
         Socket socket = null;
         final ExecutorService ex = Executors.newCachedThreadPool();
         try {
-            final int count = 250;
-            serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel = openAndBindServerSocketChannel();
+
+            int count = 250;
             ex.execute(new ServerSocketChannelProcessor(serverSocketChannel, count, ex));
 
             SSLContext clientContext = createClientSslContext();
@@ -109,8 +110,9 @@ public class SSLConnectionTest {
         SocketChannelWrapper socketChannel = null;
         final ExecutorService ex = Executors.newCachedThreadPool();
         try {
-            final int count = 1000;
-            serverSocketChannel = ServerSocketChannel.open();
+            serverSocketChannel = openAndBindServerSocketChannel();
+
+            int count = 1000;
             ex.execute(new ServerSocketChannelProcessor(serverSocketChannel, count, ex));
 
             final AtomicReference<Error> error = new AtomicReference<Error>();
@@ -147,6 +149,14 @@ public class SSLConnectionTest {
             IOUtil.closeResource(socketChannel);
             IOUtil.closeResource(serverSocketChannel);
         }
+    }
+
+    private ServerSocketChannel openAndBindServerSocketChannel() throws IOException {
+        ServerSocketChannel serverSocketChannel;
+        serverSocketChannel = ServerSocketChannel.open();
+        serverSocketChannel.configureBlocking(true);
+        serverSocketChannel.socket().bind(new InetSocketAddress(PORT));
+        return serverSocketChannel;
     }
 
     private abstract class ChannelReader implements Runnable {
@@ -230,8 +240,6 @@ public class SSLConnectionTest {
         public void run() {
             SocketChannelWrapper socketChannel = null;
             try {
-                ssc.configureBlocking(true);
-                ssc.socket().bind(new InetSocketAddress(PORT));
                 SSLContext context = createServerSslContext();
                 socketChannel = new SSLSocketChannelWrapper(context, ssc.accept(), false);
                 final CountDownLatch latch = new CountDownLatch(2);

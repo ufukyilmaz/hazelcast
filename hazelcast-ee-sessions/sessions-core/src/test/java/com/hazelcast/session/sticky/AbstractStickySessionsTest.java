@@ -125,5 +125,23 @@ public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessio
         assertEquals("null", value);
     }
 
+    @Test(timeout = 60000)
+    public void testAttributeNames() throws Exception {
+
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("read", SERVER_PORT_1, cookieStore);
+
+        String commatSeperatedAttributeNames = executeRequest("names", SERVER_PORT_1, cookieStore);
+
+        //no name should be created
+        assertEquals("",commatSeperatedAttributeNames);
+
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+
+        commatSeperatedAttributeNames = executeRequest("names", SERVER_PORT_1, cookieStore);
+        assertEquals("key",commatSeperatedAttributeNames);
+
+    }
+
 
 }

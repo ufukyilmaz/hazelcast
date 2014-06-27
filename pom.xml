@@ -184,9 +184,6 @@
         </profile>
     </profiles>
 
-    <!--<scm>-->
-        <!--<developerConnection>scm:git:git@github.com:hazelcast/elastic-memory.git</developerConnection>-->
-    <!--</scm>-->
     <dependencies>
         <dependency>
             <groupId>com.hazelcast</groupId>

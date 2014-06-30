@@ -112,9 +112,9 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    public void getAsync() {
+    public void getAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
-        getMap().getAsync(key);
+        getMap().getAsync(key).get();
         final String serviceName = getServiceName();
         interceptor.assertMethod(serviceName, "getAsync", key);
     }

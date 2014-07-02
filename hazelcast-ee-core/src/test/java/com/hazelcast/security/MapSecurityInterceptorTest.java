@@ -610,40 +610,6 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         }
     }
 
-    static class DummyPredicate implements Predicate {
-
-        long i;
-
-        DummyPredicate() {
-        }
-
-        DummyPredicate(final long i) {
-            this.i = i;
-        }
-
-        @Override
-        public boolean apply(final Map.Entry mapEntry) {
-            return false;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            final DummyPredicate that = (DummyPredicate) o;
-
-            if (i != that.i) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return (int) (i ^ (i >>> 32));
-        }
-    }
-
     static class DummyEntryProcessor implements EntryProcessor {
 
         long i;

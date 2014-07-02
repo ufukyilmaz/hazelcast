@@ -12,6 +12,11 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
+<<<<<<< HEAD
+=======
+import com.hazelcast.map.MapService;
+import com.hazelcast.query.Predicate;
+>>>>>>> fad95c983932ce93541a9eb5006a355fd27765c1
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -185,37 +190,4 @@ public abstract class BaseInterceptorTest {
         return new Random(System.currentTimeMillis()).nextInt(max);
     }
 
-    static class DummyFunction implements IFunction {
-
-        long i;
-
-        DummyFunction() {
-        }
-
-        DummyFunction(final long i) {
-            this.i = i;
-        }
-
-        @Override
-        public Object apply(final Object o) {
-            return i;
-        }
-
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            final DummyFunction that = (DummyFunction) o;
-
-            if (i != that.i) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return (int) (i ^ (i >>> 32));
-        }
-    }
 }

@@ -10,8 +10,8 @@ import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
-import com.hazelcast.map.MapService;
 import com.hazelcast.query.Predicate;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -186,19 +186,19 @@ public abstract class BaseInterceptorTest {
         return new Random(System.currentTimeMillis()).nextInt(max);
     }
 
-    public static class DummyPredicate implements Predicate {
+    static class DummyPredicate implements Predicate {
 
         long i;
 
         DummyPredicate() {
         }
 
-        DummyPredicate(final long i) {
+        DummyPredicate(long i) {
             this.i = i;
         }
 
         @Override
-        public boolean apply(final Map.Entry mapEntry) {
+        public boolean apply(final Map.Entry entry) {
             return false;
         }
 
@@ -208,6 +208,41 @@ public abstract class BaseInterceptorTest {
             if (o == null || getClass() != o.getClass()) return false;
 
             final DummyPredicate that = (DummyPredicate) o;
+
+            if (i != that.i) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int) (i ^ (i >>> 32));
+        }
+    }
+
+    static class DummyFunction implements IFunction {
+
+        long i;
+
+        DummyFunction() {
+
+        }
+
+        DummyFunction(long i) {
+            this.i = i;
+        }
+
+        @Override
+        public Object apply(final Object o) {
+            return i;
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final DummyFunction that = (DummyFunction) o;
 
             if (i != that.i) return false;
 

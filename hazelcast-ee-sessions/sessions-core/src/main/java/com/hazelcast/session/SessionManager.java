@@ -6,6 +6,8 @@ import java.io.IOException;
 
 public interface SessionManager {
 
+    String DEFAULT_INSTANCE_NAME = "SESSION-REPLICATION-INSTANCE";
+
     void remove(Session session);
 
     void commit(Session session);

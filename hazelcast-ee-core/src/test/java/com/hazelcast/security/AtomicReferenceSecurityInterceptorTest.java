@@ -3,104 +3,99 @@ package com.hazelcast.security;
 import com.hazelcast.concurrent.atomicreference.AtomicReferenceService;
 import com.hazelcast.core.IAtomicReference;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class AtomicReferenceSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    IAtomicReference atomicReference;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        atomicReference = client.getAtomicReference(objectName);
+    }
+
     @Test
     public void apply() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
-        getAtomicReference().apply(dummyFunction);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "apply", dummyFunction);
+        atomicReference.apply(dummyFunction);
+        interceptor.assertMethod(getObjectType(), objectName, "apply", dummyFunction);
     }
 
     @Test
     public void alter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
-        getAtomicReference().alter(dummyFunction);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "alter", dummyFunction);
+        atomicReference.alter(dummyFunction);
+        interceptor.assertMethod(getObjectType(), objectName, "alter", dummyFunction);
     }
 
     @Test
     public void alterAndGet() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
-        getAtomicReference().alterAndGet(dummyFunction);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "alterAndGet", dummyFunction);
+        atomicReference.alterAndGet(dummyFunction);
+        interceptor.assertMethod(getObjectType(), objectName, "alterAndGet", dummyFunction);
     }
 
     @Test
     public void getAndAlter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
-        getAtomicReference().getAndAlter(dummyFunction);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "getAndAlter", dummyFunction);
+        atomicReference.getAndAlter(dummyFunction);
+        interceptor.assertMethod(getObjectType(), objectName, "getAndAlter", dummyFunction);
     }
 
     @Test
     public void compareAndSet() {
         final String expected = randomString();
         final String update = randomString();
-        getAtomicReference().compareAndSet(expected, update);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "compareAndSet", expected, update);
+        atomicReference.compareAndSet(expected, update);
+        interceptor.assertMethod(getObjectType(), objectName, "compareAndSet", expected, update);
     }
 
     @Test
     public void contains() {
         final String value = randomString();
-        getAtomicReference().contains(value);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "contains", value);
+        atomicReference.contains(value);
+        interceptor.assertMethod(getObjectType(), objectName, "contains", value);
     }
 
     @Test
     public void get() {
-        getAtomicReference().get();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "get");
+        atomicReference.get();
+        interceptor.assertMethod(getObjectType(), objectName, "get");
     }
 
     @Test
     public void set() {
         final String value = randomString();
-        getAtomicReference().set(value);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "set", value);
+        atomicReference.set(value);
+        interceptor.assertMethod(getObjectType(), objectName, "set", value);
     }
 
     @Test
     public void clear() {
-        getAtomicReference().clear();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "clear");
+        atomicReference.clear();
+        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void getAndSet() {
         final String value = randomString();
-        getAtomicReference().getAndSet(value);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "getAndSet", value);
+        atomicReference.getAndSet(value);
+        interceptor.assertMethod(getObjectType(), objectName, "getAndSet", value);
     }
 
     @Test
     public void isNull() {
-        getAtomicReference().isNull();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isNull");
+        atomicReference.isNull();
+        interceptor.assertMethod(getObjectType(), objectName, "isNull");
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return AtomicReferenceService.SERVICE_NAME;
-    }
-
-    IAtomicReference getAtomicReference() {
-        return client.getAtomicReference(randomString());
     }
 }

@@ -3,6 +3,7 @@ package com.hazelcast.security;
 import com.hazelcast.concurrent.lock.LockService;
 import com.hazelcast.core.ILock;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -11,89 +12,81 @@ import java.util.concurrent.TimeUnit;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LockSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    ILock lock;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        lock = client.getLock(objectName);
+    }
+
     @Test
     public void isLocked() {
-        getLock().isLocked();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isLocked");
+        lock.isLocked();
+        interceptor.assertMethod(getObjectType(), objectName, "isLocked");
     }
 
     @Test
     public void isLockedByCurrentThread() {
-        getLock().isLockedByCurrentThread();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isLockedByCurrentThread");
+        lock.isLockedByCurrentThread();
+        interceptor.assertMethod(getObjectType(), objectName, "isLockedByCurrentThread");
     }
 
     @Test
     public void getLockCount() {
-        getLock().getLockCount();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "getLockCount");
+        lock.getLockCount();
+        interceptor.assertMethod(getObjectType(), objectName, "getLockCount");
     }
 
     @Test
     public void getRemainingLeaseTime() {
-        getLock().getRemainingLeaseTime();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "getRemainingLeaseTime");
+        lock.getRemainingLeaseTime();
+        interceptor.assertMethod(getObjectType(), objectName, "getRemainingLeaseTime");
     }
 
     @Test
     public void test1_lock() {
-        getLock().lock();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "lock");
+        lock.lock();
+        interceptor.assertMethod(getObjectType(), objectName, "lock");
     }
 
     @Test
     public void test2_lock() {
         final long ttl = randomLong();
-        getLock().lock(ttl, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "lock", ttl, TimeUnit.MILLISECONDS);
+        lock.lock(ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "lock", ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void forceUnlock() {
-        getLock().forceUnlock();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "forceUnlock");
+        lock.forceUnlock();
+        interceptor.assertMethod(getObjectType(), objectName, "forceUnlock");
     }
 
     @Test
     public void unlock() {
-        final ILock lock = getLock();
         lock.lock();
-        interceptor.reset();;
-
+        interceptor.reset();
         lock.unlock();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "unlock");
+        interceptor.assertMethod(getObjectType(), objectName, "unlock");
     }
 
     @Test
     public void test1_tryLock() {
-        getLock().tryLock();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryLock");
+        lock.tryLock();
+        interceptor.assertMethod(getObjectType(), objectName, "tryLock");
     }
 
     @Test
     public void test2_tryLock() throws InterruptedException {
         final long ttl = randomLong();
-        getLock().tryLock(ttl, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryLock", ttl, TimeUnit.MILLISECONDS);
-    }
-
-
-    ILock getLock() {
-        return client.getLock(randomString());
+        lock.tryLock(ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "tryLock", ttl, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return LockService.SERVICE_NAME;
     }
 }

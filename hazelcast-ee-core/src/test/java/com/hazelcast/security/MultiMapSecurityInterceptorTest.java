@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.multimap.MultiMapService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -12,197 +13,178 @@ import java.util.concurrent.TimeUnit;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class MultiMapSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    MultiMap multiMap;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        multiMap = client.getMultiMap(objectName);
+    }
+
     @Test
     public void put() {
         final String key = randomString();
         final String val = randomString();
-        getMultiMap().put(key, val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "put", key, val);
+        multiMap.put(key, val);
+        interceptor.assertMethod(getObjectType(), objectName, "put", key, val);
     }
 
     @Test
     public void get() {
         final String key = randomString();
-        getMultiMap().get(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "get", key);
+        multiMap.get(key);
+        interceptor.assertMethod(getObjectType(), objectName, "get", key);
     }
 
     @Test
     public void test1_remove() {
         final String key = randomString();
         final String val = randomString();
-        getMultiMap().remove(key, val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", key, val);
+        multiMap.remove(key, val);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", key, val);
     }
 
     @Test
     public void test2_remove() {
         final String key = randomString();
-        getMultiMap().remove(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", key);
+        multiMap.remove(key);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", key);
     }
 
     @Test
     public void keySet() {
-        getMultiMap().keySet();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "keySet");
+        multiMap.keySet();
+        interceptor.assertMethod(getObjectType(), objectName, "keySet");
     }
 
     @Test
     public void values() {
-        getMultiMap().values();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "values");
+        multiMap.values();
+        interceptor.assertMethod(getObjectType(), objectName, "values");
     }
 
     @Test
     public void entrySet() {
-        getMultiMap().entrySet();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "entrySet");
+        multiMap.entrySet();
+        interceptor.assertMethod(getObjectType(), objectName, "entrySet");
     }
 
     @Test
     public void containsKey() {
         final String key = randomString();
-        getMultiMap().containsKey(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsKey", key);
+        multiMap.containsKey(key);
+        interceptor.assertMethod(getObjectType(), objectName, "containsKey", key);
     }
 
     @Test
     public void containsValue() {
         final String val = randomString();
-        getMultiMap().containsValue(val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsValue", val);
+        multiMap.containsValue(val);
+        interceptor.assertMethod(getObjectType(), objectName, "containsValue", val);
     }
 
     @Test
     public void containsEntry() {
         final String key = randomString();
         final String val = randomString();
-        getMultiMap().containsEntry(key, val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsEntry", key, val);
+        multiMap.containsEntry(key, val);
+        interceptor.assertMethod(getObjectType(), objectName, "containsEntry", key, val);
     }
 
     @Test
     public void size() {
-        getMultiMap().size();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "size");
+        multiMap.size();
+        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void clear() {
-        getMultiMap().clear();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "clear");
+        multiMap.clear();
+        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void valueCount() {
         final String key = randomString();
-        getMultiMap().valueCount(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "valueCount", key);
+        multiMap.valueCount(key);
+        interceptor.assertMethod(getObjectType(), objectName, "valueCount", key);
     }
 
     @Test
     public void test1_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
-        getMultiMap().addEntryListener(entryAdapter, true);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", null, true);
+        multiMap.addEntryListener(entryAdapter, true);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, true);
     }
 
     @Test
     public void test2_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String key = randomString();
-        getMultiMap().addEntryListener(entryAdapter, key, false);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", null, key, false);
+        multiMap.addEntryListener(entryAdapter, key, false);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, key, false);
     }
 
     @Test
     public void test1_lock() {
         final String key = randomString();
-        getMultiMap().lock(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "lock", key);
+        multiMap.lock(key);
+        interceptor.assertMethod(getObjectType(), objectName, "lock", key);
     }
 
     @Test
     public void test2_lock() {
         final String key = randomString();
         final long ttl = randomLong();
-        getMultiMap().lock(key, ttl, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "lock", key, ttl, TimeUnit.MILLISECONDS);
+        multiMap.lock(key, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "lock", key, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void isLocked() {
         final String key = randomString();
-        getMultiMap().isLocked(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isLocked", key);
+        multiMap.isLocked(key);
+        interceptor.assertMethod(getObjectType(), objectName, "isLocked", key);
     }
 
     @Test
     public void test1_tryLock() {
         final String key = randomString();
-        getMultiMap().tryLock(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryLock", key);
+        multiMap.tryLock(key);
+        interceptor.assertMethod(getObjectType(), objectName, "tryLock", key);
     }
 
     @Test
     public void test2_tryLock() throws InterruptedException {
         final String key = randomString();
         final long timeout = randomLong();
-        getMultiMap().tryLock(key, timeout, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
+        multiMap.tryLock(key, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void unlock() {
         final String key = randomString();
-        final MultiMap multiMap = getMultiMap();
         multiMap.lock(key);
         interceptor.reset();
 
         multiMap.unlock(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "unlock", key);
+        interceptor.assertMethod(getObjectType(), objectName, "unlock", key);
     }
 
     @Test
     public void forceUnlock() {
         final String key = randomString();
-        final MultiMap multiMap = getMultiMap();
         multiMap.lock(key);
         interceptor.reset();
 
         multiMap.forceUnlock(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "forceUnlock", key);
-    }
-
-    MultiMap getMultiMap() {
-        return client.getMultiMap(randomString());
+        interceptor.assertMethod(getObjectType(), objectName, "forceUnlock", key);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return MultiMapService.SERVICE_NAME;
     }
 }

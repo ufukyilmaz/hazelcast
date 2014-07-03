@@ -54,7 +54,7 @@ public abstract class BaseInterceptorTest {
         Hazelcast.shutdownAll();
     }
 
-    abstract String getServiceName();
+    abstract String getObjectType();
 
     private static Config createConfig(TestSecurityInterceptor interceptor) {
         final Config config = new Config();
@@ -77,13 +77,16 @@ public abstract class BaseInterceptorTest {
 
     static class TestSecurityInterceptor implements SecurityInterceptor {
 
-        String serviceName;
+        String objectType;
+        String objectName;
         String methodName;
         Object[] params;
 
         @Override
-        public void before(final Credentials credentials, final String serviceName, final String methodName, final Parameters parameters) throws AccessControlException {
-            this.serviceName = serviceName;
+        public void before(Credentials credentials, String objectType, String objectName,
+                           String methodName, Parameters parameters) throws AccessControlException {
+            this.objectType = objectType;
+            this.objectName = objectName;
             this.methodName = methodName;
             final int length = parameters.length();
             params = new Object[length];
@@ -93,7 +96,8 @@ public abstract class BaseInterceptorTest {
         }
 
         @Override
-        public void after(final Credentials credentials, final String serviceName, final String methodName, final Parameters parameters) {
+        public void after(Credentials credentials, String objectType, String objectName,
+                          String methodName, Parameters parameters) {
         }
 
         void reset() {
@@ -101,8 +105,9 @@ public abstract class BaseInterceptorTest {
             params = null;
         }
 
-        void assertMethod(String serviceName, String methodName, Object... params) {
-            assertEquals(serviceName, this.serviceName);
+        void assertMethod(String objectType, String objectName, String methodName, Object... params) {
+            assertEquals(objectType, this.objectType);
+            assertEquals(objectName, this.objectName);
             assertEquals(methodName, this.methodName);
             int len = params.length;
             assertNotNull(this.params);

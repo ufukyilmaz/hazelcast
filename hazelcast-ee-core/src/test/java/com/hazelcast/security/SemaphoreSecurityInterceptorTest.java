@@ -3,6 +3,7 @@ package com.hazelcast.security;
 import com.hazelcast.concurrent.semaphore.SemaphoreService;
 import com.hazelcast.core.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -11,108 +12,100 @@ import java.util.concurrent.TimeUnit;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    ISemaphore semaphore;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        semaphore = client.getSemaphore(objectName);
+        semaphore.init(100);
+        interceptor.reset();
+    }
+
     @Test
     public void init() {
         final int permit = randomInt(100);
-        final ISemaphore semaphore = client.getSemaphore(randomString());
         semaphore.init(permit);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "init", permit);
+        interceptor.assertMethod(getObjectType(), objectName, "init", permit);
     }
 
     @Test
     public void test1_acquire() throws InterruptedException {
-        getSemaphore().acquire();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "acquire");
+        semaphore.acquire();
+        interceptor.assertMethod(getObjectType(), objectName, "acquire");
     }
 
     @Test
     public void test2_acquire() throws InterruptedException {
         final int permit = randomInt(100);
-        getSemaphore().acquire(permit);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "acquire", permit);
+        semaphore.acquire(permit);
+        interceptor.assertMethod(getObjectType(), objectName, "acquire", permit);
     }
 
     @Test
     public void availablePermits() {
-        getSemaphore().availablePermits();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "availablePermits");
+        semaphore.availablePermits();
+        interceptor.assertMethod(getObjectType(), objectName, "availablePermits");
     }
 
     @Test
     public void drainPermits() {
-        getSemaphore().drainPermits();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "drainPermits");
+        semaphore.drainPermits();
+        interceptor.assertMethod(getObjectType(), objectName, "drainPermits");
     }
 
     @Test
     public void reducePermits() {
         final int permit = randomInt(100);
-        getSemaphore().reducePermits(permit);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "reducePermits", permit);
+        semaphore.reducePermits(permit);
+        interceptor.assertMethod(getObjectType(), objectName, "reducePermits", permit);
     }
 
     @Test
     public void test1_release() {
-        getSemaphore().release();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "release");
+        semaphore.release();
+        interceptor.assertMethod(getObjectType(), objectName, "release");
     }
 
     @Test
     public void test2_release() {
         final int permit = randomInt(100);
-        getSemaphore().release(permit);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "release", permit);
+        semaphore.release(permit);
+        interceptor.assertMethod(getObjectType(), objectName, "release", permit);
     }
 
     @Test
     public void test1_tryAcquire() {
-        getSemaphore().tryAcquire();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryAcquire");
+        semaphore.tryAcquire();
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire");
     }
 
     @Test
     public void test2_tryAcquire() {
         final int permit = randomInt(100);
-        getSemaphore().tryAcquire(permit);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryAcquire", permit);
+        semaphore.tryAcquire(permit);
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit);
     }
 
     @Test
     public void test3_tryAcquire() throws InterruptedException {
         final long timeout = randomLong();
-        getSemaphore().tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryAcquire", timeout, TimeUnit.MILLISECONDS);
+        semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test4_tryAcquire() throws InterruptedException {
         final int permit = randomInt(100);
         final long timeout = randomLong();
-        getSemaphore().tryAcquire(permit, timeout, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "tryAcquire", permit, timeout, TimeUnit.MILLISECONDS);
+        semaphore.tryAcquire(permit, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return SemaphoreService.SERVICE_NAME;
     }
 
-    ISemaphore getSemaphore() {
-        final ISemaphore semaphore = client.getSemaphore(randomString());
-        semaphore.init(100);
-        interceptor.reset();
-        return semaphore;
-    }
 }

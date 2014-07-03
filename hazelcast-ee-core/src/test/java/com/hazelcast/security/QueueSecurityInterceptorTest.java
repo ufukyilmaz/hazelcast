@@ -5,6 +5,7 @@ import com.hazelcast.core.ItemEvent;
 import com.hazelcast.core.ItemListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.queue.QueueService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -14,99 +15,94 @@ import java.util.concurrent.TimeUnit;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    IQueue queue;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        queue = client.getQueue(objectName);
+    }
+
     @Test
     public void addItemListener() {
         final DummyListener itemListener = new DummyListener();
-        getQueue().addItemListener(itemListener, false);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addItemListener", null, false);
+        queue.addItemListener(itemListener, false);
+        interceptor.assertMethod(getObjectType(), objectName, "addItemListener", null, false);
     }
 
     @Test
     public void removeItemListener() {
         final DummyListener itemListener = new DummyListener();
-        final IQueue queue = getQueue();
         final String id = queue.addItemListener(itemListener, false);
         interceptor.reset();
         queue.removeItemListener(id);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeItemListener", id);
+        interceptor.assertMethod(getObjectType(), objectName, "removeItemListener", id);
     }
 
     @Test
     public void test1_offer() {
         final String item = randomString();
-        getQueue().offer(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "offer", item);
+        queue.offer(item);
+        interceptor.assertMethod(getObjectType(), objectName, "offer", item);
     }
 
     @Test
     public void test2_offer() throws InterruptedException {
         final String item = randomString();
         final long timeout = randomLong();
-        getQueue().offer(item, timeout, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "offer", item, timeout, TimeUnit.MILLISECONDS);
+        queue.offer(item, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "offer", item, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void put() throws InterruptedException {
         final String item = randomString();
-        getQueue().put(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "put", item);
+        queue.put(item);
+        interceptor.assertMethod(getObjectType(), objectName, "put", item);
     }
 
     @Test
     public void test1_poll() throws InterruptedException {
-        getQueue().poll();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "poll");
+        queue.poll();
+        interceptor.assertMethod(getObjectType(), objectName, "poll");
     }
 
     @Test
     public void test2_poll() throws InterruptedException {
-        final IQueue queue = getQueue();
         queue.offer(randomString());
         interceptor.reset();
         final long timeout = randomLong();
         queue.poll(timeout, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "poll", timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "poll", timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void take() throws InterruptedException {
-        final IQueue queue = getQueue();
         queue.offer(randomString());
         interceptor.reset();
         queue.take();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "take");
+        interceptor.assertMethod(getObjectType(), objectName, "take");
     }
 
     @Test
     public void remainingCapacity() throws InterruptedException {
-        getQueue().remainingCapacity();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remainingCapacity");
+        queue.remainingCapacity();
+        interceptor.assertMethod(getObjectType(), objectName, "remainingCapacity");
     }
 
     @Test
     public void remove() throws InterruptedException {
         final String item = randomString();
-        getQueue().remove(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", item);
+        queue.remove(item);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", item);
     }
 
     @Test
     public void contains() throws InterruptedException {
         final String item = randomString();
-        getQueue().contains(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "contains", item);
+        queue.contains(item);
+        interceptor.assertMethod(getObjectType(), objectName, "contains", item);
     }
 
     @Test
@@ -115,52 +111,45 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
-        getQueue().containsAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsAll", items);
+        queue.containsAll(items);
+        interceptor.assertMethod(getObjectType(), objectName, "containsAll", items);
     }
 
     @Test
     public void test1_drainTo() throws InterruptedException {
-        getQueue().drainTo(new HashSet());
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "drainTo", (String) null);
+        queue.drainTo(new HashSet());
+        interceptor.assertMethod(getObjectType(), objectName, "drainTo", (String) null);
     }
 
     @Test
     public void test2_drainTo() throws InterruptedException {
         final int max = randomInt(200);
-        getQueue().drainTo(new HashSet(), max);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "drainTo", null, max);
+        queue.drainTo(new HashSet(), max);
+        interceptor.assertMethod(getObjectType(), objectName, "drainTo", null, max);
     }
 
     @Test
     public void peek() throws InterruptedException {
-        getQueue().peek();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "peek");
+        queue.peek();
+        interceptor.assertMethod(getObjectType(), objectName, "peek");
     }
 
     @Test
     public void size() throws InterruptedException {
-        getQueue().size();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "size");
+        queue.size();
+        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() throws InterruptedException {
-        getQueue().isEmpty();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isEmpty");
+        queue.isEmpty();
+        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void iterator() throws InterruptedException {
-        getQueue().iterator();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "iterator");
+        queue.iterator();
+        interceptor.assertMethod(getObjectType(), objectName, "iterator");
     }
 
     @Test
@@ -169,9 +158,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
-        getQueue().addAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addAll", items);
+        queue.addAll(items);
+        interceptor.assertMethod(getObjectType(), objectName, "addAll", items);
     }
 
     @Test
@@ -180,9 +168,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
-        getQueue().removeAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeAll", items);
+        queue.removeAll(items);
+        interceptor.assertMethod(getObjectType(), objectName, "removeAll", items);
     }
 
     @Test
@@ -191,25 +178,19 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
-        getQueue().retainAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "retainAll", items);
+        queue.retainAll(items);
+        interceptor.assertMethod(getObjectType(), objectName, "retainAll", items);
     }
 
     @Test
     public void clear() throws InterruptedException {
-        getQueue().clear();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "clear");
+        queue.clear();
+        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return QueueService.SERVICE_NAME;
-    }
-
-    public static IQueue getQueue() {
-        return client.getQueue(randomString());
     }
 
     static class DummyListener implements ItemListener {

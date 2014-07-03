@@ -5,6 +5,7 @@ import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.replicatedmap.ReplicatedMapService;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -14,13 +15,21 @@ import java.util.concurrent.TimeUnit;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+    ReplicatedMap replicatedMap;
+
+    @Before
+    public void setup() {
+        objectName = randomString();
+        replicatedMap = client.getReplicatedMap(objectName);
+    }
+
     @Test
     public void test1_put() {
         final String key = randomString();
         final String val = randomString();
-        getReplicatedMap().put(key, val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "put", key, val);
+        replicatedMap.put(key, val);
+        interceptor.assertMethod(getObjectType(), objectName, "put", key, val);
     }
 
     @Test
@@ -28,55 +37,48 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        getReplicatedMap().put(key, val, ttl, TimeUnit.MILLISECONDS);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
+        replicatedMap.put(key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void size() {
-        getReplicatedMap().size();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "size");
+        replicatedMap.size();
+        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() {
-        getReplicatedMap().isEmpty();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isEmpty");
+        replicatedMap.isEmpty();
+        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void containsKey() {
         final String key = randomString();
-        getReplicatedMap().containsKey(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsKey", key);
+        replicatedMap.containsKey(key);
+        interceptor.assertMethod(getObjectType(), objectName, "containsKey", key);
     }
 
     @Test
     public void containsValue() {
         final String val = randomString();
-        getReplicatedMap().containsValue(val);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsValue", val);
+        replicatedMap.containsValue(val);
+        interceptor.assertMethod(getObjectType(), objectName, "containsValue", val);
     }
 
     @Test
     public void get() {
         final String key = randomString();
-        getReplicatedMap().get(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "get", key);
+        replicatedMap.get(key);
+        interceptor.assertMethod(getObjectType(), objectName, "get", key);
     }
 
     @Test
     public void remove() {
         final String key = randomString();
-        getReplicatedMap().remove(key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", key);
+        replicatedMap.remove(key);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", key);
     }
 
     @Test
@@ -85,42 +87,37 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         map.put(randomString(), randomString());
         map.put(randomString(), randomString());
         map.put(randomString(), randomString());
-        getReplicatedMap().putAll(map);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "putAll", map);
+        replicatedMap.putAll(map);
+        interceptor.assertMethod(getObjectType(), objectName, "putAll", map);
     }
 
     @Test
     public void clear() {
-        getReplicatedMap().clear();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "clear");
+        replicatedMap.clear();
+        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void test1_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
-        getReplicatedMap().addEntryListener(entryAdapter);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", (EntryListener) null);
+        replicatedMap.addEntryListener(entryAdapter);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", (EntryListener) null);
     }
 
     @Test
     public void test2_addEntryListener() {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
-        getReplicatedMap().addEntryListener(entryAdapter, key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", null, key);
+        replicatedMap.addEntryListener(entryAdapter, key);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, key);
     }
 
     @Test
     public void test3_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
-        getReplicatedMap().addEntryListener(entryAdapter, predicate);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", null, predicate);
+        replicatedMap.addEntryListener(entryAdapter, predicate);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate);
     }
 
     @Test
@@ -128,49 +125,40 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         final String key = randomString();
-        getReplicatedMap().addEntryListener(entryAdapter, predicate, key);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addEntryListener", null, predicate, key);
+        replicatedMap.addEntryListener(entryAdapter, predicate, key);
+        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate, key);
     }
 
     @Test
     public void removeEntryListener() {
-        final ReplicatedMap replicatedMap = getReplicatedMap();
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = replicatedMap.addEntryListener(entryAdapter);
         interceptor.reset();
         replicatedMap.removeEntryListener(id);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeEntryListener", id);
+        interceptor.assertMethod(getObjectType(), objectName, "removeEntryListener", id);
     }
 
     @Test
     public void keySet() {
-        getReplicatedMap().keySet();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "keySet");
+        replicatedMap.keySet();
+        interceptor.assertMethod(getObjectType(), objectName, "keySet");
     }
 
     @Test
     public void values() {
-        getReplicatedMap().values();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "values");
+        replicatedMap.values();
+        interceptor.assertMethod(getObjectType(), objectName, "values");
     }
 
     @Test
     public void entrySet() {
-        getReplicatedMap().entrySet();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "entrySet");
+        replicatedMap.entrySet();
+        interceptor.assertMethod(getObjectType(), objectName, "entrySet");
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return ReplicatedMapService.SERVICE_NAME;
     }
 
-    public static ReplicatedMap getReplicatedMap() {
-        return client.getReplicatedMap(randomString());
-    }
 }

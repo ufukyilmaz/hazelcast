@@ -1,12 +1,14 @@
 package com.hazelcast.session;
 
 import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.config.Config;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapEvent;
+import org.apache.catalina.Context;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
@@ -39,8 +41,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     private int rejectedSessions;
     private int maxActiveSessions = -1;
-
-    private HazelcastInstance instance;
 
     private IMap<String, HazelcastSession> sessionMap;
 
@@ -114,6 +114,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
         getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
 
+        HazelcastInstance instance;
         if (isClientOnly()) {
             try {
                 instance = HazelcastClient.newHazelcastClient();
@@ -122,10 +123,12 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 throw new LifecycleException(e.getMessage());
             }
         } else {
-            instance = Hazelcast.newHazelcastInstance();
+            Config config = new Config(P2PLifeCycleListener.DEFAULT_INSTANCE_NAME);
+            instance = Hazelcast.getOrCreateHazelcastInstance(config);
         }
         if (getMapName() == null) {
-            sessionMap = instance.getMap("default");
+            Context ctx = (Context) getContainer();
+            sessionMap = instance.getMap(ctx.getPath()+"-SR");
         } else {
             sessionMap = instance.getMap(getMapName());
         }
@@ -171,9 +174,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
         lifecycle.fireLifecycleEvent(STOP_EVENT, null);
 
-        if (instance != null) {
-            instance.shutdown();
-        }
         log.info("HazelcastSessionManager stopped...");
     }
 

@@ -98,6 +98,7 @@
                         -Dhazelcast.elastic.memory.enabled=true
                         -Dhazelcast.elastic.memory.total.size=128m
                         -Dhazelcast.elastic.memory.chunk.size=1k
+                        -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
                     </argLine>
                 </configuration>
             </plugin>

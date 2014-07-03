@@ -22,48 +22,51 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
 
 
     @Override
-    public Embedded configure() throws Exception{
+    public Embedded configure() throws Exception {
         final Embedded catalina = new Embedded();
+        if (!clientOnly) {
+            catalina.addLifecycleListener(new P2PLifeCycleListener());
+        }
 
         final StandardServer server = new StandardServer();
-        server.addService( catalina );
+        server.addService(catalina);
 
-        final URL root = new URL( Tomcat6Configurator.class.getResource( "/" ), "../test-classes" );
+        final URL root = new URL(Tomcat6Configurator.class.getResource("/"), "../test-classes");
         // use file to get correct separator char, replace %20 introduced by URL for spaces
-        final String cleanedRoot = new File( root.getFile().replaceAll("%20", " ") ).toString();
+        final String cleanedRoot = new File(root.getFile().replaceAll("%20", " ")).toString();
 
-        final String fileSeparator = File.separator.equals( "\\" ) ? "\\\\" : File.separator;
-        final String docBase = cleanedRoot + File.separator + Tomcat6Configurator.class.getPackage().getName().replaceAll( "\\.", fileSeparator );
+        final String fileSeparator = File.separator.equals("\\") ? "\\\\" : File.separator;
+        final String docBase = cleanedRoot + File.separator + Tomcat6Configurator.class.getPackage().getName().replaceAll("\\.", fileSeparator);
 
         final Engine engine = catalina.createEngine();
-        engine.setName( "engine-" + port );
-        engine.setDefaultHost( DEFAULT_HOST );
-        engine.setJvmRoute( "tomcat-"+port );
+        engine.setName("engine-" + port);
+        engine.setDefaultHost(DEFAULT_HOST);
+        engine.setJvmRoute("tomcat-" + port);
 
         catalina.addEngine(engine);
         engine.setService(catalina);
 
-        final Host host = catalina.createHost( DEFAULT_HOST, docBase );
-        engine.addChild( host );
+        final Host host = catalina.createHost(DEFAULT_HOST, docBase);
+        engine.addChild(host);
 
-        final Context context = createContext( catalina, "/", "webapp" );
-        host.addChild( context );
+        final Context context = createContext(catalina, "/", "webapp");
+        host.addChild(context);
 
         this.manager = new HazelcastSessionManager();
         context.setManager(manager);
         updateManager(this.manager);
-        context.setBackgroundProcessorDelay( 1 );
+        context.setBackgroundProcessorDelay(1);
         context.setCookies(true);
         // new File( "webapp" + File.separator + "webapp" ).mkdirs();
 
-        final Connector connector = catalina.createConnector( "localhost", port, false );
+        final Connector connector = catalina.createConnector("localhost", port, false);
         connector.setProperty("bindOnInit", "false");
         catalina.addConnector(connector);
         return catalina;
     }
 
     @Override
-    public void start() throws Exception{
+    public void start() throws Exception {
         tomcat = configure();
         tomcat.start();
     }
@@ -75,13 +78,13 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
 
     @Override
     public void reload() {
-        Context ctx = (Context)tomcat.getContainer().findChild(DEFAULT_HOST).findChild("/");
+        Context ctx = (Context) tomcat.getContainer().findChild(DEFAULT_HOST).findChild("/");
         ctx.reload();
     }
 
 
-    protected Context createContext( final Embedded catalina, final String contextPath, final String docBase ) {
-        return catalina.createContext( contextPath, docBase );
+    protected Context createContext(final Embedded catalina, final String contextPath, final String docBase) {
+        return catalina.createContext(contextPath, docBase);
     }
 
     private void updateManager(HazelcastSessionManager manager) {
@@ -90,8 +93,6 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
         manager.setMapName(mapName);
         manager.setMaxInactiveInterval(sessionTimeout);
     }
-
-
 
 
 }

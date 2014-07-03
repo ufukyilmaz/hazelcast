@@ -6,7 +6,6 @@ import com.hazelcast.session.AbstractHazelcastSessionsTest;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.BasicCookieStore;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -18,19 +17,13 @@ import static org.junit.Assert.assertEquals;
 @RunWith(HazelcastSerialClassRunner.class)
 public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessionsTest {
 
-
-
-    @After
-    public void cleanup() throws Exception{
-        instance1.stop();
-        instance2.stop();
-    }
-
     @Test
     public void testContextReloadSticky() throws Exception{
         CookieStore cookieStore = new BasicCookieStore();
         executeRequest("write", SERVER_PORT_1, cookieStore);
+        System.out.println("#########RELOAD BEGIN########");
         instance1.reload();
+        System.out.println("#########RELOAD END########");
 
         String value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("value", value);

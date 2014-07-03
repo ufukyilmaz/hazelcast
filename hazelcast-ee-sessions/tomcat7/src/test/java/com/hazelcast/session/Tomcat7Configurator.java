@@ -17,19 +17,22 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
 
     @Override
-    public Tomcat configure() throws Exception{
-        final URL root = new URL( TestServlet.class.getResource( "/" ), "../../../sessions-core/target/test-classes" );
+    public Tomcat configure() throws Exception {
+        final URL root = new URL(TestServlet.class.getResource("/"), "../../../sessions-core/target/test-classes");
         // use file to get correct separator char, replace %20 introduced by URL for spaces
-        final String cleanedRoot = new File( root.getFile().replaceAll("%20", " ") ).toString();
+        final String cleanedRoot = new File(root.getFile().replaceAll("%20", " ")).toString();
 
-        final String fileSeparator = File.separator.equals( "\\" ) ? "\\\\" : File.separator;
-        final String docBase = cleanedRoot + File.separator + TestServlet.class.getPackage().getName().replaceAll( "\\.", fileSeparator );
+        final String fileSeparator = File.separator.equals("\\") ? "\\\\" : File.separator;
+        final String docBase = cleanedRoot + File.separator + TestServlet.class.getPackage().getName().replaceAll("\\.", fileSeparator);
 
         Tomcat tomcat = new Tomcat();
-        tomcat.getEngine().setJvmRoute("tomcat-"+port);
+        if (!clientOnly) {
+            tomcat.getServer().addLifecycleListener(new P2PLifeCycleListener());
+        }
+        tomcat.getEngine().setJvmRoute("tomcat-" + port);
         tomcat.setBaseDir(docBase);
 
-        tomcat.getEngine().setName("engine-"+port);
+        tomcat.getEngine().setName("engine-" + port);
 
         final Connector connector = tomcat.getConnector();
         connector.setPort(port);
@@ -37,7 +40,7 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
         Context context;
         try {
-            context = tomcat.addWebapp(tomcat.getHost(),"/", docBase + fileSeparator + "webapp");
+            context = tomcat.addWebapp(tomcat.getHost(), "/", docBase + fileSeparator + "webapp");
         } catch (final Exception e) {
             throw new IllegalStateException(e);
         }
@@ -53,7 +56,7 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
     }
 
     @Override
-    public void start() throws Exception{
+    public void start() throws Exception {
         tomcat = configure();
         tomcat.start();
     }
@@ -65,8 +68,8 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
     @Override
     public void reload() {
-       Context context = (Context) tomcat.getHost().findChild("/");
-       context.reload();
+        Context context = (Context) tomcat.getHost().findChild("/");
+        context.reload();
     }
 
     private void updateManager(HazelcastSessionManager manager) {

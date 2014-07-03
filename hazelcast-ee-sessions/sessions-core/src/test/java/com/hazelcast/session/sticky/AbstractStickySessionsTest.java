@@ -21,9 +21,7 @@ public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessio
     public void testContextReloadSticky() throws Exception{
         CookieStore cookieStore = new BasicCookieStore();
         executeRequest("write", SERVER_PORT_1, cookieStore);
-        System.out.println("#########RELOAD BEGIN########");
         instance1.reload();
-        System.out.println("#########RELOAD END########");
 
         String value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("value", value);

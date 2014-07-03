@@ -112,12 +112,12 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 throw new LifecycleException(e.getMessage());
             }
         } else {
-            Config config = new Config(P2PLifeCycleListener.DEFAULT_INSTANCE_NAME);
+            Config config = new Config(SessionManager.DEFAULT_INSTANCE_NAME);
             instance = Hazelcast.getOrCreateHazelcastInstance(config);
         }
         if (getMapName() == null) {
             Context ctx = (Context) getContainer();
-            sessionMap = instance.getMap(ctx.getPath()+"-SR");
+            sessionMap = instance.getMap(ctx.getPath() + "-SR");
         } else {
             sessionMap = instance.getMap(getMapName());
         }

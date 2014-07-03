@@ -7,7 +7,7 @@ import org.apache.catalina.LifecycleEvent;
 import org.apache.catalina.LifecycleListener;
 
 
-public class P2PLifeCycleListener implements LifecycleListener {
+public class P2PLifecycleListener implements LifecycleListener {
 
     @Override
     public void lifecycleEvent(LifecycleEvent event) {

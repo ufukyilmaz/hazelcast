@@ -25,7 +25,7 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
     public Embedded configure() throws Exception {
         final Embedded catalina = new Embedded();
         if (!clientOnly) {
-            catalina.addLifecycleListener(new P2PLifeCycleListener());
+            catalina.addLifecycleListener(new P2PLifecycleListener());
         }
 
         final StandardServer server = new StandardServer();

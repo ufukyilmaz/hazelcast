@@ -27,7 +27,7 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
         Tomcat tomcat = new Tomcat();
         if (!clientOnly) {
-            tomcat.getServer().addLifecycleListener(new P2PLifeCycleListener());
+            tomcat.getServer().addLifecycleListener(new P2PLifecycleListener());
         }
         tomcat.getEngine().setJvmRoute("tomcat-" + port);
         tomcat.setBaseDir(docBase);

@@ -26,7 +26,7 @@ public class P2PLifecycleListener implements LifecycleListener {
             try {
                 config = ConfigLoader.load(getConfigLocation());
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException("failed to load Config:", e);
             }
 
             if (config == null) {

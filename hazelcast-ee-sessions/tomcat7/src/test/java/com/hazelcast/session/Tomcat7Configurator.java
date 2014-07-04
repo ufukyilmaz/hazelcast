@@ -27,7 +27,10 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
         Tomcat tomcat = new Tomcat();
         if (!clientOnly) {
-            tomcat.getServer().addLifecycleListener(new P2PLifecycleListener());
+            String configLocation = "hazelcast.xml";
+            P2PLifecycleListener p2PLifecycleListener = new P2PLifecycleListener();
+            p2PLifecycleListener.setConfigLocation(configLocation);
+            tomcat.getServer().addLifecycleListener(p2PLifecycleListener);
         }
         tomcat.getEngine().setJvmRoute("tomcat-" + port);
         tomcat.setBaseDir(docBase);

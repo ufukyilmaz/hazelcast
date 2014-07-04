@@ -30,6 +30,7 @@ import com.hazelcast.nio.ssl.BasicSSLContextFactory;
 import com.hazelcast.nio.ssl.SSLContextFactory;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapper;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
+import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -328,4 +329,43 @@ public class SSLConnectionTest {
             assertEquals(i * 1024, bytes.length);
         }
     }
+
+    @Test(timeout = 1000 * 180)
+    public void testPutAndGetAlwaysGoesToWire() throws Exception {
+        Config config = new Config();
+        config.setProperty(GroupProperties.PROP_IO_THREAD_COUNT, "1");
+        JoinConfig join = config.getNetworkConfig().getJoin();
+        join.getMulticastConfig().setEnabled(false);
+        join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
+
+        Properties props = TestKeyStoreUtil.createSslProperties();
+        config.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(props));
+
+        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+
+
+        assertEquals(2, h1.getCluster().getMembers().size());
+        assertEquals(2, h2.getCluster().getMembers().size());
+
+        warmUpPartitions(h1, h2);
+        Member owner1 = h1.getPartitionService().getPartition(0).getOwner();
+        Member owner2 = h2.getPartitionService().getPartition(0).getOwner();
+        assertEquals(owner1, owner2);
+
+        String name = "ssl-test";
+
+        IMap<String, byte[]> map1 = h1.getMap(name);
+        final int count = 512;
+        for (int i = 1; i <= count; i++) {
+            final String key = HazelcastTestSupport.generateKeyOwnedBy(h2);
+            map1.put(key, new byte[1024 * i]);
+            byte[] bytes = map1.get(key);
+            assertEquals(i * 1024, bytes.length);
+
+        }
+        assertEquals(count, map1.size());
+
+    }
+
 }

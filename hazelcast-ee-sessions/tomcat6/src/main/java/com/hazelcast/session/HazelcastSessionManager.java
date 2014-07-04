@@ -1,7 +1,6 @@
 package com.hazelcast.session;
 
 import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.config.Config;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.Hazelcast;
@@ -123,8 +122,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
                 throw new LifecycleException(e.getMessage());
             }
         } else {
-            Config config = new Config(SessionManager.DEFAULT_INSTANCE_NAME);
-            instance = Hazelcast.getOrCreateHazelcastInstance(config);
+            instance = Hazelcast.getOrCreateHazelcastInstance(P2PLifecycleListener.getConfig());
         }
         if (getMapName() == null) {
             Context ctx = (Context) getContainer();

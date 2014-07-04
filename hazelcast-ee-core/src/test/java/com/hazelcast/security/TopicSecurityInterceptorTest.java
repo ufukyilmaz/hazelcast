@@ -13,38 +13,36 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void publish() {
+        final String objectName = randomString();
         final String message = randomString();
-        getTopic().publish(message);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "publish", message);
+        final ITopic<Object> topic = client.getTopic(objectName);
+        topic.publish(message);
+        interceptor.assertMethod(getObjectType(), objectName, "publish", message);
     }
 
     @Test
     public void addMessageListener() {
         final DummyMessageListener messageListener = new DummyMessageListener();
-        getTopic().addMessageListener(messageListener);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addMessageListener", (MessageListener)null);
+        final String objectName = randomString();
+        final ITopic<Object> topic = client.getTopic(objectName);
+        topic.addMessageListener(messageListener);
+        interceptor.assertMethod(getObjectType(), objectName, "addMessageListener", (MessageListener) null);
     }
 
     @Test
     public void removeMessageListener() {
         final DummyMessageListener messageListener = new DummyMessageListener();
-        final ITopic topic = getTopic();
+        final String objectName = randomString();
+        final ITopic topic = client.getTopic(objectName);
         final String id = topic.addMessageListener(messageListener);
         interceptor.reset();
 
         topic.removeMessageListener(id);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeMessageListener", id);
-    }
-
-    ITopic getTopic() {
-        return client.getTopic(randomString());
+        interceptor.assertMethod(getObjectType(), objectName, "removeMessageListener", id);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return TopicService.SERVICE_NAME;
     }
 

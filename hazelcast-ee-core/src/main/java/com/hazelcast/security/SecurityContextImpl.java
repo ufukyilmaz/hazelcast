@@ -109,7 +109,7 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public void interceptBefore(Credentials credentials, String serviceName, String methodName,
+    public void interceptBefore(Credentials credentials, String objectType, String objectName, String methodName,
                                 Object[] args) throws AccessControlException {
         if (interceptors.isEmpty()) {
             return;
@@ -117,7 +117,7 @@ public class SecurityContextImpl implements SecurityContext {
         final Parameters parameters = getArguments(args);
         for (SecurityInterceptor interceptor : interceptors) {
             try {
-                interceptor.before(credentials, serviceName, methodName, parameters);
+                interceptor.before(credentials, objectType, objectName, methodName, parameters);
             } catch (Throwable t) {
                 throw new AccessControlException(t.getMessage());
             }
@@ -125,14 +125,14 @@ public class SecurityContextImpl implements SecurityContext {
     }
 
     @Override
-    public void interceptAfter(Credentials credentials, String serviceName, String methodName) {
+    public void interceptAfter(Credentials credentials, String objectType, String objectName, String methodName) {
         if (interceptors.isEmpty()) {
             return;
         }
         final Parameters parameters = getArguments();
         for (SecurityInterceptor interceptor : interceptors) {
             try {
-                interceptor.after(credentials, serviceName, methodName, parameters);
+                interceptor.after(credentials, objectType, objectName, methodName, parameters);
             } catch (Throwable t) {
                 logger.warning("Exception during interceptor.after " + interceptor);
             }

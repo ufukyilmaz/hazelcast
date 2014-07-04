@@ -13,49 +13,45 @@ import java.util.HashSet;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class SetSecurityInterceptorTest extends BaseInterceptorTest {
 
+    String objectName;
+
     @Test
     public void size() {
         getCollection().size();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "size");
+        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() {
         getCollection().isEmpty();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "isEmpty");
+        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void contains() {
         final String item = randomString();
         getCollection().contains(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "contains", item);
+        interceptor.assertMethod(getObjectType(), objectName, "contains", item);
     }
 
     @Test
     public void iterator() {
         getCollection().iterator();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "iterator");
+        interceptor.assertMethod(getObjectType(), objectName, "iterator");
     }
 
     @Test
     public void add() {
         final String item = randomString();
         getCollection().add(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "add", item);
+        interceptor.assertMethod(getObjectType(), objectName, "add", item);
     }
 
     @Test
     public void remove() {
         final String item = randomString();
         getCollection().remove(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", item);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", item);
     }
 
     @Test
@@ -65,8 +61,7 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getCollection().containsAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "containsAll", items);
+        interceptor.assertMethod(getObjectType(), objectName, "containsAll", items);
     }
 
     @Test
@@ -76,8 +71,7 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getCollection().addAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addAll", items);
+        interceptor.assertMethod(getObjectType(), objectName, "addAll", items);
     }
 
     @Test
@@ -87,8 +81,7 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getCollection().removeAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeAll", items);
+        interceptor.assertMethod(getObjectType(), objectName, "removeAll", items);
     }
 
     @Test
@@ -98,23 +91,20 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         getCollection().retainAll(items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "retainAll", items);
+        interceptor.assertMethod(getObjectType(), objectName, "retainAll", items);
     }
 
     @Test
     public void clear() {
         getCollection().clear();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "clear");
+        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void addItemListener() {
         final DummyListener listener = new DummyListener();
         getCollection().addItemListener(listener, true);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addItemListener", null, true);
+        interceptor.assertMethod(getObjectType(), objectName, "addItemListener", null, true);
     }
 
     @Test
@@ -122,17 +112,17 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
         final DummyListener listener = new DummyListener();
         final String id = getCollection().addItemListener(listener, true);
         getCollection().removeItemListener(id);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "removeItemListener", id);
+        interceptor.assertMethod(getObjectType(), objectName, "removeItemListener", id);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return SetService.SERVICE_NAME;
     }
 
     ICollection getCollection() {
-        return client.getSet(randomString());
+        objectName = randomString();
+        return client.getSet(objectName);
     }
 
     static class DummyListener implements ItemListener {

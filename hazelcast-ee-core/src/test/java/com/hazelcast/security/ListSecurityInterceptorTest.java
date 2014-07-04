@@ -25,8 +25,7 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         items.add(randomString());
         final int index = randomInt(3);
         list.addAll(index, items);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "addAll", index, items);
+        interceptor.assertMethod(getObjectType(), objectName, "addAll", index, items);
     }
 
     @Test
@@ -39,8 +38,7 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
         final int index = randomInt(3);
         list.get(index);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "get", index);
+        interceptor.assertMethod(getObjectType(), objectName, "get", index);
     }
 
     @Test
@@ -54,8 +52,7 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         final int index = randomInt(3);
         final String item = randomString();
         list.set(index, item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "set", index, item);
+        interceptor.assertMethod(getObjectType(), objectName, "set", index, item);
     }
 
     @Test
@@ -68,8 +65,7 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         final int index = randomInt(3);
         final String item = randomString();
         list.add(index, item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "add", index, item);
+        interceptor.assertMethod(getObjectType(), objectName, "add", index, item);
     }
 
     @Test
@@ -82,31 +78,27 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
         final int index = randomInt(3);
         list.remove(index);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "remove", index);
+        interceptor.assertMethod(getObjectType(), objectName, "remove", index);
     }
 
     @Test
     public void indexOf() {
         final String item = randomString();
         getCollection().indexOf(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "indexOf", item);
+        interceptor.assertMethod(getObjectType(), objectName, "indexOf", item);
     }
 
     @Test
     public void lastIndexOf() {
         final String item = randomString();
         getCollection().lastIndexOf(item);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "lastIndexOf", item);
+        interceptor.assertMethod(getObjectType(), objectName, "lastIndexOf", item);
     }
 
     @Test
     public void listIterator() {
         getCollection().listIterator();
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "listIterator");
+        interceptor.assertMethod(getObjectType(), objectName, "listIterator");
     }
 
     @Test
@@ -123,17 +115,17 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
         final int from = randomInt(3);
         final int to = randomInt(3);
-        list.subList(from, from+to);
-        final String serviceName = getServiceName();
-        interceptor.assertMethod(serviceName, "subList", from, from+to);
+        list.subList(from, from + to);
+        interceptor.assertMethod(getObjectType(), objectName, "subList", from, from + to);
     }
 
     @Override
-    String getServiceName() {
+    String getObjectType() {
         return ListService.SERVICE_NAME;
     }
 
     IList getCollection() {
-        return client.getList(randomString());
+        objectName = randomString();
+        return client.getList(objectName);
     }
 }

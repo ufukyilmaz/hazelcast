@@ -6,10 +6,9 @@ import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.tcp.DefaultPacketReader;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.util.ExceptionUtil;
-
+import java.nio.ByteBuffer;
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
-import java.nio.ByteBuffer;
 
 public class SymmetricCipherPacketReader extends DefaultPacketReader {
 
@@ -79,9 +78,15 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
                     packet.setConn(connection);
                     ioService.handleMemberPacket(packet);
                     packet = null;
+                } else {
+                    break;
                 }
             }
-            cipherBuffer.clear();
+            if (cipherBuffer.hasRemaining()) {
+                cipherBuffer.compact();
+            } else {
+                cipherBuffer.clear();
+            }
         }
     }
 }

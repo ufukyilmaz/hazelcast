@@ -33,6 +33,7 @@ import com.hazelcast.nio.tcp.SocketChannelWrapper;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -331,6 +332,7 @@ public class SSLConnectionTest {
     }
 
     @Test(timeout = 1000 * 180)
+    @Ignore
     public void testPutAndGetAlwaysGoesToWire() throws Exception {
         Config config = new Config();
         config.setProperty(GroupProperties.PROP_IO_THREAD_COUNT, "1");

@@ -4,13 +4,13 @@
     <parent>
         <artifactId>hazelcast-enterprise</artifactId>
         <groupId>com.hazelcast</groupId>
-        <version>3.3-RC2-SNAPSHOT</version>
+        <version>3.3-RC3-SNAPSHOT</version>
     </parent>
 
     <name>hazelcast-ee-core</name>
     <artifactId>hazelcast-ee-core</artifactId>
     <packaging>jar</packaging>
-    <version>3.3-RC2-SNAPSHOT</version>
+    <version>3.3-RC3-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -10,7 +10,7 @@
     <groupId>com.hazelcast</groupId>
     <artifactId>hazelcast-enterprise</artifactId>
     <packaging>pom</packaging>
-    <version>3.3-RC2-SNAPSHOT</version>
+    <version>3.3-RC3-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

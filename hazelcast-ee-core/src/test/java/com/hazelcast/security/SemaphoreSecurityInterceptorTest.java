@@ -3,8 +3,10 @@ package com.hazelcast.security;
 import com.hazelcast.concurrent.semaphore.SemaphoreService;
 import com.hazelcast.core.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.test.annotation.ProblematicTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
@@ -96,6 +98,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
+    @Category(ProblematicTest.class)
     public void test4_tryAcquire() throws InterruptedException {
         final int permit = randomInt(100);
         final long timeout = randomLong();

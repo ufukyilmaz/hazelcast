@@ -100,6 +100,7 @@
                         -Dhazelcast.elastic.memory.chunk.size=1k
                         -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
                     </argLine>
+                    <excludedGroups>com.hazelcast.test.annotation.ProblematicTest</excludedGroups>
                 </configuration>
             </plugin>
 

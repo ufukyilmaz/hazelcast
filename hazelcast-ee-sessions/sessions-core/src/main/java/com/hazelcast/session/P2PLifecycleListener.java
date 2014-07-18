@@ -20,6 +20,9 @@ public class P2PLifecycleListener implements LifecycleListener {
     public void lifecycleEvent(LifecycleEvent event) {
 
         String shutdown = System.getProperty("hazelcast.tomcat.shutdown_hazelcast_instance");
+        if (getConfigLocation() == null) {
+            setConfigLocation("hazelcast.xml");
+        }
 
         if ("start".equals(event.getType())) {
 

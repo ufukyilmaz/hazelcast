@@ -1,5 +1,6 @@
 package com.hazelcast.session.sticky;
 
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.session.AbstractHazelcastSessionsTest;
@@ -109,7 +110,7 @@ public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessio
         String value = executeRequest("read", SERVER_PORT_1, cookieStore);
         assertEquals("value", value);
 
-        sleepSeconds(DEFAULT_SESSION_TIMEOUT+10);
+        sleepSeconds(DEFAULT_SESSION_TIMEOUT+instance1.getManager().getProcessExpiresFrequency());
 
 
         value = executeRequest("read", SERVER_PORT_1, cookieStore);
@@ -131,6 +132,25 @@ public abstract class AbstractStickySessionsTest extends AbstractHazelcastSessio
 
         commatSeperatedAttributeNames = executeRequest("names", SERVER_PORT_1, cookieStore);
         assertEquals("key",commatSeperatedAttributeNames);
+
+    }
+
+    @Test
+    public void testCleanupAfterSessionExpire() throws Exception {
+
+        int DEFAULT_SESSION_TIMEOUT = 10;
+        CookieStore cookieStore = new BasicCookieStore();
+        executeRequest("write", SERVER_PORT_1, cookieStore);
+        String value = executeRequest("read", SERVER_PORT_1, cookieStore);
+        assertEquals("value", value);
+
+        sleepSeconds(DEFAULT_SESSION_TIMEOUT+instance1.getManager().getProcessExpiresFrequency());
+
+
+        HazelcastInstance instance = Hazelcast.newHazelcastInstance();
+        IMap<Object, Object> map = instance.getMap("default");
+        assertEquals(0,map.size());
+
 
     }
 

@@ -5,6 +5,7 @@ import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardServer;
+import org.apache.catalina.session.ManagerBase;
 import org.apache.catalina.startup.Embedded;
 
 import java.io.File;
@@ -83,6 +84,11 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
     public void reload() {
         Context ctx = (Context) tomcat.getContainer().findChild(DEFAULT_HOST).findChild("/");
         ctx.reload();
+    }
+
+    @Override
+    public ManagerBase getManager() {
+        return (ManagerBase)manager;
     }
 
 

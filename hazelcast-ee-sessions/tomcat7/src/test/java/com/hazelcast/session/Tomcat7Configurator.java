@@ -2,6 +2,7 @@ package com.hazelcast.session;
 
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
+import org.apache.catalina.session.ManagerBase;
 import org.apache.catalina.startup.Tomcat;
 
 import java.io.File;
@@ -13,6 +14,8 @@ import java.net.URL;
 public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
 
     private Tomcat tomcat;
+
+
     private HazelcastSessionManager manager;
 
 
@@ -75,12 +78,18 @@ public class Tomcat7Configurator extends WebContainerConfigurator<Tomcat> {
         context.reload();
     }
 
+    @Override
+    public ManagerBase getManager() {
+        return (ManagerBase)manager;
+    }
+
     private void updateManager(HazelcastSessionManager manager) {
         manager.setSticky(sticky);
         manager.setClientOnly(clientOnly);
         manager.setMapName(mapName);
         manager.setMaxInactiveInterval(sessionTimeout);
     }
+
 
 
 }

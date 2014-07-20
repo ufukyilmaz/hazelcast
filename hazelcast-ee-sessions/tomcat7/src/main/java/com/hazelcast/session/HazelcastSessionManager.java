@@ -28,7 +28,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     private static final String NAME = "HazelcastSessionManager";
     private static final String INFO = "HazelcastSessionManager/1.0";
 
-    private static final int DEFAULT_MAP_SIZE = 1000;
     private static final int DEFAULT_SESSION_TIMEOUT = 60;
 
     protected LifecycleSupport lifecycle = new LifecycleSupport(this);
@@ -43,6 +42,8 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     private boolean sticky = true;
 
     private String mapName;
+
+    private boolean deferredWrite = true;
 
     @Override
     public String getInfo() {
@@ -84,19 +85,15 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
         super.startInternal();
 
-        if (log.isDebugEnabled()) {
-            log.debug("Force random number initialization starting");
-        }
         super.generateSessionId();
-
-        if (log.isDebugEnabled()) {
-            log.debug("Force random number initialization completed");
-        }
 
         HazelcastSessionChangeValve hazelcastSessionChangeValve = new HazelcastSessionChangeValve(this);
         getContainer().getPipeline().addValve(hazelcastSessionChangeValve);
-        HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
-        getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
+
+        if (isDeferredEnabled()) {
+            HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
+            getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
+        }
 
         HazelcastInstance instance;
         if (isClientOnly()) {
@@ -229,7 +226,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             return null;
         }
 
-        hazelcastSession.setManager(this);
+        hazelcastSession.setSessionManager(this);
 
         sessions.put(id, hazelcastSession);
 
@@ -261,7 +258,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         }
 
         if (session.getManager() == null) {
-            session.setManager(this);
+            session.setSessionManager(this);
         }
         int index = sessionId.indexOf(".");
         String baseSessionId = sessionId.substring(0, index);
@@ -283,8 +280,14 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         remove(session.getId());
     }
 
-    private IMap<String, HazelcastSession> getSessionMap() {
+    @Override
+    public IMap<String, HazelcastSession> getDistributedMap() {
         return sessionMap;
+    }
+
+    @Override
+    public boolean isDeferredEnabled() {
+        return deferredWrite;
     }
 
     public boolean isClientOnly() {
@@ -350,6 +353,10 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         this.maxActiveSessions = maxActiveSessions;
         this.support.firePropertyChange("maxActiveSessions",
                 Integer.valueOf(oldMaxActiveSessions), Integer.valueOf(this.maxActiveSessions));
+    }
+
+    public void setDeferredWrite(boolean deferredWrite) {
+        this.deferredWrite = deferredWrite;
     }
 
 

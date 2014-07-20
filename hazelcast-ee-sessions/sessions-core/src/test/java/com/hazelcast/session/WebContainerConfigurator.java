@@ -12,6 +12,7 @@ public abstract class WebContainerConfigurator<T> {
     protected boolean clientOnly;
     protected String mapName = "default";
     protected int sessionTimeout;
+    protected boolean deferredWrite;
 
     public WebContainerConfigurator<T> port(int port) {
         this.port = port;
@@ -31,6 +32,10 @@ public abstract class WebContainerConfigurator<T> {
     }
     public WebContainerConfigurator<T> sessionTimeout(int sessionTimeout) {
         this.sessionTimeout = sessionTimeout;
+        return this;
+    }
+    public WebContainerConfigurator<T> deferredWrite(boolean deferredWrite) {
+        this.deferredWrite = deferredWrite;
         return this;
     }
 

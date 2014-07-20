@@ -21,8 +21,6 @@ import org.apache.juli.logging.LogFactory;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 public class HazelcastSessionManager extends ManagerBase implements Lifecycle, PropertyChangeListener, SessionManager {
@@ -37,8 +35,6 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
 
     private final Log log = LogFactory.getLog(HazelcastSessionManager.class);
-
-    private Map<String, HazelcastSession> localSessionMap = new ConcurrentHashMap<String, HazelcastSession>(DEFAULT_MAP_SIZE);
 
     private IMap<String, HazelcastSession> sessionMap;
 
@@ -115,7 +111,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         }
         if (getMapName() == null) {
             Context ctx = (Context) getContainer();
-            sessionMap = instance.getMap(ctx.getPath() + "-SR");
+            sessionMap = instance.getMap("_web_" + ctx.getServletContext().getServletContextName());
         } else {
             sessionMap = instance.getMap(getMapName());
         }
@@ -128,7 +124,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
                 public void entryRemoved(EntryEvent<String, HazelcastSession> entryEvent) {
                     if (entryEvent.getMember() == null || !entryEvent.getMember().localMember()) {
-                        localSessionMap.remove(entryEvent.getKey());
+                        sessions.remove(entryEvent.getKey());
                     }
                 }
 
@@ -196,7 +192,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         session.setId(newSessionId);
         session.tellNew();
 
-        localSessionMap.put(newSessionId, session);
+        sessions.put(newSessionId, session);
         sessionMap.put(newSessionId, session);
         return session;
     }
@@ -208,7 +204,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public void add(Session session) {
-        localSessionMap.put(session.getId(), (HazelcastSession) session);
+        sessions.put(session.getId(), (HazelcastSession) session);
         sessionMap.put(session.getId(), (HazelcastSession) session);
     }
 
@@ -219,8 +215,8 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             return null;
         }
 
-        if (localSessionMap.containsKey(id)) {
-            return localSessionMap.get(id);
+        if (sessions.containsKey(id)) {
+            return sessions.get(id);
         }
 
         if (isSticky()) {
@@ -235,7 +231,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
         hazelcastSession.setManager(this);
 
-        localSessionMap.put(id, hazelcastSession);
+        sessions.put(id, hazelcastSession);
 
         // call remove method to trigger eviction Listener on each node to invalidate local sessions
         sessionMap.remove(id);
@@ -259,6 +255,11 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     @Override
     public String updateJvmRouteForSession(String sessionId, String newJvmRoute) throws IOException {
         HazelcastSession session = sessionMap.get(sessionId);
+        if (session == null) {
+            session = (HazelcastSession) createSession(null);
+            return session.getId();
+        }
+
         if (session.getManager() == null) {
             session.setManager(this);
         }
@@ -274,6 +275,11 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
     @Override
     public void remove(Session session) {
+        remove(session.getId());
+    }
+
+    @Override
+    public void remove(Session session, boolean update) {
         remove(session.getId());
     }
 
@@ -301,7 +307,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
     }
 
     private void remove(String id) {
-        localSessionMap.remove(id);
+        sessions.remove(id);
         sessionMap.remove(id);
     }
 

@@ -101,6 +101,7 @@ public class Tomcat6Configurator extends WebContainerConfigurator<Embedded> {
         manager.setClientOnly(clientOnly);
         manager.setMapName(mapName);
         manager.setMaxInactiveInterval(sessionTimeout);
+        manager.setDeferredWrite(deferredWrite);
     }
 
 

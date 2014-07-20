@@ -16,8 +16,11 @@ public class HazelcastSession extends StandardSession implements DataSerializabl
 
     protected boolean dirty;
 
-    public HazelcastSession(Manager manager) {
-        super(manager);
+    private transient SessionManager sessionManager;
+
+    public HazelcastSession(SessionManager sessionManager) {
+        super((Manager) sessionManager);
+        this.sessionManager = sessionManager;
     }
 
     public HazelcastSession() {
@@ -25,23 +28,23 @@ public class HazelcastSession extends StandardSession implements DataSerializabl
     }
 
     @Override
-  public void setAttribute(String key, Object value) {
-      dirty = true;
-      super.setAttribute(key, value);
-  }
+    public void setAttribute(String key, Object value) {
+        super.setAttribute(key, value);
+        updateSession();
+    }
 
 
     @Override
-  public void removeAttribute(String name) {
-    dirty = true;
+    public void removeAttribute(String name) {
         super.removeAttribute(name);
-  }
+        updateSession();
+    }
 
-  @Override
-  public void setPrincipal(Principal principal) {
-    dirty = true;
-    super.setPrincipal(principal);
-  }
+    @Override
+    public void setPrincipal(Principal principal) {
+        super.setPrincipal(principal);
+        updateSession();
+    }
 
     public boolean isDirty() {
         return dirty;
@@ -51,11 +54,24 @@ public class HazelcastSession extends StandardSession implements DataSerializabl
         this.dirty = dirty;
     }
 
+    public void setSessionManager(SessionManager sessionManager) {
+        super.setManager((Manager) sessionManager);
+        this.sessionManager = sessionManager;
+    }
 
-    public Map<String, Object> getLocalAttributeCache() {
+    public Map getAttributes() {
         return attributes;
     }
 
+
+    private void updateSession() {
+        if (sessionManager.isDeferredEnabled()) {
+            dirty = true;
+        } else {
+            sessionManager.getDistributedMap().put(id, this);
+        }
+
+    }
 
     @Override
     public void writeData(ObjectDataOutput objectDataOutput) throws IOException {
@@ -73,14 +89,14 @@ public class HazelcastSession extends StandardSession implements DataSerializabl
 
     @Override
     public void readData(ObjectDataInput objectDataInput) throws IOException {
-       this.creationTime = objectDataInput.readLong();
-       this.lastAccessedTime = objectDataInput.readLong();
-       this.maxInactiveInterval = objectDataInput.readInt();
-       this.isNew = objectDataInput.readBoolean();
-       this.isValid = objectDataInput.readBoolean();
-       this.thisAccessedTime = objectDataInput.readLong();
-       this.id = objectDataInput.readObject();
-       this.attributes = objectDataInput.readObject();
+        this.creationTime = objectDataInput.readLong();
+        this.lastAccessedTime = objectDataInput.readLong();
+        this.maxInactiveInterval = objectDataInput.readInt();
+        this.isNew = objectDataInput.readBoolean();
+        this.isValid = objectDataInput.readBoolean();
+        this.thisAccessedTime = objectDataInput.readLong();
+        this.id = objectDataInput.readObject();
+        this.attributes = objectDataInput.readObject();
         this.notes = objectDataInput.readObject();
 
         if (this.listeners == null) {
@@ -88,4 +104,6 @@ public class HazelcastSession extends StandardSession implements DataSerializabl
         }
 
     }
+
+
 }

@@ -1,5 +1,6 @@
 package com.hazelcast.session;
 
+import com.hazelcast.core.IMap;
 import org.apache.catalina.Session;
 
 import java.io.IOException;
@@ -16,4 +17,7 @@ public interface SessionManager {
 
     String getJvmRoute();
 
+    IMap<String, HazelcastSession> getDistributedMap();
+
+    boolean isDeferredEnabled();
 }

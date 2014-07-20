@@ -123,8 +123,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         }
         if (getMapName() == null) {
             Context ctx = (Context) getContainer();
-            sessionMap = instance.getMap(ctx.getPath() + "-SR");
-        } else {
+            sessionMap = instance.getMap("_web_" + ctx.getServletContext().getServletContextName());        } else {
             sessionMap = instance.getMap(getMapName());
         }
 

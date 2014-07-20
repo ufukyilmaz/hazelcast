@@ -84,6 +84,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
+    @Category(ProblematicTest.class)
     public void test2_tryAcquire() {
         final int permit = randomInt(100);
         semaphore.tryAcquire(permit);

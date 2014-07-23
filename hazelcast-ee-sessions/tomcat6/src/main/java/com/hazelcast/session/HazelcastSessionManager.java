@@ -98,23 +98,20 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         init();
         lifecycle.fireLifecycleEvent(START_EVENT, null);
 
-        if (log.isDebugEnabled()) {
-            log.debug("Force random number initialization starting");
-        }
         super.generateSessionId();
-        if (log.isDebugEnabled()) {
-            log.debug("Force random number initialization completed");
-        }
 
         HazelcastSessionChangeValve hazelcastSessionChangeValve = new HazelcastSessionChangeValve(this);
         getContainer().getPipeline().addValve(hazelcastSessionChangeValve);
-        HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
-        getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
+
+        if (isDeferredEnabled()) {
+            HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
+            getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
+        }
 
         HazelcastInstance instance;
         if (isClientOnly()) {
             try {
-                instance = HazelcastClient.newHazelcastClient();
+                instance = HazelcastClient.newHazelcastClient(ClientServerLifecycleListener.getConfig());
             } catch (Exception e) {
                 log.error("Hazelcast Client could not be created.", e);
                 throw new LifecycleException(e.getMessage());
@@ -125,7 +122,13 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
         if (getMapName() == null || "default".equals(getMapName())) {
             Context ctx = (Context) getContainer();
             String contextPath = ctx.getServletContext().getContextPath();
-            String mapName = contextPath.substring(1,contextPath.length())  + "_session_replication";
+            log.info("contextPath:" + contextPath);
+            String mapName;
+            if (contextPath == null || contextPath.equals("/") || contextPath.equals("")) {
+                mapName = "empty_session_replication";
+            } else {
+                mapName = contextPath.substring(1, contextPath.length())  + "_session_replication";
+            }
             sessionMap = instance.getMap(mapName);
         } else {
             sessionMap = instance.getMap(getMapName());

@@ -4,10 +4,8 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.multimap.MultiMapService;
-import com.hazelcast.test.annotation.ProblematicTest;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
@@ -158,7 +156,6 @@ public class MultiMapSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    @Category(ProblematicTest.class)
     public void test2_tryLock() throws InterruptedException {
         final String key = randomString();
         final long timeout = randomLong();

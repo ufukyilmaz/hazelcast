@@ -23,11 +23,9 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.test.annotation.ProblematicTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -48,7 +46,6 @@ public class EncryptionTest {
      * Simple symmetric encryption test.
      */
     @Test
-    @Category(ProblematicTest.class)
     public void testSymmetricEncryption() throws Exception {
         Config config = new Config();
         SymmetricEncryptionConfig encryptionConfig = new SymmetricEncryptionConfig();

@@ -13,14 +13,14 @@
         <!--</includes>-->
         <!--</fileSet>-->
         <fileSet>
-            <directory>hazelcast-ee-sessions/tomcat6/target/</directory>
+            <directory>hazelcast-enterprise-sessions/tomcat6/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>
                 <include>hazelcast-sessions-tomcat6-${project.version}.jar</include>
             </includes>
         </fileSet>
         <fileSet>
-            <directory>hazelcast-ee-sessions/tomcat7/target/</directory>
+            <directory>hazelcast-enterprise-sessions/tomcat7/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>
                 <include>hazelcast-sessions-tomcat7-${project.version}.jar</include>

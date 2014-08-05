@@ -1,14 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>Hazelcast Enterprise</name>
+    <name>Hazelcast Enterprise Root</name>
     <modules>
-        <module>hazelcast-ee-core</module>
-        <module>hazelcast-ee-sessions</module>
-        <module>hazelcast-ee-all</module>
+        <module>hazelcast-enterprise</module>
+        <module>hazelcast-enterprise-sessions</module>
+        <module>hazelcast-enterprise-all</module>
     </modules>
     <groupId>com.hazelcast</groupId>
-    <artifactId>hazelcast-enterprise</artifactId>
+    <artifactId>hazelcast-enterprise-root</artifactId>
     <packaging>pom</packaging>
     <version>3.3-RC4-SNAPSHOT</version>
 
@@ -53,7 +53,7 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven.assembly.plugin.version}</version>
                 <configuration>
-                    <finalName>hazelcast-${project.version}</finalName>
+                    <finalName>hazelcast-enterprise-${project.version}</finalName>
                     <descriptors>
                         <descriptor>./src/main/assembly/assembly-ee.xml</descriptor>
                     </descriptors>

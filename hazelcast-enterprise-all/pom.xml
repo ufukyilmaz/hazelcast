@@ -3,14 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>hazelcast-enterprise</artifactId>
+        <artifactId>hazelcast-enterprise-root</artifactId>
         <groupId>com.hazelcast</groupId>
         <version>3.3-RC4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>hazelcast-ee-all</artifactId>
-    <name>hazelcast-ee-all</name>
+    <name>Hazelcast Enterprise(All)</name>
+    <artifactId>hazelcast-enterprise-all</artifactId>
     <properties>
         <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
@@ -27,13 +27,13 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <shadedArtifactId>hazelcast-ee-all</shadedArtifactId>
+                            <shadedArtifactId>hazelcast-enterprise-all</shadedArtifactId>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-ee-core</include>
+                                    <include>com.hazelcast:hazelcast-enterprise</include>
                                     <include>com.hazelcast:hazelcast-all</include>
                                 </includes>
                             </artifactSet>
@@ -65,7 +65,7 @@
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-ee-core</artifactId>
+            <artifactId>hazelcast-enterprise</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>

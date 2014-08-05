@@ -53,14 +53,13 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven.assembly.plugin.version}</version>
                 <configuration>
-                    <finalName>hazelcast-enterprise-${project.version}</finalName>
+                    <finalName>hazelcast-${project.version}</finalName>
                     <descriptors>
-                        <descriptor>./src/main/assembly/assembly-ee.xml</descriptor>
+                        <descriptor>src/main/assembly/hazelcast-enterprise-assembly.xml</descriptor>
                     </descriptors>
                     <appendAssemblyId>true</appendAssemblyId>
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -248,6 +247,5 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
-
     </dependencies>
 </project>

@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>Hazelcast Session Replication Core Module</name>
+    <name>Hazelcast Enterprise Session Replication(Core)</name>
     <groupId>com.hazelcast</groupId>
     <artifactId>sessions-core</artifactId>
     <packaging>jar</packaging>

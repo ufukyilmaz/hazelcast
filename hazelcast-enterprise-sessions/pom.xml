@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>hazelcast-enterprise</artifactId>
+        <artifactId>hazelcast-enterprise-root</artifactId>
         <groupId>com.hazelcast</groupId>
         <version>3.3-RC4-SNAPSHOT</version>
     </parent>
@@ -13,7 +13,7 @@
     <artifactId>hazelcast-sessions</artifactId>
     <packaging>pom</packaging>
     <version>3.3-RC4-SNAPSHOT</version>
-    <name>Hazelcast Sessions Replication</name>
+    <name>Hazelcast Enterprise Session Replication</name>
     <description>Session Replication Module for Hazelcast</description>
     <url>http://www.hazelcast.com/</url>
 

@@ -4,7 +4,7 @@ import com.hazelcast.core.ITopic;
 import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.topic.TopicService;
+import com.hazelcast.topic.impl.TopicService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

@@ -4,7 +4,7 @@ import com.hazelcast.core.IQueue;
 import com.hazelcast.core.ItemEvent;
 import com.hazelcast.core.ItemListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.queue.QueueService;
+import com.hazelcast.queue.impl.QueueService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

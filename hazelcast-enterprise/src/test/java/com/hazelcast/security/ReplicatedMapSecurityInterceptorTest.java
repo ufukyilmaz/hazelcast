@@ -4,7 +4,7 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.replicatedmap.ReplicatedMapService;
+import com.hazelcast.replicatedmap.impl.ReplicatedMapService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

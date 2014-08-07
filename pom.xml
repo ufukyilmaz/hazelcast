@@ -16,6 +16,10 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <target.dir>target</target.dir>
+        <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
+        <timestamp>${maven.build.timestamp}</timestamp>
+        <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
+
         <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
         <findbugs.maven.plugin.version>2.5.3</findbugs.maven.plugin.version>
         <checkstyle.maven.plugin.version>2.12</checkstyle.maven.plugin.version>
@@ -47,6 +51,35 @@
     </repositories>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-webdav</artifactId>
+                <version>1.0-beta-2</version>
+            </extension>
+        </extensions>
+
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <outputDirectory>${target.dir}/classes</outputDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testOutputDirectory>${target.dir}/test-classes</testOutputDirectory>
+
+        <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+            <includes>
+                <include>**/*.bat</include>
+                <include>**/*.sh</include>
+                <include>**/*.properties</include>
+                <include>**/*.xml</include>
+                <include>**/*.xsd</include>
+                <include>**/*.handlers</include>
+                <include>**/*.schemas</include>
+            </includes>
+        </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -248,4 +281,12 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
+
+        <distributionManagement>
+            <repository>
+                <id>cloudbees-private-repository</id>
+                <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
+            </repository>
+        </distributionManagement>
+
 </project>

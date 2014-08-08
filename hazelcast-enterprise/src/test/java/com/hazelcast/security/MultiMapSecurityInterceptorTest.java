@@ -3,7 +3,7 @@ package com.hazelcast.security;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.multimap.MultiMapService;
+import com.hazelcast.multimap.impl.MultiMapService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

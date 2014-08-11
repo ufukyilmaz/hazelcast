@@ -10,7 +10,7 @@
     <groupId>com.hazelcast</groupId>
     <artifactId>hazelcast-enterprise-root</artifactId>
     <packaging>pom</packaging>
-    <version>3.3-RC4-SNAPSHOT</version>
+    <version>3.3-RC4</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -86,11 +86,11 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>${maven.assembly.plugin.version}</version>
                 <configuration>
-                    <finalName>hazelcast-${project.version}</finalName>
+                    <finalName>hazelcast-enterprise-${project.version}</finalName>
                     <descriptors>
                         <descriptor>src/main/assembly/hazelcast-enterprise-assembly.xml</descriptor>
                     </descriptors>
-                    <appendAssemblyId>true</appendAssemblyId>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
             </plugin>
             <plugin>

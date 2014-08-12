@@ -3,17 +3,28 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>hazelcast-enterprise</artifactId>
+        <artifactId>hazelcast-enterprise-root</artifactId>
         <groupId>com.hazelcast</groupId>
         <version>3.2.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>hazelcast-ee-all</artifactId>
-    <name>hazelcast-ee-all</name>
+    <name>Hazelcast Enterprise(Core)</name>
+    <artifactId>hazelcast-enterprise</artifactId>
+    <packaging>jar</packaging>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -26,13 +37,13 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <shadedArtifactId>hazelcast-ee-all</shadedArtifactId>
+                            <shadedArtifactId>hazelcast-enterprise</shadedArtifactId>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-ee-core</include>
-                                    <include>com.hazelcast:hazelcast-all</include>
+                                    <include>com.hazelcast:hazelcast</include>
+                                    <include>com.hazelcast:hazelcast-enterprise</include>
                                 </includes>
                             </artifactSet>
                             <filters>
@@ -53,21 +64,5 @@
     </build>
 
 
-    <dependencies>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-all</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-ee-core</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
-    </dependencies>
 
 </project>

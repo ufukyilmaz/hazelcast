@@ -62,8 +62,8 @@
                                     <createDependencyReducedPom>false</createDependencyReducedPom>
                                     <artifactSet>
                                         <includes>
-                                            <include>com.hazelcast:hazelcast-enterprise</include>
                                             <include>com.hazelcast:hazelcast</include>
+                                            <include>com.hazelcast:hazelcast-enterprise</include>
                                         </includes>
                                     </artifactSet>
                                     <filters>

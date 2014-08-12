@@ -65,19 +65,26 @@
         <testOutputDirectory>${target.dir}/test-classes</testOutputDirectory>
 
         <resources>
-        <resource>
-            <directory>src/main/resources</directory>
-            <filtering>true</filtering>
-            <includes>
-                <include>**/*.bat</include>
-                <include>**/*.sh</include>
-                <include>**/*.properties</include>
-                <include>**/*.xml</include>
-                <include>**/*.xsd</include>
-                <include>**/*.handlers</include>
-                <include>**/*.schemas</include>
-            </includes>
-        </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.bat</include>
+                    <include>**/*.sh</include>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.xsd</include>
+                    <include>**/*.handlers</include>
+                    <include>**/*.schemas</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/META-INF/services/*.*</include>
+                </includes>
+            </resource>
         </resources>
 
         <plugins>

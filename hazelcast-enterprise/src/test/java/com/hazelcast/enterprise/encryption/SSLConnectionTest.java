@@ -66,7 +66,7 @@ public class SSLConnectionTest {
 
     @Before
     @After
-    public static void killAllHazelcastInstances() throws IOException {
+    public void killAllHazelcastInstances() throws IOException {
         Hazelcast.shutdownAll();
     }
 

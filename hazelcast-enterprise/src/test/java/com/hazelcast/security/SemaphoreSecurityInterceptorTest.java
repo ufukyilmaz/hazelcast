@@ -27,7 +27,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void init() {
-        final int permit = randomInt(100);
+        final int permit = randomInt(100) + 1;
         semaphore.init(permit);
         interceptor.assertMethod(getObjectType(), objectName, "init", permit);
     }
@@ -40,7 +40,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void test2_acquire() throws InterruptedException {
-        final int permit = randomInt(100);
+        final int permit = randomInt(100) + 1;
         semaphore.acquire(permit);
         interceptor.assertMethod(getObjectType(), objectName, "acquire", permit);
     }
@@ -59,7 +59,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void reducePermits() {
-        final int permit = randomInt(100);
+        final int permit = randomInt(100) + 1;
         semaphore.reducePermits(permit);
         interceptor.assertMethod(getObjectType(), objectName, "reducePermits", permit);
     }
@@ -72,7 +72,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void test2_release() {
-        final int permit = randomInt(100);
+        final int permit = randomInt(100) + 1;
         semaphore.release(permit);
         interceptor.assertMethod(getObjectType(), objectName, "release", permit);
     }
@@ -85,22 +85,22 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void test2_tryAcquire() {
-        final int permit = randomInt(100);
+        final int permit = randomInt(100) + 1;
         semaphore.tryAcquire(permit);
         interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit);
     }
 
     @Test
     public void test3_tryAcquire() throws InterruptedException {
-        final long timeout = randomLong();
+        final long timeout = randomLong() + 1;
         semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", 1,timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test4_tryAcquire() throws InterruptedException {
-        final int permit = randomInt(100);
-        final long timeout = randomLong();
+        final int permit = randomInt(100) + 1;
+        final long timeout = randomLong() + 1;
         semaphore.tryAcquire(permit, timeout, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit, timeout, TimeUnit.MILLISECONDS);
     }

@@ -43,11 +43,11 @@
 
 
     <repositories>
-       <repository>
-           <id>snapshot-repository</id>
-           <name>Maven2 Snapshot Repository</name>
-           <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-       </repository>
+        <repository>
+            <id>snapshot-repository</id>
+            <name>Maven2 Snapshot Repository</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
     </repositories>
 
     <build>
@@ -201,6 +201,15 @@
         </profile>
         <profile>
             <id>test-coverage</id>
+            <properties>
+                <argLine>
+                    -Xms128m -Xmx1G -XX:MaxPermSize=128M
+                    -Dhazelcast.version.check.enabled=false
+                    -Dhazelcast.mancenter.enabled=false
+                    -Dhazelcast.logging.type=none
+                    -Dhazelcast.test.use.network=false
+                </argLine>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -210,13 +219,6 @@
                         <configuration combine.self="override">
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <testFailureIgnore>true</testFailureIgnore>
-                            <argLine>
-                                -Xms128m -Xmx1G -XX:MaxPermSize=128M
-                                -Dhazelcast.version.check.enabled=false
-                                -Dhazelcast.mancenter.enabled=false
-                                -Dhazelcast.logging.type=none
-                                -Dhazelcast.test.use.network=false
-                            </argLine>
                         </configuration>
                     </plugin>
 
@@ -289,11 +291,11 @@
         </dependency>
     </dependencies>
 
-        <distributionManagement>
-            <repository>
-                <id>cloudbees-private-repository</id>
-                <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
-            </repository>
-        </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>cloudbees-private-repository</id>
+            <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
+        </repository>
+    </distributionManagement>
 
 </project>

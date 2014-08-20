@@ -184,11 +184,11 @@ public abstract class BaseInterceptorTest {
     }
 
     public static long randomLong() {
-        return randomInt(1000);
+        return randomInt(1000) + 1;
     }
 
     public static int randomInt(int max) {
-        return new Random(System.currentTimeMillis()).nextInt(max);
+        return new Random(System.currentTimeMillis()).nextInt(max) + 1;
     }
 
     static class DummyPredicate implements Predicate {

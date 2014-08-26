@@ -136,7 +136,7 @@ public class MultiMapSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test2_lock() {
         final String key = randomString();
-        final long ttl = randomLong();
+        final long ttl = randomLong() + 1;
         multiMap.lock(key, ttl, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "lock", key, ttl, TimeUnit.MILLISECONDS);
     }
@@ -158,7 +158,7 @@ public class MultiMapSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test2_tryLock() throws InterruptedException {
         final String key = randomString();
-        final long timeout = randomLong();
+        final long timeout = randomLong() + 1;
         multiMap.tryLock(key, timeout, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
     }

@@ -52,10 +52,16 @@ public class LockSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    public void test2_lock() {
-        final long ttl = randomLong();
+    public void tesLockWithPositiveTTL() {
+        final long ttl = randomLong() + 1;
         lock.lock(ttl, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "lock", ttl, TimeUnit.MILLISECONDS);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testLockWithZeroTTL() {
+        final long ttl = 0;
+        lock.lock(ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -75,7 +81,8 @@ public class LockSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test1_tryLock() {
         lock.tryLock();
-        interceptor.assertMethod(getObjectType(), objectName, "tryLock");
+        // lock.tryLock() == lock.tryLock(0,,TimeUnit.MILLISECONDS) so i pass those parameters into assertMethod
+        interceptor.assertMethod(getObjectType(), objectName, "tryLock",0l,TimeUnit.MILLISECONDS);
     }
 
     @Test

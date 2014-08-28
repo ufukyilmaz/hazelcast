@@ -20,7 +20,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import org.junit.After;
@@ -71,17 +70,19 @@ public class SocketInterceptorTest {
         assertEquals(0, mySocketInterceptor.getConnectFailureCount());
     }
 
-    @Test(expected = RuntimeException.class, timeout = 120000)
+    @Test(timeout = 120000)
     public void testFailingSocketInterceptor() {
         Config config = new Config();
-        config.getSecurityConfig().setEnabled(true);
-        config.setProperty(GroupProperties.PROP_MAX_JOIN_SECONDS, "3");
         SocketInterceptorConfig sic = new SocketInterceptorConfig();
         MySocketInterceptor mySocketInterceptor = new MySocketInterceptor(false);
         sic.setImplementation(mySocketInterceptor).setEnabled(true);
         config.getNetworkConfig().setSocketInterceptorConfig(sic);
+
         HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
         HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+
+        assertEquals(1, h2.getCluster().getMembers().size());
+        assertEquals(1, h1.getCluster().getMembers().size());
     }
 
     public static class MySocketInterceptor implements MemberSocketInterceptor {

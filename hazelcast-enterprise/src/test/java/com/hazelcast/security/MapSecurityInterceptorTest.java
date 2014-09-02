@@ -22,7 +22,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
-import com.hazelcast.map.MapService;
+import com.hazelcast.map.impl.MapService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -143,5 +143,36 @@
                 <include>keystore</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${csharp.dir}/Html</directory>
+            <outputDirectory>/clients/dotnet-client/docs/Html/</outputDirectory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${csharp.dir}</directory>
+            <outputDirectory>/clients/dotnet-client/lib/</outputDirectory>
+            <includes>
+                <include>*.dll</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${cpp.dir}</directory>
+            <outputDirectory>/clients/cpp-client/docs/</outputDirectory>
+            <includes>
+                <include>html/**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${cpp.dir}</directory>
+            <outputDirectory>/clients/cpp-client/</outputDirectory>
+            <includes>
+                <include>Linux_32/**</include>
+                <include>Linux_64/**</include>
+                <include>Windows_32/**</include>
+                <include>Windows_64/**</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>

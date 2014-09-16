@@ -190,7 +190,7 @@
             <outputDirectory>/bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <includes>
-                <include>server.sh</include>
+                <include>server.**</include>
             </includes>
         </fileSet>
     </fileSets>

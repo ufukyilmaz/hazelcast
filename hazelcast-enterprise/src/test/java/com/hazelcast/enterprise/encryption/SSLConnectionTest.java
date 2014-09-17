@@ -31,7 +31,12 @@ import com.hazelcast.nio.ssl.SSLContextFactory;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapper;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ProblematicTest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import javax.net.ssl.SSLContext;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -48,12 +53,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.net.ssl.SSLContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 import static com.hazelcast.instance.TestUtil.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
@@ -332,7 +331,6 @@ public class SSLConnectionTest {
     }
 
     @Test(timeout = 1000 * 600)
-    @Category(ProblematicTest.class)
     public void testPutAndGetAlwaysGoesToWire() throws Exception {
         Config config = new Config();
         config.setProperty(GroupProperties.PROP_IO_THREAD_COUNT, "1");

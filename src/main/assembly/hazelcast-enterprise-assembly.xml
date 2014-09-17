@@ -116,16 +116,7 @@
         <fileSet>
             <directory>${hazelcast.root}/hazelcast/target/classes/</directory>
             <outputDirectory>/bin/</outputDirectory>
-            <fileMode>0755</fileMode>
             <includes>
-                <include>*.sh</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${hazelcast.root}/hazelcast/target/classes/</directory>
-            <outputDirectory>/bin/</outputDirectory>
-            <includes>
-                <include>*.bat</include>
                 <include>keystore</include>
             </includes>
         </fileSet>
@@ -174,6 +165,33 @@
                 <include>Windows_64/**</include>
             </includes>
         </fileSet>
-
+        <fileSet>
+            <directory>${code-samples.dir}</directory>
+            <outputDirectory>/code-samples/</outputDirectory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <excludes>
+                <exclude>**/bin/**</exclude>
+                <exclude>**/target/**</exclude>
+            </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>${script.dir}</directory>
+            <outputDirectory>/demo/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>clientConsole.**</include>
+                <include>console.**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${script.dir}</directory>
+            <outputDirectory>/bin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>server.**</include>
+            </includes>
+        </fileSet>
     </fileSets>
 </assembly>

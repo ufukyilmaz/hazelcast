@@ -1,23 +1,21 @@
-package com.hazelcast.enterprise.nio.tcp;
+package com.hazelcast.nio.tcp;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.CipherHelper;
 import com.hazelcast.nio.IOService;
-import com.hazelcast.nio.tcp.DefaultPacketReader;
-import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.util.ExceptionUtil;
-import java.nio.ByteBuffer;
+
 import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
+import java.nio.ByteBuffer;
 
 public class SymmetricCipherPacketReader extends DefaultPacketReader {
 
-    private static final int CONST_BUFFER_NO = 4;
-
-    int size = -1;
-    final Cipher cipher;
-    final ILogger logger;
-    ByteBuffer cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
+    private final Cipher cipher;
+    private final ILogger logger;
+    private int size = -1;
+    private ByteBuffer cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
 
     public SymmetricCipherPacketReader(TcpIpConnection connection, IOService ioService) {
         super(connection, ioService);
@@ -42,7 +40,7 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
         while (inBuffer.hasRemaining()) {
             try {
                 if (size == -1) {
-                    if (inBuffer.remaining() < CONST_BUFFER_NO) {
+                    if (inBuffer.remaining() < Bits.INT_SIZE_IN_BYTES) {
                         return;
                     }
                     size = inBuffer.getInt();

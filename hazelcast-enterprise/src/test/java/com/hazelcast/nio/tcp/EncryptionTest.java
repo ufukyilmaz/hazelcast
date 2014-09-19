@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.enterprise.encryption;
+package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SymmetricEncryptionConfig;

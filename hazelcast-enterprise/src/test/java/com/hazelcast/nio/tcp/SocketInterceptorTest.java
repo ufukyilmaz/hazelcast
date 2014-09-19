@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.hazelcast.enterprise;
+package com.hazelcast.nio.tcp;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import org.junit.After;

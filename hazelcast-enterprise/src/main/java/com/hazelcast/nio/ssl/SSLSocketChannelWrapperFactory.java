@@ -1,11 +1,6 @@
-package com.hazelcast.enterprise.nio.ssl;
+package com.hazelcast.nio.ssl;
 
-import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.nio.ssl.BasicSSLContextFactory;
-import com.hazelcast.nio.ssl.SSLContextFactory;
-import com.hazelcast.nio.ssl.SSLSocketChannelWrapper;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 
@@ -14,12 +9,7 @@ import java.nio.channels.SocketChannel;
 public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFactory {
     final SSLContextFactory sslContextFactory;
 
-    public SSLSocketChannelWrapperFactory(NetworkConfig networkConfig) {
-        final SSLConfig sslConfig = networkConfig.getSSLConfig();
-        final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
-        if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
-            throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
-        }
+    public SSLSocketChannelWrapperFactory(SSLConfig sslConfig) {
         SSLContextFactory sslContextFactoryObject = (SSLContextFactory) sslConfig.getFactoryImplementation();
         try {
             String factoryClassName = sslConfig.getFactoryClassName();

@@ -1,29 +1,42 @@
-package com.hazelcast.enterprise;
+package com.hazelcast.instance;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.config.SSLConfig;
+import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.elasticmemory.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
-import com.hazelcast.enterprise.nio.ssl.SSLSocketChannelWrapperFactory;
-import com.hazelcast.enterprise.nio.tcp.SymmetricCipherPacketReader;
-import com.hazelcast.enterprise.nio.tcp.SymmetricCipherPacketWriter;
+import com.hazelcast.enterprise.InvalidLicenseError;
+import com.hazelcast.enterprise.KG;
+import com.hazelcast.enterprise.License;
+import com.hazelcast.enterprise.TrialLicenseExpiredError;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.instance.DefaultNodeInitializer;
-import com.hazelcast.instance.Node;
-import com.hazelcast.instance.NodeInitializer;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.PacketReader;
 import com.hazelcast.nio.tcp.PacketWriter;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
+import com.hazelcast.nio.tcp.SymmetricCipherPacketReader;
+import com.hazelcast.nio.tcp.SymmetricCipherPacketWriter;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.storage.Storage;
+import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 
 import java.util.Calendar;
@@ -33,19 +46,19 @@ import java.util.logging.Level;
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
-public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements NodeInitializer {
+public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private static final int HOUR_OF_DAY = 23;
     private static final int MINUTE = 59;
     private static final int SECOND = 59;
 
-    private Storage storage;
+    private volatile Storage storage;
     private volatile License license;
-    private SecurityContext securityContext;
-    private boolean securityEnabled;
-    private MemberSocketInterceptor memberSocketInterceptor;
+    private volatile SecurityContext securityContext;
+    private volatile boolean securityEnabled;
+    private volatile MemberSocketInterceptor memberSocketInterceptor;
 
-    public EnterpriseNodeInitializer() {
+    public EnterpriseNodeExtension() {
         super();
     }
 
@@ -65,7 +78,6 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         }
 
         systemLogger = node.getLogger("com.hazelcast.system");
-        parseSystemProps();
         securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
 
         if (node.groupProperties.ELASTIC_MEMORY_ENABLED.getBoolean()) {
@@ -80,10 +92,10 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
             logger.log(Level.INFO, "Initializing node off-heap storage.");
             storage = storageFactory.createStorage();
         }
-        getSocketInterceptor(node.config.getNetworkConfig());
+        createSocketInterceptor(node.config.getNetworkConfig());
     }
 
-    private void getSocketInterceptor(NetworkConfig networkConfig) {
+    private void createSocketInterceptor(NetworkConfig networkConfig) {
         SocketInterceptorConfig sic = networkConfig.getSocketInterceptorConfig();
         SocketInterceptor implementation = null;
         if (sic != null && sic.isEnabled()) {
@@ -111,8 +123,10 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     }
 
     public void printNodeInfo(Node node) {
+        BuildInfo buildInfo = node.getBuildInfo();
         systemLogger.log(Level.INFO,
-                "Hazelcast Enterprise " + version + " (" + build + ") starting at " + node.getThisAddress());
+                "Hazelcast Enterprise " + buildInfo.getVersion()
+                        + " (" + buildInfo.getBuild() + ") starting at " + node.getThisAddress());
         systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
     }
 
@@ -135,6 +149,52 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         return license;
     }
 
+    public SerializationService createSerializationService() {
+        SerializationService ss;
+        try {
+            Config config = node.getConfig();
+            ClassLoader configClassLoader = node.getConfigClassLoader();
+
+            HazelcastInstanceImpl hazelcastInstance = node.hazelcastInstance;
+            PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
+            MemoryManager memoryManager = getMemoryManager(config);
+
+            EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
+            SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
+                    .getSerializationConfig() : new SerializationConfig();
+
+            ss = builder
+                    .setMemoryManager(memoryManager)
+                    .setClassLoader(configClassLoader)
+                    .setConfig(serializationConfig)
+                    .setManagedContext(hazelcastInstance.managedContext)
+                    .setPartitioningStrategy(partitioningStrategy)
+                    .setHazelcastInstance(hazelcastInstance)
+                    .build();
+        } catch (Exception e) {
+            throw ExceptionUtil.rethrow(e);
+        }
+        return ss;
+    }
+
+    private MemoryManager getMemoryManager(Config config) {
+        OffHeapMemoryConfig memoryConfig = config.getOffHeapMemoryConfig();
+        if (memoryConfig.isEnabled()) {
+            MemorySize size = memoryConfig.getSize();
+            OffHeapMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            logger.info("Creating " + type + " offheap memory manager with " + size.toPrettyString() + " size");
+            if (type == OffHeapMemoryConfig.MemoryAllocatorType.STANDARD) {
+                return new StandardMemoryManager(size);
+            } else {
+                int blockSize = memoryConfig.getMinBlockSize();
+                int pageSize = memoryConfig.getPageSize();
+                float metadataSpace = memoryConfig.getMetadataSpacePercentage();
+                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
+            }
+        }
+        return null;
+    }
+
     public SecurityContext getSecurityContext() {
         if (securityEnabled && securityContext == null) {
             securityContext = new SecurityContextImpl(node);
@@ -152,8 +212,12 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
+            SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
+            if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
+                throw new RuntimeException("SSL and SymmetricEncryption cannot be both enabled!");
+            }
             logger.info("SSL is enabled");
-            return new SSLSocketChannelWrapperFactory(networkConfig);
+            return new SSLSocketChannelWrapperFactory(sslConfig);
         }
         return super.getSocketChannelWrapperFactory();
     }
@@ -193,6 +257,28 @@ public class EnterpriseNodeInitializer extends DefaultNodeInitializer implements
     @Override
     public WanReplicationService geWanReplicationService() {
         return new EnterpriseWanReplicationService(node);
+    }
+
+    @Override
+    public void onThreadStart(Thread thread) {
+        EnterpriseSerializationService serializationService
+                = (EnterpriseSerializationService) node.getSerializationService();
+
+        MemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager instanceof PoolingMemoryManager) {
+            ((PoolingMemoryManager) memoryManager).registerThread(thread);
+        }
+    }
+
+    @Override
+    public void onThreadStop(Thread thread) {
+        EnterpriseSerializationService serializationService
+                = (EnterpriseSerializationService) node.getSerializationService();
+
+        MemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager instanceof PoolingMemoryManager) {
+            ((PoolingMemoryManager) memoryManager).deregisterThread(thread);
+        }
     }
 
     public void destroy() {

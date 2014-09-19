@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.concurrent.lock.LockService;
 import com.hazelcast.core.ILock;

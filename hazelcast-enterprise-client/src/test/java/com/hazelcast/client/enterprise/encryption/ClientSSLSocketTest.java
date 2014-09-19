@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.enterprise.encryption;
+package com.hazelcast.client.enterprise.encryption;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -24,6 +24,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

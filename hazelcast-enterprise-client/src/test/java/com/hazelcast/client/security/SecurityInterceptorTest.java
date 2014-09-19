@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.config.Config;
@@ -25,10 +25,11 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.security.Credentials;
+import com.hazelcast.security.Parameters;
+import com.hazelcast.security.SecurityInterceptor;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

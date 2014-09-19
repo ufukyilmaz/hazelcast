@@ -1,5 +1,6 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
+import com.hazelcast.client.security.BaseInterceptorTest;
 import com.hazelcast.concurrent.countdownlatch.CountDownLatchService;
 import com.hazelcast.core.ICountDownLatch;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;

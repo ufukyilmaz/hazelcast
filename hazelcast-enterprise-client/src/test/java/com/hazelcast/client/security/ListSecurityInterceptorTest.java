@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.collection.list.ListService;
 import com.hazelcast.core.IList;

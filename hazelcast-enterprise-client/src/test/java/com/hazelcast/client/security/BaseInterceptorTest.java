@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 
 import com.hazelcast.client.HazelcastClient;
@@ -13,6 +13,9 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
 import com.hazelcast.query.Predicate;
+import com.hazelcast.security.Credentials;
+import com.hazelcast.security.Parameters;
+import com.hazelcast.security.SecurityInterceptor;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

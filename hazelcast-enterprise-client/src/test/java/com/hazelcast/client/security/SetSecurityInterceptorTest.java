@@ -1,5 +1,6 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
+import com.hazelcast.client.security.BaseInterceptorTest;
 import com.hazelcast.collection.set.SetService;
 import com.hazelcast.core.ICollection;
 import com.hazelcast.core.ItemEvent;

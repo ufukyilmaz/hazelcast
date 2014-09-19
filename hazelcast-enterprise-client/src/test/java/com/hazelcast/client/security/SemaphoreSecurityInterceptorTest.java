@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.concurrent.semaphore.SemaphoreService;
 import com.hazelcast.core.ISemaphore;

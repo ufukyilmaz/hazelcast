@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.concurrent.atomiclong.AtomicLongService;
 import com.hazelcast.core.IAtomicLong;

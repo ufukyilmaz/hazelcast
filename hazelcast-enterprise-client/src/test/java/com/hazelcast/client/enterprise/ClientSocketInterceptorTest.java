@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.enterprise;
+package com.hazelcast.client.enterprise;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
@@ -27,12 +27,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.enterprise.SocketInterceptorTest.MySocketInterceptor;
+import static com.hazelcast.nio.tcp.SocketInterceptorTest.MySocketInterceptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner.class)
 public class ClientSocketInterceptorTest {
 
     @Before

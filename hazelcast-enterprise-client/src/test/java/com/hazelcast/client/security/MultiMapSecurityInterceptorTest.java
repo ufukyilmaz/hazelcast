@@ -1,4 +1,4 @@
-package com.hazelcast.security;
+package com.hazelcast.client.security;
 
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.MultiMap;

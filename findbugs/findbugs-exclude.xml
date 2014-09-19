@@ -3,6 +3,11 @@
 
     <!--comment out packages as they pass findbugs. e.g. examples now passes-->
 
+    <Match>
+        <Class name="com.hazelcast.nio.ssl.SSLSocketChannelWrapper" />
+        <Bug pattern="SWL_SLEEP_WITH_LOCK_HELD" />
+    </Match>
+
     <!-- all these issues below need to be resolved in 3.3-->
     <Match>
         <Package name="com.hazelcast.session" />

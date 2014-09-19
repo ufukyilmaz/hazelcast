@@ -4,6 +4,8 @@
     <name>Hazelcast Enterprise Root</name>
     <modules>
         <module>hazelcast-enterprise</module>
+        <!--<module>hazelcast-enterprise-jcache</module>-->
+        <module>hazelcast-enterprise-client</module>
         <module>hazelcast-enterprise-sessions</module>
         <module>hazelcast-enterprise-all</module>
     </modules>
@@ -21,11 +23,14 @@
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
 
         <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
-        <findbugs.maven.plugin.version>2.5.3</findbugs.maven.plugin.version>
+        <findbugs.maven.plugin.version>2.5.5</findbugs.maven.plugin.version>
         <checkstyle.maven.plugin.version>2.12</checkstyle.maven.plugin.version>
         <main.basedir>${project.basedir}</main.basedir>
         <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
         <maven.shade.plugin.version>2.2</maven.shade.plugin.version>
+
+        <mockito.all.version>1.9.5</mockito.all.version>
+        <log4j.version>1.2.12</log4j.version>
     </properties>
 
     <licenses>
@@ -122,6 +127,13 @@
                         <!-- manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile -->
                     </archive>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -269,18 +281,17 @@
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-client</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
-        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.all.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

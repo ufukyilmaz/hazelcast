@@ -50,9 +50,17 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test2_offer() throws InterruptedException {
         final String item = randomString();
-        final long timeout = randomLong();
+        final long timeout = randomLong() + 1;
         queue.offer(item, timeout, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "offer", item, timeout, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void testOfferWithZeroTimeout() throws InterruptedException {
+        final String item = randomString();
+        final long timeout = 0;
+        queue.offer(item, timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "offer", item);
     }
 
     @Test

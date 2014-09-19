@@ -1,6 +1,7 @@
-package com.hazelcast.elasticmemory.error;
+package com.hazelcast.memory.error;
 
 public class OffHeapError extends Error {
+
     public OffHeapError() {
         super();
     }

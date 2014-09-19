@@ -17,19 +17,18 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
-import com.hazelcast.elasticmemory.util.MathUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataAccessor;
+import com.hazelcast.nio.serialization.HeapData;
 import com.hazelcast.storage.Storage;
+import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
 
 class UnsafeStorage implements Storage<DataRefImpl> {
 
@@ -52,7 +51,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
 
         this.chunkSize = chunkSize;
         if (capacity % chunkSize != 0) {
-            capacity = MathUtil.divideByAndCeilToLong(capacity, chunkSize) * chunkSize;
+            capacity = QuickMath.divideByAndCeilToLong(capacity, chunkSize) * chunkSize;
         }
 
         assertTrue((capacity % chunkSize == 0), "Storage size[" + capacity
@@ -89,12 +88,12 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.getBuffer();
+        final byte[] value = data.getData();
         if (value == null || value.length == 0) {
-            return new DataRefImpl(data.getType(), null, 0, data.getClassDefinition()); // volatile write;
+            return new DataRefImpl(data.getType(), null, 0); // volatile write;
         }
 
-        final int count = divideByAndCeilToInt(value.length, chunkSize);
+        final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
         final int[] indexes = reserve(count);  // operation under lock
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         int offset = 0;
@@ -104,7 +103,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (address + pos), len);
             offset += len;
         }
-        return new DataRefImpl(data.getType(), indexes, value.length, data.getClassDefinition()); // volatile write
+        return new DataRefImpl(data.getType(), indexes, value.length); // volatile write
     }
 
     public Data get(int hash, final DataRefImpl ref) {
@@ -112,9 +111,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             return null;
         }
         if (ref.isEmpty()) {
-            Data data = new Data(ref.getType(), null);
-            DataAccessor.setCD(data, ref.getClassDefinition());
-            return data;
+            return new HeapData(ref.getType(), null);
         }
 
         final byte[] value = new byte[ref.size()];
@@ -129,9 +126,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         }
 
         if (isEntryRefValid(ref)) { // volatile read
-            Data data = new Data(ref.getType(), value);
-            DataAccessor.setCD(data, ref.getClassDefinition());
-            return data;
+            return new HeapData(ref.getType(), value);
         }
         return null;
     }

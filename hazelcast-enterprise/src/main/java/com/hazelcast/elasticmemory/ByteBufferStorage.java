@@ -1,16 +1,16 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.elasticmemory.util.MemoryUnit;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.storage.Storage;
 
 import java.io.Closeable;
 import java.util.logging.Level;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToLong;
+import static com.hazelcast.util.QuickMath.divideByAndCeilToInt;
+import static com.hazelcast.util.QuickMath.divideByAndCeilToLong;
 
 class ByteBufferStorage implements Storage<DataRefImpl> {
 
@@ -31,7 +31,7 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
         if (capacity >= MAX_SEGMENT_SIZE * MIN_SEGMENT_COUNT) {
             segmentCount = divideByAndCeilToInt(capacity, (int) MAX_SEGMENT_SIZE);
         } else {
-            segmentCount = capacity >= MIN_SEGMENT_COUNT ? MIN_SEGMENT_COUNT : 1;
+            segmentCount = 1;
         }
         boolean sizeAdjusted = false;
         if (capacity % segmentCount != 0) {

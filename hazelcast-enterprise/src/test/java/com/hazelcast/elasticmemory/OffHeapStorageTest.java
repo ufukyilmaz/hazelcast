@@ -4,19 +4,27 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.GlobalSerializerConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.core.*;
-import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
-import com.hazelcast.elasticmemory.util.MemorySize;
-import com.hazelcast.elasticmemory.util.MemoryUnit;
+import com.hazelcast.core.EntryAdapter;
+import com.hazelcast.core.EntryEvent;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationConstants;
+import com.hazelcast.nio.serialization.HeapData;
 import com.hazelcast.nio.serialization.StreamSerializer;
 import com.hazelcast.storage.Storage;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -24,7 +32,10 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class OffHeapStorageTest {
@@ -95,13 +106,13 @@ public class OffHeapStorageTest {
         rand.nextBytes(data);
         final int hash = rand.nextInt();
 
-        final DataRefImpl ref = s.put(hash, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
+        final DataRefImpl ref = s.put(hash, new HeapData(0, data));
         assertEquals(k, ref.size());
         assertEquals((int) Math.ceil((double) k / chunkSize), ref.getChunkCount());
 
         Data resultData = s.get(hash, ref);
         assertNotNull(resultData);
-        byte[] result = resultData.getBuffer();
+        byte[] result = resultData.getData();
         assertArrayEquals(data, result);
 
         s.remove(hash, ref);
@@ -142,7 +153,7 @@ public class OffHeapStorageTest {
                 : new ByteBufferStorage(total.bytes(), (int) chunk.bytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
-            s.put(i, new Data(SerializationConstants.CONSTANT_TYPE_DATA, data));
+            s.put(i, new HeapData(0, data));
         }
         s.destroy();
     }
@@ -181,12 +192,12 @@ public class OffHeapStorageTest {
         assertEquals(ENTRY_COUNT, map.size());
     }
 
-    @Test(expected = HazelcastInstanceNotActiveException.class)
+    @Test(expected = OffHeapOutOfMemoryError.class)
     public void testMapStorageOom() {
         testMapStorageOom(false);
     }
 
-    @Test(expected = HazelcastInstanceNotActiveException.class)
+    @Test(expected = OffHeapOutOfMemoryError.class)
     public void testMapStorageOom2() {
         testMapStorageOom(true);
     }
@@ -335,7 +346,7 @@ public class OffHeapStorageTest {
         }
     }
 
-    @Test(expected = HazelcastInstanceNotActiveException.class)
+    @Test(expected = OffHeapOutOfMemoryError.class)
     public void testSharedMapStorageOom() {
         Config c1 = new Config();
         c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);

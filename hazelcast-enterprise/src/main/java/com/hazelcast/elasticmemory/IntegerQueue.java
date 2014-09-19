@@ -1,6 +1,6 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.elasticmemory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 
 /**
 * @author mdogan 10/10/13

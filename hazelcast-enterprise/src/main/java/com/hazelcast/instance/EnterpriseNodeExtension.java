@@ -62,7 +62,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         super();
     }
 
-    public void beforeInitialize(Node node) {
+    public void beforeStart(Node node) {
         this.node = node;
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
         Date validUntil;
@@ -130,7 +130,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
     }
 
-    public void afterInitialize(Node node) {
+    public void afterStart(Node node) {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
             node.shutdown(true);

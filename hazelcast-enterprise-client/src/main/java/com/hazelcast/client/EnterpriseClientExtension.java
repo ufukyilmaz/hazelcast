@@ -26,8 +26,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     private volatile SocketInterceptor socketInterceptor;
 
     @Override
-    public void beforeInitialize(HazelcastClient client) {
-        super.beforeInitialize(client);
+    public void beforeStart(HazelcastClient client) {
+        super.beforeStart(client);
         ClientConfig clientConfig = client.getClientConfig();
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         initSocketInterceptor(networkConfig.getSocketInterceptorConfig());

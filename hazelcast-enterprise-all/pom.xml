@@ -35,6 +35,8 @@
                                 <includes>
                                     <include>com.hazelcast:hazelcast-all</include>
                                     <include>com.hazelcast:hazelcast-enterprise</include>
+                                    <!--<include>com.hazelcast:hazelcast-enterprise-jcache</include>-->
+                                    <include>com.hazelcast:hazelcast-enterprise-client</include>
                                 </includes>
                             </artifactSet>
                             <filters>

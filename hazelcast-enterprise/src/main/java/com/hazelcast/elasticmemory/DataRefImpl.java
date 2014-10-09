@@ -1,32 +1,28 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.nio.serialization.SerializationConstants;
 import com.hazelcast.storage.DataRef;
-import com.hazelcast.nio.serialization.ClassDefinition;
 
 public class DataRefImpl implements DataRef {
 
     private final int length;
     private final int type;
     private final int[] chunks;
-    private final ClassDefinition classDefinition;
 
     private volatile boolean valid;
 
-    DataRefImpl(int type, int[] indexes, int length, ClassDefinition cd) {
+    DataRefImpl(int type, int[] indexes, int length) {
         this.type = type;
         this.chunks = indexes;
         this.length = length;
-        this.classDefinition = cd;
         this.valid = true; // volatile write
     }
 
-    private DataRefImpl() {
-        length = 0;
-        type = SerializationConstants.CONSTANT_TYPE_DATA;
-        chunks = null;
-        classDefinition = null;
-    }
+//    private DataRefImpl() {
+//        length = 0;
+//        type = SerializationConstants.CONSTANT_TYPE_DATA;
+//        chunks = null;
+//        classDefinition = null;
+//    }
 
     public boolean isEmpty() {
         return getChunkCount() == 0;
@@ -60,9 +56,5 @@ public class DataRefImpl implements DataRef {
 
     public void invalidate() {
         valid = false;  // volatile write
-    }
-
-    ClassDefinition getClassDefinition() {
-        return classDefinition;
     }
 }

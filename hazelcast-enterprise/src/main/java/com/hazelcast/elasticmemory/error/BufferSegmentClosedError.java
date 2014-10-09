@@ -1,5 +1,7 @@
 package com.hazelcast.elasticmemory.error;
 
+import com.hazelcast.memory.error.OffHeapError;
+
 /**
 * @author mdogan 10/10/13
 */

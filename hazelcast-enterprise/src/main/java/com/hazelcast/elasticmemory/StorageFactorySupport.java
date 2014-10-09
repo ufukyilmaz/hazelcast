@@ -1,7 +1,7 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.elasticmemory.util.MemorySize;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.memory.MemorySize;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.storage.Storage;
 

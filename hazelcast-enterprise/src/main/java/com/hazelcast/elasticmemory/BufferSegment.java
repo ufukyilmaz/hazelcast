@@ -4,7 +4,8 @@ import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataAccessor;
+import com.hazelcast.nio.serialization.HeapData;
+import com.hazelcast.util.QuickMath;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
@@ -14,7 +15,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.elasticmemory.util.MathUtil.divideByAndCeilToInt;
 
 public class BufferSegment implements Closeable {
 
@@ -55,12 +55,12 @@ public class BufferSegment implements Closeable {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.getBuffer();
+        final byte[] value = data.getData();
         if (value == null || value.length == 0) {
-            return new DataRefImpl(data.getType(), null, 0, data.getClassDefinition()); // volatile write;
+            return new DataRefImpl(data.getType(), null, 0); // volatile write;
         }
 
-        final int count = divideByAndCeilToInt(value.length, chunkSize);
+        final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
         final ByteBuffer buffer = getBuffer();   // volatile read
         if (buffer == null) {
             throw new BufferSegmentClosedError();
@@ -78,7 +78,7 @@ public class BufferSegment implements Closeable {
         } finally {
             bufferPool.offer(buffer);
         }
-        return new DataRefImpl(data.getType(), indexes, value.length, data.getClassDefinition()); // volatile write
+        return new DataRefImpl(data.getType(), indexes, value.length); // volatile write
     }
 
     public Data get(final DataRefImpl ref) {
@@ -86,9 +86,7 @@ public class BufferSegment implements Closeable {
             return null;
         }
         if (ref.isEmpty()) {
-            Data data = new Data(ref.getType(), null);
-            DataAccessor.setCD(data, ref.getClassDefinition());
-            return data;
+            return new HeapData(ref.getType(), null);
         }
 
         final byte[] value = new byte[ref.size()];
@@ -110,9 +108,7 @@ public class BufferSegment implements Closeable {
         }
 
         if (isEntryRefValid(ref)) { // volatile read
-            Data data = new Data(ref.getType(), value);
-            DataAccessor.setCD(data, ref.getClassDefinition());
-            return data;
+            return new HeapData(ref.getType(), value);
         }
         return null;
     }

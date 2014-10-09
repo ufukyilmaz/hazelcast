@@ -1,5 +1,7 @@
 package com.hazelcast.instance;
 
+import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.OffHeapMemoryConfig;
@@ -255,8 +257,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public WanReplicationService geWanReplicationService() {
-        return new EnterpriseWanReplicationService(node);
+    public <T> T createService(Class<T> clazz) {
+        if (WanReplicationService.class.isAssignableFrom(clazz)) {
+            return (T) new EnterpriseWanReplicationService(node);
+        } else if (ICacheService.class.isAssignableFrom(clazz)) {
+            return (T) new EnterpriseCacheService();
+        }
+        return super.createService(clazz);
     }
 
     @Override

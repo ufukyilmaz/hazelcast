@@ -1,1 +1,1 @@
-com.hazelcast.client.EnterpriseClientExtension
+com.hazelcast.client.impl.EnterpriseClientExtension

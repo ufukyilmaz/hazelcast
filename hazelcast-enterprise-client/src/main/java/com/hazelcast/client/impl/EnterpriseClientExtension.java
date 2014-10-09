@@ -1,4 +1,4 @@
-package com.hazelcast.client;
+package com.hazelcast.client.impl;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
@@ -18,15 +18,12 @@ import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 import com.hazelcast.util.ExceptionUtil;
 
-/**
- * @author mdogan 05/09/14
- */
 public class EnterpriseClientExtension extends DefaultClientExtension {
 
     private volatile SocketInterceptor socketInterceptor;
 
     @Override
-    public void beforeStart(HazelcastClient client) {
+    public void beforeStart(HazelcastClientInstanceImpl client) {
         super.beforeStart(client);
         ClientConfig clientConfig = client.getClientConfig();
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();

@@ -150,8 +150,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public char readChar(int position) throws IOException {
-        checkAvailable(position, CHAR_SIZE_IN_BYTES);
-        return memory.readChar(position);
+        try {
+            return memory.readChar(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public double readDouble() throws IOException {
@@ -161,8 +164,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public double readDouble(int position) throws IOException {
-        checkAvailable(position, DOUBLE_SIZE_IN_BYTES);
-        return memory.readDouble(position);
+        try {
+            return memory.readDouble(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public float readFloat() throws IOException {
@@ -172,8 +178,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public float readFloat(int position) throws IOException {
-        checkAvailable(position, FLOAT_SIZE_IN_BYTES);
-        return memory.readFloat(position);
+        try {
+            return memory.readFloat(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public int readInt() throws IOException {
@@ -183,8 +192,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public int readInt(int position) throws IOException {
-        checkAvailable(position, INT_SIZE_IN_BYTES);
-        return memory.readInt(position);
+        try {
+            return memory.readInt(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public long readLong() throws IOException {
@@ -194,8 +206,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public long readLong(int position) throws IOException {
-        checkAvailable(position, LONG_SIZE_IN_BYTES);
-        return memory.readLong(position);
+        try {
+            return memory.readLong(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public short readShort() throws IOException {
@@ -205,8 +220,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     public short readShort(int position) throws IOException {
-        checkAvailable(position, SHORT_SIZE_IN_BYTES);
-        return memory.readShort(position);
+        try {
+            return memory.readShort(position);
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public byte[] readByteArray() throws IOException {
@@ -285,22 +303,16 @@ final class MemoryBlockDataInput extends InputStream
         }
 
         int actualLength = length * indexScale;
-        checkAvailable(pos, actualLength);
-        memory.copyTo(pos, dest, destOffset, actualLength);
-        pos += actualLength;
+        try {
+            memory.copyTo(pos, dest, destOffset, actualLength);
+            pos += actualLength;
+        } catch (IndexOutOfBoundsException e) {
+            throw new IOException(e);
+        }
     }
 
     public ByteOrder getByteOrder() {
         return ByteOrder.nativeOrder();
-    }
-
-    private void checkAvailable(int pos, int k) throws IOException {
-        if (pos < 0) {
-            throw new IllegalArgumentException("Negative pos! -> " + pos);
-        }
-        if ((size - pos) < k) {
-            throw new IOException("Cannot read " + k + " bytes!");
-        }
     }
 
     public void readFully(final byte[] b) throws IOException {

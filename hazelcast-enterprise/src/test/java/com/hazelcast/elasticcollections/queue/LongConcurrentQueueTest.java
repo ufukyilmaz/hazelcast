@@ -77,7 +77,7 @@ public class LongConcurrentQueueTest {
         }
 
         for (QueueWorker worker : workers) {
-            Assert.assertTrue(worker.await(2, TimeUnit.MINUTES));
+            Assert.assertTrue(worker.await(10, TimeUnit.MINUTES));
             Throwable error = worker.error;
             Assert.assertNull(toString(error), error);
         }

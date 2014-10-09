@@ -330,7 +330,7 @@ public class SSLConnectionTest {
         }
     }
 
-    @Test(timeout = 1000 * 180)
+    @Test(timeout = 1000 * 600)
     public void testPutAndGetAlwaysGoesToWire() throws Exception {
         Config config = new Config();
         config.setProperty(GroupProperties.PROP_IO_THREAD_COUNT, "1");

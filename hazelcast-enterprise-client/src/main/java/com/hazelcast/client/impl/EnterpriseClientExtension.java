@@ -18,6 +18,9 @@ import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 import com.hazelcast.util.ExceptionUtil;
 
+/**
+ * Enterprise implementation of <tt>ClientExtension</tt>
+ */
 public class EnterpriseClientExtension extends DefaultClientExtension {
 
     private volatile SocketInterceptor socketInterceptor;
@@ -40,9 +43,11 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
 
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
+            SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
+                    .getSerializationConfig() : new SerializationConfig();
             ss = builder.setMemoryManager(getMemoryManager(config))
                     .setClassLoader(configClassLoader)
-                    .setConfig(config.getSerializationConfig() != null ? config.getSerializationConfig() : new SerializationConfig())
+                    .setConfig(serializationConfig)
                     .setManagedContext(new HazelcastClientManagedContext(client, config.getManagedContext()))
                     .setPartitioningStrategy(partitioningStrategy)
                     .setHazelcastInstance(client)

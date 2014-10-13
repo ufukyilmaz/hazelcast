@@ -16,7 +16,7 @@ public final class CacheInvalidationListener {
     }
 
     public void send(CacheInvalidationMessage message) {
-        if (endpoint.live()) {
+        if (endpoint.isAlive()) {
             endpoint.sendEvent(message, callId);
         }
     }

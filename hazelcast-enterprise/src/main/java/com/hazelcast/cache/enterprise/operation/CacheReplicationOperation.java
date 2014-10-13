@@ -1,6 +1,6 @@
 package com.hazelcast.cache.enterprise.operation;
 
-import com.hazelcast.cache.CacheRecord;
+import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
 import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public final class CacheReplicationOperation extends Operation implements NonThreadSafe {
 
-    final Map<String, Map<Data, CacheRecord>> source;
+    final Map<String, Map<Data, EnterpriseCacheRecord>> source;
 
     final Map<String, Map<Data, CacheRecordHolder>> destination;
 
@@ -41,7 +41,7 @@ public final class CacheReplicationOperation extends Operation implements NonThr
     }
 
     public CacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
-        source = new HashMap<String, Map<Data, CacheRecord>>();
+        source = new HashMap<String, Map<Data, EnterpriseCacheRecord>>();
         destination = null;
 
         Iterator<ICacheRecordStore> iter = segment.cacheIterator();
@@ -49,7 +49,7 @@ public final class CacheReplicationOperation extends Operation implements NonThr
             EnterpriseCacheRecordStore next = (EnterpriseCacheRecordStore) iter.next();
             CacheConfig cacheConfig = next.getConfig();
             if (cacheConfig.getAsyncBackupCount() + cacheConfig.getBackupCount() >= replicaIndex) {
-                source.put(next.getName(), next.map);
+                source.put(next.getName(), next.getCacheMap());
             }
         }
     }
@@ -134,14 +134,14 @@ public final class CacheReplicationOperation extends Operation implements NonThr
         if (count > 0) {
             OffHeapData data = new OffHeapData();
             long now = Clock.currentTimeMillis();
-            for (Map.Entry<String, Map<Data, CacheRecord>> entry : source.entrySet()) {
-                Map<Data, CacheRecord> value = entry.getValue();
+            for (Map.Entry<String, Map<Data, EnterpriseCacheRecord>> entry : source.entrySet()) {
+                Map<Data, EnterpriseCacheRecord> value = entry.getValue();
                 int subCount = value.size();
                 out.writeInt(subCount);
                 if (subCount > 0) {
                     out.writeUTF(entry.getKey());
-                    for (Map.Entry<Data, CacheRecord> e : value.entrySet()) {
-                        CacheRecord record = e.getValue();
+                    for (Map.Entry<Data, EnterpriseCacheRecord> e : value.entrySet()) {
+                        EnterpriseCacheRecord record = e.getValue();
 
                         long creationTime = record.getCreationTime();
                         int ttlMillis = record.getTtlMillis();

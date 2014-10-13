@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.HazelcastCachingProvider;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
@@ -37,7 +38,7 @@ public class CacheStatsTest {
         serializationConfig.setAllowUnsafe(true);
         final HazelcastInstance instance = Hazelcast.newHazelcastInstance(config);
 
-        CacheManager cacheManager = new HazelcastCachingProvider(instance).getCacheManager();
+        CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
         ICache cache = (ICache) cacheManager.getCache(name);
         int puts = 1000;
         for (int i = 0; i < puts; i++) {
@@ -59,14 +60,12 @@ public class CacheStatsTest {
             cache.remove(i);
         }
 
-        CacheStats stats = cache.getStats();
-        assertEquals(miss, stats.getMisses());
-        assertEquals(hit, stats.getHits());
-        assertEquals(puts, stats.getPuts());
-        assertEquals(hit + miss, stats.getGets());
-        assertEquals(removes, stats.getRemoves());
-        assertEquals(puts - removes, stats.getOwnedEntryCount());
-
+        CacheStatistics stats = cache.getLocalCacheStatistics();
+        assertEquals(miss, stats.getCacheMisses());
+        assertEquals(hit, stats.getCacheHits());
+        assertEquals(puts, stats.getCachePuts());
+        assertEquals(hit + miss, stats.getCacheGets());
+        assertEquals(removes, stats.getCacheRemovals());
     }
 
     @Test
@@ -79,13 +78,10 @@ public class CacheStatsTest {
         SerializationConfig serializationConfig = config.getSerializationConfig();
         serializationConfig.setAllowUnsafe(true);
 
-        final HazelcastInstance instance1 = Hazelcast.newHazelcastInstance(config);
-        final HazelcastInstance instance2 = Hazelcast.newHazelcastInstance(config);
-
-        CacheManager cacheManager = new HazelcastCachingProvider(instance1).getCacheManager();
+        CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
         ICache cache = (ICache) cacheManager.getCache(name);
 
-        CacheManager cacheManager2 = new HazelcastCachingProvider(instance2).getCacheManager();
+        CacheManager cacheManager2 = new HazelcastCachingProvider().getCacheManager();
         ICache cache2 = (ICache) cacheManager2.getCache(name);
 
         int puts = 1000;
@@ -108,12 +104,12 @@ public class CacheStatsTest {
             cache.remove(i);
         }
 
-        CacheStats stats1 = cache.getStats();
-        assertEquals(miss, stats1.getMisses());
-        assertEquals(hit, stats1.getHits());
-        assertEquals(puts, stats1.getPuts());
-        assertEquals(hit + miss, stats1.getGets());
-        assertEquals(removes, stats1.getRemoves());
+        CacheStatistics stats1 = cache.getLocalCacheStatistics();
+        assertEquals(miss, stats1.getCacheMisses());
+        assertEquals(hit, stats1.getCacheHits());
+        assertEquals(puts, stats1.getCachePuts());
+        assertEquals(hit + miss, stats1.getCacheGets());
+        assertEquals(removes, stats1.getCacheRemovals());
 
         int puts2 = 10000;
         for (int i = 0; i < puts2; i++) {
@@ -135,13 +131,12 @@ public class CacheStatsTest {
             cache2.remove(i);
         }
 
-        CacheStats stats2 = cache2.getStats();
-        assertEquals(miss2, stats2.getMisses());
-        assertEquals(hit2, stats2.getHits());
-        assertEquals(puts2, stats2.getPuts());
-        assertEquals(hit2 + miss2, stats2.getGets());
-        assertEquals(removes2, stats2.getRemoves());
-
+        CacheStatistics stats2 = cache.getLocalCacheStatistics();
+        assertEquals(miss2, stats2.getCacheMisses());
+        assertEquals(hit2, stats2.getCacheHits());
+        assertEquals(puts2, stats2.getCachePuts());
+        assertEquals(hit2 + miss2, stats2.getCacheGets());
+        assertEquals(removes2, stats2.getCacheRemovals());
     }
 
 }

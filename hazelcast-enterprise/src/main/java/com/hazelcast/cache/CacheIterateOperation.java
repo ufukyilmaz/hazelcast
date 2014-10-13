@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
 import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
@@ -36,15 +37,15 @@ public class CacheIterateOperation extends PartitionWideCacheOperation {
         EnterpriseCacheRecordStore cache = service.getCache(name, getPartitionId());
         if (cache != null) {
             EnterpriseSerializationService ss = service.getSerializationService();
-            BinaryOffHeapHashMap<CacheRecord>.EntryIter iter = cache.iterator(slot);
+            BinaryOffHeapHashMap<EnterpriseCacheRecord>.EntryIter iter = cache.iterator(slot);
             Data[] keys = new Data[batch];
             Data[] values = new Data[batch];
             int count = 0;
             while (iter.hasNext()) {
-                Map.Entry<Data, CacheRecord> entry = iter.next();
+                Map.Entry<Data, EnterpriseCacheRecord> entry = iter.next();
                 Data key = entry.getKey();
                 keys[count] = ss.convertData(key, DataType.HEAP);
-                CacheRecord record = entry.getValue();
+                EnterpriseCacheRecord record = entry.getValue();
                 OffHeapData value = cache.cacheRecordService.readData(record.getValueAddress());
                 values[count] = ss.convertData(value, DataType.HEAP);
                 if (++count == batch) {

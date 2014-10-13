@@ -7,8 +7,8 @@ import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
 import com.hazelcast.cache.impl.AbstractCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
+import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 05/02/14
  */
-public class EnterpriseCacheService extends AbstractCacheService implements ICacheService {
+public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
     protected ConstructorFunction<String, ICacheRecordStore> createCacheConstructorFunction(final int partitionId) {
@@ -77,7 +77,7 @@ public class EnterpriseCacheService extends AbstractCacheService implements ICac
     /**
      * Does forced eviction on one or more caches... Runs on the operation threads..
      */
-    int forceEvict(String name, int originalPartitionId) {
+    public int forceEvict(String name, int originalPartitionId) {
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
@@ -154,6 +154,20 @@ public class EnterpriseCacheService extends AbstractCacheService implements ICac
 
     public EnterpriseSerializationService getSerializationService() {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
+    }
+
+    @Override
+    public EnterpriseCacheRecordStore getOrCreateCache(String name, int partitionId) {
+        return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, partitionId);
+    }
+
+    @Override
+    public EnterpriseCacheRecordStore getCache(String name, int partitionId) {
+        return (EnterpriseCacheRecordStore) super.getCache(name, partitionId);
+    }
+
+    public CacheStatisticsImpl getOrCreateCacheStats(String name) {
+        return null;
     }
 
     @Override

@@ -18,8 +18,6 @@ package com.hazelcast.cache.client;
 
 import com.hazelcast.cache.CacheContainsKeyOperation;
 import com.hazelcast.cache.CachePortableHook;
-import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.config.CacheConfig;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -52,15 +50,6 @@ public class CacheContainsKeyRequest extends AbstractCacheRequest {
     @Override
     protected Operation prepareOperation() {
         return new CacheContainsKeyOperation(name, key);
-    }
-
-    @Override
-    protected void afterResponse() {
-        EnterpriseCacheService cacheService = getService();
-        final CacheConfig cacheConfig = cacheService.getNodeEngine().getConfig().findCacheConfig(name);
-        if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).setLastAccessTime(System.currentTimeMillis());
-        }
     }
 
     public void write(PortableWriter writer) throws IOException {

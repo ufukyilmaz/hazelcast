@@ -89,7 +89,7 @@
     <dependencies>
         <dependency>
             <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-client</artifactId>
+            <artifactId>hazelcast-all</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>

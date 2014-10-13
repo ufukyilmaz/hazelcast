@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.HazelcastCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -7,6 +8,7 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemoryManager;
@@ -23,6 +25,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.cache.CacheManager;
+import javax.cache.configuration.Configuration;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,15 +72,26 @@ public class CacheLoadTest {
 
         config.setSerializationConfig(AbstractCacheTest.getDefaultSerializationConfig());
 
-        config.addCacheConfig(new CacheConfig().setName(CACHE_NAME).setEvictionPolicy(EvictionPolicy.LRU)
-//            .setEvictionPercentage(10).setEvictionThresholdPercentage(90));
+        /*
+        config.addCacheConfig(new CacheConfig()
+                                .setName(CACHE_NAME)
+                                .setEvictionPolicy(EvictionPolicy.LRU)
+                                //.setEvictionPercentage(10)
+                                //.setEvictionThresholdPercentage(90));
         );
+        */
         return config;
     }
 
     protected ICache createCache(String name) {
-        CacheManager cacheManager = new HazelcastCachingProvider(server).getCacheManager();
-        return cacheManager.getCache(name).unwrap(ICache.class);
+        System.setProperty(GroupProperties.PROP_JCACHE_PROVIDER_TYPE, "server");
+        CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
+        CacheConfig cc = new CacheConfig()
+                                .setName(CACHE_NAME)
+                                .setEvictionPolicy(EvictionPolicy.LRU);
+        return cacheManager.createCache(name,
+                                        (Configuration<Object, Object>)cc)
+                                .unwrap(ICache.class);
     }
 
     @After

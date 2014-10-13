@@ -1,7 +1,6 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.AbstractCacheRecordStore;
-import com.hazelcast.cache.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.memory.MemoryBlockAccessor;
@@ -19,7 +18,7 @@ import java.util.Arrays;
  * @author mdogan 11/02/14
  */
 // TODO: needs refactor and cleanup..
-public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
+public final class EnterpriseCacheHashMap extends BinaryOffHeapHashMap<EnterpriseCacheRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
@@ -35,8 +34,8 @@ public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
 
     private int randomEvictionLastIndex;
 
-    public CacheHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<CacheRecord> memoryBlockAccessor, Callback<Data> evictionCallback) {
+    public EnterpriseCacheHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
+                                  MemoryBlockAccessor<EnterpriseCacheRecord> memoryBlockAccessor, Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, memoryBlockAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.evictionCallback = evictionCallback;
@@ -59,9 +58,9 @@ public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
             for (int ix = start; ix < end; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int ttlMillis = CacheRecord.getTtlMillis(value);
+                    int ttlMillis = EnterpriseCacheRecord.getTtlMillis(value);
                     if (ttlMillis > 0) {
-                        long creationTime = CacheRecord.getCreationTime(value);
+                        long creationTime = EnterpriseCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
                             OffHeapData binary = service.readData(key);
@@ -158,8 +157,8 @@ public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
     }
 
     private static long getAccessTime(long recordAddress) {
-        long creationTime = CacheRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = CacheRecord.getAccessTimeDiff(recordAddress);
+        long creationTime = EnterpriseCacheRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = EnterpriseCacheRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
     }
 
@@ -180,7 +179,7 @@ public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    hit = CacheRecord.getAccessHit(value);
+                    hit = EnterpriseCacheRecord.getAccessHit(value);
                     sortArray[k] = hit;
                     if (++k >= size) {
                         break;
@@ -196,7 +195,7 @@ public final class CacheHashMap extends BinaryOffHeapHashMap<CacheRecord> {
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int h = CacheRecord.getAccessHit(value);
+                    int h = EnterpriseCacheRecord.getAccessHit(value);
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);

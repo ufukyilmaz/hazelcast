@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.HazelcastCachingProvider;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -16,6 +17,9 @@ import org.junit.Test;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
+import javax.cache.expiry.CreatedExpiryPolicy;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
@@ -42,7 +46,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     @Before
     public void setup() {
         onSetup();
-        cacheManager = new HazelcastCachingProvider(getHazelcastInstance()).getCacheManager();
+        cacheManager = new HazelcastCachingProvider().getCacheManager();
     }
 
     protected abstract HazelcastInstance getHazelcastInstance();
@@ -162,11 +166,15 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         assertEquals(0, cache.size());
     }
 
+    protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {
+        return new CreatedExpiryPolicy(new Duration(timeUnit, ttl));
+    }
+
     @Test
     public void testPutWithTtl() throws ExecutionException, InterruptedException {
         final ICache cache = newCache();
         final String key = "key";
-        cache.put(key, "value1", 1, TimeUnit.SECONDS);
+        cache.put(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
 
         assertTrueEventually(new AssertTask() {
             public void run() throws Exception {
@@ -176,7 +184,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         assertEquals(0, cache.size());
 
 
-        cache.putAsync(key, "value1", 1, TimeUnit.SECONDS);
+        cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -186,7 +194,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         assertEquals(0, cache.size());
 
         cache.put(key, "value2");
-        Object o = cache.getAndPut(key, "value3", 1, TimeUnit.SECONDS);
+        Object o = cache.getAndPut(key, "value3", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertEquals("value2", o);
         assertTrueEventually(new AssertTask() {
             @Override
@@ -197,7 +205,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         assertEquals(0, cache.size());
 
         cache.put(key, "value4");
-        Future f = cache.getAndPutAsync(key, "value5", 1, TimeUnit.SECONDS);
+        Future f = cache.getAndPutAsync(key, "value5", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertEquals("value4", f.get());
 
         assertTrueEventually(new AssertTask() {

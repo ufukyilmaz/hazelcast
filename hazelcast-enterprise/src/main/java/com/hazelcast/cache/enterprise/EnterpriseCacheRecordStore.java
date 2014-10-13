@@ -2,7 +2,6 @@ package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.AbstractCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
-import com.hazelcast.cache.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.nio.serialization.Data;
@@ -19,6 +18,8 @@ import java.util.concurrent.TimeUnit;
  */
 public final class EnterpriseCacheRecordStore extends AbstractCacheRecordStore {
 
+    private static final int DEFAULT_INITIAL_CAPACITY = 1000;
+
     final String name;
     final int partitionId;
     final NodeEngine nodeEngine;
@@ -30,12 +31,16 @@ public final class EnterpriseCacheRecordStore extends AbstractCacheRecordStore {
 
     EnterpriseCacheRecordStore(final String name, int partitionId, NodeEngine nodeEngine,
             final EnterpriseCacheService cacheService) {
-        super(cacheService.getSerializationService(), nodeEngine.getConfig().findCacheConfig(name), 1000);
+        super(name,
+              cacheService,
+              cacheService.getSerializationService(),
+              nodeEngine,
+              DEFAULT_INITIAL_CAPACITY);
         this.name = name;
         this.partitionId = partitionId;
         this.nodeEngine = nodeEngine;
         this.cacheService = cacheService;
-        cacheConfig = nodeEngine.getConfig().findCacheConfig(name);
+        cacheConfig = cacheService.getCacheConfig(name);
 
         evictionOperation = createEvictionOperation(10);
         evictionTaskFuture = nodeEngine.getExecutionService()
@@ -73,12 +78,11 @@ public final class EnterpriseCacheRecordStore extends AbstractCacheRecordStore {
         return cacheConfig;
     }
 
-    public BinaryOffHeapHashMap<CacheRecord>.EntryIter iterator(int slot) {
-        return map.iterator(slot);
+    public BinaryOffHeapHashMap<EnterpriseCacheRecord>.EntryIter iterator(int slot) {
+        return records.iterator(slot);
     }
 
     private class EvictionTask implements Runnable {
-
         public void run() {
             if (hasTTL()) {
                 OperationService operationService = nodeEngine.getOperationService();

@@ -58,15 +58,15 @@ public class CacheGetRequest extends AbstractCacheRequest {
 
     @Override
     protected void beforeProcess() {
-        startTime = System.currentTimeMillis();
+        startTime = System.nanoTime();
     }
 
     @Override
     protected void afterResponse() {
         EnterpriseCacheService cacheService = getService();
-        final CacheConfig cacheConfig = cacheService.getNodeEngine().getConfig().findCacheConfig(name);
+        final CacheConfig cacheConfig = cacheService.getCacheConfig(name);
         if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).updateGetStats(startTime);
+            cacheService.getOrCreateCacheStats(name).addGetTimeNano(System.nanoTime() - startTime);
         }
     }
 

@@ -19,6 +19,7 @@ package com.hazelcast.cache.client;
 import com.hazelcast.cache.CacheGetAndRemoveOperation;
 import com.hazelcast.cache.CachePortableHook;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -57,15 +58,18 @@ public class CacheGetAndRemoveRequest extends AbstractCacheRequest {
 
     @Override
     protected void beforeProcess() {
-        startTime = System.currentTimeMillis();
+        startTime = System.nanoTime();
     }
 
     @Override
     protected void afterResponse() {
         EnterpriseCacheService cacheService = getService();
-        final CacheConfig cacheConfig = cacheService.getNodeEngine().getConfig().findCacheConfig(name);
+        final CacheConfig cacheConfig = cacheService.getCacheConfig(name);
         if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).updateRemoveStats(startTime);
+            long passedTimeNano = System.nanoTime() - startTime;
+            CacheStatisticsImpl cacheStats = cacheService.getOrCreateCacheStats(name);
+            cacheStats.addGetTimeNano(passedTimeNano);
+            cacheStats.addRemoveTimeNano(passedTimeNano);
         }
     }
 

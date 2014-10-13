@@ -19,7 +19,7 @@ public final class CacheEvictionOperation extends AbstractOperation implements P
     final String name;
     final int percentage;
 
-    CacheEvictionOperation(String name, int percentage) {
+    public CacheEvictionOperation(String name, int percentage) {
         this.name = name;
         this.percentage = percentage;
     }
@@ -28,7 +28,7 @@ public final class CacheEvictionOperation extends AbstractOperation implements P
         EnterpriseCacheService cacheService = getService();
         EnterpriseCacheRecordStore cache = (EnterpriseCacheRecordStore) cacheService.getCache(name, getPartitionId());
         if (cache != null) {
-            cache.map.evictExpiredRecords(percentage);
+            cache.evictExpiredRecords(percentage);
         }
     }
 

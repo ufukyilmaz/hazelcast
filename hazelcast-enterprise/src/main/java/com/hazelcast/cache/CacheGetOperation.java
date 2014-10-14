@@ -7,7 +7,7 @@ import com.hazelcast.spi.ReadonlyOperation;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheGetOperation extends AbstractCacheOperation implements ReadonlyOperation {
+public class CacheGetOperation extends AbstractOffHeapCacheOperation implements ReadonlyOperation {
 
 
     public CacheGetOperation() {

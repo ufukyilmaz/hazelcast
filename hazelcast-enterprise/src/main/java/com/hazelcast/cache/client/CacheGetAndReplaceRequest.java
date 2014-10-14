@@ -19,7 +19,6 @@ package com.hazelcast.cache.client;
 import com.hazelcast.cache.CacheGetAndReplaceOperation;
 import com.hazelcast.cache.CachePortableHook;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

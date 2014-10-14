@@ -6,12 +6,12 @@ import com.hazelcast.spi.BackupAwareOperation;
 /**
  * @author mdogan 05/02/14
  */
-abstract class BackupAwareCacheOperation extends AbstractCacheOperation implements BackupAwareOperation {
+abstract class BackupAwareOffHeapCacheOperation extends AbstractOffHeapCacheOperation implements BackupAwareOperation {
 
-    protected BackupAwareCacheOperation() {
+    protected BackupAwareOffHeapCacheOperation() {
     }
 
-    protected BackupAwareCacheOperation(String name, Data key) {
+    protected BackupAwareOffHeapCacheOperation(String name, Data key) {
         super(name, key);
     }
 

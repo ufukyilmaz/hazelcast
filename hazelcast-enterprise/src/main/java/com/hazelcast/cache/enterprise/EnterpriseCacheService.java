@@ -1,14 +1,14 @@
 package com.hazelcast.cache.enterprise;
 
+import com.hazelcast.cache.CacheStorageType;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.onheap.EnterpriseOnHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.CacheReplicationOperation;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.impl.AbstractCacheService;
-import com.hazelcast.cache.impl.CachePartitionSegment;
-import com.hazelcast.cache.impl.CacheStatisticsImpl;
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.*;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -32,16 +32,29 @@ import java.util.concurrent.TimeUnit;
 public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
-    protected ConstructorFunction<String, ICacheRecordStore> createCacheConstructorFunction(final int partitionId) {
-        ConstructorFunction<String, ICacheRecordStore> function
-                = new ConstructorFunction<String, ICacheRecordStore>() {
+    protected ConstructorFunction<CacheInfo, ICacheRecordStore> createCacheConstructorFunction(final int partitionId) {
+        ConstructorFunction<CacheInfo, ICacheRecordStore> function
+                = new ConstructorFunction<CacheInfo, ICacheRecordStore>() {
 
-            public ICacheRecordStore createNew(String name) {
-                try {
-                    return new EnterpriseCacheRecordStore(name, partitionId, nodeEngine, EnterpriseCacheService.this);
-                } catch (OffHeapOutOfMemoryError e) {
-                    throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
-                            "not enough contiguous memory available! -> " + e.getMessage(), e);
+            public ICacheRecordStore createNew(CacheInfo ci) {
+                if (ci.getCacheStorageType() == null
+                        || ci.getCacheStorageType() == CacheStorageType.HEAP) {
+                    return new EnterpriseOnHeapCacheRecordStore(ci.getName(),
+                                                                partitionId,
+                                                                nodeEngine,
+                                                                EnterpriseCacheService.this);
+                } else {
+                    try {
+                        return new EnterpriseOffHeapCacheRecordStore(partitionId,
+                                                                     ci.getName(),
+                                                                     EnterpriseCacheService.this,
+                                                                     getSerializationService(),
+                                                                     nodeEngine,
+                                                                     EnterpriseOffHeapCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+                    } catch (OffHeapOutOfMemoryError e) {
+                        throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
+                                "not enough contiguous memory available! -> " + e.getMessage(), e);
+                    }
                 }
             }
         };
@@ -162,6 +175,13 @@ public class EnterpriseCacheService extends AbstractCacheService {
     }
 
     @Override
+    public ICacheRecordStore getOrCreateCache(String name,
+                                              CacheStorageType cacheStorageType,
+                                              int partitionId) {
+        return super.getOrCreateCache(name, cacheStorageType, partitionId);
+    }
+
+    @Override
     public EnterpriseCacheRecordStore getCache(String name, int partitionId) {
         return (EnterpriseCacheRecordStore) super.getCache(name, partitionId);
     }
@@ -172,7 +192,7 @@ public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
     public String toString() {
-        return "CacheService[" + SERVICE_NAME + "]";
+        return "EnterpriseCacheService[" + SERVICE_NAME + "]";
     }
 
 }

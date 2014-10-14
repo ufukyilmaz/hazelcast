@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutOperation extends BackupAwareCacheOperation {
+public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
     private boolean get; // getAndPut

@@ -1,6 +1,6 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutIfAbsentOperation extends BackupAwareCacheOperation {
+public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
 
@@ -28,7 +28,8 @@ public class CachePutIfAbsentOperation extends BackupAwareCacheOperation {
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseCacheRecordStore cache = service.getOrCreateCache(name, getPartitionId());
+        EnterpriseOffHeapCacheRecordStore cache =
+                (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         response = cache.putIfAbsent(key, value, getCallerUuid());
     }
 

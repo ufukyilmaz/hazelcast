@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheGetAndReplaceOperation extends BackupAwareCacheOperation {
+public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
 

@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheReplaceOperation extends BackupAwareCacheOperation {
+public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
     private Data currentValue; // replace if same

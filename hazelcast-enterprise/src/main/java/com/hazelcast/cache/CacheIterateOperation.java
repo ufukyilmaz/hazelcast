@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecord;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -34,19 +34,20 @@ public class CacheIterateOperation extends PartitionWideCacheOperation {
     @Override
     public void run() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseCacheRecordStore cache = service.getCache(name, getPartitionId());
+        EnterpriseOffHeapCacheRecordStore cache =
+                (EnterpriseOffHeapCacheRecordStore) service.getCache(name, getPartitionId());
         if (cache != null) {
             EnterpriseSerializationService ss = service.getSerializationService();
-            BinaryOffHeapHashMap<EnterpriseCacheRecord>.EntryIter iter = cache.iterator(slot);
+            BinaryOffHeapHashMap<EnterpriseOffHeapCacheRecord>.EntryIter iter = cache.iterator(slot);
             Data[] keys = new Data[batch];
             Data[] values = new Data[batch];
             int count = 0;
             while (iter.hasNext()) {
-                Map.Entry<Data, EnterpriseCacheRecord> entry = iter.next();
+                Map.Entry<Data, EnterpriseOffHeapCacheRecord> entry = iter.next();
                 Data key = entry.getKey();
                 keys[count] = ss.convertData(key, DataType.HEAP);
-                EnterpriseCacheRecord record = entry.getValue();
-                OffHeapData value = cache.cacheRecordService.readData(record.getValueAddress());
+                EnterpriseOffHeapCacheRecord record = entry.getValue();
+                OffHeapData value = cache.getCacheRecordService().readData(record.getValueAddress());
                 values[count] = ss.convertData(value, DataType.HEAP);
                 if (++count == batch) {
                     break;

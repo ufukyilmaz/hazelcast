@@ -7,7 +7,7 @@ import com.hazelcast.spi.ReadonlyOperation;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheContainsKeyOperation extends AbstractCacheOperation implements ReadonlyOperation {
+public class CacheContainsKeyOperation extends AbstractOffHeapCacheOperation implements ReadonlyOperation {
 
     public CacheContainsKeyOperation() {
     }

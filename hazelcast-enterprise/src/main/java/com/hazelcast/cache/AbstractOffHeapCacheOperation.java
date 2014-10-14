@@ -2,6 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -22,24 +23,25 @@ import java.util.logging.Level;
 /**
  * @author mdogan 05/02/14
  */
-abstract class AbstractCacheOperation extends AbstractOperation
+abstract class AbstractOffHeapCacheOperation
+        extends AbstractOperation
         implements PartitionAwareOperation, IdentifiedDataSerializable {
 
-    private static final int FORCED_EVICTION_RETRY_COUNT = 100 / AbstractCacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
+    private static final int FORCED_EVICTION_RETRY_COUNT = 100 / EnterpriseCacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
 
     String name;
     Data key;
 
     Object response;
 
-    transient EnterpriseCacheRecordStore cache;
+    transient EnterpriseOffHeapCacheRecordStore cache;
 
     transient OffHeapOutOfMemoryError oome;
 
-    protected AbstractCacheOperation() {
+    protected AbstractOffHeapCacheOperation() {
     }
 
-    protected AbstractCacheOperation(String name, Data key) {
+    protected AbstractOffHeapCacheOperation(String name, Data key) {
         this.name = name;
         this.key = key;
     }
@@ -54,10 +56,10 @@ abstract class AbstractCacheOperation extends AbstractOperation
 
         try {
             EnterpriseCacheService service = getService();
-            if (this instanceof BackupAwareCacheOperation) {
-                cache = service.getOrCreateCache(name, getPartitionId());
+            if (this instanceof BackupAwareOffHeapCacheOperation) {
+                cache = (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
             } else {
-                cache = service.getCache(name, getPartitionId());
+                cache = (EnterpriseOffHeapCacheRecordStore) service.getCache(name, getPartitionId());
             }
         } catch (Throwable e) {
             dispose();

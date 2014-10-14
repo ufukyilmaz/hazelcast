@@ -1,6 +1,5 @@
-package com.hazelcast.cache.enterprise;
+package com.hazelcast.cache.enterprise.impl.offheap;
 
-import com.hazelcast.cache.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.nio.serialization.Data;
 
@@ -9,13 +8,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.MutableEntry;
 
 /**
- * Entry of Entry Processor for {@link com.hazelcast.cache.impl.CacheEntry}.
- *
- * @param <K>
- * @param <V>
- * @see com.hazelcast.map.EntryProcessor
+ * @author sozal 14/10/14
  */
-public class EnterpriseCacheEntryProcessorEntry<K, V> implements MutableEntry<K, V> {
+public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V> implements MutableEntry<K, V> {
 
     private K key;
     private V value;
@@ -23,18 +18,18 @@ public class EnterpriseCacheEntryProcessorEntry<K, V> implements MutableEntry<K,
     private State state = State.NONE;
 
     private final Data keyData;
-    private EnterpriseCacheRecord record;
-    private EnterpriseCacheRecord recordLoaded;
+    private EnterpriseOffHeapCacheRecord record;
+    private EnterpriseOffHeapCacheRecord recordLoaded;
 
-    private final AbstractCacheRecordStore cacheRecordStore;
+    private final EnterpriseOffHeapCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
-    public EnterpriseCacheEntryProcessorEntry(Data keyData,
-                                              EnterpriseCacheRecord record,
-                                              AbstractCacheRecordStore cacheRecordStore,
-                                              long now) {
+    public EnterpriseOffHeapCacheEntryProcessorEntry(Data keyData,
+                                                     EnterpriseOffHeapCacheRecord record,
+                                                     EnterpriseOffHeapCacheRecordStore cacheRecordStore,
+                                                     long now) {
         this.keyData = keyData;
         this.record = record;
         this.cacheRecordStore = cacheRecordStore;
@@ -102,7 +97,7 @@ public class EnterpriseCacheEntryProcessorEntry<K, V> implements MutableEntry<K,
         return null;
     }
 
-    private V getRecordValue(EnterpriseCacheRecord theRecord) {
+    private V getRecordValue(EnterpriseOffHeapCacheRecord theRecord) {
         return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
     }
 

@@ -328,9 +328,9 @@
 //        EnterpriseSerializationService serializationService = getService().getSerializationService();
 //
 //        Data k = serializationService.toData(key, DataType.HEAP);
-//        Data old = serializationService.toData(oldValue, DataType.HEAP);
+//        Data temp = serializationService.toData(oldValue, DataType.HEAP);
 //
-//        Operation op = new CacheRemoveOperation(name, k, old);
+//        Operation op = new CacheRemoveOperation(name, k, temp);
 //        InternalCompletableFuture<Boolean> f = engine.getOperationService()
 //                .invokeOnPartition(getServiceName(), op, getPartitionId(engine, k));
 //

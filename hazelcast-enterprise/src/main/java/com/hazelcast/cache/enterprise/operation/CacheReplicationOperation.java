@@ -1,8 +1,8 @@
 package com.hazelcast.cache.enterprise.operation;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecord;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.CacheConfig;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public final class CacheReplicationOperation extends Operation implements NonThreadSafe {
 
-    final Map<String, Map<Data, EnterpriseCacheRecord>> source;
+    final Map<String, Map<Data, EnterpriseOffHeapCacheRecord>> source;
 
     final Map<String, Map<Data, CacheRecordHolder>> destination;
 
@@ -41,12 +41,12 @@ public final class CacheReplicationOperation extends Operation implements NonThr
     }
 
     public CacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
-        source = new HashMap<String, Map<Data, EnterpriseCacheRecord>>();
+        source = new HashMap<String, Map<Data, EnterpriseOffHeapCacheRecord>>();
         destination = null;
 
         Iterator<ICacheRecordStore> iter = segment.cacheIterator();
         while (iter.hasNext()) {
-            EnterpriseCacheRecordStore next = (EnterpriseCacheRecordStore) iter.next();
+            EnterpriseOffHeapCacheRecordStore next = (EnterpriseOffHeapCacheRecordStore) iter.next();
             CacheConfig cacheConfig = next.getConfig();
             if (cacheConfig.getAsyncBackupCount() + cacheConfig.getBackupCount() >= replicaIndex) {
                 source.put(next.getName(), next.getCacheMap());
@@ -83,8 +83,8 @@ public final class CacheReplicationOperation extends Operation implements NonThr
             EnterpriseCacheService service = getService();
             try {
                 for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : destination.entrySet()) {
-                    EnterpriseCacheRecordStore cache
-                            = (EnterpriseCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
+                    EnterpriseOffHeapCacheRecordStore cache
+                            = (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
                     Map<Data, CacheRecordHolder> map = entry.getValue();
 
                     Iterator<Map.Entry<Data, CacheRecordHolder>> iter = map.entrySet().iterator();
@@ -134,14 +134,14 @@ public final class CacheReplicationOperation extends Operation implements NonThr
         if (count > 0) {
             OffHeapData data = new OffHeapData();
             long now = Clock.currentTimeMillis();
-            for (Map.Entry<String, Map<Data, EnterpriseCacheRecord>> entry : source.entrySet()) {
-                Map<Data, EnterpriseCacheRecord> value = entry.getValue();
+            for (Map.Entry<String, Map<Data, EnterpriseOffHeapCacheRecord>> entry : source.entrySet()) {
+                Map<Data, EnterpriseOffHeapCacheRecord> value = entry.getValue();
                 int subCount = value.size();
                 out.writeInt(subCount);
                 if (subCount > 0) {
                     out.writeUTF(entry.getKey());
-                    for (Map.Entry<Data, EnterpriseCacheRecord> e : value.entrySet()) {
-                        EnterpriseCacheRecord record = e.getValue();
+                    for (Map.Entry<Data, EnterpriseOffHeapCacheRecord> e : value.entrySet()) {
+                        EnterpriseOffHeapCacheRecord record = e.getValue();
 
                         long creationTime = record.getCreationTime();
                         int ttlMillis = record.getTtlMillis();
@@ -164,7 +164,6 @@ public final class CacheReplicationOperation extends Operation implements NonThr
                         throw new AssertionError("Cache iteration error, count is not zero!" + subCount);
                     }
                 }
-
             }
         }
     }

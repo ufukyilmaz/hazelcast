@@ -184,7 +184,7 @@ public class LongHashSet implements LongSet {
         allocateBuffers(nextCapacity(allocatedLength));
 
         // We have succeeded at allocating new data so insert the pending key/value at
-        // the free slot in the old arrays before rehashing.
+        // the free slot in the temp arrays before rehashing.
         assigned++;
         writeBool(oldAllocated, freeSlot, true);
         writeLong(oldKeys, freeSlot, pendingKey);

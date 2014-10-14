@@ -1,28 +1,28 @@
-package com.hazelcast.cache;
+package com.hazelcast.cache.enterprise.impl.offheap;
 
 import com.hazelcast.cache.enterprise.*;
+import com.hazelcast.cache.enterprise.impl.AbstractEnterpriseCacheRecordStore;
+import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
 import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.map.impl.MapEntrySet;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.OffHeapData;
-import com.hazelcast.nio.serialization.OffHeapDataUtil;
+import com.hazelcast.nio.serialization.*;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.cache.configuration.Factory;
-import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
@@ -36,21 +36,29 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 
-// TODO: needs refactor and cleanup..
-public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
+/**
+ * @author sozal 14/10/14
+ */
+public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRecordStore {
+
+    public static final int DEFAULT_INITIAL_CAPACITY = 1000;
+    public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
     protected static final int MIN_FORCED_EVICT_PERCENTAGE = 10;
     protected static final int DEFAULT_EVICTION_PERCENTAGE = 10;
     protected static final int DEFAULT_EVICTION_THRESHOLD_PERCENTAGE = 95;
     protected static final int DEFAULT_TTL = 1000 * 60 * 60; // 1 hour
 
+    protected final int partitionId;
+    protected final NodeEngine nodeEngine;
     protected final CacheConfig cacheConfig;
-    protected final EnterpriseCacheHashMap records;
+    protected final EnterpriseOffHeapCacheHashMap records;
     protected final EnterpriseCacheService cacheService;
     protected final EnterpriseSerializationService serializationService;
+    protected final ScheduledFuture<?> evictionTaskFuture;
+    protected final Operation evictionOperation;
     protected final MemoryManager memoryManager;
     protected final CacheRecordAccessor cacheRecordService;
-
     protected final EvictionPolicy evictionPolicy;
     protected final ExpiryPolicy expiryPolicy;
     protected final boolean evictionEnabled;
@@ -64,29 +72,31 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     protected CacheStatisticsImpl statistics;
     protected CacheLoader cacheLoader;
     protected CacheWriter cacheWriter;
-
     protected volatile boolean hasTtl;
     protected final long defaultTTL;
 
-    protected AbstractCacheRecordStore(final CacheConfig cacheConfig,
-                                       final EnterpriseCacheService cacheService,
-                                       final EnterpriseSerializationService serializationService,
-                                       final NodeEngine nodeEngine,
-                                       final int initialCapacity,
-                                       final ExpiryPolicy expiryPolicy,
-                                       final EvictionPolicy evictionPolicy,
-                                       final int evictionPercentage,
-                                       final int evictionThresholdPercentage) {
+    protected EnterpriseOffHeapCacheRecordStore(final int partitionId,
+                                                final CacheConfig cacheConfig,
+                                                final EnterpriseCacheService cacheService,
+                                                final EnterpriseSerializationService serializationService,
+                                                final NodeEngine nodeEngine,
+                                                final int initialCapacity,
+                                                final ExpiryPolicy expiryPolicy,
+                                                final EvictionPolicy evictionPolicy,
+                                                final int evictionPercentage,
+                                                final int evictionThresholdPercentage) {
         if (cacheConfig == null) {
             throw new IllegalStateException("Cache already destroyed");
         }
+        this.partitionId = partitionId;
         this.cacheConfig = cacheConfig;
         this.cacheService = cacheService;
         this.serializationService = serializationService;
+        this.nodeEngine = nodeEngine;
         this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create();
         this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
         this.cacheRecordService = new CacheRecordAccessor(serializationService);
-        this.records = new EnterpriseCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
+        this.records = new EnterpriseOffHeapCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
         this.memoryManager = serializationService.getMemoryManager();
         this.evictionEnabled = evictionPolicy != EvictionPolicy.NONE;
         this.evictionPercentage = evictionPercentage;
@@ -102,14 +112,20 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         long ttl = expiryPolicyToTTL(expiryPolicy);
         this.defaultTTL = ttl > 0 ? ttl : DEFAULT_TTL;
         this.hasTtl = defaultTTL > 0;
+        this.evictionOperation = createEvictionOperation(10);
+        this.evictionTaskFuture =
+                nodeEngine.getExecutionService()
+                    .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-    public AbstractCacheRecordStore(final String cacheName,
-                                    final EnterpriseCacheService cacheService,
-                                    final EnterpriseSerializationService ss,
-                                    final NodeEngine nodeEngine,
-                                    final int initialCapacity) {
-        this(cacheService.getCacheConfig(cacheName),
+    public EnterpriseOffHeapCacheRecordStore(final int partitionId,
+                                             final String cacheName,
+                                             final EnterpriseCacheService cacheService,
+                                             final EnterpriseSerializationService ss,
+                                             final NodeEngine nodeEngine,
+                                             final int initialCapacity) {
+        this(partitionId,
+             cacheService.getCacheConfig(cacheName),
              cacheService,
              ss,
              nodeEngine,
@@ -120,12 +136,14 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
              DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
-    public AbstractCacheRecordStore(final CacheConfig cacheConfig,
-                                    final EnterpriseCacheService cacheService,
-                                    final EnterpriseSerializationService ss,
-                                    final NodeEngine nodeEngine,
-                                    final int initialCapacity) {
-        this(cacheConfig,
+    public EnterpriseOffHeapCacheRecordStore(final int partitionId,
+                                             final CacheConfig cacheConfig,
+                                             final EnterpriseCacheService cacheService,
+                                             final EnterpriseSerializationService ss,
+                                             final NodeEngine nodeEngine,
+                                             final int initialCapacity) {
+        this(partitionId,
+             cacheConfig,
              cacheService,
              ss,
              nodeEngine,
@@ -154,7 +172,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return cacheConfig.isWriteThrough();
     }
 
-    protected OffHeapData getRecordData(EnterpriseCacheRecord record) {
+    protected OffHeapData getRecordData(EnterpriseOffHeapCacheRecord record) {
         return (OffHeapData) cacheRecordService.readData(record.getValueAddress());
     }
 
@@ -180,17 +198,17 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
 
         if (!isExpiredAt(expiryTime, now)) {
-            EnterpriseCacheRecord record = createRecord(key, value, expiryTime);
+            EnterpriseOffHeapCacheRecord record = createRecord(key, value, expiryTime);
             records.put(key, record);
             return true;
         }
         return false;
     }
 
-    public EnterpriseCacheRecord createRecord(Data keyData,
-                                              Object value,
-                                              long expirationTime) {
-        final EnterpriseCacheRecord record =
+    public EnterpriseOffHeapCacheRecord createRecord(Data keyData,
+                                                     Object value,
+                                                     long expirationTime) {
+        final EnterpriseOffHeapCacheRecord record =
                 createRecord(value, Clock.currentTimeMillis(), expirationTime);
         if (isEventsEnabled) {
             final OffHeapData recordValue = record.getValue();
@@ -206,7 +224,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
 
     public boolean updateRecordWithExpiry(Data key,
                                           Object value,
-                                          EnterpriseCacheRecord record,
+                                          EnterpriseOffHeapCacheRecord record,
                                           ExpiryPolicy localExpiryPolicy,
                                           long now,
                                           boolean disableWriteThrough) {
@@ -228,7 +246,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return !processExpiredEntry(key, record, expiryTime, now);
     }
 
-    public EnterpriseCacheRecord updateRecord(EnterpriseCacheRecord record, Object value) {
+    public EnterpriseOffHeapCacheRecord updateRecord(EnterpriseOffHeapCacheRecord record, Object value) {
         final OffHeapData dataOldValue = (OffHeapData) record.getValue();
         final OffHeapData dataValue = toOffHeapData(value);
         record.setValue(dataValue);
@@ -244,7 +262,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     }
 
     public void deleteRecord(Data key) {
-        final EnterpriseCacheRecord record = records.remove(key);
+        final EnterpriseOffHeapCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
@@ -256,7 +274,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
     }
 
-    public EnterpriseCacheRecord accessRecord(EnterpriseCacheRecord record,
+    public EnterpriseOffHeapCacheRecord accessRecord(EnterpriseOffHeapCacheRecord record,
                                               ExpiryPolicy expiryPolicy,
                                               long now) {
         final ExpiryPolicy localExpiryPolicy =
@@ -267,7 +285,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return record;
     }
 
-    public EnterpriseCacheRecord readThroughRecord(Data key, long now) {
+    public EnterpriseOffHeapCacheRecord readThroughRecord(Data key, long now) {
         final ExpiryPolicy localExpiryPolicy = expiryPolicy;
         Object value = readThroughCache(key);
         if (value == null) {
@@ -391,7 +409,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return null;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseCacheRecord record, long now) {
+    protected boolean processExpiredEntry(Data key, EnterpriseOffHeapCacheRecord record, long now) {
         final boolean isExpired = record != null && record.isExpiredAt(now);
         if (!isExpired) {
             return false;
@@ -407,7 +425,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return true;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseCacheRecord record, long expiryTime, long now) {
+    protected boolean processExpiredEntry(Data key, EnterpriseOffHeapCacheRecord record, long expiryTime, long now) {
         final boolean isExpired = isExpiredAt(expiryTime, now);
         if (!isExpired) {
             return false;
@@ -423,7 +441,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return true;
     }
 
-    protected long updateAccessDuration(EnterpriseCacheRecord record,
+    protected long updateAccessDuration(EnterpriseOffHeapCacheRecord record,
                                         ExpiryPolicy expiryPolicy,
                                         long now) {
         long expiryTime = -1L;
@@ -509,7 +527,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         cacheService.publishEvent(cacheName, ces, orderKey);
     }
 
-    protected void onAccess(long now, EnterpriseCacheRecord record, long creationTime) {
+    protected void onAccess(long now, EnterpriseOffHeapCacheRecord record, long creationTime) {
         if (evictionEnabled) {
             if (evictionPolicy == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
@@ -541,44 +559,25 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return offHeapData;
     }
 
-    protected long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
-        if (expiryPolicy == null) {
-            return -1;
-        }
-        Duration expiryDuration;
-        try {
-            expiryDuration = expiryPolicy.getExpiryForCreation();
-        } catch (Exception e) {
-            return -1;
-        }
-        long durationAmount = expiryDuration.getDurationAmount();
-        TimeUnit durationTimeUnit = expiryDuration.getTimeUnit();
-        return TimeUnit.MILLISECONDS.convert(durationAmount, durationTimeUnit);
-    }
-
-    protected ExpiryPolicy ttlToExpirePolicy(long ttl) {
-        return new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
-    }
-
     protected boolean isEvictionRequired(MemoryStats memoryStats) {
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
     }
 
-    protected EnterpriseCacheRecord createRecord(long now) {
+    protected EnterpriseOffHeapCacheRecord createRecord(long now) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseCacheRecord createRecord(Object value, long now) {
+    protected EnterpriseOffHeapCacheRecord createRecord(Object value, long now) {
         return createRecord(value, now, -1);
     }
 
-    protected EnterpriseCacheRecord createRecord(long now, long expirationTime) {
+    protected EnterpriseOffHeapCacheRecord createRecord(long now, long expirationTime) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseCacheRecord createRecord(Object value, long now, long expirationTime) {
-        long address = memoryManager.allocate(EnterpriseCacheRecord.SIZE);
-        EnterpriseCacheRecord record = cacheRecordService.newRecord();
+    protected EnterpriseOffHeapCacheRecord createRecord(Object value, long now, long expirationTime) {
+        long address = memoryManager.allocate(EnterpriseOffHeapCacheRecord.SIZE);
+        EnterpriseOffHeapCacheRecord record = cacheRecordService.newRecord();
         record.reset(address);
         record.setCreationTime(now);
         if (expirationTime > 0) {
@@ -588,7 +587,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
             OffHeapData offHeapValue = toOffHeapData(value);
             record.setValueAddress(offHeapValue.address());
         } else {
-            record.setValueAddress(EnterpriseCacheConstants.NULL_PTR);
+            record.setValueAddress(NULL_PTR);
         }
         return record;
     }
@@ -602,7 +601,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         evictIfRequired(now);
 
         long creationTime;
-        EnterpriseCacheRecord record = null;
+        EnterpriseOffHeapCacheRecord record = null;
         OffHeapData newValue = null;
         Data oldValue = null;
         boolean newPut = false;
@@ -615,7 +614,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
                 records.set(key, record);
                 newPut = true;
             } else {
-                if (record.getValueAddress() == EnterpriseCacheConstants.NULL_PTR) {
+                if (record.getValueAddress() == NULL_PTR) {
                     throw new IllegalStateException("Invalid record -> " + record);
                 }
                 creationTime = record.getCreationTime();
@@ -649,12 +648,12 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
 
             cacheRecordService.enqueueRecord(record);
         } catch (OffHeapOutOfMemoryError e) {
-            if (newPut && record != null && record.address() != EnterpriseCacheConstants.NULL_PTR) {
+            if (newPut && record != null && record.address() != NULL_PTR) {
                 if (!records.delete(key)) {
                     cacheRecordService.dispose(record);
                 }
             }
-            if (newValue != null && newValue.address() != EnterpriseCacheConstants.NULL_PTR) {
+            if (newValue != null && newValue.address() != NULL_PTR) {
                 cacheRecordService.disposeData(newValue);
             }
             throw e;
@@ -662,17 +661,15 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return oldValue;
     }
 
-
-    protected abstract Callback<Data> createEvictionCallback();
-    protected abstract void onEntryInvalidated(Data key, String source);
-    protected abstract void onClear();
-    protected abstract void onDestroy();
-
     public EnterpriseCacheService getCacheService() {
         return cacheService;
     }
 
-    public EnterpriseCacheHashMap getCacheMap() {
+    public CacheRecordAccessor getCacheRecordService() {
+        return cacheRecordService;
+    }
+
+    public EnterpriseOffHeapCacheHashMap getCacheMap() {
         return records;
     }
 
@@ -709,7 +706,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     public Data get(Data key, ExpiryPolicy expiryPolicy) {
         long now = Clock.currentTimeMillis();
         OffHeapData value = null;
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (record != null) {
             long creationTime = record.getCreationTime();
@@ -781,11 +778,11 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
 
     @Override
     public void setRecord(Data key, CacheRecord record) {
-        if (!(record instanceof EnterpriseCacheRecord)) {
+        if (!(record instanceof EnterpriseOffHeapCacheRecord)) {
             throw new IllegalArgumentException("record must be an instance of "
-                    + EnterpriseCacheRecord.class.getName());
+                    + EnterpriseOffHeapCacheRecord.class.getName());
         }
-        records.set(key, (EnterpriseCacheRecord)record);
+        records.set(key, (EnterpriseOffHeapCacheRecord)record);
     }
 
     @Override
@@ -806,7 +803,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     public boolean putIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseCacheRecord record = null;
+        EnterpriseOffHeapCacheRecord record = null;
         OffHeapData newValue = null;
 
         try {
@@ -833,12 +830,12 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
 
             cacheRecordService.enqueueRecord(record);
         } catch (OffHeapOutOfMemoryError e) {
-            if (record != null && record.address() != EnterpriseCacheConstants.NULL_PTR) {
+            if (record != null && record.address() != NULL_PTR) {
                 if (!records.delete(key)) {
                     cacheRecordService.dispose(record);
                 }
             }
-            if (newValue != null && newValue.address() != EnterpriseCacheConstants.NULL_PTR) {
+            if (newValue != null && newValue.address() != NULL_PTR) {
                 cacheRecordService.disposeData(newValue);
             }
             throw e;
@@ -854,7 +851,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     public boolean replace(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -892,7 +889,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         OffHeapData oldOffHeapData = (OffHeapData) oldValue;
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         if (record != null) {
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
@@ -926,7 +923,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         evictIfRequired(now);
 
         Data oldValue = null;
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -958,6 +955,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return 0;
     }
 
+    @Override
     public int forceEvict() {
         int percentage = Math.max(MIN_FORCED_EVICT_PERCENTAGE, evictionPercentage);
         int evicted = 0;
@@ -975,7 +973,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     @Override
     public Data getAndRemove(Data key, String caller) {
         Data oldValue = null;
-        EnterpriseCacheRecord record = records.remove(key);
+        EnterpriseOffHeapCacheRecord record = records.remove(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             OffHeapData oldBinary = cacheRecordService.readData(record.getValueAddress());
@@ -1002,7 +1000,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
         OffHeapData offHeapData = (OffHeapData) value;
         boolean deleted = false;
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         if (record != null) {
             if (OffHeapDataUtil.equals(record.getValueAddress(), offHeapData)) {
                 onEntryInvalidated(key, caller);
@@ -1024,7 +1022,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
             final Set<Data> keysToClean = new HashSet<Data>(keys.isEmpty() ? records.keySet() : keys);
             for (Data key : keysToClean) {
                 isEventBatchingEnabled = true;
-                final EnterpriseCacheRecord record = records.get(key);
+                final EnterpriseOffHeapCacheRecord record = records.get(key);
                 if (localKeys.contains(key) && record != null) {
                     final boolean isExpired = processExpiredEntry(key, record, now);
                     if (!isExpired) {
@@ -1095,7 +1093,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         final long now = Clock.currentTimeMillis();
         final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
 
-        EnterpriseCacheRecord record = records.get(key);
+        EnterpriseOffHeapCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (isExpired) {
             record = null;
@@ -1112,8 +1110,8 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
             statistics.addGetTimeNano(System.nanoTime() - start);
         }
 
-        EnterpriseCacheEntryProcessorEntry entry =
-                new EnterpriseCacheEntryProcessorEntry(key, record, this, now);
+        EnterpriseOffHeapCacheEntryProcessorEntry entry =
+                new EnterpriseOffHeapCacheEntryProcessorEntry(key, record, this, now);
         final Object process = entryProcessor.process(entry, arguments);
         entry.applyChanges();
         return process;
@@ -1121,11 +1119,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
 
     @Override
     public CacheKeyIteratorResult iterator(int tableIndex, int size) {
-        // TODO: Implement
-        //return records.fetchNext(tableIndex, size);
-        throw new UnsupportedOperationException(
-                "CacheKeyIteratorResult iterator(int tableIndex, int size) "
-                        + " is not supported right now !");
+        return records.fetchNext(tableIndex, size);
     }
 
     public final boolean hasTTL() {
@@ -1166,11 +1160,11 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
     }
 
     public static class CacheRecordAccessor
-            implements MemoryBlockAccessor<EnterpriseCacheRecord> {
+            implements MemoryBlockAccessor<EnterpriseOffHeapCacheRecord> {
 
         private final EnterpriseSerializationService ss;
         private final MemoryManager memoryManager;
-        private final Queue<EnterpriseCacheRecord> recordQ = new ArrayDeque<EnterpriseCacheRecord>(1024);
+        private final Queue<EnterpriseOffHeapCacheRecord> recordQ = new ArrayDeque<EnterpriseOffHeapCacheRecord>(1024);
         private final Queue<OffHeapData> dataQ = new ArrayDeque<OffHeapData>(1024);
 
         public CacheRecordAccessor(EnterpriseSerializationService ss) {
@@ -1179,44 +1173,44 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
 
         @Override
-        public boolean isEqual(long address, EnterpriseCacheRecord value) {
+        public boolean isEqual(long address, EnterpriseOffHeapCacheRecord value) {
             return isEqual(address, value.address());
         }
 
         @Override
         public boolean isEqual(long address1, long address2) {
-            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseCacheRecord.VALUE_OFFSET);
-            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseCacheRecord.VALUE_OFFSET);
+            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseOffHeapCacheRecord.VALUE_OFFSET);
+            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseOffHeapCacheRecord.VALUE_OFFSET);
             return OffHeapDataUtil.equals(valueAddress1, valueAddress2);
         }
 
-        public EnterpriseCacheRecord newRecord() {
-            EnterpriseCacheRecord record = recordQ.poll();
+        public EnterpriseOffHeapCacheRecord newRecord() {
+            EnterpriseOffHeapCacheRecord record = recordQ.poll();
             if (record == null) {
-                record = new EnterpriseCacheRecord();
+                record = new EnterpriseOffHeapCacheRecord();
             }
             return record;
         }
 
         @Override
-        public EnterpriseCacheRecord read(long address) {
-            if (address <= EnterpriseCacheConstants.NULL_PTR) {
+        public EnterpriseOffHeapCacheRecord read(long address) {
+            if (address <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
             }
-            EnterpriseCacheRecord record = newRecord();
+            EnterpriseOffHeapCacheRecord record = newRecord();
             record.reset(address);
             return record;
         }
 
         @Override
-        public void dispose(EnterpriseCacheRecord record) {
-            if (record.address() <= EnterpriseCacheConstants.NULL_PTR) {
+        public void dispose(EnterpriseOffHeapCacheRecord record) {
+            if (record.address() <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + record.address());
             }
             disposeValue(record);
             record.clear();
             memoryManager.free(record.address(), record.size());
-            recordQ.offer(record.reset(EnterpriseCacheConstants.NULL_PTR));
+            recordQ.offer(record.reset(NULL_PTR));
         }
 
         @Override
@@ -1225,7 +1219,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
 
         public OffHeapData readData(long valueAddress) {
-            if (valueAddress <= EnterpriseCacheConstants.NULL_PTR) {
+            if (valueAddress <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + valueAddress);
             }
             OffHeapData value = dataQ.poll();
@@ -1235,11 +1229,11 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
             return value.reset(valueAddress);
         }
 
-        public void disposeValue(EnterpriseCacheRecord record) {
+        public void disposeValue(EnterpriseOffHeapCacheRecord record) {
             long valueAddress = record.getValueAddress();
-            if (valueAddress != EnterpriseCacheConstants.NULL_PTR) {
+            if (valueAddress != NULL_PTR) {
                 disposeData(valueAddress);
-                record.setValueAddress(EnterpriseCacheConstants.NULL_PTR);
+                record.setValueAddress(NULL_PTR);
             }
         }
 
@@ -1255,14 +1249,59 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
             disposeData(data);
         }
 
-        void enqueueRecord(EnterpriseCacheRecord record) {
-            recordQ.offer(record.reset(EnterpriseCacheConstants.NULL_PTR));
+        void enqueueRecord(EnterpriseOffHeapCacheRecord record) {
+            recordQ.offer(record.reset(NULL_PTR));
         }
 
         void enqueueData(OffHeapData data) {
-            data.reset(EnterpriseCacheConstants.NULL_PTR);
+            data.reset(NULL_PTR);
             dataQ.offer(data);
         }
+    }
+
+    protected Callback<Data> createEvictionCallback() {
+        return new Callback<Data>() {
+            public void notify(Data object) {
+                cacheService.sendInvalidationEvent(cacheConfig.getName(), object, "<NA>");
+            }
+        };
+    }
+
+    protected void onEntryInvalidated(Data key, String source) {
+        cacheService.sendInvalidationEvent(cacheConfig.getName(), key, source);
+    }
+
+    protected void onClear() {
+        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
+    }
+
+    protected void onDestroy() {
+        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
+        ScheduledFuture<?> f = evictionTaskFuture;
+        if (f != null) {
+            f.cancel(true);
+        }
+    }
+
+    public BinaryOffHeapHashMap<EnterpriseOffHeapCacheRecord>.EntryIter iterator(int slot) {
+        return records.iterator(slot);
+    }
+
+    protected class EvictionTask implements Runnable {
+        public void run() {
+            if (hasTTL()) {
+                OperationService operationService = nodeEngine.getOperationService();
+                operationService.executeOperation(evictionOperation);
+            }
+        }
+    }
+
+    protected Operation createEvictionOperation(int percentage) {
+        return new CacheEvictionOperation(cacheConfig.getName(), percentage)
+                .setNodeEngine(nodeEngine)
+                .setPartitionId(partitionId)
+                .setCallerUuid(nodeEngine.getLocalMember().getUuid())
+                .setService(cacheService);
     }
 
 }

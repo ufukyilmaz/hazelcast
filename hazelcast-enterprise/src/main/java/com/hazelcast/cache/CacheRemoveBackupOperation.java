@@ -7,7 +7,7 @@ import com.hazelcast.spi.BackupOperation;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheRemoveBackupOperation extends AbstractCacheOperation implements BackupOperation {
+public class CacheRemoveBackupOperation extends AbstractOffHeapCacheOperation implements BackupOperation {
 
     public CacheRemoveBackupOperation() {
     }

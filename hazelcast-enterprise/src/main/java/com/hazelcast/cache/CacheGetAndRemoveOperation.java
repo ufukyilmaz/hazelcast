@@ -7,7 +7,7 @@ import com.hazelcast.spi.Operation;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheGetAndRemoveOperation extends BackupAwareCacheOperation {
+public class CacheGetAndRemoveOperation extends BackupAwareOffHeapCacheOperation {
 
     public CacheGetAndRemoveOperation() {
     }

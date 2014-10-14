@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutBackupOperation extends AbstractCacheOperation implements BackupOperation {
+public class CachePutBackupOperation extends AbstractOffHeapCacheOperation implements BackupOperation {
 
     private Data value;
     private long ttlMillis;
@@ -30,7 +30,8 @@ public class CachePutBackupOperation extends AbstractCacheOperation implements B
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseCacheRecordStore cache = service.getOrCreateCache(name, getPartitionId());
+        EnterpriseOffHeapCacheRecordStore cache =
+                (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         cache.put(key, value, ttlMillis, null);
         response = Boolean.TRUE;
     }

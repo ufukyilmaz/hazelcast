@@ -18,13 +18,14 @@ package com.hazelcast.cache;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CacheTest extends AbstractCacheTest {
 

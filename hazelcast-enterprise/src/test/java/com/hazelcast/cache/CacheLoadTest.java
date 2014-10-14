@@ -8,6 +8,7 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author mdogan 02/06/14
  */
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class CacheLoadTest {
 

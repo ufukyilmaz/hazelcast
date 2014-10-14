@@ -5,6 +5,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -18,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CacheStatsTest {
 

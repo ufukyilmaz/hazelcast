@@ -1,9 +1,6 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheConstants;
-import com.hazelcast.cache.enterprise.EnterpriseCacheHashMap;
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
-import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.enterprise.*;
 import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
@@ -139,8 +136,6 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
              DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
-    protected abstract Callback<Data> createEvictionCallback();
-
     protected boolean isStatisticsEnabled() {
         if (!cacheConfig.isStatisticsEnabled()) {
             return false;
@@ -167,11 +162,11 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         evictExpiredRecords(evictionPercentage);
     }
 
-    protected boolean createRecordWithExpiry(Data key,
-                                             Object value,
-                                             ExpiryPolicy localExpiryPolicy,
-                                             long now,
-                                             boolean disableWriteThrough) {
+    public boolean createRecordWithExpiry(Data key,
+                                          Object value,
+                                          ExpiryPolicy localExpiryPolicy,
+                                          long now,
+                                          boolean disableWriteThrough) {
         Duration expiryDuration;
         try {
             expiryDuration = localExpiryPolicy.getExpiryForCreation();
@@ -192,7 +187,9 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return false;
     }
 
-    protected EnterpriseCacheRecord createRecord(Data keyData, Object value, long expirationTime) {
+    public EnterpriseCacheRecord createRecord(Data keyData,
+                                              Object value,
+                                              long expirationTime) {
         final EnterpriseCacheRecord record =
                 createRecord(value, Clock.currentTimeMillis(), expirationTime);
         if (isEventsEnabled) {
@@ -207,12 +204,12 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return record;
     }
 
-    protected boolean updateRecordWithExpiry(Data key,
-                                             Object value,
-                                             EnterpriseCacheRecord record,
-                                             ExpiryPolicy localExpiryPolicy,
-                                             long now,
-                                             boolean disableWriteThrough) {
+    public boolean updateRecordWithExpiry(Data key,
+                                          Object value,
+                                          EnterpriseCacheRecord record,
+                                          ExpiryPolicy localExpiryPolicy,
+                                          long now,
+                                          boolean disableWriteThrough) {
         long expiryTime = -1L;
         try {
             Duration expiryDuration = localExpiryPolicy.getExpiryForUpdate();
@@ -231,7 +228,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return !processExpiredEntry(key, record, expiryTime, now);
     }
 
-    protected EnterpriseCacheRecord updateRecord(EnterpriseCacheRecord record, Object value) {
+    public EnterpriseCacheRecord updateRecord(EnterpriseCacheRecord record, Object value) {
         final OffHeapData dataOldValue = (OffHeapData) record.getValue();
         final OffHeapData dataValue = toOffHeapData(value);
         record.setValue(dataValue);
@@ -246,7 +243,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return record;
     }
 
-    protected void deleteRecord(Data key) {
+    public void deleteRecord(Data key) {
         final EnterpriseCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
@@ -259,9 +256,9 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         }
     }
 
-    protected CacheRecord accessRecord(EnterpriseCacheRecord record,
-                                       ExpiryPolicy expiryPolicy,
-                                       long now) {
+    public EnterpriseCacheRecord accessRecord(EnterpriseCacheRecord record,
+                                              ExpiryPolicy expiryPolicy,
+                                              long now) {
         final ExpiryPolicy localExpiryPolicy =
                 expiryPolicy != null
                         ? expiryPolicy
@@ -270,7 +267,7 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return record;
     }
 
-    protected EnterpriseCacheRecord readThroughRecord(Data key, long now) {
+    public EnterpriseCacheRecord readThroughRecord(Data key, long now) {
         final ExpiryPolicy localExpiryPolicy = expiryPolicy;
         Object value = readThroughCache(key);
         if (value == null) {
@@ -665,9 +662,15 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         return oldValue;
     }
 
+
+    protected abstract Callback<Data> createEvictionCallback();
     protected abstract void onEntryInvalidated(Data key, String source);
     protected abstract void onClear();
     protected abstract void onDestroy();
+
+    public EnterpriseCacheService getCacheService() {
+        return cacheService;
+    }
 
     public EnterpriseCacheHashMap getCacheMap() {
         return records;
@@ -1097,19 +1100,23 @@ public abstract class AbstractCacheRecordStore implements ICacheRecordStore {
         if (isExpired) {
             record = null;
         }
-        // FIXME
-        //      Make "CacheEntryProcessorEntry" as takes "ICacheRecordStore"
-        //      instead of  "CacheRecordStore"
-        //      then open these comments
-        /*
-        CacheEntryProcessorEntry entry = new CacheEntryProcessorEntry(key, record, this, now);
+
+        if (isStatisticsEnabled()) {
+            if (record == null || isExpired) {
+                statistics.increaseCacheMisses(1);
+            } else {
+                statistics.increaseCacheHits(1);
+            }
+        }
+        if (isStatisticsEnabled()) {
+            statistics.addGetTimeNano(System.nanoTime() - start);
+        }
+
+        EnterpriseCacheEntryProcessorEntry entry =
+                new EnterpriseCacheEntryProcessorEntry(key, record, this, now);
         final Object process = entryProcessor.process(entry, arguments);
         entry.applyChanges();
         return process;
-        */
-        throw new UnsupportedOperationException(
-                "Object invoke(Data key, EntryProcessor entryProcessor, Object[] arguments) "
-                        + "is not supported right now !");
     }
 
     @Override

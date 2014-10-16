@@ -557,15 +557,11 @@ public class EnterpriseOnHeapCacheRecordStore extends AbstractEnterpriseCacheRec
         if (isStatisticsEnabled()) {
             statistics.addGetTimeNano(System.nanoTime() - start);
         }
-        /*
-        CacheEntryProcessorEntry entry = new CacheEntryProcessorEntry(key, record, this, now);
+        EnterpriseOnHeapCacheEntryProcessorEntry entry =
+                new EnterpriseOnHeapCacheEntryProcessorEntry(key, record, this, now);
         final Object process = entryProcessor.process(entry, arguments);
         entry.applyChanges();
         return process;
-        */
-        throw new UnsupportedOperationException(
-                "\"Object invoke(Data key, EntryProcessor entryProcessor, Object[] arguments)\" "
-                    + "is not supported right now !");
     }
 
     @Override

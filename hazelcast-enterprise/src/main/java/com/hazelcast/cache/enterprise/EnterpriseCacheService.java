@@ -9,6 +9,7 @@ import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
 import com.hazelcast.cache.impl.*;
+import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -29,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 05/02/14
  */
-public class EnterpriseCacheService extends AbstractCacheService {
+public class EnterpriseCacheService extends CacheService {
 
     @Override
     protected ConstructorFunction<CacheInfo, ICacheRecordStore> createCacheConstructorFunction(final int partitionId) {
@@ -115,11 +116,13 @@ public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
     public DistributedObject createDistributedObject(String objectName) {
+        /*
         EnterpriseSerializationService serializationService = getSerializationService();
         if (serializationService.getMemoryManager() == null) {
             throw new IllegalStateException("OffHeap memory should be enabled and configured " +
                     "to be able to use ICache!");
         }
+        */
         return super.createDistributedObject(objectName);
     }
 
@@ -171,19 +174,35 @@ public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
     public EnterpriseCacheRecordStore getOrCreateCache(String name, int partitionId) {
-        return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, partitionId);
+        CacheConfig cacheConfig = getCacheConfig(name);
+        if (cacheConfig != null && cacheConfig.getCacheStorageType() != null) {
+            return (EnterpriseCacheRecordStore) super.getOrCreateCache(name,
+                                                                       cacheConfig.getCacheStorageType(),
+                                                                       partitionId);
+        } else {
+            return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, partitionId);
+        }
     }
 
     @Override
-    public ICacheRecordStore getOrCreateCache(String name,
-                                              CacheStorageType cacheStorageType,
-                                              int partitionId) {
-        return super.getOrCreateCache(name, cacheStorageType, partitionId);
+    public EnterpriseCacheRecordStore getOrCreateCache(String name,
+                                                       CacheStorageType cacheStorageType,
+                                                       int partitionId) {
+        return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, cacheStorageType, partitionId);
     }
 
     @Override
     public EnterpriseCacheRecordStore getCache(String name, int partitionId) {
         return (EnterpriseCacheRecordStore) super.getCache(name, partitionId);
+    }
+
+    @Override
+    public CacheConfig getCacheConfig(String name) {
+        CacheConfig cacheConfig = super.getCacheConfig(name);
+        if (cacheConfig == null) {
+            cacheConfig = new CacheConfig().setName(name);
+        }
+        return cacheConfig;
     }
 
     public CacheStatisticsImpl getOrCreateCacheStats(String name) {

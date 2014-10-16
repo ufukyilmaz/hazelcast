@@ -19,7 +19,6 @@ package com.hazelcast.cache;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
@@ -33,10 +32,10 @@ public class CacheTest extends AbstractCacheTest {
 
     @Override
     protected void onSetup() {
-        Config config = getConfig();
-        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(3);
-        factory.newHazelcastInstance(config);
+        Config config = createConfig();
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         instance = factory.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     @Override

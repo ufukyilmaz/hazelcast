@@ -1,4 +1,4 @@
-package com.hazelcast.cache.enterprise.impl.offheap;
+package com.hazelcast.cache.enterprise.impl.onheap;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.CacheStatisticsImpl;
@@ -10,8 +10,8 @@ import javax.cache.expiry.ExpiryPolicy;
 /**
  * @author sozal 14/10/14
  */
-// TODO: Implement as off-heap
-public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
+// TODO: Implement as on-heap
+public class EnterpriseOnHeapCacheEntryProcessorEntry<K, V>
         implements EnterpriseCacheEntryProcessorEntry<K, V> {
 
     private K key;
@@ -20,28 +20,27 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
     private State state = State.NONE;
 
     private final Data keyData;
-    private EnterpriseOffHeapCacheRecord record;
-    private EnterpriseOffHeapCacheRecord recordLoaded;
+    private EnterpriseOnHeapCacheRecord record;
+    private EnterpriseOnHeapCacheRecord recordLoaded;
 
-    private final EnterpriseOffHeapCacheRecordStore cacheRecordStore;
+    private final EnterpriseOnHeapCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
-    public EnterpriseOffHeapCacheEntryProcessorEntry(Data keyData,
-                                                     EnterpriseOffHeapCacheRecord record,
-                                                     EnterpriseOffHeapCacheRecordStore cacheRecordStore,
-                                                     long now) {
+    public EnterpriseOnHeapCacheEntryProcessorEntry(Data keyData,
+                                                    EnterpriseOnHeapCacheRecord record,
+                                                    EnterpriseOnHeapCacheRecordStore cacheRecordStore,
+                                                    long now) {
         this.keyData = keyData;
         this.record = record;
         this.cacheRecordStore = cacheRecordStore;
         this.now = now;
-        this.start =
-                cacheRecordStore.getConfig().isStatisticsEnabled() ? System.nanoTime() : 0;
+        this.start = cacheRecordStore.cacheConfig.isStatisticsEnabled() ? System.nanoTime() : 0;
 
-        final Factory<ExpiryPolicy> expiryPolicyFactory =
-                cacheRecordStore.getConfig().getExpiryPolicyFactory();
+        final Factory<ExpiryPolicy> expiryPolicyFactory = cacheRecordStore.cacheConfig.getExpiryPolicyFactory();
         this.expiryPolicy = expiryPolicyFactory.create();
+
     }
 
     @Override
@@ -71,7 +70,7 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
     @Override
     public K getKey() {
         if (key == null) {
-            key = (K) cacheRecordStore.getCacheService().toObject(keyData);
+            key = (K) cacheRecordStore.cacheService.toObject(keyData);
         }
         return key;
     }
@@ -99,13 +98,25 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
         return null;
     }
 
-    private V getRecordValue(EnterpriseOffHeapCacheRecord theRecord) {
-        return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
+    private V getRecordValue(EnterpriseOnHeapCacheRecord theRecord) {
+        final Object objValue;
+        switch (cacheRecordStore.cacheConfig.getInMemoryFormat()) {
+            case BINARY:
+                objValue = cacheRecordStore.cacheService.toObject(theRecord.getValue());
+                break;
+            case OBJECT:
+                objValue = theRecord.getValue();
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid storage format: " + cacheRecordStore.cacheConfig.getInMemoryFormat());
+        }
+        return (V) objValue;
     }
 
     public void applyChanges() {
-        final boolean isStatisticsEnabled = cacheRecordStore.getConfig().isStatisticsEnabled();
-        final CacheStatisticsImpl statistics = cacheRecordStore.getCacheStats();
+        final boolean isStatisticsEnabled = cacheRecordStore.cacheConfig.isStatisticsEnabled();
+        final CacheStatisticsImpl statistics = cacheRecordStore.statistics;
+
         switch (state) {
             case ACCESS:
                 cacheRecordStore.accessRecord(record, expiryPolicy, now);
@@ -143,8 +154,7 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
         if (clazz.isAssignableFrom(((Object) this).getClass())) {
             return clazz.cast(this);
         }
-        throw new IllegalArgumentException("Unwrapping to " + clazz
-                + " is not supported by this implementation");
+        throw new IllegalArgumentException("Unwrapping to " + clazz + " is not supported by this implementation");
     }
 
     private enum State {

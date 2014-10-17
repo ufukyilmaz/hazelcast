@@ -176,6 +176,18 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return (OffHeapData) cacheRecordService.readData(record.getValueAddress());
     }
 
+    protected Object getDataValue(OffHeapData offHeapData) {
+        if (offHeapData != null) {
+            return serializationService.convertData(offHeapData, DataType.HEAP);
+        } else {
+            return null;
+        }
+    }
+
+    protected Object getRecordValue(EnterpriseOffHeapCacheRecord record) {
+        return getDataValue(getRecordData(record));
+    }
+
     public void evictExpiredRecords() {
         evictExpiredRecords(evictionPercentage);
     }
@@ -862,11 +874,6 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
                            Object newValue,
                            ExpiryPolicy expiryPolicy,
                            String caller) {
-        if (!(oldValue instanceof OffHeapData)) {
-            throw new IllegalArgumentException("Old value must be an instance of "
-                    + OffHeapData.class.getName());
-        }
-        OffHeapData oldOffHeapData = (OffHeapData) oldValue;
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
         EnterpriseOffHeapCacheRecord record = records.get(key);
@@ -874,8 +881,8 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
             if (ttl <= 0 || creationTime + ttl > now) {
-                long currentValueAddress = record.getValueAddress();
-                if (OffHeapDataUtil.equals(currentValueAddress, oldOffHeapData)) {
+                Object existingValue = getRecordValue(record);
+                if (oldValue.equals(existingValue)) {
                     onEntryInvalidated(key, caller);
                     OffHeapData newOffHeapData = toOffHeapData(newValue);
                     cacheRecordService.disposeValue(record);
@@ -974,15 +981,11 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
 
     @Override
     public boolean remove(Data key, Object value, String caller) {
-        if (!(value instanceof OffHeapData)) {
-            throw new IllegalArgumentException("Value must be an instance of "
-                    + OffHeapData.class.getName());
-        }
-        OffHeapData offHeapData = (OffHeapData) value;
         boolean deleted = false;
         EnterpriseOffHeapCacheRecord record = records.get(key);
         if (record != null) {
-            if (OffHeapDataUtil.equals(record.getValueAddress(), offHeapData)) {
+            Object existingValue = getRecordValue(record);
+            if (value.equals(existingValue)) {
                 onEntryInvalidated(key, caller);
                 records.delete(key);
                 deleted = true;

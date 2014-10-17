@@ -45,7 +45,8 @@ public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperatio
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutBackupOperation(name, key, value, -1);
+//        return new CachePutBackupOperation(name, key, value, -1);
+        return null;
     }
 
     @Override

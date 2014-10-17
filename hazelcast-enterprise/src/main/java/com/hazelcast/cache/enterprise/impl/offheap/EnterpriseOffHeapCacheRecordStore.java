@@ -698,10 +698,6 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         }
     }
 
-    public Data get(Data key) {
-        return get(key, expiryPolicy);
-    }
-
     @Override
     public Data get(Data key, ExpiryPolicy expiryPolicy) {
         long now = Clock.currentTimeMillis();
@@ -744,25 +740,9 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         putInternal(key, value, expiryPolicy, false, caller);
     }
 
-    public void put(Data key, Object value, long ttl, String caller) {
-        // TODO: Implement without creating a "ExpirePolicy" object
-        // This is just a quick workaround
-        put(key, value, ttlToExpirePolicy(ttl), caller);
-    }
-
-    public Data getAndPut(Data key, Object value, String caller) {
-        return getAndPut(key, value, expiryPolicy, caller);
-    }
-
     @Override
     public Data getAndPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         return putInternal(key, value, expiryPolicy, true, caller);
-    }
-
-    public Data getAndPut(Data key, Object value, long ttl, String caller) {
-        // TODO: Implement without creating a "ExpirePolicy" object
-        // This is just a quick workaround
-        return getAndPut(key, value, ttlToExpirePolicy(ttl), caller);
     }
 
     public void own(Data key, Object value, long ttlMillis) {

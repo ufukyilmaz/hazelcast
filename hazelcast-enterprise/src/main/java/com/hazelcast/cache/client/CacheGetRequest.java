@@ -52,7 +52,8 @@ public class CacheGetRequest extends AbstractCacheRequest {
 
     @Override
     protected Operation prepareOperation() {
-        return new CacheGetOperation(name, key);
+//        return new CacheGetOperation(name, key);
+        return null;
     }
 
 

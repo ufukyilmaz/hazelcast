@@ -80,7 +80,8 @@ public class CachePutRequest extends AbstractCacheRequest {
 
     @Override
     protected Operation prepareOperation() {
-        return new CachePutOperation(name, key, value, ttlMillis, get);
+//        return new CachePutOperation(name, key, value, ttlMillis, get);
+        return null;
     }
 
     public void write(PortableWriter writer) throws IOException {

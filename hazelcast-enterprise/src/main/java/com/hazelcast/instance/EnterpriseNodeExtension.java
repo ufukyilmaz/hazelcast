@@ -1,6 +1,11 @@
 package com.hazelcast.instance;
 
+import com.hazelcast.cache.CacheOperationProvider;
+import com.hazelcast.cache.CacheStorageType;
+import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.HeapOperationProvider;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
@@ -40,6 +45,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.storage.Storage;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -256,14 +262,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return storage;
     }
 
-    @Override
-    public <T> T createService(Class<T> clazz) {
-        if (WanReplicationService.class.isAssignableFrom(clazz)) {
-            return (T) new EnterpriseWanReplicationService(node);
-        } else if (ICacheService.class.isAssignableFrom(clazz)) {
-            return (T) new EnterpriseCacheService();
-        }
-        return super.createService(clazz);
+    public WanReplicationService geWanReplicationService() {
+        return new EnterpriseWanReplicationService(node);
     }
 
     @Override
@@ -314,4 +314,23 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return validUntil;
     }
 
+    @Override
+    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, CacheStorageType storageType) {
+        if (CacheStorageType.HEAP.equals(storageType)) {
+            return new HeapOperationProvider(nameWithPrefix);
+        } else if (CacheStorageType.OFFHEAP.equals(storageType)){
+            return new OffHeapOperationProvider(nameWithPrefix);
+        }
+        throw new IllegalArgumentException("No operation provider for storage type: " + storageType);
+    }
+
+    @Override
+    public <T> T createService(Class<T> clazz) {
+        if (WanReplicationService.class.isAssignableFrom(clazz)) {
+            return (T) new WanReplicationServiceImpl(node);
+        } else if (ICacheService.class.isAssignableFrom(clazz)) {
+            return (T) new EnterpriseCacheService();
+        }
+        throw new IllegalArgumentException("Unknown service class: " + clazz);
+    }
 }

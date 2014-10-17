@@ -1,14 +1,18 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.CacheStorageType;
+import com.hazelcast.cache.client.CacheInvalidationListener;
+import com.hazelcast.cache.client.CacheInvalidationMessage;
 import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.impl.onheap.EnterpriseOnHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.CacheReplicationOperation;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
-import com.hazelcast.cache.client.CacheInvalidationListener;
-import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.AbstractCacheService;
+import com.hazelcast.cache.impl.CachePartitionSegment;
+import com.hazelcast.cache.impl.CacheStatisticsImpl;
+import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
@@ -19,7 +23,6 @@ import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
-import com.hazelcast.util.ConstructorFunction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,33 +35,29 @@ import java.util.concurrent.TimeUnit;
 public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
-    protected ConstructorFunction<CacheInfo, ICacheRecordStore> createCacheConstructorFunction(final int partitionId) {
-        ConstructorFunction<CacheInfo, ICacheRecordStore> function
-                = new ConstructorFunction<CacheInfo, ICacheRecordStore>() {
-
-            public ICacheRecordStore createNew(CacheInfo ci) {
-                if (ci.getCacheStorageType() == null
-                        || ci.getCacheStorageType() == CacheStorageType.HEAP) {
-                    return new EnterpriseOnHeapCacheRecordStore(ci.getName(),
-                                                                partitionId,
-                                                                nodeEngine,
-                                                                EnterpriseCacheService.this);
-                } else {
-                    try {
-                        return new EnterpriseOffHeapCacheRecordStore(partitionId,
-                                                                     ci.getName(),
-                                                                     EnterpriseCacheService.this,
-                                                                     getSerializationService(),
-                                                                     nodeEngine,
-                                                                     EnterpriseOffHeapCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
-                    } catch (OffHeapOutOfMemoryError e) {
-                        throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
-                                "not enough contiguous memory available! -> " + e.getMessage(), e);
-                    }
-                }
+    protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
+        CacheConfig cacheConfig = configs.get(name);
+        CacheStorageType cacheStorageType = cacheConfig.getCacheStorageType();
+        if (cacheStorageType == null
+                || CacheStorageType.HEAP.equals(cacheStorageType)) {
+            return new EnterpriseOnHeapCacheRecordStore(name,
+                    partitionId,
+                    nodeEngine,
+                    EnterpriseCacheService.this);
+        } else if (CacheStorageType.OFFHEAP.equals(cacheStorageType)) {
+            try {
+                return new EnterpriseOffHeapCacheRecordStore(partitionId,
+                        name,
+                        EnterpriseCacheService.this,
+                        getSerializationService(),
+                        nodeEngine,
+                        EnterpriseOffHeapCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+            } catch (OffHeapOutOfMemoryError e) {
+                throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
+                        "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
-        };
-        return function;
+        }
+        throw new IllegalArgumentException("Cannot create record store for the storage type: " + cacheStorageType);
     }
 
     @Override
@@ -115,11 +114,11 @@ public class EnterpriseCacheService extends AbstractCacheService {
 
     @Override
     public DistributedObject createDistributedObject(String objectName) {
-        EnterpriseSerializationService serializationService = getSerializationService();
-        if (serializationService.getMemoryManager() == null) {
-            throw new IllegalStateException("OffHeap memory should be enabled and configured " +
-                    "to be able to use ICache!");
-        }
+//        EnterpriseSerializationService serializationService = getSerializationService();
+//        if (serializationService.getMemoryManager() == null) {
+//            throw new IllegalStateException("OffHeap memory should be enabled and configured " +
+//                    "to be able to use ICache!");
+//        }
         return super.createDistributedObject(objectName);
     }
 
@@ -169,19 +168,25 @@ public class EnterpriseCacheService extends AbstractCacheService {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
     }
 
-    @Override
-    public EnterpriseCacheRecordStore getOrCreateCache(String name, int partitionId) {
-        return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, partitionId);
-    }
+//    @Override
+//    <<<<<<<Updated upstream
+//
+//    public EnterpriseCacheRecordStore getOrCreateCache(String name, int partitionId) {
+//        return (EnterpriseCacheRecordStore) super.getOrCreateCache(name, partitionId);
+//    }
+//
+//    @Override
+//    public ICacheRecordStore getOrCreateCache(String name,
+//                                              CacheStorageType cacheStorageType,
+//                                              int partitionId) {
+//        return super.getOrCreateCache(name, cacheStorageType, partitionId);
+//    }
+//
+//    @Override
+//    =======
+//            >>>>>>>
+//    Stashed changes
 
-    @Override
-    public ICacheRecordStore getOrCreateCache(String name,
-                                              CacheStorageType cacheStorageType,
-                                              int partitionId) {
-        return super.getOrCreateCache(name, cacheStorageType, partitionId);
-    }
-
-    @Override
     public EnterpriseCacheRecordStore getCache(String name, int partitionId) {
         return (EnterpriseCacheRecordStore) super.getCache(name, partitionId);
     }

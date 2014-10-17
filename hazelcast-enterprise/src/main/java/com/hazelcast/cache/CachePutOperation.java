@@ -6,6 +6,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
@@ -15,31 +16,31 @@ public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
     private boolean get; // getAndPut
-    private long ttlMillis;
+    private ExpiryPolicy expiryPolicy;
 
     public CachePutOperation() {
     }
 
-    public CachePutOperation(String name, Data key, Data value, long ttlMillis) {
+    public CachePutOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = value;
-        this.ttlMillis = ttlMillis;
+        this.expiryPolicy = expiryPolicy;
         get = false;
     }
 
-    public CachePutOperation(String name, Data key, Data value, long ttlMillis, boolean get) {
+    public CachePutOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy, boolean get) {
         super(name, key);
         this.value = value;
-        this.ttlMillis = ttlMillis;
+        this.expiryPolicy = expiryPolicy;
         this.get = get;
     }
 
     @Override
     public void runInternal() throws Exception {
         if (get) {
-            response = cache.getAndPut(key, value, ttlMillis, getCallerUuid());
+            response = cache.getAndPut(key, value, expiryPolicy, getCallerUuid());
         } else {
-            cache.put(key, value, ttlMillis, getCallerUuid());
+            cache.put(key, value, expiryPolicy, getCallerUuid());
             response = null;
         }
     }
@@ -55,7 +56,7 @@ public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutBackupOperation(name, key, value, ttlMillis);
+        return new CachePutBackupOperation(name, key, value, expiryPolicy);
     }
 
     @Override
@@ -67,7 +68,7 @@ public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeBoolean(get);
-        out.writeLong(ttlMillis);
+        out.writeObject(expiryPolicy);
         out.writeData(value);
     }
 
@@ -75,7 +76,7 @@ public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         get = in.readBoolean();
-        ttlMillis = in.readLong();
+        expiryPolicy = in.readObject();
         value = readOffHeapData(in);
     }
 

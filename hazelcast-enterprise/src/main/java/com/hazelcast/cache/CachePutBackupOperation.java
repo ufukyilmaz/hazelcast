@@ -8,6 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.BackupOperation;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
@@ -16,15 +17,15 @@ import java.io.IOException;
 public class CachePutBackupOperation extends AbstractOffHeapCacheOperation implements BackupOperation {
 
     private Data value;
-    private long ttlMillis;
+    private ExpiryPolicy expiryPolicy;
 
     public CachePutBackupOperation() {
     }
 
-    public CachePutBackupOperation(String name, Data key, Data value, long ttlMillis) {
+    public CachePutBackupOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = value;
-        this.ttlMillis = ttlMillis;
+        this.expiryPolicy = expiryPolicy;
     }
 
     @Override
@@ -32,7 +33,7 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
         EnterpriseCacheService service = getService();
         EnterpriseOffHeapCacheRecordStore cache =
                 (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
-        cache.put(key, value, ttlMillis, null);
+        cache.put(key, value, expiryPolicy, null);
         response = Boolean.TRUE;
     }
 
@@ -48,14 +49,14 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeLong(ttlMillis);
+        out.writeObject(expiryPolicy);
         out.writeData(value);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        ttlMillis = in.readLong();
+        expiryPolicy = in.readObject();
         value = readOffHeapData(in);
     }
 

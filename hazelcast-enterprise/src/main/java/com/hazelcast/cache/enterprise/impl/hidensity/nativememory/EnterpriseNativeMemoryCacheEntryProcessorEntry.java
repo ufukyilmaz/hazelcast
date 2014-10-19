@@ -1,6 +1,6 @@
-package com.hazelcast.cache.enterprise.impl.offheap;
+package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheEntryProcessorEntry;
+import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.nio.serialization.Data;
 
@@ -11,8 +11,8 @@ import javax.cache.expiry.ExpiryPolicy;
  * @author sozal 14/10/14
  */
 // TODO: Implement as off-heap
-public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
-        implements EnterpriseCacheEntryProcessorEntry<K, V> {
+public class EnterpriseNativeMemoryCacheEntryProcessorEntry<K, V>
+        implements EnterpriseHiDensityCacheEntryProcessorEntry<K, V> {
 
     private K key;
     private V value;
@@ -20,18 +20,18 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
     private State state = State.NONE;
 
     private final Data keyData;
-    private CacheOffHeapRecord record;
-    private CacheOffHeapRecord recordLoaded;
+    private EnterpriseNativeMemoryCacheRecord record;
+    private EnterpriseNativeMemoryCacheRecord recordLoaded;
 
-    private final OffHeapCacheRecordStore cacheRecordStore;
+    private final EnterpriseNativeMemoryCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
-    public EnterpriseOffHeapCacheEntryProcessorEntry(Data keyData,
-                                                     CacheOffHeapRecord record,
-                                                     OffHeapCacheRecordStore cacheRecordStore,
-                                                     long now) {
+    public EnterpriseNativeMemoryCacheEntryProcessorEntry(Data keyData,
+                                                          EnterpriseNativeMemoryCacheRecord record,
+                                                          EnterpriseNativeMemoryCacheRecordStore cacheRecordStore,
+                                                          long now) {
         this.keyData = keyData;
         this.record = record;
         this.cacheRecordStore = cacheRecordStore;
@@ -99,7 +99,7 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
         return null;
     }
 
-    private V getRecordValue(CacheOffHeapRecord theRecord) {
+    private V getRecordValue(EnterpriseNativeMemoryCacheRecord theRecord) {
         return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
     }
 

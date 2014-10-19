@@ -1,19 +1,21 @@
-package com.hazelcast.cache.enterprise.impl.offheap;
+package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheRecord;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.OffHeapData;
-import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
 /**
  * @author sozal 14/10/14
  */
-public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord<OffHeapData> {
+public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
+        extends MemoryBlock
+        implements EnterpriseHiDensityCacheRecord<V>, DataSerializable {
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = 8;
@@ -23,10 +25,10 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
 
     public static final int SIZE = VALUE_OFFSET + 8;
 
-    public CacheOffHeapRecord() {
+    public EnterpriseNativeMemoryCacheRecord() {
     }
 
-    public CacheOffHeapRecord(long address) {
+    public EnterpriseNativeMemoryCacheRecord(long address) {
         super(address, SIZE);
     }
 
@@ -75,7 +77,7 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
-    public CacheOffHeapRecord reset(long address) {
+    public EnterpriseNativeMemoryCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -85,7 +87,7 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
         writeLong(CREATION_TIME_OFFSET, 0L);
         setAccessTimeDiff(0);
         setTtlMillis(0);
-        setValueAddress(OffHeapCacheRecordStore.NULL_PTR);
+        setValueAddress(EnterpriseNativeMemoryCacheRecordStore.NULL_PTR);
     }
 
     public static long getCreationTime(long address) {
@@ -105,22 +107,21 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
     }
 
     @Override
-    public OffHeapData getValue() {
+    public V getValue() {
         // TODO
         //      Maybe "cacheRecordService.readData(address);" can be used.
         //      But in that case, "cacheRecordService" may be passed as argument to constructor
         //      or it may be taken from a singleton context
         throw new UnsupportedOperationException(
                 "\"<V extends OffHeapData> V getValue()\" is not supported !");
-
     }
 
     @Override
-    public void setValue(OffHeapData value) {
+    public void setValue(V value) {
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(OffHeapCacheRecordStore.NULL_PTR);
+            setValueAddress(EnterpriseNativeMemoryCacheRecordStore.NULL_PTR);
         }
     }
 
@@ -134,7 +135,7 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
         long creationTime = getCreationTime();
         int newTtl =
                 expirationTime > creationTime
-                        ? (int) (expirationTime - creationTime)
+                        ? (int)(expirationTime - creationTime)
                         : -1;
         if (newTtl > 0) {
             setTtlMillis(newTtl);
@@ -148,15 +149,27 @@ public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord
     }
 
     @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeLong(address);
+        out.writeInt(size);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        address = in.readLong();
+        size = in.readInt();
+    }
+
+    @Override
     public String toString() {
-        if (address() >= OffHeapCacheRecordStore.NULL_PTR) {
-            return "EnterpriseOffHeapCacheRecord{creationTime: " + getCreationTime()
+        if (address() >= EnterpriseNativeMemoryCacheRecordStore.NULL_PTR) {
+            return "EnterpriseNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()
                     + ", valueAddress: " + getValueAddress()
                     + " }";
         } else {
-            return "EnterpriseOffHeapCacheRecord{ NULL }";
+            return "EnterpriseNativeMemoryCacheRecord{ NULL }";
         }
     }
 }

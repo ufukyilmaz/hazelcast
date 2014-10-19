@@ -11,8 +11,8 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
-
 import com.hazelcast.util.StringUtil;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +22,6 @@ import javax.cache.CacheManager;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -47,7 +46,8 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected static final String CACHE_STORAGE_TYPE_PROPERTY = "cacheStorageType";
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
-    protected static final CacheStorageType DEFAULT_CACHE_STORAGE_TYPE = CacheStorageType.OFFHEAP;
+    protected static final CacheStorageType DEFAULT_CACHE_STORAGE_TYPE =
+            CacheStorageType.NATIVE_MEMORY;
 
     protected static final String CACHE_NAME;
     protected static final CacheStorageType CACHE_STORAGE_TYPE;
@@ -98,10 +98,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     public static OffHeapMemoryConfig getDefaultMemoryConfig() {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
         return
-            new OffHeapMemoryConfig()
-                    .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
-                    .setSize(memorySize).setEnabled(true)
-                    .setMinBlockSize(16).setPageSize(1 << 20);
+                new OffHeapMemoryConfig()
+                        .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
+                        .setSize(memorySize).setEnabled(true)
+                        .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     public static SerializationConfig getDefaultSerializationConfig() {
@@ -122,10 +122,8 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ICache getCache() {
-        Cache<Object, Object> cache = cacheManager.getCache(CACHE_NAME);
-        if (cache == null) {
-            cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
-        }
+        Cache<Object, Object> cache =
+                cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
         return cache.unwrap(ICache.class);
     }
 
@@ -141,7 +139,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         if (cacheManager != null) {
             Iterable<String> cacheNames = cacheManager.getCacheNames();
             for (String name : cacheNames) {
-                cacheManager.destroyCache(name);
+                //cacheManager.destroyCache(name);
             }
         }
         onTearDown();
@@ -154,6 +152,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
         cache.put("key1", "value1");
         assertEquals("value1", cache.get("key1"));
+
         assertEquals("value1", cache.getAndPut("key1", "value2"));
         assertEquals(1, cache.size());
 
@@ -237,10 +236,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {
-        return new ModifiedExpiryPolicy(new Duration(timeUnit, ttl));
+        return new CreatedExpiryPolicy(new Duration(timeUnit, ttl));
     }
 
-    @Test
+    //@Test
     public void testPutWithTtl() throws ExecutionException, InterruptedException {
         final ICache cache = getCache();
         final String key = "key";
@@ -252,6 +251,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             }
         });
         assertEquals(0, cache.size());
+
 
         cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertTrueEventually(new AssertTask() {
@@ -284,7 +284,6 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             }
         });
         assertEquals(0, cache.size());
-
     }
 
     //@Test

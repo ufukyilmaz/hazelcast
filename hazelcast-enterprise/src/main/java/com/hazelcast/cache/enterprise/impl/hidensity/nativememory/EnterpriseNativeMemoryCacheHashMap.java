@@ -1,6 +1,6 @@
-package com.hazelcast.cache.enterprise.impl.offheap;
+package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheHashMap;
+import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
@@ -18,9 +18,9 @@ import java.util.Arrays;
 /**
  * @author sozal 11/02/14
  */
-public final class EnterpriseOffHeapCacheHashMap
-        extends BinaryOffHeapHashMap<CacheOffHeapRecord>
-        implements EnterpriseCacheHashMap<Data, CacheOffHeapRecord> {
+public final class EnterpriseNativeMemoryCacheHashMap
+        extends BinaryOffHeapHashMap<EnterpriseNativeMemoryCacheRecord>
+        implements EnterpriseHiDensityCacheRecordMap<Data, EnterpriseNativeMemoryCacheRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
@@ -36,10 +36,10 @@ public final class EnterpriseOffHeapCacheHashMap
 
     private int randomEvictionLastIndex;
 
-    public EnterpriseOffHeapCacheHashMap(int initialCapacity,
-                                         EnterpriseSerializationService serializationService,
-                                         MemoryBlockAccessor<CacheOffHeapRecord> memoryBlockAccessor,
-                                         Callback<Data> evictionCallback) {
+    public EnterpriseNativeMemoryCacheHashMap(int initialCapacity,
+                                              EnterpriseSerializationService serializationService,
+                                              MemoryBlockAccessor<EnterpriseNativeMemoryCacheRecord> memoryBlockAccessor,
+                                              Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, memoryBlockAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.evictionCallback = evictionCallback;
@@ -54,7 +54,7 @@ public final class EnterpriseOffHeapCacheHashMap
         int len = (int) (capacity * (long) percentage / 100);
         int k = 0;
         if (len > 0 && size() > 0) {
-            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
             int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
 
@@ -62,9 +62,9 @@ public final class EnterpriseOffHeapCacheHashMap
             for (int ix = start; ix < end; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int ttlMillis = CacheOffHeapRecord.getTtlMillis(value);
+                    int ttlMillis = EnterpriseNativeMemoryCacheRecord.getTtlMillis(value);
                     if (ttlMillis > 0) {
-                        long creationTime = CacheOffHeapRecord.getCreationTime(value);
+                        long creationTime = EnterpriseNativeMemoryCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
                             OffHeapData binary = service.readData(key);
@@ -141,7 +141,7 @@ public final class EnterpriseOffHeapCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             long time = sortArray[index];
 
-            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -161,8 +161,8 @@ public final class EnterpriseOffHeapCacheHashMap
     }
 
     private static long getAccessTime(long recordAddress) {
-        long creationTime = CacheOffHeapRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = CacheOffHeapRecord.getAccessTimeDiff(recordAddress);
+        long creationTime = EnterpriseNativeMemoryCacheRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = EnterpriseNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
     }
 
@@ -183,7 +183,7 @@ public final class EnterpriseOffHeapCacheHashMap
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    hit = CacheOffHeapRecord.getAccessHit(value);
+                    hit = EnterpriseNativeMemoryCacheRecord.getAccessHit(value);
                     sortArray[k] = hit;
                     if (++k >= size) {
                         break;
@@ -194,12 +194,12 @@ public final class EnterpriseOffHeapCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             hit = sortArray[index];
 
-            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int h = CacheOffHeapRecord.getAccessHit(value);
+                    int h = EnterpriseNativeMemoryCacheRecord.getAccessHit(value);
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
@@ -239,7 +239,7 @@ public final class EnterpriseOffHeapCacheHashMap
 
         int ix = start;
         int k = 0;
-        OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+        EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
@@ -257,8 +257,8 @@ public final class EnterpriseOffHeapCacheHashMap
         return k;
     }
 
-    private OffHeapCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
-        return (OffHeapCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
+    private EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
+        return (EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
     }
 
     public EntryIter iterator(int slot) {

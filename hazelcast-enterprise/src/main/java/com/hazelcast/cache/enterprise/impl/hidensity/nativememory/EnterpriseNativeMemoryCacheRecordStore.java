@@ -1,15 +1,9 @@
-package com.hazelcast.cache.enterprise.impl.offheap;
+package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.enterprise.*;
+import com.hazelcast.cache.enterprise.impl.hidensity.AbstractEnterpriseHiDensityCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
-import com.hazelcast.cache.impl.CacheEntry;
-import com.hazelcast.cache.impl.CacheEventData;
-import com.hazelcast.cache.impl.CacheEventDataImpl;
-import com.hazelcast.cache.impl.CacheEventSet;
-import com.hazelcast.cache.impl.CacheEventType;
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
-import com.hazelcast.cache.impl.CacheStatisticsImpl;
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.EvictionPolicy;
@@ -20,11 +14,7 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.OffHeapData;
-import com.hazelcast.nio.serialization.OffHeapDataUtil;
+import com.hazelcast.nio.serialization.*;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -33,7 +23,6 @@ import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.cache.configuration.Factory;
-import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
@@ -41,13 +30,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
-import java.util.ArrayDeque;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -56,20 +39,16 @@ import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 /**
  * @author sozal 14/10/14
  */
-public class OffHeapCacheRecordStore implements ICacheRecordStore {
+public class EnterpriseNativeMemoryCacheRecordStore
+        extends AbstractEnterpriseHiDensityCacheRecordStore {
 
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
     public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
-    protected static final int MIN_FORCED_EVICT_PERCENTAGE = 10;
-    protected static final int DEFAULT_EVICTION_PERCENTAGE = 10;
-    protected static final int DEFAULT_EVICTION_THRESHOLD_PERCENTAGE = 95;
-    protected static final int DEFAULT_TTL = 1000 * 60 * 60; // 1 hour
-
     protected final int partitionId;
     protected final NodeEngine nodeEngine;
     protected final CacheConfig cacheConfig;
-    protected final EnterpriseOffHeapCacheHashMap records;
+    protected final EnterpriseNativeMemoryCacheHashMap records;
     protected final EnterpriseCacheService cacheService;
     protected final EnterpriseSerializationService serializationService;
     protected final ScheduledFuture<?> evictionTaskFuture;
@@ -92,16 +71,16 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     protected volatile boolean hasTtl;
     protected final long defaultTTL;
 
-    protected OffHeapCacheRecordStore(final int partitionId,
-                                      final CacheConfig cacheConfig,
-                                      final EnterpriseCacheService cacheService,
-                                      final EnterpriseSerializationService serializationService,
-                                      final NodeEngine nodeEngine,
-                                      final int initialCapacity,
-                                      final ExpiryPolicy expiryPolicy,
-                                      final EvictionPolicy evictionPolicy,
-                                      final int evictionPercentage,
-                                      final int evictionThresholdPercentage) {
+    protected EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
+                                                     final CacheConfig cacheConfig,
+                                                     final EnterpriseCacheService cacheService,
+                                                     final EnterpriseSerializationService serializationService,
+                                                     final NodeEngine nodeEngine,
+                                                     final int initialCapacity,
+                                                     final ExpiryPolicy expiryPolicy,
+                                                     final EvictionPolicy evictionPolicy,
+                                                     final int evictionPercentage,
+                                                     final int evictionThresholdPercentage) {
         if (cacheConfig == null) {
             throw new IllegalStateException("Cache already destroyed");
         }
@@ -110,10 +89,10 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         this.cacheService = cacheService;
         this.serializationService = serializationService;
         this.nodeEngine = nodeEngine;
-        this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy) cacheConfig.getExpiryPolicyFactory().create();
+        this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create();
         this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
         this.cacheRecordService = new CacheRecordAccessor(serializationService);
-        this.records = new EnterpriseOffHeapCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
+        this.records = new EnterpriseNativeMemoryCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
         this.memoryManager = serializationService.getMemoryManager();
         this.evictionEnabled = evictionPolicy != EvictionPolicy.NONE;
         this.evictionPercentage = evictionPercentage;
@@ -132,43 +111,43 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         this.evictionOperation = createEvictionOperation(10);
         this.evictionTaskFuture =
                 nodeEngine.getExecutionService()
-                        .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
+                    .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-    public OffHeapCacheRecordStore(final int partitionId,
-                                   final String cacheName,
-                                   final EnterpriseCacheService cacheService,
-                                   final EnterpriseSerializationService ss,
-                                   final NodeEngine nodeEngine,
-                                   final int initialCapacity) {
+    public EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
+                                                  final String cacheName,
+                                                  final EnterpriseCacheService cacheService,
+                                                  final EnterpriseSerializationService ss,
+                                                  final NodeEngine nodeEngine,
+                                                  final int initialCapacity) {
         this(partitionId,
-                cacheService.getCacheConfig(cacheName),
-                cacheService,
-                ss,
-                nodeEngine,
-                initialCapacity,
-                null,
-                null,
-                DEFAULT_EVICTION_PERCENTAGE,
-                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+             cacheService.getCacheConfig(cacheName),
+             cacheService,
+             ss,
+             nodeEngine,
+             initialCapacity,
+             null,
+             null,
+             DEFAULT_EVICTION_PERCENTAGE,
+             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
-    public OffHeapCacheRecordStore(final int partitionId,
-                                   final CacheConfig cacheConfig,
-                                   final EnterpriseCacheService cacheService,
-                                   final EnterpriseSerializationService ss,
-                                   final NodeEngine nodeEngine,
-                                   final int initialCapacity) {
+    public EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
+                                                  final CacheConfig cacheConfig,
+                                                  final EnterpriseCacheService cacheService,
+                                                  final EnterpriseSerializationService ss,
+                                                  final NodeEngine nodeEngine,
+                                                  final int initialCapacity) {
         this(partitionId,
-                cacheConfig,
-                cacheService,
-                ss,
-                nodeEngine,
-                initialCapacity,
-                (ExpiryPolicy) cacheConfig.getExpiryPolicyFactory().create(),
-                cacheConfig.getEvictionPolicy(),
-                DEFAULT_EVICTION_PERCENTAGE,
-                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+             cacheConfig,
+             cacheService,
+             ss,
+             nodeEngine,
+             initialCapacity,
+             (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create(),
+             cacheConfig.getEvictionPolicy(),
+             DEFAULT_EVICTION_PERCENTAGE,
+             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
     protected boolean isStatisticsEnabled() {
@@ -189,7 +168,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return cacheConfig.isWriteThrough();
     }
 
-    protected OffHeapData getRecordData(CacheOffHeapRecord record) {
+    protected OffHeapData getRecordData(EnterpriseNativeMemoryCacheRecord record) {
         return (OffHeapData) cacheRecordService.readData(record.getValueAddress());
     }
 
@@ -201,7 +180,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         }
     }
 
-    protected Object getRecordValue(CacheOffHeapRecord record) {
+    protected Object getRecordValue(EnterpriseNativeMemoryCacheRecord record) {
         return getDataValue(getRecordData(record));
     }
 
@@ -227,33 +206,33 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         }
 
         if (!isExpiredAt(expiryTime, now)) {
-            CacheOffHeapRecord record = createRecord(key, value, expiryTime);
+            EnterpriseNativeMemoryCacheRecord record = createRecord(key, value, expiryTime);
             records.put(key, record);
             return true;
         }
         return false;
     }
 
-    public CacheOffHeapRecord createRecord(Data keyData,
-                                                     Object value,
-                                                     long expirationTime) {
-        final CacheOffHeapRecord record =
+    public EnterpriseNativeMemoryCacheRecord createRecord(Data keyData,
+                                                          Object value,
+                                                          long expirationTime) {
+        final EnterpriseNativeMemoryCacheRecord record =
                 createRecord(value, Clock.currentTimeMillis(), expirationTime);
         if (isEventsEnabled) {
             final OffHeapData recordValue = record.getValue();
             publishEvent(cacheConfig.getName(),
-                    CacheEventType.CREATED,
-                    keyData,
-                    null,
-                    recordValue,
-                    false);
+                         CacheEventType.CREATED,
+                         keyData,
+                         null,
+                         recordValue,
+                         false);
         }
         return record;
     }
 
     public boolean updateRecordWithExpiry(Data key,
                                           Object value,
-                                          CacheOffHeapRecord record,
+                                          EnterpriseNativeMemoryCacheRecord record,
                                           ExpiryPolicy localExpiryPolicy,
                                           long now,
                                           boolean disableWriteThrough) {
@@ -275,37 +254,38 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return !processExpiredEntry(key, record, expiryTime, now);
     }
 
-    public CacheOffHeapRecord updateRecord(Data key, CacheOffHeapRecord record, Object value) {
-        final OffHeapData dataOldValue = record.getValue();
+    public EnterpriseNativeMemoryCacheRecord updateRecord(Data key,
+                                                          EnterpriseNativeMemoryCacheRecord record, Object value) {
+        final OffHeapData dataOldValue = (OffHeapData) record.getValue();
         final OffHeapData dataValue = toOffHeapData(value);
         record.setValue(dataValue);
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
-                    CacheEventType.UPDATED,
-                    key,
-                    dataOldValue,
-                    dataValue,
-                    true);
+                         CacheEventType.UPDATED,
+                         key,
+                         dataOldValue,
+                         dataValue,
+                         true);
         }
         return record;
     }
 
     public void deleteRecord(Data key) {
-        final CacheOffHeapRecord record = records.remove(key);
+        final EnterpriseNativeMemoryCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
-                    CacheEventType.REMOVED,
-                    key,
-                    null,
-                    dataValue,
-                    false);
+                         CacheEventType.REMOVED,
+                         key,
+                         null,
+                         dataValue,
+                         false);
         }
     }
 
-    public CacheOffHeapRecord accessRecord(CacheOffHeapRecord record,
-                                                     ExpiryPolicy expiryPolicy,
-                                                     long now) {
+    public EnterpriseNativeMemoryCacheRecord accessRecord(EnterpriseNativeMemoryCacheRecord record,
+                                              ExpiryPolicy expiryPolicy,
+                                              long now) {
         final ExpiryPolicy localExpiryPolicy =
                 expiryPolicy != null
                         ? expiryPolicy
@@ -314,7 +294,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return record;
     }
 
-    public CacheOffHeapRecord readThroughRecord(Data key, long now) {
+    public EnterpriseNativeMemoryCacheRecord readThroughRecord(Data key, long now) {
         final ExpiryPolicy localExpiryPolicy = expiryPolicy;
         Object value = readThroughCache(key);
         if (value == null) {
@@ -438,7 +418,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return null;
     }
 
-    protected boolean processExpiredEntry(Data key, CacheOffHeapRecord record, long now) {
+    protected boolean processExpiredEntry(Data key, EnterpriseNativeMemoryCacheRecord record, long now) {
         final boolean isExpired = record != null && record.isExpiredAt(now);
         if (!isExpired) {
             return false;
@@ -454,7 +434,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return true;
     }
 
-    protected boolean processExpiredEntry(Data key, CacheOffHeapRecord record, long expiryTime, long now) {
+    protected boolean processExpiredEntry(Data key, EnterpriseNativeMemoryCacheRecord record, long expiryTime, long now) {
         final boolean isExpired = isExpiredAt(expiryTime, now);
         if (!isExpired) {
             return false;
@@ -470,7 +450,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return true;
     }
 
-    protected long updateAccessDuration(CacheOffHeapRecord record,
+    protected long updateAccessDuration(EnterpriseNativeMemoryCacheRecord record,
                                         ExpiryPolicy expiryPolicy,
                                         long now) {
         long expiryTime = -1L;
@@ -556,7 +536,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         cacheService.publishEvent(cacheName, ces, orderKey);
     }
 
-    protected void onAccess(long now, CacheOffHeapRecord record, long creationTime) {
+    protected void onAccess(long now, EnterpriseNativeMemoryCacheRecord record, long creationTime) {
         if (evictionEnabled) {
             if (evictionPolicy == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
@@ -581,7 +561,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         if (!(data instanceof Data)) {
             offHeapData = serializationService.toData(data, DataType.OFFHEAP);
         } else if (!(data instanceof OffHeapData)) {
-            offHeapData = serializationService.convertData((Data) data, DataType.OFFHEAP);
+            offHeapData = serializationService.convertData((Data)data, DataType.OFFHEAP);
         } else {
             offHeapData = (OffHeapData) data;
         }
@@ -592,21 +572,21 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
     }
 
-    protected CacheOffHeapRecord createRecord(long now) {
+    protected EnterpriseNativeMemoryCacheRecord createRecord(long now) {
         return createRecord(null, now, -1);
     }
 
-    protected CacheOffHeapRecord createRecord(Object value, long now) {
+    protected EnterpriseNativeMemoryCacheRecord createRecord(Object value, long now) {
         return createRecord(value, now, -1);
     }
 
-    protected CacheOffHeapRecord createRecord(long now, long expirationTime) {
+    protected EnterpriseNativeMemoryCacheRecord createRecord(long now, long expirationTime) {
         return createRecord(null, now, -1);
     }
 
-    protected CacheOffHeapRecord createRecord(Object value, long now, long expirationTime) {
-        long address = memoryManager.allocate(CacheOffHeapRecord.SIZE);
-        CacheOffHeapRecord record = cacheRecordService.newRecord();
+    protected EnterpriseNativeMemoryCacheRecord createRecord(Object value, long now, long expirationTime) {
+        long address = memoryManager.allocate(EnterpriseNativeMemoryCacheRecord.SIZE);
+        EnterpriseNativeMemoryCacheRecord record = cacheRecordService.newRecord();
         record.reset(address);
         record.setCreationTime(now);
         if (expirationTime > 0) {
@@ -630,7 +610,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         evictIfRequired(now);
 
         long creationTime;
-        CacheOffHeapRecord record = null;
+        EnterpriseNativeMemoryCacheRecord record = null;
         OffHeapData newValue = null;
         Data oldValue = null;
         boolean newPut = false;
@@ -698,7 +678,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         return cacheRecordService;
     }
 
-    public EnterpriseOffHeapCacheHashMap getCacheMap() {
+    public EnterpriseNativeMemoryCacheHashMap getCacheMap() {
         return records;
     }
 
@@ -731,7 +711,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     public Data get(Data key, ExpiryPolicy expiryPolicy) {
         long now = Clock.currentTimeMillis();
         OffHeapData value = null;
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (record != null) {
             long creationTime = record.getCreationTime();
@@ -777,7 +757,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     public void own(Data key, Object value, long ttlMillis) {
         // TODO: Implement without creating a "ExpirePolicy" object
         // This is just a quick workaround
-        putInternal(key, value, ttlToExpirePolicy(ttlMillis), false, null);
+        putInternal(key, value, ttlToExpirePolicy(ttlMillis), true, null);
     }
 
     @Override
@@ -787,11 +767,11 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
 
     @Override
     public void setRecord(Data key, CacheRecord record) {
-        if (!(record instanceof CacheOffHeapRecord)) {
+        if (!(record instanceof EnterpriseNativeMemoryCacheRecord)) {
             throw new IllegalArgumentException("record must be an instance of "
-                    + CacheOffHeapRecord.class.getName());
+                    + EnterpriseNativeMemoryCacheRecord.class.getName());
         }
-        records.set(key, (CacheOffHeapRecord) record);
+        records.set(key, (EnterpriseNativeMemoryCacheRecord)record);
     }
 
     @Override
@@ -812,7 +792,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     public boolean putIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        CacheOffHeapRecord record = null;
+        EnterpriseNativeMemoryCacheRecord record = null;
         OffHeapData newValue = null;
 
         try {
@@ -860,7 +840,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     public boolean replace(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -893,7 +873,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
                            String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
@@ -927,7 +907,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         evictIfRequired(now);
 
         Data oldValue = null;
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -977,7 +957,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     @Override
     public Data getAndRemove(Data key, String caller) {
         Data oldValue = null;
-        CacheOffHeapRecord record = records.remove(key);
+        EnterpriseNativeMemoryCacheRecord record = records.remove(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             OffHeapData oldBinary = cacheRecordService.readData(record.getValueAddress());
@@ -999,7 +979,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     @Override
     public boolean remove(Data key, Object value, String caller) {
         boolean deleted = false;
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             Object existingValue = getRecordValue(record);
             if (value.equals(existingValue)) {
@@ -1022,7 +1002,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
             final Set<Data> keysToClean = new HashSet<Data>(keys.isEmpty() ? records.keySet() : keys);
             for (Data key : keysToClean) {
                 isEventBatchingEnabled = true;
-                final CacheOffHeapRecord record = records.get(key);
+                final EnterpriseNativeMemoryCacheRecord record = records.get(key);
                 if (localKeys.contains(key) && record != null) {
                     final boolean isExpired = processExpiredEntry(key, record, now);
                     if (!isExpired) {
@@ -1093,7 +1073,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         final long now = Clock.currentTimeMillis();
         final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
 
-        CacheOffHeapRecord record = records.get(key);
+        EnterpriseNativeMemoryCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (isExpired) {
             record = null;
@@ -1110,8 +1090,8 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
             statistics.addGetTimeNano(System.nanoTime() - start);
         }
 
-        EnterpriseOffHeapCacheEntryProcessorEntry entry =
-                new EnterpriseOffHeapCacheEntryProcessorEntry(key, record, this, now);
+        EnterpriseNativeMemoryCacheEntryProcessorEntry entry =
+                new EnterpriseNativeMemoryCacheEntryProcessorEntry(key, record, this, now);
         final Object process = entryProcessor.process(entry, arguments);
         entry.applyChanges();
         return process;
@@ -1151,7 +1131,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
 
     @Override
     public String getName() {
-        return cacheConfig.getNameWithPrefix();
+        return cacheConfig.getName();
     }
 
     @Override
@@ -1160,11 +1140,11 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
     }
 
     public static class CacheRecordAccessor
-            implements MemoryBlockAccessor<CacheOffHeapRecord> {
+            implements MemoryBlockAccessor<EnterpriseNativeMemoryCacheRecord> {
 
         private final EnterpriseSerializationService ss;
         private final MemoryManager memoryManager;
-        private final Queue<CacheOffHeapRecord> recordQ = new ArrayDeque<CacheOffHeapRecord>(1024);
+        private final Queue<EnterpriseNativeMemoryCacheRecord> recordQ = new ArrayDeque<EnterpriseNativeMemoryCacheRecord>(1024);
         private final Queue<OffHeapData> dataQ = new ArrayDeque<OffHeapData>(1024);
 
         public CacheRecordAccessor(EnterpriseSerializationService ss) {
@@ -1173,37 +1153,37 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         }
 
         @Override
-        public boolean isEqual(long address, CacheOffHeapRecord value) {
+        public boolean isEqual(long address, EnterpriseNativeMemoryCacheRecord value) {
             return isEqual(address, value.address());
         }
 
         @Override
         public boolean isEqual(long address1, long address2) {
-            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + CacheOffHeapRecord.VALUE_OFFSET);
-            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + CacheOffHeapRecord.VALUE_OFFSET);
+            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseNativeMemoryCacheRecord.VALUE_OFFSET);
+            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseNativeMemoryCacheRecord.VALUE_OFFSET);
             return OffHeapDataUtil.equals(valueAddress1, valueAddress2);
         }
 
-        public CacheOffHeapRecord newRecord() {
-            CacheOffHeapRecord record = recordQ.poll();
+        public EnterpriseNativeMemoryCacheRecord newRecord() {
+            EnterpriseNativeMemoryCacheRecord record = recordQ.poll();
             if (record == null) {
-                record = new CacheOffHeapRecord();
+                record = new EnterpriseNativeMemoryCacheRecord();
             }
             return record;
         }
 
         @Override
-        public CacheOffHeapRecord read(long address) {
+        public EnterpriseNativeMemoryCacheRecord read(long address) {
             if (address <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
             }
-            CacheOffHeapRecord record = newRecord();
+            EnterpriseNativeMemoryCacheRecord record = newRecord();
             record.reset(address);
             return record;
         }
 
         @Override
-        public void dispose(CacheOffHeapRecord record) {
+        public void dispose(EnterpriseNativeMemoryCacheRecord record) {
             if (record.address() <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + record.address());
             }
@@ -1229,7 +1209,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
             return value.reset(valueAddress);
         }
 
-        public void disposeValue(CacheOffHeapRecord record) {
+        public void disposeValue(EnterpriseNativeMemoryCacheRecord record) {
             long valueAddress = record.getValueAddress();
             if (valueAddress != NULL_PTR) {
                 disposeData(valueAddress);
@@ -1249,7 +1229,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
             disposeData(data);
         }
 
-        void enqueueRecord(CacheOffHeapRecord record) {
+        void enqueueRecord(EnterpriseNativeMemoryCacheRecord record) {
             recordQ.offer(record.reset(NULL_PTR));
         }
 
@@ -1283,7 +1263,7 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
         }
     }
 
-    public BinaryOffHeapHashMap<CacheOffHeapRecord>.EntryIter iterator(int slot) {
+    public BinaryOffHeapHashMap<EnterpriseNativeMemoryCacheRecord>.EntryIter iterator(int slot) {
         return records.iterator(slot);
     }
 
@@ -1302,25 +1282,6 @@ public class OffHeapCacheRecordStore implements ICacheRecordStore {
                 .setPartitionId(partitionId)
                 .setCallerUuid(nodeEngine.getLocalMember().getUuid())
                 .setService(cacheService);
-    }
-
-    private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
-        if (expiryPolicy == null) {
-            return -1;
-        }
-        Duration expiryDuration;
-        try {
-            expiryDuration = expiryPolicy.getExpiryForCreation();
-        } catch (Exception e) {
-            return -1;
-        }
-        long durationAmount = expiryDuration.getDurationAmount();
-        TimeUnit durationTimeUnit = expiryDuration.getTimeUnit();
-        return TimeUnit.MILLISECONDS.convert(durationAmount, durationTimeUnit);
-    }
-
-    private ExpiryPolicy ttlToExpirePolicy(long ttl) {
-        return new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
     }
 
 }

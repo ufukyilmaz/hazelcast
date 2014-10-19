@@ -1,6 +1,6 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.impl.offheap.OffHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -28,8 +28,8 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        OffHeapCacheRecordStore cache =
-                (OffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+        EnterpriseNativeMemoryCacheRecordStore cache =
+                (EnterpriseNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         response = cache.putIfAbsent(key, value, getCallerUuid());
     }
 

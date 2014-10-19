@@ -19,7 +19,7 @@ public class CacheSizeOperation extends PartitionWideCacheOperation implements R
     @Override
     public void run() throws Exception {
         CacheService service = getService();
-        ICacheRecordStore cache = service.getCache(name, getPartitionId());
+        ICacheRecordStore cache = service.getCacheRecordStore(name, getPartitionId());
         response = cache != null ? cache.size() : 0;
     }
 

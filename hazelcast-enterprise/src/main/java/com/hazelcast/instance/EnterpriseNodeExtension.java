@@ -4,8 +4,7 @@ import com.hazelcast.cache.CacheOperationProvider;
 import com.hazelcast.cache.CacheStorageType;
 import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.HeapOperationProvider;
+import com.hazelcast.cache.impl.DefaultOperationProvider;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NetworkConfig;
@@ -312,16 +311,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 "Licensed type: " + (license.full ? "Full" : "Trial") + ", Valid until: " + validUntil + ", Max nodes: "
                         + license.nodes);
         return validUntil;
-    }
-
-    @Override
-    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, CacheStorageType storageType) {
-        if (CacheStorageType.HEAP.equals(storageType)) {
-            return new HeapOperationProvider(nameWithPrefix);
-        } else if (CacheStorageType.OFFHEAP.equals(storageType)){
-            return new OffHeapOperationProvider(nameWithPrefix);
-        }
-        throw new IllegalArgumentException("No operation provider for storage type: " + storageType);
     }
 
     @Override

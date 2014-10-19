@@ -19,8 +19,8 @@ import java.util.Arrays;
  * @author sozal 11/02/14
  */
 public final class EnterpriseOffHeapCacheHashMap
-        extends BinaryOffHeapHashMap<EnterpriseOffHeapCacheRecord>
-        implements EnterpriseCacheHashMap<Data, EnterpriseOffHeapCacheRecord> {
+        extends BinaryOffHeapHashMap<CacheOffHeapRecord>
+        implements EnterpriseCacheHashMap<Data, CacheOffHeapRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
@@ -38,7 +38,7 @@ public final class EnterpriseOffHeapCacheHashMap
 
     public EnterpriseOffHeapCacheHashMap(int initialCapacity,
                                          EnterpriseSerializationService serializationService,
-                                         MemoryBlockAccessor<EnterpriseOffHeapCacheRecord> memoryBlockAccessor,
+                                         MemoryBlockAccessor<CacheOffHeapRecord> memoryBlockAccessor,
                                          Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, memoryBlockAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
@@ -54,7 +54,7 @@ public final class EnterpriseOffHeapCacheHashMap
         int len = (int) (capacity * (long) percentage / 100);
         int k = 0;
         if (len > 0 && size() > 0) {
-            EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
             int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
 
@@ -62,9 +62,9 @@ public final class EnterpriseOffHeapCacheHashMap
             for (int ix = start; ix < end; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int ttlMillis = EnterpriseOffHeapCacheRecord.getTtlMillis(value);
+                    int ttlMillis = CacheOffHeapRecord.getTtlMillis(value);
                     if (ttlMillis > 0) {
-                        long creationTime = EnterpriseOffHeapCacheRecord.getCreationTime(value);
+                        long creationTime = CacheOffHeapRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
                             OffHeapData binary = service.readData(key);
@@ -141,7 +141,7 @@ public final class EnterpriseOffHeapCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             long time = sortArray[index];
 
-            EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -161,8 +161,8 @@ public final class EnterpriseOffHeapCacheHashMap
     }
 
     private static long getAccessTime(long recordAddress) {
-        long creationTime = EnterpriseOffHeapCacheRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = EnterpriseOffHeapCacheRecord.getAccessTimeDiff(recordAddress);
+        long creationTime = CacheOffHeapRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = CacheOffHeapRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
     }
 
@@ -183,7 +183,7 @@ public final class EnterpriseOffHeapCacheHashMap
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    hit = EnterpriseOffHeapCacheRecord.getAccessHit(value);
+                    hit = CacheOffHeapRecord.getAccessHit(value);
                     sortArray[k] = hit;
                     if (++k >= size) {
                         break;
@@ -194,12 +194,12 @@ public final class EnterpriseOffHeapCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             hit = sortArray[index];
 
-            EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int h = EnterpriseOffHeapCacheRecord.getAccessHit(value);
+                    int h = CacheOffHeapRecord.getAccessHit(value);
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
@@ -239,7 +239,7 @@ public final class EnterpriseOffHeapCacheHashMap
 
         int ix = start;
         int k = 0;
-        EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+        OffHeapCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
@@ -257,8 +257,8 @@ public final class EnterpriseOffHeapCacheHashMap
         return k;
     }
 
-    private EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
-        return (EnterpriseOffHeapCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
+    private OffHeapCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
+        return (OffHeapCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
     }
 
     public EntryIter iterator(int slot) {

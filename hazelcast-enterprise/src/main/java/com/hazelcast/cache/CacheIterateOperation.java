@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecord;
-import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.offheap.CacheOffHeapRecord;
+import com.hazelcast.cache.enterprise.impl.offheap.OffHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -34,19 +34,19 @@ public class CacheIterateOperation extends PartitionWideCacheOperation {
     @Override
     public void run() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseOffHeapCacheRecordStore cache =
-                (EnterpriseOffHeapCacheRecordStore) service.getCache(name, getPartitionId());
+        OffHeapCacheRecordStore cache =
+                (OffHeapCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
         if (cache != null) {
             EnterpriseSerializationService ss = service.getSerializationService();
-            BinaryOffHeapHashMap<EnterpriseOffHeapCacheRecord>.EntryIter iter = cache.iterator(slot);
+            BinaryOffHeapHashMap<CacheOffHeapRecord>.EntryIter iter = cache.iterator(slot);
             Data[] keys = new Data[batch];
             Data[] values = new Data[batch];
             int count = 0;
             while (iter.hasNext()) {
-                Map.Entry<Data, EnterpriseOffHeapCacheRecord> entry = iter.next();
+                Map.Entry<Data, CacheOffHeapRecord> entry = iter.next();
                 Data key = entry.getKey();
                 keys[count] = ss.convertData(key, DataType.HEAP);
-                EnterpriseOffHeapCacheRecord record = entry.getValue();
+                CacheOffHeapRecord record = entry.getValue();
                 OffHeapData value = cache.getCacheRecordService().readData(record.getValueAddress());
                 values[count] = ss.convertData(value, DataType.HEAP);
                 if (++count == batch) {

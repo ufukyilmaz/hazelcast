@@ -1,21 +1,19 @@
 package com.hazelcast.cache.enterprise.impl.offheap;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecord;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.OffHeapData;
+import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
 /**
  * @author sozal 14/10/14
  */
-public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
-        extends MemoryBlock
-        implements EnterpriseCacheRecord<V> {
+public final class CacheOffHeapRecord extends MemoryBlock implements CacheRecord<OffHeapData> {
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = 8;
@@ -25,10 +23,10 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
 
     public static final int SIZE = VALUE_OFFSET + 8;
 
-    public EnterpriseOffHeapCacheRecord() {
+    public CacheOffHeapRecord() {
     }
 
-    public EnterpriseOffHeapCacheRecord(long address) {
+    public CacheOffHeapRecord(long address) {
         super(address, SIZE);
     }
 
@@ -77,7 +75,7 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
-    public EnterpriseOffHeapCacheRecord reset(long address) {
+    public CacheOffHeapRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -87,7 +85,7 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
         writeLong(CREATION_TIME_OFFSET, 0L);
         setAccessTimeDiff(0);
         setTtlMillis(0);
-        setValueAddress(EnterpriseOffHeapCacheRecordStore.NULL_PTR);
+        setValueAddress(OffHeapCacheRecordStore.NULL_PTR);
     }
 
     public static long getCreationTime(long address) {
@@ -107,27 +105,22 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
     }
 
     @Override
-    public Data getKey() {
-        throw new UnsupportedOperationException(
-                "\"Data getKey()\" is not supported !");
-    }
-
-    @Override
-    public V getValue() {
+    public OffHeapData getValue() {
         // TODO
         //      Maybe "cacheRecordService.readData(address);" can be used.
         //      But in that case, "cacheRecordService" may be passed as argument to constructor
         //      or it may be taken from a singleton context
         throw new UnsupportedOperationException(
                 "\"<V extends OffHeapData> V getValue()\" is not supported !");
+
     }
 
     @Override
-    public void setValue(V value) {
+    public void setValue(OffHeapData value) {
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(EnterpriseOffHeapCacheRecordStore.NULL_PTR);
+            setValueAddress(OffHeapCacheRecordStore.NULL_PTR);
         }
     }
 
@@ -141,7 +134,7 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
         long creationTime = getCreationTime();
         int newTtl =
                 expirationTime > creationTime
-                        ? (int)(expirationTime - creationTime)
+                        ? (int) (expirationTime - creationTime)
                         : -1;
         if (newTtl > 0) {
             setTtlMillis(newTtl);
@@ -155,20 +148,8 @@ public final class EnterpriseOffHeapCacheRecord<V extends OffHeapData>
     }
 
     @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(address);
-        out.writeInt(size);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        address = in.readLong();
-        size = in.readInt();
-    }
-
-    @Override
     public String toString() {
-        if (address() >= EnterpriseOffHeapCacheRecordStore.NULL_PTR) {
+        if (address() >= OffHeapCacheRecordStore.NULL_PTR) {
             return "EnterpriseOffHeapCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

@@ -18,7 +18,7 @@ public class CacheClearOperation extends PartitionWideCacheOperation {
     @Override
     public void run() throws Exception {
         ICacheService service = getService();
-        ICacheRecordStore cache = service.getCache(name, getPartitionId());
+        ICacheRecordStore cache = service.getCacheRecordStore(name, getPartitionId());
         if (cache != null) {
             cache.clear();
         }

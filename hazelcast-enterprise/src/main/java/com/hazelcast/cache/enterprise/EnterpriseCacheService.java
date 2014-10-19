@@ -1,20 +1,19 @@
 package com.hazelcast.cache.enterprise;
 
+import com.hazelcast.cache.CacheOperationProvider;
 import com.hazelcast.cache.CacheStorageType;
+import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
-import com.hazelcast.cache.enterprise.impl.onheap.EnterpriseOnHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.offheap.OffHeapCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
-import com.hazelcast.cache.enterprise.operation.CacheReplicationOperation;
+import com.hazelcast.cache.enterprise.operation.EnterpriseCacheReplicationOperation;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
-import com.hazelcast.cache.impl.AbstractCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.CacheStatisticsImpl;
+import com.hazelcast.cache.impl.DefaultOperationProvider;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.client.CacheInvalidationListener;
-import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.impl.*;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -40,21 +39,18 @@ public class EnterpriseCacheService extends CacheService {
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
-        CacheStorageType cacheStorageType = cacheConfig.getCacheStorageType();
+        CacheStorageType cacheStorageType = cacheConfig != null ? cacheConfig.getCacheStorageType() : null;
         if (cacheStorageType == null
                 || CacheStorageType.HEAP.equals(cacheStorageType)) {
-            return new EnterpriseOnHeapCacheRecordStore(name,
-                    partitionId,
-                    nodeEngine,
-                    EnterpriseCacheService.this);
+            return super.createNewRecordStore(name, partitionId);
         } else if (CacheStorageType.OFFHEAP.equals(cacheStorageType)) {
             try {
-                return new EnterpriseOffHeapCacheRecordStore(partitionId,
+                return new OffHeapCacheRecordStore(partitionId,
                         name,
                         EnterpriseCacheService.this,
                         getSerializationService(),
                         nodeEngine,
-                        EnterpriseOffHeapCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+                        OffHeapCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
             } catch (OffHeapOutOfMemoryError e) {
                 throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
                         "not enough contiguous memory available! -> " + e.getMessage(), e);
@@ -99,7 +95,7 @@ public class EnterpriseCacheService extends CacheService {
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
-                EnterpriseCacheRecordStore cache = (EnterpriseCacheRecordStore) getCache(name, partitionId);
+                ICacheRecordStore cache = getCacheRecordStore(name, partitionId);
                 if (cache != null) {
                     evicted += cache.forceEvict();
                 }
@@ -111,7 +107,7 @@ public class EnterpriseCacheService extends CacheService {
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
         CachePartitionSegment segment = segments[event.getPartitionId()];
-        CacheReplicationOperation op = new CacheReplicationOperation(segment, event.getReplicaIndex());
+        EnterpriseCacheReplicationOperation op = new EnterpriseCacheReplicationOperation(segment, event.getReplicaIndex());
         return op.isEmpty() ? null : op;
     }
 
@@ -166,10 +162,6 @@ public class EnterpriseCacheService extends CacheService {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
     }
 
-    public EnterpriseCacheRecordStore getCache(String name, int partitionId) {
-        return (EnterpriseCacheRecordStore) super.getCache(name, partitionId);
-    }
-
     @Override
     public CacheConfig getCacheConfig(String name) {
         CacheConfig cacheConfig = super.getCacheConfig(name);
@@ -188,4 +180,11 @@ public class EnterpriseCacheService extends CacheService {
         return "EnterpriseCacheService[" + SERVICE_NAME + "]";
     }
 
+    @Override
+    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, CacheStorageType storageType) {
+        if (CacheStorageType.OFFHEAP.equals(storageType)){
+            return new OffHeapOperationProvider(nameWithPrefix);
+        }
+        return super.getCacheOperationProvider(nameWithPrefix, storageType);
+    }
 }

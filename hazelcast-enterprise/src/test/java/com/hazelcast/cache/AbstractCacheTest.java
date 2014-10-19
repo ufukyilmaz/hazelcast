@@ -22,6 +22,7 @@ import javax.cache.CacheManager;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -46,7 +47,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected static final String CACHE_STORAGE_TYPE_PROPERTY = "cacheStorageType";
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
-    protected static final CacheStorageType DEFAULT_CACHE_STORAGE_TYPE = CacheStorageType.DEFAULT_STORAGE_TYPE;
+    protected static final CacheStorageType DEFAULT_CACHE_STORAGE_TYPE = CacheStorageType.OFFHEAP;
 
     protected static final String CACHE_NAME;
     protected static final CacheStorageType CACHE_STORAGE_TYPE;
@@ -236,7 +237,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {
-        return new CreatedExpiryPolicy(new Duration(timeUnit, ttl));
+        return new ModifiedExpiryPolicy(new Duration(timeUnit, ttl));
     }
 
     @Test
@@ -251,7 +252,6 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             }
         });
         assertEquals(0, cache.size());
-
 
         cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertTrueEventually(new AssertTask() {
@@ -284,6 +284,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             }
         });
         assertEquals(0, cache.size());
+
     }
 
     //@Test

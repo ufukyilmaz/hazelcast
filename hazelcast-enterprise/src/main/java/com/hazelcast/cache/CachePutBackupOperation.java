@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.offheap.EnterpriseOffHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.offheap.OffHeapCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -31,8 +31,8 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseOffHeapCacheRecordStore cache =
-                (EnterpriseOffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+        OffHeapCacheRecordStore cache =
+                (OffHeapCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         cache.put(key, value, expiryPolicy, null);
         response = Boolean.TRUE;
     }

@@ -20,17 +20,17 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
     private State state = State.NONE;
 
     private final Data keyData;
-    private EnterpriseOffHeapCacheRecord record;
-    private EnterpriseOffHeapCacheRecord recordLoaded;
+    private CacheOffHeapRecord record;
+    private CacheOffHeapRecord recordLoaded;
 
-    private final EnterpriseOffHeapCacheRecordStore cacheRecordStore;
+    private final OffHeapCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
     public EnterpriseOffHeapCacheEntryProcessorEntry(Data keyData,
-                                                     EnterpriseOffHeapCacheRecord record,
-                                                     EnterpriseOffHeapCacheRecordStore cacheRecordStore,
+                                                     CacheOffHeapRecord record,
+                                                     OffHeapCacheRecordStore cacheRecordStore,
                                                      long now) {
         this.keyData = keyData;
         this.record = record;
@@ -99,7 +99,7 @@ public class EnterpriseOffHeapCacheEntryProcessorEntry<K, V>
         return null;
     }
 
-    private V getRecordValue(EnterpriseOffHeapCacheRecord theRecord) {
+    private V getRecordValue(CacheOffHeapRecord theRecord) {
         return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
     }
 

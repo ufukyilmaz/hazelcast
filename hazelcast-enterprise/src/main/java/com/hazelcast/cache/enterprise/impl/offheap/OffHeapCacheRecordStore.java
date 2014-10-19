@@ -1,9 +1,15 @@
 package com.hazelcast.cache.enterprise.impl.offheap;
 
-import com.hazelcast.cache.enterprise.*;
-import com.hazelcast.cache.enterprise.impl.AbstractEnterpriseCacheRecordStore;
+import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.CacheEntry;
+import com.hazelcast.cache.impl.CacheEventData;
+import com.hazelcast.cache.impl.CacheEventDataImpl;
+import com.hazelcast.cache.impl.CacheEventSet;
+import com.hazelcast.cache.impl.CacheEventType;
+import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.CacheStatisticsImpl;
+import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.EvictionPolicy;
@@ -14,7 +20,11 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.OffHeapData;
+import com.hazelcast.nio.serialization.OffHeapDataUtil;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -23,6 +33,7 @@ import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 
 import javax.cache.configuration.Factory;
+import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
@@ -30,7 +41,13 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +56,7 @@ import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 /**
  * @author sozal 14/10/14
  */
-public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRecordStore {
+public class OffHeapCacheRecordStore implements ICacheRecordStore {
 
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
     public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
@@ -75,16 +92,16 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     protected volatile boolean hasTtl;
     protected final long defaultTTL;
 
-    protected EnterpriseOffHeapCacheRecordStore(final int partitionId,
-                                                final CacheConfig cacheConfig,
-                                                final EnterpriseCacheService cacheService,
-                                                final EnterpriseSerializationService serializationService,
-                                                final NodeEngine nodeEngine,
-                                                final int initialCapacity,
-                                                final ExpiryPolicy expiryPolicy,
-                                                final EvictionPolicy evictionPolicy,
-                                                final int evictionPercentage,
-                                                final int evictionThresholdPercentage) {
+    protected OffHeapCacheRecordStore(final int partitionId,
+                                      final CacheConfig cacheConfig,
+                                      final EnterpriseCacheService cacheService,
+                                      final EnterpriseSerializationService serializationService,
+                                      final NodeEngine nodeEngine,
+                                      final int initialCapacity,
+                                      final ExpiryPolicy expiryPolicy,
+                                      final EvictionPolicy evictionPolicy,
+                                      final int evictionPercentage,
+                                      final int evictionThresholdPercentage) {
         if (cacheConfig == null) {
             throw new IllegalStateException("Cache already destroyed");
         }
@@ -93,7 +110,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         this.cacheService = cacheService;
         this.serializationService = serializationService;
         this.nodeEngine = nodeEngine;
-        this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create();
+        this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy) cacheConfig.getExpiryPolicyFactory().create();
         this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
         this.cacheRecordService = new CacheRecordAccessor(serializationService);
         this.records = new EnterpriseOffHeapCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
@@ -115,43 +132,43 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         this.evictionOperation = createEvictionOperation(10);
         this.evictionTaskFuture =
                 nodeEngine.getExecutionService()
-                    .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
+                        .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-    public EnterpriseOffHeapCacheRecordStore(final int partitionId,
-                                             final String cacheName,
-                                             final EnterpriseCacheService cacheService,
-                                             final EnterpriseSerializationService ss,
-                                             final NodeEngine nodeEngine,
-                                             final int initialCapacity) {
+    public OffHeapCacheRecordStore(final int partitionId,
+                                   final String cacheName,
+                                   final EnterpriseCacheService cacheService,
+                                   final EnterpriseSerializationService ss,
+                                   final NodeEngine nodeEngine,
+                                   final int initialCapacity) {
         this(partitionId,
-             cacheService.getCacheConfig(cacheName),
-             cacheService,
-             ss,
-             nodeEngine,
-             initialCapacity,
-             null,
-             null,
-             DEFAULT_EVICTION_PERCENTAGE,
-             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+                cacheService.getCacheConfig(cacheName),
+                cacheService,
+                ss,
+                nodeEngine,
+                initialCapacity,
+                null,
+                null,
+                DEFAULT_EVICTION_PERCENTAGE,
+                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
-    public EnterpriseOffHeapCacheRecordStore(final int partitionId,
-                                             final CacheConfig cacheConfig,
-                                             final EnterpriseCacheService cacheService,
-                                             final EnterpriseSerializationService ss,
-                                             final NodeEngine nodeEngine,
-                                             final int initialCapacity) {
+    public OffHeapCacheRecordStore(final int partitionId,
+                                   final CacheConfig cacheConfig,
+                                   final EnterpriseCacheService cacheService,
+                                   final EnterpriseSerializationService ss,
+                                   final NodeEngine nodeEngine,
+                                   final int initialCapacity) {
         this(partitionId,
-             cacheConfig,
-             cacheService,
-             ss,
-             nodeEngine,
-             initialCapacity,
-             (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create(),
-             cacheConfig.getEvictionPolicy(),
-             DEFAULT_EVICTION_PERCENTAGE,
-             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+                cacheConfig,
+                cacheService,
+                ss,
+                nodeEngine,
+                initialCapacity,
+                (ExpiryPolicy) cacheConfig.getExpiryPolicyFactory().create(),
+                cacheConfig.getEvictionPolicy(),
+                DEFAULT_EVICTION_PERCENTAGE,
+                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
     protected boolean isStatisticsEnabled() {
@@ -172,7 +189,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return cacheConfig.isWriteThrough();
     }
 
-    protected OffHeapData getRecordData(EnterpriseOffHeapCacheRecord record) {
+    protected OffHeapData getRecordData(CacheOffHeapRecord record) {
         return (OffHeapData) cacheRecordService.readData(record.getValueAddress());
     }
 
@@ -184,7 +201,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         }
     }
 
-    protected Object getRecordValue(EnterpriseOffHeapCacheRecord record) {
+    protected Object getRecordValue(CacheOffHeapRecord record) {
         return getDataValue(getRecordData(record));
     }
 
@@ -210,33 +227,33 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         }
 
         if (!isExpiredAt(expiryTime, now)) {
-            EnterpriseOffHeapCacheRecord record = createRecord(key, value, expiryTime);
+            CacheOffHeapRecord record = createRecord(key, value, expiryTime);
             records.put(key, record);
             return true;
         }
         return false;
     }
 
-    public EnterpriseOffHeapCacheRecord createRecord(Data keyData,
+    public CacheOffHeapRecord createRecord(Data keyData,
                                                      Object value,
                                                      long expirationTime) {
-        final EnterpriseOffHeapCacheRecord record =
+        final CacheOffHeapRecord record =
                 createRecord(value, Clock.currentTimeMillis(), expirationTime);
         if (isEventsEnabled) {
             final OffHeapData recordValue = record.getValue();
             publishEvent(cacheConfig.getName(),
-                         CacheEventType.CREATED,
-                         record.getKey(),
-                         null,
-                         recordValue,
-                         false);
+                    CacheEventType.CREATED,
+                    keyData,
+                    null,
+                    recordValue,
+                    false);
         }
         return record;
     }
 
     public boolean updateRecordWithExpiry(Data key,
                                           Object value,
-                                          EnterpriseOffHeapCacheRecord record,
+                                          CacheOffHeapRecord record,
                                           ExpiryPolicy localExpiryPolicy,
                                           long now,
                                           boolean disableWriteThrough) {
@@ -254,41 +271,41 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         if (!disableWriteThrough) {
             writeThroughCache(key, value);
         }
-        updateRecord(record, value);
+        updateRecord(key, record, value);
         return !processExpiredEntry(key, record, expiryTime, now);
     }
 
-    public EnterpriseOffHeapCacheRecord updateRecord(EnterpriseOffHeapCacheRecord record, Object value) {
-        final OffHeapData dataOldValue = (OffHeapData) record.getValue();
+    public CacheOffHeapRecord updateRecord(Data key, CacheOffHeapRecord record, Object value) {
+        final OffHeapData dataOldValue = record.getValue();
         final OffHeapData dataValue = toOffHeapData(value);
         record.setValue(dataValue);
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
-                         CacheEventType.UPDATED,
-                         record.getKey(),
-                         dataOldValue,
-                         dataValue,
-                         true);
+                    CacheEventType.UPDATED,
+                    key,
+                    dataOldValue,
+                    dataValue,
+                    true);
         }
         return record;
     }
 
     public void deleteRecord(Data key) {
-        final EnterpriseOffHeapCacheRecord record = records.remove(key);
+        final CacheOffHeapRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
-                         CacheEventType.REMOVED,
-                         record.getKey(),
-                         null,
-                         dataValue,
-                         false);
+                    CacheEventType.REMOVED,
+                    key,
+                    null,
+                    dataValue,
+                    false);
         }
     }
 
-    public EnterpriseOffHeapCacheRecord accessRecord(EnterpriseOffHeapCacheRecord record,
-                                              ExpiryPolicy expiryPolicy,
-                                              long now) {
+    public CacheOffHeapRecord accessRecord(CacheOffHeapRecord record,
+                                                     ExpiryPolicy expiryPolicy,
+                                                     long now) {
         final ExpiryPolicy localExpiryPolicy =
                 expiryPolicy != null
                         ? expiryPolicy
@@ -297,7 +314,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return record;
     }
 
-    public EnterpriseOffHeapCacheRecord readThroughRecord(Data key, long now) {
+    public CacheOffHeapRecord readThroughRecord(Data key, long now) {
         final ExpiryPolicy localExpiryPolicy = expiryPolicy;
         Object value = readThroughCache(key);
         if (value == null) {
@@ -421,7 +438,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return null;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseOffHeapCacheRecord record, long now) {
+    protected boolean processExpiredEntry(Data key, CacheOffHeapRecord record, long now) {
         final boolean isExpired = record != null && record.isExpiredAt(now);
         if (!isExpired) {
             return false;
@@ -437,7 +454,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return true;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseOffHeapCacheRecord record, long expiryTime, long now) {
+    protected boolean processExpiredEntry(Data key, CacheOffHeapRecord record, long expiryTime, long now) {
         final boolean isExpired = isExpiredAt(expiryTime, now);
         if (!isExpired) {
             return false;
@@ -453,7 +470,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return true;
     }
 
-    protected long updateAccessDuration(EnterpriseOffHeapCacheRecord record,
+    protected long updateAccessDuration(CacheOffHeapRecord record,
                                         ExpiryPolicy expiryPolicy,
                                         long now) {
         long expiryTime = -1L;
@@ -539,7 +556,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         cacheService.publishEvent(cacheName, ces, orderKey);
     }
 
-    protected void onAccess(long now, EnterpriseOffHeapCacheRecord record, long creationTime) {
+    protected void onAccess(long now, CacheOffHeapRecord record, long creationTime) {
         if (evictionEnabled) {
             if (evictionPolicy == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
@@ -564,7 +581,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         if (!(data instanceof Data)) {
             offHeapData = serializationService.toData(data, DataType.OFFHEAP);
         } else if (!(data instanceof OffHeapData)) {
-            offHeapData = serializationService.convertData((Data)data, DataType.OFFHEAP);
+            offHeapData = serializationService.convertData((Data) data, DataType.OFFHEAP);
         } else {
             offHeapData = (OffHeapData) data;
         }
@@ -575,21 +592,21 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
     }
 
-    protected EnterpriseOffHeapCacheRecord createRecord(long now) {
+    protected CacheOffHeapRecord createRecord(long now) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseOffHeapCacheRecord createRecord(Object value, long now) {
+    protected CacheOffHeapRecord createRecord(Object value, long now) {
         return createRecord(value, now, -1);
     }
 
-    protected EnterpriseOffHeapCacheRecord createRecord(long now, long expirationTime) {
+    protected CacheOffHeapRecord createRecord(long now, long expirationTime) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseOffHeapCacheRecord createRecord(Object value, long now, long expirationTime) {
-        long address = memoryManager.allocate(EnterpriseOffHeapCacheRecord.SIZE);
-        EnterpriseOffHeapCacheRecord record = cacheRecordService.newRecord();
+    protected CacheOffHeapRecord createRecord(Object value, long now, long expirationTime) {
+        long address = memoryManager.allocate(CacheOffHeapRecord.SIZE);
+        CacheOffHeapRecord record = cacheRecordService.newRecord();
         record.reset(address);
         record.setCreationTime(now);
         if (expirationTime > 0) {
@@ -613,7 +630,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         evictIfRequired(now);
 
         long creationTime;
-        EnterpriseOffHeapCacheRecord record = null;
+        CacheOffHeapRecord record = null;
         OffHeapData newValue = null;
         Data oldValue = null;
         boolean newPut = false;
@@ -714,7 +731,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     public Data get(Data key, ExpiryPolicy expiryPolicy) {
         long now = Clock.currentTimeMillis();
         OffHeapData value = null;
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (record != null) {
             long creationTime = record.getCreationTime();
@@ -760,7 +777,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     public void own(Data key, Object value, long ttlMillis) {
         // TODO: Implement without creating a "ExpirePolicy" object
         // This is just a quick workaround
-        putInternal(key, value, ttlToExpirePolicy(ttlMillis), true, null);
+        putInternal(key, value, ttlToExpirePolicy(ttlMillis), false, null);
     }
 
     @Override
@@ -770,11 +787,11 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
 
     @Override
     public void setRecord(Data key, CacheRecord record) {
-        if (!(record instanceof EnterpriseOffHeapCacheRecord)) {
+        if (!(record instanceof CacheOffHeapRecord)) {
             throw new IllegalArgumentException("record must be an instance of "
-                    + EnterpriseOffHeapCacheRecord.class.getName());
+                    + CacheOffHeapRecord.class.getName());
         }
-        records.set(key, (EnterpriseOffHeapCacheRecord)record);
+        records.set(key, (CacheOffHeapRecord) record);
     }
 
     @Override
@@ -795,7 +812,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     public boolean putIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseOffHeapCacheRecord record = null;
+        CacheOffHeapRecord record = null;
         OffHeapData newValue = null;
 
         try {
@@ -843,7 +860,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     public boolean replace(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -876,7 +893,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
                            String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         if (record != null) {
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
@@ -910,7 +927,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         evictIfRequired(now);
 
         Data oldValue = null;
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
@@ -960,7 +977,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     @Override
     public Data getAndRemove(Data key, String caller) {
         Data oldValue = null;
-        EnterpriseOffHeapCacheRecord record = records.remove(key);
+        CacheOffHeapRecord record = records.remove(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             OffHeapData oldBinary = cacheRecordService.readData(record.getValueAddress());
@@ -982,7 +999,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     @Override
     public boolean remove(Data key, Object value, String caller) {
         boolean deleted = false;
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         if (record != null) {
             Object existingValue = getRecordValue(record);
             if (value.equals(existingValue)) {
@@ -1005,7 +1022,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
             final Set<Data> keysToClean = new HashSet<Data>(keys.isEmpty() ? records.keySet() : keys);
             for (Data key : keysToClean) {
                 isEventBatchingEnabled = true;
-                final EnterpriseOffHeapCacheRecord record = records.get(key);
+                final CacheOffHeapRecord record = records.get(key);
                 if (localKeys.contains(key) && record != null) {
                     final boolean isExpired = processExpiredEntry(key, record, now);
                     if (!isExpired) {
@@ -1076,7 +1093,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         final long now = Clock.currentTimeMillis();
         final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
 
-        EnterpriseOffHeapCacheRecord record = records.get(key);
+        CacheOffHeapRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (isExpired) {
             record = null;
@@ -1134,7 +1151,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
 
     @Override
     public String getName() {
-        return cacheConfig.getName();
+        return cacheConfig.getNameWithPrefix();
     }
 
     @Override
@@ -1143,11 +1160,11 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
     }
 
     public static class CacheRecordAccessor
-            implements MemoryBlockAccessor<EnterpriseOffHeapCacheRecord> {
+            implements MemoryBlockAccessor<CacheOffHeapRecord> {
 
         private final EnterpriseSerializationService ss;
         private final MemoryManager memoryManager;
-        private final Queue<EnterpriseOffHeapCacheRecord> recordQ = new ArrayDeque<EnterpriseOffHeapCacheRecord>(1024);
+        private final Queue<CacheOffHeapRecord> recordQ = new ArrayDeque<CacheOffHeapRecord>(1024);
         private final Queue<OffHeapData> dataQ = new ArrayDeque<OffHeapData>(1024);
 
         public CacheRecordAccessor(EnterpriseSerializationService ss) {
@@ -1156,37 +1173,37 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         }
 
         @Override
-        public boolean isEqual(long address, EnterpriseOffHeapCacheRecord value) {
+        public boolean isEqual(long address, CacheOffHeapRecord value) {
             return isEqual(address, value.address());
         }
 
         @Override
         public boolean isEqual(long address1, long address2) {
-            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseOffHeapCacheRecord.VALUE_OFFSET);
-            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseOffHeapCacheRecord.VALUE_OFFSET);
+            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + CacheOffHeapRecord.VALUE_OFFSET);
+            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + CacheOffHeapRecord.VALUE_OFFSET);
             return OffHeapDataUtil.equals(valueAddress1, valueAddress2);
         }
 
-        public EnterpriseOffHeapCacheRecord newRecord() {
-            EnterpriseOffHeapCacheRecord record = recordQ.poll();
+        public CacheOffHeapRecord newRecord() {
+            CacheOffHeapRecord record = recordQ.poll();
             if (record == null) {
-                record = new EnterpriseOffHeapCacheRecord();
+                record = new CacheOffHeapRecord();
             }
             return record;
         }
 
         @Override
-        public EnterpriseOffHeapCacheRecord read(long address) {
+        public CacheOffHeapRecord read(long address) {
             if (address <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
             }
-            EnterpriseOffHeapCacheRecord record = newRecord();
+            CacheOffHeapRecord record = newRecord();
             record.reset(address);
             return record;
         }
 
         @Override
-        public void dispose(EnterpriseOffHeapCacheRecord record) {
+        public void dispose(CacheOffHeapRecord record) {
             if (record.address() <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + record.address());
             }
@@ -1212,7 +1229,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
             return value.reset(valueAddress);
         }
 
-        public void disposeValue(EnterpriseOffHeapCacheRecord record) {
+        public void disposeValue(CacheOffHeapRecord record) {
             long valueAddress = record.getValueAddress();
             if (valueAddress != NULL_PTR) {
                 disposeData(valueAddress);
@@ -1232,7 +1249,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
             disposeData(data);
         }
 
-        void enqueueRecord(EnterpriseOffHeapCacheRecord record) {
+        void enqueueRecord(CacheOffHeapRecord record) {
             recordQ.offer(record.reset(NULL_PTR));
         }
 
@@ -1266,7 +1283,7 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
         }
     }
 
-    public BinaryOffHeapHashMap<EnterpriseOffHeapCacheRecord>.EntryIter iterator(int slot) {
+    public BinaryOffHeapHashMap<CacheOffHeapRecord>.EntryIter iterator(int slot) {
         return records.iterator(slot);
     }
 
@@ -1285,6 +1302,25 @@ public class EnterpriseOffHeapCacheRecordStore extends AbstractEnterpriseCacheRe
                 .setPartitionId(partitionId)
                 .setCallerUuid(nodeEngine.getLocalMember().getUuid())
                 .setService(cacheService);
+    }
+
+    private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
+        if (expiryPolicy == null) {
+            return -1;
+        }
+        Duration expiryDuration;
+        try {
+            expiryDuration = expiryPolicy.getExpiryForCreation();
+        } catch (Exception e) {
+            return -1;
+        }
+        long durationAmount = expiryDuration.getDurationAmount();
+        TimeUnit durationTimeUnit = expiryDuration.getTimeUnit();
+        return TimeUnit.MILLISECONDS.convert(durationAmount, durationTimeUnit);
+    }
+
+    private ExpiryPolicy ttlToExpirePolicy(long ttl) {
+        return new CreatedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
     }
 
 }

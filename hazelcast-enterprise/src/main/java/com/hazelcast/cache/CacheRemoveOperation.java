@@ -18,10 +18,6 @@ public class CacheRemoveOperation extends BackupAwareOffHeapCacheOperation {
     public CacheRemoveOperation() {
     }
 
-    public CacheRemoveOperation(String name, Data key) {
-        super(name, key);
-    }
-
     public CacheRemoveOperation(String name, Data key, Data currentValue) {
         super(name, key);
         this.currentValue = currentValue;

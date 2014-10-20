@@ -19,11 +19,6 @@ public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
     public CacheReplaceOperation() {
     }
 
-    public CacheReplaceOperation(String name, Data key, Data value) {
-        super(name, key);
-        this.value = value;
-    }
-
     public CacheReplaceOperation(String name, Data key, Data oldValue, Data newValue) {
         super(name, key);
         this.value = newValue;

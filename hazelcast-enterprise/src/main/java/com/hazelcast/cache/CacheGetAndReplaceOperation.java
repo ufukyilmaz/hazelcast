@@ -6,6 +6,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
@@ -15,17 +16,20 @@ public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperatio
 
     private Data value;
 
+    private ExpiryPolicy expiryPolicy;
+
     public CacheGetAndReplaceOperation() {
     }
 
-    public CacheGetAndReplaceOperation(String name, Data key, Data value) {
+    public CacheGetAndReplaceOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = value;
+        this.expiryPolicy = expiryPolicy;
     }
 
     @Override
     public void runInternal() throws Exception {
-        response = cache.getAndReplace(key, value, getCallerUuid());
+        response = cache.getAndReplace(key, value, expiryPolicy, getCallerUuid());
     }
 
     @Override
@@ -46,7 +50,7 @@ public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperatio
     @Override
     public Operation getBackupOperation() {
 //        return new CachePutBackupOperation(name, key, value, -1);
-        return null;
+        throw new UnsupportedOperationException("implement get and replace backup!!!");
     }
 
     @Override
@@ -58,12 +62,14 @@ public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperatio
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeData(value);
+        out.writeObject(expiryPolicy);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         value = readOffHeapData(in);
+        expiryPolicy = in.readObject();
     }
 
     @Override

@@ -54,7 +54,7 @@ public class CachePutIfAbsentRequest extends AbstractCacheRequest {
 
     @Override
     protected Operation prepareOperation() {
-        return new CachePutIfAbsentOperation(name, key, value);
+        return new CachePutIfAbsentOperation(name, key, value, null);
     }
 
     @Override

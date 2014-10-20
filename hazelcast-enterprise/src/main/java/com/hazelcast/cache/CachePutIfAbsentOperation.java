@@ -8,6 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
@@ -17,12 +18,15 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
 
     private Data value;
 
+    private ExpiryPolicy expiryPolicy;
+
     public CachePutIfAbsentOperation() {
     }
 
-    public CachePutIfAbsentOperation(String name, Data key, Data value) {
+    public CachePutIfAbsentOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = value;
+        this.expiryPolicy = expiryPolicy;
     }
 
     @Override
@@ -30,7 +34,7 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
         EnterpriseCacheService service = getService();
         EnterpriseNativeMemoryCacheRecordStore cache =
                 (EnterpriseNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
-        response = cache.putIfAbsent(key, value, getCallerUuid());
+        response = cache.putIfAbsent(key, value, expiryPolicy, getCallerUuid());
     }
 
     @Override
@@ -48,7 +52,7 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
     @Override
     public Operation getBackupOperation() {
 //        return new CachePutBackupOperation(name, key, value, -1);
-        return null;
+        throw new UnsupportedOperationException("implement put if absent backup!!!");
     }
 
     @Override
@@ -60,12 +64,14 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeData(value);
+        out.writeObject(expiryPolicy);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         value = readOffHeapData(in);
+        expiryPolicy = in.readObject();
     }
 
     @Override

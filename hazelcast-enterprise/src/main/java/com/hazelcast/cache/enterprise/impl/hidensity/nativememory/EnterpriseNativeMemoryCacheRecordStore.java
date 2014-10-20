@@ -784,10 +784,6 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return Collections.unmodifiableMap((Map<Data, CacheRecord>) (Map) records);
     }
 
-    public boolean putIfAbsent(Data key, Object value, String caller) {
-        return putIfAbsent(key, value, expiryPolicy, caller);
-    }
-
     @Override
     public boolean putIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
@@ -895,10 +891,6 @@ public class EnterpriseNativeMemoryCacheRecordStore
             }
         }
         return false;
-    }
-
-    public Object getAndReplace(Data key, Object value, String caller) {
-        return getAndReplace(key, value, expiryPolicy, caller);
     }
 
     @Override

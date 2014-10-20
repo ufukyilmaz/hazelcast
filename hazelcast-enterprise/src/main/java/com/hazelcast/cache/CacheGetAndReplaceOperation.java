@@ -68,7 +68,7 @@ public class CacheGetAndReplaceOperation extends BackupAwareOffHeapCacheOperatio
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.GET_AND_REPLACE;
+        return EnterpriseCacheDataSerializerHook.GET_AND_REPLACE;
     }
 
 }

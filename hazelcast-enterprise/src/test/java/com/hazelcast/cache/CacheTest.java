@@ -35,7 +35,7 @@ public class CacheTest extends AbstractCacheTest {
         Config config = createConfig();
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         instance = factory.newHazelcastInstance(config);
-        //factory.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
     }
 
     @Override

@@ -64,7 +64,7 @@ public class CacheRemoveOperation extends BackupAwareOffHeapCacheOperation {
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.REMOVE;
+        return EnterpriseCacheDataSerializerHook.REMOVE;
     }
 
     @Override

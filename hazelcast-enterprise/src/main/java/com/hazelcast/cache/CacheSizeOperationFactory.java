@@ -29,12 +29,12 @@ public class CacheSizeOperationFactory implements OperationFactory, IdentifiedDa
 
     @Override
     public int getFactoryId() {
-        return CacheDataSerializerHook.F_ID;
+        return EnterpriseCacheDataSerializerHook.F_ID;
     }
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.SIZE_FACTORY;
+        return EnterpriseCacheDataSerializerHook.SIZE_FACTORY;
     }
 
     @Override

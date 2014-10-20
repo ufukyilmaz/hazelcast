@@ -62,7 +62,7 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.PUT_BACKUP;
+        return EnterpriseCacheDataSerializerHook.PUT_BACKUP;
     }
 
 }

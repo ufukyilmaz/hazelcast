@@ -36,7 +36,7 @@ public class CacheRemoveBackupOperation extends AbstractOffHeapCacheOperation im
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.REMOVE_BACKUP;
+        return EnterpriseCacheDataSerializerHook.REMOVE_BACKUP;
     }
 
 }

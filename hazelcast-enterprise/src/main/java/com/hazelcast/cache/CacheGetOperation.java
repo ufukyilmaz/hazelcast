@@ -40,7 +40,7 @@ public class CacheGetOperation extends AbstractOffHeapCacheOperation implements 
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.GET;
+        return EnterpriseCacheDataSerializerHook.GET;
     }
 
     @Override

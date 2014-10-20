@@ -49,6 +49,6 @@ abstract class PartitionWideCacheOperation extends AbstractOperation
 
     @Override
     public int getFactoryId() {
-        return CacheDataSerializerHook.F_ID;
+        return EnterpriseCacheDataSerializerHook.F_ID;
     }
 }

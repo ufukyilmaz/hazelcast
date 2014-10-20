@@ -12,7 +12,6 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.util.StringUtil;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +55,9 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected CacheManager cacheManager;
 
     protected abstract HazelcastInstance getHazelcastInstance();
+
     protected abstract void onSetup();
+
     protected abstract void onTearDown();
 
     static {
@@ -99,7 +100,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
         return
                 new OffHeapMemoryConfig()
-                        .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
+                        .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.STANDARD)
                         .setSize(memorySize).setEnabled(true)
                         .setMinBlockSize(16).setPageSize(1 << 20);
     }
@@ -122,8 +123,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ICache getCache() {
-        Cache<Object, Object> cache =
-                cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
+        Cache<Object, Object> cache = cacheManager.getCache(CACHE_NAME);
+        if (cache == null) {
+            cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
+        }
         return cache.unwrap(ICache.class);
     }
 

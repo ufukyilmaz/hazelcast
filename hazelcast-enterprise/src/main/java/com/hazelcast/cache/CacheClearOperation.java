@@ -26,6 +26,6 @@ public class CacheClearOperation extends PartitionWideCacheOperation {
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.CLEAR;
+        return EnterpriseCacheDataSerializerHook.CLEAR;
     }
 }

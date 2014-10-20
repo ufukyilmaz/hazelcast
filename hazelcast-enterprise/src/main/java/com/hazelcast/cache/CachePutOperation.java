@@ -82,7 +82,7 @@ public class CachePutOperation extends BackupAwareOffHeapCacheOperation {
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.PUT;
+        return EnterpriseCacheDataSerializerHook.PUT;
     }
 
 }

@@ -21,9 +21,9 @@ import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
-public final class CacheDataSerializerHook implements DataSerializerHook {
+public final class EnterpriseCacheDataSerializerHook implements DataSerializerHook {
 
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.CACHE_DS_FACTORY, -25);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY, -26);
 
     public static final int GET = 0;
     public static final int CONTAINS_KEY = 1;

@@ -92,7 +92,7 @@ public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.REPLACE;
+        return EnterpriseCacheDataSerializerHook.REPLACE;
     }
 
 }

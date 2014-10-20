@@ -32,6 +32,6 @@ public class CacheContainsKeyOperation extends AbstractOffHeapCacheOperation imp
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.CONTAINS_KEY;
+        return EnterpriseCacheDataSerializerHook.CONTAINS_KEY;
     }
 }

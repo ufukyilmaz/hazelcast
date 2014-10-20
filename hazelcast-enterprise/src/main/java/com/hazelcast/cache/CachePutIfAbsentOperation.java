@@ -70,7 +70,7 @@ public class CachePutIfAbsentOperation extends BackupAwareOffHeapCacheOperation 
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.PUT_IF_ABSENT;
+        return EnterpriseCacheDataSerializerHook.PUT_IF_ABSENT;
     }
 
 }

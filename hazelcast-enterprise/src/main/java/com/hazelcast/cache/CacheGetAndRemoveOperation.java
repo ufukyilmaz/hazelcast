@@ -42,6 +42,6 @@ public class CacheGetAndRemoveOperation extends BackupAwareOffHeapCacheOperation
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.GET_AND_REMOVE;
+        return EnterpriseCacheDataSerializerHook.GET_AND_REMOVE;
     }
 }

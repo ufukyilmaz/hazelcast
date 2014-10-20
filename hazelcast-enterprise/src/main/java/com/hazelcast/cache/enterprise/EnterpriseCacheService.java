@@ -20,7 +20,11 @@ import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.*;
+import com.hazelcast.spi.EventRegistration;
+import com.hazelcast.spi.EventService;
+import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.PartitionReplicationEvent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +39,7 @@ public class EnterpriseCacheService extends CacheService {
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
-        CacheStorageType cacheStorageType = cacheConfig.getCacheStorageType();
+        CacheStorageType cacheStorageType = cacheConfig != null ? cacheConfig.getCacheStorageType() : null;
         if (cacheStorageType == null
                 || CacheStorageType.HEAP.equals(cacheStorageType)) {
             return new EnterpriseOnHeapCacheRecordStore(name,
@@ -165,22 +169,13 @@ public class EnterpriseCacheService extends CacheService {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
     }
 
-    @Override
-    public CacheConfig getCacheConfig(String name) {
-        CacheConfig cacheConfig = super.getCacheConfig(name);
-        if (cacheConfig == null) {
-            cacheConfig = new CacheConfig().setName(name);
-        }
-        return cacheConfig;
-    }
-
     public CacheStatisticsImpl getOrCreateCacheStats(String name) {
         return null;
     }
 
     @Override
     public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, CacheStorageType storageType) {
-        if (CacheStorageType.NATIVE_MEMORY.equals(storageType)){
+        if (CacheStorageType.NATIVE_MEMORY.equals(storageType)) {
             return new OffHeapOperationProvider(nameWithPrefix);
         }
         return super.getCacheOperationProvider(nameWithPrefix, storageType);

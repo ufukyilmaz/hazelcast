@@ -51,12 +51,12 @@ public final class CacheIterationResult implements IdentifiedDataSerializable {
 
     @Override
     public int getFactoryId() {
-        return CacheDataSerializerHook.F_ID;
+        return EnterpriseCacheDataSerializerHook.F_ID;
     }
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.ITERATION_RESULT;
+        return EnterpriseCacheDataSerializerHook.ITERATION_RESULT;
     }
 
     @Override

@@ -29,12 +29,12 @@ public class CacheClearOperationFactory implements OperationFactory, IdentifiedD
 
     @Override
     public int getFactoryId() {
-        return CacheDataSerializerHook.F_ID;
+        return EnterpriseCacheDataSerializerHook.F_ID;
     }
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.CLEAR_FACTORY;
+        return EnterpriseCacheDataSerializerHook.CLEAR_FACTORY;
     }
 
     @Override

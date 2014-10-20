@@ -60,7 +60,7 @@ public class CacheIterateOperation extends PartitionWideCacheOperation {
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.ITERATE;
+        return EnterpriseCacheDataSerializerHook.ITERATE;
     }
 
     @Override

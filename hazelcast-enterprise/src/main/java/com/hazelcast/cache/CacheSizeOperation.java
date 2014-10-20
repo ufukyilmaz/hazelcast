@@ -25,6 +25,6 @@ public class CacheSizeOperation extends PartitionWideCacheOperation implements R
 
     @Override
     public int getId() {
-        return CacheDataSerializerHook.SIZE;
+        return EnterpriseCacheDataSerializerHook.SIZE;
     }
 }

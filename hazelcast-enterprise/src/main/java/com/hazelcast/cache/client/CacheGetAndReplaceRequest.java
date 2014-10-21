@@ -55,7 +55,9 @@ public class CacheGetAndReplaceRequest extends AbstractCacheRequest {
 
     @Override
     protected Operation prepareOperation() {
-        return new CacheGetAndReplaceOperation(name, key, value);
+        return null;
+        // TODO: Handle client request
+        //return new CacheGetAndReplaceOperation(name, key, value);
     }
 
     @Override

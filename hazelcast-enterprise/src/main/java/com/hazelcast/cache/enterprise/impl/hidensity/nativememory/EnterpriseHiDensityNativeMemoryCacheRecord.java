@@ -2,34 +2,34 @@ package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
 import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheRecord;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.OffHeapData;
-
-import java.io.IOException;
 
 /**
  * @author sozal 14/10/14
  */
-public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
+public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapData>
         extends MemoryBlock
-        implements EnterpriseHiDensityCacheRecord<V>, DataSerializable {
+        implements EnterpriseHiDensityCacheRecord<V> {
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = 8;
     static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     static final int TTL_OFFSET = 12;
-    public static final int VALUE_OFFSET = 16;
 
+    public static final int VALUE_OFFSET = 16;
     public static final int SIZE = VALUE_OFFSET + 8;
 
-    public EnterpriseNativeMemoryCacheRecord() {
+    private EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor;
+
+    public EnterpriseHiDensityNativeMemoryCacheRecord(EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor) {
+        this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
-    public EnterpriseNativeMemoryCacheRecord(long address) {
+    public EnterpriseHiDensityNativeMemoryCacheRecord(EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor,
+                                                      long address) {
         super(address, SIZE);
+        this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
     public long getCreationTime() {
@@ -77,7 +77,7 @@ public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
-    public EnterpriseNativeMemoryCacheRecord reset(long address) {
+    public EnterpriseHiDensityNativeMemoryCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -87,7 +87,7 @@ public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
         writeLong(CREATION_TIME_OFFSET, 0L);
         setAccessTimeDiff(0);
         setTtlMillis(0);
-        setValueAddress(EnterpriseNativeMemoryCacheRecordStore.NULL_PTR);
+        setValueAddress(EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR);
     }
 
     public static long getCreationTime(long address) {
@@ -108,12 +108,11 @@ public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
 
     @Override
     public V getValue() {
-        // TODO
-        //      Maybe "cacheRecordService.readData(address);" can be used.
-        //      But in that case, "cacheRecordService" may be passed as argument to constructor
-        //      or it may be taken from a singleton context
-        throw new UnsupportedOperationException(
-                "\"<V extends OffHeapData> V getValue()\" is not supported !");
+        if (address == EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+            return null;
+        } else {
+            return cacheRecordAccessor.readValue(this);
+        }
     }
 
     @Override
@@ -121,7 +120,7 @@ public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(EnterpriseNativeMemoryCacheRecordStore.NULL_PTR);
+            setValueAddress(EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR);
         }
     }
 
@@ -149,20 +148,8 @@ public final class EnterpriseNativeMemoryCacheRecord<V extends OffHeapData>
     }
 
     @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(address);
-        out.writeInt(size);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        address = in.readLong();
-        size = in.readInt();
-    }
-
-    @Override
     public String toString() {
-        if (address() >= EnterpriseNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() >= EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return "EnterpriseNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

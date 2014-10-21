@@ -5,15 +5,11 @@ import com.hazelcast.cache.CacheStorageType;
 import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.enterprise.impl.onheap.EnterpriseOnHeapCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.EnterpriseCacheReplicationOperation;
-import com.hazelcast.cache.impl.CachePartitionSegment;
-import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.CacheStatisticsImpl;
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.*;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -42,18 +38,18 @@ public class EnterpriseCacheService extends CacheService {
         CacheStorageType cacheStorageType = cacheConfig != null ? cacheConfig.getCacheStorageType() : null;
         if (cacheStorageType == null
                 || CacheStorageType.HEAP.equals(cacheStorageType)) {
-            return new EnterpriseOnHeapCacheRecordStore(name,
-                    partitionId,
-                    nodeEngine,
-                    EnterpriseCacheService.this);
+            return new CacheRecordStore(name,
+                                        partitionId,
+                                        nodeEngine,
+                                        this);
         } else if (CacheStorageType.NATIVE_MEMORY.equals(cacheStorageType)) {
             try {
-                return new EnterpriseNativeMemoryCacheRecordStore(partitionId,
+                return new EnterpriseHiDensityNativeMemoryCacheRecordStore(partitionId,
                         name,
                         EnterpriseCacheService.this,
                         getSerializationService(),
                         nodeEngine,
-                        EnterpriseNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+                        EnterpriseHiDensityNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
             } catch (OffHeapOutOfMemoryError e) {
                 throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
                         "not enough contiguous memory available! -> " + e.getMessage(), e);
@@ -101,8 +97,7 @@ public class EnterpriseCacheService extends CacheService {
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
-                EnterpriseCacheRecordStore cache =
-                        (EnterpriseCacheRecordStore) getCacheRecordStore(name, partitionId);
+                ICacheRecordStore cache = getCacheRecordStore(name, partitionId);
                 if (cache != null) {
                     evicted += cache.forceEvict();
                 }

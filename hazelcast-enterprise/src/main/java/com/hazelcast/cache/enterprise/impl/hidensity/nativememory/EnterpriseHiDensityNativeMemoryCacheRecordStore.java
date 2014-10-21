@@ -5,8 +5,9 @@ import com.hazelcast.cache.enterprise.impl.hidensity.AbstractEnterpriseHiDensity
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
 import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.config.CacheConfig;
+import com.hazelcast.cache.impl.record.CacheRecordFactory;
 import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.map.impl.MapEntrySet;
 import com.hazelcast.memory.MemoryBlockAccessor;
@@ -22,12 +23,9 @@ import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 
-import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriter;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
 import java.util.*;
@@ -39,73 +37,43 @@ import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 /**
  * @author sozal 14/10/14
  */
-public class EnterpriseNativeMemoryCacheRecordStore
-        extends AbstractEnterpriseHiDensityCacheRecordStore {
+public class EnterpriseHiDensityNativeMemoryCacheRecordStore
+        extends AbstractEnterpriseHiDensityCacheRecordStore<EnterpriseHiDensityNativeMemoryCacheRecordMap> {
 
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
     public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
-    protected final int partitionId;
-    protected final NodeEngine nodeEngine;
-    protected final CacheConfig cacheConfig;
-    protected final EnterpriseNativeMemoryCacheHashMap records;
-    protected final EnterpriseCacheService cacheService;
-    protected final EnterpriseSerializationService serializationService;
-    protected final ScheduledFuture<?> evictionTaskFuture;
-    protected final Operation evictionOperation;
-    protected final MemoryManager memoryManager;
-    protected final CacheRecordAccessor cacheRecordService;
-    protected final EvictionPolicy evictionPolicy;
-    protected final ExpiryPolicy expiryPolicy;
-    protected final boolean evictionEnabled;
-    protected final int evictionPercentage;
-    protected final float evictionThreshold;
-    protected boolean hasExpiringEntry;
-    protected boolean isEventsEnabled = true;
-    protected boolean isEventBatchingEnabled;
-    protected final Map<CacheEventType, Set<CacheEventData>> batchEvent =
-            new HashMap<CacheEventType, Set<CacheEventData>>();
-    protected CacheStatisticsImpl statistics;
-    protected CacheLoader cacheLoader;
-    protected CacheWriter cacheWriter;
-    protected volatile boolean hasTtl;
-    protected final long defaultTTL;
+    private final int initialCapacity;
+    private final ScheduledFuture<?> evictionTaskFuture;
+    private final Operation evictionOperation;
+    private final MemoryManager memoryManager;
+    private CacheRecordAccessor cacheRecordAccessor;
+    private final EvictionPolicy evictionPolicy;
+    private final boolean evictionEnabled;
+    private final int evictionPercentage;
+    private final float evictionThreshold;
+    private volatile boolean hasTtl;
+    private final long defaultTTL;
 
-    protected EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
-                                                     final CacheConfig cacheConfig,
-                                                     final EnterpriseCacheService cacheService,
-                                                     final EnterpriseSerializationService serializationService,
-                                                     final NodeEngine nodeEngine,
-                                                     final int initialCapacity,
-                                                     final ExpiryPolicy expiryPolicy,
-                                                     final EvictionPolicy evictionPolicy,
-                                                     final int evictionPercentage,
-                                                     final int evictionThresholdPercentage) {
-        if (cacheConfig == null) {
-            throw new IllegalStateException("Cache already destroyed");
-        }
-        this.partitionId = partitionId;
-        this.cacheConfig = cacheConfig;
-        this.cacheService = cacheService;
-        this.serializationService = serializationService;
-        this.nodeEngine = nodeEngine;
-        this.expiryPolicy = expiryPolicy != null ? expiryPolicy : (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create();
+    protected EnterpriseHiDensityNativeMemoryCacheRecordStore(final int partitionId,
+                                                              final String name,
+                                                              final EnterpriseCacheService cacheService,
+                                                              final EnterpriseSerializationService serializationService,
+                                                              final NodeEngine nodeEngine,
+                                                              final int initialCapacity,
+                                                              final ExpiryPolicy expiryPolicy,
+                                                              final EvictionPolicy evictionPolicy,
+                                                              final int evictionPercentage,
+                                                              final int evictionThresholdPercentage) {
+        super(name, partitionId, nodeEngine, cacheService, serializationService, null, expiryPolicy);
+        this.initialCapacity = initialCapacity;
         this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
-        this.cacheRecordService = new CacheRecordAccessor(serializationService);
-        this.records = new EnterpriseNativeMemoryCacheHashMap(initialCapacity, serializationService, cacheRecordService, createEvictionCallback());
+        this.cacheRecordAccessor = getCacheRecordAccessor();
         this.memoryManager = serializationService.getMemoryManager();
         this.evictionEnabled = evictionPolicy != EvictionPolicy.NONE;
         this.evictionPercentage = evictionPercentage;
         this.evictionThreshold = (float) Math.max(1, 100 - evictionThresholdPercentage) / 100;
-        if (cacheConfig.getCacheLoaderFactory() != null) {
-            final Factory<CacheLoader> cacheLoaderFactory = cacheConfig.getCacheLoaderFactory();
-            cacheLoader = cacheLoaderFactory.create();
-        }
-        if (cacheConfig.getCacheWriterFactory() != null) {
-            final Factory<CacheWriter> cacheWriterFactory = cacheConfig.getCacheWriterFactory();
-            cacheWriter = cacheWriterFactory.create();
-        }
-        long ttl = expiryPolicyToTTL(expiryPolicy);
+        long ttl = expiryPolicyToTTL(defaultExpiryPolicy);
         this.defaultTTL = ttl > 0 ? ttl : DEFAULT_TTL;
         this.hasTtl = defaultTTL > 0;
         this.evictionOperation = createEvictionOperation(10);
@@ -114,16 +82,16 @@ public class EnterpriseNativeMemoryCacheRecordStore
                     .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
     }
 
-    public EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
-                                                  final String cacheName,
-                                                  final EnterpriseCacheService cacheService,
-                                                  final EnterpriseSerializationService ss,
-                                                  final NodeEngine nodeEngine,
-                                                  final int initialCapacity) {
+    public EnterpriseHiDensityNativeMemoryCacheRecordStore(final int partitionId,
+                                                           final String cacheName,
+                                                           final EnterpriseCacheService cacheService,
+                                                           final EnterpriseSerializationService serializationService,
+                                                           final NodeEngine nodeEngine,
+                                                           final int initialCapacity) {
         this(partitionId,
-             cacheService.getCacheConfig(cacheName),
+             cacheName,
              cacheService,
-             ss,
+             serializationService,
              nodeEngine,
              initialCapacity,
              null,
@@ -132,67 +100,82 @@ public class EnterpriseNativeMemoryCacheRecordStore
              DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
-    public EnterpriseNativeMemoryCacheRecordStore(final int partitionId,
-                                                  final CacheConfig cacheConfig,
-                                                  final EnterpriseCacheService cacheService,
-                                                  final EnterpriseSerializationService ss,
-                                                  final NodeEngine nodeEngine,
-                                                  final int initialCapacity) {
-        this(partitionId,
-             cacheConfig,
-             cacheService,
-             ss,
-             nodeEngine,
-             initialCapacity,
-             (ExpiryPolicy)cacheConfig.getExpiryPolicyFactory().create(),
-             cacheConfig.getEvictionPolicy(),
-             DEFAULT_EVICTION_PERCENTAGE,
-             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+    protected EnterpriseHiDensityNativeMemoryCacheRecordMap createRecordCacheMap() {
+        return
+            new EnterpriseHiDensityNativeMemoryCacheRecordMap(initialCapacity,
+                                                              ((EnterpriseSerializationService)serializationService),
+                                                              getCacheRecordAccessor(),
+                                                              createEvictionCallback());
     }
 
-    protected boolean isStatisticsEnabled() {
-        if (!cacheConfig.isStatisticsEnabled()) {
-            return false;
+    @Override
+    protected CacheRecordFactory createCacheRecordFactory(InMemoryFormat inMemoryFormat,
+                                                          SerializationService serializationService) {
+        return new EnterpriseHiDensityNativeMemoryCacheRecordFactory(inMemoryFormat,
+                                                                     serializationService,
+                                                                     this);
+    }
+
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
+    }
+
+    public EnterpriseCacheService getCacheService() {
+        return (EnterpriseCacheService) cacheService;
+    }
+
+    public CacheRecordAccessor getCacheRecordAccessor() {
+        if (cacheRecordAccessor == null) {
+            cacheRecordAccessor = new CacheRecordAccessor((EnterpriseSerializationService)serializationService);
         }
-        if (statistics == null) {
-            this.statistics = cacheService.createCacheStatIfAbsent(cacheConfig.getName());
-        }
-        return true;
+        return cacheRecordAccessor;
     }
 
-    protected boolean isReadThrough() {
-        return cacheConfig.isReadThrough();
+    @Override
+    protected <T> Data valueToData(T value) {
+        return ((EnterpriseSerializationService)serializationService).toData(value, DataType.OFFHEAP);
     }
 
-    protected boolean isWriteThrough() {
-        return cacheConfig.isWriteThrough();
+    private OffHeapData getRecordData(EnterpriseHiDensityNativeMemoryCacheRecord record) {
+        return (OffHeapData) cacheRecordAccessor.readData(record.getValueAddress());
     }
 
-    protected OffHeapData getRecordData(EnterpriseNativeMemoryCacheRecord record) {
-        return (OffHeapData) cacheRecordService.readData(record.getValueAddress());
-    }
-
-    protected Object getDataValue(OffHeapData offHeapData) {
+    private Object getDataValue(OffHeapData offHeapData) {
         if (offHeapData != null) {
-            return serializationService.convertData(offHeapData, DataType.HEAP);
+            return ((EnterpriseSerializationService)serializationService)
+                        .convertData(offHeapData, DataType.HEAP);
         } else {
             return null;
         }
     }
 
-    protected Object getRecordValue(EnterpriseNativeMemoryCacheRecord record) {
+    private Object getRecordValue(EnterpriseHiDensityNativeMemoryCacheRecord record) {
         return getDataValue(getRecordData(record));
+    }
+
+    private OffHeapData toOffHeapData(Object data) {
+        OffHeapData offHeapData = null;
+        if (!(data instanceof Data)) {
+            offHeapData = ((EnterpriseSerializationService)serializationService)
+                                .toData(data, DataType.OFFHEAP);
+        } else if (!(data instanceof OffHeapData)) {
+            offHeapData = ((EnterpriseSerializationService)serializationService)
+                                .convertData((Data)data, DataType.OFFHEAP);
+        } else {
+            offHeapData = (OffHeapData) data;
+        }
+        return offHeapData;
     }
 
     public void evictExpiredRecords() {
         evictExpiredRecords(evictionPercentage);
     }
 
-    public boolean createRecordWithExpiry(Data key,
-                                          Object value,
-                                          ExpiryPolicy localExpiryPolicy,
-                                          long now,
-                                          boolean disableWriteThrough) {
+    boolean createRecordWithExpiry(Data key,
+                                   Object value,
+                                   ExpiryPolicy localExpiryPolicy,
+                                   long now,
+                                   boolean disableWriteThrough) {
         Duration expiryDuration;
         try {
             expiryDuration = localExpiryPolicy.getExpiryForCreation();
@@ -206,17 +189,17 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
 
         if (!isExpiredAt(expiryTime, now)) {
-            EnterpriseNativeMemoryCacheRecord record = createRecord(key, value, expiryTime);
+            EnterpriseHiDensityNativeMemoryCacheRecord record = createRecord(key, value, expiryTime);
             records.put(key, record);
             return true;
         }
         return false;
     }
 
-    public EnterpriseNativeMemoryCacheRecord createRecord(Data keyData,
-                                                          Object value,
-                                                          long expirationTime) {
-        final EnterpriseNativeMemoryCacheRecord record =
+    EnterpriseHiDensityNativeMemoryCacheRecord createRecord(Data keyData,
+                                                   Object value,
+                                                   long expirationTime) {
+        final EnterpriseHiDensityNativeMemoryCacheRecord record =
                 createRecord(value, Clock.currentTimeMillis(), expirationTime);
         if (isEventsEnabled) {
             final OffHeapData recordValue = record.getValue();
@@ -230,12 +213,12 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return record;
     }
 
-    public boolean updateRecordWithExpiry(Data key,
-                                          Object value,
-                                          EnterpriseNativeMemoryCacheRecord record,
-                                          ExpiryPolicy localExpiryPolicy,
-                                          long now,
-                                          boolean disableWriteThrough) {
+    boolean updateRecordWithExpiry(Data key,
+                                   Object value,
+                                   EnterpriseHiDensityNativeMemoryCacheRecord record,
+                                   ExpiryPolicy localExpiryPolicy,
+                                   long now,
+                                   boolean disableWriteThrough) {
         long expiryTime = -1L;
         try {
             Duration expiryDuration = localExpiryPolicy.getExpiryForUpdate();
@@ -254,8 +237,8 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return !processExpiredEntry(key, record, expiryTime, now);
     }
 
-    public EnterpriseNativeMemoryCacheRecord updateRecord(Data key,
-                                                          EnterpriseNativeMemoryCacheRecord record, Object value) {
+    EnterpriseHiDensityNativeMemoryCacheRecord updateRecord(Data key,
+                                                   EnterpriseHiDensityNativeMemoryCacheRecord record, Object value) {
         final OffHeapData dataOldValue = (OffHeapData) record.getValue();
         final OffHeapData dataValue = toOffHeapData(value);
         record.setValue(dataValue);
@@ -270,8 +253,8 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return record;
     }
 
-    public void deleteRecord(Data key) {
-        final EnterpriseNativeMemoryCacheRecord record = records.remove(key);
+    void deleteRecord(Data key) {
+        final EnterpriseHiDensityNativeMemoryCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
@@ -283,26 +266,22 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
     }
 
-    public EnterpriseNativeMemoryCacheRecord accessRecord(EnterpriseNativeMemoryCacheRecord record,
-                                              ExpiryPolicy expiryPolicy,
-                                              long now) {
-        final ExpiryPolicy localExpiryPolicy =
-                expiryPolicy != null
-                        ? expiryPolicy
-                        : this.expiryPolicy;
-        updateAccessDuration(record, localExpiryPolicy, now);
+    EnterpriseHiDensityNativeMemoryCacheRecord accessRecord(EnterpriseHiDensityNativeMemoryCacheRecord record,
+                                                   ExpiryPolicy expiryPolicy,
+                                                   long now) {
+        expiryPolicy = getExpiryPolicy(expiryPolicy);
+        updateAccessDuration(record, expiryPolicy, now);
         return record;
     }
 
-    public EnterpriseNativeMemoryCacheRecord readThroughRecord(Data key, long now) {
-        final ExpiryPolicy localExpiryPolicy = expiryPolicy;
+    EnterpriseHiDensityNativeMemoryCacheRecord readThroughRecord(Data key, long now) {
         Object value = readThroughCache(key);
         if (value == null) {
             return null;
         }
         Duration expiryDuration;
         try {
-            expiryDuration = localExpiryPolicy.getExpiryForCreation();
+            expiryDuration = defaultExpiryPolicy.getExpiryForCreation();
         } catch (Exception e) {
             expiryDuration = Duration.ETERNAL;
         }
@@ -314,7 +293,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return createRecord(key, value, expiryTime);
     }
 
-    protected Object readThroughCache(Data key) throws CacheLoaderException {
+    Object readThroughCache(Data key) throws CacheLoaderException {
         if (isReadThrough() && cacheLoader != null) {
             try {
                 Object o = cacheService.toObject(key);
@@ -330,7 +309,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return null;
     }
 
-    protected void writeThroughCache(Data key, Object value) throws CacheWriterException {
+    void writeThroughCache(Data key, Object value) throws CacheWriterException {
         if (isWriteThrough() && cacheWriter != null) {
             try {
                 final Object objKey = cacheService.toObject(key);
@@ -347,7 +326,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
     }
 
-    protected void deleteCacheEntry(Data key) {
+    void deleteCacheEntry(Data key) {
         if (isWriteThrough() && cacheWriter != null) {
             try {
                 final Object objKey = cacheService.toObject(key);
@@ -362,7 +341,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
     }
 
-    protected void deleteAllCacheEntry(Set<Data> keys) {
+    void deleteAllCacheEntry(Set<Data> keys) {
         if (isWriteThrough() && cacheWriter != null && keys != null && !keys.isEmpty()) {
             Map<Object, Data> keysToDelete = new HashMap<Object, Data>();
             for (Data key : keys) {
@@ -387,7 +366,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
     }
 
-    protected Map<Data, Object> loadAllCacheEntry(Set<Data> keys) {
+    Map<Data, Object> loadAllCacheEntry(Set<Data> keys) {
         if (cacheLoader != null) {
             Map<Object, Data> keysToLoad = new HashMap<Object, Data>();
             for (Data key : keys) {
@@ -418,7 +397,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return null;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseNativeMemoryCacheRecord record, long now) {
+    boolean processExpiredEntry(Data key, EnterpriseHiDensityNativeMemoryCacheRecord record, long now) {
         final boolean isExpired = record != null && record.isExpiredAt(now);
         if (!isExpired) {
             return false;
@@ -434,7 +413,10 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return true;
     }
 
-    protected boolean processExpiredEntry(Data key, EnterpriseNativeMemoryCacheRecord record, long expiryTime, long now) {
+    boolean processExpiredEntry(Data key,
+                                EnterpriseHiDensityNativeMemoryCacheRecord record,
+                                long expiryTime,
+                                long now) {
         final boolean isExpired = isExpiredAt(expiryTime, now);
         if (!isExpired) {
             return false;
@@ -450,93 +432,9 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return true;
     }
 
-    protected long updateAccessDuration(EnterpriseNativeMemoryCacheRecord record,
-                                        ExpiryPolicy expiryPolicy,
-                                        long now) {
-        long expiryTime = -1L;
-        try {
-            Duration expiryDuration = expiryPolicy.getExpiryForAccess();
-            if (expiryDuration != null) {
-                expiryTime = expiryDuration.getAdjustedTime(now);
-                record.setExpirationTime(expiryTime);
-            }
-        } catch (Exception e) {
-            EmptyStatement.ignore(e);
-            //leave the expiry time untouched when we can't determine a duration
-        }
-        return expiryTime;
-    }
-
-    protected void updateGetAndPutStat(boolean isPutSucceed,
-                                       boolean getValue,
-                                       boolean oldValueNull,
-                                       long start) {
-        if (isStatisticsEnabled()) {
-            if (isPutSucceed) {
-                statistics.increaseCachePuts(1);
-                statistics.addPutTimeNano(System.nanoTime() - start);
-            }
-            if (getValue) {
-                if (oldValueNull) {
-                    statistics.increaseCacheMisses(1);
-                } else {
-                    statistics.increaseCacheHits(1);
-                }
-                statistics.addGetTimeNano(System.nanoTime() - start);
-            }
-        }
-    }
-
-    protected void updateReplaceStat(boolean result, boolean isHit, long start) {
-        if (isStatisticsEnabled()) {
-            if (result) {
-                statistics.increaseCachePuts(1);
-                statistics.addPutTimeNano(System.nanoTime() - start);
-            }
-            statistics.addGetTimeNano(System.nanoTime() - start);
-            if (isHit) {
-                statistics.increaseCacheHits(1);
-            } else {
-                statistics.increaseCacheMisses(1);
-            }
-        }
-    }
-
-    protected void publishEvent(String cacheName,
-                                CacheEventType eventType,
-                                Data dataKey,
-                                Data dataOldValue,
-                                Data dataValue,
-                                boolean isOldValueAvailable) {
-        if (isEventBatchingEnabled) {
-            final CacheEventDataImpl cacheEventData = new CacheEventDataImpl(cacheName, eventType, dataKey, dataValue,
-                    dataOldValue, isOldValueAvailable);
-            Set<CacheEventData> cacheEventDatas = batchEvent.get(eventType);
-            if (cacheEventDatas == null) {
-                cacheEventDatas = new HashSet<CacheEventData>();
-                batchEvent.put(eventType, cacheEventDatas);
-            }
-            cacheEventDatas.add(cacheEventData);
-        } else {
-            cacheService.publishEvent(cacheName,
-                    eventType,
-                    dataKey,
-                    dataValue,
-                    dataOldValue,
-                    isOldValueAvailable,
-                    dataKey.hashCode());
-        }
-    }
-
-    protected void publishBatchedEvents(String cacheName,
-                                        CacheEventType cacheEventType,
-                                        int orderKey) {
-        final Set<CacheEventData> cacheEventDatas = batchEvent.get(cacheEventType);
-        CacheEventSet ces = new CacheEventSet(cacheEventType, cacheEventDatas);
-        cacheService.publishEvent(cacheName, ces, orderKey);
-    }
-
-    protected void onAccess(long now, EnterpriseNativeMemoryCacheRecord record, long creationTime) {
+    void onAccess(long now,
+                  EnterpriseHiDensityNativeMemoryCacheRecord record,
+                  long creationTime) {
         if (evictionEnabled) {
             if (evictionPolicy == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
@@ -548,45 +446,25 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
     }
 
-    protected OffHeapData checkedCastToOffHeapData(Object data) {
-        if (!(data instanceof OffHeapData)) {
-            throw new IllegalArgumentException("Data must be an instance of "
-                    + OffHeapData.class.getName());
-        }
-        return (OffHeapData) data;
-    }
-
-    protected OffHeapData toOffHeapData(Object data) {
-        OffHeapData offHeapData = null;
-        if (!(data instanceof Data)) {
-            offHeapData = serializationService.toData(data, DataType.OFFHEAP);
-        } else if (!(data instanceof OffHeapData)) {
-            offHeapData = serializationService.convertData((Data)data, DataType.OFFHEAP);
-        } else {
-            offHeapData = (OffHeapData) data;
-        }
-        return offHeapData;
-    }
-
-    protected boolean isEvictionRequired(MemoryStats memoryStats) {
+    boolean isEvictionRequired(MemoryStats memoryStats) {
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
     }
 
-    protected EnterpriseNativeMemoryCacheRecord createRecord(long now) {
+    EnterpriseHiDensityNativeMemoryCacheRecord createRecord(long now) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseNativeMemoryCacheRecord createRecord(Object value, long now) {
+    EnterpriseHiDensityNativeMemoryCacheRecord createRecord(Object value, long now) {
         return createRecord(value, now, -1);
     }
 
-    protected EnterpriseNativeMemoryCacheRecord createRecord(long now, long expirationTime) {
+    EnterpriseHiDensityNativeMemoryCacheRecord createRecord(long now, long expirationTime) {
         return createRecord(null, now, -1);
     }
 
-    protected EnterpriseNativeMemoryCacheRecord createRecord(Object value, long now, long expirationTime) {
-        long address = memoryManager.allocate(EnterpriseNativeMemoryCacheRecord.SIZE);
-        EnterpriseNativeMemoryCacheRecord record = cacheRecordService.newRecord();
+    EnterpriseHiDensityNativeMemoryCacheRecord createRecord(Object value, long now, long expirationTime) {
+        long address = memoryManager.allocate(EnterpriseHiDensityNativeMemoryCacheRecord.SIZE);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = cacheRecordAccessor.newRecord();
         record.reset(address);
         record.setCreationTime(now);
         if (expirationTime > 0) {
@@ -601,16 +479,16 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return record;
     }
 
-    protected Data putInternal(Data key,
-                               Object value,
-                               ExpiryPolicy expiryPolicy,
-                               boolean getValue,
-                               String caller) {
+    private Data putInternal(Data key,
+                             Object value,
+                             ExpiryPolicy expiryPolicy,
+                             boolean getValue,
+                             String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
 
         long creationTime;
-        EnterpriseNativeMemoryCacheRecord record = null;
+        EnterpriseHiDensityNativeMemoryCacheRecord record = null;
         OffHeapData newValue = null;
         Data oldValue = null;
         boolean newPut = false;
@@ -633,12 +511,13 @@ public class EnterpriseNativeMemoryCacheRecordStore
             }
             newValue = toOffHeapData(value);
             if (getValue) {
-                OffHeapData current = cacheRecordService.readData(record.getValueAddress());
+                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
                 // TODO: avoid free() until read is completed!
-                oldValue = serializationService.convertData(current, DataType.HEAP);
-                cacheRecordService.disposeData(current);
+                oldValue = ((EnterpriseSerializationService)serializationService)
+                                .convertData(current, DataType.HEAP);
+                cacheRecordAccessor.disposeData(current);
             } else {
-                cacheRecordService.disposeValue(record);
+                cacheRecordAccessor.disposeValue(record);
             }
             record.setValueAddress(newValue.address());
 
@@ -655,39 +534,19 @@ public class EnterpriseNativeMemoryCacheRecordStore
             }
             record.setTtlMillis((int) ttlMillis);
 
-            cacheRecordService.enqueueRecord(record);
+            cacheRecordAccessor.enqueueRecord(record);
         } catch (OffHeapOutOfMemoryError e) {
             if (newPut && record != null && record.address() != NULL_PTR) {
                 if (!records.delete(key)) {
-                    cacheRecordService.dispose(record);
+                    cacheRecordAccessor.dispose(record);
                 }
             }
             if (newValue != null && newValue.address() != NULL_PTR) {
-                cacheRecordService.disposeData(newValue);
+                cacheRecordAccessor.disposeData(newValue);
             }
             throw e;
         }
         return oldValue;
-    }
-
-    public EnterpriseCacheService getCacheService() {
-        return cacheService;
-    }
-
-    public CacheRecordAccessor getCacheRecordService() {
-        return cacheRecordService;
-    }
-
-    public EnterpriseNativeMemoryCacheHashMap getCacheMap() {
-        return records;
-    }
-
-    public ExpiryPolicy getExpiryPolicy() {
-        return expiryPolicy;
-    }
-
-    public EvictionPolicy getEvictionPolicy() {
-        return evictionPolicy;
     }
 
     @Override
@@ -711,7 +570,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
     public Data get(Data key, ExpiryPolicy expiryPolicy) {
         long now = Clock.currentTimeMillis();
         OffHeapData value = null;
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (record != null) {
             long creationTime = record.getCreationTime();
@@ -719,18 +578,19 @@ public class EnterpriseNativeMemoryCacheRecordStore
             if (ttl <= 0 || creationTime + ttl > now) {
                 onAccess(now, record, creationTime);
                 long valueAddress = record.getValueAddress();
-                value = cacheRecordService.readData(valueAddress);
-                cacheRecordService.enqueueRecord(record);
+                value = cacheRecordAccessor.readData(valueAddress);
+                cacheRecordAccessor.enqueueRecord(record);
             } else {
                 records.delete(key);
             }
         }
         // TODO: avoid free() until read is completed!
         try {
-            return serializationService.convertData(value, DataType.HEAP);
+            return ((EnterpriseSerializationService)serializationService)
+                        .convertData(value, DataType.HEAP);
         } finally {
             if (value != null) {
-                cacheRecordService.enqueueData(value);
+                cacheRecordAccessor.enqueueData(value);
             }
         }
     }
@@ -741,7 +601,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
     }
 
     public void put(Data key, Object value, String caller) {
-        put(key, value, expiryPolicy, caller);
+        put(key, value, defaultExpiryPolicy, caller);
     }
 
     @Override
@@ -767,11 +627,11 @@ public class EnterpriseNativeMemoryCacheRecordStore
 
     @Override
     public void setRecord(Data key, CacheRecord record) {
-        if (!(record instanceof EnterpriseNativeMemoryCacheRecord)) {
+        if (!(record instanceof EnterpriseHiDensityNativeMemoryCacheRecord)) {
             throw new IllegalArgumentException("record must be an instance of "
-                    + EnterpriseNativeMemoryCacheRecord.class.getName());
+                    + EnterpriseHiDensityNativeMemoryCacheRecord.class.getName());
         }
-        records.set(key, (EnterpriseNativeMemoryCacheRecord)record);
+        records.set(key, (EnterpriseHiDensityNativeMemoryCacheRecord)record);
     }
 
     @Override
@@ -779,16 +639,15 @@ public class EnterpriseNativeMemoryCacheRecordStore
         return records.remove(key);
     }
 
-    @Override
-    public Map<Data, CacheRecord> getReadOnlyRecords() {
-        return Collections.unmodifiableMap((Map<Data, CacheRecord>) (Map) records);
+    public boolean putIfAbsent(Data key, Object value, String caller) {
+        return putIfAbsent(key, value, defaultExpiryPolicy, caller);
     }
 
     @Override
     public boolean putIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseNativeMemoryCacheRecord record = null;
+        EnterpriseHiDensityNativeMemoryCacheRecord record = null;
         OffHeapData newValue = null;
 
         try {
@@ -799,7 +658,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
                 if (ttl <= 0 || creationTime + ttl > now) {
                     return false;
                 }
-                cacheRecordService.disposeValue(record);
+                cacheRecordAccessor.disposeValue(record);
             } else {
                 record = createRecord(now);
                 records.set(key, record);
@@ -813,15 +672,15 @@ public class EnterpriseNativeMemoryCacheRecordStore
 
             record.setValueAddress(newValue.address());
 
-            cacheRecordService.enqueueRecord(record);
+            cacheRecordAccessor.enqueueRecord(record);
         } catch (OffHeapOutOfMemoryError e) {
             if (record != null && record.address() != NULL_PTR) {
                 if (!records.delete(key)) {
-                    cacheRecordService.dispose(record);
+                    cacheRecordAccessor.dispose(record);
                 }
             }
             if (newValue != null && newValue.address() != NULL_PTR) {
-                cacheRecordService.disposeData(newValue);
+                cacheRecordAccessor.disposeData(newValue);
             }
             throw e;
         }
@@ -829,36 +688,36 @@ public class EnterpriseNativeMemoryCacheRecordStore
     }
 
     public boolean replace(Data key, Object value, String caller) {
-        return replace(key, value, expiryPolicy, caller);
+        return replace(key, value, defaultExpiryPolicy, caller);
     }
 
     @Override
     public boolean replace(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
             if (ttl <= 0 || creationTime + ttl > now) {
                 OffHeapData newValue = toOffHeapData(value);
-                cacheRecordService.disposeValue(record);
+                cacheRecordAccessor.disposeValue(record);
                 record.setValueAddress(newValue.address());
 
                 onAccess(now, record, creationTime);
 
-                cacheRecordService.enqueueRecord(record);
+                cacheRecordAccessor.enqueueRecord(record);
                 return true;
             } else {
-                cacheRecordService.dispose(record);
+                cacheRecordAccessor.dispose(record);
             }
         }
         return false;
     }
 
     public boolean replace(Data key, Object oldValue, Object newValue, String caller) {
-        return replace(key, oldValue, newValue, expiryPolicy, caller);
+        return replace(key, oldValue, newValue, defaultExpiryPolicy, caller);
     }
 
     @Override
@@ -869,7 +728,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
                            String caller) {
         long now = Clock.currentTimeMillis();
         evictIfRequired(now);
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
@@ -878,19 +737,23 @@ public class EnterpriseNativeMemoryCacheRecordStore
                 if (oldValue.equals(existingValue)) {
                     onEntryInvalidated(key, caller);
                     OffHeapData newOffHeapData = toOffHeapData(newValue);
-                    cacheRecordService.disposeValue(record);
+                    cacheRecordAccessor.disposeValue(record);
                     record.setValueAddress(newOffHeapData.address());
 
                     onAccess(now, record, creationTime);
                     return true;
                 }
-                cacheRecordService.enqueueRecord(record);
+                cacheRecordAccessor.enqueueRecord(record);
             } else {
                 onEntryInvalidated(key, caller);
-                cacheRecordService.dispose(record);
+                cacheRecordAccessor.dispose(record);
             }
         }
         return false;
+    }
+
+    public Object getAndReplace(Data key, Object value, String caller) {
+        return getAndReplace(key, value, defaultExpiryPolicy, caller);
     }
 
     @Override
@@ -899,23 +762,24 @@ public class EnterpriseNativeMemoryCacheRecordStore
         evictIfRequired(now);
 
         Data oldValue = null;
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
             if (ttl <= 0 || creationTime + ttl > now) {
                 OffHeapData newValue = toOffHeapData(value);
-                OffHeapData oldBinary = cacheRecordService.readData(record.getValueAddress());
-                oldValue = serializationService.convertData(oldBinary, DataType.HEAP);
-                cacheRecordService.disposeData(oldBinary);
+                OffHeapData oldBinary = cacheRecordAccessor.readData(record.getValueAddress());
+                oldValue = ((EnterpriseSerializationService)serializationService)
+                                .convertData(oldBinary, DataType.HEAP);
+                cacheRecordAccessor.disposeData(oldBinary);
                 record.setValueAddress(newValue.address());
 
                 onAccess(now, record, creationTime);
 
-                cacheRecordService.enqueueRecord(record);
+                cacheRecordAccessor.enqueueRecord(record);
             } else {
-                cacheRecordService.dispose(record);
+                cacheRecordAccessor.dispose(record);
             }
         }
         return oldValue;
@@ -949,12 +813,13 @@ public class EnterpriseNativeMemoryCacheRecordStore
     @Override
     public Data getAndRemove(Data key, String caller) {
         Data oldValue = null;
-        EnterpriseNativeMemoryCacheRecord record = records.remove(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.remove(key);
         if (record != null) {
             onEntryInvalidated(key, caller);
-            OffHeapData oldBinary = cacheRecordService.readData(record.getValueAddress());
-            oldValue = serializationService.convertData(oldBinary, DataType.HEAP);
-            cacheRecordService.dispose(record);
+            OffHeapData oldBinary = cacheRecordAccessor.readData(record.getValueAddress());
+            oldValue = ((EnterpriseSerializationService)serializationService)
+                            .convertData(oldBinary, DataType.HEAP);
+            cacheRecordAccessor.dispose(record);
         }
         return oldValue;
     }
@@ -971,7 +836,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
     @Override
     public boolean remove(Data key, Object value, String caller) {
         boolean deleted = false;
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             Object existingValue = getRecordValue(record);
             if (value.equals(existingValue)) {
@@ -979,7 +844,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
                 records.delete(key);
                 deleted = true;
             }
-            cacheRecordService.enqueueRecord(record);
+            cacheRecordAccessor.enqueueRecord(record);
         }
         return deleted;
     }
@@ -994,7 +859,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
             final Set<Data> keysToClean = new HashSet<Data>(keys.isEmpty() ? records.keySet() : keys);
             for (Data key : keysToClean) {
                 isEventBatchingEnabled = true;
-                final EnterpriseNativeMemoryCacheRecord record = records.get(key);
+                final EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
                 if (localKeys.contains(key) && record != null) {
                     final boolean isExpired = processExpiredEntry(key, record, now);
                     if (!isExpired) {
@@ -1015,13 +880,11 @@ public class EnterpriseNativeMemoryCacheRecordStore
 
     @Override
     public MapEntrySet getAll(Set<Data> keySet, ExpiryPolicy expiryPolicy) {
-        final ExpiryPolicy localExpiryPolicy =
-                expiryPolicy != null
-                        ? expiryPolicy
-                        : this.expiryPolicy;
+        expiryPolicy = getExpiryPolicy(expiryPolicy);
+
         final MapEntrySet result = new MapEntrySet();
         for (Data key : keySet) {
-            final Object value = get(key, localExpiryPolicy);
+            final Object value = get(key, expiryPolicy);
             if (value != null) {
                 result.add(key, cacheService.toData(value));
             }
@@ -1041,7 +904,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
                 final Data key = entry.getKey();
                 final Object value = entry.getValue();
                 if (value != null) {
-                    getAndPut(key, value, expiryPolicy, null);
+                    getAndPut(key, value, defaultExpiryPolicy, null);
                     keysLoaded.add(key);
                 }
             }
@@ -1050,7 +913,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
                 final Data key = entry.getKey();
                 final Object value = entry.getValue();
                 if (value != null) {
-                    final boolean hasPut = putIfAbsent(key, value, expiryPolicy, null);
+                    final boolean hasPut = putIfAbsent(key, value, defaultExpiryPolicy, null);
                     if (hasPut) {
                         keysLoaded.add(key);
                     }
@@ -1065,7 +928,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
         final long now = Clock.currentTimeMillis();
         final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
 
-        EnterpriseNativeMemoryCacheRecord record = records.get(key);
+        EnterpriseHiDensityNativeMemoryCacheRecord record = records.get(key);
         final boolean isExpired = processExpiredEntry(key, record, now);
         if (isExpired) {
             record = null;
@@ -1082,8 +945,8 @@ public class EnterpriseNativeMemoryCacheRecordStore
             statistics.addGetTimeNano(System.nanoTime() - start);
         }
 
-        EnterpriseNativeMemoryCacheEntryProcessorEntry entry =
-                new EnterpriseNativeMemoryCacheEntryProcessorEntry(key, record, this, now);
+        EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry entry =
+                new EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry(key, record, this, now);
         final Object process = entryProcessor.process(entry, arguments);
         entry.applyChanges();
         return process;
@@ -1099,11 +962,6 @@ public class EnterpriseNativeMemoryCacheRecordStore
     }
 
     @Override
-    public final int size() {
-        return records.size();
-    }
-
-    @Override
     public final void clear() {
         onClear();
         records.clear();
@@ -1116,27 +974,12 @@ public class EnterpriseNativeMemoryCacheRecordStore
         records.destroy();
     }
 
-    @Override
-    public CacheConfig getConfig() {
-        return cacheConfig;
-    }
-
-    @Override
-    public String getName() {
-        return cacheConfig.getName();
-    }
-
-    @Override
-    public CacheStatisticsImpl getCacheStats() {
-        return statistics;
-    }
-
     public static class CacheRecordAccessor
-            implements MemoryBlockAccessor<EnterpriseNativeMemoryCacheRecord> {
+            implements MemoryBlockAccessor<EnterpriseHiDensityNativeMemoryCacheRecord> {
 
         private final EnterpriseSerializationService ss;
         private final MemoryManager memoryManager;
-        private final Queue<EnterpriseNativeMemoryCacheRecord> recordQ = new ArrayDeque<EnterpriseNativeMemoryCacheRecord>(1024);
+        private final Queue<EnterpriseHiDensityNativeMemoryCacheRecord> recordQ = new ArrayDeque<EnterpriseHiDensityNativeMemoryCacheRecord>(1024);
         private final Queue<OffHeapData> dataQ = new ArrayDeque<OffHeapData>(1024);
 
         public CacheRecordAccessor(EnterpriseSerializationService ss) {
@@ -1145,37 +988,37 @@ public class EnterpriseNativeMemoryCacheRecordStore
         }
 
         @Override
-        public boolean isEqual(long address, EnterpriseNativeMemoryCacheRecord value) {
+        public boolean isEqual(long address, EnterpriseHiDensityNativeMemoryCacheRecord value) {
             return isEqual(address, value.address());
         }
 
         @Override
         public boolean isEqual(long address1, long address2) {
-            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseNativeMemoryCacheRecord.VALUE_OFFSET);
-            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseNativeMemoryCacheRecord.VALUE_OFFSET);
+            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + EnterpriseHiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + EnterpriseHiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
             return OffHeapDataUtil.equals(valueAddress1, valueAddress2);
         }
 
-        public EnterpriseNativeMemoryCacheRecord newRecord() {
-            EnterpriseNativeMemoryCacheRecord record = recordQ.poll();
+        public EnterpriseHiDensityNativeMemoryCacheRecord newRecord() {
+            EnterpriseHiDensityNativeMemoryCacheRecord record = recordQ.poll();
             if (record == null) {
-                record = new EnterpriseNativeMemoryCacheRecord();
+                record = new EnterpriseHiDensityNativeMemoryCacheRecord(this);
             }
             return record;
         }
 
         @Override
-        public EnterpriseNativeMemoryCacheRecord read(long address) {
+        public EnterpriseHiDensityNativeMemoryCacheRecord read(long address) {
             if (address <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
             }
-            EnterpriseNativeMemoryCacheRecord record = newRecord();
+            EnterpriseHiDensityNativeMemoryCacheRecord record = newRecord();
             record.reset(address);
             return record;
         }
 
         @Override
-        public void dispose(EnterpriseNativeMemoryCacheRecord record) {
+        public void dispose(EnterpriseHiDensityNativeMemoryCacheRecord record) {
             if (record.address() <= NULL_PTR) {
                 throw new IllegalArgumentException("Illegal memory address: " + record.address());
             }
@@ -1201,7 +1044,16 @@ public class EnterpriseNativeMemoryCacheRecordStore
             return value.reset(valueAddress);
         }
 
-        public void disposeValue(EnterpriseNativeMemoryCacheRecord record) {
+        public <T> T readValue(EnterpriseHiDensityNativeMemoryCacheRecord record) {
+            OffHeapData offHeapData = (OffHeapData) readData(record.getValueAddress());
+            if (offHeapData != null) {
+                return (T) ss.convertData(offHeapData, DataType.HEAP);
+            } else {
+                return null;
+            }
+        }
+
+        public void disposeValue(EnterpriseHiDensityNativeMemoryCacheRecord record) {
             long valueAddress = record.getValueAddress();
             if (valueAddress != NULL_PTR) {
                 disposeData(valueAddress);
@@ -1221,7 +1073,7 @@ public class EnterpriseNativeMemoryCacheRecordStore
             disposeData(data);
         }
 
-        void enqueueRecord(EnterpriseNativeMemoryCacheRecord record) {
+        void enqueueRecord(EnterpriseHiDensityNativeMemoryCacheRecord record) {
             recordQ.offer(record.reset(NULL_PTR));
         }
 
@@ -1234,28 +1086,28 @@ public class EnterpriseNativeMemoryCacheRecordStore
     protected Callback<Data> createEvictionCallback() {
         return new Callback<Data>() {
             public void notify(Data object) {
-                cacheService.sendInvalidationEvent(cacheConfig.getName(), object, "<NA>");
+                ((EnterpriseCacheService) cacheService).sendInvalidationEvent(cacheConfig.getName(), object, "<NA>");
             }
         };
     }
 
     protected void onEntryInvalidated(Data key, String source) {
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), key, source);
+        ((EnterpriseCacheService) cacheService).sendInvalidationEvent(cacheConfig.getName(), key, source);
     }
 
     protected void onClear() {
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
+        ((EnterpriseCacheService) cacheService).sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
     }
 
     protected void onDestroy() {
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
+        ((EnterpriseCacheService) cacheService).sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
         ScheduledFuture<?> f = evictionTaskFuture;
         if (f != null) {
             f.cancel(true);
         }
     }
 
-    public BinaryOffHeapHashMap<EnterpriseNativeMemoryCacheRecord>.EntryIter iterator(int slot) {
+    public BinaryOffHeapHashMap<EnterpriseHiDensityNativeMemoryCacheRecord>.EntryIter iterator(int slot) {
         return records.iterator(slot);
     }
 

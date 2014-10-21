@@ -63,7 +63,9 @@ public class CacheClearRequest extends AllPartitionsClientRequest implements Ret
 
     @Override
     protected OperationFactory createOperationFactory() {
-        return new CacheClearOperationFactory(name);
+        return null;
+        // TODO: Handle client request
+        //return new CacheClearOperationFactory(name);
     }
 
     @Override

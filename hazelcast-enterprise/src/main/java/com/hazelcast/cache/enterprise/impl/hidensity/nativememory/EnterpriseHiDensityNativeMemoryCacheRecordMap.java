@@ -18,9 +18,9 @@ import java.util.Arrays;
 /**
  * @author sozal 11/02/14
  */
-public final class EnterpriseNativeMemoryCacheHashMap
-        extends BinaryOffHeapHashMap<EnterpriseNativeMemoryCacheRecord>
-        implements EnterpriseHiDensityCacheRecordMap<Data, EnterpriseNativeMemoryCacheRecord> {
+public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
+        extends BinaryOffHeapHashMap<EnterpriseHiDensityNativeMemoryCacheRecord>
+        implements EnterpriseHiDensityCacheRecordMap<Data, EnterpriseHiDensityNativeMemoryCacheRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
@@ -36,10 +36,10 @@ public final class EnterpriseNativeMemoryCacheHashMap
 
     private int randomEvictionLastIndex;
 
-    public EnterpriseNativeMemoryCacheHashMap(int initialCapacity,
-                                              EnterpriseSerializationService serializationService,
-                                              MemoryBlockAccessor<EnterpriseNativeMemoryCacheRecord> memoryBlockAccessor,
-                                              Callback<Data> evictionCallback) {
+    public EnterpriseHiDensityNativeMemoryCacheRecordMap(int initialCapacity,
+                                                         EnterpriseSerializationService serializationService,
+                                                         MemoryBlockAccessor<EnterpriseHiDensityNativeMemoryCacheRecord> memoryBlockAccessor,
+                                                         Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, memoryBlockAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.evictionCallback = evictionCallback;
@@ -54,7 +54,7 @@ public final class EnterpriseNativeMemoryCacheHashMap
         int len = (int) (capacity * (long) percentage / 100);
         int k = 0;
         if (len > 0 && size() > 0) {
-            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
             int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
 
@@ -62,9 +62,9 @@ public final class EnterpriseNativeMemoryCacheHashMap
             for (int ix = start; ix < end; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int ttlMillis = EnterpriseNativeMemoryCacheRecord.getTtlMillis(value);
+                    int ttlMillis = EnterpriseHiDensityNativeMemoryCacheRecord.getTtlMillis(value);
                     if (ttlMillis > 0) {
-                        long creationTime = EnterpriseNativeMemoryCacheRecord.getCreationTime(value);
+                        long creationTime = EnterpriseHiDensityNativeMemoryCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
                             OffHeapData binary = service.readData(key);
@@ -141,7 +141,7 @@ public final class EnterpriseNativeMemoryCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             long time = sortArray[index];
 
-            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -161,8 +161,8 @@ public final class EnterpriseNativeMemoryCacheHashMap
     }
 
     private static long getAccessTime(long recordAddress) {
-        long creationTime = EnterpriseNativeMemoryCacheRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = EnterpriseNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
+        long creationTime = EnterpriseHiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
     }
 
@@ -183,7 +183,7 @@ public final class EnterpriseNativeMemoryCacheHashMap
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    hit = EnterpriseNativeMemoryCacheRecord.getAccessHit(value);
+                    hit = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessHit(value);
                     sortArray[k] = hit;
                     if (++k >= size) {
                         break;
@@ -194,12 +194,12 @@ public final class EnterpriseNativeMemoryCacheHashMap
             int index = (int) (size * (long) percentage / 100);
             hit = sortArray[index];
 
-            EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int h = EnterpriseNativeMemoryCacheRecord.getAccessHit(value);
+                    int h = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessHit(value);
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
@@ -239,7 +239,7 @@ public final class EnterpriseNativeMemoryCacheHashMap
 
         int ix = start;
         int k = 0;
-        EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+        EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
@@ -257,8 +257,8 @@ public final class EnterpriseNativeMemoryCacheHashMap
         return k;
     }
 
-    private EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
-        return (EnterpriseNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
+    private EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
+        return (EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
     }
 
     public EntryIter iterator(int slot) {

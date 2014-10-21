@@ -1,8 +1,8 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -27,14 +27,14 @@ abstract class AbstractOffHeapCacheOperation
         extends AbstractOperation
         implements PartitionAwareOperation, IdentifiedDataSerializable {
 
-    private static final int FORCED_EVICTION_RETRY_COUNT = 100 / EnterpriseCacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
+    private static final int FORCED_EVICTION_RETRY_COUNT = 100 / ICacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
 
     String name;
     Data key;
 
     Object response;
 
-    transient EnterpriseNativeMemoryCacheRecordStore cache;
+    transient EnterpriseHiDensityNativeMemoryCacheRecordStore cache;
 
     transient OffHeapOutOfMemoryError oome;
 
@@ -57,9 +57,9 @@ abstract class AbstractOffHeapCacheOperation
         try {
             EnterpriseCacheService service = getService();
             if (this instanceof BackupAwareOffHeapCacheOperation) {
-                cache = (EnterpriseNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+                cache = (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
             } else {
-                cache = (EnterpriseNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+                cache = (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
             }
         } catch (Throwable e) {
             dispose();

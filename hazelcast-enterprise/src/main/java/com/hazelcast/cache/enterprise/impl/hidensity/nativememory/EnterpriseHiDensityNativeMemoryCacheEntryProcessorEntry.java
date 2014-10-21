@@ -11,7 +11,7 @@ import javax.cache.expiry.ExpiryPolicy;
  * @author sozal 14/10/14
  */
 // TODO: Implement as off-heap
-public class EnterpriseNativeMemoryCacheEntryProcessorEntry<K, V>
+public class EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
         implements EnterpriseHiDensityCacheEntryProcessorEntry<K, V> {
 
     private K key;
@@ -20,18 +20,18 @@ public class EnterpriseNativeMemoryCacheEntryProcessorEntry<K, V>
     private State state = State.NONE;
 
     private final Data keyData;
-    private EnterpriseNativeMemoryCacheRecord record;
-    private EnterpriseNativeMemoryCacheRecord recordLoaded;
+    private EnterpriseHiDensityNativeMemoryCacheRecord record;
+    private EnterpriseHiDensityNativeMemoryCacheRecord recordLoaded;
 
-    private final EnterpriseNativeMemoryCacheRecordStore cacheRecordStore;
+    private final EnterpriseHiDensityNativeMemoryCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
-    public EnterpriseNativeMemoryCacheEntryProcessorEntry(Data keyData,
-                                                          EnterpriseNativeMemoryCacheRecord record,
-                                                          EnterpriseNativeMemoryCacheRecordStore cacheRecordStore,
-                                                          long now) {
+    public EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry(Data keyData,
+                                                                   EnterpriseHiDensityNativeMemoryCacheRecord record,
+                                                                   EnterpriseHiDensityNativeMemoryCacheRecordStore cacheRecordStore,
+                                                                   long now) {
         this.keyData = keyData;
         this.record = record;
         this.cacheRecordStore = cacheRecordStore;
@@ -99,7 +99,7 @@ public class EnterpriseNativeMemoryCacheEntryProcessorEntry<K, V>
         return null;
     }
 
-    private V getRecordValue(EnterpriseNativeMemoryCacheRecord theRecord) {
+    private V getRecordValue(EnterpriseHiDensityNativeMemoryCacheRecord theRecord) {
         return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
     }
 

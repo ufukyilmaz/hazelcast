@@ -285,7 +285,7 @@ public class ClientSecurityTest {
     }
 
     static class DummyCallable implements Callable<Integer>, Serializable, HazelcastInstanceAware {
-        HazelcastInstance hz;
+        transient HazelcastInstance hz;
 
         public Integer call() throws Exception {
             hz.getList("list").add("value");
@@ -298,7 +298,7 @@ public class ClientSecurityTest {
     }
 
     static class DummyCallableNewThread implements Callable<Integer>, Serializable, HazelcastInstanceAware {
-        HazelcastInstance hz;
+        transient HazelcastInstance hz;
 
         public Integer call() throws Exception {
             final CountDownLatch latch = new CountDownLatch(1);

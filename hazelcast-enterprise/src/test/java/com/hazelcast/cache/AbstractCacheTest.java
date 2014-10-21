@@ -3,6 +3,7 @@ package com.hazelcast.cache;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -21,6 +22,7 @@ import javax.cache.CacheManager;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -42,14 +44,14 @@ import static org.junit.Assert.assertTrue;
 public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected static final String CACHE_NAME_PROPERTY = "cacheName";
-    protected static final String CACHE_STORAGE_TYPE_PROPERTY = "cacheStorageType";
+    protected static final String IN_MEMORY_FORMAT_PROPERTY = "inMemoryFormat";
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
-    protected static final CacheStorageType DEFAULT_CACHE_STORAGE_TYPE =
-            CacheStorageType.NATIVE_MEMORY;
+    protected static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT =
+            InMemoryFormat.OFFHEAP;
 
     protected static final String CACHE_NAME;
-    protected static final CacheStorageType CACHE_STORAGE_TYPE;
+    protected static final InMemoryFormat IN_MEMORY_FORMAT;
 
     protected CachingProvider cachingProvider;
     protected CacheManager cacheManager;
@@ -68,11 +70,11 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             CACHE_NAME = cacheNamePropertyValue;
         }
 
-        String cacheStorageTypePropertyValue = System.getProperty(CACHE_STORAGE_TYPE_PROPERTY);
+        String cacheStorageTypePropertyValue = System.getProperty(IN_MEMORY_FORMAT_PROPERTY);
         if (StringUtil.isNullOrEmpty(cacheStorageTypePropertyValue)) {
-            CACHE_STORAGE_TYPE = DEFAULT_CACHE_STORAGE_TYPE;
+            IN_MEMORY_FORMAT = DEFAULT_IN_MEMORY_FORMAT;
         } else {
-            CACHE_STORAGE_TYPE = CacheStorageType.valueOf(cacheStorageTypePropertyValue);
+            IN_MEMORY_FORMAT = InMemoryFormat.valueOf(cacheStorageTypePropertyValue);
         }
     }
 
@@ -85,14 +87,14 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     public static CacheConfig createCacheConfig(String cacheName) {
-        return createCacheConfig(cacheName, CACHE_STORAGE_TYPE);
+        return createCacheConfig(cacheName, IN_MEMORY_FORMAT);
     }
 
     public static CacheConfig createCacheConfig(String cacheName,
-                                                CacheStorageType cacheStorageType) {
+                                                InMemoryFormat inMemoryFormat) {
         CacheConfig cacheConfig = new CacheConfig();
         cacheConfig.setName(cacheName);
-        cacheConfig.setCacheStorageType(cacheStorageType);
+        cacheConfig.setInMemoryFormat(inMemoryFormat);
         return cacheConfig;
     }
 
@@ -122,11 +124,8 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return props;
     }
 
-    protected ICache getCache() {
-        Cache<Object, Object> cache = cacheManager.getCache(CACHE_NAME);
-        if (cache == null) {
-            cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
-        }
+    protected ICache createCache() {
+        Cache<Object, Object> cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
         return cache.unwrap(ICache.class);
     }
 
@@ -142,16 +141,15 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         if (cacheManager != null) {
             Iterable<String> cacheNames = cacheManager.getCacheNames();
             for (String name : cacheNames) {
-                //cacheManager.destroyCache(name);
+                cacheManager.destroyCache(name);
             }
         }
         onTearDown();
-        //Hazelcast.shutdownAll();
     }
 
     @Test
     public void testPutGetRemoveReplace() throws InterruptedException, ExecutionException {
-        ICache cache = getCache();
+        ICache cache = createCache();
 
         cache.put("key1", "value1");
         assertEquals("value1", cache.get("key1"));
@@ -188,7 +186,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     @Test
     public void testAsyncGetPutRemove() throws InterruptedException, ExecutionException {
-        final ICache cache = getCache();
+        final ICache cache = createCache();
         final String key = "key";
         cache.put(key, "value1");
         Future f = cache.getAsync(key);
@@ -220,7 +218,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     @Test
     public void testClear() {
-        ICache cache = getCache();
+        ICache cache = createCache();
         for (int i = 0; i < 10; i++) {
             cache.put("key" + i, "value" + i);
         }
@@ -230,7 +228,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     @Test
     public void testRemoveAll() {
-        ICache cache = getCache();
+        ICache cache = createCache();
         for (int i = 0; i < 10; i++) {
             cache.put("key" + i, "value" + i);
         }
@@ -239,12 +237,12 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {
-        return new CreatedExpiryPolicy(new Duration(timeUnit, ttl));
+        return new ModifiedExpiryPolicy(new Duration(timeUnit, ttl));
     }
 
-    //@Test
+    @Test
     public void testPutWithTtl() throws ExecutionException, InterruptedException {
-        final ICache cache = getCache();
+        final ICache cache = createCache();
         final String key = "key";
         cache.put(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
 
@@ -291,7 +289,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test
     public void testIterator() {
-        ICache cache = getCache();
+        ICache cache = createCache();
         int size = 1111;
         int multiplier = 11;
         for (int i = 0; i < size; i++) {
@@ -318,7 +316,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test
     public void testIteratorRemove() {
-        ICache cache = getCache();
+        ICache cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -334,7 +332,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test(expected = IllegalStateException.class)
     public void testIteratorIllegalRemove() {
-        ICache cache = getCache();
+        ICache cache = createCache();
         int size = 10;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -348,7 +346,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test
     public void testIteratorDuringInsertion() throws InterruptedException {
-        final ICache cache = getCache();
+        final ICache cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -386,7 +384,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test
     public void testIteratorDuringUpdate() throws InterruptedException {
-        final ICache cache = getCache();
+        final ICache cache = createCache();
         final int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -424,7 +422,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     //@Test
     public void testIteratorDuringRemoval() throws InterruptedException {
-        final ICache cache = getCache();
+        final ICache cache = createCache();
         final int size = 2222;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);

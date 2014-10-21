@@ -63,7 +63,8 @@ public class CacheReplaceRequest extends AbstractCacheRequest {
 
     @Override
     protected Operation prepareOperation() {
-        return new CacheReplaceOperation(name, key, currentValue, value);
+//        return new CacheReplaceOperation(name, key, currentValue, value);
+        return null;
     }
 
     @Override

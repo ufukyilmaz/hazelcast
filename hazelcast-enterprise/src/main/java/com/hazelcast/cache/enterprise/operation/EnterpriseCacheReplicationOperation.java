@@ -142,7 +142,6 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        super.writeInternal(out);
         int count = offHeapSource.size();
         out.writeInt(count);
         OffHeapData data = new OffHeapData();
@@ -166,6 +165,7 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
                 throw new AssertionError("Cache iteration error, count is not zero!" + subCount);
             }
         }
+        super.writeInternal(out);
     }
 
     private int getRemainingTtl(EnterpriseHiDensityNativeMemoryCacheRecord record, long now) {
@@ -181,31 +181,24 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        super.readInternal(in);
         int count = in.readInt();
-        if (count > 0) {
-            for (int i = 0; i < count; i++) {
-                int subCount = in.readInt();
-                if (subCount > 0) {
-                    String name = in.readUTF();
-                    Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
-                    offHeapDestination.put(name, m);
+        for (int i = 0; i < count; i++) {
+            int subCount = in.readInt();
+            String name = in.readUTF();
+            Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
+            offHeapDestination.put(name, m);
 
-                    for (int j = 0; j < subCount; j++) {
-                        int ttlMillis = in.readInt();
+            for (int j = 0; j < subCount; j++) {
+                int ttlMillis = in.readInt();
 
-                        Data key = readOffHeapBinary(in);
-                        Data value = readOffHeapBinary(in);
-                        if (key != null) {
-                            m.put(key, new CacheRecordHolder(value, ttlMillis));
-                        }
-//                        if (oome != null) {
-//                            return;
-//                        }
-                    }
+                Data key = readOffHeapBinary(in);
+                Data value = readOffHeapBinary(in);
+                if (key != null) {
+                    m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }
             }
         }
+        super.readInternal(in);
     }
 
     private Data readOffHeapBinary(ObjectDataInput in) throws IOException {

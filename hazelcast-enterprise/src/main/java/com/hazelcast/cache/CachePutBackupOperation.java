@@ -17,6 +17,7 @@ import java.io.IOException;
 public class CachePutBackupOperation extends AbstractOffHeapCacheOperation implements BackupOperation {
 
     private Data value;
+    
     private ExpiryPolicy expiryPolicy;
 
     public CachePutBackupOperation() {

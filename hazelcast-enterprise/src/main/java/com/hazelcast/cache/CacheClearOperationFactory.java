@@ -54,6 +54,10 @@ public class CacheClearOperationFactory implements OperationFactory, IdentifiedD
         out.writeUTF(name);
         out.writeBoolean(isRemoveAll);
         out.writeInt(completionId);
+        if (keySet == null) {
+            out.writeInt(0);
+            return;
+        }
         out.writeInt(keySet.size());
         for (Data data : keySet) {
             out.writeData(data);

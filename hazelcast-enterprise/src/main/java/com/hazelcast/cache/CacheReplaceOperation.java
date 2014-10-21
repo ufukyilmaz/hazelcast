@@ -6,6 +6,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 
 /**
@@ -14,15 +15,19 @@ import java.io.IOException;
 public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
 
     private Data value;
+
     private Data currentValue; // replace if same
+
+    private ExpiryPolicy expiryPolicy;
 
     public CacheReplaceOperation() {
     }
 
-    public CacheReplaceOperation(String name, Data key, Data oldValue, Data newValue) {
+    public CacheReplaceOperation(String name, Data key, Data oldValue, Data newValue, ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = newValue;
         this.currentValue = oldValue;
+        this.expiryPolicy = expiryPolicy;
     }
 
     @Override
@@ -59,8 +64,7 @@ public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
 
     @Override
     public Operation getBackupOperation() {
-//        return new CachePutBackupOperation(name, key, value, -1);
-        return null;
+        return new CachePutBackupOperation(name, key, value, expiryPolicy);
     }
 
     @Override
@@ -76,6 +80,7 @@ public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
         super.writeInternal(out);
         out.writeData(value);
         out.writeData(currentValue);
+        out.writeObject(expiryPolicy);
     }
 
     @Override
@@ -83,6 +88,7 @@ public class CacheReplaceOperation extends BackupAwareOffHeapCacheOperation {
         super.readInternal(in);
         value = readOffHeapData(in);
         currentValue = readOffHeapData(in);
+        expiryPolicy = in.readObject();
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.CacheOperationProvider;
-import com.hazelcast.cache.CacheStorageType;
 import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
@@ -11,7 +10,7 @@ import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.EnterpriseCacheReplicationOperation;
 import com.hazelcast.cache.impl.*;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.core.DistributedObject;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -35,14 +34,11 @@ public class EnterpriseCacheService extends CacheService {
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
-        CacheStorageType cacheStorageType = cacheConfig != null ? cacheConfig.getCacheStorageType() : null;
-        if (cacheStorageType == null
-                || CacheStorageType.HEAP.equals(cacheStorageType)) {
-            return new CacheRecordStore(name,
-                                        partitionId,
-                                        nodeEngine,
-                                        this);
-        } else if (CacheStorageType.NATIVE_MEMORY.equals(cacheStorageType)) {
+        if (cacheConfig == null) {
+            throw new IllegalArgumentException("CacheConfig is null!!! " + name);
+        }
+        InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
+        if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
             try {
                 return new EnterpriseHiDensityNativeMemoryCacheRecordStore(partitionId,
                         name,
@@ -54,11 +50,15 @@ public class EnterpriseCacheService extends CacheService {
                 throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
                         "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
+
+        } else if (InMemoryFormat.BINARY.equals(inMemoryFormat)
+                || InMemoryFormat.OBJECT.equals(inMemoryFormat)) {
+            return super.createNewRecordStore(name, partitionId);
         }
         // TODO:
-        //      Or if "cacheStorageType" is "ON_HEAP_SLAB",
+        //      Or if "inMemoryFormat" is "ON_HEAP_SLAB",
         //      create "EnterpriseOnHeapSlabAllocatorCacheRecordStore"
-        throw new IllegalArgumentException("Cannot create record store for the storage type: " + cacheStorageType);
+        throw new IllegalArgumentException("Cannot create record store for the storage type: " + inMemoryFormat);
     }
 
     @Override
@@ -113,40 +113,10 @@ public class EnterpriseCacheService extends CacheService {
         return op.isEmpty() ? null : op;
     }
 
-    @Override
-    public DistributedObject createDistributedObject(String objectName) {
-        return super.createDistributedObject(objectName);
-    }
-
-    @Override
-    public void destroyDistributedObject(String objectName) {
-        OperationService operationService = nodeEngine.getOperationService();
-        List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
-        for (CachePartitionSegment segment : segments) {
-            if (segment.hasCache(objectName)) {
-                CacheDestroyOperation op = new CacheDestroyOperation(objectName);
-                ops.add(op);
-                op.setPartitionId(segment.getPartitionId()).setNodeEngine(nodeEngine).setService(this);
-                operationService.executeOperation(op);
-            }
-        }
-        for (CacheDestroyOperation op : ops) {
-            try {
-                op.awaitCompletion(30, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     public String addInvalidationListener(String name, CacheInvalidationListener listener) {
         EventService eventService = nodeEngine.getEventService();
         EventRegistration registration = eventService.registerLocalListener(SERVICE_NAME, name, listener);
         return registration.getId();
-    }
-
-    public void dispatchEvent(CacheInvalidationMessage event, CacheInvalidationListener listener) {
-        listener.send(event);
     }
 
     public void sendInvalidationEvent(String name, Data key, String sourceUuid) {
@@ -169,11 +139,11 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     @Override
-    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, CacheStorageType storageType) {
-        if (CacheStorageType.NATIVE_MEMORY.equals(storageType)) {
+    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, InMemoryFormat inMemoryFormat) {
+        if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
             return new OffHeapOperationProvider(nameWithPrefix);
         }
-        return super.getCacheOperationProvider(nameWithPrefix, storageType);
+        return super.getCacheOperationProvider(nameWithPrefix, inMemoryFormat);
     }
 
     @Override

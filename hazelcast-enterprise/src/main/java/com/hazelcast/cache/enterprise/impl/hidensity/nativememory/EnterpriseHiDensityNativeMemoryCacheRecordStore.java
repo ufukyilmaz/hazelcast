@@ -617,7 +617,7 @@ public class EnterpriseHiDensityNativeMemoryCacheRecordStore
     public void own(Data key, Object value, long ttlMillis) {
         // TODO: Implement without creating a "ExpirePolicy" object
         // This is just a quick workaround
-        putInternal(key, value, ttlToExpirePolicy(ttlMillis), true, null);
+        putInternal(key, value, ttlToExpirePolicy(ttlMillis), false, null);
     }
 
     @Override

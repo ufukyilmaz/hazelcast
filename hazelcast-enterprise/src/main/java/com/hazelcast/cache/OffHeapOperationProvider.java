@@ -52,7 +52,7 @@ public class OffHeapOperationProvider implements CacheOperationProvider {
 
     @Override
     public Operation createReplaceOperation(Data key, Data oldValue, Data newValue, ExpiryPolicy policy) {
-        return new CacheReplaceOperation(nameWithPrefix, key, oldValue, newValue);
+        return new CacheReplaceOperation(nameWithPrefix, key, oldValue, newValue, policy);
     }
 
     @Override
@@ -68,11 +68,6 @@ public class OffHeapOperationProvider implements CacheOperationProvider {
     @Override
     public Operation createKeyIteratorOperation(int lastTableIndex, int fetchSize) {
         throw new UnsupportedOperationException("implement key iterator operation !!!");
-    }
-
-    @Override
-    public Operation createDestroyOperation() {
-        return new CacheDestroyOperation(nameWithPrefix);
     }
 
     @Override

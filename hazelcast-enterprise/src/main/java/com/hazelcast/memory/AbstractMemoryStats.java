@@ -1,19 +1,16 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.com.eclipsesource.json.JsonObject;
+import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.monitor.LocalGCStats;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.monitor.impl.LocalGCStatsImpl;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
-
-import java.io.IOException;
 
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.getHeapMemoryUsage;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
-class StandardMemoryStats implements LocalMemoryStats {
+abstract class AbstractMemoryStats implements LocalMemoryStats {
 
     private final LocalGCStatsImpl gcStats = new LocalGCStatsImpl();
 
@@ -47,26 +44,6 @@ class StandardMemoryStats implements LocalMemoryStats {
     }
 
     @Override
-    public long getMaxNativeMemory() {
-        return 0;
-    }
-
-    @Override
-    public long getCommittedNativeMemory() {
-        return 0;
-    }
-
-    @Override
-    public long getUsedNativeMemory() {
-        return 0;
-    }
-
-    @Override
-    public long getFreeNativeMemory() {
-        return 0L;
-    }
-
-    @Override
     public final LocalGCStats getGCStats() {
         GCStatsSupport.fill(gcStats);
         return gcStats;
@@ -94,43 +71,25 @@ class StandardMemoryStats implements LocalMemoryStats {
     }
 
     @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(getTotalPhysical());
-        out.writeLong(getFreePhysical());
-        out.writeLong(getMaxNativeMemory());
-        out.writeLong(getCommittedNativeMemory());
-        out.writeLong(getUsedNativeMemory());
-        out.writeLong(getMaxHeap());
-        out.writeLong(getCommittedHeap());
-        out.writeLong(getUsedHeap());
-        getGCStats().writeData(out);
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-
-    }
-
-
-    @Override
-    public JsonObject toJson() {
-        JsonObject root = new JsonObject();
-        root.add("creationTime", getCreationTime());
-        root.add("totalPhysical", getTotalPhysical());
-        root.add("freePhysical", getFreePhysical());
-        root.add("maxNativeMemory", getMaxNativeMemory());
-        root.add("committedNativeMemory", getCommittedNativeMemory());
-        root.add("usedNativeMemory", getUsedNativeMemory());
-        root.add("freeNativeMemory", getFreeNativeMemory());
-        root.add("maxHeap", getMaxHeap());
-        root.add("committedHeap", getCommittedHeap());
-        root.add("usedHeap", getUsedHeap());
-        root.add("gcStats", getGCStats().toJson());
-        return root;
-    }
-
-    @Override
     public void fromJson(JsonObject json) {
+        throw new UnsupportedOperationException();
+    }
 
+    static void checkFreeMemory(long size) {
+        long totalMem = totalPhysicalMemory();
+        if (totalMem < 0) {
+            return;
+        }
+        long freeMem = freePhysicalMemory();
+        if (freeMem < 0) {
+            return;
+        }
+        if (size > freeMem) {
+            throw new OffHeapOutOfMemoryError("Not enough free physical memory available!"
+                    + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
+                    + " Total physical memory: " + MemorySize.toPrettyString(totalMem)
+                    + ", Free physical memory: " + MemorySize.toPrettyString(freeMem)
+            );
+        }
     }
 }

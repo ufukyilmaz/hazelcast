@@ -8,16 +8,16 @@ import com.hazelcast.monitor.LocalMemoryStats;
 public final class StandardMemoryManager implements MemoryManager {
 
     private final LibMalloc malloc;
-    private final OffHeapMemoryStats memoryStats;
+    private final NativeMemoryStats memoryStats;
 
     public StandardMemoryManager(MemorySize cap) {
         long size = cap.bytes();
-        EnterpriseMemoryStatsSupport.checkFreeMemory(size);
+        NativeMemoryStats.checkFreeMemory(size);
         malloc = new UnsafeMalloc();
-        memoryStats = new OffHeapMemoryStats(size);
+        memoryStats = new NativeMemoryStats(size);
     }
 
-    StandardMemoryManager(LibMalloc malloc, OffHeapMemoryStats memoryStats) {
+    StandardMemoryManager(LibMalloc malloc, NativeMemoryStats memoryStats) {
         this.malloc = malloc;
         this.memoryStats = memoryStats;
     }

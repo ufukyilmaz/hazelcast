@@ -35,7 +35,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     final int pageSize;
     final int minBlockSizePower;
     final AddressQueue[] addressQueues;
-    final PooledOffHeapMemoryStats memoryStats;
+    final PooledNativeMemoryStats memoryStats;
 
     // page allocator, to allocate MAX_SIZE memory block from system
     final MemoryAllocator pageAllocator;
@@ -46,7 +46,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     final MemoryAllocator systemAllocator;
 
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledOffHeapMemoryStats stats) {
+            LibMalloc malloc, PooledNativeMemoryStats stats) {
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 
         memoryStats = stats;

@@ -2,17 +2,14 @@ package com.hazelcast.memory;
 
 import com.hazelcast.com.eclipsesource.json.JsonObject;
 import com.hazelcast.monitor.LocalMemoryStats;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Clock;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author mdogan 10/02/14
  */
-class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements LocalMemoryStats {
+class PooledNativeMemoryStats extends NativeMemoryStats implements LocalMemoryStats {
 
     private final long creationTime;
 
@@ -22,7 +19,7 @@ class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements LocalMemory
 
     private final AtomicLong usedOffHeap = new AtomicLong();
 
-    public PooledOffHeapMemoryStats(long maxOffHeap, long maxMetadata) {
+    public PooledNativeMemoryStats(long maxOffHeap, long maxMetadata) {
         super(maxOffHeap);
         this.maxMetadata = maxMetadata;
         creationTime = Clock.currentTimeMillis();
@@ -76,5 +73,4 @@ class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements LocalMemory
         root.add("gcStats", getGCStats().toJson());
         return root;
     }
-
 }

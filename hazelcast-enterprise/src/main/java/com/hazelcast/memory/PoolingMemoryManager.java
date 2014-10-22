@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;
@@ -7,10 +8,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
  * Pooling MemoryManager
@@ -43,7 +44,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
-        MemoryStatsSupport.checkFreeMemory(totalSize);
+        EnterpriseMemoryStatsSupport.checkFreeMemory(totalSize);
 
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
@@ -176,7 +177,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
     }
 
-    public MemoryStats getMemoryStats() {
+    public LocalMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

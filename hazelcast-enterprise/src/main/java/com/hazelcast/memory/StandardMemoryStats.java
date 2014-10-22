@@ -1,12 +1,21 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.com.eclipsesource.json.JsonObject;
+import com.hazelcast.monitor.LocalGCStats;
+import com.hazelcast.monitor.LocalMemoryStats;
+import com.hazelcast.monitor.impl.LocalGCStatsImpl;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+
+import java.io.IOException;
+
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.getHeapMemoryUsage;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
-class StandardMemoryStats implements MemoryStats {
+class StandardMemoryStats implements LocalMemoryStats {
 
-    private final StandardGCStats gcStats = new StandardGCStats();
+    private final LocalGCStatsImpl gcStats = new LocalGCStatsImpl();
 
     public final long getTotalPhysical() {
         return totalPhysicalMemory();
@@ -38,28 +47,28 @@ class StandardMemoryStats implements MemoryStats {
     }
 
     @Override
-    public long getMaxOffHeap() {
+    public long getMaxNativeMemory() {
         return 0;
     }
 
     @Override
-    public long getCommittedOffHeap() {
+    public long getCommittedNativeMemory() {
         return 0;
     }
 
     @Override
-    public long getUsedOffHeap() {
+    public long getUsedNativeMemory() {
         return 0;
     }
 
     @Override
-    public long getFreeOffHeap() {
+    public long getFreeNativeMemory() {
         return 0L;
     }
 
     @Override
-    public final GCStats getGCStats() {
-        gcStats.refresh();
+    public final LocalGCStats getGCStats() {
+        GCStatsSupport.fill(gcStats);
         return gcStats;
     }
 
@@ -80,17 +89,48 @@ class StandardMemoryStats implements MemoryStats {
     }
 
     @Override
-    public SerializableMemoryStats asSerializable() {
-        SerializableMemoryStats stats = new SerializableMemoryStats();
-        stats.setTotalPhysical(getTotalPhysical());
-        stats.setFreePhysical(getFreePhysical());
-        stats.setMaxOffHeap(getMaxOffHeap());
-        stats.setCommittedOffHeap(getCommittedOffHeap());
-        stats.setUsedOffHeap(getUsedOffHeap());
-        stats.setMaxHeap(getMaxHeap());
-        stats.setCommittedHeap(getCommittedHeap());
-        stats.setUsedHeap(getUsedHeap());
-        stats.setGcStats(gcStats.asSerializable());
-        return stats;
+    public long getCreationTime() {
+        return 0;
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeLong(getTotalPhysical());
+        out.writeLong(getFreePhysical());
+        out.writeLong(getMaxNativeMemory());
+        out.writeLong(getCommittedNativeMemory());
+        out.writeLong(getUsedNativeMemory());
+        out.writeLong(getMaxHeap());
+        out.writeLong(getCommittedHeap());
+        out.writeLong(getUsedHeap());
+        getGCStats().writeData(out);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+
+    }
+
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject root = new JsonObject();
+        root.add("creationTime", getCreationTime());
+        root.add("totalPhysical", getTotalPhysical());
+        root.add("freePhysical", getFreePhysical());
+        root.add("maxNativeMemory", getMaxNativeMemory());
+        root.add("committedNativeMemory", getCommittedNativeMemory());
+        root.add("usedNativeMemory", getUsedNativeMemory());
+        root.add("freeNativeMemory", getFreeNativeMemory());
+        root.add("maxHeap", getMaxHeap());
+        root.add("committedHeap", getCommittedHeap());
+        root.add("usedHeap", getUsedHeap());
+        root.add("gcStats", getGCStats().toJson());
+        return root;
+    }
+
+    @Override
+    public void fromJson(JsonObject json) {
+
     }
 }

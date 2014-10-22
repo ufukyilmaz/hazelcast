@@ -1,11 +1,20 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.com.eclipsesource.json.JsonObject;
+import com.hazelcast.monitor.LocalMemoryStats;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.util.Clock;
+
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author mdogan 10/02/14
  */
-class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements MemoryStats {
+class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements LocalMemoryStats {
+
+    private final long creationTime;
 
     private final long maxMetadata;
 
@@ -16,13 +25,15 @@ class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements MemoryStats
     public PooledOffHeapMemoryStats(long maxOffHeap, long maxMetadata) {
         super(maxOffHeap);
         this.maxMetadata = maxMetadata;
+        creationTime = Clock.currentTimeMillis();
     }
 
     final long getMaxMetadata() {
         return maxMetadata;
     }
 
-    public long getUsedOffHeap() {
+    @Override
+    public long getUsedNativeMemory() {
         return usedOffHeap.get();
     }
 
@@ -45,12 +56,25 @@ class PooledOffHeapMemoryStats extends OffHeapMemoryStats implements MemoryStats
     }
 
     @Override
-    public SerializableMemoryStats asSerializable() {
-        SerializableMemoryStats stats = super.asSerializable();
-        stats.setMaxOffHeap(getMaxOffHeap() + maxMetadata);
-        stats.setCommittedOffHeap(getCommittedOffHeap() + maxMetadata);
-        stats.setUsedOffHeap(getUsedOffHeap() + maxMetadata);
-        return stats;
+    public long getCreationTime() {
+        return creationTime;
+    }
+
+    @Override
+    public JsonObject toJson() {
+        JsonObject root = new JsonObject();
+        root.add("creationTime", getCreationTime());
+        root.add("totalPhysical", getTotalPhysical());
+        root.add("freePhysical", getFreePhysical());
+        root.add("maxNativeMemory", getMaxNativeMemory() + maxMetadata);
+        root.add("committedNativeMemory", getCommittedNativeMemory() + maxMetadata);
+        root.add("usedNativeMemory", getUsedNativeMemory() + maxMetadata);
+        root.add("freeNativeMemory", getFreeNativeMemory());
+        root.add("maxHeap", getMaxHeap());
+        root.add("committedHeap", getCommittedHeap());
+        root.add("usedHeap", getUsedHeap());
+        root.add("gcStats", getGCStats().toJson());
+        return root;
     }
 
 }

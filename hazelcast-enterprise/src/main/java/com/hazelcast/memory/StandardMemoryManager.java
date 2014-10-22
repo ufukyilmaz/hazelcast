@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.monitor.LocalMemoryStats;
+
 /**
  * @author mdogan 03/12/13
  */
@@ -10,7 +12,7 @@ public final class StandardMemoryManager implements MemoryManager {
 
     public StandardMemoryManager(MemorySize cap) {
         long size = cap.bytes();
-        MemoryStatsSupport.checkFreeMemory(size);
+        EnterpriseMemoryStatsSupport.checkFreeMemory(size);
         malloc = new UnsafeMalloc();
         memoryStats = new OffHeapMemoryStats(size);
     }
@@ -21,7 +23,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
+    public LocalMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

@@ -1,6 +1,7 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
 
@@ -307,7 +308,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     public abstract int getHeaderLength();
 
     @Override
-    public final MemoryStats getMemoryStats() {
+    public final LocalMemoryStats getMemoryStats() {
         return memoryStats;
     }
 
@@ -315,7 +316,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (size <= 0 || size > pageSize) {
             return 0;
         }
-        long free = memoryStats.getFreeOffHeap();
+        long free = memoryStats.getFreeNativeMemory();
         if (free == 0) {
             return 0;
         }

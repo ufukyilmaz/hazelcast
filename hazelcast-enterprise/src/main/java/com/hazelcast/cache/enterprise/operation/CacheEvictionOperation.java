@@ -1,7 +1,7 @@
 package com.hazelcast.cache.enterprise.operation;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
@@ -26,7 +26,7 @@ public final class CacheEvictionOperation extends AbstractOperation implements P
 
     public void run() throws Exception {
         EnterpriseCacheService cacheService = getService();
-        EnterpriseHiDensityNativeMemoryCacheRecordStore cache = (EnterpriseHiDensityNativeMemoryCacheRecordStore) cacheService.getCacheRecordStore(name, getPartitionId());
+        HiDensityNativeMemoryCacheRecordStore cache = (HiDensityNativeMemoryCacheRecordStore) cacheService.getCacheRecordStore(name, getPartitionId());
         if (cache != null) {
             cache.evictExpiredRecords(percentage);
         }

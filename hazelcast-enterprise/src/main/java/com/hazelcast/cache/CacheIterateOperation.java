@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecord;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -34,19 +34,19 @@ public class CacheIterateOperation extends PartitionWideCacheOperation {
     @Override
     public void run() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseHiDensityNativeMemoryCacheRecordStore cache =
-                (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+        HiDensityNativeMemoryCacheRecordStore cache =
+                (HiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
         if (cache != null) {
             EnterpriseSerializationService ss = service.getSerializationService();
-            BinaryOffHeapHashMap<EnterpriseHiDensityNativeMemoryCacheRecord>.EntryIter iter = cache.iterator(slot);
+            BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>.EntryIter iter = cache.iterator(slot);
             Data[] keys = new Data[batch];
             Data[] values = new Data[batch];
             int count = 0;
             while (iter.hasNext()) {
-                Map.Entry<Data, EnterpriseHiDensityNativeMemoryCacheRecord> entry = iter.next();
+                Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
                 Data key = entry.getKey();
                 keys[count] = ss.convertData(key, DataType.HEAP);
-                EnterpriseHiDensityNativeMemoryCacheRecord record = entry.getValue();
+                HiDensityNativeMemoryCacheRecord record = entry.getValue();
                 OffHeapData value = cache.getCacheRecordAccessor().readData(record.getValueAddress());
                 values[count] = ss.convertData(value, DataType.HEAP);
                 if (++count == batch) {

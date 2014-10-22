@@ -1,6 +1,6 @@
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheRecord;
+import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecord;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.OffHeapData;
@@ -8,9 +8,9 @@ import com.hazelcast.nio.serialization.OffHeapData;
 /**
  * @author sozal 14/10/14
  */
-public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapData>
+public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
         extends MemoryBlock
-        implements EnterpriseHiDensityCacheRecord<V> {
+        implements HiDensityCacheRecord<V> {
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = 8;
@@ -20,14 +20,14 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
     public static final int VALUE_OFFSET = 16;
     public static final int SIZE = VALUE_OFFSET + 8;
 
-    private EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor;
+    private HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor;
 
-    public EnterpriseHiDensityNativeMemoryCacheRecord(EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor) {
+    public HiDensityNativeMemoryCacheRecord(HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor) {
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
-    public EnterpriseHiDensityNativeMemoryCacheRecord(EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor,
-                                                      long address) {
+    public HiDensityNativeMemoryCacheRecord(HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor cacheRecordAccessor,
+                                            long address) {
         super(address, SIZE);
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
@@ -77,7 +77,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
-    public EnterpriseHiDensityNativeMemoryCacheRecord reset(long address) {
+    public HiDensityNativeMemoryCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -87,7 +87,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
         writeLong(CREATION_TIME_OFFSET, 0L);
         setAccessTimeDiff(0);
         setTtlMillis(0);
-        setValueAddress(EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+        setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
     }
 
     public static long getCreationTime(long address) {
@@ -108,10 +108,10 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
 
     @Override
     public V getValue() {
-        if (address == EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return cacheRecordAccessor.readValue(this);
+            return cacheRecordAccessor.readValue(this, true);
         }
     }
 
@@ -120,7 +120,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+            setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
         }
     }
 
@@ -149,7 +149,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecord<V extends OffHeapD
 
     @Override
     public String toString() {
-        if (address() >= EnterpriseHiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() >= HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return "EnterpriseNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

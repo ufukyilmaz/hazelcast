@@ -1,6 +1,6 @@
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheEntryProcessorEntry;
+import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.nio.serialization.Data;
 
@@ -10,9 +10,8 @@ import javax.cache.expiry.ExpiryPolicy;
 /**
  * @author sozal 14/10/14
  */
-// TODO: Implement as off-heap
-public class EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
-        implements EnterpriseHiDensityCacheEntryProcessorEntry<K, V> {
+public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
+        implements HiDensityCacheEntryProcessorEntry<K, V> {
 
     private K key;
     private V value;
@@ -20,18 +19,18 @@ public class EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
     private State state = State.NONE;
 
     private final Data keyData;
-    private EnterpriseHiDensityNativeMemoryCacheRecord record;
-    private EnterpriseHiDensityNativeMemoryCacheRecord recordLoaded;
+    private HiDensityNativeMemoryCacheRecord record;
+    private HiDensityNativeMemoryCacheRecord recordLoaded;
 
-    private final EnterpriseHiDensityNativeMemoryCacheRecordStore cacheRecordStore;
+    private final HiDensityNativeMemoryCacheRecordStore cacheRecordStore;
     private final long now;
     private final long start;
     private final ExpiryPolicy expiryPolicy;
 
-    public EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry(Data keyData,
-                                                                   EnterpriseHiDensityNativeMemoryCacheRecord record,
-                                                                   EnterpriseHiDensityNativeMemoryCacheRecordStore cacheRecordStore,
-                                                                   long now) {
+    public HiDensityNativeMemoryCacheEntryProcessorEntry(Data keyData,
+                                                         HiDensityNativeMemoryCacheRecord record,
+                                                         HiDensityNativeMemoryCacheRecordStore cacheRecordStore,
+                                                         long now) {
         this.keyData = keyData;
         this.record = record;
         this.cacheRecordStore = cacheRecordStore;
@@ -71,7 +70,7 @@ public class EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
     @Override
     public K getKey() {
         if (key == null) {
-            key = (K) cacheRecordStore.getCacheService().toObject(keyData);
+            key = (K) cacheRecordStore.getDataValue(keyData);
         }
         return key;
     }
@@ -99,8 +98,8 @@ public class EnterpriseHiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
         return null;
     }
 
-    private V getRecordValue(EnterpriseHiDensityNativeMemoryCacheRecord theRecord) {
-        return (V) cacheRecordStore.getCacheService().toObject(theRecord.getValue());
+    private V getRecordValue(HiDensityNativeMemoryCacheRecord record) {
+        return (V) cacheRecordStore.getRecordValue(record);
     }
 
     public void applyChanges() {

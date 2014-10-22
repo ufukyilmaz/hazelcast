@@ -1,8 +1,8 @@
 package com.hazelcast.cache.enterprise.operation;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecord;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecord;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public final class EnterpriseCacheReplicationOperation extends CacheReplicationOperation implements NonThreadSafe {
 
-    protected Map<String, Map<Data, EnterpriseHiDensityNativeMemoryCacheRecord>> offHeapSource;
+    protected Map<String, Map<Data, HiDensityNativeMemoryCacheRecord>> offHeapSource;
     protected Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
 
     transient OffHeapOutOfMemoryError oome;
@@ -43,7 +43,7 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
 
     public EnterpriseCacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
         data = new HashMap<String, Map<Data, CacheRecord>>();
-        offHeapSource = new HashMap<String, Map<Data, EnterpriseHiDensityNativeMemoryCacheRecord>>();
+        offHeapSource = new HashMap<String, Map<Data, HiDensityNativeMemoryCacheRecord>>();
 
         Iterator<ICacheRecordStore> iter = segment.cacheIterator();
         while (iter.hasNext()) {
@@ -52,7 +52,7 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
             if (cacheConfig.getAsyncBackupCount() + cacheConfig.getBackupCount() >= replicaIndex) {
                 Map<Data, CacheRecord> records = cacheRecordStore.getReadOnlyRecords();
                 String name = cacheRecordStore.getName();
-                if (cacheRecordStore instanceof EnterpriseHiDensityNativeMemoryCacheRecordStore) {
+                if (cacheRecordStore instanceof HiDensityNativeMemoryCacheRecordStore) {
                     offHeapSource.put(name, (Map) records);
                 } else {
                     data.put(name, records);
@@ -97,8 +97,8 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
         EnterpriseCacheService service = getService();
         try {
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
-                EnterpriseHiDensityNativeMemoryCacheRecordStore cache
-                        = (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
+                HiDensityNativeMemoryCacheRecordStore cache
+                        = (HiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
                 Map<Data, CacheRecordHolder> map = entry.getValue();
 
                 Iterator<Map.Entry<Data, CacheRecordHolder>> iter = map.entrySet().iterator();
@@ -146,13 +146,13 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
         out.writeInt(count);
         OffHeapData data = new OffHeapData();
         long now = Clock.currentTimeMillis();
-        for (Map.Entry<String, Map<Data, EnterpriseHiDensityNativeMemoryCacheRecord>> entry : offHeapSource.entrySet()) {
-            Map<Data, EnterpriseHiDensityNativeMemoryCacheRecord> value = entry.getValue();
+        for (Map.Entry<String, Map<Data, HiDensityNativeMemoryCacheRecord>> entry : offHeapSource.entrySet()) {
+            Map<Data, HiDensityNativeMemoryCacheRecord> value = entry.getValue();
             int subCount = value.size();
             out.writeInt(subCount);
             out.writeUTF(entry.getKey());
-            for (Map.Entry<Data, EnterpriseHiDensityNativeMemoryCacheRecord> e : value.entrySet()) {
-                EnterpriseHiDensityNativeMemoryCacheRecord record = e.getValue();
+            for (Map.Entry<Data, HiDensityNativeMemoryCacheRecord> e : value.entrySet()) {
+                HiDensityNativeMemoryCacheRecord record = e.getValue();
 
                 int remainingTtl = getRemainingTtl(record, now);
                 out.writeInt(remainingTtl);
@@ -168,7 +168,7 @@ public final class EnterpriseCacheReplicationOperation extends CacheReplicationO
         super.writeInternal(out);
     }
 
-    private int getRemainingTtl(EnterpriseHiDensityNativeMemoryCacheRecord record, long now) {
+    private int getRemainingTtl(HiDensityNativeMemoryCacheRecord record, long now) {
         long creationTime = record.getCreationTime();
         int ttlMillis = record.getTtlMillis();
         int remainingTtl;

@@ -5,6 +5,6 @@ import com.hazelcast.cache.impl.ICacheRecordStore;
 /**
  * @author sozal 18/10/14
  */
-public interface EnterpriseHiDensityCacheRecordStore extends ICacheRecordStore {
+public interface HiDensityCacheRecordStore extends ICacheRecordStore {
 
 }

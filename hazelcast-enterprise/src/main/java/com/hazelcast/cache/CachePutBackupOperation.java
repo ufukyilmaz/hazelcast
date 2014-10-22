@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -32,8 +32,8 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        EnterpriseHiDensityNativeMemoryCacheRecordStore cache =
-                (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+        HiDensityNativeMemoryCacheRecordStore cache =
+                (HiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         cache.put(key, value, expiryPolicy, null);
         response = Boolean.TRUE;
     }

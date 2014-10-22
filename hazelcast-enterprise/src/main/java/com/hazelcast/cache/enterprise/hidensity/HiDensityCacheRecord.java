@@ -5,7 +5,7 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 /**
  * @author sozal 18/10/14
  */
-public interface EnterpriseHiDensityCacheRecord<V>
+public interface HiDensityCacheRecord<V>
         extends CacheRecord<V> {
 
 }

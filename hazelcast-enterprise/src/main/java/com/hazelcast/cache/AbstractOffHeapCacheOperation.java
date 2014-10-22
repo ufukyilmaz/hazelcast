@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -34,7 +34,7 @@ abstract class AbstractOffHeapCacheOperation
 
     Object response;
 
-    transient EnterpriseHiDensityNativeMemoryCacheRecordStore cache;
+    transient HiDensityNativeMemoryCacheRecordStore cache;
 
     transient OffHeapOutOfMemoryError oome;
 
@@ -57,9 +57,9 @@ abstract class AbstractOffHeapCacheOperation
         try {
             EnterpriseCacheService service = getService();
             if (this instanceof BackupAwareOffHeapCacheOperation) {
-                cache = (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+                cache = (HiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
             } else {
-                cache = (EnterpriseHiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+                cache = (HiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
             }
         } catch (Throwable e) {
             dispose();

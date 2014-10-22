@@ -4,8 +4,7 @@ import com.hazelcast.cache.CacheOperationProvider;
 import com.hazelcast.cache.OffHeapOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.EnterpriseHiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
+import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.EnterpriseCacheReplicationOperation;
 import com.hazelcast.cache.impl.*;
@@ -40,12 +39,11 @@ public class EnterpriseCacheService extends CacheService {
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
         if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
             try {
-                return new EnterpriseHiDensityNativeMemoryCacheRecordStore(partitionId,
+                return new HiDensityNativeMemoryCacheRecordStore(partitionId,
                         name,
-                        EnterpriseCacheService.this,
-                        getSerializationService(),
+                        this,
                         nodeEngine,
-                        EnterpriseHiDensityNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+                        HiDensityNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
             } catch (OffHeapOutOfMemoryError e) {
                 throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
                         "not enough contiguous memory available! -> " + e.getMessage(), e);

@@ -3,10 +3,9 @@ package com.hazelcast.cache;
 import com.hazelcast.cache.impl.HazelcastCachingProvider;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
@@ -18,29 +17,32 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 
-
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class CacheStatsTest {
+public class CacheStatsTest extends AbstractCacheTest {
 
-    @After
-    public void shutdown() {
-        Hazelcast.shutdownAll();
+    private HazelcastInstance instance;
+
+    @Override
+    protected void onSetup() {
+        Config config = createConfig();
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
+        instance = factory.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
+    }
+
+    @Override
+    protected void onTearDown() {
+    }
+
+    @Override
+    protected HazelcastInstance getHazelcastInstance() {
+        return instance;
     }
 
     @Test
     public void testStats() throws InterruptedException, ExecutionException {
-        final String name = "test";
-        Config config = new Config();
-        config.setProperties(AbstractCacheTest.getDefaultProperties());
-
-        config.setOffHeapMemoryConfig(AbstractCacheTest.getDefaultMemoryConfig());
-        SerializationConfig serializationConfig = config.getSerializationConfig();
-        serializationConfig.setAllowUnsafe(true);
-        final HazelcastInstance instance = Hazelcast.newHazelcastInstance(config);
-
-        CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
-        ICache cache = (ICache) cacheManager.getCache(name);
+        ICache cache = createCache();
         int puts = 1000;
         for (int i = 0; i < puts; i++) {
             cache.put(i, i);

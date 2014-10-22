@@ -1,26 +1,30 @@
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.hidensity.EnterpriseHiDensityCacheRecordMap;
+import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.OffHeapData;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author sozal 11/02/14
  */
-public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
-        extends BinaryOffHeapHashMap<EnterpriseHiDensityNativeMemoryCacheRecord>
-        implements EnterpriseHiDensityCacheRecordMap<Data, EnterpriseHiDensityNativeMemoryCacheRecord> {
+public final class HiDensityNativeMemoryCacheRecordMap
+        extends BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>
+        implements HiDensityCacheRecordMap<Data, HiDensityNativeMemoryCacheRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
@@ -36,10 +40,10 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
 
     private int randomEvictionLastIndex;
 
-    public EnterpriseHiDensityNativeMemoryCacheRecordMap(int initialCapacity,
-                                                         EnterpriseSerializationService serializationService,
-                                                         MemoryBlockAccessor<EnterpriseHiDensityNativeMemoryCacheRecord> memoryBlockAccessor,
-                                                         Callback<Data> evictionCallback) {
+    public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
+                                               EnterpriseSerializationService serializationService,
+                                               MemoryBlockAccessor<HiDensityNativeMemoryCacheRecord> memoryBlockAccessor,
+                                               Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, memoryBlockAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.evictionCallback = evictionCallback;
@@ -54,7 +58,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
         int len = (int) (capacity * (long) percentage / 100);
         int k = 0;
         if (len > 0 && size() > 0) {
-            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
             int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
 
@@ -62,9 +66,9 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
             for (int ix = start; ix < end; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int ttlMillis = EnterpriseHiDensityNativeMemoryCacheRecord.getTtlMillis(value);
+                    int ttlMillis = HiDensityNativeMemoryCacheRecord.getTtlMillis(value);
                     if (ttlMillis > 0) {
-                        long creationTime = EnterpriseHiDensityNativeMemoryCacheRecord.getCreationTime(value);
+                        long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
                             OffHeapData binary = service.readData(key);
@@ -141,7 +145,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
             int index = (int) (size * (long) percentage / 100);
             long time = sortArray[index];
 
-            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -161,8 +165,8 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
     }
 
     private static long getAccessTime(long recordAddress) {
-        long creationTime = EnterpriseHiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
+        long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = HiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
     }
 
@@ -183,7 +187,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    hit = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessHit(value);
+                    hit = HiDensityNativeMemoryCacheRecord.getAccessHit(value);
                     sortArray[k] = hit;
                     if (++k >= size) {
                         break;
@@ -194,12 +198,12 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
             int index = (int) (size * (long) percentage / 100);
             hit = sortArray[index];
 
-            EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
-                    int h = EnterpriseHiDensityNativeMemoryCacheRecord.getAccessHit(value);
+                    int h = HiDensityNativeMemoryCacheRecord.getAccessHit(value);
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
@@ -239,7 +243,7 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
 
         int ix = start;
         int k = 0;
-        EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
+        HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
@@ -257,8 +261,8 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
         return k;
     }
 
-    private EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
-        return (EnterpriseHiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
+    private HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
+        return (HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
     }
 
     public EntryIter iterator(int slot) {
@@ -266,9 +270,15 @@ public final class EnterpriseHiDensityNativeMemoryCacheRecordMap
     }
 
     public CacheKeyIteratorResult fetchNext(int nextTableIndex, int size) {
-        throw new UnsupportedOperationException(
-                "\"CacheKeyIteratorResult fetchNext(int nextTableIndex, int size)\" "
-                    + "is not supported right now !");
+        BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>.EntryIter iter =
+                iterator(nextTableIndex);
+        List<Data> keys = new ArrayList<Data>();
+        for (int i = 0; i < size && iter.hasNext(); i++) {
+            Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
+            Data key = entry.getKey();
+            keys.add(serializationService.convertData(key, DataType.HEAP));
+        }
+        return new CacheKeyIteratorResult(keys, iter.getNextSlot());
     }
 
     private static class SortArea {

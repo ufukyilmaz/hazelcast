@@ -24,7 +24,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
     static final int MAX_PAGE_SIZE = 1 << 30;
 
     private final LibMalloc malloc = new UnsafeMalloc();
-    private final PooledOffHeapMemoryStats memoryStats;
+    private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
     private final Map<Thread, MemoryManager> threadLocalManagers
             = new ConcurrentHashMap<Thread, MemoryManager>(32, .75f, 1);
@@ -44,13 +44,13 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
-        EnterpriseMemoryStatsSupport.checkFreeMemory(totalSize);
+        NativeMemoryStats.checkFreeMemory(totalSize);
 
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
         long maxOffHeap = QuickMath.normalize(totalSize - maxMetadata, pageSize);
 
-        memoryStats = new PooledOffHeapMemoryStats(maxOffHeap, maxMetadata);
+        memoryStats = new PooledNativeMemoryStats(maxOffHeap, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
 
         gc.registerGarbageCollectable(this);

@@ -3,23 +3,18 @@ package com.hazelcast.memory;
 import com.hazelcast.com.eclipsesource.json.JsonObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static com.hazelcast.memory.EnterpriseMemoryStatsSupport.checkFreeMemory;
 
 /**
  * @author mdogan 10/02/14
  */
-class OffHeapMemoryStats extends StandardMemoryStats implements LocalMemoryStats {
+class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 
     static {
-        ASSERTS_ENABLED = OffHeapMemoryStats.class.desiredAssertionStatus();
+        ASSERTS_ENABLED = NativeMemoryStats.class.desiredAssertionStatus();
     }
 
     private final long maxOffHeap;
@@ -28,7 +23,7 @@ class OffHeapMemoryStats extends StandardMemoryStats implements LocalMemoryStats
 
     private final AtomicLong internalFragmentation = new AtomicLong();
 
-    OffHeapMemoryStats(long maxOffHeap) {
+    NativeMemoryStats(long maxOffHeap) {
         this.maxOffHeap = maxOffHeap;
     }
 
@@ -64,9 +59,9 @@ class OffHeapMemoryStats extends StandardMemoryStats implements LocalMemoryStats
             if (maxOffHeap < (currentAllocated + size)) {
                 throw new OffHeapOutOfMemoryError("Not enough contiguous memory available! " +
                         " Cannot allocate " + MemorySize.toPrettyString(size) + "!" +
-                        " Max OffHeap: " + MemorySize.toPrettyString(maxOffHeap) +
-                        ", Committed OffHeap: " + MemorySize.toPrettyString(currentAllocated) +
-                        ", Used OffHeap: " + MemorySize.toPrettyString(getUsedNativeMemory())
+                        " Max Native Memory: " + MemorySize.toPrettyString(maxOffHeap) +
+                        ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated) +
+                        ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
                 );
             }
         }
@@ -93,10 +88,10 @@ class OffHeapMemoryStats extends StandardMemoryStats implements LocalMemoryStats
         sb.append(", Committed Heap: ").append(MemorySize.toPrettyString(getCommittedHeap()));
         sb.append(", Used Heap: ").append(MemorySize.toPrettyString(getUsedHeap()));
         sb.append(", Free Heap: ").append(MemorySize.toPrettyString(getFreeHeap()));
-        sb.append(", Max OffHeap: ").append(MemorySize.toPrettyString(getMaxNativeMemory()));
-        sb.append(", Committed OffHeap: ").append(MemorySize.toPrettyString(getCommittedNativeMemory()));
-        sb.append(", Used OffHeap: ").append(MemorySize.toPrettyString(getUsedNativeMemory()));
-        sb.append(", Free OffHeap: ").append(MemorySize.toPrettyString(getFreeNativeMemory()));
+        sb.append(", Max Native Memory: ").append(MemorySize.toPrettyString(getMaxNativeMemory()));
+        sb.append(", Committed Native Memory: ").append(MemorySize.toPrettyString(getCommittedNativeMemory()));
+        sb.append(", Used Native Memory: ").append(MemorySize.toPrettyString(getUsedNativeMemory()));
+        sb.append(", Free Native Memory: ").append(MemorySize.toPrettyString(getFreeNativeMemory()));
         appendAdditionalToString(sb);
         if (ASSERTS_ENABLED) {
             sb.append(", Internal Fragmentation: ").append(MemorySize.toPrettyString(internalFragmentation.get()));
@@ -112,19 +107,6 @@ class OffHeapMemoryStats extends StandardMemoryStats implements LocalMemoryStats
     @Override
     public long getCreationTime() {
         return 0;
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(getTotalPhysical());
-        out.writeLong(getFreePhysical());
-        out.writeLong(getMaxNativeMemory());
-        out.writeLong(getCommittedNativeMemory());
-        out.writeLong(getUsedNativeMemory());
-        out.writeLong(getMaxHeap());
-        out.writeLong(getCommittedHeap());
-        out.writeLong(getUsedHeap());
-        getGCStats().writeData(out);
     }
 
     @Override

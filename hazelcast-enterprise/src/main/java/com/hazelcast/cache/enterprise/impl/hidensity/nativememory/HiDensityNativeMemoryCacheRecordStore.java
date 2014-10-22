@@ -1,7 +1,6 @@
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
 import com.hazelcast.cache.enterprise.*;
-import com.hazelcast.cache.enterprise.impl.hidensity.AbstractHiDensityCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
 import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
@@ -19,7 +18,6 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
-import com.hazelcast.util.EmptyStatement;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -36,7 +34,7 @@ import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
  * @author sozal 14/10/14
  */
 public class HiDensityNativeMemoryCacheRecordStore
-        extends AbstractHiDensityCacheRecordStore<
+        extends AbstractCacheRecordStore<
                     HiDensityNativeMemoryCacheRecord,
                     HiDensityNativeMemoryCacheRecordMap> {
 
@@ -226,49 +224,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         evictExpiredRecords(evictionPercentage);
     }
 
-    boolean updateRecordWithExpiry(Data key,
-                                   Object value,
-                                   HiDensityNativeMemoryCacheRecord record,
-                                   ExpiryPolicy expiryPolicy,
-                                   long now,
-                                   boolean disableWriteThrough) {
-        expiryPolicy = getExpiryPolicy(expiryPolicy);
-
-        long expiryTime = -1L;
-        try {
-            Duration expiryDuration = expiryPolicy.getExpiryForUpdate();
-            if (expiryDuration != null) {
-                expiryTime = expiryDuration.getAdjustedTime(now);
-                record.setExpirationTime(expiryTime);
-            }
-        } catch (Exception e) {
-            EmptyStatement.ignore(e);
-            //leave the expiry time untouched when we can't determine a duration
-        }
-        if (!disableWriteThrough) {
-            writeThroughCache(key, value);
-        }
-        updateRecord(key, record, value);
-        return !processExpiredEntry(key, record, expiryTime, now);
-    }
-
-    private HiDensityNativeMemoryCacheRecord updateRecord(Data key,
-                                                          HiDensityNativeMemoryCacheRecord record,
-                                                          Object value) {
-        final OffHeapData dataOldValue = record.getValue();
-        final OffHeapData dataValue = toOffHeapData(value);
-        record.setValue(dataValue);
-        if (isEventsEnabled) {
-            publishEvent(cacheConfig.getName(),
-                         CacheEventType.UPDATED,
-                         key,
-                         dataOldValue,
-                         dataValue,
-                         true);
-        }
-        return record;
-    }
-
     private void deleteRecord(Data key) {
         final HiDensityNativeMemoryCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
@@ -377,25 +332,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             return result;
         }
         return null;
-    }
-
-    boolean processExpiredEntry(Data key,
-                                HiDensityNativeMemoryCacheRecord record,
-                                long expiryTime,
-                                long now) {
-        final boolean isExpired = isExpiredAt(expiryTime, now);
-        if (!isExpired) {
-            return false;
-        }
-        if (isStatisticsEnabled()) {
-            statistics.increaseCacheExpiries(1);
-        }
-        records.remove(key);
-        if (isEventsEnabled) {
-            final OffHeapData dataValue = getRecordData(record);
-            publishEvent(cacheConfig.getName(), CacheEventType.EXPIRED, key, null, dataValue, false);
-        }
-        return true;
     }
 
     void onAccess(long now,
@@ -585,10 +521,12 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
      */
 
+    /*
     @Override
     public boolean contains(Data key) {
         return records.containsKey(key);
     }
+    */
 
     public void put(Data key, Object value, String caller) {
         put(key, value, defaultExpiryPolicy, caller);

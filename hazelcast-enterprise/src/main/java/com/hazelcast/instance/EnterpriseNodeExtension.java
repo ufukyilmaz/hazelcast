@@ -255,7 +255,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public WanReplicationService geWanReplicationService() {
+    public WanReplicationService getWanReplicationService() {
         return new EnterpriseWanReplicationService(node);
     }
 

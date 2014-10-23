@@ -6,7 +6,6 @@ import com.hazelcast.cache.impl.*;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
-import com.hazelcast.map.impl.MapEntrySet;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemoryStats;
@@ -19,16 +18,11 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
 
-import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 
 /**
  * @author sozal 14/10/14
@@ -108,32 +102,43 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return
             new HiDensityNativeMemoryCacheRecordMap(initialCapacity,
-                                                              serializationService,
-                                                              cacheRecordAccessor,
-                                                              createEvictionCallback());
+                                                    serializationService,
+                                                    cacheRecordAccessor,
+                                                    createEvictionCallback());
     }
 
     @Override
     protected HiDensityNativeMemoryCacheRecord createRecord(Object value,
                                                             long creationTime,
                                                             long expiryTime) {
-        long address = memoryManager
-                            .allocate(HiDensityNativeMemoryCacheRecord.SIZE);
-        HiDensityNativeMemoryCacheRecord record = cacheRecordAccessor.newRecord();
-        record.reset(address);
-        if (creationTime > 0) {
-            record.setCreationTime(creationTime);
+        OffHeapData offHeapValue = null;
+        HiDensityNativeMemoryCacheRecord record = null;
+        try {
+            long address = memoryManager.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
+            record = cacheRecordAccessor.newRecord();
+            record.reset(address);
+            if (creationTime > 0) {
+                record.setCreationTime(creationTime);
+            }
+            if (expiryTime > 0) {
+                record.setExpirationTime(expiryTime);
+            }
+            if (value != null) {
+                offHeapValue = toOffHeapData(value);
+                record.setValueAddress(offHeapValue.address());
+            } else {
+                record.setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+            }
+            return record;
+        } catch (OffHeapOutOfMemoryError e) {
+            if (record != null && record.address() >= NULL_PTR) {
+                cacheRecordAccessor.dispose(record);
+            }
+            if (offHeapValue != null && offHeapValue.address() >= NULL_PTR) {
+                cacheRecordAccessor.disposeData(offHeapValue);
+            }
+            throw e;
         }
-        if (expiryTime > 0) {
-            record.setExpirationTime(expiryTime);
-        }
-        if (value != null) {
-            OffHeapData offHeapValue = toOffHeapData(value);
-            record.setValueAddress(offHeapValue.address());
-        } else {
-            record.setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
-        }
-        return record;
     }
 
     @Override
@@ -180,6 +185,34 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    private OffHeapData getRecordData(HiDensityNativeMemoryCacheRecord record) {
+        return cacheRecordAccessor.readData(record.getValueAddress());
+    }
+
+    private OffHeapData toOffHeapData(Object data) {
+        OffHeapData offHeapData = null;
+        if (!(data instanceof Data)) {
+            offHeapData = serializationService.toData(data, DataType.OFFHEAP);
+        } else if (!(data instanceof OffHeapData)) {
+            offHeapData = serializationService.convertData((Data) data, DataType.OFFHEAP);
+        } else {
+            offHeapData = (OffHeapData) data;
+        }
+        return offHeapData;
+    }
+
+    Object getDataValue(Data data) {
+        if (data != null) {
+            return serializationService.toObject(data);// serializationService.convertData(data, DataType.HEAP);
+        } else {
+            return null;
+        }
+    }
+
+    Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
+        return getDataValue(getRecordData(record));
+    }
+
     public MemoryManager getMemoryManager() {
         return memoryManager;
     }
@@ -192,39 +225,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         return cacheRecordAccessor;
     }
 
-    OffHeapData getRecordData(HiDensityNativeMemoryCacheRecord record) {
-        return cacheRecordAccessor.readData(record.getValueAddress());
-    }
-
-    Object getDataValue(Data data) {
-        if (data != null) {
-            return serializationService.convertData(data, DataType.HEAP);
-        } else {
-            return null;
-        }
-    }
-
-    Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
-        return getDataValue(getRecordData(record));
-    }
-
-    OffHeapData toOffHeapData(Object data) {
-        OffHeapData offHeapData = null;
-        if (!(data instanceof Data)) {
-            offHeapData = serializationService.toData(data, DataType.OFFHEAP);
-        } else if (!(data instanceof OffHeapData)) {
-            offHeapData = serializationService.convertData((Data) data, DataType.OFFHEAP);
-        } else {
-            offHeapData = (OffHeapData) data;
-        }
-        return offHeapData;
-    }
-
-    public void evictExpiredRecords() {
-        evictExpiredRecords(evictionPercentage);
-    }
-
-    private void deleteRecord(Data key) {
+    protected void deleteRecord(Data key) {
         final HiDensityNativeMemoryCacheRecord record = records.remove(key);
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
@@ -244,6 +245,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         return record;
     }
 
+    /*
     HiDensityNativeMemoryCacheRecord readThroughRecord(Data key, long now) {
         Object value = readThroughCache(key);
         if (value == null) {
@@ -262,7 +264,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return createRecord(key, value, expiryTime);
     }
+    */
 
+    /*
     void deleteThroughCache(Data key) {
         if (isWriteThrough() && cacheWriter != null) {
             try {
@@ -277,7 +281,9 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
+    */
 
+    /*
     void deleteAllCacheEntry(Set<Data> keys) {
         if (isWriteThrough() && cacheWriter != null && keys != null && !keys.isEmpty()) {
             Map<Object, Data> keysToDelete = new HashMap<Object, Data>();
@@ -302,7 +308,9 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
+    */
 
+    /*
     Map<Data, Object> loadAllCacheEntry(Set<Data> keys) {
         if (cacheLoader != null) {
             Map<Object, Data> keysToLoad = new HashMap<Object, Data>();
@@ -333,6 +341,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return null;
     }
+    */
 
     void onAccess(long now,
                   HiDensityNativeMemoryCacheRecord record,
@@ -348,77 +357,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    boolean isEvictionRequired(MemoryStats memoryStats) {
+    private boolean isEvictionRequired(MemoryStats memoryStats) {
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
-    }
-
-    private Data putInternal(Data key,
-                             Object value,
-                             ExpiryPolicy expiryPolicy,
-                             boolean getValue,
-                             String caller) {
-        long now = Clock.currentTimeMillis();
-        evictIfRequired(now);
-
-        long creationTime;
-        HiDensityNativeMemoryCacheRecord record = null;
-        OffHeapData newValue = null;
-        Data oldValue = null;
-        boolean newPut = false;
-
-        try {
-            record = records.get(key);
-            if (record == null) {
-                record = createRecord(now);
-                creationTime = now;
-                records.set(key, record);
-                newPut = true;
-            } else {
-                if (record.getValueAddress() == NULL_PTR) {
-                    throw new IllegalStateException("Invalid record -> " + record);
-                }
-                creationTime = record.getCreationTime();
-                if (caller != null) {
-                    onEntryInvalidated(key, caller);
-                }
-            }
-            newValue = toOffHeapData(value);
-            if (getValue) {
-                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
-                // TODO: avoid free() until read is completed!
-                oldValue = serializationService.convertData(current, DataType.HEAP);
-                cacheRecordAccessor.disposeData(current);
-            } else {
-                cacheRecordAccessor.disposeValue(record);
-            }
-            record.setValueAddress(newValue.address());
-
-            onAccess(now, record, creationTime);
-            if (newPut) {
-                record.resetAccessHit();
-            }
-
-            long ttlMillis = expiryPolicyToTTL(expiryPolicy);
-            ttlMillis = ttlMillis <= 0 ? defaultTTL : ttlMillis;
-            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
-            if (!hasTtl && ttlMillis > 0) {
-                hasTtl = true;
-            }
-            record.setTtlMillis((int) ttlMillis);
-
-            cacheRecordAccessor.enqueueRecord(record);
-        } catch (OffHeapOutOfMemoryError e) {
-            if (newPut && record != null && record.address() != NULL_PTR) {
-                if (!records.delete(key)) {
-                    cacheRecordAccessor.dispose(record);
-                }
-            }
-            if (newValue != null && newValue.address() != NULL_PTR) {
-                cacheRecordAccessor.disposeData(newValue);
-            }
-            throw e;
-        }
-        return oldValue;
     }
 
     /*
@@ -528,18 +468,191 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
     */
 
+    /*
+    protected Object getAndPut(Data key,
+                               Object value,
+                               ExpiryPolicy expiryPolicy,
+                               String caller,
+                               boolean getValue,
+                               boolean disableWriteThrough) {
+        expiryPolicy = getExpiryPolicy(expiryPolicy);
+
+        final long now = Clock.currentTimeMillis();
+        final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
+
+        boolean isPutSucceed;
+        Object oldValue = null;
+        R record = records.get(key);
+        boolean isExpired = processExpiredEntry(key, record, now);
+        // check that new entry is not already expired, in which case it should
+        // not be added to the cache or listeners called or writers called.
+        if (record == null || isExpired) {
+            isPutSucceed = createRecordWithExpiry(key,
+                                                  value,
+                                                  expiryPolicy,
+                                                  now,
+                                                  disableWriteThrough);
+        } else {
+            oldValue = record.getValue();
+            isPutSucceed = updateRecordWithExpiry(key,
+                                                  value,
+                                                  record,
+                                                  expiryPolicy,
+                                                  now,
+                                                  disableWriteThrough);
+        }
+        updateGetAndPutStat(isPutSucceed, getValue, oldValue == null, start);
+        return oldValue;
+    }
+    */
+
+    private Data putInternal(Data key,
+                             Object value,
+                             ExpiryPolicy expiryPolicy,
+                             boolean getValue,
+                             String caller) {
+        long now = Clock.currentTimeMillis();
+        evictIfRequired(now);
+
+        long creationTime;
+        HiDensityNativeMemoryCacheRecord record = null;
+        OffHeapData newValue = null;
+        Data oldValue = null;
+        boolean newPut = false;
+
+        try {
+            record = records.get(key);
+            if (record == null) {
+                record = createRecord(now);
+                creationTime = now;
+                records.set(key, record);
+                newPut = true;
+            } else {
+                if (record.getValueAddress() == NULL_PTR) {
+                    throw new IllegalStateException("Invalid record -> " + record);
+                }
+                creationTime = record.getCreationTime();
+                if (caller != null) {
+                    onEntryInvalidated(key, caller);
+                }
+            }
+            newValue = toOffHeapData(value);
+            if (getValue) {
+                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
+                // TODO: avoid free() until read is completed!
+                oldValue = serializationService.convertData(current, DataType.HEAP);
+                cacheRecordAccessor.disposeData(current);
+            } else {
+                cacheRecordAccessor.disposeValue(record);
+            }
+            record.setValueAddress(newValue.address());
+
+            onAccess(now, record, creationTime);
+            if (newPut) {
+                record.resetAccessHit();
+            }
+
+            long ttlMillis = expiryPolicyToTTL(expiryPolicy);
+            ttlMillis = ttlMillis <= 0 ? defaultTTL : ttlMillis;
+            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
+            if (!hasTtl && ttlMillis > 0) {
+                hasTtl = true;
+            }
+            record.setTtlMillis((int) ttlMillis);
+
+            cacheRecordAccessor.enqueueRecord(record);
+        } catch (OffHeapOutOfMemoryError e) {
+            if (newPut && record != null && record.address() != NULL_PTR) {
+                if (!records.delete(key)) {
+                    cacheRecordAccessor.dispose(record);
+                }
+            }
+            if (newValue != null && newValue.address() != NULL_PTR) {
+                cacheRecordAccessor.disposeData(newValue);
+            }
+            throw e;
+        }
+        return oldValue;
+    }
+
     public void put(Data key, Object value, String caller) {
         put(key, value, defaultExpiryPolicy, caller);
     }
 
     @Override
     public void put(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
-        putInternal(key, value, expiryPolicy, false, caller);
+        putInternal(key, value, expiryPolicy, false, caller); //getAndPut(key, value, expiryPolicy, caller, false, false);
     }
 
     @Override
-    public Data getAndPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
-        return putInternal(key, value, expiryPolicy, true, caller);
+    public Object getAndPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller) {
+        return putInternal(key, value, expiryPolicy, true, caller); //getAndPut(key, value, expiryPolicy, caller, true, false);
+    }
+
+    protected void onBeforeGetAndPut(Data key,
+                                     Object value,
+                                     ExpiryPolicy expiryPolicy,
+                                     String caller,
+                                     boolean getValue,
+                                     boolean disableWriteThrough,
+                                     HiDensityNativeMemoryCacheRecord record,
+                                     Object oldValue,
+                                     boolean isExpired,
+                                     boolean willBeNewPut) {
+        /*
+        if (!willBeNewPut) {
+            if (record == null || record.getValueAddress() == NULL_PTR) {
+                throw new IllegalStateException("Invalid record -> " + record);
+            }
+        }
+        if (record != null && record.getValueAddress() != NULL_PTR) {
+            if (getValue) {
+                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
+                cacheRecordAccessor.disposeData(current);
+            } else {
+                cacheRecordAccessor.disposeValue(record);
+            }
+        }
+        */
+    }
+
+    protected void onAfterGetAndPut(Data key,
+                                    Object value,
+                                    ExpiryPolicy expiryPolicy,
+                                    String caller,
+                                    boolean getValue,
+                                    boolean disableWriteThrough,
+                                    HiDensityNativeMemoryCacheRecord record,
+                                    boolean isExpired,
+                                    boolean isNewPut,
+                                    boolean isSaveSucceed) {
+        /*
+        long ttlMillis = expiryPolicyToTTL(expiryPolicy);
+        ttlMillis = ttlMillis <= 0 ? defaultTTL : ttlMillis;
+        ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
+        if (!hasTtl && ttlMillis > 0) {
+            hasTtl = true;
+        }
+        cacheRecordAccessor.enqueueRecord(record);
+        */
+    }
+
+    protected void onGetAndPutError(Data key,
+                                    Object value,
+                                    ExpiryPolicy expiryPolicy,
+                                    String caller,
+                                    boolean getValue,
+                                    boolean disableWriteThrough,
+                                    HiDensityNativeMemoryCacheRecord record,
+                                    boolean wouldBeNewPut,
+                                    Throwable error) {
+        /*
+        if (wouldBeNewPut && record != null && record.address() != NULL_PTR) {
+            if (!records.delete(key)) {
+                cacheRecordAccessor.dispose(record);
+            }
+        }
+        */
     }
 
     public void own(Data key, Object value, long ttlMillis) {
@@ -661,8 +774,8 @@ public class HiDensityNativeMemoryCacheRecordStore
             long creationTime = record.getCreationTime();
             int ttl = record.getTtlMillis();
             if (ttl <= 0 || creationTime + ttl > now) {
-                Object existingValue = getRecordValue(record);
-                if (oldValue.equals(existingValue)) {
+                Object existingValue = toValue(record);
+                if (toValue(oldValue).equals(existingValue)) {
                     onEntryInvalidated(key, caller);
                     OffHeapData newOffHeapData = toOffHeapData(newValue);
                     cacheRecordAccessor.disposeValue(record);
@@ -698,8 +811,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (ttl <= 0 || creationTime + ttl > now) {
                 OffHeapData newValue = toOffHeapData(value);
                 OffHeapData oldBinary = cacheRecordAccessor.readData(record.getValueAddress());
-                oldValue = ((EnterpriseSerializationService)serializationService)
-                                .convertData(oldBinary, DataType.HEAP);
+                oldValue = serializationService.convertData(oldBinary, DataType.HEAP);
                 cacheRecordAccessor.disposeData(oldBinary);
                 record.setValueAddress(newValue.address());
 
@@ -745,13 +857,13 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (record != null) {
             onEntryInvalidated(key, caller);
             OffHeapData oldBinary = cacheRecordAccessor.readData(record.getValueAddress());
-            oldValue = ((EnterpriseSerializationService)serializationService)
-                            .convertData(oldBinary, DataType.HEAP);
+            oldValue = serializationService.convertData(oldBinary, DataType.HEAP);
             cacheRecordAccessor.dispose(record);
         }
         return oldValue;
     }
 
+    /*
     @Override
     public boolean remove(Data key, String caller) {
         boolean deleted = records.delete(key);
@@ -766,8 +878,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         boolean deleted = false;
         HiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
-            Object existingValue = getRecordValue(record);
-            if (value.equals(existingValue)) {
+            Object existingValue = toValue(record);
+            if (toValue(value).equals(existingValue)) {
                 onEntryInvalidated(key, caller);
                 records.delete(key);
                 deleted = true;
@@ -776,7 +888,16 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return deleted;
     }
+    */
 
+    protected void onRemove(Data key,
+                            Object value,
+                            HiDensityNativeMemoryCacheRecord record,
+                            boolean removed) {
+        cacheRecordAccessor.enqueueRecord(record);
+    }
+
+    /*
     @Override
     public void removeAll(Set<Data> keys) {
         final long now = Clock.currentTimeMillis();
@@ -805,7 +926,9 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
+    */
 
+    /*
     @Override
     public MapEntrySet getAll(Set<Data> keySet, ExpiryPolicy expiryPolicy) {
         expiryPolicy = getExpiryPolicy(expiryPolicy);
@@ -819,7 +942,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return result;
     }
+    */
 
+    /*
     @Override
     public Set<Data> loadAll(Set<Data> keys, boolean replaceExistingValues) {
         Set<Data> keysLoaded = new HashSet<Data>();
@@ -850,6 +975,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return keysLoaded;
     }
+    */
 
     @Override
     public Object invoke(Data key, EntryProcessor entryProcessor, Object[] arguments) {
@@ -977,7 +1103,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             OffHeapData offHeapData = readData(record.getValueAddress());
             if (offHeapData != null) {
                 try {
-                    return (T) ss.convertData(offHeapData, DataType.HEAP);
+                    return (T) ss.toObject(offHeapData); //ss.convertData(offHeapData, DataType.HEAP);
                 } finally {
                     if (enqueeDataOnFinish) {
                         enqueueData(offHeapData);

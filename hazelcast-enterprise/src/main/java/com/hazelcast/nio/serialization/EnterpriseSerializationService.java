@@ -15,5 +15,4 @@ public interface EnterpriseSerializationService extends SerializationService {
     <B extends Data> B convertData(Data data, DataType type);
 
     MemoryManager getMemoryManager();
-
 }

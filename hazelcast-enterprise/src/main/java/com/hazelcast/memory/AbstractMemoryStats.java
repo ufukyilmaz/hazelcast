@@ -1,12 +1,18 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.com.eclipsesource.json.JsonObject;
+import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.monitor.LocalGCStats;
+import com.hazelcast.monitor.LocalMemoryStats;
+import com.hazelcast.monitor.impl.LocalGCStatsImpl;
+
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.getHeapMemoryUsage;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
-class StandardMemoryStats implements MemoryStats {
+abstract class AbstractMemoryStats implements LocalMemoryStats {
 
-    private final StandardGCStats gcStats = new StandardGCStats();
+    private final LocalGCStatsImpl gcStats = new LocalGCStatsImpl();
 
     public final long getTotalPhysical() {
         return totalPhysicalMemory();
@@ -38,28 +44,8 @@ class StandardMemoryStats implements MemoryStats {
     }
 
     @Override
-    public long getMaxOffHeap() {
-        return 0;
-    }
-
-    @Override
-    public long getCommittedOffHeap() {
-        return 0;
-    }
-
-    @Override
-    public long getUsedOffHeap() {
-        return 0;
-    }
-
-    @Override
-    public long getFreeOffHeap() {
-        return 0L;
-    }
-
-    @Override
-    public final GCStats getGCStats() {
-        gcStats.refresh();
+    public final LocalGCStats getGCStats() {
+        GCStatsSupport.fill(gcStats);
         return gcStats;
     }
 
@@ -80,17 +66,30 @@ class StandardMemoryStats implements MemoryStats {
     }
 
     @Override
-    public SerializableMemoryStats asSerializable() {
-        SerializableMemoryStats stats = new SerializableMemoryStats();
-        stats.setTotalPhysical(getTotalPhysical());
-        stats.setFreePhysical(getFreePhysical());
-        stats.setMaxOffHeap(getMaxOffHeap());
-        stats.setCommittedOffHeap(getCommittedOffHeap());
-        stats.setUsedOffHeap(getUsedOffHeap());
-        stats.setMaxHeap(getMaxHeap());
-        stats.setCommittedHeap(getCommittedHeap());
-        stats.setUsedHeap(getUsedHeap());
-        stats.setGcStats(gcStats.asSerializable());
-        return stats;
+    public long getCreationTime() {
+        return 0;
+    }
+
+    @Override
+    public void fromJson(JsonObject json) {
+        throw new UnsupportedOperationException();
+    }
+
+    static void checkFreeMemory(long size) {
+        long totalMem = totalPhysicalMemory();
+        if (totalMem < 0) {
+            return;
+        }
+        long freeMem = freePhysicalMemory();
+        if (freeMem < 0) {
+            return;
+        }
+        if (size > freeMem) {
+            throw new OffHeapOutOfMemoryError("Not enough free physical memory available!"
+                    + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
+                    + " Total physical memory: " + MemorySize.toPrettyString(totalMem)
+                    + ", Free physical memory: " + MemorySize.toPrettyString(freeMem)
+            );
+        }
     }
 }

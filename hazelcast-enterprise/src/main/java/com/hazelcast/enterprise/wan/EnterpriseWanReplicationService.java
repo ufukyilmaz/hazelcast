@@ -32,6 +32,7 @@ import com.hazelcast.wan.WanReplicationEndpoint;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,23 +43,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EnterpriseWanReplicationService
         implements WanReplicationService {
 
-    private final Object lock = new Object();
 
     private final Node node;
     private final ILogger logger;
-
     private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWebReplicationPublisherMapping();
-    private final StripedExecutor executor;
+    private final Object publisherMutex = new Object();
+    private final Object executorMutex = new Object();
+    private volatile StripedExecutor executor;
 
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(EnterpriseWanReplicationService.class.getName());
-        this.executor = new StripedExecutor(
-                node.getLogger(EnterpriseWanReplicationService.class),
-                node.getThreadNamePrefix("wan"),
-                node.threadGroup,
-                ExecutorConfig.DEFAULT_POOL_SIZE,
-                ExecutorConfig.DEFAULT_QUEUE_CAPACITY);
     }
 
     @Override
@@ -67,7 +62,7 @@ public class EnterpriseWanReplicationService
         if (wr != null) {
             return wr;
         }
-        synchronized (lock) {
+        synchronized (publisherMutex) {
             wr = wanReplications.get(name);
             if (wr != null) {
                 return wr;
@@ -106,7 +101,8 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void handleEvent(final Packet packet) {
-        executor.execute(new StripedRunnable() {
+        StripedExecutor ex = getExecutor();
+        ex.execute(new StripedRunnable() {
             @Override
             public void run() {
                 final Data data = packet.getData();
@@ -127,9 +123,24 @@ public class EnterpriseWanReplicationService
         });
     }
 
+    private StripedExecutor getExecutor() {
+        StripedExecutor ex = executor;
+        if (ex == null) {
+            synchronized (executorMutex) {
+                if (executor == null) {
+                    executor = new StripedExecutor(node.getLogger(EnterpriseWanReplicationService.class),
+                            node.getThreadNamePrefix("wan"),
+                            node.threadGroup, ExecutorConfig.DEFAULT_POOL_SIZE, ExecutorConfig.DEFAULT_QUEUE_CAPACITY);
+                }
+                ex = executor;
+            }
+        }
+        return ex;
+    }
+
     @Override
     public void shutdown() {
-        synchronized (lock) {
+        synchronized (publisherMutex) {
             for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
                 WanReplicationEndpoint[] wanReplicationEndpoints = wanReplication.getEndpoints();
                 if (wanReplicationEndpoints != null) {
@@ -140,7 +151,10 @@ public class EnterpriseWanReplicationService
                     }
                 }
             }
-            executor.shutdown();
+            StripedExecutor ex = executor;
+            if (ex != null) {
+                ex.shutdown();
+            }
             wanReplications.clear();
         }
     }

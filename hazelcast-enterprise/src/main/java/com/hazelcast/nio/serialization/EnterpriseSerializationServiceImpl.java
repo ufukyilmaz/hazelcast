@@ -237,6 +237,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
     }
 
+    @Override
     public MemoryManager getMemoryManager() {
         return memoryManager;
     }

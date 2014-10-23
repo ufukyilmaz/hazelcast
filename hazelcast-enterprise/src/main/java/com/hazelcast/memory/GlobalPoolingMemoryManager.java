@@ -31,7 +31,7 @@ final class GlobalPoolingMemoryManager
     private volatile long lastFullCompaction;
 
     GlobalPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledOffHeapMemoryStats stats, GarbageCollector gc) {
+            LibMalloc malloc, PooledNativeMemoryStats stats, GarbageCollector gc) {
         super(minBlockSize, pageSize, malloc, stats);
         this.gc = gc;
         initializeAddressQueues();

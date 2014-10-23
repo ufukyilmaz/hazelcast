@@ -16,6 +16,8 @@ import com.hazelcast.enterprise.KG;
 import com.hazelcast.enterprise.License;
 import com.hazelcast.enterprise.TrialLicenseExpiredError;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.management.EnterpriseTimedMemberStateFactory;
+import com.hazelcast.management.TimedMemberStateFactory;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -257,6 +259,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public WanReplicationService getWanReplicationService() {
         return new EnterpriseWanReplicationService(node);
+    }
+
+    @Override
+    public TimedMemberStateFactory getTimedMemberStateFactory() {
+        return new EnterpriseTimedMemberStateFactory(node.hazelcastInstance);
     }
 
     @Override

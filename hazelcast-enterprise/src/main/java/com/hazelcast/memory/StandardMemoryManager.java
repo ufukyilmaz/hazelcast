@@ -1,27 +1,29 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.monitor.LocalMemoryStats;
+
 /**
  * @author mdogan 03/12/13
  */
 public final class StandardMemoryManager implements MemoryManager {
 
     private final LibMalloc malloc;
-    private final OffHeapMemoryStats memoryStats;
+    private final NativeMemoryStats memoryStats;
 
     public StandardMemoryManager(MemorySize cap) {
         long size = cap.bytes();
-        MemoryStatsSupport.checkFreeMemory(size);
+        NativeMemoryStats.checkFreeMemory(size);
         malloc = new UnsafeMalloc();
-        memoryStats = new OffHeapMemoryStats(size);
+        memoryStats = new NativeMemoryStats(size);
     }
 
-    StandardMemoryManager(LibMalloc malloc, OffHeapMemoryStats memoryStats) {
+    StandardMemoryManager(LibMalloc malloc, NativeMemoryStats memoryStats) {
         this.malloc = malloc;
         this.memoryStats = memoryStats;
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
+    public LocalMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

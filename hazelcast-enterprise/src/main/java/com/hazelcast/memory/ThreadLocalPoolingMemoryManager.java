@@ -30,7 +30,7 @@ final class ThreadLocalPoolingMemoryManager
     private long lastFullCompaction;
 
     ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledOffHeapMemoryStats stats) {
+            LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
         allocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator);
         initializeAddressQueues();

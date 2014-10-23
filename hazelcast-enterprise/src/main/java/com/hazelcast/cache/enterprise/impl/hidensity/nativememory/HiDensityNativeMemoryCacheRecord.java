@@ -126,7 +126,11 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
 
     @Override
     public long getExpirationTime() {
-        return getCreationTime() + getTtlMillis();
+        int ttlMillis = getTtlMillis();
+        if (ttlMillis < 0) {
+            return Long.MAX_VALUE;
+        }
+        return getCreationTime() + ttlMillis;
     }
 
     @Override
@@ -134,7 +138,7 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
         long creationTime = getCreationTime();
         int newTtl =
                 expirationTime > creationTime
-                        ? (int)(expirationTime - creationTime)
+                        ? (int) (expirationTime - creationTime)
                         : -1;
         if (newTtl > 0) {
             setTtlMillis(newTtl);

@@ -361,6 +361,75 @@ public class HiDensityNativeMemoryCacheRecordStore
         return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
     }
 
+    private Data putInternal(Data key,
+                             Object value,
+                             ExpiryPolicy expiryPolicy,
+                             boolean getValue,
+                             String caller) {
+        long now = Clock.currentTimeMillis();
+        evictIfRequired(now);
+
+        long creationTime;
+        HiDensityNativeMemoryCacheRecord record = null;
+        OffHeapData newValue = null;
+        Data oldValue = null;
+        boolean newPut = false;
+
+        try {
+            record = records.get(key);
+            if (record == null) {
+                record = createRecord(now);
+                creationTime = now;
+                records.set(key, record);
+                newPut = true;
+            } else {
+                if (record.getValueAddress() == NULL_PTR) {
+                    throw new IllegalStateException("Invalid record -> " + record);
+                }
+                creationTime = record.getCreationTime();
+                if (caller != null) {
+                    onEntryInvalidated(key, caller);
+                }
+            }
+            newValue = toOffHeapData(value);
+            if (getValue && !newPut) {
+                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
+                // TODO: avoid free() until read is completed!
+                oldValue = serializationService.convertData(current, DataType.HEAP);
+                cacheRecordAccessor.disposeData(current);
+            } else {
+                cacheRecordAccessor.disposeValue(record);
+            }
+            record.setValueAddress(newValue.address());
+
+            onAccess(now, record, creationTime);
+            if (newPut) {
+                record.resetAccessHit();
+            }
+
+            long ttlMillis = expiryPolicyToTTL(expiryPolicy);
+            ttlMillis = ttlMillis <= 0 ? defaultTTL : ttlMillis;
+            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
+            if (!hasTtl && ttlMillis > 0) {
+                hasTtl = true;
+            }
+            record.setTtlMillis((int) ttlMillis);
+
+            cacheRecordAccessor.enqueueRecord(record);
+        } catch (OffHeapOutOfMemoryError e) {
+            if (newPut && record != null && record.address() != NULL_PTR) {
+                if (!records.delete(key)) {
+                    cacheRecordAccessor.dispose(record);
+                }
+            }
+            if (newValue != null && newValue.address() != NULL_PTR) {
+                cacheRecordAccessor.disposeData(newValue);
+            }
+            throw e;
+        }
+        return oldValue;
+    }
+
     /*
     @Override
     public Object get(Data key, ExpiryPolicy expiryPolicy) {
@@ -505,75 +574,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         return oldValue;
     }
     */
-
-    private Data putInternal(Data key,
-                             Object value,
-                             ExpiryPolicy expiryPolicy,
-                             boolean getValue,
-                             String caller) {
-        long now = Clock.currentTimeMillis();
-        evictIfRequired(now);
-
-        long creationTime;
-        HiDensityNativeMemoryCacheRecord record = null;
-        OffHeapData newValue = null;
-        Data oldValue = null;
-        boolean newPut = false;
-
-        try {
-            record = records.get(key);
-            if (record == null) {
-                record = createRecord(now);
-                creationTime = now;
-                records.set(key, record);
-                newPut = true;
-            } else {
-                if (record.getValueAddress() == NULL_PTR) {
-                    throw new IllegalStateException("Invalid record -> " + record);
-                }
-                creationTime = record.getCreationTime();
-                if (caller != null) {
-                    onEntryInvalidated(key, caller);
-                }
-            }
-            newValue = toOffHeapData(value);
-            if (getValue) {
-                OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
-                // TODO: avoid free() until read is completed!
-                oldValue = serializationService.convertData(current, DataType.HEAP);
-                cacheRecordAccessor.disposeData(current);
-            } else {
-                cacheRecordAccessor.disposeValue(record);
-            }
-            record.setValueAddress(newValue.address());
-
-            onAccess(now, record, creationTime);
-            if (newPut) {
-                record.resetAccessHit();
-            }
-
-            long ttlMillis = expiryPolicyToTTL(expiryPolicy);
-            ttlMillis = ttlMillis <= 0 ? defaultTTL : ttlMillis;
-            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
-            if (!hasTtl && ttlMillis > 0) {
-                hasTtl = true;
-            }
-            record.setTtlMillis((int) ttlMillis);
-
-            cacheRecordAccessor.enqueueRecord(record);
-        } catch (OffHeapOutOfMemoryError e) {
-            if (newPut && record != null && record.address() != NULL_PTR) {
-                if (!records.delete(key)) {
-                    cacheRecordAccessor.dispose(record);
-                }
-            }
-            if (newValue != null && newValue.address() != NULL_PTR) {
-                cacheRecordAccessor.disposeData(newValue);
-            }
-            throw e;
-        }
-        return oldValue;
-    }
 
     public void put(Data key, Object value, String caller) {
         put(key, value, defaultExpiryPolicy, caller);

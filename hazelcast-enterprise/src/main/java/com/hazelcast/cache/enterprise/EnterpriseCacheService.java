@@ -23,6 +23,7 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -66,6 +67,10 @@ public class EnterpriseCacheService extends CacheService {
 
     @Override
     public void shutdown(boolean terminate) {
+        final ConcurrentMap<String, CacheConfig> cacheConfigs = configs;
+        for (String objectName : cacheConfigs.keySet()) {
+            destroyCache(objectName, true, null);
+        }
         OperationService operationService = nodeEngine.getOperationService();
         List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {

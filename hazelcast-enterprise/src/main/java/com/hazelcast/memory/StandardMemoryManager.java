@@ -30,9 +30,9 @@ public final class StandardMemoryManager implements MemoryManager {
     @Override
     public final long allocate(long size) {
         assert size > 0 : "Size must be positive: " + size;
-        memoryStats.checkOffHeapAllocation(size);
+        memoryStats.checkNativeMemoryAllocation(size);
         long address = malloc.malloc(size);
-        memoryStats.addCommittedOffHeap(size);
+        memoryStats.addCommittedNative(size);
         return address;
     }
 
@@ -42,7 +42,7 @@ public final class StandardMemoryManager implements MemoryManager {
         assert size > 0 : "Invalid memory size: " + size;
 
         malloc.free(address);
-        memoryStats.addCommittedOffHeap(-size);
+        memoryStats.addCommittedNative(-size);
     }
 
     @Override

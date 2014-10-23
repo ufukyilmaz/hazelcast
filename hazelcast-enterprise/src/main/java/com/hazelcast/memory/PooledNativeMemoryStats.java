@@ -17,10 +17,10 @@ class PooledNativeMemoryStats extends NativeMemoryStats implements LocalMemorySt
 
     private final AtomicLong usedMetadata = new AtomicLong();
 
-    private final AtomicLong usedOffHeap = new AtomicLong();
+    private final AtomicLong usedNative = new AtomicLong();
 
-    public PooledNativeMemoryStats(long maxOffHeap, long maxMetadata) {
-        super(maxOffHeap);
+    public PooledNativeMemoryStats(long maxNative, long maxMetadata) {
+        super(maxNative);
         this.maxMetadata = maxMetadata;
         creationTime = Clock.currentTimeMillis();
     }
@@ -31,11 +31,11 @@ class PooledNativeMemoryStats extends NativeMemoryStats implements LocalMemorySt
 
     @Override
     public long getUsedNativeMemory() {
-        return usedOffHeap.get();
+        return usedNative.get();
     }
 
     final void addUsedOffHeap(long size) {
-        usedOffHeap.addAndGet(size);
+        usedNative.addAndGet(size);
     }
 
     final void addMetadataUsage(long size) {

@@ -32,7 +32,7 @@ public class CacheStatsTest {
         Config config = new Config();
         config.setProperties(AbstractCacheTest.getDefaultProperties());
 
-        config.setOffHeapMemoryConfig(AbstractCacheTest.getDefaultMemoryConfig());
+        config.setNativeMemoryConfig(AbstractCacheTest.getDefaultMemoryConfig());
         SerializationConfig serializationConfig = config.getSerializationConfig();
         serializationConfig.setAllowUnsafe(true);
         final HazelcastInstance instance = Hazelcast.newHazelcastInstance(config);
@@ -75,7 +75,7 @@ public class CacheStatsTest {
         Config config = new Config();
         config.setProperties(AbstractCacheTest.getDefaultProperties());
 
-        config.setOffHeapMemoryConfig(AbstractCacheTest.getDefaultMemoryConfig());
+        config.setNativeMemoryConfig(AbstractCacheTest.getDefaultMemoryConfig());
         SerializationConfig serializationConfig = config.getSerializationConfig();
         serializationConfig.setAllowUnsafe(true);
 

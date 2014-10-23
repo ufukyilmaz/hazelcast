@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -53,7 +53,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         Config config = new Config();
         config.setProperties(getDefaultProperties());
 
-        config.setOffHeapMemoryConfig(getDefaultMemoryConfig());
+        config.setNativeMemoryConfig(getDefaultMemoryConfig());
         config.setSerializationConfig(getDefaultSerializationConfig());
         return config;
     }
@@ -396,10 +396,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return props;
     }
 
-    public static OffHeapMemoryConfig getDefaultMemoryConfig() {
+    public static NativeMemoryConfig getDefaultMemoryConfig() {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
-        return new OffHeapMemoryConfig()
-                .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
                 .setSize(memorySize).setEnabled(true)
                 .setMinBlockSize(16).setPageSize(1 << 20);
     }

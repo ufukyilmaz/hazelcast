@@ -4,7 +4,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.Node;
@@ -63,9 +63,9 @@ public class CacheLoadTest {
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().addMember("127.0.0.1").setEnabled(true);
 
-        config.setOffHeapMemoryConfig(new OffHeapMemoryConfig().setEnabled(true)
-            .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
-            .setSize(totalSize).setPageSize(1 << 20));
+        config.setNativeMemoryConfig(new NativeMemoryConfig().setEnabled(true)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED).setSize(totalSize)
+                .setPageSize(1 << 20));
 
         config.setSerializationConfig(AbstractCacheTest.getDefaultSerializationConfig());
 

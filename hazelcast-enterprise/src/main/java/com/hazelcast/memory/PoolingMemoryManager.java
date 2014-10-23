@@ -8,10 +8,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_PAGE_SIZE;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 
 /**
  * Pooling MemoryManager
@@ -48,9 +48,9 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
-        long maxOffHeap = QuickMath.normalize(totalSize - maxMetadata, pageSize);
+        long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
 
-        memoryStats = new PooledNativeMemoryStats(maxOffHeap, maxMetadata);
+        memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
 
         gc.registerGarbageCollectable(this);

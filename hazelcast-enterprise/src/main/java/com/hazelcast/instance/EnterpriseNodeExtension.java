@@ -1,8 +1,8 @@
 package com.hazelcast.instance;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
@@ -180,12 +180,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     private MemoryManager getMemoryManager(Config config) {
-        OffHeapMemoryConfig memoryConfig = config.getOffHeapMemoryConfig();
+        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();
-            OffHeapMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
-            logger.info("Creating " + type + " offheap memory manager with " + size.toPrettyString() + " size");
-            if (type == OffHeapMemoryConfig.MemoryAllocatorType.STANDARD) {
+            NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
+            if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 return new StandardMemoryManager(size);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();

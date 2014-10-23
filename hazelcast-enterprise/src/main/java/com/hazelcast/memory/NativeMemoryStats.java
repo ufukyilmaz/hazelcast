@@ -17,24 +17,24 @@ class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats 
         ASSERTS_ENABLED = NativeMemoryStats.class.desiredAssertionStatus();
     }
 
-    private final long maxOffHeap;
+    private final long maxNative;
 
-    private final AtomicLong committedOffHeap = new AtomicLong();
+    private final AtomicLong committedNative = new AtomicLong();
 
     private final AtomicLong internalFragmentation = new AtomicLong();
 
-    NativeMemoryStats(long maxOffHeap) {
-        this.maxOffHeap = maxOffHeap;
+    NativeMemoryStats(long maxNative) {
+        this.maxNative = maxNative;
     }
 
     @Override
     public final long getMaxNativeMemory() {
-        return maxOffHeap;
+        return maxNative;
     }
 
     @Override
     public final long getCommittedNativeMemory() {
-        return committedOffHeap.get();
+        return committedNative.get();
     }
 
     @Override
@@ -44,22 +44,22 @@ class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats 
 
     @Override
     public final long getFreeNativeMemory() {
-        long free = maxOffHeap - getUsedNativeMemory();
+        long free = maxNative - getUsedNativeMemory();
         return free > 0 ? free : 0L;
     }
 
-    final void checkOffHeapAllocation(long size) {
+    final void checkNativeMemoryAllocation(long size) {
         checkCommittedOffHeap(size);
         checkFreeMemory(size);
     }
 
     private void checkCommittedOffHeap(long size) {
         if (size > 0) {
-            long currentAllocated = committedOffHeap.get();
-            if (maxOffHeap < (currentAllocated + size)) {
+            long currentAllocated = committedNative.get();
+            if (maxNative < (currentAllocated + size)) {
                 throw new OffHeapOutOfMemoryError("Not enough contiguous memory available! " +
                         " Cannot allocate " + MemorySize.toPrettyString(size) + "!" +
-                        " Max Native Memory: " + MemorySize.toPrettyString(maxOffHeap) +
+                        " Max Native Memory: " + MemorySize.toPrettyString(maxNative) +
                         ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated) +
                         ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
                 );
@@ -67,8 +67,8 @@ class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats 
         }
     }
 
-    final void addCommittedOffHeap(long size) {
-        committedOffHeap.addAndGet(size);
+    final void addCommittedNative(long size) {
+        committedNative.addAndGet(size);
     }
 
     final void addInternalFragmentation(long size) {

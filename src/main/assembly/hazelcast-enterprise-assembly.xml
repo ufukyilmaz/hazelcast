@@ -5,6 +5,27 @@
     </formats>
     <fileSets>
         <fileSet>
+            <directory>hazelcast-enterprise-sessions/jetty7/target/</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-enterprise-jetty7-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>hazelcast-enterprise-sessions/jetty8/target/</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-enterprise-jetty8-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>hazelcast-enterprise-sessions/jetty9/target/</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-enterprise-jetty9-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>hazelcast-enterprise-sessions/tomcat6/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>

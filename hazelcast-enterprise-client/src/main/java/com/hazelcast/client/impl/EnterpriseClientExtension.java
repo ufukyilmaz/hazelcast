@@ -2,7 +2,7 @@ package com.hazelcast.client.impl;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
@@ -59,12 +59,12 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     private MemoryManager getMemoryManager(ClientConfig config) {
-        OffHeapMemoryConfig memoryConfig = config.getOffHeapMemoryConfig();
+        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();
-            OffHeapMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
-            LOGGER.info("Creating " + type + " offheap memory manager with " + size.toPrettyString() + " size");
-            if (type == OffHeapMemoryConfig.MemoryAllocatorType.STANDARD) {
+            NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            LOGGER.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
+            if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 return new StandardMemoryManager(size);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();

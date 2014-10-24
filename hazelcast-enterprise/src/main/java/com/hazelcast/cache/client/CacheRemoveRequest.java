@@ -72,7 +72,7 @@ public class CacheRemoveRequest extends AbstractCacheRequest {
         EnterpriseCacheService cacheService = getService();
         final CacheConfig cacheConfig = cacheService.getCacheConfig(name);
         if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).addRemoveTimeNano(System.nanoTime() - startTime);
+            cacheService.getOrCreateCacheStats(name).addRemoveTimeNanos(System.nanoTime() - startTime);
         }
     }
 

@@ -67,7 +67,7 @@ public class CacheGetRequest extends AbstractCacheRequest {
         EnterpriseCacheService cacheService = getService();
         final CacheConfig cacheConfig = cacheService.getCacheConfig(name);
         if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).addGetTimeNano(System.nanoTime() - startTime);
+            cacheService.getOrCreateCacheStats(name).addGetTimeNanos(System.nanoTime() - startTime);
         }
     }
 

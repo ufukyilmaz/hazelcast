@@ -1,17 +1,23 @@
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.*;
+import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.AbstractCacheRecordStore;
+import com.hazelcast.cache.impl.CacheEventType;
+import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.OffHeapData;
+import com.hazelcast.nio.serialization.OffHeapDataUtil;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -20,7 +26,8 @@ import com.hazelcast.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -29,8 +36,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<
-                    HiDensityNativeMemoryCacheRecord,
-                    HiDensityNativeMemoryCacheRecordMap> {
+        HiDensityNativeMemoryCacheRecord,
+        HiDensityNativeMemoryCacheRecordMap> {
 
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
     public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
@@ -59,7 +66,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                                                     final int evictionThresholdPercentage) {
         super(name, partitionId, nodeEngine, cacheService, expiryPolicy);
         this.initialCapacity = initialCapacity;
-        this.serializationService = (EnterpriseSerializationService)nodeEngine.getSerializationService();
+        this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
         this.cacheRecordAccessor = new CacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();
@@ -73,7 +80,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         this.evictionOperation = createEvictionOperation(10);
         this.evictionTaskFuture =
                 nodeEngine.getExecutionService()
-                    .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
+                        .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
     }
 
     public HiDensityNativeMemoryCacheRecordStore(final int partitionId,
@@ -82,14 +89,14 @@ public class HiDensityNativeMemoryCacheRecordStore
                                                  final NodeEngine nodeEngine,
                                                  final int initialCapacity) {
         this(partitionId,
-             cacheName,
-             cacheService,
-             nodeEngine,
-             initialCapacity,
-             null,
-             null,
-             DEFAULT_EVICTION_PERCENTAGE,
-             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+                cacheName,
+                cacheService,
+                nodeEngine,
+                initialCapacity,
+                null,
+                null,
+                DEFAULT_EVICTION_PERCENTAGE,
+                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
     }
 
     @Override
@@ -101,10 +108,10 @@ public class HiDensityNativeMemoryCacheRecordStore
             return null;
         }
         return
-            new HiDensityNativeMemoryCacheRecordMap(initialCapacity,
-                                                    serializationService,
-                                                    cacheRecordAccessor,
-                                                    createEvictionCallback());
+                new HiDensityNativeMemoryCacheRecordMap(initialCapacity,
+                        serializationService,
+                        cacheRecordAccessor,
+                        createEvictionCallback());
     }
 
     @Override
@@ -230,11 +237,11 @@ public class HiDensityNativeMemoryCacheRecordStore
         final OffHeapData dataValue = record.getValue();
         if (isEventsEnabled) {
             publishEvent(cacheConfig.getName(),
-                         CacheEventType.REMOVED,
-                         key,
-                         null,
-                         dataValue,
-                         false);
+                    CacheEventType.REMOVED,
+                    key,
+                    null,
+                    dataValue,
+                    false);
         }
     }
 
@@ -357,8 +364,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    private boolean isEvictionRequired(MemoryStats memoryStats) {
-        return memoryStats.getMaxOffHeap() * evictionThreshold > memoryStats.getFreeOffHeap();
+    private boolean isEvictionRequired(LocalMemoryStats memoryStats) {
+        return memoryStats.getMaxNativeMemory() * evictionThreshold > memoryStats.getFreeNativeMemory();
     }
 
     private Data putInternal(Data key,
@@ -672,7 +679,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             throw new IllegalArgumentException("record must be an instance of "
                     + HiDensityNativeMemoryCacheRecord.class.getName());
         }
-        records.set(key, (HiDensityNativeMemoryCacheRecord)record);
+        records.set(key, (HiDensityNativeMemoryCacheRecord) record);
     }
 
     @Override
@@ -827,7 +834,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     public int evictIfRequired(long now) {
         if (evictionEnabled) {
-            MemoryStats memoryStats = memoryManager.getMemoryStats();
+            LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
             if (isEvictionRequired(memoryStats)) {
                 return records.evictRecords(evictionPercentage, evictionPolicy);
             }
@@ -996,7 +1003,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
         if (isStatisticsEnabled()) {
-            statistics.addGetTimeNano(System.nanoTime() - start);
+            statistics.addGetTimeNanos(System.nanoTime() - start);
         }
 
         HiDensityNativeMemoryCacheEntryProcessorEntry entry =

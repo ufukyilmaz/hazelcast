@@ -169,11 +169,11 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
         return readInt(headerOffset + offset, order);
     }
 
-    @Override
-    public long readLongHeader(int offset, ByteOrder order) {
-        long headerOffset = headerOffset() + LONG_SIZE_IN_BYTES;
-        return readLong(headerOffset + offset, order);
-    }
+//    @Override
+//    public long readLongHeader(int offset, ByteOrder order) {
+//        long headerOffset = headerOffset() + LONG_SIZE_IN_BYTES;
+//        return readLong(headerOffset + offset, order);
+//    }
 
     private int headerOffset() {
         int current = readInt(DATA_SIZE_OFFSET);

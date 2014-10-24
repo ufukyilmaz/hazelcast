@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;
@@ -8,9 +9,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
-import static com.hazelcast.config.OffHeapMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 
 /**
  * Pooling MemoryManager
@@ -23,7 +24,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
     static final int MAX_PAGE_SIZE = 1 << 30;
 
     private final LibMalloc malloc = new UnsafeMalloc();
-    private final PooledOffHeapMemoryStats memoryStats;
+    private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
     private final Map<Thread, MemoryManager> threadLocalManagers
             = new ConcurrentHashMap<Thread, MemoryManager>(32, .75f, 1);
@@ -43,13 +44,13 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
-        MemoryStatsSupport.checkFreeMemory(totalSize);
+        NativeMemoryStats.checkFreeMemory(totalSize);
 
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
-        long maxOffHeap = QuickMath.normalize(totalSize - maxMetadata, pageSize);
+        long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
 
-        memoryStats = new PooledOffHeapMemoryStats(maxOffHeap, maxMetadata);
+        memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
         globalMemoryManager = new GlobalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats, gc);
 
         gc.registerGarbageCollectable(this);
@@ -176,7 +177,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
     }
 
-    public MemoryStats getMemoryStats() {
+    public LocalMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

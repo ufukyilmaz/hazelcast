@@ -7,6 +7,9 @@ package com.hazelcast.memory;
  */
 public interface MemoryAllocator {
 
+    /**
+     * TODO: Javadoc needed
+     */
     long NULL_ADDRESS = 0L;
 
     /**

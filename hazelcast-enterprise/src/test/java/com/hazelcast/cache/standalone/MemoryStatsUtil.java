@@ -4,8 +4,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.HazelcastInstanceImpl;
 import com.hazelcast.instance.HazelcastInstanceProxy;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryStatsSupport;
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
  */
 public class MemoryStatsUtil {
 
-    public static MemoryStats getMemoryStats(HazelcastInstance hz) {
+    public static LocalMemoryStats getMemoryStats(HazelcastInstance hz) {
         EnterpriseSerializationService ss = null;
         try {
             if (hz instanceof HazelcastInstanceProxy) {
@@ -52,6 +52,6 @@ public class MemoryStatsUtil {
         if (memoryManager != null) {
             return memoryManager.getMemoryStats();
         }
-        return MemoryStatsSupport.getStandardMemoryStats();
+        return MemoryStatsSupport.getMemoryStats();
     }
 }

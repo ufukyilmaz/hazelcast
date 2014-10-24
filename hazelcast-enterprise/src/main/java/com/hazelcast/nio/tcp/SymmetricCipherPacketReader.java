@@ -73,8 +73,7 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
                 }
                 boolean complete = packet.readFrom(cipherBuffer);
                 if (complete) {
-                    packet.setConn(connection);
-                    ioService.handleMemberPacket(packet);
+                    handlePacket(packet);
                     packet = null;
                 } else {
                     break;

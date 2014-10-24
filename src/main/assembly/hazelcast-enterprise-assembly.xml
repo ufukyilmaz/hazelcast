@@ -33,6 +33,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>hazelcast-enterprise-client/target/</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-enterprise-client-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>${hazelcast.root}/hazelcast-ra/hazelcast-jca/target</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>

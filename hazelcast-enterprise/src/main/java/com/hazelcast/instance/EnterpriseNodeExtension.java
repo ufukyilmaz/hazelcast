@@ -3,8 +3,8 @@ package com.hazelcast.instance;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.OffHeapMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
@@ -17,7 +17,8 @@ import com.hazelcast.enterprise.InvalidLicenseError;
 import com.hazelcast.enterprise.KG;
 import com.hazelcast.enterprise.License;
 import com.hazelcast.enterprise.TrialLicenseExpiredError;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.management.EnterpriseTimedMemberStateFactory;
+import com.hazelcast.management.TimedMemberStateFactory;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -181,12 +182,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     private MemoryManager getMemoryManager(Config config) {
-        OffHeapMemoryConfig memoryConfig = config.getOffHeapMemoryConfig();
+        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();
-            OffHeapMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
-            logger.info("Creating " + type + " offheap memory manager with " + size.toPrettyString() + " size");
-            if (type == OffHeapMemoryConfig.MemoryAllocatorType.STANDARD) {
+            NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
+            if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 return new StandardMemoryManager(size);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
@@ -257,8 +258,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return storage;
     }
 
-    public WanReplicationService geWanReplicationService() {
-        return new EnterpriseWanReplicationService(node);
+    @Override
+    public TimedMemberStateFactory getTimedMemberStateFactory() {
+        return new EnterpriseTimedMemberStateFactory(node.hazelcastInstance);
     }
 
     @Override

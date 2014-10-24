@@ -17,14 +17,14 @@
 package com.hazelcast.cache.standalone;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.UrlXmlConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.monitor.LocalMemoryStats;
 
 import java.io.IOException;
 
@@ -36,7 +36,7 @@ public class SimpleCacheTest {
     private static final long STATS_SECONDS = 10;
 
     private final HazelcastInstance instance;
-    private final MemoryStats memoryStats;
+    private final LocalMemoryStats memoryStats;
     private final ILogger logger;
     private final MemorySize memorySize;
 
@@ -57,14 +57,14 @@ public class SimpleCacheTest {
         }
 //        Config cfg = new FileSystemXmlConfig("/Users/mm/bin/hazelcast.xml");
 
-        OffHeapMemoryConfig memoryConfig = cfg.getOffHeapMemoryConfig();
+        NativeMemoryConfig memoryConfig = cfg.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
             System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
             System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
         } else {
             memoryConfig.setSize(memorySize).setEnabled(true);
-            memoryConfig.setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED);
+            memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED);
         }
 
         instance = Hazelcast.newHazelcastInstance(cfg);

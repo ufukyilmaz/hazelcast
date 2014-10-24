@@ -1,6 +1,7 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -60,7 +61,7 @@ public class MemoryManagerTest {
 
     private void testCompaction(PoolingMemoryManager memoryManager) {
         int maxBlockSize = pageSize / 8;
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
         Random rand = new Random();
         Set<MemoryBlock> blocks = new HashSet<MemoryBlock>();
         while (true) {
@@ -75,26 +76,26 @@ public class MemoryManagerTest {
                 break;
             }
         }
-        int minBlockCount = (int) (memoryStats.getMaxOffHeap() / maxBlockSize);
+        int minBlockCount = (int) (memoryStats.getMaxNativeMemory() / maxBlockSize);
         assertTrue(blocks.size() >= minBlockCount);
-        assertTrue("committed: " + memoryStats.getCommittedHeap() + ", used: " + memoryStats.getUsedOffHeap(),
-                memoryStats.getCommittedHeap() >= memoryStats.getUsedOffHeap());
-        assertTrue("used: " + memoryStats.getUsedOffHeap() + ", blocks: " + (blocks.size() * maxBlockSize),
-                memoryStats.getUsedOffHeap() <= (maxBlockSize * blocks.size()));
+        assertTrue("committed: " + memoryStats.getCommittedHeap() + ", used: " + memoryStats.getUsedNativeMemory(),
+                memoryStats.getCommittedHeap() >= memoryStats.getUsedNativeMemory());
+        assertTrue("used: " + memoryStats.getUsedNativeMemory() + ", blocks: " + (blocks.size() * maxBlockSize),
+                memoryStats.getUsedNativeMemory() <= (maxBlockSize * blocks.size()));
 
         for (MemoryBlock block : blocks) {
             memoryManager.free(block.address(), block.size());
         }
-        assertEquals(0, memoryStats.getUsedOffHeap());
+        assertEquals(0, memoryStats.getUsedNativeMemory());
         memoryManager.compact();
 
         int headerLength = memoryManager.getHeaderLength();
         for (int i = 7; i >= 0; i--) {
             int size = pageSize / (1 << i) - headerLength;
             long address = memoryManager.allocate(size);
-            assertEquals(size + headerLength, memoryStats.getUsedOffHeap());
+            assertEquals(size + headerLength, memoryStats.getUsedNativeMemory());
             memoryManager.free(address, size);
-            assertEquals(0, memoryStats.getUsedOffHeap());
+            assertEquals(0, memoryStats.getUsedNativeMemory());
         }
     }
 

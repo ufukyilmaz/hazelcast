@@ -70,7 +70,7 @@ public class CacheGetAndReplaceRequest extends AbstractCacheRequest {
         EnterpriseCacheService cacheService = getService();
         final CacheConfig cacheConfig = cacheService.getCacheConfig(name);
         if (cacheConfig.isStatisticsEnabled()) {
-            cacheService.getOrCreateCacheStats(name).addPutTimeNano(System.nanoTime() - startTime);
+            cacheService.getOrCreateCacheStats(name).addPutTimeNanos(System.nanoTime() - startTime);
         }
     }
 

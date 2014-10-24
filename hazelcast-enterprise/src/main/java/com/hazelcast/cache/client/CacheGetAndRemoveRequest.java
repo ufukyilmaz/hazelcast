@@ -68,8 +68,8 @@ public class CacheGetAndRemoveRequest extends AbstractCacheRequest {
         if (cacheConfig.isStatisticsEnabled()) {
             long passedTimeNano = System.nanoTime() - startTime;
             CacheStatisticsImpl cacheStats = cacheService.getOrCreateCacheStats(name);
-            cacheStats.addGetTimeNano(passedTimeNano);
-            cacheStats.addRemoveTimeNano(passedTimeNano);
+            cacheStats.addGetTimeNanos(passedTimeNano);
+            cacheStats.addRemoveTimeNanos(passedTimeNano);
         }
     }
 

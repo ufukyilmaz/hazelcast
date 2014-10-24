@@ -4,7 +4,7 @@ import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.GroupProperties;
@@ -30,7 +30,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
     protected static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT =
-                InMemoryFormat.OFFHEAP;
+            InMemoryFormat.OFFHEAP;
 
     protected static final String CACHE_NAME;
     protected static final InMemoryFormat IN_MEMORY_FORMAT;
@@ -63,7 +63,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     public static Config createConfig() {
         Config config = new Config();
         config.setProperties(getDefaultProperties());
-        config.setOffHeapMemoryConfig(getDefaultMemoryConfig());
+        config.setNativeMemoryConfig(getDefaultMemoryConfig());
         config.setSerializationConfig(getDefaultSerializationConfig());
         return config;
     }
@@ -81,11 +81,11 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return cacheConfig;
     }
 
-    public static OffHeapMemoryConfig getDefaultMemoryConfig() {
+    public static NativeMemoryConfig getDefaultMemoryConfig() {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
         return
-                new OffHeapMemoryConfig()
-                        .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.STANDARD)
+                new NativeMemoryConfig()
+                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
                         .setSize(memorySize).setEnabled(true)
                         .setMinBlockSize(16).setPageSize(1 << 20);
     }

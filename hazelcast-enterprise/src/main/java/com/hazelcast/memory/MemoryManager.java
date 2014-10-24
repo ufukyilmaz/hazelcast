@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.monitor.LocalMemoryStats;
+
 /**
  * Memory Manager allocates/frees memory blocks from/to OS like C malloc()/free()
  *
@@ -10,6 +12,9 @@ package com.hazelcast.memory;
  */
 public interface MemoryManager extends MemoryAllocator {
 
+    /**
+     * TODO: Javadoc needed
+     */
     long NULL_ADDRESS = 0L;
 
     /**
@@ -61,7 +66,7 @@ public interface MemoryManager extends MemoryAllocator {
     /**
      * @return memory statistics
      */
-    MemoryStats getMemoryStats();
+    LocalMemoryStats getMemoryStats();
 
     /**
      * Returns page id for given address

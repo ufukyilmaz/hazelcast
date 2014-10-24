@@ -5,7 +5,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.OffHeapMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -14,8 +14,8 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.SlowTest;
@@ -67,9 +67,9 @@ public class CacheLoadTest {
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().addMember("127.0.0.1").setEnabled(true);
 
-        config.setOffHeapMemoryConfig(new OffHeapMemoryConfig().setEnabled(true)
-            .setAllocatorType(OffHeapMemoryConfig.MemoryAllocatorType.POOLED)
-            .setSize(totalSize).setPageSize(1 << 20));
+        config.setNativeMemoryConfig(new NativeMemoryConfig().setEnabled(true)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED).setSize(totalSize)
+                .setPageSize(1 << 20));
 
         config.setSerializationConfig(AbstractCacheTest.getDefaultSerializationConfig());
 
@@ -138,7 +138,7 @@ public class CacheLoadTest {
         Node node = TestUtil.getNode(server);
         EnterpriseSerializationService serializationService = (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
 
         long now = System.currentTimeMillis();
         long end = now + TIMEOUT;
@@ -162,7 +162,7 @@ public class CacheLoadTest {
         Node node = TestUtil.getNode(server);
         EnterpriseSerializationService serializationService = (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
 
         Random rand = new Random();
         while (size < max) {

@@ -111,7 +111,7 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return cacheRecordAccessor.readValue(this, true);
+            return (V) cacheRecordAccessor.readData(address);
         }
     }
 
@@ -136,9 +136,10 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
     @Override
     public void setExpirationTime(long expirationTime) {
         long creationTime = getCreationTime();
+        long timeDiff = expirationTime - creationTime;
         int newTtl =
                 expirationTime > creationTime
-                        ? (int) (expirationTime - creationTime)
+                        ? (timeDiff > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)timeDiff)
                         : -1;
         if (newTtl > 0) {
             setTtlMillis(newTtl);

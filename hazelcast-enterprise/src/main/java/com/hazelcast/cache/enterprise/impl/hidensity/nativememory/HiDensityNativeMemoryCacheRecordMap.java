@@ -1,10 +1,25 @@
+/*
+ * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
 import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
-import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -36,16 +51,17 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     };
 
+    private final HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
     private final Callback<Data> evictionCallback;
-
     private int randomEvictionLastIndex;
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
                                                EnterpriseSerializationService serializationService,
-                                               MemoryBlockAccessor<HiDensityNativeMemoryCacheRecord> memoryBlockAccessor,
+                                               HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
                                                Callback<Data> evictionCallback) {
-        super(initialCapacity, serializationService, memoryBlockAccessor,
+        super(initialCapacity, serializationService, cacheRecordAccessor,
                 serializationService.getMemoryManager().unwrapMemoryAllocator());
+        this.cacheRecordAccessor = cacheRecordAccessor;
         this.evictionCallback = evictionCallback;
     }
 
@@ -58,7 +74,6 @@ public final class HiDensityNativeMemoryCacheRecordMap
         int len = (int) (capacity * (long) percentage / 100);
         int k = 0;
         if (len > 0 && size() > 0) {
-            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
             int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
 
@@ -71,10 +86,10 @@ public final class HiDensityNativeMemoryCacheRecordMap
                         long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
-                            OffHeapData binary = service.readData(key);
+                            OffHeapData binary = cacheRecordAccessor.readData(key);
                             callbackEvictionListeners(binary);
                             delete(binary);
-                            service.disposeData(binary);
+                            cacheRecordAccessor.disposeData(binary);
                             k++;
                         }
                     }
@@ -145,7 +160,6 @@ public final class HiDensityNativeMemoryCacheRecordMap
             int index = (int) (size * (long) percentage / 100);
             long time = sortArray[index];
 
-            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -154,9 +168,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
                     if (accessTime <= time) {
                         k++;
                         long key = getKey(ix);
-                        OffHeapData keyData = service.readData(key);
+                        OffHeapData keyData = cacheRecordAccessor.readData(key);
                         delete(keyData);
-                        service.disposeData(keyData);
+                        cacheRecordAccessor.disposeData(keyData);
                     }
                 }
             }
@@ -164,7 +178,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return k;
     }
 
-    private static long getAccessTime(long recordAddress) {
+    private long getAccessTime(long recordAddress) {
         long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
         int accessTimeDiff = HiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
         return creationTime + accessTimeDiff;
@@ -198,7 +212,6 @@ public final class HiDensityNativeMemoryCacheRecordMap
             int index = (int) (size * (long) percentage / 100);
             hit = sortArray[index];
 
-            HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
             k = 0;
             for (int ix = 0; ix < capacity && k < index; ix++) {
                 if (isAllocated(ix)) {
@@ -207,9 +220,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
-                        OffHeapData keyData = service.readData(key);
+                        OffHeapData keyData = cacheRecordAccessor.readData(key);
                         delete(keyData);
-                        service.disposeData(keyData);
+                        cacheRecordAccessor.disposeData(keyData);
                     }
                 }
             }
@@ -243,13 +256,12 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
         int ix = start;
         int k = 0;
-        HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor service = getCacheRecordAccessor();
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
-                OffHeapData keyData = service.readData(key);
+                OffHeapData keyData = cacheRecordAccessor.readData(key);
                 delete(keyData);
-                service.disposeData(keyData);
+                cacheRecordAccessor.disposeData(keyData);
                 if (++k >= len) {
                     break;
                 }
@@ -261,22 +273,23 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return k;
     }
 
-    private HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor getCacheRecordAccessor() {
-        return (HiDensityNativeMemoryCacheRecordStore.CacheRecordAccessor) memoryBlockAccessor;
-    }
-
     public EntryIter iterator(int slot) {
         return new EntryIter(slot);
     }
 
     public CacheKeyIteratorResult fetchNext(int nextTableIndex, int size) {
+        long now = Clock.currentTimeMillis();
         BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>.EntryIter iter =
                 iterator(nextTableIndex);
         List<Data> keys = new ArrayList<Data>();
         for (int i = 0; i < size && iter.hasNext(); i++) {
             Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
             Data key = entry.getKey();
-            keys.add(serializationService.convertData(key, DataType.HEAP));
+            HiDensityNativeMemoryCacheRecord record = entry.getValue();
+            final boolean isExpired = record.isExpiredAt(now);
+            if (!isExpired) {
+                keys.add(serializationService.convertData(key, DataType.HEAP));
+            }
         }
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());
     }

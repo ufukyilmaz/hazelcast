@@ -12,6 +12,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.util.StringUtil;
+
 import org.junit.After;
 import org.junit.Before;
 
@@ -60,20 +61,20 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         }
     }
 
-    public static Config createConfig() {
+    protected Config createConfig() {
         Config config = new Config();
-        config.setProperties(getDefaultProperties());
-        config.setNativeMemoryConfig(getDefaultMemoryConfig());
-        config.setSerializationConfig(getDefaultSerializationConfig());
+        config.setProperties(getProperties());
+        config.setNativeMemoryConfig(getMemoryConfig());
+        config.setSerializationConfig(getSerializationConfig());
         return config;
     }
 
-    public static CacheConfig createCacheConfig(String cacheName) {
+    protected CacheConfig createCacheConfig(String cacheName) {
         return createCacheConfig(cacheName, IN_MEMORY_FORMAT);
     }
 
-    public static CacheConfig createCacheConfig(String cacheName,
-                                                InMemoryFormat inMemoryFormat) {
+    protected CacheConfig createCacheConfig(String cacheName,
+                                            InMemoryFormat inMemoryFormat) {
         CacheConfig cacheConfig = new CacheConfig();
         cacheConfig.setName(cacheName);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
@@ -81,7 +82,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return cacheConfig;
     }
 
-    public static NativeMemoryConfig getDefaultMemoryConfig() {
+    protected NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
@@ -90,13 +91,13 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
                         .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
-    public static SerializationConfig getDefaultSerializationConfig() {
+    protected SerializationConfig getSerializationConfig() {
         SerializationConfig serializationConfig = new SerializationConfig();
         serializationConfig.setAllowUnsafe(true).setUseNativeByteOrder(true);
         return serializationConfig;
     }
 
-    public static Properties getDefaultProperties() {
+    protected Properties getProperties() {
         Properties props = new Properties();
         props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "111");
         props.setProperty(GroupProperties.PROP_SOCKET_BIND_ANY, "false");
@@ -108,15 +109,25 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected ICache createCache() {
-        Cache<Object, Object> cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
-
+        Cache<Object, Object> cache =
+                cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
+        try {
+            // Wait a second to handle cache config by all nodes
+            // TODO: This is just a workaround. So there should be a fix
+            // to create cache config in all nodes as synchronized
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return cache.unwrap(ICache.class);
     }
 
     @Before
     public void setup() {
         onSetup();
-        cachingProvider = HazelcastServerCachingProvider.createCachingProvider(getHazelcastInstance());
+        cachingProvider =
+                HazelcastServerCachingProvider
+                        .createCachingProvider(getHazelcastInstance());
         cacheManager = cachingProvider.getCacheManager();
     }
 

@@ -16,11 +16,15 @@
 
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
+/**
+ * @author sozal 14/10/14
+ */
 public final class EnterpriseCacheDataSerializerHook implements DataSerializerHook {
 
     public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY, -26);
@@ -33,20 +37,22 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
     public static final int GET_AND_REMOVE = 5;
     public static final int REPLACE = 6;
     public static final int GET_AND_REPLACE = 7;
-
     public static final int PUT_BACKUP = 8;
-    public static final int REMOVE_BACKUP = 9;
-
-    public static final int SIZE = 10;
-    public static final int CLEAR = 11;
-    public static final int GET_STATS = 12;
-    public static final int SIZE_FACTORY = 13;
-    public static final int CLEAR_FACTORY = 14;
-    public static final int GET_STATS_FACTORY = 15;
-
+    public static final int PUT_ALL_BACKUP = 9;
+    public static final int REMOVE_BACKUP = 10;
+    public static final int SIZE = 11;
+    public static final int CLEAR = 12;
+    public static final int CLEAR_BACKUP = 13;
+    public static final int SIZE_FACTORY = 14;
+    public static final int CLEAR_FACTORY = 15;
     public static final int ITERATE = 16;
     public static final int ITERATION_RESULT = 17;
-
+    public static final short GET_ALL = 18;
+    public static final short GET_ALL_FACTORY = 19;
+    public static final short LOAD_ALL = 20;
+    public static final short LOAD_ALL_FACTORY = 21;
+    public static final short ENTRY_PROCESSOR = 22;
+    public static final short DESTROY = 23;
 
     public int getFactoryId() {
         return F_ID;
@@ -100,11 +106,21 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
                         return new CacheClearOperationFactory();
 
                     case ITERATE:
-                        return new CacheIterateOperation();
+                        // return new CacheIterateOperation();
+                        return new CacheKeyIteratorOperation();
 
                     case ITERATION_RESULT:
-                        return new CacheIterationResult();
+                        // return new CacheIterationResult();
+                        return new CacheKeyIteratorResult();
 
+                    case LOAD_ALL:
+                        return new CacheLoadAllOperation();
+
+                    case LOAD_ALL_FACTORY:
+                        return new CacheLoadAllOperationFactory();
+
+                    case ENTRY_PROCESSOR:
+                        return new CacheEntryProcessorOperation();
                 }
                 throw new IllegalArgumentException("Unknown type-id: " + typeId);
             }

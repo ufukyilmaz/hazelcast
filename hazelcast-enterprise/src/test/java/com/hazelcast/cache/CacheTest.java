@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.cache;
 
 import com.hazelcast.config.Config;
@@ -22,6 +6,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -52,7 +37,7 @@ public class CacheTest extends AbstractCacheTest {
     @Override
     protected void onSetup() {
         Config config = createConfig();
-        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
         instance = factory.newHazelcastInstance(config);
         //factory.newHazelcastInstance(config);
     }
@@ -101,6 +86,8 @@ public class CacheTest extends AbstractCacheTest {
 
         assertEquals("value3", cache.getAndReplace("key1", "value4"));
         assertEquals("value4", cache.get("key1"));
+
+        cache.destroy();
     }
 
     @Test

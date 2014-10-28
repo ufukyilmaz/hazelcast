@@ -1,8 +1,25 @@
+/*
+ * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -23,27 +40,41 @@ import java.util.logging.Level;
 /**
  * @author mdogan 05/02/14
  */
-abstract class AbstractOffHeapCacheOperation
+abstract class AbstractHiDensityCacheOperation
         extends AbstractOperation
-        implements PartitionAwareOperation, IdentifiedDataSerializable {
+        implements PartitionAwareOperation, IdentifiedDataSerializable, MutableOperation {
 
-    private static final int FORCED_EVICTION_RETRY_COUNT = 100 / ICacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
+    protected static final int FORCED_EVICTION_RETRY_COUNT = 100 / ICacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
 
-    String name;
-    Data key;
+    protected String name;
+    protected Data key;
+    protected Object response;
+    protected int completionId = MutableOperation.IGNORE_COMPLETION;
 
-    Object response;
+    transient protected HiDensityCacheRecordStore cache;
+    transient protected OffHeapOutOfMemoryError oome;
 
-    transient HiDensityNativeMemoryCacheRecordStore cache;
-
-    transient OffHeapOutOfMemoryError oome;
-
-    protected AbstractOffHeapCacheOperation() {
+    protected AbstractHiDensityCacheOperation() {
     }
 
-    protected AbstractOffHeapCacheOperation(String name, Data key) {
+    protected AbstractHiDensityCacheOperation(String name) {
+        this.name = name;
+    }
+
+    protected AbstractHiDensityCacheOperation(String name, Data key) {
         this.name = name;
         this.key = key;
+    }
+
+    protected AbstractHiDensityCacheOperation(String name, int completionId) {
+        this.name = name;
+        this.completionId = completionId;
+    }
+
+    protected AbstractHiDensityCacheOperation(String name, Data key, int completionId) {
+        this.name = name;
+        this.key = key;
+        this.completionId = completionId;
     }
 
     @Override
@@ -56,11 +87,16 @@ abstract class AbstractOffHeapCacheOperation
 
         try {
             EnterpriseCacheService service = getService();
+            cache = (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+            // This is commented-out since some TCK tests requires created cache
+            // if there is no cache with specified partition id (or key) for cache miss statistics
+            /*
             if (this instanceof BackupAwareOffHeapCacheOperation) {
                 cache = (HiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
             } else {
                 cache = (HiDensityNativeMemoryCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
             }
+            */
         } catch (Throwable e) {
             dispose();
             throw ExceptionUtil.rethrow(e, Exception.class);
@@ -139,10 +175,28 @@ abstract class AbstractOffHeapCacheOperation
     }
 
     @Override
+    public void afterRun() throws Exception {
+        if (cache != null && key != null) {
+            cache.publishCompletedEvent(name, completionId, key, key.hashCode());
+        }
+    }
+
+    @Override
+    public int getCompletionId() {
+        return completionId;
+    }
+
+    @Override
+    public void setCompletionId(int completionId) {
+        this.completionId = completionId;
+    }
+
+    @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeUTF(name);
         out.writeData(key);
+        out.writeInt(completionId);
     }
 
     @Override
@@ -150,6 +204,7 @@ abstract class AbstractOffHeapCacheOperation
         super.readInternal(in);
         name = in.readUTF();
         key = readOffHeapData(in);
+        completionId = in.readInt();
     }
 
     protected final Data readOffHeapData(ObjectDataInput in) throws IOException {

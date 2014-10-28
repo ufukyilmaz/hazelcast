@@ -16,7 +16,7 @@
 
 package com.hazelcast.cache.client;
 
-import com.hazelcast.cache.CacheIterateOperation;
+import com.hazelcast.cache.CacheIteratorOperation;
 import com.hazelcast.cache.CachePortableHook;
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.client.impl.client.PartitionClientRequest;
@@ -47,7 +47,7 @@ public class CacheIterateRequest extends PartitionClientRequest implements Retry
 
     @Override
     protected Operation prepareOperation() {
-        return new CacheIterateOperation(name, slot, batch);
+        return new CacheIteratorOperation(name, slot, batch);
     }
 
     @Override

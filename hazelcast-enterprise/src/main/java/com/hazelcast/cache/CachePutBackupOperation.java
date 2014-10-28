@@ -1,7 +1,23 @@
+/*
+ * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -14,16 +30,18 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutBackupOperation extends AbstractOffHeapCacheOperation implements BackupOperation {
+public class CachePutBackupOperation
+        extends AbstractHiDensityCacheOperation
+        implements BackupOperation {
 
     private Data value;
-    
     private ExpiryPolicy expiryPolicy;
 
     public CachePutBackupOperation() {
     }
 
-    public CachePutBackupOperation(String name, Data key, Data value, ExpiryPolicy expiryPolicy) {
+    public CachePutBackupOperation(String name, Data key, Data value,
+                                   ExpiryPolicy expiryPolicy) {
         super(name, key);
         this.value = value;
         this.expiryPolicy = expiryPolicy;
@@ -32,8 +50,8 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
-        HiDensityNativeMemoryCacheRecordStore cache =
-                (HiDensityNativeMemoryCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+        HiDensityCacheRecordStore cache =
+                (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         cache.put(key, value, expiryPolicy, null);
         response = Boolean.TRUE;
     }
@@ -65,5 +83,4 @@ public class CachePutBackupOperation extends AbstractOffHeapCacheOperation imple
     public int getId() {
         return EnterpriseCacheDataSerializerHook.PUT_BACKUP;
     }
-
 }

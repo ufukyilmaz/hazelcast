@@ -16,12 +16,24 @@
 
 package com.hazelcast.cache.enterprise.hidensity;
 
-import com.hazelcast.cache.impl.record.CacheRecordMap;
+import com.hazelcast.memory.MemoryBlockAccessor;
+import com.hazelcast.nio.serialization.Data;
 
 /**
- * @author sozal 14/10/14
+ * @author sozal 18/10/14
  */
-public interface HiDensityCacheRecordMap<K, V>
-        extends CacheRecordMap<K, V> {
+public interface HiDensityCacheRecordAccessor<R extends HiDensityCacheRecord, D extends Data>
+        extends MemoryBlockAccessor<R> {
+
+    R newRecord();
+    D readData(long valueAddress);
+    Object readValue(R record, boolean enqueeDataOnFinish);
+
+    void disposeValue(R record);
+    void disposeData(D data);
+    void disposeData(long address);
+
+    void enqueueRecord(R record);
+    void enqueueData(D data);
 
 }

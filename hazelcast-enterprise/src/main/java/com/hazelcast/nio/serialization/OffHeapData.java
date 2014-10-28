@@ -81,6 +81,9 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
 
     @Override
     public int dataSize() {
+        if (address == 0L) {
+            return 0;
+        }
         int dataSize = readInt(DATA_SIZE_OFFSET);
         dataSize = Bits.clearBit(dataSize, PARTITION_HASH_BIT);
         dataSize = Bits.clearBit(dataSize, HEADER_BIT);
@@ -197,6 +200,9 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
 
     @Override
     public int getType() {
+        if (address == 0L) {
+            return SerializationConstants.CONSTANT_TYPE_NULL;
+        }
         return readInt(TYPE_OFFSET);
     }
 

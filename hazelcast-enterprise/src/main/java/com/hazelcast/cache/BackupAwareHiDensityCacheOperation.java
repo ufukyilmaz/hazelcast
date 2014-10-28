@@ -17,39 +17,37 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
-import com.hazelcast.spi.ReadonlyOperation;
+import com.hazelcast.spi.BackupAwareOperation;
 
 /**
  * @author mdogan 05/02/14
  */
-public class CacheContainsKeyOperation
+abstract class BackupAwareHiDensityCacheOperation
         extends AbstractHiDensityCacheOperation
-        implements ReadonlyOperation {
+        implements BackupAwareOperation {
 
-    public CacheContainsKeyOperation() {
+    protected BackupAwareHiDensityCacheOperation() {
     }
 
-    public CacheContainsKeyOperation(String name, Data key) {
+    protected BackupAwareHiDensityCacheOperation(String name) {
+        super(name);
+    }
+
+    protected BackupAwareHiDensityCacheOperation(String name, Data key) {
         super(name, key);
     }
 
-    @Override
-    public void runInternal() throws Exception {
-        response = cache != null && cache.contains(key);
+    protected BackupAwareHiDensityCacheOperation(String name, Data key, int completionId) {
+        super(name, key, completionId);
     }
 
     @Override
-    public void afterRun() throws Exception {
-        dispose();
+    public final int getSyncBackupCount() {
+        return cache != null ? cache.getConfig().getBackupCount() : 0;
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
-    }
-
-    @Override
-    public int getId() {
-        return EnterpriseCacheDataSerializerHook.CONTAINS_KEY;
+    public final int getAsyncBackupCount() {
+        return cache != null ? cache.getConfig().getAsyncBackupCount() : 0;
     }
 }

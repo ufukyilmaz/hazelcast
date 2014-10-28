@@ -17,10 +17,8 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.SlowTest;
-import org.junit.After;
-import org.junit.Before;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -42,36 +40,47 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class CacheLoadTest {
-
-    private static final String CACHE_NAME = "CACHE";
+public class CacheLoadTest extends AbstractCacheTest {
 
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
-    private HazelcastInstance server;
+    private HazelcastInstance instance;
     private ICache<Object, Object> cache;
     private MemorySize totalSize = new MemorySize(512, MemoryUnit.MEGABYTES);
 
-    @Before
-    public void setup() {
+    @Override
+    protected void onSetup() {
         Config config = getConfig();
-        server = Hazelcast.newHazelcastInstance(config);
+        instance = Hazelcast.newHazelcastInstance(config);
         cache = createCache(CACHE_NAME);
+    }
+
+    @Override
+    protected void onTearDown() {
+
+    }
+
+    @Override
+    protected HazelcastInstance getHazelcastInstance() {
+        return instance;
     }
 
     protected final Config getConfig() {
         Config config = new Config();
-        config.setProperties(AbstractCacheTest.getDefaultProperties());
+        config.setProperties(getProperties());
 
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().addMember("127.0.0.1").setEnabled(true);
 
-        config.setNativeMemoryConfig(new NativeMemoryConfig().setEnabled(true)
-                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED).setSize(totalSize)
-                .setPageSize(1 << 20));
+        config.setNativeMemoryConfig(
+                new NativeMemoryConfig()
+                        .setEnabled(true)
+                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                        .setSize(totalSize)
+                        .setPageSize(1 << 20));
 
-        config.setSerializationConfig(AbstractCacheTest.getDefaultSerializationConfig());
+        config.setSerializationConfig(getSerializationConfig());
 
         /*
         config.addCacheConfig(new CacheConfig()
@@ -81,6 +90,7 @@ public class CacheLoadTest {
                                 //.setEvictionThresholdPercentage(90));
         );
         */
+
         return config;
     }
 
@@ -95,17 +105,12 @@ public class CacheLoadTest {
                                 .unwrap(ICache.class);
     }
 
-    @After
-    public void tearDown() {
-        Hazelcast.shutdownAll();
-    }
-
     @Test
     public void testContinuousPut() throws InterruptedException {
         Random random = new Random();
         int minSize = 10;
         int maxSize = (int) MemoryUnit.KILOBYTES.toBytes(99);
-        final String[] values = new String[5000];
+        final String[] values = new String[3000];
         for (int i = 0; i < values.length; i++) {
             byte[] bb = new byte[random.nextInt(maxSize) + minSize];
             random.nextBytes(bb);
@@ -135,8 +140,9 @@ public class CacheLoadTest {
             });
         }
 
-        Node node = TestUtil.getNode(server);
-        EnterpriseSerializationService serializationService = (EnterpriseSerializationService) node.getSerializationService();
+        Node node = TestUtil.getNode(instance);
+        EnterpriseSerializationService serializationService =
+                (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
         LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
 
@@ -159,8 +165,9 @@ public class CacheLoadTest {
         int max = (int) MemoryUnit.KILOBYTES.toBytes(10);
         int size = min;
 
-        Node node = TestUtil.getNode(server);
-        EnterpriseSerializationService serializationService = (EnterpriseSerializationService) node.getSerializationService();
+        Node node = TestUtil.getNode(instance);
+        EnterpriseSerializationService serializationService =
+                (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
         LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
 
@@ -177,4 +184,5 @@ public class CacheLoadTest {
             System.out.println(memoryStats);
         }
     }
+
 }

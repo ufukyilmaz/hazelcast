@@ -16,6 +16,7 @@
 
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;

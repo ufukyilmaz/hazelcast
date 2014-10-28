@@ -17,7 +17,7 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.CacheDestroyOperation;
-import com.hazelcast.cache.CacheOperationProvider;
+import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.HiDensityOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;

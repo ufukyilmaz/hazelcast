@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.eclipsesource.json.JsonObject;
+import com.hazelcast.com.eclipsesource.json.JsonObject;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.monitor.LocalGCStats;
 import com.hazelcast.monitor.LocalMemoryStats;

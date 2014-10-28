@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.eclipsesource.json.JsonObject;
+import com.hazelcast.com.eclipsesource.json.JsonObject;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.util.Clock;
 

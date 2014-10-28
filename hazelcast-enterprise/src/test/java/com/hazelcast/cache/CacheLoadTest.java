@@ -1,6 +1,5 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.impl.HazelcastCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
@@ -18,7 +17,6 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.SlowTest;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -98,11 +96,11 @@ public class CacheLoadTest extends AbstractCacheTest {
         System.setProperty(GroupProperties.PROP_JCACHE_PROVIDER_TYPE, "server");
         CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
         CacheConfig cc = new CacheConfig()
-                                .setName(CACHE_NAME)
-                                .setEvictionPolicy(EvictionPolicy.LRU);
+                .setName(CACHE_NAME)
+                .setEvictionPolicy(EvictionPolicy.LRU);
         return cacheManager.createCache(name,
-                                        (Configuration<Object, Object>)cc)
-                                .unwrap(ICache.class);
+                (Configuration<Object, Object>) cc)
+                .unwrap(ICache.class);
     }
 
     @Test

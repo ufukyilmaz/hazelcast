@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.hazelcast.cache.enterprise.hidensity;
-
-import com.hazelcast.cache.impl.record.CacheRecordMap;
-import com.hazelcast.elasticcollections.SlottableIterator;
-
 /**
- * @author sozal 14/10/14
- *
- * @param <K> Type of key for cache record stored in this cache record map
- * @param <V> Type of value for cache record stored in this cache record map
+ * <p>This package contains Enterprise client request functionality for Hazelcast.<br/>
  */
-public interface HiDensityCacheRecordMap<K, V> extends CacheRecordMap<K, V> {
-
-    <E> SlottableIterator<E> iterator(int slot);
-
-}
+package com.hazelcast.cache.client;

@@ -26,6 +26,9 @@ import com.hazelcast.nio.serialization.Data;
 import java.io.IOException;
 import java.security.Permission;
 
+/**
+ * @author mdogan 18/02/14
+ */
 abstract class AbstractCacheRequest extends KeyBasedClientRequest implements RetryableRequest {
 
     protected String name;

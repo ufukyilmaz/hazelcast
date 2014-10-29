@@ -24,10 +24,15 @@ import com.hazelcast.nio.serialization.Data;
 
 /**
  * @author sozal 18/10/14
+ *
+ * @param <R> Type of the cache record to be accessed
  */
-public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord, D extends Data>
+public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
         extends ICacheRecordStore {
 
+    /**
+     * Value of empty address
+     */
     long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
     Object getDataValue(Data data);
@@ -38,7 +43,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord, D ext
 
     MemoryManager getMemoryManager();
     EnterpriseCacheService getCacheService();
-    HiDensityCacheRecordAccessor<R, D> getCacheRecordAccessor();
+    HiDensityCacheRecordAccessor<R> getCacheRecordAccessor();
 
     void put(Data key, Object value, String caller);
     void own(Data key, Object value, long ttlMillis);

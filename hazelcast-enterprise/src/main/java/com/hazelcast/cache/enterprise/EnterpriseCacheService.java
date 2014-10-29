@@ -24,7 +24,10 @@ import com.hazelcast.cache.client.CacheInvalidationMessage;
 import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.enterprise.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.CachePartitionSegment;
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.CacheStatisticsImpl;
+import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -48,6 +51,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class EnterpriseCacheService extends CacheService {
 
+    private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
+
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
@@ -63,15 +68,15 @@ public class EnterpriseCacheService extends CacheService {
                         nodeEngine,
                         HiDensityNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
             } catch (OffHeapOutOfMemoryError e) {
-                throw new OffHeapOutOfMemoryError("Cannot create internal cache map, " +
-                        "not enough contiguous memory available! -> " + e.getMessage(), e);
+                throw new OffHeapOutOfMemoryError("Cannot create internal cache map, "
+                        + "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
 
         } else if (InMemoryFormat.BINARY.equals(inMemoryFormat)
                 || InMemoryFormat.OBJECT.equals(inMemoryFormat)) {
             return super.createNewRecordStore(name, partitionId);
         }
-        // TODO:
+        // TODO
         //      Or if "inMemoryFormat" is "ON_HEAP_SLAB",
         //      create "EnterpriseOnHeapSlabAllocatorCacheRecordStore"
         throw new IllegalArgumentException("Cannot create record store for the storage type: "
@@ -105,7 +110,7 @@ public class EnterpriseCacheService extends CacheService {
                 }
             }
         }
-        // TODO: This is commented-out since
+        // TODO This is commented-out since
         // there is a deadlock between HiDensity cache destroy and open-source destroy operations
         // Currently operations are fire and forget :)
         /*
@@ -138,7 +143,8 @@ public class EnterpriseCacheService extends CacheService {
         }
         for (CacheSegmentDestroyOperation op : ops) {
             try {
-                op.awaitCompletion(30, TimeUnit.SECONDS);
+                op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS,
+                                   TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

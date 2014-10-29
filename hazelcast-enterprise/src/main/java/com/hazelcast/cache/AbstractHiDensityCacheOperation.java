@@ -32,6 +32,7 @@ import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.io.IOException;
@@ -44,15 +45,16 @@ abstract class AbstractHiDensityCacheOperation
         extends AbstractOperation
         implements PartitionAwareOperation, IdentifiedDataSerializable, MutableOperation {
 
-    protected static final int FORCED_EVICTION_RETRY_COUNT = 100 / ICacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
+    protected static final int FORCED_EVICTION_RETRY_COUNT =
+            ICacheRecordStore.ONE_HUNDRED_PERCENT / ICacheRecordStore.MIN_FORCED_EVICT_PERCENTAGE;
 
     protected String name;
     protected Data key;
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;
 
-    transient protected HiDensityCacheRecordStore cache;
-    transient protected OffHeapOutOfMemoryError oome;
+    protected transient HiDensityCacheRecordStore cache;
+    protected transient OffHeapOutOfMemoryError oome;
 
     protected AbstractHiDensityCacheOperation() {
     }
@@ -145,7 +147,8 @@ abstract class AbstractHiDensityCacheOperation
             }
             disposeInternal(ss);
         } catch (Throwable ignored) {
-            // TODO: ignored error at the moment
+            EmptyStatement.ignore(ignored);
+            // TODO ignored error at the moment
             // a double free() error may be thrown if an operation fails
             // since internally key/value references are freed on oome
         }

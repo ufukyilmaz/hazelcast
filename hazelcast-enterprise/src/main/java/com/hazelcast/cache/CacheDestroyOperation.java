@@ -37,7 +37,9 @@ public final class CacheDestroyOperation
     private final CountDownLatch done = new CountDownLatch(1);
     private final String name;
 
-    public CacheDestroyOperation(String name) {this.name = name;}
+    public CacheDestroyOperation(String name) {
+        this.name = name;
+    }
 
     @Override
     public void run() throws Exception {

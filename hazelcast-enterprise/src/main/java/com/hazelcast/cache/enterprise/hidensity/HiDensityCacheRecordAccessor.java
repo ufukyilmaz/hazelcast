@@ -17,23 +17,25 @@
 package com.hazelcast.cache.enterprise.hidensity;
 
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.OffHeapData;
 
 /**
  * @author sozal 18/10/14
+ *
+ * @param <R> Type of the cache record to be accessed
  */
-public interface HiDensityCacheRecordAccessor<R extends HiDensityCacheRecord, D extends Data>
+public interface HiDensityCacheRecordAccessor<R extends HiDensityCacheRecord>
         extends MemoryBlockAccessor<R> {
 
     R newRecord();
-    D readData(long valueAddress);
+    OffHeapData readData(long valueAddress);
     Object readValue(R record, boolean enqueeDataOnFinish);
 
     void disposeValue(R record);
-    void disposeData(D data);
+    void disposeData(OffHeapData data);
     void disposeData(long address);
 
     void enqueueRecord(R record);
-    void enqueueData(D data);
+    void enqueueData(OffHeapData data);
 
 }

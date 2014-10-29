@@ -16,7 +16,9 @@
 
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.CacheClearResponse;
+import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.HeapData;
 import com.hazelcast.partition.InternalPartitionService;
@@ -54,6 +56,7 @@ public class CacheClearOperation
         this.completionId = completionId;
     }
 
+    //CHECKSTYLE:OFF
     @Override
     public void run() {
         CacheService service = getService();
@@ -91,6 +94,7 @@ public class CacheClearOperation
             }
         }
     }
+    //CHECKSTYLE:ON
 
     @Override
     public boolean shouldBackup() {

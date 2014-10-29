@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * @author mdogan 05/02/14
+ */
 public class CacheClearOperationFactory
         implements OperationFactory, IdentifiedDataSerializable {
 

@@ -29,7 +29,7 @@ import java.io.IOException;
  */
 public class CacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
 
-    private Data currentValue; // if same
+    private Data currentValue;
 
     public CacheRemoveOperation() {
     }

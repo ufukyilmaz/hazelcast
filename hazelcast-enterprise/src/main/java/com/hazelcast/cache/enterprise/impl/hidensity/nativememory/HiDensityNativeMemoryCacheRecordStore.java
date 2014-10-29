@@ -52,9 +52,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<
                     HiDensityNativeMemoryCacheRecord,
                     HiDensityNativeMemoryCacheRecordMap>
-        implements HiDensityCacheRecordStore<
-                        HiDensityNativeMemoryCacheRecord,
-                        OffHeapData> {
+        implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
     /**
      * Default value for initial capacity of Hi-Density Native Memory Cache Record Store
@@ -1004,7 +1002,7 @@ public class HiDensityNativeMemoryCacheRecordStore
      * for creating, reading, disposing record or its data.
      */
     public static class HiDensityNativeMemoryCacheRecordAccessor
-            implements HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord, OffHeapData> {
+            implements HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> {
 
         private final EnterpriseSerializationService ss;
         private final MemoryManager memoryManager;

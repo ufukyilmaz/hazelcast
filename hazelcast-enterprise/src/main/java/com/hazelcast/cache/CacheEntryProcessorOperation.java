@@ -20,7 +20,11 @@ import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.OffHeapData;
+import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.processor.EntryProcessor;

@@ -58,11 +58,11 @@ public final class HiDensityNativeMemoryCacheRecordMap
     private int randomEvictionLastIndex;
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
-                                               EnterpriseSerializationService serializationService,
-                                               HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
-                                               Callback<Data> evictionCallback) {
+            EnterpriseSerializationService serializationService,
+            HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
+            Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, cacheRecordAccessor,
-                serializationService.getMemoryManager().unwrapMemoryAllocator());
+              serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.cacheRecordAccessor = cacheRecordAccessor;
         this.evictionCallback = evictionCallback;
     }
@@ -71,6 +71,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return new OffHeapOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
     }
 
+    //CHECKSTYLE:OFF
     @Override
     public int evictExpiredRecords(int percentage) {
         int capacity = capacity();
@@ -101,6 +102,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
         return k;
     }
+    //CHECKSTYLE:ON
 
     private void callbackEvictionListeners(OffHeapData binary) {
         if (evictionCallback != null) {
@@ -285,10 +287,12 @@ public final class HiDensityNativeMemoryCacheRecordMap
     }
     //CHECKSTYLE:ON
 
+    @Override
     public EntryIter iterator(int slot) {
         return new EntryIter(slot);
     }
 
+    @Override
     public CacheKeyIteratorResult fetchNext(int nextTableIndex, int size) {
         long now = Clock.currentTimeMillis();
         BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>.EntryIter iter =

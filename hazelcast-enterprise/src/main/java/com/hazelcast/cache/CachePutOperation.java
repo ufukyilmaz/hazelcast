@@ -31,7 +31,7 @@ import java.io.IOException;
 public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
 
     private Data value;
-    private boolean get; // getAndPut
+    private boolean get;
     private ExpiryPolicy expiryPolicy;
 
     public CachePutOperation() {

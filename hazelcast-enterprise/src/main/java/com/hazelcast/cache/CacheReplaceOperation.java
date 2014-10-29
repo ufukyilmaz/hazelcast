@@ -31,7 +31,7 @@ import java.io.IOException;
 public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
 
     private Data value;
-    private Data currentValue; // replace if same
+    private Data currentValue;
     private ExpiryPolicy expiryPolicy;
 
     public CacheReplaceOperation() {

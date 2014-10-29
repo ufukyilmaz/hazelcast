@@ -24,7 +24,12 @@ import com.hazelcast.spi.EventService;
 
 import java.security.Permission;
 
-public class CacheRemoveInvalidationListenerRequest extends BaseClientRemoveListenerRequest implements RetryableRequest {
+/**
+ * @author mdogan 18/02/14
+ */
+public class CacheRemoveInvalidationListenerRequest
+        extends BaseClientRemoveListenerRequest
+        implements RetryableRequest {
 
     public CacheRemoveInvalidationListenerRequest() {
     }

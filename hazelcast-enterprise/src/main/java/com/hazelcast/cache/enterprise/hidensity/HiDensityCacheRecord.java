@@ -18,13 +18,14 @@ package com.hazelcast.cache.enterprise.hidensity;
 
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.serialization.OffHeapData;
 
 /**
  * @author sozal 26/10/14
  */
-public abstract class HiDensityCacheRecord<V>
+public abstract class HiDensityCacheRecord
         extends MemoryBlock
-        implements CacheRecord<V> {
+        implements CacheRecord<OffHeapData> {
 
     public HiDensityCacheRecord() {
     }
@@ -50,7 +51,7 @@ public abstract class HiDensityCacheRecord<V>
     public abstract long getValueAddress();
     public abstract void setValueAddress(long valueAddress);
 
-    public abstract HiDensityCacheRecord<V> reset(long address);
+    public abstract HiDensityCacheRecord reset(long address);
     public abstract void clear();
 
 }

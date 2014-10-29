@@ -24,25 +24,36 @@ import com.hazelcast.nio.serialization.OffHeapData;
 /**
  * @author sozal 14/10/14
  */
-public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
-        extends HiDensityCacheRecord<V> {
+public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord {
+
+    /**
+     * Header size of native memory based cache record
+     */
+    public static final int HEADER_SIZE = 8;
+    /**
+     * Value offset of native memory based cache record
+     */
+    public static final int VALUE_OFFSET = 16;
+    /**
+     * Size of native memory based cache record
+     */
+    public static final int SIZE = VALUE_OFFSET + HEADER_SIZE;
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = 8;
     static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     static final int TTL_OFFSET = 12;
 
-    public static final int VALUE_OFFSET = 16;
-    public static final int SIZE = VALUE_OFFSET + 8;
+    private HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
 
-    private HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord, V> cacheRecordAccessor;
-
-    public HiDensityNativeMemoryCacheRecord(HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord, V> cacheRecordAccessor) {
+    public HiDensityNativeMemoryCacheRecord(
+            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor) {
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
-    public HiDensityNativeMemoryCacheRecord(HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord, V> cacheRecordAccessor,
-                                            long address) {
+    public HiDensityNativeMemoryCacheRecord(
+            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
+            long address) {
         super(address, SIZE);
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
@@ -124,16 +135,16 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
     }
 
     @Override
-    public V getValue() {
+    public OffHeapData getValue() {
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return (V) cacheRecordAccessor.readData(address);
+            return (OffHeapData) cacheRecordAccessor.readData(address);
         }
     }
 
     @Override
-    public void setValue(V value) {
+    public void setValue(OffHeapData value) {
         if (value != null) {
             setValueAddress(value.address());
         } else {
@@ -156,7 +167,7 @@ public final class HiDensityNativeMemoryCacheRecord<V extends OffHeapData>
         long timeDiff = expirationTime - creationTime;
         int newTtl =
                 expirationTime >= creationTime
-                        ? (timeDiff > Integer.MAX_VALUE ? -1 : (int)timeDiff)
+                        ? (timeDiff > Integer.MAX_VALUE ? -1 : (int) timeDiff)
                         : -1;
         setTtlMillis(newTtl);
     }

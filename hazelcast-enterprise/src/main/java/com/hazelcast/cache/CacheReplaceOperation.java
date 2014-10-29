@@ -63,7 +63,7 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
         SerializationService ss = getNodeEngine().getSerializationService();
         ss.disposeData(key);
 
-        if (response == Boolean.FALSE) {
+        if (Boolean.FALSE.equals(response)) {
             disposeInternal(ss);
         } else {
             if (currentValue != null) {
@@ -75,7 +75,7 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
 
     @Override
     public boolean shouldBackup() {
-        return response == Boolean.TRUE;
+        return Boolean.TRUE.equals(response);
     }
 
     @Override

@@ -55,7 +55,7 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
 
     @Override
     public void afterRun() throws Exception {
-        if (response == Boolean.FALSE) {
+        if (Boolean.FALSE.equals(response)) {
             dispose();
         }
         super.afterRun();
@@ -63,7 +63,7 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
 
     @Override
     public boolean shouldBackup() {
-        return response == Boolean.TRUE;
+        return Boolean.TRUE.equals(response);
     }
 
     @Override

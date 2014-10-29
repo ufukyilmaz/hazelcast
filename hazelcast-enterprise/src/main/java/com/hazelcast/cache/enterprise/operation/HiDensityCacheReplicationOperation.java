@@ -233,7 +233,7 @@ public final class HiDensityCacheReplicationOperation
     /**
      * Holder to keep data value and ttl as tuple
      */
-    private final class CacheRecordHolder {
+    private static final class CacheRecordHolder {
         final Data value;
         final int ttl;
 

@@ -31,4 +31,8 @@
         <Package name="com.hazelcast.enterprise" />
     </Match>
 
+    <Match>
+        <Class name="com.hazelcast.cache.CacheIterationResult" />
+    </Match>
+
 </FindBugsFilter>

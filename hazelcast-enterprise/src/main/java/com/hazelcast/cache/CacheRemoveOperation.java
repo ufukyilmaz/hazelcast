@@ -60,7 +60,7 @@ public class CacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
 
     @Override
     public boolean shouldBackup() {
-        return response == Boolean.TRUE;
+        return Boolean.TRUE.equals(response);
     }
 
     @Override

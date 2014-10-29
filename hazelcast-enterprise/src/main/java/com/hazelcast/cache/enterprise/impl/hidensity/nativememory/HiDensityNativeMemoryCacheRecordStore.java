@@ -80,7 +80,6 @@ public class HiDensityNativeMemoryCacheRecordStore
               evictionPolicy, evictionPercentage, evictionThresholdPercentage, evictionTaskEnable);
         this.initialCapacity = initialCapacity;
         this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
-
         this.cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();
         this.records = createRecordCacheMap();
@@ -1077,17 +1076,12 @@ public class HiDensityNativeMemoryCacheRecordStore
         public Object readValue(HiDensityNativeMemoryCacheRecord record,
                                 boolean enqueeDataOnFinish) {
             OffHeapData offHeapData = readData(record.getValueAddress());
-            if (offHeapData != null) {
-                try {
-                    return ss.toObject(offHeapData);
-                } finally {
-                    if (enqueeDataOnFinish) {
-                        enqueueData(offHeapData);
-                    }
+            try {
+                return ss.toObject(offHeapData);
+            } finally {
+                if (enqueeDataOnFinish) {
+                    enqueueData(offHeapData);
                 }
-
-            } else {
-                return null;
             }
         }
 

@@ -195,6 +195,34 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) o;
+
+        if (address != record.address) {
+            return false;
+        }
+        if (size != record.size) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = (int) (address ^ (address >>> 32));
+        result = 31 * result + size;
+        return result;
+    }
+
+    @Override
     public String toString() {
         if (address() >= HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()

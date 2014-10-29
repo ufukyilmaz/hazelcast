@@ -103,11 +103,7 @@ public class EnterpriseCacheService extends CacheService {
                 ops.add(op);
                 op.setPartitionId(segment.getPartitionId())
                         .setNodeEngine(nodeEngine).setService(this);
-                if (op.getPartitionId() == 0) {
-                    operationService.executeOperation(op);
-                } else {
-                    operationService.executeOperation(op);
-                }
+                operationService.executeOperation(op);
             }
         }
         // TODO This is commented-out since

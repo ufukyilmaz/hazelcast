@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * @author sozal 11/02/14
@@ -53,9 +54,10 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     };
 
-    private final HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
-    private final Callback<Data> evictionCallback;
+    private final transient HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private final transient Callback<Data> evictionCallback;
     private int randomEvictionLastIndex;
+    private final Random random = new Random();
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
             EnterpriseSerializationService serializationService,
@@ -78,7 +80,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         int len = (int) (capacity * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
         int k = 0;
         if (len > 0 && size() > 0) {
-            int start = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? (int) (Math.random() * capacity) : 0;
+            int start = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? (int) (random.nextInt(capacity)) : 0;
             int end = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? Math.min(start + len, capacity) : capacity;
 
             long now = Clock.currentTimeMillis();

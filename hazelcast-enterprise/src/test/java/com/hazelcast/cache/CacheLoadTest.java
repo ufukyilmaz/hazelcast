@@ -34,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 @Category(SlowTest.class)
 public class CacheLoadTest extends AbstractCacheTest {
 
-    private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(60);
+    private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
     private HazelcastInstance instance;
     private MemorySize totalSize = new MemorySize(1024, MemoryUnit.MEGABYTES);

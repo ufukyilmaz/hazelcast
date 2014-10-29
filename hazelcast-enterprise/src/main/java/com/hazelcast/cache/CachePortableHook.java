@@ -45,27 +45,78 @@ import java.util.Collection;
  */
 public class CachePortableHook implements PortableHook {
 
+    /**
+     * Id of "Cache Portable Factory"
+     */
     public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.CACHE_PORTABLE_FACTORY, -25);
+    /**
+     * Id of "GET" operation
+     */
     public static final int GET = 1;
+    /**
+     * Id of "PUT" operation
+     */
     public static final int PUT = 2;
+    /**
+     * Id of "PUT_IF_ABSENT" operation
+     */
     public static final int PUT_IF_ABSENT = 3;
+    /**
+     * Id of "REMOVE" operation
+     */
     public static final int REMOVE = 4;
+    /**
+     * Id of "GET_AND_REMOVE" operation
+     */
     public static final int GET_AND_REMOVE = 5;
+    /**
+     * Id of "REPLACE" operation
+     */
     public static final int REPLACE = 6;
+    /**
+     * Id of "GET_AND_REPLACE" operation
+     */
     public static final int GET_AND_REPLACE = 7;
+    /**
+     * Id of "SIZE" operation
+     */
     public static final int SIZE = 8;
+    /**
+     * Id of "CLEAR" operation
+     */
     public static final int CLEAR = 9;
+    /**
+     * Id of "CONTAINS_KEY" operation
+     */
     public static final int CONTAINS_KEY = 10;
+    /**
+     * Id of "ADD_INVALIDATION_LISTENER" operation
+     */
     public static final int ADD_INVALIDATION_LISTENER = 11;
+    /**
+     * Id of "INVALIDATION_MESSAGE" operation
+     */
     public static final int INVALIDATION_MESSAGE = 12;
+    /**
+     * Id of "REMOVE_INVALIDATION_LISTENER" operation
+     */
     public static final int REMOVE_INVALIDATION_LISTENER = 13;
+    /**
+     * Id of "SEND_STATS" operation
+     */
     public static final int SEND_STATS = 14;
+    /**
+     * Id of "ITERATE" operation
+     */
     public static final int ITERATE = 16;
 
+    @Override
     public int getFactoryId() {
         return F_ID;
     }
 
+    //CHECKSTYLE:OFF
+    @Override
     public PortableFactory createFactory() {
         return new PortableFactory() {
             final ConstructorFunction<Integer, Portable> constructors[] = new ConstructorFunction[20];
@@ -155,6 +206,7 @@ public class CachePortableHook implements PortableHook {
             }
         };
     }
+    //CHECKSTYLE:ON
 
     public Collection<ClassDefinition> getBuiltinDefinitions() {
         return null;

@@ -18,6 +18,7 @@ package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
 import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -42,8 +43,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
         implements HiDensityCacheRecordMap<Data, HiDensityNativeMemoryCacheRecord> {
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 100;
+    private static final int NORMALIZE_FACTORY = 50;
 
-    // TODO: clear thread local at the end!
+    // TODO clear thread local at the end!
     private static final ThreadLocal<SortArea> SORT_AREA_THREAD_LOCAL = new ThreadLocal<SortArea>() {
         @Override
         protected SortArea initialValue() {
@@ -72,11 +74,11 @@ public final class HiDensityNativeMemoryCacheRecordMap
     @Override
     public int evictExpiredRecords(int percentage) {
         int capacity = capacity();
-        int len = (int) (capacity * (long) percentage / 100);
+        int len = (int) (capacity * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
         int k = 0;
         if (len > 0 && size() > 0) {
-            int start = percentage < 100 ? (int) (Math.random() * capacity) : 0;
-            int end = percentage < 100 ? Math.min(start + len, capacity) : capacity;
+            int start = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? (int) (Math.random() * capacity) : 0;
+            int end = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? Math.min(start + len, capacity) : capacity;
 
             long now = Clock.currentTimeMillis();
             for (int ix = start; ix < end; ix++) {
@@ -106,6 +108,12 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     }
 
+    private long getAccessTime(long recordAddress) {
+        long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
+        int accessTimeDiff = HiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
+        return creationTime + accessTimeDiff;
+    }
+
     @Override
     public int evictRecords(int percentage, EvictionPolicy policy) {
         switch (policy) {
@@ -131,12 +139,13 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     }
 
+    //CHECKSTYLE:OFF
     private int evictRecordsLRU(int percentage) {
         if (percentage <= 0) {
             return 0;
         }
         final int size = size();
-        if (percentage >= 100 || size <= MIN_EVICTION_ELEMENT_COUNT) {
+        if (percentage >= ICacheRecordStore.ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
             clear();
             return size;
         }
@@ -159,7 +168,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
             }
 
             Arrays.sort(sortArray, 0, size);
-            int index = (int) (size * (long) percentage / 100);
+            int index = (int) (size * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
             long time = sortArray[index];
 
             k = 0;
@@ -179,19 +188,15 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
         return k;
     }
+    //CHECKSTYLE:ON
 
-    private long getAccessTime(long recordAddress) {
-        long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(recordAddress);
-        int accessTimeDiff = HiDensityNativeMemoryCacheRecord.getAccessTimeDiff(recordAddress);
-        return creationTime + accessTimeDiff;
-    }
-
+    //CHECKSTYLE:OFF
     private int evictRecordsLFU(int percentage) {
         if (percentage <= 0) {
             return 0;
         }
         final int size = size();
-        if (percentage >= 100 || size <= MIN_EVICTION_ELEMENT_COUNT) {
+        if (percentage >= ICacheRecordStore.ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
             clear();
             return size;
         }
@@ -211,7 +216,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
                 }
             }
             Arrays.sort(sortArray, 0, size);
-            int index = (int) (size * (long) percentage / 100);
+            int index = (int) (size * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
             hit = sortArray[index];
 
             k = 0;
@@ -231,7 +236,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
         return k;
     }
+    //CHECKSTYLE:ON
 
+    //CHECKSTYLE:OFF
     private int evictRecordsRandom(int percentage) {
         if (percentage <= 0) {
             return 0;
@@ -241,12 +248,12 @@ public final class HiDensityNativeMemoryCacheRecordMap
             return 0;
         }
 
-        if (percentage >= 100 || size <= MIN_EVICTION_ELEMENT_COUNT) {
+        if (percentage >= ICacheRecordStore.ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
             clear();
             return size;
         }
 
-        int len = (int) (size * (long) percentage / 100);
+        int len = (int) (size * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
         len = Math.max(len, MIN_EVICTION_ELEMENT_COUNT);
 
         final int start = randomEvictionLastIndex;
@@ -269,11 +276,14 @@ public final class HiDensityNativeMemoryCacheRecordMap
                 }
             }
             ix = (ix + 1) & mask;
-            if (ix == start) break;
+            if (ix == start) {
+                break;
+            }
         }
         randomEvictionLastIndex = ix;
         return k;
     }
+    //CHECKSTYLE:ON
 
     public EntryIter iterator(int slot) {
         return new EntryIter(slot);
@@ -296,13 +306,16 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());
     }
 
+    /**
+     * Sort area for record address as thread local usage.
+     */
     private static class SortArea {
         long[] longArray;
         int[] intArray;
 
         int[] getIntArray(int len) {
             if (intArray == null || intArray.length < len) {
-                len = QuickMath.normalize(len, 50);
+                len = QuickMath.normalize(len, NORMALIZE_FACTORY);
                 intArray = new int[len];
             } else {
                 Arrays.fill(intArray, 0, len, 0);
@@ -312,7 +325,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
         long[] getLongArray(int len) {
             if (longArray == null || longArray.length < len) {
-                len = QuickMath.normalize(len, 50);
+                len = QuickMath.normalize(len, NORMALIZE_FACTORY);
                 longArray = new long[len];
             } else {
                 Arrays.fill(longArray, 0, len, 0L);

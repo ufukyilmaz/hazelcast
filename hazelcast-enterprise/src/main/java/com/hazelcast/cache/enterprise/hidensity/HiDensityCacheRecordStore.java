@@ -28,6 +28,8 @@ import com.hazelcast.nio.serialization.Data;
 public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord, D extends Data>
         extends ICacheRecordStore {
 
+    long NULL_PTR = MemoryManager.NULL_ADDRESS;
+
     Object getDataValue(Data data);
     Object getRecordValue(R record);
 

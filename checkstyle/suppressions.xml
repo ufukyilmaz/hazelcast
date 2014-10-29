@@ -40,6 +40,9 @@
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketReader"/>
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
 
+    <!-- HiDensity -->
+    <suppress checks="MethodCountCheck" files="com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+
 
 </suppressions>
 

@@ -18,7 +18,6 @@ package com.hazelcast.cache.enterprise.operation;
 
 import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;

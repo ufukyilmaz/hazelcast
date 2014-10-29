@@ -16,11 +16,12 @@
 
 package com.hazelcast.cache.enterprise.impl.hidensity.nativememory;
 
-import com.hazelcast.cache.enterprise.*;
+import com.hazelcast.cache.enterprise.EnterpriseCacheService;
 import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordAccessor;
 import com.hazelcast.cache.enterprise.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
-import com.hazelcast.cache.impl.*;
+import com.hazelcast.cache.impl.AbstractCacheRecordStore;
+import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elasticcollections.map.BinaryOffHeapHashMap;
@@ -28,7 +29,11 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.OffHeapData;
+import com.hazelcast.nio.serialization.OffHeapDataUtil;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -36,9 +41,9 @@ import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author sozal 14/10/14
@@ -51,19 +56,16 @@ public class HiDensityNativeMemoryCacheRecordStore
                         HiDensityNativeMemoryCacheRecord,
                         OffHeapData> {
 
+    /**
+     * Default value for initial capacity of Hi-Density Native Memory Cache Record Store
+     */
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
-    public static final long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
     private final int initialCapacity;
     private final EnterpriseSerializationService serializationService;
-    private final ScheduledFuture<?> evictionTaskFuture;
     private final Operation evictionOperation;
     private MemoryManager memoryManager;
     private HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
-    private final EvictionPolicy evictionPolicy;
-    private final boolean evictionEnabled;
-    private final int evictionPercentage;
-    private final float evictionThreshold;
     private volatile boolean hasTtl;
 
     protected HiDensityNativeMemoryCacheRecordStore(final int partitionId,
@@ -74,23 +76,18 @@ public class HiDensityNativeMemoryCacheRecordStore
                                                     final ExpiryPolicy expiryPolicy,
                                                     final EvictionPolicy evictionPolicy,
                                                     final int evictionPercentage,
-                                                    final int evictionThresholdPercentage) {
-        super(name, partitionId, nodeEngine, cacheService, expiryPolicy);
+                                                    final int evictionThresholdPercentage,
+                                                    final boolean evictionTaskEnable) {
+        super(name, partitionId, nodeEngine, cacheService, expiryPolicy,
+              evictionPolicy, evictionPercentage, evictionThresholdPercentage, evictionTaskEnable);
         this.initialCapacity = initialCapacity;
-        this.serializationService = (EnterpriseSerializationService)nodeEngine.getSerializationService();
+        this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
 
         this.cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();
         this.records = createRecordCacheMap();
-        this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
-        this.evictionEnabled = evictionPolicy != EvictionPolicy.NONE;
-        this.evictionPercentage = evictionPercentage;
-        this.evictionThreshold = (float) Math.max(1, 100 - evictionThresholdPercentage) / 100;
         this.hasTtl = false;
-        this.evictionOperation = createEvictionOperation(10);
-        this.evictionTaskFuture =
-                nodeEngine.getExecutionService()
-                    .scheduleWithFixedDelay("hz:cache", new EvictionTask(), 5, 5, TimeUnit.SECONDS);
+        this.evictionOperation = createEvictionOperation(evictionPercentage);
     }
 
     public HiDensityNativeMemoryCacheRecordStore(final int partitionId,
@@ -106,7 +103,8 @@ public class HiDensityNativeMemoryCacheRecordStore
              null,
              null,
              DEFAULT_EVICTION_PERCENTAGE,
-             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE);
+             DEFAULT_EVICTION_THRESHOLD_PERCENTAGE,
+             DEFAULT_IS_EVICTION_TASK_ENABLE);
     }
 
     @Override
@@ -273,7 +271,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         int percentage = Math.max(MIN_FORCED_EVICT_PERCENTAGE, evictionPercentage);
         int evicted = 0;
         if (hasTTL()) {
-            evicted = records.evictExpiredRecords(100);
+            evicted = records.evictExpiredRecords(ONE_HUNDRED_PERCENT);
         }
         evicted += records.evictRecords(percentage, EvictionPolicy.RANDOM);
         return evicted;
@@ -399,7 +397,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                     + HiDensityNativeMemoryCacheRecord.class.getName());
         }
         HiDensityNativeMemoryCacheRecord updatedRecord = records.get(key);
-        records.set(key, (HiDensityNativeMemoryCacheRecord)record);
+        records.set(key, (HiDensityNativeMemoryCacheRecord) record);
         if (updatedRecord != null && updatedRecord.getValueAddress() != NULL_PTR) {
             // Record itself is disposed by record map with new record,
             // so we should only dispose its value
@@ -458,7 +456,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                 records.delete(key);
             }
         }
-        // TODO: avoid free() until read is completed!
+        // TODO avoid free() until read is completed!
         try {
             return serializationService.convertData(value, DataType.HEAP);
         } finally {
@@ -469,6 +467,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
     */
 
+    //CHECKSTYLE:OFF
     private Data putInternal(Data key,
                              Object value,
                              ExpiryPolicy expiryPolicy,
@@ -504,7 +503,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             newValue = toOffHeapData(value);
             if (getValue && !newPut) {
                 OffHeapData current = cacheRecordAccessor.readData(record.getValueAddress());
-                // TODO: avoid free() until read is completed!
+                // TODO avoid free() until read is completed!
                 oldValue = serializationService.convertData(current, DataType.HEAP);
                 cacheRecordAccessor.disposeData(current);
             } else {
@@ -538,7 +537,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         return oldValue;
     }
+    //CHECKSTYLE:ON
 
+    //CHECKSTYLE:OFF
     @Override
     protected void onBeforeGetAndPut(Data key,
                                      Object value,
@@ -570,7 +571,9 @@ public class HiDensityNativeMemoryCacheRecordStore
             */
         }
     }
+    //CHECKSTYLE:ON
 
+    //CHECKSTYLE:OFF
     @Override
     protected void onAfterGetAndPut(Data key,
                                     Object value,
@@ -595,7 +598,10 @@ public class HiDensityNativeMemoryCacheRecordStore
             cacheRecordAccessor.enqueueRecord(record);
         }
     }
+    //CHECKSTYLE:ON
 
+    //CHECKSTYLE:OFF
+    @Override
     protected void onGetAndPutError(Data key,
                                     Object value,
                                     ExpiryPolicy expiryPolicy,
@@ -612,6 +618,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
+    //CHECKSTYLE:ON
 
     @Override
     public void put(Data key, Object value, String caller) {
@@ -632,7 +639,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void own(Data key, Object value, long ttlMillis) {
-        // TODO: Implement without creating a "ExpirePolicy" object
+        // TODO Implement without creating a "ExpirePolicy" object
         // This is just a quick workaround
         putInternal(key, value, ttlToExpirePolicy(ttlMillis), false, null);
     }
@@ -753,6 +760,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         */
     }
 
+    //CHECKSTYLE:OFF
     @Override
     protected void onAfterGetAndReplace(Data key,
                                         Object oldValue,
@@ -771,6 +779,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
+    //CHECKSTYLE:ON
 
     @Override
     public boolean replace(Data key, Object value, String caller) {
@@ -982,15 +991,18 @@ public class HiDensityNativeMemoryCacheRecordStore
                 .setService(cacheService);
     }
 
-    protected class EvictionTask implements Runnable {
-        public void run() {
-            if (hasTTL()) {
-                OperationService operationService = nodeEngine.getOperationService();
-                operationService.executeOperation(evictionOperation);
-            }
+    @Override
+    protected void onEvict() {
+        if (hasTTL()) {
+            OperationService operationService = nodeEngine.getOperationService();
+            operationService.executeOperation(evictionOperation);
         }
     }
 
+    /**
+     * Cache record accessor for {@link HiDensityNativeMemoryCacheRecord}
+     * for creating, reading, disposing record or its data.
+     */
     public static class HiDensityNativeMemoryCacheRecordAccessor
             implements HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord, OffHeapData> {
 
@@ -1069,7 +1081,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             OffHeapData offHeapData = readData(record.getValueAddress());
             if (offHeapData != null) {
                 try {
-                    return ss.toObject(offHeapData); //ss.convertData(offHeapData, DataType.HEAP);
+                    return ss.toObject(offHeapData);
                 } finally {
                     if (enqueeDataOnFinish) {
                         enqueueData(offHeapData);

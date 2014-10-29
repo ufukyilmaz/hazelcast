@@ -77,7 +77,8 @@ public class HiDensityOperationProvider implements CacheOperationProvider {
     }
 
     @Override
-    public Operation createEntryProcessorOperation(Data key, Integer completionId, EntryProcessor entryProcessor, Object... args) {
+    public Operation createEntryProcessorOperation(Data key, Integer completionId,
+                                                   EntryProcessor entryProcessor, Object... args) {
         return new CacheEntryProcessorOperation(nameWithPrefix, key, completionId, entryProcessor, args);
     }
 

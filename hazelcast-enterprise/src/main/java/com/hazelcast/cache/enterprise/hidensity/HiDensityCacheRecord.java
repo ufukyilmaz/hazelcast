@@ -33,24 +33,24 @@ public abstract class HiDensityCacheRecord<V>
         super(address, size);
     }
 
-    abstract public long getCreationTime();
-    abstract public void setCreationTime(long time);
+    public abstract long getCreationTime();
+    public abstract void setCreationTime(long time);
 
-    abstract public int getAccessTimeDiff();
-    abstract public void setAccessTimeDiff(int time);
+    public abstract int getAccessTimeDiff();
+    public abstract void setAccessTimeDiff(int time);
 
-    abstract public int getAccessHit();
-    abstract public void setAccessHit(int hit);
-    abstract public void incrementAccessHit();
-    abstract public void resetAccessHit();
+    public abstract int getAccessHit();
+    public abstract void setAccessHit(int hit);
+    public abstract void incrementAccessHit();
+    public abstract void resetAccessHit();
 
-    abstract public int getTtlMillis();
-    abstract public void setTtlMillis(int ttl);
+    public abstract int getTtlMillis();
+    public abstract void setTtlMillis(int ttl);
 
-    abstract public long getValueAddress();
-    abstract public void setValueAddress(long valueAddress);
+    public abstract long getValueAddress();
+    public abstract void setValueAddress(long valueAddress);
 
-    abstract public HiDensityCacheRecord<V> reset(long address);
-    abstract public void clear();
+    public abstract HiDensityCacheRecord<V> reset(long address);
+    public abstract void clear();
 
 }

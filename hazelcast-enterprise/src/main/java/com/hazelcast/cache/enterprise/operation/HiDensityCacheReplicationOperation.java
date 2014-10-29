@@ -81,7 +81,7 @@ public final class HiDensityCacheReplicationOperation
     }
 
     @Override
-    public final void beforeRun() throws Exception {
+    public void beforeRun() throws Exception {
         super.beforeRun();
         if (oome != null) {
             dispose();
@@ -230,7 +230,10 @@ public final class HiDensityCacheReplicationOperation
         return (offHeapSource == null || offHeapSource.isEmpty() && super.isEmpty());
     }
 
-    private class CacheRecordHolder {
+    /**
+     * Holder to keep data value and ttl as tuple
+     */
+    private final class CacheRecordHolder {
         final Data value;
         final int ttl;
 

@@ -71,12 +71,11 @@ public class HiDensityNativeMemoryCacheRecordStore
                                                     final EnterpriseCacheService cacheService,
                                                     final NodeEngine nodeEngine,
                                                     final int initialCapacity,
-                                                    final ExpiryPolicy expiryPolicy,
                                                     final EvictionPolicy evictionPolicy,
                                                     final int evictionPercentage,
                                                     final int evictionThresholdPercentage,
                                                     final boolean evictionTaskEnable) {
-        super(name, partitionId, nodeEngine, cacheService, expiryPolicy,
+        super(name, partitionId, nodeEngine, cacheService,
               evictionPolicy, evictionPercentage, evictionThresholdPercentage, evictionTaskEnable);
         this.initialCapacity = initialCapacity;
         this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
@@ -97,7 +96,6 @@ public class HiDensityNativeMemoryCacheRecordStore
              cacheService,
              nodeEngine,
              initialCapacity,
-             null,
              null,
              DEFAULT_EVICTION_PERCENTAGE,
              DEFAULT_EVICTION_THRESHOLD_PERCENTAGE,

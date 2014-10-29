@@ -42,7 +42,7 @@
 
     <!-- HiDensity -->
     <suppress checks="MethodCountCheck" files="com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
-    <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.EnterpriseCacheDataSerializerHook"/>
+    <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook"/>
 
 </suppressions>
 

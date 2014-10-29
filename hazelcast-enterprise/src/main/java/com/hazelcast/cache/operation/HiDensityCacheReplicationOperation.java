@@ -21,7 +21,6 @@ import com.hazelcast.cache.HiDensityCacheRecord;
 import com.hazelcast.cache.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.impl.operation.CacheReplicationOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
@@ -46,7 +45,7 @@ import java.util.Map;
  * @author mdogan 05/02/14
  */
 public final class HiDensityCacheReplicationOperation
-        extends CacheReplicationOperation
+        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation
         implements NonThreadSafe {
 
     protected Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;

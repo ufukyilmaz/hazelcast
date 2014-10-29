@@ -126,6 +126,13 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected HiDensityNativeMemoryCacheRecord createRecord(Object value,
                                                             long creationTime,
                                                             long expiryTime) {
+        return createRecordInternal(value, creationTime, expiryTime, true);
+    }
+
+    private HiDensityNativeMemoryCacheRecord createRecordInternal(Object value,
+                                                                  long creationTime,
+                                                                  long expiryTime,
+                                                                  boolean retryOnOutOfMemoryError) {
         evictIfRequired();
 
         OffHeapData offHeapValue = null;
@@ -154,7 +161,11 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (offHeapValue != null && offHeapValue.address() != NULL_PTR) {
                 cacheRecordAccessor.disposeData(offHeapValue);
             }
-            throw e;
+            if (retryOnOutOfMemoryError) {
+                return createRecordInternal(value, creationTime, expiryTime, false);
+            } else {
+                throw e;
+            }
         }
     }
 
@@ -255,6 +266,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    public Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
+        return recordToValue(record);
+    }
+
+    @Override
     protected boolean isEvictionRequired() {
         LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
         return (memoryStats.getMaxNativeMemory() * evictionThreshold)
@@ -265,25 +281,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     public int forceEvict() {
         int percentage = Math.max(MIN_FORCED_EVICT_PERCENTAGE, evictionPercentage);
         int evicted = 0;
-        if (hasTTL()) {
+        if (hasTtl) {
             evicted = records.evictExpiredRecords(ONE_HUNDRED_PERCENT);
         }
         evicted += records.evictRecords(percentage, EvictionPolicy.RANDOM);
         return evicted;
-    }
-
-    @Override
-    public Object getDataValue(Data data) {
-        if (data != null) {
-            return serializationService.toObject(data);
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    public Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
-        return getDataValue(getRecordData(record));
     }
 
     @Override
@@ -292,33 +294,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void onAccess(long now,
-                         HiDensityNativeMemoryCacheRecord record,
-                         long creationTime) {
-        if (evictionEnabled) {
-            if (evictionPolicy == EvictionPolicy.LRU) {
-                long longDiff = now - creationTime;
-                int diff = longDiff < Integer.MAX_VALUE ? (int) longDiff : Integer.MAX_VALUE;
-                record.setAccessTimeDiff(diff);
-            } else if (evictionPolicy == EvictionPolicy.LFU) {
-                record.incrementAccessHit();
-            }
-        }
-    }
-
-    @Override
-    public boolean hasTTL() {
-        return hasTtl;
-    }
-
-    @Override
     public MemoryManager getMemoryManager() {
         return memoryManager;
-    }
-
-    @Override
-    public EnterpriseCacheService getCacheService() {
-        return (EnterpriseCacheService) cacheService;
     }
 
     @Override
@@ -462,14 +439,26 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
     */
 
+    private void onAccess(long now,
+                          HiDensityNativeMemoryCacheRecord record,
+                          long creationTime) {
+        if (evictionEnabled) {
+            if (evictionPolicy == EvictionPolicy.LRU) {
+                long longDiff = now - creationTime;
+                int diff = longDiff < Integer.MAX_VALUE ? (int) longDiff : Integer.MAX_VALUE;
+                record.setAccessTimeDiff(diff);
+            } else if (evictionPolicy == EvictionPolicy.LFU) {
+                record.incrementAccessHit();
+            }
+        }
+    }
+
     //CHECKSTYLE:OFF
     private Data putInternal(Data key,
                              Object value,
-                             ExpiryPolicy expiryPolicy,
+                             long ttlMillis,
                              boolean getValue,
                              String caller) {
-        expiryPolicy = getExpiryPolicy(expiryPolicy);
-
         long now = Clock.currentTimeMillis();
         evictIfRequired();
 
@@ -511,7 +500,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record.resetAccessHit();
             }
 
-            long ttlMillis = expiryPolicyToTTL(expiryPolicy);
             ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
             if (!hasTtl && ttlMillis > 0) {
                 hasTtl = true;
@@ -634,9 +622,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void own(Data key, Object value, long ttlMillis) {
-        // TODO Implement without creating a "ExpirePolicy" object
-        // This is just a quick workaround
-        putInternal(key, value, ttlToExpirePolicy(ttlMillis), false, null);
+        putInternal(key, value, ttlMillis, false, null);
     }
 
     @Override
@@ -988,7 +974,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected void onEvict() {
-        if (hasTTL()) {
+        if (hasTtl) {
             OperationService operationService = nodeEngine.getOperationService();
             operationService.executeOperation(evictionOperation);
         }
@@ -1104,12 +1090,10 @@ public class HiDensityNativeMemoryCacheRecordStore
             disposeData(data);
         }
 
-        @Override
         public void enqueueRecord(HiDensityNativeMemoryCacheRecord record) {
             recordQ.offer(record.reset(NULL_PTR));
         }
 
-        @Override
         public void enqueueData(OffHeapData data) {
             data.reset(NULL_PTR);
             dataQ.offer(data);

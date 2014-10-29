@@ -139,7 +139,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return (OffHeapData) cacheRecordAccessor.readData(address);
+            return cacheRecordAccessor.readData(address);
         }
     }
 

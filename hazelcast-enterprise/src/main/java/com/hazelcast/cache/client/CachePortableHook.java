@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.hazelcast.cache;
+package com.hazelcast.cache.client;
 
-import com.hazelcast.cache.client.CacheAddInvalidationListenerRequest;
-import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.client.CacheRemoveInvalidationListenerRequest;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
 import com.hazelcast.nio.serialization.Portable;

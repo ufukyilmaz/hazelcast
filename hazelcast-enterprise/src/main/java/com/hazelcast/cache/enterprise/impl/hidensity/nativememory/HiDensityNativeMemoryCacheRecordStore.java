@@ -487,7 +487,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         try {
             record = records.get(key);
             if (record == null) {
-                record = createRecord(now);
+                record = createRecord(null, now);
                 creationTime = now;
                 records.set(key, record);
                 newPut = true;

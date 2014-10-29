@@ -37,8 +37,10 @@ public class HiDensityOperationProvider implements CacheOperationProvider {
     }
 
     @Override
-    public Operation createPutOperation(Data key, Data value, ExpiryPolicy policy, boolean get) {
-        return new CachePutOperation(nameWithPrefix, key, value, policy, get);
+    public Operation createPutOperation(Data key, Data value, ExpiryPolicy policy, boolean get, int completionId) {
+        CachePutOperation cachePutOperation = new CachePutOperation(nameWithPrefix, key, value, policy, get);
+        cachePutOperation.setCompletionId(completionId);
+        return cachePutOperation;
     }
 
     @Override
@@ -52,28 +54,38 @@ public class HiDensityOperationProvider implements CacheOperationProvider {
     }
 
     @Override
-    public Operation createPutIfAbsentOperation(Data key, Data value, ExpiryPolicy policy) {
-        return new CachePutIfAbsentOperation(nameWithPrefix, key, value, policy);
+    public Operation createPutIfAbsentOperation(Data key, Data value, ExpiryPolicy policy, int completionId) {
+        CachePutIfAbsentOperation cachePutIfAbsentOperation = new CachePutIfAbsentOperation(nameWithPrefix, key, value, policy);
+        cachePutIfAbsentOperation.setCompletionId(completionId);
+        return cachePutIfAbsentOperation;
     }
 
     @Override
-    public Operation createRemoveOperation(Data key, Data value) {
-        return new CacheRemoveOperation(nameWithPrefix, key, value);
+    public Operation createRemoveOperation(Data key, Data value, int completionId) {
+        CacheRemoveOperation cacheRemoveOperation = new CacheRemoveOperation(nameWithPrefix, key, value);
+        cacheRemoveOperation.setCompletionId(completionId);
+        return cacheRemoveOperation;
     }
 
     @Override
-    public Operation createGetAndRemoveOperation(Data key) {
-        return new CacheGetAndRemoveOperation(nameWithPrefix, key);
+    public Operation createGetAndRemoveOperation(Data key, int completionId) {
+        CacheGetAndRemoveOperation cacheGetAndRemoveOperation = new CacheGetAndRemoveOperation(nameWithPrefix, key);
+        cacheGetAndRemoveOperation.setCompletionId(completionId);
+        return cacheGetAndRemoveOperation;
     }
 
     @Override
-    public Operation createReplaceOperation(Data key, Data oldValue, Data newValue, ExpiryPolicy policy) {
-        return new CacheReplaceOperation(nameWithPrefix, key, oldValue, newValue, policy);
+    public Operation createReplaceOperation(Data key, Data oldValue, Data newValue, ExpiryPolicy policy, int completionId) {
+        CacheReplaceOperation cacheReplaceOperation = new CacheReplaceOperation(nameWithPrefix, key, oldValue, newValue, policy);
+        cacheReplaceOperation.setCompletionId(completionId);
+        return cacheReplaceOperation;
     }
 
     @Override
-    public Operation createGetAndReplaceOperation(Data key, Data value, ExpiryPolicy policy) {
-        return new CacheGetAndReplaceOperation(nameWithPrefix, key, value, policy);
+    public Operation createGetAndReplaceOperation(Data key, Data value, ExpiryPolicy policy, int completionId) {
+        CacheGetAndReplaceOperation getAndReplaceOperation = new CacheGetAndReplaceOperation(nameWithPrefix, key, value, policy);
+        getAndReplaceOperation.setCompletionId(completionId);
+        return getAndReplaceOperation;
     }
 
     @Override

@@ -1,14 +1,9 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.*;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemoryManager;
@@ -17,12 +12,11 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.SlowTest;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import javax.cache.CacheManager;
-import javax.cache.configuration.Configuration;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,22 +34,20 @@ import static org.junit.Assert.assertTrue;
 @Category(SlowTest.class)
 public class CacheLoadTest extends AbstractCacheTest {
 
-    private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(3);
+    private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(60);
 
     private HazelcastInstance instance;
-    private ICache<Object, Object> cache;
-    private MemorySize totalSize = new MemorySize(512, MemoryUnit.MEGABYTES);
+    private MemorySize totalSize = new MemorySize(1024, MemoryUnit.MEGABYTES);
 
     @Override
     protected void onSetup() {
-        Config config = getConfig();
+        Config config = createConfig();
         instance = Hazelcast.newHazelcastInstance(config);
-        cache = createCache(CACHE_NAME);
     }
 
     @Override
     protected void onTearDown() {
-
+        Hazelcast.shutdownAll();
     }
 
     @Override
@@ -63,7 +55,8 @@ public class CacheLoadTest extends AbstractCacheTest {
         return instance;
     }
 
-    protected final Config getConfig() {
+    @Override
+    protected final Config createConfig() {
         Config config = new Config();
         config.setProperties(getProperties());
 
@@ -92,19 +85,18 @@ public class CacheLoadTest extends AbstractCacheTest {
         return config;
     }
 
-    protected ICache createCache(String name) {
-        System.setProperty(GroupProperties.PROP_JCACHE_PROVIDER_TYPE, "server");
-        CacheManager cacheManager = new HazelcastCachingProvider().getCacheManager();
-        CacheConfig cc = new CacheConfig()
-                .setName(CACHE_NAME)
-                .setEvictionPolicy(EvictionPolicy.LRU);
-        return cacheManager.createCache(name,
-                (Configuration<Object, Object>) cc)
-                .unwrap(ICache.class);
+    @Override
+    protected CacheConfig createCacheConfig(String cacheName,
+                                            InMemoryFormat inMemoryFormat) {
+        CacheConfig cacheConfig = super.createCacheConfig(cacheName, inMemoryFormat);
+        cacheConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        return cacheConfig;
     }
 
     @Test
     public void testContinuousPut() throws InterruptedException {
+        final ICache cache = createCache();
+
         Random random = new Random();
         int minSize = 10;
         int maxSize = (int) MemoryUnit.KILOBYTES.toBytes(99);
@@ -159,6 +151,8 @@ public class CacheLoadTest extends AbstractCacheTest {
 
     @Test
     public void testIncrementalDataLoad() throws InterruptedException {
+        final ICache cache = createCache();
+
         int min = 500;
         int max = (int) MemoryUnit.KILOBYTES.toBytes(10);
         int size = min;

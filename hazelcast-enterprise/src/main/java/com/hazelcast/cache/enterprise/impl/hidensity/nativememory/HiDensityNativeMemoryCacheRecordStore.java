@@ -78,10 +78,11 @@ public class HiDensityNativeMemoryCacheRecordStore
         super(name, partitionId, nodeEngine, cacheService, expiryPolicy);
         this.initialCapacity = initialCapacity;
         this.serializationService = (EnterpriseSerializationService)nodeEngine.getSerializationService();
-        this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
+
         this.cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();
         this.records = createRecordCacheMap();
+        this.evictionPolicy = evictionPolicy != null ? evictionPolicy : cacheConfig.getEvictionPolicy();
         this.evictionEnabled = evictionPolicy != EvictionPolicy.NONE;
         this.evictionPercentage = evictionPercentage;
         this.evictionThreshold = (float) Math.max(1, 100 - evictionThresholdPercentage) / 100;
@@ -260,15 +261,28 @@ public class HiDensityNativeMemoryCacheRecordStore
         return offHeapData;
     }
 
-    private boolean isEvictionRequired(LocalMemoryStats memoryStats) {
-        return memoryStats.getMaxNativeMemory() * evictionThreshold > memoryStats.getFreeNativeMemory();
+    @Override
+    protected boolean isEvictionRequired() {
+        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
+        return (memoryStats.getMaxNativeMemory() * evictionThreshold)
+                    > memoryStats.getFreeNativeMemory();
+    }
+
+    @Override
+    public int forceEvict() {
+        int percentage = Math.max(MIN_FORCED_EVICT_PERCENTAGE, evictionPercentage);
+        int evicted = 0;
+        if (hasTTL()) {
+            evicted = records.evictExpiredRecords(100);
+        }
+        evicted += records.evictRecords(percentage, EvictionPolicy.RANDOM);
+        return evicted;
     }
 
     @Override
     public Object getDataValue(Data data) {
         if (data != null) {
             return serializationService.toObject(data);
-            // return serializationService.convertData(data, DataType.HEAP);
         } else {
             return null;
         }
@@ -297,33 +311,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record.incrementAccessHit();
             }
         }
-    }
-
-    @Override
-    public int evictIfRequired() {
-        if (evictionEnabled) {
-            LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
-            if (isEvictionRequired(memoryStats)) {
-                return records.evictRecords(evictionPercentage, evictionPolicy);
-            }
-        }
-        return 0;
-    }
-
-    @Override
-    public int forceEvict() {
-        int percentage = Math.max(MIN_FORCED_EVICT_PERCENTAGE, evictionPercentage);
-        int evicted = 0;
-        if (hasTTL()) {
-            evicted = records.evictExpiredRecords(100);
-        }
-        evicted += records.evictRecords(percentage, EvictionPolicy.RANDOM);
-        return evicted;
-    }
-
-    @Override
-    public void evictExpiredRecords(int percentage) {
-        records.evictExpiredRecords(percentage);
     }
 
     @Override

@@ -22,8 +22,6 @@ import com.hazelcast.elasticcollections.SlottableIterator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 
-import java.util.Iterator;
-
 /**
  * @author sozal 18/10/14
  */
@@ -34,8 +32,6 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord, D ext
     Object getRecordValue(R record);
 
     void onAccess(long now, R record, long creationTime);
-    int evictIfRequired();
-    void evictExpiredRecords(int percentage);
     boolean hasTTL();
 
     MemoryManager getMemoryManager();

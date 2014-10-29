@@ -41,7 +41,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         extends BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>
         implements HiDensityCacheRecordMap<Data, HiDensityNativeMemoryCacheRecord> {
 
-    private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
+    private static final int MIN_EVICTION_ELEMENT_COUNT = 100;
 
     // TODO: clear thread local at the end!
     private static final ThreadLocal<SortArea> SORT_AREA_THREAD_LOCAL = new ThreadLocal<SortArea>() {
@@ -69,6 +69,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return new OffHeapOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
     }
 
+    @Override
     public int evictExpiredRecords(int percentage) {
         int capacity = capacity();
         int len = (int) (capacity * (long) percentage / 100);
@@ -105,6 +106,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     }
 
+    @Override
     public int evictRecords(int percentage, EvictionPolicy policy) {
         switch (policy) {
             case RANDOM:

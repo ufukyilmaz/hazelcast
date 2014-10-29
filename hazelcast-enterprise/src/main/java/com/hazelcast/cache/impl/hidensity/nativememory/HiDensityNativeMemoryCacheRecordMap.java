@@ -43,7 +43,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         extends BinaryOffHeapHashMap<HiDensityNativeMemoryCacheRecord>
         implements HiDensityCacheRecordMap<Data, HiDensityNativeMemoryCacheRecord> {
 
-    private static final int MIN_EVICTION_ELEMENT_COUNT = 100;
+    private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
     private static final int NORMALIZE_FACTORY = 50;
 
     // TODO clear thread local at the end!

@@ -114,7 +114,7 @@ public class CacheLoadTest extends AbstractCacheTest {
                         } catch (Throwable e) {
                             e.printStackTrace();
                             error.set(e);
-                            break;
+                            //break;
                         }
                     }
                 }

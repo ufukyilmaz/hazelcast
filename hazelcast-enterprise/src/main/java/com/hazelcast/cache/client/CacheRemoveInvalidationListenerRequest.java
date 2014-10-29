@@ -17,7 +17,7 @@
 package com.hazelcast.cache.client;
 
 import com.hazelcast.cache.CachePortableHook;
-import com.hazelcast.cache.enterprise.EnterpriseCacheService;
+import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.client.impl.client.BaseClientRemoveListenerRequest;
 import com.hazelcast.client.impl.client.RetryableRequest;
 import com.hazelcast.spi.EventService;

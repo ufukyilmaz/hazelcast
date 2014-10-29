@@ -16,6 +16,24 @@
 
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.operation.CacheClearOperation;
+import com.hazelcast.cache.operation.CacheClearOperationFactory;
+import com.hazelcast.cache.operation.CacheContainsKeyOperation;
+import com.hazelcast.cache.operation.CacheEntryProcessorOperation;
+import com.hazelcast.cache.operation.CacheGetAndRemoveOperation;
+import com.hazelcast.cache.operation.CacheGetAndReplaceOperation;
+import com.hazelcast.cache.operation.CacheGetOperation;
+import com.hazelcast.cache.operation.CacheKeyIteratorOperation;
+import com.hazelcast.cache.operation.CacheLoadAllOperation;
+import com.hazelcast.cache.operation.CacheLoadAllOperationFactory;
+import com.hazelcast.cache.operation.CachePutBackupOperation;
+import com.hazelcast.cache.operation.CachePutIfAbsentOperation;
+import com.hazelcast.cache.operation.CachePutOperation;
+import com.hazelcast.cache.operation.CacheRemoveBackupOperation;
+import com.hazelcast.cache.operation.CacheRemoveOperation;
+import com.hazelcast.cache.operation.CacheReplaceOperation;
+import com.hazelcast.cache.operation.CacheSizeOperation;
+import com.hazelcast.cache.operation.CacheSizeOperationFactory;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;

@@ -41,7 +41,7 @@
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
-    <suppress checks="MethodCountCheck" files="com.hazelcast.cache.enterprise.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+    <suppress checks="MethodCountCheck" files="com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
     <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.EnterpriseCacheDataSerializerHook"/>
 
 </suppressions>

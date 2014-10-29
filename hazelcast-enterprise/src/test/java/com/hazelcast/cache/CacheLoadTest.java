@@ -67,20 +67,11 @@ public class CacheLoadTest extends AbstractCacheTest {
         config.setNativeMemoryConfig(
                 new NativeMemoryConfig()
                         .setEnabled(true)
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
                         .setSize(totalSize)
                         .setPageSize(1 << 20));
 
         config.setSerializationConfig(getSerializationConfig());
-
-        /*
-        config.addCacheConfig(new CacheConfig()
-                                .setName(CACHE_NAME)
-                                .setEvictionPolicy(EvictionPolicy.LRU)
-                                //.setEvictionPercentage(10)
-                                //.setEvictionThresholdPercentage(90));
-        );
-        */
 
         return config;
     }

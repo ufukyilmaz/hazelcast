@@ -83,7 +83,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected NativeMemoryConfig getMemoryConfig() {
-        MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
                         .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
@@ -111,14 +111,6 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected ICache createCache() {
         Cache<Object, Object> cache =
                 cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
-        try {
-            // Wait a second to handle cache config by all nodes
-            // TODO: This is just a workaround. So there should be a fix
-            // to create cache config in all nodes as synchronized
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         return cache.unwrap(ICache.class);
     }
 

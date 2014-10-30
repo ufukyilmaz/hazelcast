@@ -87,7 +87,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
+                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
                         .setSize(memorySize).setEnabled(true)
                         .setMinBlockSize(16).setPageSize(1 << 20);
     }

@@ -67,7 +67,6 @@ public class CacheLoadTest extends AbstractCacheTest {
         config.setNativeMemoryConfig(
                 new NativeMemoryConfig()
                         .setEnabled(true)
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
                         .setSize(totalSize)
                         .setPageSize(1 << 20));
 

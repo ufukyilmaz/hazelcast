@@ -48,12 +48,7 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
         return free > 0 ? free : 0L;
     }
 
-    final void checkNativeMemoryAllocation(long size) {
-        checkCommittedOffHeap(size);
-        checkFreeMemory(size);
-    }
-
-    private void checkCommittedOffHeap(long size) {
+    void checkCommittedNative(long size) {
         if (size > 0) {
             long currentAllocated = committedNative.get();
             if (maxNative < (currentAllocated + size)) {

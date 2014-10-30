@@ -37,7 +37,7 @@ public class CacheLoadTest extends AbstractCacheTest {
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(3);
 
     private HazelcastInstance instance;
-    private MemorySize totalSize = new MemorySize(1024, MemoryUnit.MEGABYTES);
+    private MemorySize totalSize = new MemorySize(512, MemoryUnit.MEGABYTES);
 
     @Override
     protected void onSetup() {

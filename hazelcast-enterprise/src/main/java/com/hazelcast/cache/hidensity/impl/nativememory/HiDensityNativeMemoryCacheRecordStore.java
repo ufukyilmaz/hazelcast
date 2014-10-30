@@ -38,6 +38,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     public static final int DEFAULT_INITIAL_CAPACITY = 1000;
 
     private final int initialCapacity;
+    private final float evictionThreshold;
     private final EnterpriseSerializationService serializationService;
     private final Operation evictionOperation;
     private MemoryManager memoryManager;
@@ -55,6 +56,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         super(name, partitionId, nodeEngine, cacheService,
                 evictionPolicy, evictionPercentage, evictionThresholdPercentage, evictionTaskEnable);
         this.initialCapacity = initialCapacity;
+        this.evictionThreshold = (float) Math.max(1, ONE_HUNDRED_PERCENT - evictionThresholdPercentage)
+                / ONE_HUNDRED_PERCENT;
         this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         this.cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();

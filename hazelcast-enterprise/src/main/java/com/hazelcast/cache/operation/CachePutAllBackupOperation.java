@@ -16,7 +16,6 @@
 
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.EnterpriseCacheDataSerializerHook;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.HiDensityCacheRecord;
 import com.hazelcast.cache.HiDensityCacheRecordStore;
@@ -41,6 +40,7 @@ import java.util.Map;
 /**
  * Cache PutAllBackup Operation is the backup operation used by load all operation. Provides backup of
  * multiple entries.
+ *
  * @see com.hazelcast.cache.impl.operation.CacheLoadAllOperation
  */
 public class CachePutAllBackupOperation
@@ -92,7 +92,7 @@ public class CachePutAllBackupOperation
                 if (record instanceof HiDensityCacheRecord) {
                     out.writeBoolean(true);
                     writeHiDensityCacheRecord(out, serializationService,
-                                              (HiDensityCacheRecord) record);
+                            (HiDensityCacheRecord) record);
                 } else {
                     out.writeBoolean(false);
                     out.writeObject(record);
@@ -102,8 +102,8 @@ public class CachePutAllBackupOperation
     }
 
     private void writeHiDensityCacheRecord(ObjectDataOutput out,
-            EnterpriseSerializationService serializationService,
-            HiDensityCacheRecord record) throws IOException {
+                                           EnterpriseSerializationService serializationService,
+                                           HiDensityCacheRecord record) throws IOException {
         if (record == null) {
             out.writeBoolean(false);
             return;
@@ -159,8 +159,8 @@ public class CachePutAllBackupOperation
         }
     }
 
-    private HiDensityCacheRecord readHiDensityCacheRecord(ObjectDataInput in,
-            EnterpriseSerializationService serializationService) throws IOException {
+    private HiDensityCacheRecord readHiDensityCacheRecord(
+            ObjectDataInput in, EnterpriseSerializationService serializationService) throws IOException {
         HiDensityCacheRecord record = null;
         OffHeapData valueOffHeapData = null;
         try {

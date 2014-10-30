@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+
 /**
  * @author sozal 11/02/14
  */
@@ -54,17 +55,17 @@ public final class HiDensityNativeMemoryCacheRecordMap
         }
     };
 
-    private final transient HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private final transient HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
     private final transient Callback<Data> evictionCallback;
     private int randomEvictionLastIndex;
     private final Random random = new Random();
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
-            EnterpriseSerializationService serializationService,
-            HiDensityNativeMemoryCacheRecordStore.HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
-            Callback<Data> evictionCallback) {
+                                               EnterpriseSerializationService serializationService,
+                                               HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
+                                               Callback<Data> evictionCallback) {
         super(initialCapacity, serializationService, cacheRecordAccessor,
-              serializationService.getMemoryManager().unwrapMemoryAllocator());
+                serializationService.getMemoryManager().unwrapMemoryAllocator());
         this.cacheRecordAccessor = cacheRecordAccessor;
         this.evictionCallback = evictionCallback;
     }

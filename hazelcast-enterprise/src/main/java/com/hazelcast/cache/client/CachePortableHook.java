@@ -14,11 +14,8 @@
  * limitations under the License.
  */
 
-package com.hazelcast.cache;
+package com.hazelcast.cache.client;
 
-import com.hazelcast.cache.client.CacheAddInvalidationListenerRequest;
-import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.client.CacheRemoveInvalidationListenerRequest;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
 import com.hazelcast.nio.serialization.Portable;
@@ -62,6 +59,7 @@ public class CachePortableHook implements PortableHook {
         return new PortableFactory() {
             final ConstructorFunction<Integer, Portable>[] constructors =
                     new ConstructorFunction[PORTABLE_COUNT + 1];
+
             {
                 constructors[ADD_INVALIDATION_LISTENER] = new ConstructorFunction<Integer, Portable>() {
                     public Portable createNew(Integer arg) {

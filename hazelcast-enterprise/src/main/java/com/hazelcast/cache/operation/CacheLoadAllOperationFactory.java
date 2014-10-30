@@ -16,7 +16,6 @@
 
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.EnterpriseCacheDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -30,6 +29,7 @@ import java.util.Set;
 
 /**
  * Factory implementation for {@link com.hazelcast.cache.impl.operation.CacheLoadAllOperation}.
+ *
  * @see com.hazelcast.spi.OperationFactory
  */
 public class CacheLoadAllOperationFactory

@@ -16,7 +16,6 @@
 
 package com.hazelcast.cache.client;
 
-import com.hazelcast.cache.CachePortableHook;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.client.ClientEndpoint;
 import com.hazelcast.client.impl.client.CallableClientRequest;

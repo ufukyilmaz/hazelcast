@@ -16,18 +16,17 @@
 
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.operation.CacheDestroyOperation;
-import com.hazelcast.cache.impl.CacheOperationProvider;
-import com.hazelcast.cache.operation.HiDensityOperationProvider;
 import com.hazelcast.cache.client.CacheInvalidationListener;
 import com.hazelcast.cache.client.CacheInvalidationMessage;
-import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
-import com.hazelcast.cache.operation.HiDensityCacheReplicationOperation;
+import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.CacheStatisticsImpl;
 import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.operation.CacheDestroyOperation;
+import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
+import com.hazelcast.cache.operation.HiDensityCacheReplicationOperation;
+import com.hazelcast.cache.operation.HiDensityOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -47,12 +46,36 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * The {@link com.hazelcast.cache.impl.CacheService} implementation specified for enterprise usage.
+ * This {@link EnterpriseCacheService} implementation mainly handles
+ * <ul>
+ * <li>
+ * {@link com.hazelcast.cache.impl.ICacheRecordStore} creation of caches with specified partition id
+ * </li>
+ * <li>
+ * Destroying segments and caches
+ * </li>
+ * <li>
+ * Mediating for cache events and listeners
+ * </li>
+ * </ul>
+ *
  * @author mdogan 05/02/14
  */
 public class EnterpriseCacheService extends CacheService {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
+    /**
+     * Creates new {@link com.hazelcast.cache.impl.ICacheRecordStore} as specified
+     * {@link com.hazelcast.config.InMemoryFormat}.
+     *
+     * @param name        the name of the cache with prefix
+     * @param partitionId the partition id which cache record store is created on
+     * @return the created {@link com.hazelcast.cache.impl.ICacheRecordStore}
+     * @see com.hazelcast.cache.impl.CacheRecordStore
+     * @see com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore
+     */
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
@@ -71,28 +94,21 @@ public class EnterpriseCacheService extends CacheService {
                 throw new OffHeapOutOfMemoryError("Cannot create internal cache map, "
                         + "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
-
-        } else if (InMemoryFormat.BINARY.equals(inMemoryFormat)
+        } else if (inMemoryFormat == null
+                || InMemoryFormat.BINARY.equals(inMemoryFormat)
                 || InMemoryFormat.OBJECT.equals(inMemoryFormat)) {
             return super.createNewRecordStore(name, partitionId);
         }
-        // TODO
-        //      Or if "inMemoryFormat" is "ON_HEAP_SLAB",
-        //      create "EnterpriseOnHeapSlabAllocatorCacheRecordStore"
+
         throw new IllegalArgumentException("Cannot create record store for the storage type: "
                 + inMemoryFormat);
     }
 
-    @Override
-    public void reset() {
-        shutdown(false);
-    }
-
-    @Override
-    public void destroyDistributedObject(String objectName) {
-        destroySegments(objectName);
-    }
-
+    /**
+     * Destroys the segments for specified <code>object name/cache name</code>.
+     *
+     * @param objectName the name of object/cache whose segments will be destroyed
+     */
     @Override
     protected void destroySegments(String objectName) {
         OperationService operationService = nodeEngine.getOperationService();
@@ -120,6 +136,21 @@ public class EnterpriseCacheService extends CacheService {
         */
     }
 
+    /**
+     * Destroys the distributed object for specified <code>object name/cache name</code>.
+     *
+     * @param objectName the name of object/cache to be destroyed
+     */
+    @Override
+    public void destroyDistributedObject(String objectName) {
+        destroySegments(objectName);
+    }
+
+    /**
+     * Shutdowns the cache service and destroy the caches with their segments.
+     *
+     * @param terminate condition about cache service will be closed or not
+     */
     @Override
     public void shutdown(boolean terminate) {
         final ConcurrentMap<String, CacheConfig> cacheConfigs = configs;
@@ -140,7 +171,7 @@ public class EnterpriseCacheService extends CacheService {
         for (CacheSegmentDestroyOperation op : ops) {
             try {
                 op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS,
-                                   TimeUnit.SECONDS);
+                        TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -148,7 +179,19 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Does forced eviction on one or more caches... Runs on the operation threads..
+     * Resets the cache service without closing.
+     */
+    @Override
+    public void reset() {
+        shutdown(false);
+    }
+
+    /**
+     * Does forced eviction on one or more caches. Runs on the operation threads.
+     *
+     * @param name                the name of the cache to be evicted
+     * @param originalPartitionId the partition id of the record store stores the records of cache
+     * @return the number of evicted records
      */
     public int forceEvict(String name, int originalPartitionId) {
         int evicted = 0;
@@ -166,6 +209,13 @@ public class EnterpriseCacheService extends CacheService {
         return evicted;
     }
 
+    /**
+     * Creates a {@link com.hazelcast.cache.operation.HiDensityCacheReplicationOperation} to start the replication.
+     *
+     * @param event the {@link com.hazelcast.spi.PartitionReplicationEvent}
+     *              holds the <code>partitionId</code> and <code>replica index</code>
+     * @return the created {@link com.hazelcast.cache.operation.HiDensityCacheReplicationOperation}
+     */
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
         CachePartitionSegment segment = segments[event.getPartitionId()];
@@ -174,41 +224,68 @@ public class EnterpriseCacheService extends CacheService {
         return op.isEmpty() ? null : op;
     }
 
-    public String addInvalidationListener(String name, CacheInvalidationListener listener) {
+    /**
+     * Registers and {@link com.hazelcast.cache.client.CacheInvalidationListener} for specified <code>cacheName</code>.
+     *
+     * @param cacheName the name of the cache that {@link com.hazelcast.cache.client.CacheInvalidationListener}
+     *                  will be registered for
+     * @param listener  the {@link com.hazelcast.cache.client.CacheInvalidationListener}
+     *                  to be registered for specified <code>cache</code>
+     * @return the id which is unique for current registration
+     */
+    public String addInvalidationListener(String cacheName, CacheInvalidationListener listener) {
         EventService eventService = nodeEngine.getEventService();
         EventRegistration registration =
-                eventService.registerLocalListener(SERVICE_NAME, name, listener);
+                eventService.registerLocalListener(SERVICE_NAME, cacheName, listener);
         return registration.getId();
     }
 
-    public void sendInvalidationEvent(String name, Data key, String sourceUuid) {
+    /**
+     * Sends an invalidation event for given <code>cacheName</code> with specified <code>key</code>
+     * from mentioned source with <code>sourceUuid</code>.
+     *
+     * @param cacheName  the name of the cache that invalidation event is sent for
+     * @param key        the {@link com.hazelcast.nio.serialization.Data} represents the invalidation event
+     * @param sourceUuid an id that represents the source for invalidation event
+     */
+    public void sendInvalidationEvent(String cacheName, Data key, String sourceUuid) {
         EventService eventService = nodeEngine.getEventService();
         Collection<EventRegistration> registrations =
-                eventService.getRegistrations(SERVICE_NAME, name);
+                eventService.getRegistrations(SERVICE_NAME, cacheName);
         if (!registrations.isEmpty()) {
             EnterpriseSerializationService ss = getSerializationService();
             Data event = ss.convertData(key, DataType.HEAP);
             eventService.publishEvent(SERVICE_NAME, registrations,
-                    new CacheInvalidationMessage(name, event, sourceUuid), name.hashCode());
+                    new CacheInvalidationMessage(cacheName, event, sourceUuid), cacheName.hashCode());
         }
     }
 
-    public EnterpriseSerializationService getSerializationService() {
-        return (EnterpriseSerializationService) nodeEngine.getSerializationService();
-    }
-
-    public CacheStatisticsImpl getOrCreateCacheStats(String nameWithPrefix) {
-        return createCacheStatIfAbsent(nameWithPrefix);
-    }
-
+    /**
+     * Creates a {@link com.hazelcast.cache.impl.CacheOperationProvider} as specified
+     * {@link com.hazelcast.config.InMemoryFormat} for specified <code>cacheNameWithPrefix</code>
+     *
+     * @param cacheNameWithPrefix the name of the cache with prefix that operation works on
+     * @param inMemoryFormat      the format of memory such as <code>BINARY</code>, <code>OBJECT</code>
+     *                            or <code>OFFHEAP</code>
+     * @return
+     */
     @Override
-    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix,
+    public CacheOperationProvider getCacheOperationProvider(String cacheNameWithPrefix,
                                                             InMemoryFormat inMemoryFormat) {
         if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
-            return new HiDensityOperationProvider(nameWithPrefix);
+            return new HiDensityOperationProvider(cacheNameWithPrefix);
         }
+        return super.getCacheOperationProvider(cacheNameWithPrefix, inMemoryFormat);
+    }
 
-        return super.getCacheOperationProvider(nameWithPrefix, inMemoryFormat);
+    /**
+     * Gets the {@link com.hazelcast.nio.serialization.EnterpriseSerializationService} used by this
+     * {@link com.hazelcast.cache.impl.CacheService}.
+     *
+     * @return the used {@link com.hazelcast.nio.serialization.EnterpriseSerializationService}
+     */
+    public EnterpriseSerializationService getSerializationService() {
+        return (EnterpriseSerializationService) nodeEngine.getSerializationService();
     }
 
     @Override

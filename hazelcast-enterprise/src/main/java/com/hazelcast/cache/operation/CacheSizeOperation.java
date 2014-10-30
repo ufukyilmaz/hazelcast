@@ -16,7 +16,6 @@
 
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.EnterpriseCacheDataSerializerHook;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.spi.ReadonlyOperation;

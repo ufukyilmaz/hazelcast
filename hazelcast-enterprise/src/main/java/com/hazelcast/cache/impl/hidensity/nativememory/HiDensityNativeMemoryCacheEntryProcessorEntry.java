@@ -20,10 +20,9 @@ import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.nio.serialization.Data;
 
 /**
- * @author sozal 14/10/14
- *
  * @param <K> Type of key for entry to be processed
  * @param <V> Type of value for entry to be processed
+ * @author sozal 14/10/14
  */
 public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
         extends CacheEntryProcessorEntry<K, V, HiDensityNativeMemoryCacheRecord> {

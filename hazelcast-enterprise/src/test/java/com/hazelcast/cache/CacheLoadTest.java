@@ -13,6 +13,7 @@ import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.SlowTest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,6 +33,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
+@Ignore
 public class CacheLoadTest extends AbstractCacheTest {
 
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(3);

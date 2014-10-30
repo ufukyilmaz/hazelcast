@@ -17,6 +17,9 @@
 package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.impl.CacheOperationProvider;
+import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
+import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationFactory;
@@ -26,7 +29,7 @@ import javax.cache.processor.EntryProcessor;
 import java.util.Set;
 
 /**
- * TODO add a proper JavaDoc
+ * Provide operations for {@link InMemoryFormat#OFFHEAP}
  */
 public class HiDensityOperationProvider implements CacheOperationProvider {
 
@@ -110,8 +113,14 @@ public class HiDensityOperationProvider implements CacheOperationProvider {
     }
 
     @Override
-    public OperationFactory createClearOperationFactory(Set<Data> keySet, boolean isRemoveAll, Integer completionId) {
-        return new CacheClearOperationFactory(nameWithPrefix, keySet, isRemoveAll, completionId);
+    public OperationFactory createClearOperationFactory(Integer completionId) {
+//        return new CacheClearOperationFactory(nameWithPrefix, keySet, isRemoveAll, completionId);
+        return new CacheClearOperationFactory(nameWithPrefix, completionId);
+    }
+
+    @Override
+    public OperationFactory createRemoveAllOperationFactory(Set<Data> keySet, Integer completionId) {
+        return new CacheRemoveAllOperationFactory(nameWithPrefix, keySet, completionId);
     }
 
     @Override

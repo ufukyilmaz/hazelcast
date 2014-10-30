@@ -16,8 +16,7 @@
 
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.operation.CacheClearOperation;
-import com.hazelcast.cache.operation.CacheClearOperationFactory;
+import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.cache.operation.CacheContainsKeyOperation;
 import com.hazelcast.cache.operation.CacheEntryProcessorOperation;
 import com.hazelcast.cache.operation.CacheGetAndRemoveOperation;
@@ -34,7 +33,6 @@ import com.hazelcast.cache.operation.CacheRemoveOperation;
 import com.hazelcast.cache.operation.CacheReplaceOperation;
 import com.hazelcast.cache.operation.CacheSizeOperation;
 import com.hazelcast.cache.operation.CacheSizeOperationFactory;
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
@@ -98,21 +96,9 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
      */
     public static final int SIZE = 11;
     /**
-     * Id of "CLEAR" operation
-     */
-    public static final int CLEAR = 12;
-    /**
-     * Id of "CLEAR_BACKUP" operation
-     */
-    public static final int CLEAR_BACKUP = 13;
-    /**
      * Id of "SIZE_FACTORY" operation
      */
     public static final int SIZE_FACTORY = 14;
-    /**
-     * Id of "CLEAR_FACTORY" operation
-     */
-    public static final int CLEAR_FACTORY = 15;
     /**
      * Id of "ITERATE" operation
      */
@@ -191,21 +177,13 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
                     case SIZE:
                         return new CacheSizeOperation();
 
-                    case CLEAR:
-                        return new CacheClearOperation();
-
                     case SIZE_FACTORY:
                         return new CacheSizeOperationFactory();
 
-                    case CLEAR_FACTORY:
-                        return new CacheClearOperationFactory();
-
                     case ITERATE:
-                        // return new CacheIterateOperation();
                         return new CacheKeyIteratorOperation();
 
                     case ITERATION_RESULT:
-                        // return new CacheIterationResult();
                         return new CacheKeyIteratorResult();
 
                     case LOAD_ALL:

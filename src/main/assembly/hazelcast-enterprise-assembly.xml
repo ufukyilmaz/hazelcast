@@ -141,24 +141,10 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${hazelcast.root}/hazelcast/target/classes/</directory>
-            <outputDirectory>/bin/</outputDirectory>
-            <includes>
-                <include>keystore</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${hazelcast.root}/hazelcast/target/</directory>
             <outputDirectory>/bin/</outputDirectory>
             <includes>
                 <include>hazelcast.xml</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>${hazelcast.root}/hazelcast/src/main/resources/</directory>
-            <outputDirectory>/bin/</outputDirectory>
-            <includes>
-                <include>keystore</include>
             </includes>
         </fileSet>
         <fileSet>

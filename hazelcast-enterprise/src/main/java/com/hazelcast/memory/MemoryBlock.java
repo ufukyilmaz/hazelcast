@@ -29,8 +29,8 @@ import static com.hazelcast.nio.Bits.*;
 
 public class MemoryBlock {
 
-    private long address = MemoryManager.NULL_ADDRESS;
-    private int size;
+    protected long address = MemoryManager.NULL_ADDRESS;
+    protected int size;
 
     public MemoryBlock() {
     }

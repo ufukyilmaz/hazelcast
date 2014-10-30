@@ -81,6 +81,9 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
 
     @Override
     public int dataSize() {
+        if (address == 0L) {
+            return 0;
+        }
         int dataSize = readInt(DATA_SIZE_OFFSET);
         dataSize = Bits.clearBit(dataSize, PARTITION_HASH_BIT);
         dataSize = Bits.clearBit(dataSize, HEADER_BIT);
@@ -169,6 +172,12 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
         return readInt(headerOffset + offset, order);
     }
 
+//    @Override
+//    public long readLongHeader(int offset, ByteOrder order) {
+//        long headerOffset = headerOffset() + LONG_SIZE_IN_BYTES;
+//        return readLong(headerOffset + offset, order);
+//    }
+
     private int headerOffset() {
         int current = readInt(DATA_SIZE_OFFSET);
         if (Bits.isBitSet(current, HEADER_BIT)) {
@@ -191,6 +200,9 @@ public final class OffHeapData extends MemoryBlock implements MutableData {
 
     @Override
     public int getType() {
+        if (address == 0L) {
+            return SerializationConstants.CONSTANT_TYPE_NULL;
+        }
         return readInt(TYPE_OFFSET);
     }
 

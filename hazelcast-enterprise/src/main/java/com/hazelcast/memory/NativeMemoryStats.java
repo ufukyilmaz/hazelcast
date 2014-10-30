@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author mdogan 10/02/14
  */
-class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
+public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 
@@ -48,12 +48,7 @@ class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats 
         return free > 0 ? free : 0L;
     }
 
-    final void checkNativeMemoryAllocation(long size) {
-        checkCommittedOffHeap(size);
-        checkFreeMemory(size);
-    }
-
-    private void checkCommittedOffHeap(long size) {
+    void checkCommittedNative(long size) {
         if (size > 0) {
             long currentAllocated = committedNative.get();
             if (maxNative < (currentAllocated + size)) {

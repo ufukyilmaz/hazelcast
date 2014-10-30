@@ -102,6 +102,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             }
             return serializer.write(obj, memoryManager, partitionHash);
         } catch (Throwable e) {
+            e.printStackTrace();
             throw handleException(e);
         }
     }

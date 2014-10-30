@@ -1,5 +1,6 @@
 package com.hazelcast.elasticcollections.map;
 
+import com.hazelcast.elasticcollections.SlottableIterator;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
@@ -306,7 +307,7 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
         allocateBuffers(nextCapacity(allocatedLength));
 
         // We have succeeded at allocating new data so insert the pending key/value at
-        // the free slot in the old arrays before rehashing.
+        // the free slot in the temp arrays before rehashing.
         assigned++;
         writeBool(oldAllocated, freeSlot, true);
         writeLong(oldKeys, freeSlot, pendingKey);
@@ -530,7 +531,7 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
         return false;
     }
 
-    private abstract class SlotIter<E> implements Iterator<E> {
+    private abstract class SlotIter<E> implements SlottableIterator<E> {
         int nextSlot = -1;
         int currentSlot = -1;
 
@@ -538,7 +539,8 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
             nextSlot = advance(0);
         }
 
-        int advance(int start) {
+        @Override
+        public final int advance(int start) {
             ensureMemory();
             for (int slot = start; slot < allocatedLength; slot++) {
                 if (isAllocated(slot)) {
@@ -552,7 +554,8 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
             return nextSlot > -1;
         }
 
-        final int nextSlot() {
+        @Override
+        public final int nextSlot() {
             if (nextSlot < 0) {
                 throw new NoSuchElementException();
             }
@@ -572,10 +575,12 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
             shiftConflictingKeys(currentSlot);
         }
 
+        @Override
         public int getNextSlot() {
             return nextSlot;
         }
 
+        @Override
         public int getCurrentSlot() {
             return currentSlot;
         }
@@ -689,7 +694,8 @@ public class BinaryOffHeapHashMap<V extends MemoryBlock> implements OffHeapMap<D
 
         public EntryIter(int slot) {
             if (slot < 0 || slot > allocatedLength) {
-                throw new IllegalArgumentException("Slot: " + slot + ", capacity: " + allocatedLength);
+                slot = 0;
+                //throw new IllegalArgumentException("Slot: " + slot + ", capacity: " + allocatedLength);
             }
             nextSlot = advance(slot);
 

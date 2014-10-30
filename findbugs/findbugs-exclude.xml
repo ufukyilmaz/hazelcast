@@ -32,7 +32,7 @@
     </Match>
 
     <Match>
-        <Class name="com.hazelcast.cache.operation.CacheIterationResult" />
+        <Class name="com.hazelcast.cache.hidensity.operation.CacheIterationResult" />
     </Match>
 
 </FindBugsFilter>

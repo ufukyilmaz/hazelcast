@@ -76,6 +76,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected CacheConfig createCacheConfig(String cacheName,
                                             InMemoryFormat inMemoryFormat) {
         CacheConfig cacheConfig = new CacheConfig();
+        cacheConfig.setInMemoryFormat(InMemoryFormat.OFFHEAP);
         cacheConfig.setName(cacheName);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);

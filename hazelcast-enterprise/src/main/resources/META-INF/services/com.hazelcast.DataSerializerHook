@@ -1,1 +1,1 @@
-com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook
+com.hazelcast.cache.hidensity.operation.EnterpriseCacheDataSerializerHook

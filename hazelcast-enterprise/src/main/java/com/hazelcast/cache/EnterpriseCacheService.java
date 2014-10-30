@@ -16,17 +16,17 @@
 
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.client.CacheInvalidationListener;
-import com.hazelcast.cache.client.CacheInvalidationMessage;
 import com.hazelcast.cache.impl.CacheOperationProvider;
+import com.hazelcast.cache.hidensity.operation.CacheDestroyOperation;
+import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
+import com.hazelcast.cache.hidensity.operation.HiDensityOperationProvider;
+import com.hazelcast.cache.hidensity.client.CacheInvalidationListener;
+import com.hazelcast.cache.hidensity.client.CacheInvalidationMessage;
+import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.operation.CacheDestroyOperation;
-import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
-import com.hazelcast.cache.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.operation.HiDensityOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
@@ -46,11 +46,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The {@link com.hazelcast.cache.impl.CacheService} implementation specified for enterprise usage.
+ * The {@link CacheService} implementation specified for enterprise usage.
  * This {@link EnterpriseCacheService} implementation mainly handles
  * <ul>
  * <li>
- * {@link com.hazelcast.cache.impl.ICacheRecordStore} creation of caches with specified partition id
+ * {@link ICacheRecordStore} creation of caches with specified partition id
  * </li>
  * <li>
  * Destroying segments and caches
@@ -67,14 +67,14 @@ public class EnterpriseCacheService extends CacheService {
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
     /**
-     * Creates new {@link com.hazelcast.cache.impl.ICacheRecordStore} as specified
-     * {@link com.hazelcast.config.InMemoryFormat}.
+     * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
      *
      * @param name        the name of the cache with prefix
      * @param partitionId the partition id which cache record store is created on
-     * @return the created {@link com.hazelcast.cache.impl.ICacheRecordStore}
+     * @return the created {@link ICacheRecordStore}
+     *
      * @see com.hazelcast.cache.impl.CacheRecordStore
-     * @see com.hazelcast.cache.impl.hidensity.nativememory.HiDensityNativeMemoryCacheRecordStore
+     * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
      */
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
@@ -210,11 +210,11 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Creates a {@link com.hazelcast.cache.operation.HiDensityCacheReplicationOperation} to start the replication.
+     * Creates a {@link HiDensityCacheReplicationOperation} to start the replication.
      *
-     * @param event the {@link com.hazelcast.spi.PartitionReplicationEvent}
-     *              holds the <code>partitionId</code> and <code>replica index</code>
-     * @return the created {@link com.hazelcast.cache.operation.HiDensityCacheReplicationOperation}
+     * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>
+     *              and <code>replica index</code>
+     * @return the created {@link HiDensityCacheReplicationOperation}
      */
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
@@ -225,12 +225,10 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Registers and {@link com.hazelcast.cache.client.CacheInvalidationListener} for specified <code>cacheName</code>.
+     * Registers and {@link CacheInvalidationListener} for specified <code>cacheName</code>.
      *
-     * @param cacheName the name of the cache that {@link com.hazelcast.cache.client.CacheInvalidationListener}
-     *                  will be registered for
-     * @param listener  the {@link com.hazelcast.cache.client.CacheInvalidationListener}
-     *                  to be registered for specified <code>cache</code>
+     * @param cacheName the name of the cache that {@link CacheInvalidationListener} will be registered for
+     * @param listener  the {@link CacheInvalidationListener} to be registered for specified <code>cache</code>
      * @return the id which is unique for current registration
      */
     public String addInvalidationListener(String cacheName, CacheInvalidationListener listener) {
@@ -245,7 +243,7 @@ public class EnterpriseCacheService extends CacheService {
      * from mentioned source with <code>sourceUuid</code>.
      *
      * @param cacheName  the name of the cache that invalidation event is sent for
-     * @param key        the {@link com.hazelcast.nio.serialization.Data} represents the invalidation event
+     * @param key        the {@link Data} represents the invalidation event
      * @param sourceUuid an id that represents the source for invalidation event
      */
     public void sendInvalidationEvent(String cacheName, Data key, String sourceUuid) {
@@ -261,8 +259,8 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Creates a {@link com.hazelcast.cache.impl.CacheOperationProvider} as specified
-     * {@link com.hazelcast.config.InMemoryFormat} for specified <code>cacheNameWithPrefix</code>
+     * Creates a {@link CacheOperationProvider} as specified {@link InMemoryFormat}
+     * for specified <code>cacheNameWithPrefix</code>
      *
      * @param cacheNameWithPrefix the name of the cache with prefix that operation works on
      * @param inMemoryFormat      the format of memory such as <code>BINARY</code>, <code>OBJECT</code>
@@ -279,10 +277,9 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Gets the {@link com.hazelcast.nio.serialization.EnterpriseSerializationService} used by this
-     * {@link com.hazelcast.cache.impl.CacheService}.
+     * Gets the {@link EnterpriseSerializationService} used by this {@link CacheService}.
      *
-     * @return the used {@link com.hazelcast.nio.serialization.EnterpriseSerializationService}
+     * @return the used {@link EnterpriseSerializationService}
      */
     public EnterpriseSerializationService getSerializationService() {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();

@@ -4,7 +4,6 @@
     <name>Hazelcast Enterprise Root</name>
     <modules>
         <module>hazelcast-enterprise</module>
-        <!--<module>hazelcast-enterprise-jcache</module>-->
         <module>hazelcast-enterprise-client</module>
         <module>hazelcast-enterprise-sessions</module>
         <module>hazelcast-enterprise-all</module>

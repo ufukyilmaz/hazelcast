@@ -1,5 +1,7 @@
 package com.hazelcast.instance;
 
+import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -15,7 +17,6 @@ import com.hazelcast.enterprise.InvalidLicenseError;
 import com.hazelcast.enterprise.KG;
 import com.hazelcast.enterprise.License;
 import com.hazelcast.enterprise.TrialLicenseExpiredError;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.management.EnterpriseTimedMemberStateFactory;
 import com.hazelcast.management.TimedMemberStateFactory;
 import com.hazelcast.memory.MemoryManager;
@@ -40,6 +41,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.storage.Storage;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -257,11 +259,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public WanReplicationService getWanReplicationService() {
-        return new EnterpriseWanReplicationService(node);
-    }
-
-    @Override
     public TimedMemberStateFactory getTimedMemberStateFactory() {
         return new EnterpriseTimedMemberStateFactory(node.hazelcastInstance);
     }
@@ -314,4 +311,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return validUntil;
     }
 
+    @Override
+    public <T> T createService(Class<T> clazz) {
+        if (WanReplicationService.class.isAssignableFrom(clazz)) {
+            return (T) new WanReplicationServiceImpl(node);
+        } else if (ICacheService.class.isAssignableFrom(clazz)) {
+            return (T) new EnterpriseCacheService();
+        }
+        throw new IllegalArgumentException("Unknown service class: " + clazz);
+    }
 }

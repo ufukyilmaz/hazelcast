@@ -23,7 +23,7 @@ final class EnterpriseByteArraySerializerAdapter extends ByteArraySerializerAdap
         long address = memoryManager.allocate(size);
         assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
-        OffHeapData binary = new OffHeapData().reset(address);
+        OffHeapData binary = new OffHeapData(address, size);
         binary.setType(serializer.getTypeId());
         binary.setData(data);
         binary.setPartitionHash(partitionHash);

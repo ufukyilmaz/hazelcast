@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author mdogan 10/02/14
  */
-class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
+public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 

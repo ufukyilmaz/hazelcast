@@ -62,10 +62,10 @@ final class MemoryBlockDataInput extends InputStream
         service = serializationService;
     }
 
-    MemoryBlockDataInput(OffHeapData data, EnterpriseSerializationService serializationService) {
+    MemoryBlockDataInput(NativeMemoryData data, EnterpriseSerializationService serializationService) {
         memory = data;
         size = data.size();
-        pos = OffHeapData.HEADER_LENGTH;
+        pos = NativeMemoryData.HEADER_LENGTH;
         service = serializationService;
         byte[] headerData = data.getHeader();
         header = headerData != null ? ByteBuffer.wrap(headerData).asReadOnlyBuffer().order(getByteOrder()) : null;

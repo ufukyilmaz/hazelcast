@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
@@ -72,7 +72,7 @@ public class MemoryManagerTest {
                 }
                 long address = memoryManager.allocate(size);
                 blocks.add(new MemoryBlock(address, size));
-            } catch (OffHeapOutOfMemoryError e) {
+            } catch (NativeMemoryOutOfMemoryError e) {
                 break;
             }
         }
@@ -130,7 +130,7 @@ public class MemoryManagerTest {
                                 long address = memoryManager.allocate(size);
                                 release(last);
                                 last = new MemoryBlock(address, size);
-                            } catch (OffHeapOutOfMemoryError ignored) {
+                            } catch (NativeMemoryOutOfMemoryError ignored) {
                             } catch (Throwable t) {
                                 t.printStackTrace();
                                 error.set(t);

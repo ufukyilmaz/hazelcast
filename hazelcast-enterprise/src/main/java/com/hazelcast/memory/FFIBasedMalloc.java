@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import jnr.ffi.LibraryLoader;
 
 /**
@@ -19,7 +19,7 @@ abstract class FFIBasedMalloc implements LibMalloc {
     public final long malloc(long size) {
         long address = malloc.malloc(size);
         if (address <= 0L) {
-            throw new OffHeapOutOfMemoryError();
+            throw new NativeMemoryOutOfMemoryError();
         }
         return address;
     }

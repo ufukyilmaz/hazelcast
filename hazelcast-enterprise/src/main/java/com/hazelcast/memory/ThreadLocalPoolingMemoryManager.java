@@ -4,7 +4,7 @@ import com.hazelcast.elasticcollections.LongIterator;
 import com.hazelcast.elasticcollections.queue.LongArrayQueue;
 import com.hazelcast.elasticcollections.set.LongHashSet;
 import com.hazelcast.elasticcollections.set.LongSet;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;
@@ -62,7 +62,7 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected void onOome(OffHeapOutOfMemoryError e) {
+    protected void onOome(NativeMemoryOutOfMemoryError e) {
         long now = Clock.currentTimeMillis();
         if (now > lastFullCompaction + GarbageCollector.GC_INTERVAL) {
             compact();
@@ -290,11 +290,11 @@ final class ThreadLocalPoolingMemoryManager
                 } else {
                     queue = new LongArrayQueue(systemAllocator, newCap, INVALID_ADDRESS);
                 }
-            } catch (OffHeapOutOfMemoryError e) {
+            } catch (NativeMemoryOutOfMemoryError e) {
                 if (purge) {
                     return purgeEmptySpaceAndResizeQueue(current, newCap);
                 }
-                throw new OffHeapOutOfMemoryError("Cannot expand internal memory pool -> " + e.getMessage(), e);
+                throw new NativeMemoryOutOfMemoryError("Cannot expand internal memory pool -> " + e.getMessage(), e);
             }
             return queue;
         }

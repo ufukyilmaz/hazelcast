@@ -4,7 +4,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -109,7 +109,7 @@ public class LongConcurrentQueueTest {
                 for (int i = 0; i < ITERATIONS && error == null; i++) {
                     try {
                         runInternal();
-                    } catch (OffHeapOutOfMemoryError e) {
+                    } catch (NativeMemoryOutOfMemoryError e) {
                         LockSupport.parkNanos(1);
                     } catch (Throwable t) {
                         error = t;

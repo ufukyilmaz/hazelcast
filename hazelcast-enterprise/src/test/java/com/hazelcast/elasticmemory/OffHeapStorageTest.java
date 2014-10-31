@@ -13,7 +13,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -136,13 +136,13 @@ public class OffHeapStorageTest {
         fillUpBuffer(count, true);
     }
 
-    @Test(expected = OffHeapOutOfMemoryError.class)
+    @Test(expected = NativeMemoryOutOfMemoryError.class)
     public void testBufferOverFlow() {
         final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
         fillUpBuffer(count + 1, false);
     }
 
-    @Test(expected = OffHeapOutOfMemoryError.class)
+    @Test(expected = NativeMemoryOutOfMemoryError.class)
     public void testBufferOverFlow2() {
         final int count = (int) (total.kiloBytes() / chunk.kiloBytes());
         fillUpBuffer(count + 1, true);
@@ -192,12 +192,12 @@ public class OffHeapStorageTest {
         assertEquals(ENTRY_COUNT, map.size());
     }
 
-    @Test(expected = OffHeapOutOfMemoryError.class)
+    @Test(expected = NativeMemoryOutOfMemoryError.class)
     public void testMapStorageOom() {
         testMapStorageOom(false);
     }
 
-    @Test(expected = OffHeapOutOfMemoryError.class)
+    @Test(expected = NativeMemoryOutOfMemoryError.class)
     public void testMapStorageOom2() {
         testMapStorageOom(true);
     }
@@ -346,7 +346,7 @@ public class OffHeapStorageTest {
         }
     }
 
-    @Test(expected = OffHeapOutOfMemoryError.class)
+    @Test(expected = NativeMemoryOutOfMemoryError.class)
     public void testSharedMapStorageOom() {
         Config c1 = new Config();
         c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);

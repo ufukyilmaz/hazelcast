@@ -31,7 +31,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
     protected static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT =
-            InMemoryFormat.OFFHEAP;
+            InMemoryFormat.NATIVE;
 
     protected static final String CACHE_NAME;
     protected static final InMemoryFormat IN_MEMORY_FORMAT;
@@ -76,7 +76,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected CacheConfig createCacheConfig(String cacheName,
                                             InMemoryFormat inMemoryFormat) {
         CacheConfig cacheConfig = new CacheConfig();
-        cacheConfig.setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         cacheConfig.setName(cacheName);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);

@@ -67,7 +67,7 @@ public class EnterpriseCacheService extends CacheService {
             throw new IllegalArgumentException("CacheConfig is null!!! " + name);
         }
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
-        if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
+        if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             try {
                 return new BreakoutNativeMemoryCacheRecordStore(partitionId,
                         name,
@@ -254,7 +254,7 @@ public class EnterpriseCacheService extends CacheService {
     @Override
     public CacheOperationProvider getCacheOperationProvider(String cacheNameWithPrefix,
                                                             InMemoryFormat inMemoryFormat) {
-        if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
+        if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             return new BreakoutCacheOperationProvider(cacheNameWithPrefix);
         }
         return super.getCacheOperationProvider(cacheNameWithPrefix, inMemoryFormat);

@@ -41,6 +41,11 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.UuidUtil;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,10 +59,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -181,7 +182,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testNullData() {
-        Data data = new HeapData();
+        Data data = new DefaultData();
         SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
         assertNull(ss.toObject(data));
     }

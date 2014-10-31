@@ -17,7 +17,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.HeapData;
+import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.nio.serialization.StreamSerializer;
 import com.hazelcast.storage.Storage;
 import org.junit.After;
@@ -106,7 +106,7 @@ public class OffHeapStorageTest {
         rand.nextBytes(data);
         final int hash = rand.nextInt();
 
-        final DataRefImpl ref = s.put(hash, new HeapData(0, data));
+        final DataRefImpl ref = s.put(hash, new DefaultData(0, data));
         assertEquals(k, ref.size());
         assertEquals((int) Math.ceil((double) k / chunkSize), ref.getChunkCount());
 
@@ -153,7 +153,7 @@ public class OffHeapStorageTest {
                 : new ByteBufferStorage(total.bytes(), (int) chunk.bytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
-            s.put(i, new HeapData(0, data));
+            s.put(i, new DefaultData(0, data));
         }
         s.destroy();
     }
@@ -170,7 +170,7 @@ public class OffHeapStorageTest {
 
     private void testMapStorageFull(boolean useUnsafe) {
         Config c = new Config();
-        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -204,7 +204,7 @@ public class OffHeapStorageTest {
 
     private void testMapStorageOom(boolean useUnsafe) {
         Config c = new Config();
-        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -233,7 +233,7 @@ public class OffHeapStorageTest {
 
     private void testMapStorageAfterDestroy(boolean useUnsafe) {
         Config c = new Config();
-        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -269,7 +269,7 @@ public class OffHeapStorageTest {
 
     private void testMapStorageAfterRemove(boolean useUnsafe) {
         Config c = new Config();
-        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
@@ -314,7 +314,7 @@ public class OffHeapStorageTest {
     private void testMapStorageAfterTTL(boolean useUnsafe) throws InterruptedException {
         Config c = new Config();
         MapConfig mapConfig = c.getMapConfig("default");
-        mapConfig.setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setTimeToLiveSeconds(1);
 
         c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
@@ -349,13 +349,13 @@ public class OffHeapStorageTest {
     @Test(expected = NativeOutOfMemoryError.class)
     public void testSharedMapStorageOom() {
         Config c1 = new Config();
-        c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c1.getGroupConfig().setName("dev1");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
-        c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c2.getGroupConfig().setName("dev2");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
@@ -383,13 +383,13 @@ public class OffHeapStorageTest {
     @Test
     public void testSharedMapStorageAfterShutdown() {
         Config c1 = new Config();
-        c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c1.getGroupConfig().setName("dev1");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
-        c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c2.getGroupConfig().setName("dev2");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
@@ -432,7 +432,7 @@ public class OffHeapStorageTest {
 
     private void testEmptyData(boolean useUnsafe) {
         final Config config = new Config();
-        config.getMapConfig("default").setInMemoryFormat(InMemoryFormat.OFFHEAP);
+        config.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");

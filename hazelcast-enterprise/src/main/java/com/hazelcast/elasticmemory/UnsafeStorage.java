@@ -21,7 +21,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.HeapData;
+import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.storage.Storage;
 import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
@@ -111,7 +111,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             return null;
         }
         if (ref.isEmpty()) {
-            return new HeapData(ref.getType(), null);
+            return new DefaultData(ref.getType(), null);
         }
 
         final byte[] value = new byte[ref.size()];
@@ -126,7 +126,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         }
 
         if (isEntryRefValid(ref)) { // volatile read
-            return new HeapData(ref.getType(), value);
+            return new DefaultData(ref.getType(), value);
         }
         return null;
     }

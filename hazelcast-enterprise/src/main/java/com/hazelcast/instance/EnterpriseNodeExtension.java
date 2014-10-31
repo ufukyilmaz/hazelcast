@@ -66,6 +66,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         super();
     }
 
+    @Override
     public void beforeStart(Node node) {
         this.node = node;
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
@@ -126,6 +127,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
+    @Override
     public void printNodeInfo(Node node) {
         BuildInfo buildInfo = node.getBuildInfo();
         systemLogger.log(Level.INFO,
@@ -134,6 +136,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
     }
 
+    @Override
     public void afterStart(Node node) {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
@@ -153,6 +156,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return license;
     }
 
+    @Override
     public SerializationService createSerializationService() {
         SerializationService ss;
         try {
@@ -199,6 +203,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return null;
     }
 
+    @Override
     public SecurityContext getSecurityContext() {
         if (securityEnabled && securityContext == null) {
             securityContext = new SecurityContextImpl(node);
@@ -250,7 +255,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return super.createPacketWriter(connection, ioService);
     }
 
-    public Storage getOffHeapStorage() {
+    @Override
+    public Storage getNativeDataStorage() {
         if (storage == null) {
             throw new IllegalStateException(
                     "Offheap storage is not enabled! " + "Please set 'hazelcast.elastic.memory.enabled' to true");
@@ -285,6 +291,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
+    @Override
     public void destroy() {
         super.destroy();
         license = null;

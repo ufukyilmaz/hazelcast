@@ -25,8 +25,8 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
 
     @Override
     public EnterpriseBufferObjectDataInput createInput(Data data, SerializationService service) {
-        return data instanceof OffHeapData
-                ? new MemoryBlockDataInput((OffHeapData) data, (EnterpriseSerializationService) service)
+        return data instanceof NativeMemoryData
+                ? new MemoryBlockDataInput((NativeMemoryData) data, (EnterpriseSerializationService) service)
                 : new EnterpriseUnsafeObjectDataInput(data, (EnterpriseSerializationService) service);
     }
 

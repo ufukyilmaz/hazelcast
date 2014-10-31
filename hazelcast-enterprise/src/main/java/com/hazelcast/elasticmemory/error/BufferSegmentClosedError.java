@@ -1,11 +1,9 @@
 package com.hazelcast.elasticmemory.error;
 
-import com.hazelcast.memory.error.OffHeapError;
-
 /**
 * @author mdogan 10/10/13
 */
-public class BufferSegmentClosedError extends OffHeapError {
+public class BufferSegmentClosedError extends Error {
     public BufferSegmentClosedError() {
         super("BufferSegment is closed!");
     }

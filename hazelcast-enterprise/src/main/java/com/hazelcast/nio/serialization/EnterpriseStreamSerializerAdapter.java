@@ -38,7 +38,7 @@ final class EnterpriseStreamSerializerAdapter extends StreamSerializerAdapter
         try {
             serializer.write(out, object);
             int pos = out.position();
-            int size = OffHeapData.HEADER_LENGTH + pos;
+            int size = NativeMemoryData.HEADER_LENGTH + pos;
 
             if (partitionHash != 0) {
                 size += Bits.INT_SIZE_IN_BYTES;
@@ -55,9 +55,9 @@ final class EnterpriseStreamSerializerAdapter extends StreamSerializerAdapter
             long address = memoryManager.allocate(size);
             assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
-            OffHeapData data = new OffHeapData(address, size);
+            NativeMemoryData data = new NativeMemoryData(address, size);
             data.setType(serializer.getTypeId());
-            out.copyToMemoryBlock(data, OffHeapData.HEADER_LENGTH, pos);
+            out.copyToMemoryBlock(data, NativeMemoryData.HEADER_LENGTH, pos);
             data.setDataSize(pos);
             data.setPartitionHash(partitionHash);
             data.setHeader(header);

@@ -191,7 +191,7 @@ public class EnterpriseDataTest {
 
             for (Object object : objects) {
                 Data data1 = ss.toData(object, DataType.HEAP);
-                Data data2 = ss.toData(object, DataType.OFFHEAP);
+                Data data2 = ss.toData(object, DataType.NATIVE);
 
                 Assert.assertEquals("Types are not matching! Object: "
                                             + object, data1.getType(), data2.getType());
@@ -233,7 +233,7 @@ public class EnterpriseDataTest {
                     .setUseNativeByteOrder(true).setAllowUnsafe(true).build();
 
             Data heap = ss.toData(object, DataType.HEAP);
-            Data offheap = ss.toData(object, DataType.OFFHEAP);
+            Data offheap = ss.toData(object, DataType.NATIVE);
 
             Data heap1 = ss.convertData(heap, DataType.HEAP);
             Assert.assertTrue("Type!", heap1 instanceof HeapData);
@@ -241,13 +241,13 @@ public class EnterpriseDataTest {
             Assert.assertEquals(offheap, heap1);
             Assert.assertTrue("Identity!", heap == heap1);
 
-            Data offheap1 = ss.convertData(heap, DataType.OFFHEAP);
-            Assert.assertTrue("Type!", offheap1 instanceof OffHeapData);
+            Data offheap1 = ss.convertData(heap, DataType.NATIVE);
+            Assert.assertTrue("Type!", offheap1 instanceof NativeMemoryData);
             Assert.assertEquals(heap, offheap1);
             Assert.assertEquals(offheap, offheap1);
 
-            Data offheap2 = ss.convertData(offheap, DataType.OFFHEAP);
-            Assert.assertTrue("Type!", offheap2 instanceof OffHeapData);
+            Data offheap2 = ss.convertData(offheap, DataType.NATIVE);
+            Assert.assertTrue("Type!", offheap2 instanceof NativeMemoryData);
             Assert.assertEquals(heap, offheap2);
             Assert.assertEquals(offheap, offheap2);
             Assert.assertTrue("Identity!", offheap == offheap2);

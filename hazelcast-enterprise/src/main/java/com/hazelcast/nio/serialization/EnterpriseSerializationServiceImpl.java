@@ -20,7 +20,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -80,13 +80,13 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         if (type == DataType.HEAP) {
             return super.toData(obj, strategy);
         }
-        if (type == DataType.OFFHEAP) {
-            return toOffHeapData(obj, strategy);
+        if (type == DataType.NATIVE) {
+            return toNativeData(obj, strategy);
         }
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private Data toOffHeapData(Object obj, PartitioningStrategy strategy) {
+    private Data toNativeData(Object obj, PartitioningStrategy strategy) {
         if (memoryManager == null) {
             throw new IllegalArgumentException("MemoryManager is required!");
         }
@@ -109,10 +109,10 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
     @Override
     protected void writeDataInternal(ObjectDataOutput out, Data data) throws IOException {
-        if (data instanceof OffHeapData && out instanceof EnterpriseBufferObjectDataOutput) {
+        if (data instanceof NativeMemoryData && out instanceof EnterpriseBufferObjectDataOutput) {
             EnterpriseBufferObjectDataOutput bufferOut = (EnterpriseBufferObjectDataOutput) out;
-            OffHeapData offHeapData = (OffHeapData) data;
-            bufferOut.copyFromMemoryBlock(offHeapData, OffHeapData.HEADER_LENGTH, data.dataSize());
+            NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+            bufferOut.copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.HEADER_LENGTH, data.dataSize());
         } else {
             out.write(data.getData());
         }
@@ -140,7 +140,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             int dataSize = in.readInt();
             if (dataSize > 0) {
-                return readOffHeapData(in, typeId, partitionHash, dataSize, header);
+                return readNativeData(in, typeId, partitionHash, dataSize, header);
             }
             return new HeapData(typeId, null, partitionHash, header);
         } catch (Throwable e) {
@@ -148,10 +148,10 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
     }
 
-    private Data readOffHeapData(EnterpriseObjectDataInput in, int typeId, int partitionHash,
-            int dataSize, byte[] header) throws IOException {
+    private Data readNativeData(EnterpriseObjectDataInput in, int typeId, int partitionHash, int dataSize,
+            byte[] header) throws IOException {
 
-        int size = dataSize + OffHeapData.HEADER_LENGTH;
+        int size = dataSize + NativeMemoryData.HEADER_LENGTH;
         if (header != null) {
             size += (INT_SIZE_IN_BYTES + header.length);
         }
@@ -159,29 +159,31 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             size += INT_SIZE_IN_BYTES;
         }
 
-        OffHeapData offHeapBinary = allocateOffHeapData(in, dataSize, size);
-        offHeapBinary.setType(typeId);
+        NativeMemoryData nativeData = allocateNativeData(in, dataSize, size);
+        nativeData.setType(typeId);
 
         if (in instanceof EnterpriseBufferObjectDataInput) {
             EnterpriseBufferObjectDataInput bufferInput = (EnterpriseBufferObjectDataInput) in;
-            bufferInput.copyToMemoryBlock(offHeapBinary, OffHeapData.HEADER_LENGTH, dataSize);
-            offHeapBinary.setDataSize(dataSize);
+            bufferInput.copyToMemoryBlock(nativeData, NativeMemoryData.HEADER_LENGTH, dataSize);
+            nativeData.setDataSize(dataSize);
         } else {
             byte[] data = new byte[dataSize];
             in.readFully(data);
-            offHeapBinary.setData(data);
+            nativeData.setData(data);
         }
 
-        offHeapBinary.setPartitionHash(partitionHash);
-        offHeapBinary.setHeader(header);
-        return offHeapBinary;
+        nativeData.setPartitionHash(partitionHash);
+        nativeData.setHeader(header);
+        return nativeData;
     }
 
-    private OffHeapData allocateOffHeapData(EnterpriseObjectDataInput in, int dataSize, int size) throws IOException {
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
+    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int dataSize, int size)
+            throws IOException {
         try {
             long address = memoryManager.allocate(size);
-            return new OffHeapData(address, size);
-        } catch (OffHeapOutOfMemoryError e) {
+            return new NativeMemoryData(address, size);
+        } catch (NativeOutOfMemoryError e) {
             in.skipBytes(dataSize);
             throw e;
         }
@@ -192,18 +194,18 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             return null;
         }
         switch (type) {
-            case OFFHEAP:
+            case NATIVE:
                 if (data instanceof HeapData) {
                     if (memoryManager == null) {
                         throw new HazelcastSerializationException("MemoryManager is required!");
                     }
-                    int size = data.dataSize() + OffHeapData.HEADER_LENGTH;
+                    int size = data.dataSize() + NativeMemoryData.HEADER_LENGTH;
                     int partitionHash = data.hasPartitionHash() ? data.getPartitionHash() : 0;
                     if (partitionHash != 0) {
                         size += INT_SIZE_IN_BYTES;
                     }
                     long address = memoryManager.allocate(size);
-                    OffHeapData bin = new OffHeapData(address, size);
+                    NativeMemoryData bin = new NativeMemoryData(address, size);
                     bin.setType(data.getType());
                     bin.setData(data.getData());
                     bin.setPartitionHash(partitionHash);
@@ -212,7 +214,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                 break;
 
             case HEAP:
-                if (data instanceof OffHeapData) {
+                if (data instanceof NativeMemoryData) {
                     return new HeapData(data.getType(), data.getData(), data.getPartitionHash());
                 }
                 break;
@@ -224,11 +226,11 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     public void disposeData(Data data) {
-        if (data instanceof OffHeapData) {
+        if (data instanceof NativeMemoryData) {
             if (memoryManager == null) {
                 throw new HazelcastSerializationException("MemoryManager is required!");
             }
-            OffHeapData memoryBlock = (OffHeapData) data;
+            NativeMemoryData memoryBlock = (NativeMemoryData) data;
             if (memoryBlock.address() != MemoryManager.NULL_ADDRESS) {
                 memoryBlock.setType(SerializationConstants.CONSTANT_TYPE_NULL);
                 memoryBlock.setData(null);

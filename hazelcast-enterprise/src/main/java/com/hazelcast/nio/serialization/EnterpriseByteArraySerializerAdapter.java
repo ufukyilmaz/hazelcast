@@ -16,14 +16,14 @@ final class EnterpriseByteArraySerializerAdapter extends ByteArraySerializerAdap
     @SuppressWarnings("unchecked")
     public Data write(Object object, MemoryManager memoryManager, int partitionHash) throws IOException {
         byte[] data = serializer.write(object);
-        int size = OffHeapData.HEADER_LENGTH + data.length;
+        int size = NativeMemoryData.HEADER_LENGTH + data.length;
         if (partitionHash != 0) {
             size += Bits.INT_SIZE_IN_BYTES;
         }
         long address = memoryManager.allocate(size);
         assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
-        OffHeapData binary = new OffHeapData(address, size);
+        NativeMemoryData binary = new NativeMemoryData(address, size);
         binary.setType(serializer.getTypeId());
         binary.setData(data);
         binary.setPartitionHash(partitionHash);

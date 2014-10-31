@@ -291,7 +291,7 @@ public class EnterprisePortableTest {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        testClassDefinitionLookup(ss, DataType.OFFHEAP);
+        testClassDefinitionLookup(ss, DataType.NATIVE);
         memoryManager.destroy();
     }
 
@@ -303,7 +303,7 @@ public class EnterprisePortableTest {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        testClassDefinitionLookup(ss, DataType.OFFHEAP);
+        testClassDefinitionLookup(ss, DataType.NATIVE);
         memoryManager.destroy();
     }
 
@@ -315,7 +315,7 @@ public class EnterprisePortableTest {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        testClassDefinitionLookup(ss, DataType.OFFHEAP);
+        testClassDefinitionLookup(ss, DataType.NATIVE);
         memoryManager.destroy();
     }
 
@@ -328,7 +328,7 @@ public class EnterprisePortableTest {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        testClassDefinitionLookup(ss, DataType.OFFHEAP);
+        testClassDefinitionLookup(ss, DataType.NATIVE);
         memoryManager.destroy();
     }
 

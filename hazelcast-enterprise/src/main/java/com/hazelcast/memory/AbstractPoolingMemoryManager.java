@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
@@ -124,7 +123,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (address == NULL_ADDRESS) {
             try {
                 address = splitFromNextQueue(queue);
-            } catch (OffHeapOutOfMemoryError e) {
+            } catch (NativeOutOfMemoryError e) {
                 onOome(e);
                 throw e;
             }
@@ -132,7 +131,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         return address;
     }
 
-    protected abstract void onOome(OffHeapOutOfMemoryError e);
+    protected abstract void onOome(NativeOutOfMemoryError e);
 
     @Override
     public final void free(long address, long size) {
@@ -271,7 +270,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             do {
                 address = acquireInternal(nextQ);
                 if (address == NULL_ADDRESS) {
-                    throw new OffHeapOutOfMemoryError("Not enough contiguous memory available! " +
+                    throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
                             "Cannot acquire " + MemorySize.toPrettyString(memorySize) + "!");
                 }
 
@@ -379,7 +378,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             long limit = memoryStats.getMaxMetadata();
             long usage = memoryStats.getUsedMetadata();
             if (usage + size > limit) {
-                throw new OffHeapOutOfMemoryError("System allocations limit exceeded! " +
+                throw new NativeOutOfMemoryError("System allocations limit exceeded! " +
                         "Limit: " + MemorySize.toPrettyString(limit)
                         + ", usage: " + MemorySize.toPrettyString(usage)
                         + ", requested: " + MemorySize.toPrettyString(size));

@@ -15,7 +15,7 @@
     <suppress checks="" files="com.hazelcast.enterprise[\\/]"/>
     <suppress checks="" files="com.hazelcast.security[\\/]"/>
     <suppress checks="" files="com.hazelcast.memory[\\/]"/>
-    <suppress checks="" files="com.hazelcast.elasticcollections[\\/]"/>
+    <suppress checks="" files="com.hazelcast.elastic[\\/]"/>
 
     <suppress checks="JavadocMethod" files="com.hazelcast.nio[\\/]"/>
     <suppress checks="JavadocType" files="com.hazelcast.nio[\\/]"/>
@@ -23,7 +23,7 @@
     <suppress checks="JavadocType" files="com.hazelcast.nio.serialization[\\/]"/>
     <suppress checks="ParameterNumber" files="com.hazelcast.nio.serialization.EnterpriseSerializationServiceImpl"/>
     <suppress checks="MethodCount" files="com.hazelcast.nio.serialization.MemoryBlockDataInput"/>
-    <suppress checks="IllegalImport|NPathComplexity" files="com.hazelcast.nio.serialization.OffHeapDataUtil"/>
+    <suppress checks="IllegalImport|NPathComplexity" files="com.hazelcast.nio.serialization.NativeMemoryDataUtil"/>
 
     <suppress checks="ClassFanOutComplexityCheck" files="com.hazelcast.instance.EnterpriseNodeExtension"/>
 
@@ -41,8 +41,8 @@
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
-    <suppress checks="MethodCountCheck" files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
-    <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.hidensity.operation.EnterpriseCacheDataSerializerHook"/>
+    <suppress checks="MethodCountCheck" files="com.hazelcast.cache.enterprise.impl.nativememory.BreakoutNativeMemoryCacheRecordStore"/>
+    <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.enterprise.operation.EnterpriseCacheDataSerializerHook"/>
 
 </suppressions>
 

@@ -1,19 +1,19 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.enterprise.impl.nativememory.BreakoutNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.enterprise.operation.BreakoutCacheOperationProvider;
+import com.hazelcast.cache.enterprise.operation.BreakoutCacheReplicationOperation;
 import com.hazelcast.cache.impl.CacheOperationProvider;
-import com.hazelcast.cache.hidensity.operation.CacheDestroyOperation;
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.hidensity.operation.HiDensityOperationProvider;
-import com.hazelcast.cache.hidensity.client.CacheInvalidationListener;
-import com.hazelcast.cache.hidensity.client.CacheInvalidationMessage;
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
+import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
+import com.hazelcast.cache.enterprise.client.CacheInvalidationListener;
+import com.hazelcast.cache.enterprise.client.CacheInvalidationMessage;
+import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -58,7 +58,7 @@ public class EnterpriseCacheService extends CacheService {
      * @return the created {@link ICacheRecordStore}
      *
      * @see com.hazelcast.cache.impl.CacheRecordStore
-     * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
+     * @see com.hazelcast.cache.enterprise.impl.nativememory.BreakoutNativeMemoryCacheRecordStore
      */
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
@@ -69,13 +69,13 @@ public class EnterpriseCacheService extends CacheService {
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
         if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
             try {
-                return new HiDensityNativeMemoryCacheRecordStore(partitionId,
+                return new BreakoutNativeMemoryCacheRecordStore(partitionId,
                         name,
                         this,
                         nodeEngine,
-                        HiDensityNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
-            } catch (OffHeapOutOfMemoryError e) {
-                throw new OffHeapOutOfMemoryError("Cannot create internal cache map, "
+                        BreakoutNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+            } catch (NativeOutOfMemoryError e) {
+                throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                         + "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
         } else if (inMemoryFormat == null
@@ -194,17 +194,17 @@ public class EnterpriseCacheService extends CacheService {
     }
 
     /**
-     * Creates a {@link HiDensityCacheReplicationOperation} to start the replication.
+     * Creates a {@link com.hazelcast.cache.enterprise.operation.BreakoutCacheReplicationOperation} to start the replication.
      *
      * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>
      *              and <code>replica index</code>
-     * @return the created {@link HiDensityCacheReplicationOperation}
+     * @return the created {@link com.hazelcast.cache.enterprise.operation.BreakoutCacheReplicationOperation}
      */
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
         CachePartitionSegment segment = segments[event.getPartitionId()];
-        HiDensityCacheReplicationOperation op =
-                new HiDensityCacheReplicationOperation(segment, event.getReplicaIndex());
+        BreakoutCacheReplicationOperation op =
+                new BreakoutCacheReplicationOperation(segment, event.getReplicaIndex());
         return op.isEmpty() ? null : op;
     }
 
@@ -255,7 +255,7 @@ public class EnterpriseCacheService extends CacheService {
     public CacheOperationProvider getCacheOperationProvider(String cacheNameWithPrefix,
                                                             InMemoryFormat inMemoryFormat) {
         if (InMemoryFormat.OFFHEAP.equals(inMemoryFormat)) {
-            return new HiDensityOperationProvider(cacheNameWithPrefix);
+            return new BreakoutCacheOperationProvider(cacheNameWithPrefix);
         }
         return super.getCacheOperationProvider(cacheNameWithPrefix, inMemoryFormat);
     }

@@ -1,17 +1,17 @@
 package com.hazelcast.nio.serialization;
 
 /**
- * Defines type of the Data, on-heap or off-heap
+ * Defines type of the Data, heap or native
  */
 public enum DataType {
 
     /**
-     * On-heap data type
+     * Heap data type
      */
     HEAP,
 
     /**
-     * Off-heap data type
+     * Native data type
      */
-    OFFHEAP
+    NATIVE
 }

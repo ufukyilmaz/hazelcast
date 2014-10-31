@@ -1,8 +1,7 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.elasticcollections.queue.LongLinkedBlockingQueue;
-import com.hazelcast.elasticcollections.queue.LongQueue;
-import com.hazelcast.memory.error.OffHeapOutOfMemoryError;
+import com.hazelcast.elastic.queue.LongLinkedBlockingQueue;
+import com.hazelcast.elastic.queue.LongQueue;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
@@ -64,7 +63,7 @@ final class GlobalPoolingMemoryManager
     }
 
     @Override
-    protected void onOome(OffHeapOutOfMemoryError e) {
+    protected void onOome(NativeOutOfMemoryError e) {
         long now = Clock.currentTimeMillis();
         if (now > lastFullCompaction + GarbageCollector.GC_INTERVAL) {
             // immediately set compaction time to avoid multiple (as many as possible) threads to run compact()

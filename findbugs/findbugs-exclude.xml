@@ -25,14 +25,11 @@
         <Package name="com.hazelcast.elasticmemory" />
     </Match>
     <Match>
-        <Package name="com.hazelcast.nio.serialization" />
-    </Match>
-    <Match>
         <Package name="com.hazelcast.enterprise" />
     </Match>
 
     <Match>
-        <Class name="com.hazelcast.cache.hidensity.operation.CacheIterationResult" />
+        <Class name="com.hazelcast.cache.enterprise.operation.CacheIterationResult" />
     </Match>
 
 </FindBugsFilter>

@@ -245,7 +245,7 @@ public class EnterpriseSerializationTest
                 .setMemoryManager(memoryManager).build();
 
         String obj = String.valueOf(System.nanoTime());
-        Data partitionKey = ss.toData(obj.hashCode(), DataType.OFFHEAP);
+        Data partitionKey = ss.toData(obj.hashCode(), DataType.NATIVE);
         assertFalse(partitionKey.hasPartitionHash());
 
         Data data = ss.toData(obj, DataType.HEAP, partitionStrategy);
@@ -253,7 +253,7 @@ public class EnterpriseSerializationTest
         assertNotEquals(data.hashCode(), data.getPartitionHash());
         assertEquals(partitionKey.hashCode(), data.getPartitionHash());
 
-        Data data2 = ss.toData(obj, DataType.OFFHEAP, partitionStrategy);
+        Data data2 = ss.toData(obj, DataType.NATIVE, partitionStrategy);
         assertTrue(data2.hasPartitionHash());
         assertNotEquals(data2.hashCode(), data2.getPartitionHash());
         assertEquals(partitionKey.hashCode(), data2.getPartitionHash());

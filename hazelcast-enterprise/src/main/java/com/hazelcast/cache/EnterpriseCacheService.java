@@ -13,7 +13,7 @@ import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -74,8 +74,8 @@ public class EnterpriseCacheService extends CacheService {
                         this,
                         nodeEngine,
                         BreakoutNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
-            } catch (NativeMemoryOutOfMemoryError e) {
-                throw new NativeMemoryOutOfMemoryError("Cannot create internal cache map, "
+            } catch (NativeOutOfMemoryError e) {
+                throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                         + "not enough contiguous memory available! -> " + e.getMessage(), e);
             }
         } else if (inMemoryFormat == null

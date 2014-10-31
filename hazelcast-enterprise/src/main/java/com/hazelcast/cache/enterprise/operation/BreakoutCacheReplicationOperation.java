@@ -8,7 +8,7 @@ import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -35,7 +35,7 @@ public final class BreakoutCacheReplicationOperation
     protected Map<String, Map<Data, BreakoutCacheRecord>> offHeapSource;
     protected Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
 
-    transient NativeMemoryOutOfMemoryError oome;
+    transient NativeOutOfMemoryError oome;
 
     public BreakoutCacheReplicationOperation() {
         offHeapDestination = new HashMap<String, Map<Data, CacheRecordHolder>>();
@@ -110,7 +110,7 @@ public final class BreakoutCacheReplicationOperation
                     cache.own(key, holder.value, holder.ttl);
                 }
             }
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             dispose();
             oome = e;
         }
@@ -203,7 +203,7 @@ public final class BreakoutCacheReplicationOperation
     private Data readOffHeapBinary(ObjectDataInput in) throws IOException {
         try {
             return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             oome = e;
         }
         return null;

@@ -1,7 +1,7 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.impl.record.CacheRecordMap;
-import com.hazelcast.elasticcollections.SlottableIterator;
+import com.hazelcast.elastic.SlottableIterator;
 
 /**
  * @param <K> Type of key for cache record stored in this cache record map

@@ -1,7 +1,6 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.com.eclipsesource.json.JsonObject;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.monitor.LocalGCStats;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.monitor.impl.LocalGCStatsImpl;
@@ -85,7 +84,7 @@ abstract class AbstractMemoryStats implements LocalMemoryStats {
             return;
         }
         if (size > freeMem) {
-            throw new NativeMemoryOutOfMemoryError("Not enough free physical memory available!"
+            throw new NativeOutOfMemoryError("Not enough free physical memory available!"
                     + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
                     + " Total physical memory: " + MemorySize.toPrettyString(totalMem)
                     + ", Free physical memory: " + MemorySize.toPrettyString(freeMem)

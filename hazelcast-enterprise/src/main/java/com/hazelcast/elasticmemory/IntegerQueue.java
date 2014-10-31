@@ -1,6 +1,6 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 /**
 * @author mdogan 10/10/13
@@ -47,7 +47,7 @@ class IntegerQueue {
     public int[] poll(final int[] indexes) {
         final int count = indexes.length;
         if (count > size) {
-            throw new NativeMemoryOutOfMemoryError("Queue has " + size + " available chunks. " +
+            throw new NativeOutOfMemoryError("Queue has " + size + " available chunks. " +
                     "Data requires " + count + " chunks. Storage is full!");
         }
 

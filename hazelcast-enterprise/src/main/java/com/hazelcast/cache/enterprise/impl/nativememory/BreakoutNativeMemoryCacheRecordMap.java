@@ -4,8 +4,8 @@ import com.hazelcast.cache.enterprise.BreakoutCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.elasticcollections.map.BinaryElasticHashMap;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.elastic.map.BinaryElasticHashMap;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -51,8 +51,8 @@ public final class BreakoutNativeMemoryCacheRecordMap
         this.evictionCallback = evictionCallback;
     }
 
-    protected NativeMemoryOutOfMemoryError onOome(NativeMemoryOutOfMemoryError e) {
-        return new NativeMemoryOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
+    protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
+        return new NativeOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
     }
 
     //CHECKSTYLE:OFF

@@ -1,10 +1,9 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.elasticcollections.LongIterator;
-import com.hazelcast.elasticcollections.queue.LongArrayQueue;
-import com.hazelcast.elasticcollections.set.LongHashSet;
-import com.hazelcast.elasticcollections.set.LongSet;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.elastic.queue.LongArrayQueue;
+import com.hazelcast.elastic.set.LongHashSet;
+import com.hazelcast.elastic.set.LongSet;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;
@@ -62,7 +61,7 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected void onOome(NativeMemoryOutOfMemoryError e) {
+    protected void onOome(NativeOutOfMemoryError e) {
         long now = Clock.currentTimeMillis();
         if (now > lastFullCompaction + GarbageCollector.GC_INTERVAL) {
             compact();
@@ -290,11 +289,11 @@ final class ThreadLocalPoolingMemoryManager
                 } else {
                     queue = new LongArrayQueue(systemAllocator, newCap, INVALID_ADDRESS);
                 }
-            } catch (NativeMemoryOutOfMemoryError e) {
+            } catch (NativeOutOfMemoryError e) {
                 if (purge) {
                     return purgeEmptySpaceAndResizeQueue(current, newCap);
                 }
-                throw new NativeMemoryOutOfMemoryError("Cannot expand internal memory pool -> " + e.getMessage(), e);
+                throw new NativeOutOfMemoryError("Cannot expand internal memory pool -> " + e.getMessage(), e);
             }
             return queue;
         }

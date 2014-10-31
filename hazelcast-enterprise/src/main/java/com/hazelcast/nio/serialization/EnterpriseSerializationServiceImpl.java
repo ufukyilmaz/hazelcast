@@ -20,7 +20,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -181,7 +181,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         try {
             long address = memoryManager.allocate(size);
             return new NativeMemoryData(address, size);
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             in.skipBytes(dataSize);
             throw e;
         }

@@ -1,7 +1,6 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.com.eclipsesource.json.JsonObject;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,7 +51,7 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
         if (size > 0) {
             long currentAllocated = committedNative.get();
             if (maxNative < (currentAllocated + size)) {
-                throw new NativeMemoryOutOfMemoryError("Not enough contiguous memory available! " +
+                throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
                         " Cannot allocate " + MemorySize.toPrettyString(size) + "!" +
                         " Max Native Memory: " + MemorySize.toPrettyString(maxNative) +
                         ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated) +

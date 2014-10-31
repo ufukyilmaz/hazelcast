@@ -1,7 +1,7 @@
 package com.hazelcast.cache.enterprise;
 
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.elasticcollections.SlottableIterator;
+import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 

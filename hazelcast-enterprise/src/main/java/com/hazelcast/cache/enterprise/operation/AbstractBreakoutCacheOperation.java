@@ -5,7 +5,7 @@ import com.hazelcast.cache.enterprise.BreakoutCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -38,7 +38,7 @@ abstract class AbstractBreakoutCacheOperation
     protected int completionId = MutableOperation.IGNORE_COMPLETION;
 
     protected transient BreakoutCacheRecordStore cache;
-    protected transient NativeMemoryOutOfMemoryError oome;
+    protected transient NativeOutOfMemoryError oome;
 
     protected AbstractBreakoutCacheOperation() {
     }
@@ -98,7 +98,7 @@ abstract class AbstractBreakoutCacheOperation
     public final void run() throws Exception {
         try {
             runInternal();
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             forceEvictAndRunInternal();
         }
     }
@@ -110,7 +110,7 @@ abstract class AbstractBreakoutCacheOperation
                 runInternal();
                 oome = null;
                 break;
-            } catch (NativeMemoryOutOfMemoryError e) {
+            } catch (NativeOutOfMemoryError e) {
                 oome = e;
             }
         }
@@ -153,7 +153,7 @@ abstract class AbstractBreakoutCacheOperation
     @Override
     public void logError(Throwable e) {
         ILogger logger = getLogger();
-        if (e instanceof NativeMemoryOutOfMemoryError) {
+        if (e instanceof NativeOutOfMemoryError) {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
         } else {
@@ -197,7 +197,7 @@ abstract class AbstractBreakoutCacheOperation
     protected final Data readNativeData(ObjectDataInput in) throws IOException {
         try {
             return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             oome = e;
         }
         return null;

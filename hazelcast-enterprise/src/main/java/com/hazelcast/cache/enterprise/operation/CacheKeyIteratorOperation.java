@@ -4,7 +4,7 @@ import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.enterprise.BreakoutCacheRecordStore;
 import com.hazelcast.cache.enterprise.BreakoutCacheRecord;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
-import com.hazelcast.elasticcollections.SlottableIterator;
+import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;

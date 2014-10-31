@@ -8,9 +8,9 @@ import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.elasticcollections.map.BinaryElasticHashMap;
+import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.error.NativeMemoryOutOfMemoryError;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -142,7 +142,7 @@ public class BreakoutNativeMemoryCacheRecordStore
             }
 
             return record;
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             if (record != null && record.address() != NULL_PTR) {
                 cacheRecordAccessor.dispose(record);
             }
@@ -435,7 +435,7 @@ public class BreakoutNativeMemoryCacheRecordStore
             record.setTtlMillis((int) ttlMillis);
 
             cacheRecordAccessor.enqueueRecord(record);
-        } catch (NativeMemoryOutOfMemoryError e) {
+        } catch (NativeOutOfMemoryError e) {
             if (newPut && record != null && record.address() != NULL_PTR) {
                 if (!records.delete(key)) {
                     cacheRecordAccessor.dispose(record);

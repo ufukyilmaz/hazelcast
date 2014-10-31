@@ -158,26 +158,26 @@ public class EnterpriseDataTest {
     }
 
     @Test
-    public void testHeapAndOffHeapDataEqualityBigEndian() {
-        testHeapAndOffHeapDataEquality(ByteOrder.BIG_ENDIAN, false);
+    public void testHeapAndOffDefaultDataEqualityBigEndian() {
+        testHeapAndOffDefaultDataEquality(ByteOrder.BIG_ENDIAN, false);
     }
 
     @Test
-    public void testHeapAndOffHeapDataEqualityLittleEndian() {
-        testHeapAndOffHeapDataEquality(ByteOrder.LITTLE_ENDIAN, false);
+    public void testHeapAndOffDefaultDataEqualityLittleEndian() {
+        testHeapAndOffDefaultDataEquality(ByteOrder.LITTLE_ENDIAN, false);
     }
 
     @Test
-    public void testHeapAndOffHeapDataEqualityNativeOrder() {
-        testHeapAndOffHeapDataEquality(ByteOrder.nativeOrder(), false);
+    public void testHeapAndOffDefaultDataEqualityNativeOrder() {
+        testHeapAndOffDefaultDataEquality(ByteOrder.nativeOrder(), false);
     }
 
     @Test
-    public void testHeapAndOffHeapDataEqualityNativeOrderUsingUnsafe() {
-        testHeapAndOffHeapDataEquality(ByteOrder.nativeOrder(), true);
+    public void testHeapAndOffDefaultDataEqualityNativeOrderUsingUnsafe() {
+        testHeapAndOffDefaultDataEquality(ByteOrder.nativeOrder(), true);
     }
 
-    private void testHeapAndOffHeapDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
+    private void testHeapAndOffDefaultDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
         MemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
@@ -236,7 +236,7 @@ public class EnterpriseDataTest {
             Data offheap = ss.toData(object, DataType.NATIVE);
 
             Data heap1 = ss.convertData(heap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap1 instanceof HeapData);
+            Assert.assertTrue("Type!", heap1 instanceof DefaultData);
             Assert.assertEquals(heap, heap1);
             Assert.assertEquals(offheap, heap1);
             Assert.assertTrue("Identity!", heap == heap1);
@@ -253,7 +253,7 @@ public class EnterpriseDataTest {
             Assert.assertTrue("Identity!", offheap == offheap2);
 
             Data heap2 = ss.convertData(offheap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap2 instanceof HeapData);
+            Assert.assertTrue("Type!", heap2 instanceof DefaultData);
             Assert.assertEquals(heap, heap2);
             Assert.assertEquals(offheap, heap2);
 

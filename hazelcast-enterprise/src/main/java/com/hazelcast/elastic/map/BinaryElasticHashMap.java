@@ -8,8 +8,8 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.HeapData;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.nio.serialization.NativeMemoryDataUtil;
 import com.hazelcast.util.HashUtil;
@@ -374,7 +374,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 assigned--;
                 long v = getValue(slot);
-                if (key instanceof HeapData ||
+                if (key instanceof DefaultData ||
                         (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)) {
                     serializationService.disposeData(readData(slotKey));
                 }
@@ -412,7 +412,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 long current = getValue(slot);
                 if (memoryBlockAccessor.isEqual(current, value)){
                     assigned--;
-                    if (key instanceof HeapData ||
+                    if (key instanceof DefaultData ||
                             (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)) {
                         serializationService.disposeData(readData(slotKey));
                     }

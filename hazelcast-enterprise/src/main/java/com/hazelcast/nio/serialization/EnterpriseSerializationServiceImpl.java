@@ -81,12 +81,12 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             return super.toData(obj, strategy);
         }
         if (type == DataType.NATIVE) {
-            return toOffHeapData(obj, strategy);
+            return toNativeData(obj, strategy);
         }
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private Data toOffHeapData(Object obj, PartitioningStrategy strategy) {
+    private Data toNativeData(Object obj, PartitioningStrategy strategy) {
         if (memoryManager == null) {
             throw new IllegalArgumentException("MemoryManager is required!");
         }
@@ -140,7 +140,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             int dataSize = in.readInt();
             if (dataSize > 0) {
-                return readOffHeapData(in, typeId, partitionHash, dataSize, header);
+                return readNativeData(in, typeId, partitionHash, dataSize, header);
             }
             return new HeapData(typeId, null, partitionHash, header);
         } catch (Throwable e) {
@@ -148,8 +148,8 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
     }
 
-    private Data readOffHeapData(EnterpriseObjectDataInput in, int typeId, int partitionHash,
-            int dataSize, byte[] header) throws IOException {
+    private Data readNativeData(EnterpriseObjectDataInput in, int typeId, int partitionHash, int dataSize,
+            byte[] header) throws IOException {
 
         int size = dataSize + NativeMemoryData.HEADER_LENGTH;
         if (header != null) {
@@ -159,25 +159,27 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             size += INT_SIZE_IN_BYTES;
         }
 
-        NativeMemoryData offHeapBinary = allocateOffHeapData(in, dataSize, size);
-        offHeapBinary.setType(typeId);
+        NativeMemoryData nativeData = allocateNativeData(in, dataSize, size);
+        nativeData.setType(typeId);
 
         if (in instanceof EnterpriseBufferObjectDataInput) {
             EnterpriseBufferObjectDataInput bufferInput = (EnterpriseBufferObjectDataInput) in;
-            bufferInput.copyToMemoryBlock(offHeapBinary, NativeMemoryData.HEADER_LENGTH, dataSize);
-            offHeapBinary.setDataSize(dataSize);
+            bufferInput.copyToMemoryBlock(nativeData, NativeMemoryData.HEADER_LENGTH, dataSize);
+            nativeData.setDataSize(dataSize);
         } else {
             byte[] data = new byte[dataSize];
             in.readFully(data);
-            offHeapBinary.setData(data);
+            nativeData.setData(data);
         }
 
-        offHeapBinary.setPartitionHash(partitionHash);
-        offHeapBinary.setHeader(header);
-        return offHeapBinary;
+        nativeData.setPartitionHash(partitionHash);
+        nativeData.setHeader(header);
+        return nativeData;
     }
 
-    private NativeMemoryData allocateOffHeapData(EnterpriseObjectDataInput in, int dataSize, int size) throws IOException {
+    @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
+    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int dataSize, int size)
+            throws IOException {
         try {
             long address = memoryManager.allocate(size);
             return new NativeMemoryData(address, size);

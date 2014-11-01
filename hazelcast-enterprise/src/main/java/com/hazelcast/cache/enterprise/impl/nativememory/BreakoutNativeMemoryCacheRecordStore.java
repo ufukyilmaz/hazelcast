@@ -1,9 +1,8 @@
 package com.hazelcast.cache.enterprise.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
-
 import com.hazelcast.cache.enterprise.BreakoutCacheRecordStore;
-import com.hazelcast.cache.enterprise.operation.CacheEvictionOperation;
+import com.hazelcast.cache.enterprise.operation.CacheExpirationOperation;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.record.CacheRecord;
@@ -24,6 +23,7 @@ import com.hazelcast.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author sozal 14/10/14
@@ -32,45 +32,40 @@ public class BreakoutNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<BreakoutNativeMemoryCacheRecord, BreakoutNativeMemoryCacheRecordMap>
         implements BreakoutCacheRecordStore<BreakoutNativeMemoryCacheRecord> {
 
-    /**
-     * Default value for initial capacity of Native Memory Cache Record Store
-     */
-    public static final int DEFAULT_INITIAL_CAPACITY = 1000;
+    private static final long DEFAULT_EXPIRATION_TASK_INITIAL_DELAY = 10;
+    private static final long DEFAULT_EXPIRATION_TASK_PERIOD = 10;
+    private static final int DEFAULT_EXPIRATION_PERCENTAGE = 10;
 
     private final int initialCapacity;
     private final float evictionThreshold;
     private final EnterpriseSerializationService serializationService;
-    private final Operation evictionOperation;
-    private MemoryManager memoryManager;
-    private BreakoutNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private final Operation expirationOperation;
+    private final ScheduledFuture<?> expirationTaskFuture;
+    private final MemoryManager memoryManager;
+    private final BreakoutNativeMemoryCacheRecordAccessor cacheRecordAccessor;
 
-    protected BreakoutNativeMemoryCacheRecordStore(final int partitionId, final String name,
-            final EnterpriseCacheService cacheService, final NodeEngine nodeEngine, final int initialCapacity,
-            final EvictionPolicy evictionPolicy, final int evictionPercentage, final int evictionThresholdPercentage,
-            final boolean evictionTaskEnable) {
-        super(name, partitionId, nodeEngine, cacheService,
-                evictionPolicy, evictionPercentage, evictionThresholdPercentage, evictionTaskEnable);
-        this.initialCapacity = initialCapacity;
+    public BreakoutNativeMemoryCacheRecordStore(int partitionId, String name,
+            EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
+        super(name, partitionId, nodeEngine, cacheService);
+
+        this.initialCapacity = DEFAULT_INITIAL_CAPACITY;
         this.evictionThreshold = (float) Math.max(1, ONE_HUNDRED_PERCENT - evictionThresholdPercentage)
                 / ONE_HUNDRED_PERCENT;
         this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         this.cacheRecordAccessor = new BreakoutNativeMemoryCacheRecordAccessor(serializationService);
         this.memoryManager = serializationService.getMemoryManager();
         this.records = createRecordCacheMap();
-        this.evictionOperation = createEvictionOperation(evictionPercentage);
+        this.expirationOperation = createExpirationOperation(DEFAULT_EXPIRATION_PERCENTAGE);
+        this.expirationTaskFuture = scheduleExpirationTask();
     }
 
-    public BreakoutNativeMemoryCacheRecordStore(final int partitionId, final String cacheName,
-            final EnterpriseCacheService cacheService, final NodeEngine nodeEngine, final int initialCapacity) {
-        this(partitionId,
-                cacheName,
-                cacheService,
-                nodeEngine,
-                initialCapacity,
-                null,
-                DEFAULT_EVICTION_PERCENTAGE,
-                DEFAULT_EVICTION_THRESHOLD_PERCENTAGE,
-                DEFAULT_IS_EVICTION_TASK_ENABLE);
+    protected ScheduledFuture<?> scheduleExpirationTask() {
+        return nodeEngine.getExecutionService()
+                        .scheduleWithFixedDelay("hz:cache",
+                                new ExpirationTask(),
+                                DEFAULT_EXPIRATION_TASK_INITIAL_DELAY,
+                                DEFAULT_EXPIRATION_TASK_PERIOD,
+                                TimeUnit.SECONDS);
     }
 
     @Override
@@ -78,11 +73,7 @@ public class BreakoutNativeMemoryCacheRecordStore
         if (records != null) {
             return records;
         }
-        if (serializationService == null || cacheRecordAccessor == null) {
-            return null;
-        }
-        return
-                new BreakoutNativeMemoryCacheRecordMap(initialCapacity, serializationService,
+        return new BreakoutNativeMemoryCacheRecordMap(initialCapacity, serializationService,
                         cacheRecordAccessor, createEvictionCallback());
     }
 
@@ -674,7 +665,7 @@ public class BreakoutNativeMemoryCacheRecordStore
     protected void onDestroy() {
         ((EnterpriseCacheService) cacheService)
                 .sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
-        ScheduledFuture<?> f = evictionTaskFuture;
+        ScheduledFuture<?> f = expirationTaskFuture;
         if (f != null) {
             f.cancel(true);
         }
@@ -694,20 +685,24 @@ public class BreakoutNativeMemoryCacheRecordStore
                 .sendInvalidationEvent(cacheConfig.getName(), key, source);
     }
 
-    protected Operation createEvictionOperation(int percentage) {
-        return new CacheEvictionOperation(cacheConfig.getName(), percentage)
+    protected Operation createExpirationOperation(int percentage) {
+        return new CacheExpirationOperation(cacheConfig.getName(), percentage)
                 .setNodeEngine(nodeEngine)
                 .setPartitionId(partitionId)
                 .setCallerUuid(nodeEngine.getLocalMember().getUuid())
                 .setService(cacheService);
     }
 
-    @Override
-    protected void onEvict() {
-        if (hasExpiringEntry) {
-            OperationService operationService = nodeEngine.getOperationService();
-            operationService.executeOperation(evictionOperation);
+    /**
+     * Task to evict expired records
+     */
+    private class ExpirationTask implements Runnable {
+        @Override
+        public void run() {
+            if (hasExpiringEntry) {
+                OperationService operationService = nodeEngine.getOperationService();
+                operationService.executeOperation(expirationOperation);
+            }
         }
     }
-
 }

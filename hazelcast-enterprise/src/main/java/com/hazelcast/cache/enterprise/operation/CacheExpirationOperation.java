@@ -12,16 +12,16 @@ import com.hazelcast.spi.exception.WrongTargetException;
 import java.io.IOException;
 
 /**
- * @author mdogan 11/02/14
+ * Operation to evict expired entries in cache record store
  */
-public final class CacheEvictionOperation
+public final class CacheExpirationOperation
         extends AbstractOperation
         implements PartitionAwareOperation {
 
     final String name;
     final int percentage;
 
-    public CacheEvictionOperation(String name, int percentage) {
+    public CacheExpirationOperation(String name, int percentage) {
         this.name = name;
         this.percentage = percentage;
     }

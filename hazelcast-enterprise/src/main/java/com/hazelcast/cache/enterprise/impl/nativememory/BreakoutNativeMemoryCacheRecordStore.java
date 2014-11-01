@@ -44,11 +44,9 @@ public class BreakoutNativeMemoryCacheRecordStore
     private final MemoryManager memoryManager;
     private final BreakoutNativeMemoryCacheRecordAccessor cacheRecordAccessor;
 
-    public BreakoutNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
-            NodeEngine nodeEngine, EvictionPolicy evictionPolicy, int evictionPercentage,
-            int evictionThresholdPercentage) {
-        super(name, partitionId, nodeEngine, cacheService,
-                evictionPolicy, evictionPercentage, evictionThresholdPercentage);
+    public BreakoutNativeMemoryCacheRecordStore(int partitionId, String name,
+            EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
+        super(name, partitionId, nodeEngine, cacheService);
 
         this.initialCapacity = DEFAULT_INITIAL_CAPACITY;
         this.evictionThreshold = (float) Math.max(1, ONE_HUNDRED_PERCENT - evictionThresholdPercentage)

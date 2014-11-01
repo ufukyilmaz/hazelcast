@@ -69,9 +69,7 @@ public class EnterpriseCacheService extends CacheService {
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             try {
-                return new BreakoutNativeMemoryCacheRecordStore(partitionId, name, this,
-                        nodeEngine, cacheConfig.getEvictionPolicy(),
-                        cacheConfig.getEvictionPercentage(), cacheConfig.getEvictionThresholdPercentage());
+                return new BreakoutNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
             } catch (NativeOutOfMemoryError e) {
                 throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                         + "not enough contiguous memory available! -> " + e.getMessage(), e);

@@ -64,16 +64,14 @@ public class EnterpriseCacheService extends CacheService {
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
         if (cacheConfig == null) {
-            throw new IllegalArgumentException("CacheConfig is null!!! " + name);
+            throw new IllegalArgumentException("CacheConfig is null! " + name);
         }
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             try {
-                return new BreakoutNativeMemoryCacheRecordStore(partitionId,
-                        name,
-                        this,
-                        nodeEngine,
-                        BreakoutNativeMemoryCacheRecordStore.DEFAULT_INITIAL_CAPACITY);
+                return new BreakoutNativeMemoryCacheRecordStore(partitionId, name, this,
+                        nodeEngine, cacheConfig.getEvictionPolicy(),
+                        cacheConfig.getEvictionPercentage(), cacheConfig.getEvictionThresholdPercentage());
             } catch (NativeOutOfMemoryError e) {
                 throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                         + "not enough contiguous memory available! -> " + e.getMessage(), e);

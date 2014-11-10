@@ -150,10 +150,9 @@ public class EnterpriseCacheService extends CacheService {
         }
         for (CacheSegmentDestroyOperation op : ops) {
             try {
-                op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS,
-                        TimeUnit.SECONDS);
+                op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                nodeEngine.getLogger(getClass()).warning(e);
             }
         }
     }

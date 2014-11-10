@@ -1,13 +1,13 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.enterprise.client.CacheInvalidationListener;
+import com.hazelcast.cache.enterprise.client.CacheInvalidationMessage;
 import com.hazelcast.cache.enterprise.impl.nativememory.BreakoutNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.enterprise.operation.BreakoutCacheOperationProvider;
 import com.hazelcast.cache.enterprise.operation.BreakoutCacheReplicationOperation;
-import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.enterprise.operation.CacheDestroyOperation;
-import com.hazelcast.cache.enterprise.client.CacheInvalidationListener;
-import com.hazelcast.cache.enterprise.client.CacheInvalidationMessage;
 import com.hazelcast.cache.enterprise.operation.CacheSegmentDestroyOperation;
+import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
@@ -26,7 +26,6 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -133,19 +132,20 @@ public class EnterpriseCacheService extends CacheService {
      */
     @Override
     public void shutdown(boolean terminate) {
-        final ConcurrentMap<String, CacheConfig> cacheConfigs = configs;
-        for (String objectName : cacheConfigs.keySet()) {
-            destroyCache(objectName, true, null);
-        }
         OperationService operationService = nodeEngine.getOperationService();
         List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyCache()) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation();
-                ops.add(op);
                 op.setPartitionId(segment.getPartitionId())
                         .setNodeEngine(nodeEngine).setService(this);
-                operationService.executeOperation(op);
+
+                if (operationService.isAllowedToRunOnCallingThread(op)) {
+                    operationService.runOperationOnCallingThread(op);
+                } else {
+                    operationService.executeOperation(op);
+                    ops.add(op);
+                }
             }
         }
         for (CacheSegmentDestroyOperation op : ops) {

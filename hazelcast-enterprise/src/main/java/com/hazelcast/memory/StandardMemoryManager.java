@@ -60,6 +60,11 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
+    public boolean isDestroyed() {
+        return false;
+    }
+
+    @Override
     public void destroy() {
     }
 }

@@ -82,20 +82,20 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
     @Override
     public long allocate(long size) {
-        MemoryManager pool = getMemoryManager();
-        return pool.allocate(size);
+        MemoryManager manager = getMemoryManager();
+        return manager.allocate(size);
     }
 
     @Override
     public void free(long address, long size) {
-        MemoryManager pool = getMemoryManager();
-        pool.free(address, size);
+        MemoryManager manager = getMemoryManager();
+        manager.free(address, size);
     }
 
     @Override
     public void compact() {
-        MemoryManager pool = getMemoryManager();
-        pool.compact();
+        MemoryManager manager = getMemoryManager();
+        manager.compact();
     }
 
     @Override
@@ -133,6 +133,12 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
         threadLocalManagers.clear();
         destroyPool(globalMemoryManager);
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        MemoryManager manager = getMemoryManager();
+        return manager == null || manager.isDestroyed();
     }
 
     private void destroyPool(MemoryManager pool) {

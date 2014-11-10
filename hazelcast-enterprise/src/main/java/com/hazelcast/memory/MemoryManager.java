@@ -13,11 +13,6 @@ import com.hazelcast.monitor.LocalMemoryStats;
 public interface MemoryManager extends MemoryAllocator {
 
     /**
-     * TODO: Javadoc needed
-     */
-    long NULL_ADDRESS = 0L;
-
-    /**
      * Allocates memory from an internal memory pool or falls back to OS
      * if not enough memory available in pool.
      *
@@ -62,6 +57,12 @@ public interface MemoryManager extends MemoryAllocator {
      * Destroys this Memory Manager and releases all allocated resources.
      */
     void destroy();
+
+    /**
+     * Returns true if this MemoryManager is destroyed, false otherwise.
+     * @return true if this MemoryManager is destroyed, false otherwise.
+     */
+    boolean isDestroyed();
 
     /**
      * @return memory statistics

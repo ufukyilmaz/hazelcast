@@ -27,6 +27,7 @@ final class GlobalPoolingMemoryManager
 
     private final GarbageCollector gc;
     private final Set<Long> allocations = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+    private final AtomicBoolean destroyed = new AtomicBoolean(false);
     private volatile long lastFullCompaction;
 
     GlobalPoolingMemoryManager(int minBlockSize, int pageSize,
@@ -203,6 +204,9 @@ final class GlobalPoolingMemoryManager
     }
 
     public final void destroy() {
+        if (!destroyed.compareAndSet(false, true)) {
+            return;
+        }
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];
             if (q != null) {
@@ -216,6 +220,15 @@ final class GlobalPoolingMemoryManager
             }
             allocations.clear();
         }
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        // TODO:
+        // since this memory manager is multi-threaded,
+        // currently there's no sync relation between #destroy() method
+        // and other methods.
+        return destroyed.get();
     }
 
     @Override

@@ -8,10 +8,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
  * Pooling MemoryManager
@@ -44,8 +44,8 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
-        NativeMemoryStats.checkFreeMemory(totalSize);
 
+        checkFreeMemory(totalSize);
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
         long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
@@ -55,6 +55,14 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
         gc.registerGarbageCollectable(this);
         gc.start();
+    }
+
+    private static void checkFreeMemory(long totalSize) {
+        String checkFreeMemoryProp = System.getProperty("hazelcast.hidensity.check.freememory", "true");
+        boolean checkFreeMemory = Boolean.parseBoolean(checkFreeMemoryProp);
+        if (checkFreeMemory) {
+            NativeMemoryStats.checkFreeMemory(totalSize);
+        }
     }
 
     static void checkBlockAndPageSize(int minBlockSize, int pageSize) {
@@ -82,20 +90,20 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
     @Override
     public long allocate(long size) {
-        MemoryManager pool = getMemoryManager();
-        return pool.allocate(size);
+        MemoryManager manager = getMemoryManager();
+        return manager.allocate(size);
     }
 
     @Override
     public void free(long address, long size) {
-        MemoryManager pool = getMemoryManager();
-        pool.free(address, size);
+        MemoryManager manager = getMemoryManager();
+        manager.free(address, size);
     }
 
     @Override
     public void compact() {
-        MemoryManager pool = getMemoryManager();
-        pool.compact();
+        MemoryManager manager = getMemoryManager();
+        manager.compact();
     }
 
     @Override
@@ -133,6 +141,12 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
         threadLocalManagers.clear();
         destroyPool(globalMemoryManager);
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        MemoryManager manager = getMemoryManager();
+        return manager == null || manager.isDestroyed();
     }
 
     private void destroyPool(MemoryManager pool) {

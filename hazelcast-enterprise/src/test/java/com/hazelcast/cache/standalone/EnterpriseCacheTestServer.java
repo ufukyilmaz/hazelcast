@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * A simple test of a cache.
  */
-public class SimpleCacheTest {
+public class EnterpriseCacheTestServer {
 
     private static final long STATS_SECONDS = 10;
 
@@ -47,7 +47,7 @@ public class SimpleCacheTest {
         System.setProperty("hazelcast.multicast.group", "224.33.55.79");
     }
 
-    private SimpleCacheTest(String memory, boolean master) throws IOException {
+    private EnterpriseCacheTestServer(String memory, boolean master) throws IOException {
         this.memorySize = MemorySize.parse(memory, MemoryUnit.GIGABYTES);
 
         Config cfg = new UrlXmlConfig(
@@ -55,21 +55,16 @@ public class SimpleCacheTest {
         if (master) {
             cfg.getNetworkConfig().setPublicAddress("10.1.1.1");
         }
-//        Config cfg = new FileSystemXmlConfig("/Users/mm/bin/hazelcast.xml");
 
         NativeMemoryConfig memoryConfig = cfg.getNativeMemoryConfig();
-        if (memoryConfig.isEnabled()) {
-            System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
-            System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
-            System.err.println("OffHeapMemoryConfig is already enabled in configuration: " + memoryConfig);
-        } else {
+        if (!memoryConfig.isEnabled()) {
             memoryConfig.setSize(memorySize).setEnabled(true);
             memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED);
         }
 
         instance = Hazelcast.newHazelcastInstance(cfg);
         memoryStats = MemoryStatsUtil.getMemoryStats(instance);
-        logger = instance.getLoggingService().getLogger(SimpleCacheTest.class);
+        logger = instance.getLoggingService().getLogger(EnterpriseCacheTestServer.class);
     }
 
     public static void main(String[] input) throws Exception {
@@ -81,7 +76,7 @@ public class SimpleCacheTest {
                 master = true;
         }
 
-        SimpleCacheTest test = new SimpleCacheTest(memory, master);
+        EnterpriseCacheTestServer test = new EnterpriseCacheTestServer(memory, master);
         test.start();
     }
 

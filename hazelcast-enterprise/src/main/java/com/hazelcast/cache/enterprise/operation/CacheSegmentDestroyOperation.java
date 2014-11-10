@@ -2,8 +2,10 @@ package com.hazelcast.cache.enterprise.operation;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
 
@@ -23,6 +25,13 @@ public final class CacheSegmentDestroyOperation
     @Override
     public void run() throws Exception {
         try {
+            EnterpriseSerializationService serializationService
+                    = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
+            MemoryManager memoryManager = serializationService.getMemoryManager();
+            if (memoryManager == null || memoryManager.isDestroyed()) {
+                // otherwise will cause a SIGSEGV
+                return;
+            }
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
             CachePartitionSegment segment = service.getSegment(partitionId);

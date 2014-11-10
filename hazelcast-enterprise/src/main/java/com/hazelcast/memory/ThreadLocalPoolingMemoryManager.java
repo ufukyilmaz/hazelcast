@@ -189,6 +189,11 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
+    public boolean isDestroyed() {
+        return addressQueues[0] == null;
+    }
+
+    @Override
     public void destroy() {
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];

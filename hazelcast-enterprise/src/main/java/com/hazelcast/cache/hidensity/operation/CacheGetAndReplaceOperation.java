@@ -29,7 +29,7 @@ public class CacheGetAndReplaceOperation extends BackupAwareHiDensityCacheOperat
 
     @Override
     public void runInternal() throws Exception {
-        response = cache.getAndReplace(key, value, expiryPolicy, getCallerUuid());
+        response = cache.getAndReplace(key, value, expiryPolicy, getCallerUuid(), completionId);
     }
 
     @Override

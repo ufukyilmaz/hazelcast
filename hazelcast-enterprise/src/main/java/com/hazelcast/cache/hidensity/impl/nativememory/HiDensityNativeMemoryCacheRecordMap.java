@@ -30,15 +30,6 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
-    // TODO clear thread local at the end!
-    private static final ThreadLocal<CacheRecordSortArea> SORT_AREA_THREAD_LOCAL =
-            new ThreadLocal<CacheRecordSortArea>() {
-                @Override
-                protected CacheRecordSortArea initialValue() {
-                    return new CacheRecordSortArea();
-                }
-            };
-
     private final transient HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
     private final transient Callback<Data> evictionCallback;
     private int randomEvictionLastIndex;
@@ -141,7 +132,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         final int capacity = capacity();
         int k = 0;
         if (size > 0) {
-            long[] sortArray = SORT_AREA_THREAD_LOCAL.get().getLongArray(size);
+            long[] sortArray = CacheRecordSortArea.SORT_AREA_THREAD_LOCAL.get().getLongArray(size);
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);
@@ -193,7 +184,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         int k = 0;
         if (size > 0) {
             int hit;
-            int[] sortArray = SORT_AREA_THREAD_LOCAL.get().getIntArray(size);
+            int[] sortArray = CacheRecordSortArea.SORT_AREA_THREAD_LOCAL.get().getIntArray(size);
             for (int ix = 0; ix < capacity; ix++) {
                 if (isAllocated(ix)) {
                     long value = getValue(ix);

@@ -5,6 +5,7 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheExpirationOperation;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
+import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
@@ -66,8 +67,8 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected CacheEntryProcessorEntry createCacheEntryProcessorEntry(Data key,
-            HiDensityNativeMemoryCacheRecord record, long now) {
-        return new HiDensityNativeMemoryCacheEntryProcessorEntry(key, record, this, now);
+            HiDensityNativeMemoryCacheRecord record, long now, int completionId) {
+        return new HiDensityNativeMemoryCacheEntryProcessorEntry(key, record, this, now, completionId);
     }
 
     @Override
@@ -434,8 +435,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     //CHECKSTYLE:ON
 
     @Override
-    public void put(Data key, Object value, String caller) {
-        put(key, value, defaultExpiryPolicy, caller);
+    public void put(Data key, Object value, String caller, int completionId) {
+        put(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     //CHECKSTYLE:OFF
@@ -523,8 +524,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean putIfAbsent(Data key, Object value, String caller) {
-        return putIfAbsent(key, value, defaultExpiryPolicy, caller);
+    public boolean putIfAbsent(Data key, Object value, String caller, int completionId) {
+        return putIfAbsent(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     //CHECKSTYLE:OFF
@@ -562,18 +563,18 @@ public class HiDensityNativeMemoryCacheRecordStore
     //CHECKSTYLE:ON
 
     @Override
-    public boolean replace(Data key, Object value, String caller) {
-        return replace(key, value, defaultExpiryPolicy, caller);
+    public boolean replace(Data key, Object value, String caller, int completionId) {
+        return replace(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     @Override
-    public boolean replace(Data key, Object oldValue, Object newValue, String caller) {
-        return replace(key, oldValue, newValue, defaultExpiryPolicy, caller);
+    public boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId) {
+        return replace(key, oldValue, newValue, defaultExpiryPolicy, caller, completionId);
     }
 
     @Override
-    public Object getAndReplace(Data key, Object value, String caller) {
-        return getAndReplace(key, value, defaultExpiryPolicy, caller);
+    public Object getAndReplace(Data key, Object value, String caller, int completionId) {
+        return getAndReplace(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
     @Override
@@ -598,6 +599,16 @@ public class HiDensityNativeMemoryCacheRecordStore
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordAccessor.enqueueRecord(record);
+        }
+    }
+
+    @Override
+    public void publishCompletedEvent(String cacheName, int completionId,
+                                      Data dataKey, int orderKey) {
+        if (completionId > 0) {
+            cacheService
+                    .publishEvent(cacheName, CacheEventType.COMPLETED, dataKey,
+                            cacheService.toData(completionId), null, false, orderKey, completionId);
         }
     }
 

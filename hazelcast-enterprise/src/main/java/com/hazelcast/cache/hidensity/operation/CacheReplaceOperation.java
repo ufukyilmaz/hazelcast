@@ -33,9 +33,9 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
     public void runInternal() throws Exception {
         if (cache != null) {
             if (currentValue == null) {
-                response = cache.replace(key, value, getCallerUuid());
+                response = cache.replace(key, value, getCallerUuid(), completionId);
             } else {
-                response = cache.replace(key, currentValue, value, getCallerUuid());
+                response = cache.replace(key, currentValue, value, getCallerUuid(), completionId);
             }
         } else {
             response = Boolean.FALSE;

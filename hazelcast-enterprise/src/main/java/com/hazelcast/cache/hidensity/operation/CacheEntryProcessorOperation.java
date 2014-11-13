@@ -51,7 +51,7 @@ public class CacheEntryProcessorOperation extends BackupAwareHiDensityCacheOpera
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
         EnterpriseSerializationService serializationService = service.getSerializationService();
-        response = cache.invoke(key, entryProcessor, arguments);
+        response = cache.invoke(key, entryProcessor, arguments, completionId);
         CacheRecord record = cache.getRecord(key);
         if (record != null) {
             Object recordVal = record.getValue();

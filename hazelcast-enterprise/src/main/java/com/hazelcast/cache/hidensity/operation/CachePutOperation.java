@@ -40,9 +40,9 @@ public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
     @Override
     public void runInternal() throws Exception {
         if (get) {
-            response = cache.getAndPut(key, value, expiryPolicy, getCallerUuid());
+            response = cache.getAndPut(key, value, expiryPolicy, getCallerUuid(), completionId);
         } else {
-            cache.put(key, value, expiryPolicy, getCallerUuid());
+            cache.put(key, value, expiryPolicy, getCallerUuid(), completionId);
             response = null;
         }
     }

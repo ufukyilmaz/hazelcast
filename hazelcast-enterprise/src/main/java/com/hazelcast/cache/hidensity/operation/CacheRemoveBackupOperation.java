@@ -21,7 +21,7 @@ public class CacheRemoveBackupOperation
     @Override
     public void runInternal() throws Exception {
         if (cache != null) {
-            response = cache.remove(key, null);
+            response = cache.remove(key, null, completionId);
         } else {
             response = Boolean.FALSE;
         }

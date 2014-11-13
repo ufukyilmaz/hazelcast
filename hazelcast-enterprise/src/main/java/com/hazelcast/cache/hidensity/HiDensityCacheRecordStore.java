@@ -60,7 +60,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param value  the value to be put
      * @param caller the id which represents the caller
      */
-    void put(Data key, Object value, String caller);
+    void put(Data key, Object value, String caller, int completionId);
 
     /**
      * Owns and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>
@@ -82,7 +82,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return <code>true</code> if the <code>value</code> has been put to the record store,
      * otherwise <code>false</code>
      */
-    boolean putIfAbsent(Data key, Object value, String caller);
+    boolean putIfAbsent(Data key, Object value, String caller, int completionId);
 
     /**
      * Replaces the already stored value with the new <code>value</code>
@@ -95,7 +95,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return <code>true</code> if the <code>value</code> has been replaced with the specified <code>value</code>,
      * otherwise <code>false</code>
      */
-    boolean replace(Data key, Object value, String caller);
+    boolean replace(Data key, Object value, String caller, int completionId);
 
     /**
      * Replaces the already stored value with the new <code>value</code>
@@ -109,7 +109,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return <code>true</code> if the <code>value</code> has been replaced with the specified <code>value</code>,
      * otherwise <code>false</code>
      */
-    boolean replace(Data key, Object oldValue, Object newValue, String caller);
+    boolean replace(Data key, Object oldValue, Object newValue, String caller, int completionId);
 
     /**
      * Replaces the already stored value with the new <code>value</code>
@@ -122,7 +122,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param caller the id which represents the caller
      * @return the old value of the record with the specified <code>key</code> if exist, otherwise <code>null</code>
      */
-    Object getAndReplace(Data key, Object value, String caller);
+    Object getAndReplace(Data key, Object value, String caller, int completionId);
 
     /**
      * Returns an slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
@@ -132,5 +132,16 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return the slottable iterator for specified <code>slot</code>
      */
     <E> SlottableIterator<E> iterator(int slot);
+
+    /**
+     * Publish a Completion Event.
+     * <p>Synchronous Event Listeners require Completion Event to understand all events are executed and it is ready to proceed
+     * the method call as this Completion events are always received at the end.</p>
+     * @param cacheName  cache name.
+     * @param completionId completion id of the caller method.
+     * @param dataKey  the key.
+     * @param orderKey order key, all events of a method call will share same order key.
+     */
+    void publishCompletedEvent(String cacheName, int completionId, Data dataKey, int orderKey);
 
 }

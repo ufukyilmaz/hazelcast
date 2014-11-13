@@ -36,7 +36,8 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     public HiDensityNativeMemoryCacheRecord(
-            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor, long address) {
+            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
+            long address) {
         super(address, SIZE);
         this.cacheRecordAccessor = cacheRecordAccessor;
     }

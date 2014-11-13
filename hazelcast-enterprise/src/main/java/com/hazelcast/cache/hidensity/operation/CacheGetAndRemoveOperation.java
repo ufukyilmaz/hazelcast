@@ -18,7 +18,7 @@ public class CacheGetAndRemoveOperation extends BackupAwareHiDensityCacheOperati
 
     @Override
     public void runInternal() throws Exception {
-        response = cache != null ? cache.getAndRemove(key, getCallerUuid()) : null;
+        response = cache != null ? cache.getAndRemove(key, getCallerUuid(), completionId) : null;
     }
 
     @Override

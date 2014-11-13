@@ -34,7 +34,7 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
         EnterpriseCacheService service = getService();
         HiDensityCacheRecordStore cache =
                 (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
-        response = cache.putIfAbsent(key, value, expiryPolicy, getCallerUuid());
+        response = cache.putIfAbsent(key, value, expiryPolicy, getCallerUuid(), completionId);
     }
 
     @Override

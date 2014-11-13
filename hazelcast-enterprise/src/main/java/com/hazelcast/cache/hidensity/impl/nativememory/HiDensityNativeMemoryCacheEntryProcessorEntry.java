@@ -11,9 +11,10 @@ import com.hazelcast.nio.serialization.Data;
 public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
         extends CacheEntryProcessorEntry<K, V, HiDensityNativeMemoryCacheRecord> {
 
-    public HiDensityNativeMemoryCacheEntryProcessorEntry(Data keyData, HiDensityNativeMemoryCacheRecord record,
-                                                         HiDensityNativeMemoryCacheRecordStore cacheRecordStore, long now) {
-        super(keyData, record, cacheRecordStore, now);
+    public HiDensityNativeMemoryCacheEntryProcessorEntry(Data keyData,
+            HiDensityNativeMemoryCacheRecord record,
+            HiDensityNativeMemoryCacheRecordStore cacheRecordStore, long now, int completionId) {
+        super(keyData, record, cacheRecordStore, now, completionId);
     }
 
     @Override

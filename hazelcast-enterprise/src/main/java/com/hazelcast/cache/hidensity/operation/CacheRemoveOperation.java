@@ -27,9 +27,9 @@ public class CacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
     public void runInternal() throws Exception {
         if (cache != null) {
             if (currentValue == null) {
-                response = cache.remove(key, getCallerUuid());
+                response = cache.remove(key, getCallerUuid(), completionId);
             } else {
-                response = cache.remove(key, currentValue, getCallerUuid());
+                response = cache.remove(key, currentValue, getCallerUuid(), completionId);
             }
         } else {
             response = Boolean.FALSE;

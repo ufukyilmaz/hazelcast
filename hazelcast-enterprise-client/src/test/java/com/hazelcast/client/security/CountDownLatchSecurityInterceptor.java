@@ -43,7 +43,7 @@ public class CountDownLatchSecurityInterceptor extends BaseInterceptorTest {
 
     @Test
     public void trySetCount() {
-        final int count = randomInt(100);
+        final int count = randomInt(100) + 1;
         countDownLatch.trySetCount(count);
         interceptor.assertMethod(getObjectType(), objectName, "trySetCount", count);
     }

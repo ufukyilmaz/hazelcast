@@ -36,7 +36,7 @@ public class CachePutBackupOperation
         EnterpriseCacheService service = getService();
         HiDensityCacheRecordStore cache =
                 (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
-        cache.put(key, value, expiryPolicy, null, completionId);
+        cache.putBackup(key, value, expiryPolicy);
         response = Boolean.TRUE;
     }
 

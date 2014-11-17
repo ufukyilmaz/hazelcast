@@ -5,7 +5,6 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheExpirationOperation;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
-import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionPolicy;
@@ -432,14 +431,13 @@ public class HiDensityNativeMemoryCacheRecordStore
             cacheRecordAccessor.enqueueRecord(record);
         }
     }
-    //CHECKSTYLE:ON
 
     @Override
-    public void put(Data key, Object value, String caller, int completionId) {
-        put(key, value, defaultExpiryPolicy, caller, completionId);
+    public void putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
+        long ttl = expiryPolicyToTTL(expiryPolicy);
+        own(key, value, ttl);
     }
 
-    //CHECKSTYLE:OFF
     @Override
     public void own(Data key, Object value, long ttlMillis) {
         evictIfRequired();
@@ -599,16 +597,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordAccessor.enqueueRecord(record);
-        }
-    }
-
-    @Override
-    public void publishCompletedEvent(String cacheName, int completionId,
-                                      Data dataKey, int orderKey) {
-        if (completionId > 0) {
-            cacheService
-                    .publishEvent(cacheName, CacheEventType.COMPLETED, dataKey,
-                            cacheService.toData(completionId), null, false, orderKey, completionId);
         }
     }
 

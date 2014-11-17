@@ -49,22 +49,6 @@ abstract class AbstractMemoryStats implements LocalMemoryStats {
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(":: MEMORY STATS :: ").append('\n');
-
-        sb.append("Total Physical: ").append(MemorySize.toPrettyString(getTotalPhysical()));
-        sb.append(", Free Physical: ").append(MemorySize.toPrettyString(getFreePhysical()));
-        sb.append(", Max Heap: ").append(MemorySize.toPrettyString(getMaxHeap()));
-        sb.append(", Committed Heap: ").append(MemorySize.toPrettyString(getCommittedHeap()));
-        sb.append(", Used Heap: ").append(MemorySize.toPrettyString(getUsedHeap()));
-        sb.append(", Free Heap: ").append(MemorySize.toPrettyString(getFreeHeap()));
-        sb.append('\n');
-        sb.append(getGCStats());
-        return sb.toString();
-    }
-
-    @Override
     public long getCreationTime() {
         return 0;
     }

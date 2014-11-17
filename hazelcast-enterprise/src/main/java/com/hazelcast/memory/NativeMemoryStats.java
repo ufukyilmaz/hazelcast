@@ -74,7 +74,7 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
     @Override
     public final String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(":: MEMORY STATS :: ").append('\n');
+        sb.append("NativeMemoryStats {");
 
         sb.append("Total Physical: ").append(MemorySize.toPrettyString(getTotalPhysical()));
         sb.append(", Free Physical: ").append(MemorySize.toPrettyString(getFreePhysical()));
@@ -90,8 +90,9 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
         if (ASSERTS_ENABLED) {
             sb.append(", Internal Fragmentation: ").append(MemorySize.toPrettyString(internalFragmentation.get()));
         }
-        sb.append('\n');
+        sb.append(", ");
         sb.append(getGCStats());
+        sb.append('}');
         return sb.toString();
     }
 
@@ -118,5 +119,10 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
         root.add("usedHeap", getUsedHeap());
         root.add("gcStats", getGCStats().toJson());
         return root;
+    }
+
+    public static void main(String[] args) {
+        NativeMemoryStats stats = new NativeMemoryStats(1212121L);
+        System.err.println("stats = " + stats);
     }
 }

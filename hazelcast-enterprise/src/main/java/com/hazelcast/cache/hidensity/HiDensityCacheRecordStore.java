@@ -5,6 +5,8 @@ import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 
+import javax.cache.expiry.ExpiryPolicy;
+
 /**
  * <p>
  * {@link HiDensityCacheRecordStore} is the contract for Hi-Density specific cache record store operations.
@@ -55,12 +57,13 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
 
     /**
      * Puts the <code>value</code> with the specified <code>key</code> to this {@link HiDensityCacheRecordStore}.
+     * without sending any events
      *
-     * @param key    the key of the <code>value</code> to be put
-     * @param value  the value to be put
-     * @param caller the id which represents the caller
+     * @param key          the key of the <code>value</code> to be put
+     * @param value        the value to be put
+     * @param expiryPolicy expiry policy of the record
      */
-    void put(Data key, Object value, String caller, int completionId);
+    void putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
 
     /**
      * Owns and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>
@@ -132,16 +135,5 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return the slottable iterator for specified <code>slot</code>
      */
     <E> SlottableIterator<E> iterator(int slot);
-
-    /**
-     * Publish a Completion Event.
-     * <p>Synchronous Event Listeners require Completion Event to understand all events are executed and it is ready to proceed
-     * the method call as this Completion events are always received at the end.</p>
-     * @param cacheName  cache name.
-     * @param completionId completion id of the caller method.
-     * @param dataKey  the key.
-     * @param orderKey order key, all events of a method call will share same order key.
-     */
-    void publishCompletedEvent(String cacheName, int completionId, Data dataKey, int orderKey);
 
 }

@@ -162,13 +162,6 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     @Override
-    public void afterRun() throws Exception {
-        if (cache != null && key != null) {
-            cache.publishCompletedEvent(name, completionId, key, key.hashCode());
-        }
-    }
-
-    @Override
     public int getCompletionId() {
         return completionId;
     }

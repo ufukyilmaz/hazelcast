@@ -17,10 +17,9 @@ import com.hazelcast.enterprise.InvalidLicenseError;
 import com.hazelcast.enterprise.KG;
 import com.hazelcast.enterprise.License;
 import com.hazelcast.enterprise.TrialLicenseExpiredError;
-import com.hazelcast.management.EnterpriseTimedMemberStateFactory;
-import com.hazelcast.management.TimedMemberStateFactory;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.IOService;
@@ -59,8 +58,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile Storage storage;
     private volatile License license;
     private volatile SecurityContext securityContext;
-    private volatile boolean securityEnabled;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
+    private volatile MemoryManager memoryManager;
 
     public EnterpriseNodeExtension() {
         super();
@@ -83,8 +82,21 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         systemLogger = node.getLogger("com.hazelcast.system");
-        securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
 
+        createSecurityContext(node);
+        createMemoryManager(node.config);
+        createStorage(node);
+        createSocketInterceptor(node.config.getNetworkConfig());
+    }
+
+    private void createSecurityContext(Node node) {
+        boolean securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
+        if (securityEnabled) {
+            securityContext = new SecurityContextImpl(node);
+        }
+    }
+
+    private void createStorage(Node node) {
         if (node.groupProperties.ELASTIC_MEMORY_ENABLED.getBoolean()) {
             StorageFactory storageFactory;
             if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
@@ -97,7 +109,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             logger.log(Level.INFO, "Initializing node off-heap storage.");
             storage = storageFactory.createStorage();
         }
-        createSocketInterceptor(node.config.getNetworkConfig());
     }
 
     private void createSocketInterceptor(NetworkConfig networkConfig) {
@@ -165,7 +176,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
             HazelcastInstanceImpl hazelcastInstance = node.hazelcastInstance;
             PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
-            MemoryManager memoryManager = getMemoryManager(config);
 
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
@@ -185,29 +195,25 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return ss;
     }
 
-    private MemoryManager getMemoryManager(Config config) {
+    private void createMemoryManager(Config config) {
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
-                return new StandardMemoryManager(size);
+                memoryManager = new StandardMemoryManager(size);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
+                memoryManager = new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
             }
         }
-        return null;
     }
 
     @Override
     public SecurityContext getSecurityContext() {
-        if (securityEnabled && securityContext == null) {
-            securityContext = new SecurityContextImpl(node);
-        }
         return securityContext;
     }
 
@@ -262,11 +268,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     "Offheap storage is not enabled! " + "Please set 'hazelcast.elastic.memory.enabled' to true");
         }
         return storage;
-    }
-
-    @Override
-    public TimedMemberStateFactory getTimedMemberStateFactory() {
-        return new EnterpriseTimedMemberStateFactory(node.hazelcastInstance);
     }
 
     @Override
@@ -326,5 +327,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return (T) new EnterpriseCacheService();
         }
         throw new IllegalArgumentException("Unknown service class: " + clazz);
+    }
+
+    @Override
+    public MemoryStats getMemoryStats() {
+        MemoryManager mm = memoryManager;
+        return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 }

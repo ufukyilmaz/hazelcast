@@ -1,7 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.monitor.LocalMemoryStats;
-
 /**
  * @author mdogan 03/12/13
  */
@@ -23,7 +21,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public LocalMemoryStats getMemoryStats() {
+    public MemoryStats getMemoryStats() {
         return memoryStats;
     }
 

@@ -1,14 +1,14 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.com.eclipsesource.json.JsonObject;
-import com.hazelcast.monitor.LocalMemoryStats;
-
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
+import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
 /**
  * @author mdogan 10/02/14
  */
-public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemoryStats {
+public class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 
@@ -99,30 +99,21 @@ public class NativeMemoryStats extends AbstractMemoryStats implements LocalMemor
     void appendAdditionalToString(StringBuilder sb) {
     }
 
-    @Override
-    public long getCreationTime() {
-        return 0;
-    }
-
-    @Override
-    public JsonObject toJson() {
-        JsonObject root = new JsonObject();
-        root.add("creationTime", getCreationTime());
-        root.add("totalPhysical", getTotalPhysical());
-        root.add("freePhysical", getFreePhysical());
-        root.add("maxNativeMemory", getMaxNativeMemory());
-        root.add("committedNativeMemory", getCommittedNativeMemory());
-        root.add("usedNativeMemory", getUsedNativeMemory());
-        root.add("freeNativeMemory", getFreeNativeMemory());
-        root.add("maxHeap", getMaxHeap());
-        root.add("committedHeap", getCommittedHeap());
-        root.add("usedHeap", getUsedHeap());
-        root.add("gcStats", getGCStats().toJson());
-        return root;
-    }
-
-    public static void main(String[] args) {
-        NativeMemoryStats stats = new NativeMemoryStats(1212121L);
-        System.err.println("stats = " + stats);
+    static void checkFreeMemory(long size) {
+        long totalMem = totalPhysicalMemory();
+        if (totalMem < 0) {
+            return;
+        }
+        long freeMem = freePhysicalMemory();
+        if (freeMem < 0) {
+            return;
+        }
+        if (size > freeMem) {
+            throw new NativeOutOfMemoryError("Not enough free physical memory available!"
+                    + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
+                    + " Total physical memory: " + MemorySize.toPrettyString(totalMem)
+                    + ", Free physical memory: " + MemorySize.toPrettyString(freeMem)
+            );
+        }
     }
 }

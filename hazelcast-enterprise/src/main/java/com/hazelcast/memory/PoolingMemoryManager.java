@@ -191,7 +191,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
     }
 
-    public LocalMemoryStats getMemoryStats() {
+    public MemoryStats getMemoryStats() {
         return memoryStats;
     }
 

@@ -1,7 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.monitor.LocalMemoryStats;
-
 /**
  * Memory Manager allocates/frees memory blocks from/to OS like C malloc()/free()
  *
@@ -67,7 +65,7 @@ public interface MemoryManager extends MemoryAllocator {
     /**
      * @return memory statistics
      */
-    LocalMemoryStats getMemoryStats();
+    MemoryStats getMemoryStats();
 
     /**
      * Returns page id for given address

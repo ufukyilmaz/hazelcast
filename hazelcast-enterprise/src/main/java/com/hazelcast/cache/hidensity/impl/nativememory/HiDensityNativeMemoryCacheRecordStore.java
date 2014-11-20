@@ -11,8 +11,8 @@ import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -196,7 +196,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected boolean isEvictionRequired() {
-        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
         return (memoryStats.getMaxNativeMemory() * evictionThreshold)
                     > memoryStats.getFreeNativeMemory();
     }

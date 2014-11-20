@@ -140,24 +140,24 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
 			<li><strong>/docs</strong>
 				<ul>
 				<li><strong>/javadoc</strong> &mdash; <a href="docs/javadoc/index.html">Hazelcast Javadoc</a>.</li>
-				<li><strong>/manual</strong> &mdash; <a href="docs/manual/html/index.html">Hazelcast Reference Manual</a>, also available in <a href="docs/manual/html-single/index.html">single page</a> and <a href="docs/manual/pdf/hazelcast-documentation-version.pdf">pdf</a> formats.</li>
+				<li><strong>/manual</strong> &mdash; <a href="docs/manual/html/index.html">Hazelcast Reference Manual</a>, also available in <a href="docs/manual/html-single/index.html">single page</a> and <a href="docs/manual/pdf/hazelcast-documentation-${project.version}.pdf">pdf</a> formats.</li>
 				</ul>			
 			</li>
 			
 			<li><strong>/lib</strong>
 				<ul>
-					<li><strong>hazelcast-client&ndash;<i>version</i>.jar</strong> &mdash; Java native client library to be included on classpath for Hazelcast client.</li>
-					<li><strong>hazelcast-cloud&ndash;<i>version</i>.jar</strong> &mdash; To connect to a Hazelcast cluster on AWS as a client or node, include this library.</li>
+					<li><strong>hazelcast-client&ndash;<i>${project.version}</i>.jar</strong> &mdash; Java native client library to be included on classpath for Hazelcast client.</li>
+					<li><strong>hazelcast-cloud&ndash;<i>${project.version}</i>.jar</strong> &mdash; To connect to a Hazelcast cluster on AWS as a client or node, include this library.</li>
 					
 
-					<li><strong>hazelcast&ndash;enterprise&ndash;<i>version</i>.jar</strong> &mdash; This library includes Hazelcast (open source) and Hazelcast Enterprise features.</li>
-					<li><strong>hazelcast-enterprise-all&ndash;<i>version</i>.jar</strong> &mdash; This library is the combination of hazelcast&ndash;enterprise&ndash;<i>version</i>.jar and Hazelcast Enterprise client extensions.</li>
-					<li><strong>hazelcast-enterprise-jetty<i>(Jetty version)</i>&ndash;<i>version</i>.jar</strong> &mdash; These are the session replication libraries for Jetty 7, 8 and 9 based web applications.</li>					
-<li><strong>hazelcast-enterprise-tomcat<i>(Tomcat version)</i>&ndash;<i>version</i>.jar</strong> &mdash; These are the session replication libraries for Tomcat 6 and 7 based web applications.</li>						
-					<li><strong>hazelcast-hibernate<i>(Hibernate version)</i>&ndash;<i>version</i>.jar</strong> &mdash; These are the libraries that enable Hazelcast to be used as a Hibernate 2nd Level Cache, for Hibernate 3 and 4.</li>				
-					<li><strong>hazelcast-jca&ndash;<i>version</i>.jar</strong> and <strong>hazelcast-jca-rar&ndash;<i>version</i>.rar</strong> &mdash; These are the libraries when you want to use a Hazelcast Resource Adapter implementation.</li>
-					<li><strong>hazelcast-spring&ndash;<i>version</i>.jar</strong> &mdash; This is the library to integrate Hazelcast with Spring based applications.</li>
-					<li><strong>hazelcast-wm&ndash;<i>version</i>.jar</strong> &mdash; This is the Hazelcast's session replication module library.</li>				
+					<li><strong>hazelcast&ndash;enterprise&ndash;<i>${project.version}</i>.jar</strong> &mdash; This library includes Hazelcast (open source) and Hazelcast Enterprise features.</li>
+					<li><strong>hazelcast-enterprise-all&ndash;<i>${project.version}</i>.jar</strong> &mdash; This library is the combination of hazelcast&ndash;enterprise&ndash;<i>version</i>.jar and Hazelcast Enterprise client extensions.</li>
+					<li><strong>hazelcast-enterprise-jetty<i>(Jetty version)</i>&ndash;<i>${project.version}</i>.jar</strong> &mdash; These are the session replication libraries for Jetty 7, 8 and 9 based web applications.</li>					
+<li><strong>hazelcast-enterprise-tomcat<i>(Tomcat version)</i>&ndash;<i>${project.version}</i>.jar</strong> &mdash; These are the session replication libraries for Tomcat 6 and 7 based web applications.</li>						
+					<li><strong>hazelcast-hibernate<i>(Hibernate version)</i>&ndash;<i>${project.version}</i>.jar</strong> &mdash; These are the libraries that enable Hazelcast to be used as a Hibernate 2nd Level Cache, for Hibernate 3 and 4.</li>				
+					<li><strong>hazelcast-jca&ndash;<i>${project.version}</i>.jar</strong> and <strong>hazelcast-jca-rar&ndash;<i>${project.version}</i>.rar</strong> &mdash; These are the libraries when you want to use a Hazelcast Resource Adapter implementation.</li>
+					<li><strong>hazelcast-spring&ndash;<i>${project.version}</i>.jar</strong> &mdash; This is the library to integrate Hazelcast with Spring based applications.</li>
+					<li><strong>hazelcast-wm&ndash;<i>${project.version}</i>.jar</strong> &mdash; This is the Hazelcast's session replication module library.</li>				
 				</ul>			
 			</li>
 			
@@ -179,7 +179,7 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
 		</ul>
 	
 		<h2 id="setting-the-license">Enterprise License Key</h2>
-		<p>Hazelcast Enterprise requires a valid license key. If you are evaluating Hazelcast Enterprise, you should have been emailed a trial key. If you are a customer, <a href="mailto:sales@hazelcast.com">Hazelcast Sales</a> will have provided you your key. Once you have your key please read <a href="docs/manual/html-single/hazelcast-documentation.html#setting-the-license-key-for-hazelcast-enterprise">Setting the License Key for Hazelcast Enterprise</a> to install it.</p>
+		<p>Hazelcast Enterprise requires a valid license key. If you are evaluating Hazelcast Enterprise, you should have been emailed a trial key. If you are a customer, <a href="mailto:sales@hazelcast.com">Hazelcast Sales</a> will provide the key to you. Once you have your key please read <a href="docs/manual/html-single/hazelcast-documentation.html#setting-the-license-key-for-hazelcast-enterprise">Setting the License Key for Hazelcast Enterprise</a> to install it.</p>
 	
 		
 		<h2 id="getting-started">Getting Started</h2>

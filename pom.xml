@@ -126,6 +126,11 @@
                         <!-- Not needed for now -->
                         <!-- manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile -->
                     </archive>
+                    <excludes>
+                        <exclude>**/*.html</exclude>
+                        <exclude>**/*.sh</exclude>
+                        <exclude>**/*.bat</exclude>
+                    </excludes>
                 </configuration>
                 <executions>
                     <execution>

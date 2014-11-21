@@ -2,9 +2,6 @@ package com.hazelcast.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
-import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
-
 /**
  * @author mdogan 10/02/14
  */
@@ -97,23 +94,5 @@ public class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats
     }
 
     void appendAdditionalToString(StringBuilder sb) {
-    }
-
-    static void checkFreeMemory(long size) {
-        long totalMem = totalPhysicalMemory();
-        if (totalMem < 0) {
-            return;
-        }
-        long freeMem = freePhysicalMemory();
-        if (freeMem < 0) {
-            return;
-        }
-        if (size > freeMem) {
-            throw new NativeOutOfMemoryError("Not enough free physical memory available!"
-                    + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
-                    + " Total physical memory: " + MemorySize.toPrettyString(totalMem)
-                    + ", Free physical memory: " + MemorySize.toPrettyString(freeMem)
-            );
-        }
     }
 }

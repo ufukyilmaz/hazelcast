@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
+
 /**
  * @author mdogan 03/12/13
  */
@@ -10,7 +12,7 @@ public final class StandardMemoryManager implements MemoryManager {
 
     public StandardMemoryManager(MemorySize cap) {
         long size = cap.bytes();
-        NativeMemoryStats.checkFreeMemory(size);
+        checkFreeMemory(size);
         malloc = new UnsafeMalloc();
         memoryStats = new NativeMemoryStats(size);
     }

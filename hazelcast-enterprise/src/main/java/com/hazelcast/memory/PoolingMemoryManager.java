@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;
@@ -11,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
@@ -55,14 +55,6 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
         gc.registerGarbageCollectable(this);
         gc.start();
-    }
-
-    private static void checkFreeMemory(long totalSize) {
-        String checkFreeMemoryProp = System.getProperty("hazelcast.hidensity.check.freememory", "true");
-        boolean checkFreeMemory = Boolean.parseBoolean(checkFreeMemoryProp);
-        if (checkFreeMemory) {
-            NativeMemoryStats.checkFreeMemory(totalSize);
-        }
     }
 
     static void checkBlockAndPageSize(int minBlockSize, int pageSize) {

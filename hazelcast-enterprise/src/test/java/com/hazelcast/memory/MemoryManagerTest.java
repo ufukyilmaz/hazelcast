@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -60,7 +59,7 @@ public class MemoryManagerTest {
 
     private void testCompaction(PoolingMemoryManager memoryManager) {
         int maxBlockSize = pageSize / 8;
-        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
         Random rand = new Random();
         Set<MemoryBlock> blocks = new HashSet<MemoryBlock>();
         while (true) {

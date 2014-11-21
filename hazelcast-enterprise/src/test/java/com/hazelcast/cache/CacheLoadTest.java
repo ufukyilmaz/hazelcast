@@ -1,6 +1,11 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -8,11 +13,10 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.SlowTest;
-
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -126,7 +130,7 @@ public class CacheLoadTest extends AbstractCacheTest {
         EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
-        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
 
         long now = System.currentTimeMillis();
         long end = now + TIMEOUT;
@@ -153,7 +157,7 @@ public class CacheLoadTest extends AbstractCacheTest {
         EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) node.getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
-        LocalMemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
 
         Random rand = new Random();
         while (size < max) {

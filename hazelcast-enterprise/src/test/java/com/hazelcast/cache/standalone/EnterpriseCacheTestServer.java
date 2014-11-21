@@ -23,8 +23,8 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.monitor.LocalMemoryStats;
 
 import java.io.IOException;
 
@@ -36,7 +36,7 @@ public class EnterpriseCacheTestServer {
     private static final long STATS_SECONDS = 10;
 
     private final HazelcastInstance instance;
-    private final LocalMemoryStats memoryStats;
+    private final MemoryStats memoryStats;
     private final ILogger logger;
     private final MemorySize memorySize;
 

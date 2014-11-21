@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.monitor.LocalMemoryStats;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
 
@@ -307,7 +306,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     public abstract int getHeaderLength();
 
     @Override
-    public final LocalMemoryStats getMemoryStats() {
+    public final MemoryStats getMemoryStats() {
         return memoryStats;
     }
 

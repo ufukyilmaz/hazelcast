@@ -4,6 +4,7 @@ import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
+import com.hazelcast.memory.MemoryBlockProcessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
@@ -42,11 +43,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     private static final long allocationFactor = 17L;
 
-    protected final EnterpriseSerializationService serializationService;
-
-    protected final MemoryBlockAccessor<V> memoryBlockAccessor;
-
-    protected final MemoryAllocator malloc;
+    protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
     private long baseAddress;
 
@@ -114,6 +111,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      *
      * @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
+     * @param serializationService
+     * @param memoryBlockAccessor
      * @param malloc
      */
     public BinaryElasticHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
@@ -127,12 +126,39 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      *  @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
      * @param loadFactor      The load factor (greater than zero and smaller than 1).
+     * @param serializationService
+     * @param memoryBlockAccessor
      * @param malloc
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
-            EnterpriseSerializationService serializationService, MemoryBlockAccessor<V> memoryBlockAccessor,
-            MemoryAllocator malloc) {
+            EnterpriseSerializationService serializationService,
+            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+        this(initialCapacity, loadFactor,
+                new BinaryElasticHashMapMemoryBlockProcessor<V>(serializationService,
+                        memoryBlockAccessor, malloc));
+    }
 
+    /**
+     * Creates a hash map with the given initial capacity,
+     * load factor.
+     *  @param initialCapacity Initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two).
+     * @param memoryBlockProcessor
+     */
+    public BinaryElasticHashMap(int initialCapacity, MemoryBlockProcessor<V> memoryBlockProcessor) {
+        this(initialCapacity, DEFAULT_LOAD_FACTOR, memoryBlockProcessor);
+    }
+
+    /**
+     * Creates a hash map with the given initial capacity,
+     * load factor.
+     *  @param initialCapacity Initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two).
+     * @param loadFactor      The load factor (greater than zero and smaller than 1).
+     * @param memoryBlockProcessor
+     */
+    public BinaryElasticHashMap(int initialCapacity, float loadFactor,
+            MemoryBlockProcessor<V> memoryBlockProcessor) {
         initialCapacity = Math.max(initialCapacity, MIN_CAPACITY);
 
         assert initialCapacity > 0
@@ -140,10 +166,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         assert loadFactor > 0 && loadFactor <= 1
                 : "Load factor must be between (0, 1].";
 
-        this.malloc = malloc;
         this.loadFactor = loadFactor;
-        this.serializationService = serializationService;
-        this.memoryBlockAccessor = memoryBlockAccessor;
+        this.memoryBlockProcessor = memoryBlockProcessor;
+
         initialCapacity = roundCapacity(initialCapacity);
         allocateBuffers(initialCapacity);
     }
@@ -189,14 +214,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 final long oldValue = getValue(slot);
                 setValue(slot, value.address());
                 if (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey) {
-                    serializationService.disposeData(key);
+                    memoryBlockProcessor.disposeData((NativeMemoryData) key);
                 }
-                return memoryBlockAccessor.read(oldValue);
+                return memoryBlockProcessor.read(oldValue);
             }
             slot = (slot + 1) & mask;
         }
 
-        NativeMemoryData memKey = serializationService.convertData(key, DataType.NATIVE);
+        NativeMemoryData memKey = (NativeMemoryData) memoryBlockProcessor.convertData(key, DataType.NATIVE);
         // Check if we need to grow. If so, reallocate new data, fill in the last element
         // and rehash.
         if (assigned == resizeAt) {
@@ -214,7 +239,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     public boolean set(Data key, V value) {
         V old = put(key, value);
         if (old != null) {
-            memoryBlockAccessor.dispose(old);
+            memoryBlockProcessor.dispose(old);
         }
         return old == null;
     }
@@ -249,9 +274,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotKey = getKey(slot);
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = getValue(slot);
-                if (memoryBlockAccessor.isEqual(current, oldValue)) {
+                if (memoryBlockProcessor.isEqual(current, oldValue)) {
                     setValue(slot, newValue.address());
-                    memoryBlockAccessor.dispose(current);
+                    memoryBlockProcessor.dispose(current);
                     return true;
                 }
                 return false;
@@ -273,7 +298,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = getValue(slot);
                 setValue(slot, value.address());
-                return memoryBlockAccessor.read(current);
+                return memoryBlockProcessor.read(current);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -330,7 +355,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 setValue(slot, v);
             }
         }
-        malloc.free(oldAddress, oldAllocatedLength * allocationFactor);
+        memoryBlockProcessor.free(oldAddress, oldAllocatedLength * allocationFactor);
     }
 
     /**
@@ -342,7 +367,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     private void allocateBuffers(int capacity) {
         long allocationCapacity = capacity * allocationFactor;
         try {
-            baseAddress = malloc.allocate(allocationCapacity);
+            baseAddress = memoryBlockProcessor.allocate(allocationCapacity);
         } catch (NativeOutOfMemoryError e) {
             throw onOome(e);
         }
@@ -376,10 +401,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 long v = getValue(slot);
                 if (key instanceof DefaultData ||
                         (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)) {
-                    serializationService.disposeData(readData(slotKey));
+                    memoryBlockProcessor.disposeData(readData(slotKey));
                 }
                 shiftConflictingKeys(slot);
-                return memoryBlockAccessor.read(v);
+                return memoryBlockProcessor.read(v);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -392,7 +417,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     public boolean delete(Data key) {
         V value = remove(key);
         if (value != null) {
-            memoryBlockAccessor.dispose(value);
+            memoryBlockProcessor.dispose(value);
         }
         return value != null;
     }
@@ -410,14 +435,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotKey = getKey(slot);
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = getValue(slot);
-                if (memoryBlockAccessor.isEqual(current, value)){
+                if (memoryBlockProcessor.isEqual(current, value)){
                     assigned--;
                     if (key instanceof DefaultData ||
                             (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey)) {
-                        serializationService.disposeData(readData(slotKey));
+                        memoryBlockProcessor.disposeData(readData(slotKey));
                     }
                     if (value.address() != current) {
-                        memoryBlockAccessor.dispose(current);
+                        memoryBlockProcessor.dispose(current);
                     }
                     shiftConflictingKeys(slot);
                     return true;
@@ -482,7 +507,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotKey = getKey(slot);
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long value = getValue(slot);
-                return memoryBlockAccessor.read(value);
+                return memoryBlockProcessor.read(value);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -523,7 +548,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         for (int slot = 0; slot < allocatedLength; slot++) {
             if (isAllocated(slot)) {
                 long current = getValue(slot);
-                if (memoryBlockAccessor.isEqual(current, value)) {
+                if (memoryBlockProcessor.isEqual(current, value)) {
                     return true;
                 }
             }
@@ -571,7 +596,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             }
             assigned--;
             long current = getValue(currentSlot);
-            memoryBlockAccessor.dispose(current);
+            memoryBlockProcessor.dispose(current);
             shiftConflictingKeys(currentSlot);
         }
 
@@ -643,7 +668,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         public V next() {
             nextSlot();
             long slotValue = getValue(currentSlot);
-            return memoryBlockAccessor.read(slotValue);
+            return memoryBlockProcessor.read(slotValue);
         }
     }
 
@@ -709,18 +734,23 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private class MapEntry implements Map.Entry<Data, V> {
-        final int slot;
 
-        private MapEntry(final int slot) {this.slot = slot;}
+        private final int slot;
+
+        private MapEntry(final int slot) {
+            this.slot = slot;
+        }
 
         @Override
         public Data getKey() {
             return readData(BinaryElasticHashMap.this.getKey(slot));
         }
+
         @Override
         public V getValue() {
-            return memoryBlockAccessor.read(BinaryElasticHashMap.this.getValue(slot));
+            return memoryBlockProcessor.read(BinaryElasticHashMap.this.getValue(slot));
         }
+
         @Override
         public V setValue(MemoryBlock value) {
             V current = getValue();
@@ -738,8 +768,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             EntryIter iter = new EntryIter();
             while (iter.hasNext()) {
                 Entry<Data, V> e = iter.next();
-                serializationService.disposeData(e.getKey());
-                memoryBlockAccessor.dispose(e.getValue());
+                memoryBlockProcessor.disposeData((NativeMemoryData) e.getKey());
+                memoryBlockProcessor.dispose(e.getValue());
             }
 
             assigned = 0;
@@ -752,9 +782,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     @Override
     public void destroy() {
-        assigned = 0;
+        if (assigned > 0) {
+            clear();
+        }
         if (baseAddress > 0L) {
-            malloc.free(baseAddress, allocatedLength * allocationFactor);
+            memoryBlockProcessor.free(baseAddress, allocatedLength * allocationFactor);
         }
         allocatedLength = 0;
         baseAddress = -1L;
@@ -855,6 +887,72 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      */
     private static int computePerturbationValue(int capacity) {
         return PERTURBATIONS[Integer.numberOfLeadingZeros(capacity)];
+    }
+
+    private static class BinaryElasticHashMapMemoryBlockProcessor<V extends MemoryBlock>
+            implements MemoryBlockProcessor<V> {
+
+        private final EnterpriseSerializationService serializationService;
+        private final MemoryBlockAccessor<V> memoryBlockAccessor;
+        private final MemoryAllocator malloc;
+
+        private BinaryElasticHashMapMemoryBlockProcessor(EnterpriseSerializationService serializationService,
+                MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+            this.serializationService = serializationService;
+            this.memoryBlockAccessor = memoryBlockAccessor;
+            this.malloc = malloc;
+        }
+
+        @Override
+        public boolean isEqual(long address, V value) {
+            return memoryBlockAccessor.isEqual(address, value);
+        }
+
+        @Override
+        public boolean isEqual(long address1, long address2) {
+            return memoryBlockAccessor.isEqual(address1, address2);
+        }
+
+        @Override
+        public V read(long address) {
+            return memoryBlockAccessor.read(address);
+        }
+
+        @Override
+        public long dispose(long address) {
+            return memoryBlockAccessor.dispose(address);
+        }
+
+        @Override
+        public long dispose(V block) {
+            return memoryBlockAccessor.dispose(block);
+        }
+
+        @Override
+        public Data toData(Object obj, DataType dataType) {
+            return serializationService.toData(obj, dataType);
+        }
+
+        @Override
+        public Data convertData(Data data, DataType dataType) {
+            return serializationService.convertData(data, dataType);
+        }
+
+        @Override
+        public void disposeData(Data data) {
+            serializationService.disposeData(data);
+        }
+
+        @Override
+        public long allocate(long size) {
+            return malloc.allocate(size);
+        }
+
+        @Override
+        public void free(long address, long size) {
+            malloc.free(address, size);
+        }
+
     }
 
 }

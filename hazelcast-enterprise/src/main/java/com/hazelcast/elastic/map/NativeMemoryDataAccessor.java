@@ -34,12 +34,14 @@ class NativeMemoryDataAccessor
     }
 
     @Override
-    public void dispose(NativeMemoryData block) {
+    public long dispose(NativeMemoryData block) {
+        long size = block.size();
         serializationService.disposeData(block);
+        return size;
     }
 
     @Override
-    public void dispose(long address) {
-        dispose(read(address));
+    public long dispose(long address) {
+        return dispose(read(address));
     }
 }

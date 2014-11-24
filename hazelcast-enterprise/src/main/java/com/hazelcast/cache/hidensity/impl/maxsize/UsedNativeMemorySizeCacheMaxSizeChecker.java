@@ -11,17 +11,17 @@ import com.hazelcast.memory.MemoryUnit;
 public class UsedNativeMemorySizeCacheMaxSizeChecker implements CacheMaxSizeChecker {
 
     private final HiDensityCacheInfo cacheInfo;
-    private final long maxSize;
+    private final long maxUsedMemorySize;
 
     public UsedNativeMemorySizeCacheMaxSizeChecker(HiDensityCacheInfo cacheInfo,
             CacheMaxSizeConfig maxSizeConfig) {
         this.cacheInfo = cacheInfo;
-        this.maxSize = MemoryUnit.BYTES.convert(maxSizeConfig.getSize(), MemoryUnit.MEGABYTES);
+        this.maxUsedMemorySize = MemoryUnit.BYTES.convert(maxSizeConfig.getSize(), MemoryUnit.MEGABYTES);
     }
 
     @Override
     public boolean isReachedToMaxSize() {
-        return cacheInfo.getUsedMemory() >= maxSize;
+        return cacheInfo.getUsedMemory() >= maxUsedMemorySize;
     }
 
 }

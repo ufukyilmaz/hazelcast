@@ -11,8 +11,7 @@ import com.hazelcast.memory.MemoryManager;
 public class FreeNativeMemoryPercentageCacheMaxSizeChecker implements CacheMaxSizeChecker {
 
     private final MemoryManager memoryManager;
-    private final long maxNativeMemory;
-    private final double maxSizeRatio;
+    private final long minFreeMemorySize;
 
     public FreeNativeMemoryPercentageCacheMaxSizeChecker(MemoryManager memoryManager,
             CacheMaxSizeConfig maxSizeConfig, long maxNativeMemory) {
@@ -22,13 +21,13 @@ public class FreeNativeMemoryPercentageCacheMaxSizeChecker implements CacheMaxSi
             throw new IllegalArgumentException("\"maxSize\" can only be 0-100 for "
                     + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
         }
-        this.maxSizeRatio = (double) maxSizePercentage / (double) ICacheRecordStore.ONE_HUNDRED_PERCENT;
-        this.maxNativeMemory = maxNativeMemory;
+        final double maxSizeRatio = (double) maxSizePercentage / (double) ICacheRecordStore.ONE_HUNDRED_PERCENT;
+        this.minFreeMemorySize = (long) (maxNativeMemory * maxSizeRatio);
     }
 
     @Override
     public boolean isReachedToMaxSize() {
-        return memoryManager.getMemoryStats().getFreeNativeMemory() >= (maxNativeMemory * maxSizeRatio);
+        return memoryManager.getMemoryStats().getFreeNativeMemory() < minFreeMemorySize;
     }
 
 }

@@ -11,17 +11,17 @@ import com.hazelcast.memory.MemoryUnit;
 public class FreeNativeMemorySizeCacheMaxSizeChecker implements CacheMaxSizeChecker {
 
     private final MemoryManager memoryManager;
-    private final long maxSize;
+    private final long minFreeMemorySize;
 
     public FreeNativeMemorySizeCacheMaxSizeChecker(MemoryManager memoryManager,
             CacheMaxSizeConfig maxSizeConfig) {
         this.memoryManager = memoryManager;
-        this.maxSize = MemoryUnit.BYTES.convert(maxSizeConfig.getSize(), MemoryUnit.MEGABYTES);
+        this.minFreeMemorySize = MemoryUnit.BYTES.convert(maxSizeConfig.getSize(), MemoryUnit.MEGABYTES);
     }
 
     @Override
     public boolean isReachedToMaxSize() {
-        return memoryManager.getMemoryStats().getFreeNativeMemory() >= maxSize;
+        return memoryManager.getMemoryStats().getFreeNativeMemory() < minFreeMemorySize;
     }
 
 }

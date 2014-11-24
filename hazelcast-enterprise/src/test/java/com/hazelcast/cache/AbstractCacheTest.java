@@ -2,6 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.CacheMaxSizeConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -11,6 +12,7 @@ import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.util.HealthMonitorLevel;
 import com.hazelcast.util.StringUtil;
 
 import org.junit.After;
@@ -80,6 +82,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         cacheConfig.setName(cacheName);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);
+        CacheMaxSizeConfig maxSizeConfig = new CacheMaxSizeConfig();
+        maxSizeConfig.setSize(90);
+        maxSizeConfig.setMaxSizePolicy(CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        cacheConfig.setMaxSizeConfig(maxSizeConfig);
         return cacheConfig;
     }
 
@@ -100,12 +106,13 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected Properties getProperties() {
         Properties props = new Properties();
-        props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "111");
+        props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "1000");
         props.setProperty(GroupProperties.PROP_SOCKET_BIND_ANY, "false");
         props.setProperty(GroupProperties.PROP_MAX_WAIT_SECONDS_BEFORE_JOIN, "0");
         props.setProperty(GroupProperties.PROP_GENERIC_OPERATION_THREAD_COUNT, "2");
         props.setProperty(GroupProperties.PROP_PARTITION_OPERATION_THREAD_COUNT, "4");
         props.setProperty(GroupProperties.PROP_LOGGING_TYPE, "log4j");
+        props.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.OFF.name());
         return props;
     }
 

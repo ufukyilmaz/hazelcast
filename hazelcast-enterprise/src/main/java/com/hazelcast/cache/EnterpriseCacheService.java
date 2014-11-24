@@ -23,6 +23,8 @@ import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
+import com.hazelcast.util.ConcurrencyUtil;
+import com.hazelcast.util.ConstructorFunction;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,6 +56,13 @@ public class EnterpriseCacheService extends CacheService {
 
     private final ConcurrentMap<String, HiDensityCacheInfo> hiDensityCacheInfoMap =
             new ConcurrentHashMap<String, HiDensityCacheInfo>();
+    private final ConstructorFunction<String, HiDensityCacheInfo> hiDensityCacheInfoConstructorFunction =
+            new ConstructorFunction<String, HiDensityCacheInfo>() {
+                @Override
+                public HiDensityCacheInfo createNew(String cacheNameWithPrefix) {
+                    return new HiDensityCacheInfo(cacheNameWithPrefix);
+                }
+            };
 
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
@@ -275,22 +284,13 @@ public class EnterpriseCacheService extends CacheService {
      * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityCacheInfo} instance
      * which holds live information about cache.
      *
-     * @param cacheConfig Configuration of the cache whose live information is requested
+     * @param cacheNameWithPrefix Name (with prefix) of the cache whose live information is requested
      *
      * @return the {@link HiDensityCacheInfo} instance which holds live information about Hi-Density cache
      */
-    public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(CacheConfig cacheConfig) {
-        HiDensityCacheInfo cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
-        if (cacheInfo == null) {
-            synchronized (this) {
-                cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
-                if (cacheInfo == null) {
-                    cacheInfo = new HiDensityCacheInfo(cacheConfig);
-                    hiDensityCacheInfoMap.put(cacheConfig.getNameWithPrefix(), cacheInfo);
-                }
-            }
-        }
-        return cacheInfo;
+    public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {
+        return ConcurrencyUtil.getOrPutSynchronized(hiDensityCacheInfoMap, cacheNameWithPrefix,
+                    this, hiDensityCacheInfoConstructorFunction);
     }
 
     @Override

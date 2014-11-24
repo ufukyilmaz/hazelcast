@@ -16,8 +16,6 @@
 
 package com.hazelcast.cache.hidensity;
 
-import com.hazelcast.config.CacheConfig;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -25,18 +23,17 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class HiDensityCacheInfo {
 
-    protected final CacheConfig cacheConfig;
+    protected final String cacheNameWithPrefix;
     protected final AtomicLong entryCount = new AtomicLong(0L);
     protected final AtomicLong usedMemory = new AtomicLong(0L);
-    protected final String cacheNameWithPrefix;
 
-    public HiDensityCacheInfo(CacheConfig cacheConfig) {
-       this.cacheConfig = cacheConfig;
-       this.cacheNameWithPrefix = cacheConfig.getNameWithPrefix();
+
+    public HiDensityCacheInfo(String cacheNameWithPrefix) {
+       this.cacheNameWithPrefix = cacheNameWithPrefix;
     }
 
-    public String getCacheName() {
-        return cacheConfig.getName();
+    public String getCacheNameWithPrefix() {
+        return cacheNameWithPrefix;
     }
 
     public long addEntryCount(long count) {
@@ -87,7 +84,7 @@ public class HiDensityCacheInfo {
     @Override
     public String toString() {
         return "HiDensityCacheInfo{"
-                + "cacheName=" + cacheNameWithPrefix
+                + "cacheNameWithPrefix=" + cacheNameWithPrefix
                 + ", entryCount=" + entryCount
                 + ", usedMemory=" + usedMemory
                 + '}';

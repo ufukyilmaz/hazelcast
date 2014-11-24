@@ -69,29 +69,27 @@ public class HiDensityNativeMemoryCacheRecordStore
             return maxSizeChecker;
         }
 
-        if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
-            return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, maxSizeConfig);
-        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
-            final long maxNativeMemory =
-                    ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                            .getMemoryManager().getMemoryStats().getMaxNativeMemory();
-            return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, maxSizeConfig, maxNativeMemory);
-        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
-            return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, maxSizeConfig);
-        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
-            final long maxNativeMemory =
-                    ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                            .getMemoryManager().getMemoryStats().getMaxNativeMemory();
-            return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, maxSizeConfig, maxNativeMemory);
-        } else {
-            throw new IllegalArgumentException("Invalid max-size policy "
-                + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                + CacheMaxSizeConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
-                + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
-                + " are supported.");
+        final long maxNativeMemory =
+                ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                        .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+        switch (maxSizePolicy) {
+            case USED_NATIVE_MEMORY_SIZE:
+                return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, maxSizeConfig);
+            case USED_NATIVE_MEMORY_PERCENTAGE:
+                return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, maxSizeConfig, maxNativeMemory);
+            case FREE_NATIVE_MEMORY_SIZE:
+                return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, maxSizeConfig);
+            case FREE_NATIVE_MEMORY_PERCENTAGE:
+                return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, maxSizeConfig, maxNativeMemory);
+            default:
+                throw new IllegalArgumentException("Invalid max-size policy "
+                        + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                        + CacheMaxSizeConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
+                        + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                        + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                        + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                        + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                        + " are supported.");
         }
     }
     //CHECKSTYLE:ON
@@ -99,7 +97,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     private void ensureInitialized() {
         if (cacheInfo == null) {
             cacheInfo = ((EnterpriseCacheService) cacheService)
-                            .getOrCreateHiDensityCacheInfo(cacheConfig);
+                            .getOrCreateHiDensityCacheInfo(cacheConfig.getNameWithPrefix());
         }
         if (serializationService == null) {
             serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();

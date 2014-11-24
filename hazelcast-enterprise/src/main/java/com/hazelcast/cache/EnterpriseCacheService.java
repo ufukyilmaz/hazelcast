@@ -282,7 +282,7 @@ public class EnterpriseCacheService extends CacheService {
     public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(CacheConfig cacheConfig) {
         HiDensityCacheInfo cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
         if (cacheInfo == null) {
-            synchronized (hiDensityCacheInfoMap) {
+            synchronized (this) {
                 cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
                 if (cacheInfo == null) {
                     cacheInfo = new HiDensityCacheInfo(cacheConfig);

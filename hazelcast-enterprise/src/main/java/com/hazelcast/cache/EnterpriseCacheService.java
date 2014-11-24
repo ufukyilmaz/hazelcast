@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.client.CacheInvalidationListener;
 import com.hazelcast.cache.hidensity.client.CacheInvalidationMessage;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
@@ -26,6 +27,8 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,6 +51,9 @@ import java.util.concurrent.TimeUnit;
 public class EnterpriseCacheService extends CacheService {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
+
+    private final ConcurrentMap<String, HiDensityCacheInfo> hiDensityCacheInfoMap =
+            new ConcurrentHashMap<String, HiDensityCacheInfo>();
 
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
@@ -262,6 +268,29 @@ public class EnterpriseCacheService extends CacheService {
      */
     public EnterpriseSerializationService getSerializationService() {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
+    }
+
+
+    /**
+     * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityCacheInfo} instance
+     * which holds live information about cache.
+     *
+     * @param cacheConfig Configuration of the cache whose live information is requested
+     *
+     * @return the {@link HiDensityCacheInfo} instance which holds live information about Hi-Density cache
+     */
+    public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(CacheConfig cacheConfig) {
+        HiDensityCacheInfo cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
+        if (cacheInfo == null) {
+            synchronized (hiDensityCacheInfoMap) {
+                cacheInfo = hiDensityCacheInfoMap.get(cacheConfig.getNameWithPrefix());
+                if (cacheInfo == null) {
+                    cacheInfo = new HiDensityCacheInfo(cacheConfig);
+                    hiDensityCacheInfoMap.put(cacheConfig.getNameWithPrefix(), cacheInfo);
+                }
+            }
+        }
+        return cacheInfo;
     }
 
     @Override

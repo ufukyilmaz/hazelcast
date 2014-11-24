@@ -106,7 +106,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected Properties getProperties() {
         Properties props = new Properties();
-        props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "1000");
+        props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "111");
         props.setProperty(GroupProperties.PROP_SOCKET_BIND_ANY, "false");
         props.setProperty(GroupProperties.PROP_MAX_WAIT_SECONDS_BEFORE_JOIN, "0");
         props.setProperty(GroupProperties.PROP_GENERIC_OPERATION_THREAD_COUNT, "2");

@@ -10,6 +10,8 @@ package com.hazelcast.memory;
  */
 public interface MemoryManager extends MemoryAllocator {
 
+    int SIZE_INVALID = -1;
+
     /**
      * Allocates memory from an internal memory pool or falls back to OS
      * if not enough memory available in pool.
@@ -74,5 +76,7 @@ public interface MemoryManager extends MemoryAllocator {
      * @return page id
      */
     long getPage(long address);
+
+    int getSize(long address);
 
 }

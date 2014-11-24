@@ -104,6 +104,12 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         return manager.getPage(address);
     }
 
+    @Override
+    public int getSize(long address) {
+        MemoryManager manager = getMemoryManager();
+        return manager.getSize(address);
+    }
+
     public int getHeaderLength() {
         AbstractPoolingMemoryManager manager = (AbstractPoolingMemoryManager) getMemoryManager();
         return manager.getHeaderLength();

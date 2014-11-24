@@ -67,4 +67,10 @@ public final class StandardMemoryManager implements MemoryManager {
     @Override
     public void destroy() {
     }
+
+    @Override
+    public int getSize(long address) {
+        return SIZE_INVALID;
+    }
+
 }

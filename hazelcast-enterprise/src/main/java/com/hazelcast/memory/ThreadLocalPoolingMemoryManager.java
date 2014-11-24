@@ -121,8 +121,8 @@ final class ThreadLocalPoolingMemoryManager
     @Override
     protected boolean markInvalid(long address, int expectedSize) {
         assertNotNullPtr(address);
-        assert expectedSize == getSize(address)
-                : "Invalid size! actual: " + getSize(address) + ", expected: " + expectedSize;
+        assert expectedSize == getSizeInternal(address)
+                : "Invalid size! actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
         UnsafeHelper.UNSAFE.putByte(address, (byte) 0);
         UnsafeHelper.UNSAFE.putInt(address + HEADER_OFFSET, 0);
         return true;
@@ -153,11 +153,15 @@ final class ThreadLocalPoolingMemoryManager
         return allocations.contains(address - offset);
     }
 
-    @Override
-    protected int getSize(long address) {
+    protected int getSizeInternal(long address) {
         byte b = UnsafeHelper.UNSAFE.getByte(address);
         b = Bits.clearBit(b, AVAILABLE_BIT);
         return 1 << b;
+    }
+
+    @Override
+    public int getSize(long address) {
+        return getSizeInternal(address - getHeaderSize());
     }
 
     protected int getOffset(long address) {
@@ -171,7 +175,7 @@ final class ThreadLocalPoolingMemoryManager
 
     @Override
     public long getPage(long address) {
-        int size = getSize(address);
+        int size = getSizeInternal(address);
         return getPage(address, size);
     }
 

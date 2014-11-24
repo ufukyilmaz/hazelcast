@@ -13,8 +13,8 @@ public interface MemoryBlockAccessor<V extends MemoryBlock> {
 
     V read(long address);
 
-    void dispose(V block);
+    long dispose(V block);
 
-    void dispose(long address);
+    long dispose(long address);
 
 }

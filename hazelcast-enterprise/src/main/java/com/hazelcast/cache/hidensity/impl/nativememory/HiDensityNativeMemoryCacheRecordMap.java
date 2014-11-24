@@ -1,15 +1,16 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecordSortArea;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
@@ -30,19 +31,84 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
     private static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
-    private final transient HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private final transient HiDensityNativeMemoryCacheRecordProcessor cacheRecordProcessor;
     private final transient Callback<Data> evictionCallback;
+    private final transient HiDensityCacheInfo cacheInfo;
     private int randomEvictionLastIndex;
-    private final Random random = new Random();
+    private final transient Random random = new Random();
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
-            EnterpriseSerializationService serializationService,
-            HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor,
-            Callback<Data> evictionCallback) {
-        super(initialCapacity, serializationService, cacheRecordAccessor,
-                serializationService.getMemoryManager().unwrapMemoryAllocator());
-        this.cacheRecordAccessor = cacheRecordAccessor;
+            HiDensityNativeMemoryCacheRecordProcessor cacheRecordProcessor,
+            Callback<Data> evictionCallback,
+            HiDensityCacheInfo cacheInfo) {
+        super(initialCapacity, cacheRecordProcessor);
+        this.cacheRecordProcessor = cacheRecordProcessor;
         this.evictionCallback = evictionCallback;
+        this.cacheInfo = cacheInfo;
+    }
+
+    @Override
+    public boolean set(Data key, HiDensityNativeMemoryCacheRecord value) {
+        boolean added = super.set(key, value);
+        if (added) {
+            cacheInfo.increaseEntryCount();
+        }
+        return added;
+    }
+
+    @Override
+    public HiDensityNativeMemoryCacheRecord put(Data key, MemoryBlock value) {
+        HiDensityNativeMemoryCacheRecord record = super.put(key, value);
+        // If there is no previous value with specified key, means that new entry is added
+        if (record == null) {
+            cacheInfo.increaseEntryCount();
+        }
+        return record;
+    }
+
+    @Override
+    public HiDensityNativeMemoryCacheRecord put(Data key, HiDensityNativeMemoryCacheRecord value) {
+        HiDensityNativeMemoryCacheRecord record = super.put(key, value);
+        // If there is no previous value with specified key, means that new entry is added
+        if (record == null) {
+            cacheInfo.increaseEntryCount();
+        }
+        return record;
+    }
+
+    @Override
+    public HiDensityNativeMemoryCacheRecord putIfAbsent(Data key, HiDensityNativeMemoryCacheRecord value) {
+        HiDensityNativeMemoryCacheRecord record = super.putIfAbsent(key, value);
+        // If there is no previous value with specified key, means that new entry is added
+        if (record == null) {
+            cacheInfo.increaseEntryCount();
+        }
+        return record;
+    }
+
+    @Override
+    public boolean delete(Data key) {
+        boolean deleted = super.delete(key);
+        if (deleted) {
+            cacheInfo.decreaseEntryCount();
+        }
+        return deleted;
+    }
+
+    @Override
+    public boolean remove(Object k, Object v) {
+        boolean removed = super.remove(k, v);
+        if (removed) {
+            cacheInfo.decreaseEntryCount();
+        }
+        return removed;
+    }
+
+    @Override
+    public void clear() {
+        final int sizeBeforeClear = size();
+        super.clear();
+        cacheInfo.removeEntryCount(sizeBeforeClear);
     }
 
     protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
@@ -54,7 +120,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
     public int evictExpiredRecords(int percentage) {
         int capacity = capacity();
         int len = (int) (capacity * (long) percentage / ICacheRecordStore.ONE_HUNDRED_PERCENT);
-        int k = 0;
+        int evictedCount = 0;
         if (len > 0 && size() > 0) {
             int start = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? (int) (random.nextInt(capacity)) : 0;
             int end = percentage < ICacheRecordStore.ONE_HUNDRED_PERCENT ? Math.min(start + len, capacity) : capacity;
@@ -68,17 +134,20 @@ public final class HiDensityNativeMemoryCacheRecordMap
                         long creationTime = HiDensityNativeMemoryCacheRecord.getCreationTime(value);
                         if (creationTime + ttlMillis < now) {
                             long key = getKey(ix);
-                            NativeMemoryData binary = cacheRecordAccessor.readData(key);
+                            NativeMemoryData binary = cacheRecordProcessor.readData(key);
                             callbackEvictionListeners(binary);
                             delete(binary);
-                            cacheRecordAccessor.disposeData(binary);
-                            k++;
+                            cacheRecordProcessor.disposeData(binary);
+                            evictedCount++;
                         }
                     }
                 }
             }
         }
-        return k;
+
+        cacheInfo.removeEntryCount(evictedCount);
+
+        return evictedCount;
     }
     //CHECKSTYLE:ON
 
@@ -96,27 +165,25 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
     @Override
     public int evictRecords(int percentage, EvictionPolicy policy) {
+        int evictedCount;
+
         switch (policy) {
             case RANDOM:
-                return evictRecordsRandom(percentage);
-
+                evictedCount = evictRecordsRandom(percentage);
+                break;
             case LRU:
-                try {
-                    return evictRecordsLRU(percentage);
-                } catch (Throwable e) {
-                    return evictRecordsRandom(percentage);
-                }
-
+                evictedCount = evictRecordsLRU(percentage);
+                break;
             case LFU:
-                try {
-                    return evictRecordsLFU(percentage);
-                } catch (Throwable e) {
-                    return evictRecordsRandom(percentage);
-                }
-
+                evictedCount = evictRecordsLFU(percentage);
+                break;
             default:
-                throw new IllegalArgumentException();
+                throw new IllegalArgumentException("Unsupported eviction policy: " + policy);
         }
+
+        cacheInfo.removeEntryCount(evictedCount);
+
+        return evictedCount;
     }
 
     //CHECKSTYLE:OFF
@@ -159,9 +226,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
                     if (accessTime <= time) {
                         k++;
                         long key = getKey(ix);
-                        NativeMemoryData keyData = cacheRecordAccessor.readData(key);
+                        NativeMemoryData keyData = cacheRecordProcessor.readData(key);
                         delete(keyData);
-                        cacheRecordAccessor.disposeData(keyData);
+                        cacheRecordProcessor.disposeData(keyData);
                     }
                 }
             }
@@ -207,9 +274,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
                     if (h <= hit) {
                         k++;
                         long key = getKey(ix);
-                        NativeMemoryData keyData = cacheRecordAccessor.readData(key);
+                        NativeMemoryData keyData = cacheRecordProcessor.readData(key);
                         delete(keyData);
-                        cacheRecordAccessor.disposeData(keyData);
+                        cacheRecordProcessor.disposeData(keyData);
                     }
                 }
             }
@@ -248,9 +315,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
         while (true) {
             if (isAllocated(ix)) {
                 long key = getKey(ix);
-                NativeMemoryData keyData = cacheRecordAccessor.readData(key);
+                NativeMemoryData keyData = cacheRecordProcessor.readData(key);
                 delete(keyData);
-                cacheRecordAccessor.disposeData(keyData);
+                cacheRecordProcessor.disposeData(keyData);
                 if (++k >= len) {
                     break;
                 }
@@ -282,7 +349,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
             HiDensityNativeMemoryCacheRecord record = entry.getValue();
             final boolean isExpired = record.isExpiredAt(now);
             if (!isExpired) {
-                keys.add(serializationService.convertData(key, DataType.HEAP));
+                keys.add(memoryBlockProcessor.convertData(key, DataType.HEAP));
             }
         }
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());

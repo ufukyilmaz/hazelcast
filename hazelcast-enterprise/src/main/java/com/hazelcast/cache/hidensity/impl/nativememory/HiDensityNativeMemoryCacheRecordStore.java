@@ -1,17 +1,23 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemoryPercentageCacheMaxSizeChecker;
+import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemorySizeCacheMaxSizeChecker;
+import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemoryPercentageCacheMaxSizeChecker;
+import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemorySizeCacheMaxSizeChecker;
 import com.hazelcast.cache.hidensity.operation.CacheExpirationOperation;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
+import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.config.CacheMaxSizeConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -34,25 +40,83 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private static final int DEFAULT_EXPIRATION_PERCENTAGE = 10;
 
-    private final int initialCapacity;
-    private final float evictionThreshold;
-    private final EnterpriseSerializationService serializationService;
-    private final Operation expirationOperation;
-    private final MemoryManager memoryManager;
-    private final HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private HiDensityCacheInfo cacheInfo;
+    private EnterpriseSerializationService serializationService;
+    private Operation expirationOperation;
+    private MemoryManager memoryManager;
+    private HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
+    private HiDensityNativeMemoryCacheRecordProcessor cacheRecordProcessor;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
-                                                 EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
+            EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
         super(name, partitionId, nodeEngine, cacheService);
+        ensureInitialized();
+    }
 
-        this.initialCapacity = DEFAULT_INITIAL_CAPACITY;
-        this.evictionThreshold = (float) Math.max(1, ONE_HUNDRED_PERCENT - evictionThresholdPercentage)
-                / ONE_HUNDRED_PERCENT;
-        this.serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
-        this.cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
-        this.memoryManager = serializationService.getMemoryManager();
-        this.records = createRecordCacheMap();
-        this.expirationOperation = createExpirationOperation(DEFAULT_EXPIRATION_PERCENTAGE);
+    //CHECKSTYLE:OFF
+    @Override
+    protected CacheMaxSizeChecker createCacheMaxSizeChecker(CacheMaxSizeConfig maxSizeConfig) {
+        if (maxSizeConfig == null) {
+            return null;
+        }
+        final CacheMaxSizeConfig.CacheMaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
+        if (maxSizePolicy == null) {
+            return null;
+        }
+
+        final CacheMaxSizeChecker maxSizeChecker = super.createCacheMaxSizeChecker(maxSizeConfig);
+        if (maxSizeChecker != null) {
+            return maxSizeChecker;
+        }
+
+        if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
+            return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, maxSizeConfig);
+        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
+            final long maxNativeMemory =
+                    ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                            .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+            return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, maxSizeConfig, maxNativeMemory);
+        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
+            return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, maxSizeConfig);
+        } else if (maxSizePolicy == CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
+            final long maxNativeMemory =
+                    ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                            .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+            return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, maxSizeConfig, maxNativeMemory);
+        } else {
+            throw new IllegalArgumentException("Invalid max-size policy "
+                + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                + CacheMaxSizeConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
+                + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                + " are supported.");
+        }
+    }
+    //CHECKSTYLE:ON
+
+    private void ensureInitialized() {
+        if (cacheInfo == null) {
+            cacheInfo = ((EnterpriseCacheService) cacheService)
+                            .getOrCreateHiDensityCacheInfo(cacheConfig);
+        }
+        if (serializationService == null) {
+            serializationService = (EnterpriseSerializationService) nodeEngine.getSerializationService();
+        }
+        if (memoryManager == null) {
+            memoryManager = serializationService.getMemoryManager();
+        }
+        if (cacheRecordAccessor == null) {
+            cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
+        }
+        if (cacheRecordProcessor == null) {
+            cacheRecordProcessor = new HiDensityNativeMemoryCacheRecordProcessor(serializationService,
+                    cacheRecordAccessor, memoryManager.unwrapMemoryAllocator(), cacheInfo);
+        }
+        if (expirationOperation == null) {
+            expirationOperation = createExpirationOperation(DEFAULT_EXPIRATION_PERCENTAGE);
+        }
     }
 
     @Override
@@ -60,8 +124,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (records != null) {
             return records;
         }
-        return new HiDensityNativeMemoryCacheRecordMap(initialCapacity, serializationService,
-                        cacheRecordAccessor, createEvictionCallback());
+        ensureInitialized();
+        return new HiDensityNativeMemoryCacheRecordMap(DEFAULT_INITIAL_CAPACITY, cacheRecordProcessor,
+                createEvictionCallback(), cacheInfo);
     }
 
     @Override
@@ -87,7 +152,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected <T> Data valueToData(T value) {
-        return serializationService.toData(value, DataType.NATIVE);
+        return cacheRecordProcessor.toData(value, DataType.NATIVE);
     }
 
     @Override
@@ -105,7 +170,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (!isMemoryBlockValid(record)) {
             return null;
         }
-        return (T) cacheRecordAccessor.readValue(record, true);
+        return (T) cacheRecordProcessor.readValue(record, true);
     }
 
     @Override
@@ -138,7 +203,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected Data toData(Object obj) {
         if ((obj instanceof Data) && !(obj instanceof NativeMemoryData)) {
-            return serializationService.convertData((Data) obj, DataType.NATIVE);
+            return cacheRecordProcessor.convertData((Data) obj, DataType.NATIVE);
         } else {
             return super.toData(obj);
         }
@@ -152,7 +217,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (obj instanceof Data) {
             Data data = (Data) obj;
             if (obj instanceof NativeMemoryData) {
-                return serializationService.convertData(data, DataType.HEAP);
+                return cacheRecordProcessor.convertData(data, DataType.HEAP);
             } else {
                 return data;
             }
@@ -161,7 +226,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             Object value = record.getValue();
             return toHeapData(value);
         } else {
-            return serializationService.toData(obj, DataType.HEAP);
+            return cacheRecordProcessor.toData(obj, DataType.HEAP);
         }
     }
 
@@ -180,9 +245,9 @@ public class HiDensityNativeMemoryCacheRecordStore
     private NativeMemoryData toNativeMemoryData(Object data) {
         NativeMemoryData nativeMemoryData;
         if (!(data instanceof Data)) {
-            nativeMemoryData = serializationService.toData(data, DataType.NATIVE);
+            nativeMemoryData = (NativeMemoryData) cacheRecordProcessor.toData(data, DataType.NATIVE);
         } else if (!(data instanceof NativeMemoryData)) {
-            nativeMemoryData = serializationService.convertData((Data) data, DataType.NATIVE);
+            nativeMemoryData = (NativeMemoryData) cacheRecordProcessor.convertData((Data) data, DataType.NATIVE);
         } else {
             nativeMemoryData = (NativeMemoryData) data;
         }
@@ -196,9 +261,11 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected boolean isEvictionRequired() {
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
-        return (memoryStats.getMaxNativeMemory() * evictionThreshold)
-                    > memoryStats.getFreeNativeMemory();
+        if (maxSizeChecker != null) {
+            return maxSizeChecker.isReachedToMaxSize();
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -212,8 +279,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public HiDensityNativeMemoryCacheRecordAccessor getCacheRecordAccessor() {
-        return cacheRecordAccessor;
+    public HiDensityNativeMemoryCacheRecordProcessor getCacheRecordProcessor() {
+        return cacheRecordProcessor;
     }
 
     @Override
@@ -236,7 +303,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
         try {
             recordAddress = memoryManager.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
-            record = cacheRecordAccessor.newRecord();
+            record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
 
             if (creationTime >= 0) {
@@ -256,11 +323,11 @@ public class HiDensityNativeMemoryCacheRecordStore
         } catch (NativeOutOfMemoryError e) {
             // If any memory region is allocated for record, dispose it
             if (recordAddress != NULL_PTR) {
-                cacheRecordAccessor.dispose(recordAddress);
+                cacheRecordProcessor.dispose(recordAddress);
             }
             // If any data is allocated for record, dispose it
             if (isMemoryBlockValid(data)) {
-                cacheRecordAccessor.disposeData(data);
+                cacheRecordProcessor.disposeData(data);
             }
             if (retryOnOutOfMemoryError) {
                 return createRecordInternal(value, creationTime, expiryTime, true, false);
@@ -277,7 +344,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
             NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
             if (isMemoryBlockValid(nativeMemoryData)) {
-                cacheRecordAccessor.disposeData(nativeMemoryData);
+                cacheRecordProcessor.disposeData(nativeMemoryData);
             }
         }
     }
@@ -297,7 +364,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
                 // If new value is not in use, dispose its data since it is not used
                 if (!newValueInUse) {
-                    cacheRecordAccessor.disposeData(nativeMemoryData);
+                    cacheRecordProcessor.disposeData(nativeMemoryData);
                 }
             }
         }
@@ -306,7 +373,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
                 NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
                 if (isMemoryBlockValid(nativeMemoryData)) {
-                    cacheRecordAccessor.disposeData(nativeMemoryData);
+                    cacheRecordProcessor.disposeData(nativeMemoryData);
                 }
             }
         } else {
@@ -327,7 +394,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             Data dataValue, boolean deleted) {
         // If record is deleted and if this record is valid, dispose it and its data
         if (deleted && isMemoryBlockValid(record)) {
-            cacheRecordAccessor.dispose(record);
+            cacheRecordProcessor.dispose(record);
         }
     }
 
@@ -355,7 +422,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         records.set(key, (HiDensityNativeMemoryCacheRecord) record);
         // If old record is valid, dispose it and its data
         if (isMemoryBlockValid(updatedRecord)) {
-            cacheRecordAccessor.dispose(updatedRecord);
+            cacheRecordProcessor.dispose(updatedRecord);
         }
     }
 
@@ -366,7 +433,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         // If removed record is valid, first get a heap based copy of it and dispose it
         if (isMemoryBlockValid(removedRecord)) {
             recordToReturn = toHeapCacheRecord(removedRecord);
-            cacheRecordAccessor.dispose(removedRecord);
+            cacheRecordProcessor.dispose(removedRecord);
         }
         return recordToReturn;
     }
@@ -376,7 +443,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             HiDensityNativeMemoryCacheRecord record) {
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -385,7 +452,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                               HiDensityNativeMemoryCacheRecord record, Throwable error) {
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -409,7 +476,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             Object oldValue, boolean isExpired, boolean isNewPut, boolean isSaveSucceed) {
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
     //CHECKSTYLE:ON
@@ -422,13 +489,13 @@ public class HiDensityNativeMemoryCacheRecordStore
         // If this record has been somehow saved, dispose it
         if (wouldBeNewPut && isMemoryBlockValid(record)) {
             if (!records.delete(key)) {
-                cacheRecordAccessor.dispose(record);
+                cacheRecordProcessor.dispose(record);
                 return;
             }
         }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -464,7 +531,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             // Dispose old value if exist
             if (record.getValueAddress() != NULL_PTR) {
-                cacheRecordAccessor.disposeValue(record);
+                cacheRecordProcessor.disposeValue(record);
             }
 
             // Assign new value to record
@@ -482,12 +549,12 @@ public class HiDensityNativeMemoryCacheRecordStore
             record.setTtlMillis((int) ttlMillis);
 
             // Put this record to queue for reusing later
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         } catch (NativeOutOfMemoryError e) {
             // If this record has been somehow saved, dispose it
             if (newPut && isMemoryBlockValid(record)) {
                 if (!records.delete(key)) {
-                    cacheRecordAccessor.dispose(record);
+                    cacheRecordProcessor.dispose(record);
                 }
             }
             throw e;
@@ -501,7 +568,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             boolean isExpired, boolean isSaveSucceed) {
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -511,13 +578,13 @@ public class HiDensityNativeMemoryCacheRecordStore
         // If this record has been somehow saved, dispose it
         if (isMemoryBlockValid(record)) {
             if (!records.delete(key)) {
-                cacheRecordAccessor.dispose(record);
+                cacheRecordProcessor.dispose(record);
                 return;
             }
         }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -533,12 +600,12 @@ public class HiDensityNativeMemoryCacheRecordStore
             boolean isExpired, boolean replaced) {
         // If record is valid and expired, dispose it
         if (isExpired && isMemoryBlockValid(record)) {
-            cacheRecordAccessor.dispose(record);
+            cacheRecordProcessor.dispose(record);
             return;
         }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
     //CHECKSTYLE:ON
@@ -550,12 +617,12 @@ public class HiDensityNativeMemoryCacheRecordStore
             boolean isExpired, boolean replaced, Throwable error) {
         // If record is valid and expired, dispose it
         if (isExpired && isMemoryBlockValid(record)) {
-            cacheRecordAccessor.dispose(record);
+            cacheRecordProcessor.dispose(record);
             return;
         }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
     //CHECKSTYLE:ON
@@ -581,7 +648,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         onEntryInvalidated(key, caller);
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
@@ -591,12 +658,12 @@ public class HiDensityNativeMemoryCacheRecordStore
                                  Throwable error) {
         // If record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {
-            cacheRecordAccessor.dispose(record);
+            cacheRecordProcessor.dispose(record);
             return;
         }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
-            cacheRecordAccessor.enqueueRecord(record);
+            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 

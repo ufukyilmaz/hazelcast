@@ -60,21 +60,38 @@ public interface HiDensityCacheRecordAccessor<R extends HiDensityCacheRecord>
      * Disposes (frees) the value of the specified {@link HiDensityCacheRecord}.
      *
      * @param record The {@link HiDensityCacheRecord} whose value will be disposed
+     * @return size of disposed {@link HiDensityCacheRecord}
      */
-    void disposeValue(R record);
+    long disposeValue(R record);
 
     /**
-     * Disposes (frees) the data of the specified {@link HiDensityCacheRecord}.
+     * Disposes (frees) the specified {@link NativeMemoryData}.
      *
-     * @param data The {@link com.hazelcast.nio.serialization.NativeMemoryData} whose value will be disposed
+     * @param data The {@link NativeMemoryData} whose value will be disposed
+     * @return size of disposed data
      */
-    void disposeData(NativeMemoryData data);
+    long disposeData(NativeMemoryData data);
 
     /**
      * Disposes (frees) the data at the specified <code>address</code>.
      *
-     * @param address the address of the {@link com.hazelcast.nio.serialization.NativeMemoryData} whose value will be disposed
+     * @param address the address of the {@link NativeMemoryData} whose value will be disposed
+     * @return size of disposed data at given <code>address</code>
      */
-    void disposeData(long address);
+    long disposeData(long address);
+
+    /**
+     * Enqueues (caches) the specified {@link HiDensityCacheRecord} for later usages.
+     *
+     * @param record The {@link HiDensityCacheRecord} that will be enqueued
+     */
+    void enqueueRecord(R record);
+
+    /**
+     * Enqueues (caches) the specified {@link NativeMemoryData} for later usages.
+     *
+     * @param data The {@link NativeMemoryData} that will be enqueued
+     */
+    void enqueueData(NativeMemoryData data);
 
 }

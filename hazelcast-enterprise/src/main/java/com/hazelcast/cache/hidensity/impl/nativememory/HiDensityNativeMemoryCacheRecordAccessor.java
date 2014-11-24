@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordAccessor;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -60,19 +61,22 @@ public class HiDensityNativeMemoryCacheRecordAccessor
     }
 
     @Override
-    public void dispose(HiDensityNativeMemoryCacheRecord record) {
+    public long dispose(HiDensityNativeMemoryCacheRecord record) {
         if (record.address() <= HiDensityCacheRecordStore.NULL_PTR) {
             throw new IllegalArgumentException("Illegal memory address: " + record.address());
         }
-        disposeValue(record);
+        long size = 0L;
+        size += disposeValue(record);
         record.clear();
+        size += getSize(record);
         memoryManager.free(record.address(), record.size());
         recordQ.offer(record.reset(HiDensityCacheRecordStore.NULL_PTR));
+        return size;
     }
 
     @Override
-    public void dispose(long address) {
-        dispose(read(address));
+    public long dispose(long address) {
+        return dispose(read(address));
     }
 
     @Override
@@ -101,33 +105,53 @@ public class HiDensityNativeMemoryCacheRecordAccessor
     }
 
     @Override
-    public void disposeValue(HiDensityNativeMemoryCacheRecord record) {
+    public long disposeValue(HiDensityNativeMemoryCacheRecord record) {
         long valueAddress = record.getValueAddress();
+        long size = 0L;
         if (valueAddress != HiDensityCacheRecordStore.NULL_PTR) {
-            disposeData(valueAddress);
+            size = disposeData(valueAddress);
             record.setValueAddress(HiDensityCacheRecordStore.NULL_PTR);
         }
+        return size;
     }
 
     @Override
-    public void disposeData(NativeMemoryData value) {
+    public long disposeData(NativeMemoryData value) {
+        long size = getSize(value);
         ss.disposeData(value);
         dataQ.offer(value);
+        return size;
     }
 
     @Override
-    public void disposeData(long address) {
+    public long disposeData(long address) {
         NativeMemoryData data = readData(address);
+        long size = getSize(data);
         disposeData(data);
+        return size;
     }
 
+    @Override
     public void enqueueRecord(HiDensityNativeMemoryCacheRecord record) {
         recordQ.offer(record.reset(HiDensityCacheRecordStore.NULL_PTR));
     }
 
+    @Override
     public void enqueueData(NativeMemoryData data) {
         data.reset(HiDensityCacheRecordStore.NULL_PTR);
         dataQ.offer(data);
+    }
+
+    public int getSize(MemoryBlock memoryBlock) {
+        if (memoryBlock == null) {
+            return  0;
+        }
+        int size = memoryManager.getSize(memoryBlock.address());
+        if (size == MemoryManager.SIZE_INVALID) {
+            size = memoryBlock.size();
+        }
+
+        return size;
     }
 
 }

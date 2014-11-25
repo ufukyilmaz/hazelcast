@@ -86,7 +86,7 @@ final class GlobalPoolingMemoryManager
 
         if (!UnsafeHelper.UNSAFE.compareAndSwapLong(null, address, 0L, value)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
-                    + ", Size: " + size + ", Header: " + getSize(address));
+                    + ", Size: " + size + ", Header: " + getSizeInternal(address));
         }
     }
 
@@ -167,11 +167,15 @@ final class GlobalPoolingMemoryManager
         return allocations.contains(address - offset);
     }
 
-    @Override
-    protected int getSize(long address) {
+    protected int getSizeInternal(long address) {
         int size = UnsafeHelper.UNSAFE.getIntVolatile(null, address);
         size = Bits.clearBit(size, AVAILABLE_BIT);
         return size;
+    }
+
+    @Override
+    public int getSize(long address) {
+        return getSizeInternal(address - getHeaderSize());
     }
 
     @Override
@@ -186,7 +190,7 @@ final class GlobalPoolingMemoryManager
 
     @Override
     public long getPage(long address) {
-        int size = getSize(address);
+        int size = getSizeInternal(address);
         return getPage(address, size);
     }
 

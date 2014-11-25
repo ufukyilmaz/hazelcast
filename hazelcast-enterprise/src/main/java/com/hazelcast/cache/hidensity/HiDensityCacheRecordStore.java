@@ -48,12 +48,12 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     MemoryManager getMemoryManager();
 
     /**
-     * Gets the {@link HiDensityCacheRecordAccessor}
+     * Gets the {@link HiDensityCacheRecordProcessor}
      * which is used by this {@link HiDensityCacheRecordStore}.
      *
-     * @return the used Hi-Density cache record accessor.
+     * @return the used Hi-Density cache record processor.
      */
-    HiDensityCacheRecordAccessor<R> getCacheRecordAccessor();
+    HiDensityCacheRecordProcessor<R> getCacheRecordProcessor();
 
     /**
      * Puts the <code>value</code> with the specified <code>key</code> to this {@link HiDensityCacheRecordStore}.

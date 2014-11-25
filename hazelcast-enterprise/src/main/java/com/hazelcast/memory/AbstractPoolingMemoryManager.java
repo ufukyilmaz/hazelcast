@@ -143,8 +143,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
                 throw new AssertionError("Double free(): " + address);
             }
 
-            assert queue.getMemorySize() == getSize(address)
-                    : "Size mismatch -> header: " + getSize(address) + ", param: " + queue.getMemorySize();
+            assert queue.getMemorySize() == getSizeInternal(address)
+                    : "Size mismatch -> header: " + getSizeInternal(address) + ", param: " + queue.getMemorySize();
 
             memoryStats.addInternalFragmentation(size - queue.getMemorySize());
             markAvailable(address);
@@ -299,7 +299,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract boolean isValidAndAvailable(long address, int expectedSize);
 
-    protected abstract int getSize(long address);
+    protected abstract int getSizeInternal(long address);
 
     protected abstract int getOffset(long address);
 

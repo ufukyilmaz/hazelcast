@@ -7,7 +7,6 @@ import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecordSortArea;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
-import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -54,16 +53,6 @@ public final class HiDensityNativeMemoryCacheRecordMap
             cacheInfo.increaseEntryCount();
         }
         return added;
-    }
-
-    @Override
-    public HiDensityNativeMemoryCacheRecord put(Data key, MemoryBlock value) {
-        HiDensityNativeMemoryCacheRecord record = super.put(key, value);
-        // If there is no previous value with specified key, means that new entry is added
-        if (record == null) {
-            cacheInfo.increaseEntryCount();
-        }
-        return record;
     }
 
     @Override

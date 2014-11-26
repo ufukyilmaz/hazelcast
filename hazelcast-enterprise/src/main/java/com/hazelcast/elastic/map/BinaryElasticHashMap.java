@@ -202,7 +202,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     @Override
-    public V put(Data key, MemoryBlock value) {
+    public V put(Data key, V value) {
         ensureMemory();
         assert assigned < allocatedLength;
 

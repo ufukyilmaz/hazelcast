@@ -21,4 +21,12 @@ public interface HiDensityCacheRecordMap<R extends HiDensityCacheRecord>
      */
     <E> SlottableIterator<E> iterator(int slot);
 
+    /**
+     * Forcefully evict records as given <code>evictionPercentage</code>.
+     *
+     * @param evictionPercentage Percentage to determine how many records will be evicted
+     * @return evicted entry count
+     */
+    int forceEvict(int evictionPercentage);
+
 }

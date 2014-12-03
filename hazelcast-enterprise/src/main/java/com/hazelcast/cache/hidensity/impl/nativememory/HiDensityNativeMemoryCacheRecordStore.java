@@ -7,7 +7,6 @@ import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemoryPercentageCach
 import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemorySizeCacheMaxSizeChecker;
 import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemoryPercentageCacheMaxSizeChecker;
 import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemorySizeCacheMaxSizeChecker;
-import com.hazelcast.cache.hidensity.operation.CacheExpirationOperation;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
@@ -25,8 +24,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.Clock;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -38,11 +35,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<HiDensityNativeMemoryCacheRecord, HiDensityNativeMemoryCacheRecordMap>
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
-    private static final int DEFAULT_EXPIRATION_PERCENTAGE = 10;
-
     private HiDensityCacheInfo cacheInfo;
     private EnterpriseSerializationService serializationService;
-    private Operation expirationOperation;
     private MemoryManager memoryManager;
     private HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
     private HiDensityNativeMemoryCacheRecordProcessor cacheRecordProcessor;
@@ -62,11 +56,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         final CacheMaxSizeConfig.CacheMaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
         if (maxSizePolicy == null) {
             return null;
-        }
-
-        final CacheMaxSizeChecker maxSizeChecker = super.createCacheMaxSizeChecker(maxSizeConfig);
-        if (maxSizeChecker != null) {
-            return maxSizeChecker;
         }
 
         final long maxNativeMemory =
@@ -111,9 +100,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (cacheRecordProcessor == null) {
             cacheRecordProcessor = new HiDensityNativeMemoryCacheRecordProcessor(serializationService,
                     cacheRecordAccessor, memoryManager.unwrapMemoryAllocator(), cacheInfo);
-        }
-        if (expirationOperation == null) {
-            expirationOperation = createExpirationOperation(DEFAULT_EXPIRATION_PERCENTAGE);
         }
     }
 
@@ -327,6 +313,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (isMemoryBlockValid(data)) {
                 cacheRecordProcessor.disposeData(data);
             }
+
             if (retryOnOutOfMemoryError) {
                 return createRecordInternal(value, creationTime, expiryTime, true, false);
             } else {
@@ -703,21 +690,9 @@ public class HiDensityNativeMemoryCacheRecordStore
                 .sendInvalidationEvent(cacheConfig.getName(), key, source);
     }
 
-    protected Operation createExpirationOperation(int percentage) {
-        return
-            new CacheExpirationOperation(cacheConfig.getName(), percentage)
-                    .setNodeEngine(nodeEngine)
-                    .setPartitionId(partitionId)
-                    .setCallerUuid(nodeEngine.getLocalMember().getUuid())
-                    .setService(cacheService);
-    }
-
     @Override
-    protected void onExpiry() {
-        if (hasExpiringEntry) {
-            OperationService operationService = nodeEngine.getOperationService();
-            operationService.executeOperation(expirationOperation);
-        }
+    public int forceEvict() {
+        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE);
     }
 
 }

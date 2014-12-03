@@ -1,6 +1,7 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
+import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.client.CacheInvalidationListener;
 import com.hazelcast.cache.hidensity.client.CacheInvalidationMessage;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
@@ -195,8 +196,8 @@ public class EnterpriseCacheService extends CacheService {
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
                 ICacheRecordStore cache = getCacheRecordStore(name, partitionId);
-                if (cache != null) {
-                    evicted += cache.forceEvict();
+                if (cache instanceof HiDensityCacheRecordStore) {
+                    evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
                 }
             }
         }

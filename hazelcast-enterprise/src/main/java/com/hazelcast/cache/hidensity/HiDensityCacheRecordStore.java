@@ -28,6 +28,11 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
         extends ICacheRecordStore {
 
     /**
+     * Constant value for default forced eviction percentage
+     */
+    int DEFAULT_FORCED_EVICT_PERCENTAGE = 20;
+
+    /**
      * Constant value for representing the empty address
      */
     long NULL_PTR = MemoryManager.NULL_ADDRESS;
@@ -135,5 +140,12 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return the slottable iterator for specified <code>slot</code>
      */
     <E> SlottableIterator<E> iterator(int slot);
+
+    /**
+     * Forcefully evict records.
+     *
+     * @return evicted entry count
+     */
+    int forceEvict();
 
 }

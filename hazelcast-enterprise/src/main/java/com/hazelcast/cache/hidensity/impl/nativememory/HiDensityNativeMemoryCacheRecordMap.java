@@ -8,7 +8,6 @@ import com.hazelcast.cache.impl.eviction.Evictable;
 import com.hazelcast.cache.impl.eviction.EvictionCandidate;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
-import com.hazelcast.memory.MemoryStatsSupport;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -188,6 +187,9 @@ public final class HiDensityNativeMemoryCacheRecordMap
     }
     //CHECKSTYLE:ON
 
+    /**
+     * Sampling entry that can be evictable and also it is an eviction candidate.
+     */
     public class EvictableSamplingEntry extends SamplingEntry implements EvictionCandidate {
 
         public EvictableSamplingEntry(final int slot) {

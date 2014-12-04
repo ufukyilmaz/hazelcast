@@ -102,8 +102,8 @@ public class SampleableElasticHashMapTest  extends HazelcastTestSupport {
         int sampleCount = 0;
         Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
         for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
-
-            map.put(sample.getKey(), sample.getValue());
+            // Because of maven compile error, explicit "SimpleNativeMemoryData" casting was added
+            map.put(sample.getKey(), (SimpleNativeMemoryData) sample.getValue());
             sampleCount++;
         }
         // Sure that there is enough sample as we expected

@@ -51,11 +51,12 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected CacheMaxSizeChecker createCacheMaxSizeChecker(CacheMaxSizeConfig maxSizeConfig) {
         if (maxSizeConfig == null) {
-            return null;
+            throw new IllegalArgumentException("Max-Size config cannot be null");
         }
+
         final CacheMaxSizeConfig.CacheMaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
         if (maxSizePolicy == null) {
-            return null;
+            throw new IllegalArgumentException("Max-Size policy cannot be null");
         }
 
         final long maxNativeMemory =

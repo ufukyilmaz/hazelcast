@@ -1,27 +1,24 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.Node;
-import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.nio.serialization.NativeMemoryDataUtil;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -38,20 +35,6 @@ import static org.junit.Assert.assertNotNull;
 @Category(QuickTest.class)
 public class SampleableElasticHashMapTest  extends HazelcastTestSupport {
 
-    private HazelcastInstance instance;
-
-    @Before
-    public void setup() {
-        instance = createHazelcastInstance(createConfig());
-    }
-
-    private Config createConfig() {
-        Config config = new Config();
-        config.setNativeMemoryConfig(getMemoryConfig());
-        config.setSerializationConfig(getSerializationConfig());
-        return config;
-    }
-
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
         return
@@ -67,15 +50,26 @@ public class SampleableElasticHashMapTest  extends HazelcastTestSupport {
         return serializationConfig;
     }
 
+    private EnterpriseSerializationService getSerializationService() {
+        NativeMemoryConfig memoryConfig = getMemoryConfig();
+        SerializationConfig serializationConfig = getSerializationConfig();
+        int blockSize = memoryConfig.getMinBlockSize();
+        int pageSize = memoryConfig.getPageSize();
+        float metadataSpace = memoryConfig.getMetadataSpacePercentage();
+        MemoryManager memoryManager =
+                new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        return new EnterpriseSerializationServiceBuilder()
+                        .setConfig(serializationConfig)
+                        .setMemoryManager(memoryManager)
+                    .build();
+    }
+
     @Test
     public void samplesSuccessfullyRetrieved() {
         final int ENTRY_COUNT = 100;
         final int SAMPLE_COUNT = 15;
 
-        Node node = TestUtil.getNode(instance);
-
-        EnterpriseSerializationService serializationService =
-                (EnterpriseSerializationService) node.getSerializationService();
+        EnterpriseSerializationService serializationService = getSerializationService();
         MemoryManager memoryManager = serializationService.getMemoryManager();
         SimpleNativeMemoryDataAccessor memoryBlockAccessor =
                 new SimpleNativeMemoryDataAccessor(serializationService);

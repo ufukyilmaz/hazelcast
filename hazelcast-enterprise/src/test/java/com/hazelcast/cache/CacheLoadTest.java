@@ -70,11 +70,10 @@ public class CacheLoadTest extends AbstractCacheTest {
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().addMember("127.0.0.1").setEnabled(true);
 
-        config.setNativeMemoryConfig(
-                new NativeMemoryConfig()
-                        .setEnabled(true)
-                        .setSize(totalSize)
-                        .setPageSize(1 << 20));
+        NativeMemoryConfig memoryConfig = super.getMemoryConfig();
+        memoryConfig.setSize(totalSize);
+
+        config.setNativeMemoryConfig(memoryConfig);
 
         config.setSerializationConfig(getSerializationConfig());
 
@@ -119,7 +118,7 @@ public class CacheLoadTest extends AbstractCacheTest {
                         } catch (Throwable e) {
                             e.printStackTrace();
                             error.set(e);
-                            //break;
+                            break;
                         }
                     }
                 }

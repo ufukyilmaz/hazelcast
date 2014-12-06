@@ -733,11 +733,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
-    private class MapEntry implements Map.Entry<Data, V> {
+    protected class MapEntry implements Map.Entry<Data, V> {
 
         private final int slot;
 
-        private MapEntry(final int slot) {
+        protected MapEntry(final int slot) {
             this.slot = slot;
         }
 

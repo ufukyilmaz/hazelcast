@@ -2,6 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.CacheMaxSizeConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
@@ -48,6 +49,10 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         CacheManager cacheManager = provider.getCacheManager();
         CacheConfig cacheConfig = new CacheConfig();
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        CacheMaxSizeConfig maxSizeConfig = new CacheMaxSizeConfig();
+        maxSizeConfig.setSize(90);
+        maxSizeConfig.setMaxSizePolicy(CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        cacheConfig.setMaxSizeConfig(maxSizeConfig);
         String cacheName = randomString();
         cache = cacheManager.createCache(cacheName, cacheConfig);
     }

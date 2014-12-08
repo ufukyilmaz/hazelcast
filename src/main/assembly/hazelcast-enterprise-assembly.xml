@@ -151,7 +151,7 @@
             <directory>${csharp.dir}/Html</directory>
             <outputDirectory>/clients/dotnet-client/docs/Html/</outputDirectory>
             <includes>
-                <include>*</include>
+                <include>**</include>
             </includes>
         </fileSet>
         <fileSet>

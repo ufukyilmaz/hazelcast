@@ -100,13 +100,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
         super.generateSessionId();
 
-        HazelcastSessionChangeValve hazelcastSessionChangeValve = new HazelcastSessionChangeValve(this);
-        getContainer().getPipeline().addValve(hazelcastSessionChangeValve);
-
-        if (isDeferredEnabled()) {
-            HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
-            getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
-        }
+        configureValves();
 
         HazelcastInstance instance;
         if (isClientOnly()) {
@@ -127,7 +121,7 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             if (contextPath == null || contextPath.equals("/") || contextPath.equals("")) {
                 mapName = "empty_session_replication";
             } else {
-                mapName = contextPath.substring(1, contextPath.length())  + "_session_replication";
+                mapName = contextPath.substring(1, contextPath.length()) + "_session_replication";
             }
             sessionMap = instance.getMap(mapName);
         } else {
@@ -166,6 +160,19 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
 
         log.info("HazelcastSessionManager started...");
 
+    }
+
+    private void configureValves() {
+
+        if (isSticky()) {
+            HazelcastSessionChangeValve hazelcastSessionChangeValve = new HazelcastSessionChangeValve(this);
+            getContainer().getPipeline().addValve(hazelcastSessionChangeValve);
+        }
+
+        if (isDeferredEnabled()) {
+            HazelcastSessionCommitValve hazelcastSessionCommitValve = new HazelcastSessionCommitValve(this);
+            getContainer().getPipeline().addValve(hazelcastSessionCommitValve);
+        }
     }
 
 
@@ -219,31 +226,37 @@ public class HazelcastSessionManager extends ManagerBase implements Lifecycle, P
             return null;
         }
 
-        if (sessions.containsKey(id)) {
+        if (!isSticky() || (isSticky() && !sessions.containsKey(id))) {
+
+            if (isSticky()) {
+                log.info("Sticky Session is currently enabled."
+                        + "Some failover occured so reading session from Hazelcast map:" + getMapName());
+            }
+
+            HazelcastSession hazelcastSession = sessionMap.get(id);
+            if (hazelcastSession == null) {
+                log.info("No Session found for:" + id);
+                return null;
+            }
+
+            hazelcastSession.access();
+            hazelcastSession.endAccess();
+
+            hazelcastSession.setSessionManager(this);
+
+            sessions.put(id, hazelcastSession);
+
+            // call remove method to trigger eviction Listener on each node to invalidate local sessions
+            sessionMap.remove(id);
+            sessionMap.put(id, hazelcastSession);
+
+
+            return hazelcastSession;
+
+        } else {
             return sessions.get(id);
         }
 
-        if (isSticky()) {
-            log.info("Sticky Session is currently enabled."
-                    + "Some failover occured so reading session from Hazelcast map:" + getMapName());
-        }
-
-        HazelcastSession hazelcastSession = sessionMap.get(id);
-        if (hazelcastSession == null) {
-            log.info("No Session found for:" + id);
-            return null;
-        }
-
-        hazelcastSession.setSessionManager(this);
-
-        sessions.put(id, hazelcastSession);
-
-        // call remove method to trigger eviction Listener on each node to invalidate local sessions
-        sessionMap.remove(id);
-        sessionMap.put(id, hazelcastSession);
-
-
-        return hazelcastSession;
     }
 
     public void commit(Session session) {

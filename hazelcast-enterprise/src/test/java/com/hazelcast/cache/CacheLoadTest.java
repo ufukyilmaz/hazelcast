@@ -84,7 +84,7 @@ public class CacheLoadTest extends AbstractCacheTest {
     protected CacheConfig createCacheConfig(String cacheName,
                                             InMemoryFormat inMemoryFormat) {
         CacheConfig cacheConfig = super.createCacheConfig(cacheName, inMemoryFormat);
-        cacheConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        cacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.LRU);
         return cacheConfig;
     }
 

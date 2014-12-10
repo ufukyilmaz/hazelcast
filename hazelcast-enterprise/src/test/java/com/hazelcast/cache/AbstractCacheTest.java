@@ -2,7 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.CacheMaxSizeConfig;
+import com.hazelcast.config.CacheEvictionConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -82,10 +82,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         cacheConfig.setName(cacheName);
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);
-        CacheMaxSizeConfig maxSizeConfig = new CacheMaxSizeConfig();
-        maxSizeConfig.setSize(90);
-        maxSizeConfig.setMaxSizePolicy(CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        cacheConfig.setMaxSizeConfig(maxSizeConfig);
+        CacheEvictionConfig evictionConfig = new CacheEvictionConfig();
+        evictionConfig.setSize(90);
+        evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }
 

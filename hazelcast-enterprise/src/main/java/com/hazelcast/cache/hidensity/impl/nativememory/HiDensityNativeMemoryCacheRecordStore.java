@@ -47,12 +47,28 @@ public class HiDensityNativeMemoryCacheRecordStore
         ensureInitialized();
     }
 
+    private boolean dontThrowExceptionForInvalidMaxSizePolicy() {
+        // By default this property is not exist.
+        // This property can be set to "true" for TCK tests for example.
+        // Because there is no max-size policy.
+        // For example: -DdontThrowExceptionWhenInvalidMaxSizePolicy=true
+        return
+            Boolean.parseBoolean(
+                System.getProperty(SYSTEM_PROPERTY_NAME_FOR_DONT_THROW_EXCEPTION_WHEN_INVALID_MAX_SIZE_POLICY,
+                        "false"));
+    }
+
     //CHECKSTYLE:OFF
     @Override
     protected CacheMaxSizeChecker createCacheMaxSizeChecker(int size,
             CacheEvictionConfig.CacheMaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
-            throw new IllegalArgumentException("Max-Size policy cannot be null");
+            if (dontThrowExceptionForInvalidMaxSizePolicy()) {
+                // Don't throw exception, just ignore max-size policy
+                return null;
+            } else {
+                throw new IllegalArgumentException("Max-Size policy cannot be null");
+            }
         }
 
         final long maxNativeMemory =
@@ -68,14 +84,19 @@ public class HiDensityNativeMemoryCacheRecordStore
             case FREE_NATIVE_MEMORY_PERCENTAGE:
                 return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
-                throw new IllegalArgumentException("Invalid max-size policy "
-                        + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                        + CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
-                        + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                        + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                        + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                        + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
-                        + " are supported.");
+                if (dontThrowExceptionForInvalidMaxSizePolicy()) {
+                    // Don't throw exception, just ignore max-size policy
+                    return null;
+                } else {
+                    throw new IllegalArgumentException("Invalid max-size policy "
+                            + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                            + CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
+                            + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                            + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                            + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                            + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                            + " are supported.");
+                }
         }
     }
     //CHECKSTYLE:ON

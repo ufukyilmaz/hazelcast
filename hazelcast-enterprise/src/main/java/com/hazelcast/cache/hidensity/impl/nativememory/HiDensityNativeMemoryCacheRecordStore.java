@@ -12,7 +12,7 @@ import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.config.CacheMaxSizeConfig;
+import com.hazelcast.config.CacheEvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.memory.MemoryBlock;
@@ -49,12 +49,8 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     //CHECKSTYLE:OFF
     @Override
-    protected CacheMaxSizeChecker createCacheMaxSizeChecker(CacheMaxSizeConfig maxSizeConfig) {
-        if (maxSizeConfig == null) {
-            throw new IllegalArgumentException("Max-Size config cannot be null");
-        }
-
-        final CacheMaxSizeConfig.CacheMaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
+    protected CacheMaxSizeChecker createCacheMaxSizeChecker(int size,
+            CacheEvictionConfig.CacheMaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
             throw new IllegalArgumentException("Max-Size policy cannot be null");
         }
@@ -64,21 +60,21 @@ public class HiDensityNativeMemoryCacheRecordStore
                         .getMemoryManager().getMemoryStats().getMaxNativeMemory();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
-                return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, maxSizeConfig);
+                return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, size);
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, maxSizeConfig, maxNativeMemory);
+                return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, size, maxNativeMemory);
             case FREE_NATIVE_MEMORY_SIZE:
-                return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, maxSizeConfig);
+                return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, size);
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, maxSizeConfig, maxNativeMemory);
+                return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
                 throw new IllegalArgumentException("Invalid max-size policy "
                         + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                        + CacheMaxSizeConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
-                        + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                        + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                        + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                        + CacheMaxSizeConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                        + CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
+                        + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                        + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                        + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                        + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
                         + " are supported.");
         }
     }
@@ -444,12 +440,12 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private void onAccess(long now, HiDensityNativeMemoryCacheRecord record,
             long creationTime) {
-        if (evictionEnabled) {
-            if (evictionPolicy == EvictionPolicy.LRU) {
+        if (isEvictionEnabled()) {
+            if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
                 int diff = longDiff < Integer.MAX_VALUE ? (int) longDiff : Integer.MAX_VALUE;
                 record.setAccessTimeDiff(diff);
-            } else if (evictionPolicy == EvictionPolicy.LFU) {
+            } else if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LFU) {
                 record.incrementAccessHit();
             }
         }

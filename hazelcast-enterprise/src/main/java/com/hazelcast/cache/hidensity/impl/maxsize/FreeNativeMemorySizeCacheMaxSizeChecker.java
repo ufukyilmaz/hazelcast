@@ -1,7 +1,6 @@
 package com.hazelcast.cache.hidensity.impl.maxsize;
 
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
-import com.hazelcast.config.CacheMaxSizeConfig;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemoryUnit;
 
@@ -13,10 +12,9 @@ public class FreeNativeMemorySizeCacheMaxSizeChecker implements CacheMaxSizeChec
     private final MemoryManager memoryManager;
     private final long minFreeMemorySize;
 
-    public FreeNativeMemorySizeCacheMaxSizeChecker(MemoryManager memoryManager,
-            CacheMaxSizeConfig maxSizeConfig) {
+    public FreeNativeMemorySizeCacheMaxSizeChecker(MemoryManager memoryManager, int size) {
         this.memoryManager = memoryManager;
-        this.minFreeMemorySize = MemoryUnit.BYTES.convert(maxSizeConfig.getSize(), MemoryUnit.MEGABYTES);
+        this.minFreeMemorySize = MemoryUnit.BYTES.convert(size, MemoryUnit.MEGABYTES);
     }
 
     @Override

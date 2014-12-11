@@ -47,14 +47,14 @@ public class HiDensityNativeMemoryCacheRecordStore
         ensureInitialized();
     }
 
-    private boolean dontThrowExceptionForInvalidMaxSizePolicy() {
+    private boolean isInvalidMaxSizePolicyExceptionDisabled() {
         // By default this property is not exist.
-        // This property can be set to "true" for TCK tests for example.
+        // This property can be set to "true" for such as TCK tests.
         // Because there is no max-size policy.
-        // For example: -DdontThrowExceptionWhenInvalidMaxSizePolicy=true
+        // For example: -DdisableInvalidMaxSizePolicyException=true
         return
             Boolean.parseBoolean(
-                System.getProperty(SYSTEM_PROPERTY_NAME_FOR_DONT_THROW_EXCEPTION_WHEN_INVALID_MAX_SIZE_POLICY,
+                System.getProperty(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION,
                         "false"));
     }
 
@@ -63,7 +63,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected CacheMaxSizeChecker createCacheMaxSizeChecker(int size,
             CacheEvictionConfig.CacheMaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
-            if (dontThrowExceptionForInvalidMaxSizePolicy()) {
+            if (isInvalidMaxSizePolicyExceptionDisabled()) {
                 // Don't throw exception, just ignore max-size policy
                 return null;
             } else {
@@ -84,7 +84,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             case FREE_NATIVE_MEMORY_PERCENTAGE:
                 return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
-                if (dontThrowExceptionForInvalidMaxSizePolicy()) {
+                if (isInvalidMaxSizePolicyExceptionDisabled()) {
                     // Don't throw exception, just ignore max-size policy
                     return null;
                 } else {

@@ -41,8 +41,8 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * Constant for system property name for enabling/disabling throwing exception behaviour
      * when invalid max-size policy config
      */
-    String SYSTEM_PROPERTY_NAME_FOR_DONT_THROW_EXCEPTION_WHEN_INVALID_MAX_SIZE_POLICY =
-            "dontThrowExceptionWhenInvalidMaxSizePolicy";
+    String SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION =
+            "disableInvalidMaxSizePolicyException";
 
     /**
      * Gets the value of specified cache record.

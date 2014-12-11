@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.impl.maxsize;
 import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
-import com.hazelcast.config.CacheMaxSizeConfig;
+import com.hazelcast.config.CacheEvictionConfig;
 
 /**
  * @author sozal 20/11/14
@@ -14,12 +14,12 @@ public class UsedNativeMemoryPercentageCacheMaxSizeChecker implements CacheMaxSi
     private final long maxUsedMemorySize;
 
     public UsedNativeMemoryPercentageCacheMaxSizeChecker(HiDensityCacheInfo cacheInfo,
-            CacheMaxSizeConfig maxSizeConfig, long maxNativeMemory) {
+            int size, long maxNativeMemory) {
         this.cacheInfo = cacheInfo;
-        final int maxSizePercentage = maxSizeConfig.getSize();
+        final int maxSizePercentage = size;
         if (maxSizePercentage < 0 || maxSizePercentage > ICacheRecordStore.ONE_HUNDRED_PERCENT) {
             throw new IllegalArgumentException("\"maxSize\" can only be 0-100 for "
-                    + CacheMaxSizeConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
+                    + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
         }
         final double maxSizeRatio = (double) maxSizePercentage / (double) ICacheRecordStore.ONE_HUNDRED_PERCENT;
         this.maxUsedMemorySize = (long) (maxNativeMemory * maxSizeRatio);

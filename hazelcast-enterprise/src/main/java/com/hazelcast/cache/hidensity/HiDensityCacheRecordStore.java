@@ -38,6 +38,13 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     long NULL_PTR = MemoryManager.NULL_ADDRESS;
 
     /**
+     * Constant for system property name for enabling/disabling throwing exception behaviour
+     * when invalid max-size policy config
+     */
+    String SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION =
+            "disableInvalidMaxSizePolicyException";
+
+    /**
      * Gets the value of specified cache record.
      *
      * @param record The record whose value is extracted

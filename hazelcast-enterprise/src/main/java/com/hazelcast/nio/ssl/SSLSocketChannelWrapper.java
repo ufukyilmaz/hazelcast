@@ -1,16 +1,15 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.nio.tcp.DefaultSocketChannelWrapper;
-
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLSession;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
 
@@ -47,36 +46,24 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         if (handshakeCompleted) {
             return;
         }
-        if (DEBUG) {
-            log("Starting handshake...");
-        }
+        log("Starting handshake...");
         synchronized (lock) {
             if (handshakeCompleted) {
-                if (DEBUG) {
-                    log("Handshake already completed...");
-                }
+                log("Handshake already completed...");
                 return;
             }
             int counter = 0;
-            if (DEBUG) {
-                log("Begin handshake");
-            }
+            log("Begin handshake");
             sslEngine.beginHandshake();
             writeInternal(emptyBuffer);
             while (counter++ < 250 && sslEngineResult.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.FINISHED) {
-                if (DEBUG) {
-                    log("Handshake status: " + sslEngineResult.getHandshakeStatus());
-                }
+                log("Handshake status: " + sslEngineResult.getHandshakeStatus());
                 if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_UNWRAP) {
-                    if (DEBUG) {
-                        log("Begin UNWRAP");
-                    }
+                    log("Begin UNWRAP");
                     netInBuffer.clear();
                     while (socketChannel.read(netInBuffer) < 1) {
                         try {
-                            if (DEBUG) {
-                                log("Spinning on channel read...");
-                            }
+                            log("Spinning on channel read...");
                             Thread.sleep(50);
                         } catch (InterruptedException e) {
                             throw new IOException(e);
@@ -84,30 +71,20 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                     }
                     netInBuffer.flip();
                     unwrap(netInBuffer);
-                    if (DEBUG) {
-                        log("Done UNWRAP: " + sslEngineResult.getHandshakeStatus());
-                    }
+                    log("Done UNWRAP: " + sslEngineResult.getHandshakeStatus());
                     if (sslEngineResult.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.FINISHED) {
                         emptyBuffer.clear();
                         writeInternal(emptyBuffer);
-                        if (DEBUG) {
-                            log("Done WRAP after UNWRAP: " + sslEngineResult.getHandshakeStatus());
-                        }
+                        log("Done WRAP after UNWRAP: " + sslEngineResult.getHandshakeStatus());
                     }
                 } else if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_WRAP) {
-                    if (DEBUG) {
-                        log("Begin WRAP");
-                    }
+                    log("Begin WRAP");
                     emptyBuffer.clear();
                     writeInternal(emptyBuffer);
-                    if (DEBUG) {
-                        log("Done WRAP: " + sslEngineResult.getHandshakeStatus());
-                    }
+                    log("Done WRAP: " + sslEngineResult.getHandshakeStatus());
                 } else {
                     try {
-                        if (DEBUG) {
-                            log("Sleeping... Status: " + sslEngineResult.getHandshakeStatus());
-                        }
+                        log("Sleeping... Status: " + sslEngineResult.getHandshakeStatus());
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         throw new IOException(e);
@@ -118,9 +95,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 throw new SSLHandshakeException("SSL handshake failed after " + counter
                         + " trials! -> " + sslEngineResult.getHandshakeStatus());
             }
-            if (DEBUG) {
-                log("Handshake completed!");
-            }
+            log("Handshake completed!");
             applicationBuffer.clear();
             applicationBuffer.flip();
             handshakeCompleted = true;
@@ -134,30 +109,40 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     private ByteBuffer unwrap(ByteBuffer b) throws SSLException {
+        log(" ----------- unwrap enter ---------------- ");
         applicationBuffer.clear();
+        log("==============");
+        log("net buffer = " + netInBuffer);
+        log("application buffer = " + applicationBuffer);
+        log("==============");
+
         while (b.hasRemaining()) {
             synchronized (lock) {
                 sslEngineResult = sslEngine.unwrap(b, applicationBuffer);
             }
+            log("==============");
+            log("SSL Engine Status : " + sslEngineResult.getStatus());
+            log("net buffer  = " + netInBuffer);
+            log("application buffer = " + applicationBuffer);
+            log("==============");
             if (sslEngineResult.getStatus() == SSLEngineResult.Status.BUFFER_OVERFLOW) {
+                log(" ----------- unwrap exit ----------------");
                 return applicationBuffer;
             }
             if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.NEED_TASK) {
-                if (DEBUG) {
-                    log("Handshake NEED TASK");
-                }
+                log("Handshake NEED TASK");
                 Runnable task;
                 while ((task = sslEngine.getDelegatedTask()) != null) {
-                    if (DEBUG) {
-                        log("Running task: " + task);
-                    }
+                    log("Running task: " + task);
                     task.run();
                 }
             } else if (sslEngineResult.getHandshakeStatus() == SSLEngineResult.HandshakeStatus.FINISHED
                     || sslEngineResult.getStatus() == SSLEngineResult.Status.BUFFER_UNDERFLOW) {
+                log(" ----------- unwrap exit ----------------");
                 return applicationBuffer;
             }
         }
+        log(" ----------- unwrap exit ---------------- ");
         return applicationBuffer;
     }
 
@@ -184,20 +169,26 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     public int read(ByteBuffer output) throws IOException {
+        log("######  read enter #########");
+        log("net buffer = " + netInBuffer);
+        log("application buffer = " + applicationBuffer);
         if (!handshakeCompleted) {
             handshake();
         }
         int readBytesCount = 0;
         int limit;
         if (applicationBuffer.hasRemaining()) {
+            log("Read data from applicationBuffer");
             limit = Math.min(applicationBuffer.remaining(), output.remaining());
             for (int i = 0; i < limit; i++) {
                 output.put(applicationBuffer.get());
                 readBytesCount++;
             }
+            log("######  read exit #########");
             return readBytesCount;
         }
         if (netInBuffer.hasRemaining()) {
+            log("There are some data in the netInBuffer, try to unwrap more data ");
             unwrap(netInBuffer);
             applicationBuffer.flip();
             limit = Math.min(applicationBuffer.remaining(), output.remaining());
@@ -205,22 +196,22 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
                 output.put(applicationBuffer.get());
                 readBytesCount++;
             }
-            if (sslEngineResult.getStatus() != SSLEngineResult.Status.BUFFER_UNDERFLOW) {
-                netInBuffer.clear();
-                netInBuffer.flip();
-                return readBytesCount;
-            }
         }
         if (netInBuffer.hasRemaining()) {
+            log("There is some data in the netInBuffer, compacting the buffer");
             netInBuffer.compact();
         } else {
+            log("There is no data in the netInBuffer, so clear it for the next read");
             netInBuffer.clear();
         }
         if (socketChannel.read(netInBuffer) == -1) {
             netInBuffer.clear();
             netInBuffer.flip();
+            log("######  read exit #########");
             return -1;
         }
+
+        log("Try to unwrap and read again. ");
         netInBuffer.flip();
         unwrap(netInBuffer);
         applicationBuffer.flip();
@@ -229,6 +220,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
             output.put(applicationBuffer.get());
             readBytesCount++;
         }
+        log("######  read exit #########");
         return readBytesCount;
     }
 

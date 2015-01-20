@@ -165,6 +165,9 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     }
 
     private boolean nameMatches(String name, String pattern) {
+        if (name.equals(pattern)) {
+            return true;
+        }
         Set<String> patterns = Collections.singleton(pattern);
         return configPatternMatcher.matches(patterns, name) != null;
     }

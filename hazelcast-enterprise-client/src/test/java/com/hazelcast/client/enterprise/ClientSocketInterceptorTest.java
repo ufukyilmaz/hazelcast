@@ -69,6 +69,7 @@ public class ClientSocketInterceptorTest {
         assertEquals(0, mySocketInterceptor.getConnectFailureCount());
 
         assertTrue(myClientSocketInterceptor.getConnectCallCount() > 0);
+        assertTrue(myClientSocketInterceptor.getConnectCallCount() <= 2);
         assertEquals(0, myClientSocketInterceptor.getAcceptCallCount());
         assertEquals(0, myClientSocketInterceptor.getAcceptFailureCount());
         assertEquals(0, myClientSocketInterceptor.getConnectFailureCount());

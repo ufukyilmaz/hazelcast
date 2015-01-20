@@ -41,7 +41,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     // Principal permissions
     final ConcurrentMap<String, PrincipalPermissionsHolder> principalPermissions = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
-    ConfigPatternMatcher configPatternMatcher;
+    volatile ConfigPatternMatcher configPatternMatcher;
 
     public void configure(Config config, Properties properties) {
         logger.log(Level.FINEST, "Configuring and initializing policy.");

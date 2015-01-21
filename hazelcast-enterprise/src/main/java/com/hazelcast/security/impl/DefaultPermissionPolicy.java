@@ -1,5 +1,7 @@
 package com.hazelcast.security.impl;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigPatternMatcher;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.logging.ILogger;
@@ -17,6 +19,7 @@ import java.security.Permission;
 import java.security.PermissionCollection;
 import java.security.Principal;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,8 +41,12 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
     // Principal permissions
     final ConcurrentMap<String, PrincipalPermissionsHolder> principalPermissions = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
-    public void configure(SecurityConfig securityConfig, Properties properties) {
+    volatile ConfigPatternMatcher configPatternMatcher;
+
+    public void configure(Config config, Properties properties) {
         logger.log(Level.FINEST, "Configuring and initializing policy.");
+        this.configPatternMatcher = config.getConfigPatternMatcher();
+        SecurityConfig securityConfig = config.getSecurityConfig();
         final Set<PermissionConfig> permissionConfigs = securityConfig.getClientPermissionConfigs();
         for (PermissionConfig permCfg : permissionConfigs) {
             final ClusterPermission permission = createPermission(permCfg);
@@ -155,6 +162,14 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 }
             }
         }
+    }
+
+    private boolean nameMatches(String name, String pattern) {
+        if (name.equals(pattern)) {
+            return true;
+        }
+        Set<String> patterns = Collections.singleton(pattern);
+        return configPatternMatcher.matches(patterns, name) != null;
     }
 
     private class PrincipalKey {

@@ -79,10 +79,6 @@ public final class SecurityUtil {
 		}
 	}
 	
-	public static boolean nameMatches(final String name, final String pattern) {
-		return Config.nameMatches(name, pattern);
-    }
-	
 	public static boolean addressMatches(final String address, final String pattern) {
 		return AddressUtil.matchInterface(address, pattern);
 	}

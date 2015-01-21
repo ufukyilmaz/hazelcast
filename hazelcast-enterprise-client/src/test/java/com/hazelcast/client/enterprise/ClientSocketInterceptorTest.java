@@ -63,12 +63,13 @@ public class ClientSocketInterceptorTest {
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
         assertEquals(2, client.getCluster().getMembers().size());
 
-        assertEquals(3, mySocketInterceptor.getAcceptCallCount());
+        assertEquals(2, mySocketInterceptor.getAcceptCallCount());
         assertEquals(1, mySocketInterceptor.getConnectCallCount());
         assertEquals(0, mySocketInterceptor.getAcceptFailureCount());
         assertEquals(0, mySocketInterceptor.getConnectFailureCount());
 
-        assertTrue(myClientSocketInterceptor.getConnectCallCount() >= 2);
+        assertTrue(myClientSocketInterceptor.getConnectCallCount() > 0);
+        assertTrue(myClientSocketInterceptor.getConnectCallCount() <= 2);
         assertEquals(0, myClientSocketInterceptor.getAcceptCallCount());
         assertEquals(0, myClientSocketInterceptor.getAcceptFailureCount());
         assertEquals(0, myClientSocketInterceptor.getConnectFailureCount());

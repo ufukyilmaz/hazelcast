@@ -54,7 +54,7 @@ public class SecurityContextImpl implements SecurityContext {
             tmpPolicy = (IPermissionPolicy) createImplInstance(node.getConfigClassLoader(), policyConfig.getClassName());
         }
         policy = tmpPolicy;
-        policy.configure(securityConfig, policyConfig.getProperties());
+        policy.configure(node.config, policyConfig.getProperties());
 
         CredentialsFactoryConfig credentialsFactoryConfig = securityConfig.getMemberCredentialsConfig();
         if (credentialsFactoryConfig.getClassName() == null) {

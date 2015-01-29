@@ -24,7 +24,6 @@ import com.hazelcast.nio.UnsafeHelper;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
@@ -37,12 +36,7 @@ import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 /**
 * @author mdogan 06/16/13
 */
-final class MemoryBlockDataInput extends InputStream
-        implements EnterpriseBufferObjectDataInput, PortableDataInput {
-
-    private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
-
-    private ByteBuffer header;
+final class MemoryBlockDataInput extends InputStream implements EnterpriseBufferObjectDataInput {
 
     private MemoryBlock memory;
 
@@ -56,19 +50,11 @@ final class MemoryBlockDataInput extends InputStream
 
     private byte[] utfBuffer;
 
-    MemoryBlockDataInput(MemoryBlock memoryBlock, EnterpriseSerializationService serializationService) {
+    MemoryBlockDataInput(MemoryBlock memoryBlock, int offset, EnterpriseSerializationService serializationService) {
         memory = memoryBlock;
         size = memoryBlock.size();
         service = serializationService;
-    }
-
-    MemoryBlockDataInput(NativeMemoryData data, EnterpriseSerializationService serializationService) {
-        memory = data;
-        size = data.size();
-        pos = NativeMemoryData.HEADER_LENGTH;
-        service = serializationService;
-        byte[] headerData = data.getHeader();
-        header = headerData != null ? ByteBuffer.wrap(headerData).asReadOnlyBuffer().order(getByteOrder()) : null;
+        pos = offset;
     }
 
     public int read() throws IOException {
@@ -171,6 +157,22 @@ final class MemoryBlockDataInput extends InputStream
         }
     }
 
+    @Override
+    public double readDouble(ByteOrder byteOrder) throws IOException {
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            return Double.longBitsToDouble(readLong(byteOrder));
+        }
+        return readDouble();
+    }
+
+    @Override
+    public double readDouble(int position, ByteOrder byteOrder) throws IOException {
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            return Double.longBitsToDouble(readLong(position, byteOrder));
+        }
+        return readDouble(position);
+    }
+
     public float readFloat() throws IOException {
         final float f = readFloat(pos);
         pos += FLOAT_SIZE_IN_BYTES;
@@ -183,6 +185,22 @@ final class MemoryBlockDataInput extends InputStream
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public float readFloat(ByteOrder byteOrder) throws IOException {
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            return Float.intBitsToFloat(readInt(byteOrder));
+        }
+        return readFloat();
+    }
+
+    @Override
+    public float readFloat(int position, ByteOrder byteOrder) throws IOException {
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            return Float.intBitsToFloat(readInt(position, byteOrder));
+        }
+        return readFloat(position);
     }
 
     public int readInt() throws IOException {
@@ -199,6 +217,24 @@ final class MemoryBlockDataInput extends InputStream
         }
     }
 
+    @Override
+    public int readInt(ByteOrder byteOrder) throws IOException {
+        int v = readInt();
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Integer.reverseBytes(v);
+        }
+        return v;
+    }
+
+    @Override
+    public int readInt(int position, ByteOrder byteOrder) throws IOException {
+        int v = readInt(position);
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Integer.reverseBytes(v);
+        }
+        return v;
+    }
+
     public long readLong() throws IOException {
         final long l = readLong(pos);
         pos += LONG_SIZE_IN_BYTES;
@@ -213,6 +249,24 @@ final class MemoryBlockDataInput extends InputStream
         }
     }
 
+    @Override
+    public long readLong(ByteOrder byteOrder) throws IOException {
+        long v = readLong();
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Long.reverseBytes(v);
+        }
+        return v;
+    }
+
+    @Override
+    public long readLong(int position, ByteOrder byteOrder) throws IOException {
+        long v = readLong(position);
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Long.reverseBytes(v);
+        }
+        return v;
+    }
+
     public short readShort() throws IOException {
         short s = readShort(pos);
         pos += SHORT_SIZE_IN_BYTES;
@@ -225,6 +279,24 @@ final class MemoryBlockDataInput extends InputStream
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
+    }
+
+    @Override
+    public short readShort(ByteOrder byteOrder) throws IOException {
+        short v = readShort();
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Short.reverseBytes(v);
+        }
+        return v;
+    }
+
+    @Override
+    public short readShort(int position, ByteOrder byteOrder) throws IOException {
+        short v = readShort(position);
+        if (byteOrder != ByteOrder.nativeOrder()) {
+            v = Short.reverseBytes(v);
+        }
+        return v;
     }
 
     public byte[] readByteArray() throws IOException {
@@ -336,13 +408,13 @@ final class MemoryBlockDataInput extends InputStream
      * Bytes for this operation are read from the contained input stream.
      *
      * @return the next byte of this input stream, interpreted as an unsigned
-     *         8-bit number.
+     * 8-bit number.
      * @throws java.io.EOFException if this input stream has reached the end.
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedByte() throws IOException {
-        return readByte();
+        return readByte() & 0xFF;
     }
 
     /**
@@ -352,14 +424,14 @@ final class MemoryBlockDataInput extends InputStream
      * Bytes for this operation are read from the contained input stream.
      *
      * @return the next two bytes of this input stream, interpreted as an
-     *         unsigned 16-bit integer.
+     * unsigned 16-bit integer.
      * @throws java.io.EOFException if this input stream reaches the end before reading two
-     *                      bytes.
+     *                              bytes.
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedShort() throws IOException {
-        return readShort();
+        return readShort() & 0xffff;
     }
 
     @Deprecated
@@ -477,11 +549,6 @@ final class MemoryBlockDataInput extends InputStream
     @Override
     public ClassLoader getClassLoader() {
         return service.getClassLoader();
-    }
-
-    @Override
-    public ByteBuffer getHeaderBuffer() {
-        return header != null ? header : EMPTY_BUFFER;
     }
 
     @Override

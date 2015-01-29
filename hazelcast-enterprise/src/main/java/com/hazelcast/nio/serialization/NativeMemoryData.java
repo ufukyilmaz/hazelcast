@@ -17,7 +17,6 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.nio.Bits;
 import com.hazelcast.util.HashUtil;
 
 import java.nio.ByteOrder;
@@ -29,54 +28,28 @@ import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 /**
  * @author mdogan 12/10/13
  */
-public final class NativeMemoryData extends MemoryBlock implements MutableData {
+public final class NativeMemoryData extends MemoryBlock implements Data {
 
-    // using sign bit as partition hash flag
-    static final int PARTITION_HASH_BIT = Integer.SIZE - 1;
-    // using highest bit as header flag
-    static final int HEADER_BIT = Integer.SIZE - 2;
+    static final int DATA_SIZE_OFFSET = 0;
+    static final int TYPE_OFFSET = 4;
+    // we can store this bit in sign-bit of data-size
+    // for the sake of simplicity and make structure same as DefaultData
+    // we will use a byte to store partition_hash bit
+    static final int PARTITION_HASH_BIT_OFFSET = 8;
+    static final int DATA_OFFSET = 9;
 
-    static final int TYPE_OFFSET = 0;
-    static final int DATA_SIZE_OFFSET = 4;
-    static final int DATA_OFFSET = 8;
-
-    static final int HEADER_LENGTH = DATA_OFFSET;
-
-    // max allowed data size is 1GB
-    private static final int MAX_DATA_SIZE = 1 << (Integer.SIZE - 2);
+    private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 
     public NativeMemoryData() {
     }
 
     public NativeMemoryData(long address, int size) {
-        super(address, checkDataSize(size));
+        super(address, size);
     }
 
-    private static int checkDataSize(int size) {
-        assert Bits.clearBit(Bits.clearBit(size, PARTITION_HASH_BIT), HEADER_BIT) <= MAX_DATA_SIZE;
-        return size;
-    }
-
-    void setDataSize(int size) {
-        checkDataSize(size);
-        writeInt(DATA_SIZE_OFFSET, size);
-    }
-
-    private void setBytes(byte[] buffer, int offset, int size) {
-        setDataSize(size);
-        if (size > 0) {
-            if (buffer == null) {
-                throw new IllegalArgumentException("Buffer is required!");
-            }
-            if (buffer.length < offset + size) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
-            copyFrom(DATA_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET + offset, size);
-        }
-    }
-
-    private void getBytes(byte[] buffer, int offset, int length) {
-        copyTo(DATA_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET + offset, length);
+    @Override
+    public int totalSize() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -84,118 +57,31 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
         if (address == 0L) {
             return 0;
         }
-        int dataSize = readInt(DATA_SIZE_OFFSET);
-        dataSize = Bits.clearBit(dataSize, PARTITION_HASH_BIT);
-        dataSize = Bits.clearBit(dataSize, HEADER_BIT);
-        return dataSize;
+        return readInt(DATA_SIZE_OFFSET);
     }
 
     @Override
     public int getPartitionHash() {
-        int dataSize = readInt(DATA_SIZE_OFFSET);
-        boolean hasPartitionHash = Bits.isBitSet(dataSize, PARTITION_HASH_BIT);
-        if (hasPartitionHash) {
-            dataSize = Bits.clearBit(dataSize, PARTITION_HASH_BIT);
-            dataSize = Bits.clearBit(dataSize, HEADER_BIT);
-            return readInt(DATA_OFFSET + dataSize);
+        if (hasPartitionHash()) {
+            int dataSize = readInt(DATA_SIZE_OFFSET);
+            int hash = readInt(DATA_OFFSET + dataSize - INT_SIZE_IN_BYTES);
+            return BIG_ENDIAN ? hash : Integer.reverseBytes(hash);
         }
         return hashCode();
     }
 
     @Override
-    public void setPartitionHash(int partitionHash) {
-        int current = readInt(DATA_SIZE_OFFSET);
-        int dataSize = Bits.clearBit(current, PARTITION_HASH_BIT);
-        dataSize = Bits.clearBit(dataSize, HEADER_BIT);
-
-        if (partitionHash != 0) {
-            setDataSize(Bits.setBit(current, PARTITION_HASH_BIT));
-            writeInt(dataSize + DATA_OFFSET, partitionHash);
-        } else {
-            setDataSize(Bits.clearBit(current, PARTITION_HASH_BIT));
-        }
-    }
-
-    @Override
     public boolean hasPartitionHash() {
-        int dataSize = readInt(DATA_SIZE_OFFSET);
-        return Bits.isBitSet(dataSize, PARTITION_HASH_BIT);
-    }
-
-    @Override
-    public void setHeader(byte[] header) {
-        int current = readInt(DATA_SIZE_OFFSET);
-        int dataSize = Bits.clearBit(current, PARTITION_HASH_BIT);
-        dataSize = Bits.clearBit(dataSize, HEADER_BIT);
-
-        if (header != null && header.length > 0) {
-            int offset = dataSize + DATA_OFFSET;
-            if (Bits.isBitSet(current, PARTITION_HASH_BIT)) {
-                offset += INT_SIZE_IN_BYTES;
-            }
-            setDataSize(Bits.setBit(current, HEADER_BIT));
-            writeInt(offset, header.length);
-            copyFrom(offset + INT_SIZE_IN_BYTES, header, BYTE_ARRAY_BASE_OFFSET, header.length);
-        } else {
-            setDataSize(Bits.clearBit(current, HEADER_BIT));
-        }
+        return readByte(PARTITION_HASH_BIT_OFFSET) != 0;
     }
 
     @Override
     public byte[] getData() {
-        byte[] buffer = new byte[dataSize()];
-        getBytes(buffer, 0, buffer.length);
+        int dataSize = dataSize();
+        int len = dataSize + DefaultData.DATA_OFFSET;
+        byte[] buffer = new byte[len];
+        copyTo(TYPE_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET, len);
         return buffer;
-    }
-
-    @Override
-    public byte[] getHeader() {
-        int offset = headerOffset();
-        if (offset > 0) {
-            int headerSize = readInt(offset);
-            byte[] header = new byte[headerSize];
-            copyTo(offset + INT_SIZE_IN_BYTES, header, BYTE_ARRAY_BASE_OFFSET, headerSize);
-            return header;
-        }
-        return null;
-    }
-
-    @Override
-    public int headerSize() {
-        int offset = headerOffset();
-        return offset > 0 ? readInt(offset) : 0;
-    }
-
-    @Override
-    public int readIntHeader(int offset, ByteOrder order) {
-        long headerOffset = headerOffset() + INT_SIZE_IN_BYTES;
-        return readInt(headerOffset + offset, order);
-    }
-
-//    @Override
-//    public long readLongHeader(int offset, ByteOrder order) {
-//        long headerOffset = headerOffset() + LONG_SIZE_IN_BYTES;
-//        return readLong(headerOffset + offset, order);
-//    }
-
-    private int headerOffset() {
-        int current = readInt(DATA_SIZE_OFFSET);
-        if (Bits.isBitSet(current, HEADER_BIT)) {
-            int dataSize = Bits.clearBit(current, PARTITION_HASH_BIT);
-            dataSize = Bits.clearBit(dataSize, HEADER_BIT);
-
-            int offset = dataSize + DATA_OFFSET;
-            if (Bits.isBitSet(current, PARTITION_HASH_BIT)) {
-                offset += INT_SIZE_IN_BYTES;
-            }
-            return offset;
-        }
-        return -1;
-    }
-
-    @Override
-    public void setData(byte[] array) {
-        setBytes(array, 0, array != null ? array.length : 0);
     }
 
     @Override
@@ -203,12 +89,8 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
         if (address == 0L) {
             return SerializationConstants.CONSTANT_TYPE_NULL;
         }
-        return readInt(TYPE_OFFSET);
-    }
-
-    @Override
-    public void setType(int type) {
-        writeInt(TYPE_OFFSET, type);
+        int type = readInt(TYPE_OFFSET);
+        return BIG_ENDIAN ? type : Integer.reverseBytes(type);
     }
 
     @Override
@@ -239,20 +121,20 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
             return false;
         }
 
-        final int bufferSize = dataSize();
-        if (bufferSize != data.dataSize()) {
+        final int dataSize = dataSize();
+        if (dataSize != data.dataSize()) {
             return false;
         }
 
-        if (bufferSize == 0) {
+        if (dataSize == 0) {
             return true;
         }
 
         if (data instanceof NativeMemoryData) {
-            return NativeMemoryDataUtil.equals(address(), ((NativeMemoryData) data).address(), bufferSize);
+            return NativeMemoryDataUtil.equals(address(), ((NativeMemoryData) data).address(), dataSize);
         }
         byte[] bytes = data.getData();
-        return NativeMemoryDataUtil.equals(address(), bufferSize, bytes);
+        return NativeMemoryDataUtil.equals(address(), dataSize, bytes);
     }
     //CHECKSTYLE:ON
 
@@ -270,8 +152,8 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
         setAddress(address);
         if (address > 0L) {
             // tmp size to read data size;
-            setSize(INT_SIZE_IN_BYTES + HEADER_LENGTH);
-            int size = dataSize() + HEADER_LENGTH;
+            setSize(INT_SIZE_IN_BYTES + DATA_OFFSET);
+            int size = dataSize() + DATA_OFFSET;
             if (hasPartitionHash()) {
                 size += INT_SIZE_IN_BYTES;
             }

@@ -16,6 +16,7 @@
 
 package com.hazelcast.nio.serialization;
 
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 
@@ -25,14 +26,18 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
 
     @Override
     public EnterpriseBufferObjectDataInput createInput(Data data, SerializationService service) {
-        return data instanceof NativeMemoryData
-                ? new MemoryBlockDataInput((NativeMemoryData) data, (EnterpriseSerializationService) service)
-                : new EnterpriseUnsafeObjectDataInput(data, (EnterpriseSerializationService) service);
+        EnterpriseSerializationService serializationService = (EnterpriseSerializationService) service;
+        if (data instanceof NativeMemoryData) {
+            MemoryBlock memoryBlock = (NativeMemoryData) data;
+            return new MemoryBlockDataInput(memoryBlock,  NativeMemoryData.DATA_OFFSET, serializationService);
+        } else {
+            return new EnterpriseUnsafeObjectDataInput(data.getData(), DefaultData.DATA_OFFSET, serializationService);
+        }
     }
 
     @Override
     public EnterpriseBufferObjectDataInput createInput(byte[] buffer, SerializationService service) {
-        return new EnterpriseUnsafeObjectDataInput(buffer, (EnterpriseSerializationService) service);
+        return new EnterpriseUnsafeObjectDataInput(buffer, 0, (EnterpriseSerializationService) service);
     }
 
     @Override

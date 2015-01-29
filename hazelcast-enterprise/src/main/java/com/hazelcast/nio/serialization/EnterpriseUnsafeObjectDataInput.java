@@ -24,17 +24,12 @@ import java.io.EOFException;
 import java.io.IOException;
 
 final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput
-        implements EnterpriseBufferObjectDataInput, PortableDataInput {
+        implements EnterpriseBufferObjectDataInput {
 
     private final EnterpriseSerializationService enterpriseSerializationService;
 
-    EnterpriseUnsafeObjectDataInput(Data data, EnterpriseSerializationService service) {
-        super(data, service);
-        this.enterpriseSerializationService = service;
-    }
-
-    EnterpriseUnsafeObjectDataInput(byte[] buffer, EnterpriseSerializationService service) {
-        super(buffer, service);
+    EnterpriseUnsafeObjectDataInput(byte[] buffer, int offset, EnterpriseSerializationService service) {
+        super(buffer, offset, service);
         this.enterpriseSerializationService = service;
     }
 

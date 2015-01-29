@@ -16,7 +16,6 @@
 
 package com.hazelcast.nio.serialization;
 
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.HashUtil;
 import sun.misc.Unsafe;
@@ -54,10 +53,7 @@ public final class NativeMemoryDataUtil {
     }
 
     private static int readDataSize(long address) {
-        int bufferSize = UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.DATA_SIZE_OFFSET);
-        bufferSize = Bits.clearBit(bufferSize, NativeMemoryData.PARTITION_HASH_BIT);
-        bufferSize = Bits.clearBit(bufferSize, NativeMemoryData.HEADER_BIT);
-        return bufferSize;
+        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.DATA_SIZE_OFFSET);
     }
 
     public static boolean equals(long address1, long address2) {
@@ -123,14 +119,15 @@ public final class NativeMemoryDataUtil {
     }
 
     public static boolean equals(long address, final int bufferSize, byte[] bytes) {
-        if (address <= 0 || bytes == null || bytes.length == 0 || bufferSize != bytes.length) {
+        if (address <= 0 || bytes == null || bytes.length == 0
+                || bufferSize != bytes.length - DefaultData.DATA_OFFSET) {
             return false;
         }
         int bufferOffset = NativeMemoryData.DATA_OFFSET;
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < bufferSize; i++) {
             byte b = unsafe.getByte(address + bufferOffset + i);
-            if (b != bytes[i]) {
+            if (b != bytes[i + DefaultData.DATA_OFFSET]) {
                 return false;
             }
         }

@@ -5,24 +5,15 @@ import com.hazelcast.internal.storage.DataRef;
 public class DataRefImpl implements DataRef {
 
     private final int length;
-    private final int type;
     private final int[] chunks;
 
     private volatile boolean valid;
 
-    DataRefImpl(int type, int[] indexes, int length) {
-        this.type = type;
+    DataRefImpl(int[] indexes, int length) {
         this.chunks = indexes;
         this.length = length;
         this.valid = true; // volatile write
     }
-
-//    private DataRefImpl() {
-//        length = 0;
-//        type = SerializationConstants.CONSTANT_TYPE_DATA;
-//        chunks = null;
-//        classDefinition = null;
-//    }
 
     public boolean isEmpty() {
         return getChunkCount() == 0;
@@ -44,10 +35,6 @@ public class DataRefImpl implements DataRef {
 
     public int getChunk(int i) {
         return chunks[i];
-    }
-
-    public int getType() {
-        return type;
     }
 
     public boolean isValid() {

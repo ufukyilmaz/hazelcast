@@ -63,16 +63,20 @@ public class ClientSocketInterceptorTest {
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
         assertEquals(2, client.getCluster().getMembers().size());
 
-        assertEquals(2, mySocketInterceptor.getAcceptCallCount());
+        assertBetween("Accept call count should be 2 or 3", 2, 3, mySocketInterceptor.getAcceptCallCount());
         assertEquals(1, mySocketInterceptor.getConnectCallCount());
         assertEquals(0, mySocketInterceptor.getAcceptFailureCount());
         assertEquals(0, mySocketInterceptor.getConnectFailureCount());
 
-        assertTrue(myClientSocketInterceptor.getConnectCallCount() > 0);
-        assertTrue(myClientSocketInterceptor.getConnectCallCount() <= 2);
+        assertBetween("Client connect call count should be 1 or 2", 1, 2, myClientSocketInterceptor.getConnectCallCount());
         assertEquals(0, myClientSocketInterceptor.getAcceptCallCount());
         assertEquals(0, myClientSocketInterceptor.getAcceptFailureCount());
         assertEquals(0, myClientSocketInterceptor.getConnectFailureCount());
+    }
+
+    static void assertBetween(String message, int begin, int end, int value) {
+        assertTrue(message, value >= begin);
+        assertTrue(message, value <= end);
     }
 
 

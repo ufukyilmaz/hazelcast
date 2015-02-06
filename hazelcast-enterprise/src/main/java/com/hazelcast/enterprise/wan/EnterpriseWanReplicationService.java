@@ -19,6 +19,7 @@ package com.hazelcast.enterprise.wan;
 import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.ClassLoaderUtil;
@@ -36,6 +37,9 @@ import com.hazelcast.wan.WanReplicationService;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
+import static com.hazelcast.config.ExecutorConfig.DEFAULT_QUEUE_CAPACITY;
 
 /**
  * Enterprise implementation for WAN replication
@@ -128,9 +132,10 @@ public class EnterpriseWanReplicationService
         if (ex == null) {
             synchronized (executorMutex) {
                 if (executor == null) {
-                    executor = new StripedExecutor(node.getLogger(EnterpriseWanReplicationService.class),
-                            node.getThreadNamePrefix("wan"),
-                            node.threadGroup, ExecutorConfig.DEFAULT_POOL_SIZE, ExecutorConfig.DEFAULT_QUEUE_CAPACITY);
+                    HazelcastThreadGroup hazelcastThreadGroup = node.getHazelcastThreadGroup();
+                    String prefix = hazelcastThreadGroup.getThreadNamePrefix("wan");
+                    ThreadGroup threadGroup = hazelcastThreadGroup.getInternalThreadGroup();
+                    executor = new StripedExecutor(logger, prefix, threadGroup, DEFAULT_POOL_SIZE, DEFAULT_QUEUE_CAPACITY);
                 }
                 ex = executor;
             }

@@ -25,14 +25,13 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
+import java.io.IOException;
+import java.util.Properties;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
@@ -48,6 +47,21 @@ public class ClientSSLSocketTest {
     public void cleanup() throws Exception {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
+        Properties serverSslProps = TestKeyStoreUtil.createSslProperties();
+        Config cfg = new Config();
+        cfg.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
+        cfg.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(serverSslProps));
+        final HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
+        final HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(cfg);
+
+        ClientConfig config = new ClientConfig();
+        config.getNetworkConfig().addAddress("127.0.0.1");
+        final HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
     }
 
     @Test

@@ -203,7 +203,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
         @Override
         public Evictable getEvictable() {
-            return getValue();
+            return (Evictable) getValue();
         }
 
     }

@@ -142,7 +142,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return cacheRecordAccessor.readData(address);
+            return cacheRecordAccessor.readData(getValueAddress());
         }
     }
 
@@ -227,7 +227,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public String toString() {
-        if (address() >= HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() > HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

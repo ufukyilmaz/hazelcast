@@ -180,25 +180,23 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (!isMemoryBlockValid(record)) {
             return null;
         }
-        Object value = recordToValue(record);
-        if (value == null) {
-            return null;
-        } else if (value instanceof Data) {
-            return (Data) value;
-        } else {
-            return valueToData(value);
-        }
+        return record.getValue();
     }
 
     @Override
     protected HiDensityNativeMemoryCacheRecord dataToRecord(Data data) {
-        Object value = dataToValue(data);
-        if (value == null) {
-            return null;
-        } else if (value instanceof HiDensityNativeMemoryCacheRecord) {
-            return (HiDensityNativeMemoryCacheRecord) value;
+        if (data == null) {
+            return new HiDensityNativeMemoryCacheRecord(cacheRecordAccessor);
+        }
+        if (data instanceof NativeMemoryData) {
+            NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+            return new HiDensityNativeMemoryCacheRecord(cacheRecordAccessor,
+                                                        nativeMemoryData.address());
         } else {
-            return valueToRecord(value);
+            NativeMemoryData nativeMemoryData =
+                    (NativeMemoryData) cacheRecordProcessor.convertData(data, DataType.NATIVE);
+            return new HiDensityNativeMemoryCacheRecord(cacheRecordAccessor,
+                                                        nativeMemoryData.address());
         }
     }
 

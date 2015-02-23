@@ -13,10 +13,9 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.elasticmemory.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
-import com.hazelcast.enterprise.InvalidLicenseError;
 import com.hazelcast.enterprise.KG;
 import com.hazelcast.enterprise.License;
-import com.hazelcast.enterprise.TrialLicenseExpiredError;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -46,6 +45,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Level;
 
+import static com.hazelcast.map.impl.MapServiceConstructor.getDefaultMapServiceConstructor;
+
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
@@ -69,17 +70,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public void beforeStart(Node node) {
         this.node = node;
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
-        Date validUntil;
-        try {
-            logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
-            validUntil = validateLicense(node);
-        } catch (Exception e) {
-            throw new InvalidLicenseError();
-        }
-
-        if (license == null || validUntil == null || System.currentTimeMillis() > validUntil.getTime()) {
-            throw new TrialLicenseExpiredError();
-        }
+//        Date validUntil;
+//        try {
+//            logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
+//            validUntil = validateLicense(node);
+//        } catch (Exception e) {
+//            throw new InvalidLicenseError();
+//        }
+//
+//        if (license == null || validUntil == null || System.currentTimeMillis() > validUntil.getTime()) {
+//            throw new TrialLicenseExpiredError();
+//        }
 
         systemLogger = node.getLogger("com.hazelcast.system");
 
@@ -149,18 +150,18 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void afterStart(Node node) {
-        if (license == null) {
-            logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
-            node.shutdown(true);
-            return;
-        }
-        final int count = node.getClusterService().getSize();
-        if (count > license.nodes) {
-            logger.log(Level.SEVERE,
-                    "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: " + license.nodes
-                            + ", Current: " + count);
-            node.shutdown(true);
-        }
+//        if (license == null) {
+//            logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
+//            node.shutdown(true);
+//            return;
+//        }
+//        final int count = node.getClusterService().getSize();
+//        if (count > license.nodes) {
+//            logger.log(Level.SEVERE,
+//                    "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: " + license.nodes
+//                            + ", Current: " + count);
+//            node.shutdown(true);
+//        }
     }
 
     public License getLicense() {
@@ -325,6 +326,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return (T) new WanReplicationServiceImpl(node);
         } else if (ICacheService.class.isAssignableFrom(clazz)) {
             return (T) new EnterpriseCacheService();
+        } else if (MapService.class.isAssignableFrom(clazz)) {
+            return (T) getDefaultMapServiceConstructor().createNew(node.getNodeEngine());
         }
         throw new IllegalArgumentException("Unknown service class: " + clazz);
     }

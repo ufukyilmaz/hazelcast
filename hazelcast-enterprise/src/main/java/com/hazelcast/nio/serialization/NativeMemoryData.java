@@ -285,7 +285,7 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
     @Override
     public String toString() {
         if (address() > 0L) {
-            final StringBuilder sb = new StringBuilder("OffHeapBinary{");
+            final StringBuilder sb = new StringBuilder("NativeMemoryData{");
             sb.append("type=").append(getType());
             sb.append(", hashCode=").append(hashCode());
             sb.append(", partitionHash=").append(getPartitionHash());

@@ -125,10 +125,7 @@ public class HiDensityNativeMemoryCacheRecordAccessor
 
     @Override
     public long disposeData(long address) {
-        NativeMemoryData data = readData(address);
-        long size = getSize(data);
-        disposeData(data);
-        return size;
+        return disposeData(readData(address));
     }
 
     @Override

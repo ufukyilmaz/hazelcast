@@ -2,7 +2,6 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordProcessor;
-import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -17,17 +16,15 @@ public class HiDensityNativeMemoryCacheRecordProcessor
 
     private final EnterpriseSerializationService serializationService;
     private final HiDensityNativeMemoryCacheRecordAccessor memoryBlockAccessor;
-    private final MemoryAllocator malloc;
     private final MemoryManager memoryManager;
     private final HiDensityCacheInfo cacheInfo;
 
     public HiDensityNativeMemoryCacheRecordProcessor(EnterpriseSerializationService serializationService,
-            HiDensityNativeMemoryCacheRecordAccessor memoryBlockAccessor, MemoryAllocator malloc,
+            HiDensityNativeMemoryCacheRecordAccessor memoryBlockAccessor, MemoryManager memoryManager,
             HiDensityCacheInfo cacheInfo) {
         this.serializationService = serializationService;
         this.memoryBlockAccessor = memoryBlockAccessor;
-        this.malloc = malloc;
-        this.memoryManager = serializationService.getMemoryManager();
+        this.memoryManager = memoryManager;
         this.cacheInfo = cacheInfo;
     }
 
@@ -43,9 +40,7 @@ public class HiDensityNativeMemoryCacheRecordProcessor
 
     @Override
     public HiDensityNativeMemoryCacheRecord read(long address) {
-        HiDensityNativeMemoryCacheRecord record = memoryBlockAccessor.read(address);
-        cacheInfo.addUsedMemory(memoryBlockAccessor.getSize(record));
-        return record;
+        return memoryBlockAccessor.read(address);
     }
 
     @Override
@@ -69,9 +64,7 @@ public class HiDensityNativeMemoryCacheRecordProcessor
 
     @Override
     public NativeMemoryData readData(long valueAddress) {
-        NativeMemoryData data = memoryBlockAccessor.readData(valueAddress);
-        cacheInfo.addUsedMemory(memoryBlockAccessor.getSize(data));
-        return data;
+        return memoryBlockAccessor.readData(valueAddress);
     }
 
     @Override
@@ -140,15 +133,16 @@ public class HiDensityNativeMemoryCacheRecordProcessor
 
     @Override
     public long allocate(long size) {
-        long address = malloc.allocate(size);
-        cacheInfo.addUsedMemory(size);
+        long address = memoryManager.allocate(size);
+        cacheInfo.addUsedMemory(getSize(address, size));
         return address;
     }
 
     @Override
     public void free(long address, long size) {
-        malloc.free(address, size);
-        cacheInfo.removeUsedMemory(size);
+        long disposedSize = getSize(address, size);
+        memoryManager.free(address, size);
+        cacheInfo.removeUsedMemory(disposedSize);
     }
 
     @Override

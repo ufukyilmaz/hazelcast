@@ -116,8 +116,12 @@ public class HiDensityNativeMemoryCacheRecordStore
             cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         }
         if (cacheRecordProcessor == null) {
-            cacheRecordProcessor = new HiDensityNativeMemoryCacheRecordProcessor(serializationService,
-                    cacheRecordAccessor, memoryManager.unwrapMemoryAllocator(), cacheInfo);
+            cacheRecordProcessor =
+                    new HiDensityNativeMemoryCacheRecordProcessor(
+                            serializationService,
+                            cacheRecordAccessor,
+                            memoryManager,
+                            cacheInfo);
         }
     }
 
@@ -302,7 +306,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         long recordAddress = NULL_PTR;
 
         try {
-            recordAddress = memoryManager.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
+            recordAddress = cacheRecordProcessor.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
             record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
 

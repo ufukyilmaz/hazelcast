@@ -180,6 +180,22 @@ public class ClientSecurityTest {
         }
     }
 
+    @Test
+    public void testMapReadPermission_alreadyCreatedMap() {
+        final Config config = createConfig();
+        addPermission(config, PermissionType.MAP, "test", "dev")
+                .addAction(ActionConstants.ACTION_READ);
+        HazelcastInstance instance = Hazelcast.newHazelcastInstance(config);
+        instance.getMap("test").put("key", "value");
+        HazelcastInstance client = createHazelcastClient();
+        try {
+            IMap<Object, Object> map = client.getMap("test");
+            assertEquals("value", map.get("key"));
+        } finally {
+            client.shutdown();
+        }
+    }
+
     @Test(expected = AccessControlException.class)
     public void testLockPermissionFail() {
         final Config config = createConfig();

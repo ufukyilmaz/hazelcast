@@ -140,7 +140,6 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             }
         }
         onTearDown();
-        super.shutdownNodeFactory();
     }
 
 }

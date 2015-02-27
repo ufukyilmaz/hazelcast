@@ -90,12 +90,11 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     }
 
     protected NativeMemoryConfig getMemoryConfig() {
-        MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(128, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
                         .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                        .setSize(memorySize).setEnabled(true)
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+                        .setSize(memorySize).setEnabled(true);
     }
 
     protected SerializationConfig getSerializationConfig() {

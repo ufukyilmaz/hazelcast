@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +40,6 @@ public class CacheTest extends AbstractCacheTest {
         Config config = createConfig();
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
         instance = factory.newHazelcastInstance(config);
-        //factory.newHazelcastInstance(config);
     }
 
     @Override
@@ -86,8 +86,6 @@ public class CacheTest extends AbstractCacheTest {
 
         assertEquals("value3", cache.getAndReplace("key1", "value4"));
         assertEquals("value4", cache.get("key1"));
-
-        cache.destroy();
     }
 
     @Test
@@ -158,7 +156,6 @@ public class CacheTest extends AbstractCacheTest {
             }
         });
         assertEquals(0, cache.size());
-
 
         cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertTrueEventually(new AssertTask() {
@@ -252,6 +249,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testIteratorDuringInsertion() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
@@ -261,7 +259,7 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt();
                     try {
                         cache.putAsync(i, i);
@@ -284,12 +282,13 @@ public class CacheTest extends AbstractCacheTest {
         }
         assertTrue(k >= size);
 
-        thread.interrupt();
-        thread.join(10000);
+        stop.set(true);
+        thread.join();
     }
 
     @Test
     public void testIteratorDuringUpdate() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         final int size = 1111;
         for (int i = 0; i < size; i++) {
@@ -299,7 +298,7 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
                         cache.putAsync(i, -i);
@@ -322,12 +321,13 @@ public class CacheTest extends AbstractCacheTest {
         }
         assertEquals(size, k);
 
-        thread.interrupt();
-        thread.join(10000);
+        stop.set(true);
+        thread.join();
     }
 
     @Test
     public void testIteratorDuringRemoval() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         final int size = 2222;
         for (int i = 0; i < size; i++) {
@@ -337,7 +337,7 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
                         cache.removeAsync(i);
@@ -362,7 +362,8 @@ public class CacheTest extends AbstractCacheTest {
         }
         assertTrue(k <= size);
 
-        thread.interrupt();
-        thread.join(10000);
+        stop.set(true);
+        thread.join();
     }
+
 }

@@ -138,6 +138,10 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
             for (String name : cacheNames) {
                 cacheManager.destroyCache(name);
             }
+            cacheManager.close();
+        }
+        if (cachingProvider != null) {
+            cachingProvider.close();
         }
         onTearDown();
     }

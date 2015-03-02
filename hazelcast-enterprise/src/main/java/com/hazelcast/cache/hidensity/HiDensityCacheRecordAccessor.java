@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity;
 
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
@@ -93,5 +94,23 @@ public interface HiDensityCacheRecordAccessor<R extends HiDensityCacheRecord>
      * @param data The {@link NativeMemoryData} that will be enqueued
      */
     void enqueueData(NativeMemoryData data);
+
+    /**
+     * Gets the allocated memory size for given <code>address</code>.
+     *
+     * @param address       the address whose allocated memory size will be calculated
+     * @param expectedSize  the expected memory size for given <code>address</code>
+     *                      if it is not associated with any existing memory managers
+     * @return the allocated memory size for given <code>address</code>
+     */
+    long getSize(long address, long expectedSize);
+
+    /**
+     * Gets the allocated memory size for given <code>memoryBlock</code>.
+     *
+     * @param memoryBlock the {@link MemoryBlock} whose allocated memory size will be calculated
+     * @return the allocated memory size for given <code>memoryBlock</code>
+     */
+    long getSize(MemoryBlock memoryBlock);
 
 }

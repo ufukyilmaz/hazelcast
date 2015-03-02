@@ -139,7 +139,17 @@ public class HiDensityNativeMemoryCacheRecordAccessor
         dataQ.offer(data);
     }
 
-    public int getSize(MemoryBlock memoryBlock) {
+    @Override
+    public long getSize(long address, long expectedSize) {
+        long size = memoryManager.getSize(address);
+        if (size == MemoryManager.SIZE_INVALID) {
+            size = expectedSize;
+        }
+        return size;
+    }
+
+    @Override
+    public long getSize(MemoryBlock memoryBlock) {
         if (memoryBlock == null) {
             return  0;
         }
@@ -147,7 +157,6 @@ public class HiDensityNativeMemoryCacheRecordAccessor
         if (size == MemoryManager.SIZE_INVALID) {
             size = memoryBlock.size();
         }
-
         return size;
     }
 

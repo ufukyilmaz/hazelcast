@@ -84,8 +84,10 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param key       the key of the <code>value</code> to be owned
      * @param value     the value to be owned
      * @param ttlMillis the TTL value in milliseconds for the owned value
+     * @return <code>true</code> if the <code>value</code> has been added as new record,
+     * otherwise (in case of update) <code>false</code>
      */
-    void own(Data key, Object value, long ttlMillis);
+    boolean own(Data key, Object value, long ttlMillis);
 
     /**
      * Puts the <code>value</code> with the specified <code>key</code>

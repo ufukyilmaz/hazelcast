@@ -74,8 +74,10 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @param key          the key of the <code>value</code> to be put
      * @param value        the value to be put
      * @param expiryPolicy expiry policy of the record
+     * @return <code>true</code> if the <code>value</code> has been added as new record,
+     * otherwise (in case of update) <code>false</code>
      */
-    void putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
+    boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
 
     /**
      * Owns and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>

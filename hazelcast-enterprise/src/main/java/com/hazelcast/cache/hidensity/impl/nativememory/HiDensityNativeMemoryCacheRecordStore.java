@@ -505,9 +505,9 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
+    public boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
-        own(key, value, ttl);
+        return own(key, value, ttl);
     }
 
     @Override

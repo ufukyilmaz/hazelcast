@@ -1,6 +1,6 @@
 package com.hazelcast.client.security;
 
-import com.hazelcast.collection.list.ListService;
+import com.hazelcast.collection.impl.list.ListService;
 import com.hazelcast.core.IList;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import org.junit.Test;

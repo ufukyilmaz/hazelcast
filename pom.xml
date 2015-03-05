@@ -220,7 +220,7 @@
             <id>test-coverage</id>
             <properties>
                 <argLine>
-                    -Xms128m -Xmx1G -XX:MaxPermSize=128M
+                    -Xms128m -Xmx1G -XX:MaxPermSize=1024M
                     -Dhazelcast.version.check.enabled=false
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none

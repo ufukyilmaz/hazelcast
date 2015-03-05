@@ -271,19 +271,21 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            int value = e.getValue();
-            assertEquals(key, value);
-            k++;
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                int value = e.getValue();
+                assertEquals(key, value);
+                k++;
+            }
+            assertTrue(k >= size);
+        } finally {
+            stop.set(true);
+            thread.join();
         }
-        assertTrue(k >= size);
-
-        stop.set(true);
-        thread.join();
     }
 
     @Test
@@ -310,19 +312,21 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            int value = e.getValue();
-            assertTrue("Key: " + key + ", Value: " + value, key == Math.abs(value));
-            k++;
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                int value = e.getValue();
+                assertTrue("Key: " + key + ", Value: " + value, key == Math.abs(value));
+                k++;
+            }
+            assertEquals(size, k);
+        } finally {
+            stop.set(true);
+            thread.join();
         }
-        assertEquals(size, k);
-
-        stop.set(true);
-        thread.join();
     }
 
     @Test
@@ -349,21 +353,23 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            Integer value = e.getValue();
-            if (value != null) {
-                assertEquals(key, value.intValue());
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                Integer value = e.getValue();
+                if (value != null) {
+                    assertEquals(key, value.intValue());
+                }
+                k++;
             }
-            k++;
+            assertTrue(k <= size);
+        } finally {
+            stop.set(true);
+            thread.join();
         }
-        assertTrue(k <= size);
-
-        stop.set(true);
-        thread.join();
     }
 
 }

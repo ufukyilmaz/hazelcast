@@ -12,7 +12,7 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
     public EnterpriseSerialJUnitClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
         if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
-            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "Hazelcast Enterprise|9999 Nodes|9999 Clients|HD Memory: 99999999GB|37V1IyuEKczAfiwJk5HlSmb15999qC1992d999190L929109p9Z5C99ZgQ99");
         }
     }
 }

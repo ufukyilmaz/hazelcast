@@ -30,6 +30,7 @@
 
         <mockito.all.version>1.9.5</mockito.all.version>
         <log4j.version>1.2.12</log4j.version>
+        <license.extractor.version>1.0.1</license.extractor.version>
     </properties>
 
     <licenses>
@@ -281,6 +282,11 @@
             <version>1.2.12</version>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast.marketing</groupId>
+            <artifactId>hazelcast-license-extractor</artifactId>
+            <version>${license.extractor.version}</version>
         </dependency>
     </dependencies>
 

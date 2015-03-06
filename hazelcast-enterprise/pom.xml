@@ -91,6 +91,7 @@
                                 <includes>
                                     <include>com.hazelcast:hazelcast</include>
                                     <include>com.hazelcast:hazelcast-enterprise</include>
+                                    <include>com.hazelcast.marketing:hazelcast-license-extractor</include>
                                 </includes>
                             </artifactSet>
                             <filters>

@@ -53,6 +53,11 @@
             <name>Maven2 Snapshot Repository</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </repository>
+        <repository>
+            <id>private-repository</id>
+            <name>Hazelcast Private Repository</name>
+            <url>https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
+        </repository>
     </repositories>
 
     <build>

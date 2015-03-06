@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNotNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class SampleableElasticHashMapTest  extends HazelcastTestSupport {
+public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
@@ -70,40 +70,44 @@ public class SampleableElasticHashMapTest  extends HazelcastTestSupport {
         final int SAMPLE_COUNT = 15;
 
         EnterpriseSerializationService serializationService = getSerializationService();
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-        SimpleNativeMemoryDataAccessor memoryBlockAccessor =
-                new SimpleNativeMemoryDataAccessor(serializationService);
+        try {
+            MemoryManager memoryManager = serializationService.getMemoryManager();
+            SimpleNativeMemoryDataAccessor memoryBlockAccessor =
+                    new SimpleNativeMemoryDataAccessor(serializationService);
 
-        SampleableElasticHashMap<SimpleNativeMemoryData> sampleableElasticHashMap =
-                new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                        ENTRY_COUNT,
-                        serializationService,
-                        memoryBlockAccessor,
-                        memoryManager.unwrapMemoryAllocator());
+            SampleableElasticHashMap<SimpleNativeMemoryData> sampleableElasticHashMap =
+                    new SampleableElasticHashMap<SimpleNativeMemoryData>(
+                            ENTRY_COUNT,
+                            serializationService,
+                            memoryBlockAccessor,
+                            memoryManager.unwrapMemoryAllocator());
 
-        for (int i = 0; i < ENTRY_COUNT; i++) {
-            Data key = serializationService.toData(i);
-            NativeMemoryData value = serializationService.toData(i, DataType.NATIVE);
-            SimpleNativeMemoryData simpleNativeMemoryData = memoryBlockAccessor.newRecord();
-            simpleNativeMemoryData.setValue(value);
-            sampleableElasticHashMap.put(key, simpleNativeMemoryData);
+            for (int i = 0; i < ENTRY_COUNT; i++) {
+                Data key = serializationService.toData(i);
+                NativeMemoryData value = serializationService.toData(i, DataType.NATIVE);
+                SimpleNativeMemoryData simpleNativeMemoryData = memoryBlockAccessor.newRecord();
+                simpleNativeMemoryData.setValue(value);
+                sampleableElasticHashMap.put(key, simpleNativeMemoryData);
+            }
+
+            Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples =
+                    sampleableElasticHashMap.getRandomSamples(SAMPLE_COUNT);
+            assertNotNull(samples);
+
+            int sampleCount = 0;
+            Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
+            for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
+                // Because of maven compile error, explicit "SimpleNativeMemoryData" casting was added
+                map.put(sample.getKey(), (SimpleNativeMemoryData) sample.getValue());
+                sampleCount++;
+            }
+            // Sure that there is enough sample as we expected
+            assertEquals(SAMPLE_COUNT, sampleCount);
+            // Sure that all samples are different
+            assertEquals(SAMPLE_COUNT, map.size());
+        } finally {
+            serializationService.destroy();
         }
-
-        Iterable<SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry> samples =
-                sampleableElasticHashMap.getRandomSamples(SAMPLE_COUNT);
-        assertNotNull(samples);
-
-        int sampleCount = 0;
-        Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
-        for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
-            // Because of maven compile error, explicit "SimpleNativeMemoryData" casting was added
-            map.put(sample.getKey(), (SimpleNativeMemoryData) sample.getValue());
-            sampleCount++;
-        }
-        // Sure that there is enough sample as we expected
-        assertEquals(SAMPLE_COUNT, sampleCount);
-        // Sure that all samples are different
-        assertEquals(SAMPLE_COUNT, map.size());
     }
 
     class SimpleNativeMemoryData extends MemoryBlock {

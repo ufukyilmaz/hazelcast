@@ -13,10 +13,9 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.elasticmemory.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
-import com.hazelcast.enterprise.InvalidLicenseError;
-import com.hazelcast.enterprise.KG;
-import com.hazelcast.enterprise.License;
-import com.hazelcast.enterprise.TrialLicenseExpiredError;
+import com.hazelcast.license.domain.License;
+import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.license.extractor.LicenseExtractor;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -77,11 +76,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
             validUntil = validateLicense(node);
         } catch (Exception e) {
-            throw new InvalidLicenseError();
+            throw new InvalidLicenseException("Invalid license key! Please contact sales@hazelcast.com");
         }
 
         if (license == null || validUntil == null || System.currentTimeMillis() > validUntil.getTime()) {
-            throw new TrialLicenseExpiredError();
+            throw new InvalidLicenseException("Trial license has been expired! Please contact sales@hazelcast.com");
         }
 
         systemLogger = node.getLogger("com.hazelcast.system");
@@ -158,10 +157,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return;
         }
         final int count = node.getClusterService().getSize();
-        if (count > license.nodes) {
+        if (count > license.getAllowedMembers()) {
             logger.log(Level.SEVERE,
-                    "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: " + license.nodes
-                            + ", Current: " + count);
+                    "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
+                            + license.getAllowedMembers() + ", Current: " + count);
             node.shutdown(true);
         }
     }
@@ -312,13 +311,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
-        license = KG.ex(licenseKey != null ? licenseKey.toCharArray() : null);
+        license = LicenseExtractor.extractLicense(licenseKey != null ? licenseKey : null);
         Calendar cal = Calendar.getInstance();
-        cal.set(license.year, license.month, license.day, HOUR_OF_DAY, MINUTE, SECOND);
+        cal.setTime(license.getExpiryDate());
         validUntil = cal.getTime();
         logger.log(Level.INFO,
-                "Licensed type: " + (license.full ? "Full" : "Trial") + ", Valid until: " + validUntil + ", Max nodes: "
-                        + license.nodes);
+                "Licensed type: " + (license.getIsLicensed() ? "Full" : "Trial")
+                        + ", Valid until: " + validUntil + ", Max nodes: " + license.getAllowedMembers());
         return validUntil;
     }
 

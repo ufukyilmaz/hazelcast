@@ -4,7 +4,9 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.license.exception.InvalidLicenseException;
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
@@ -13,6 +15,13 @@ import java.util.Set;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest {
+
+    private static  final String ENTERPRISE_LICENSE = "Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214";
+    private static  final String EXPIRED_ENTERPRISE_LICENSE = "Hazelcast Enterprise|10 Nodes|10 Clients|HD Memory: 10GB|zIBRNEUbjfOJy6uTHlF10am160eP06v00G04npGY1001x0g11000030020L0";
+
+
+    @Rule
+    public ExpectedException expectedEx = ExpectedException.none();
 
     @BeforeClass
     @AfterClass
@@ -33,7 +42,7 @@ public class LicenseTest {
                 "        <name>dev</name>\n" +
                 "        <password>dev-pass</password>\n" +
                 "    </group>\n" +
-                "    <license-key>IEL9GHFPOMCAN20V280250I6U10N02</license-key>\n" +
+                "    <license-key>Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214</license-key>\n" +
                 "    <network>\n" +
                 "        <port auto-increment=\"true\">5701</port>\n" +
                 "        <join>\n" +
@@ -52,52 +61,21 @@ public class LicenseTest {
                 "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        Assert.assertEquals("IEL9GHFPOMCAN20V280250I6U10N02", config.getLicenseKey());
+        Assert.assertEquals("Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214", config.getLicenseKey());
     }
 
-    @Test
-    public void testKeygen() {
-        int count = 100000;
-        Random rand = new Random();
-        for (int i = 0; i < count; i++) {
-            boolean full = rand.nextBoolean();
-            boolean enterprise = rand.nextBoolean();
-            int day = rand.nextInt(30) + 1;
-            int month = rand.nextInt(12);
-            int year = KG.yearBase + rand.nextInt(10);
-            int nodes = rand.nextInt(9999);
-            License expected = new License(full, enterprise, day, month, year, nodes);
-            char[] key = KG.gen(full, enterprise, day, month, year, nodes);
-            License license = KG.ex(key);
-            Assert.assertEquals(expected, license);
-        }
-    }
-
-    @Test
-    public void testKeygenUniqueness() {
-        int count = 500000;
-        Set<String> keys = new HashSet<String>(count);
-        boolean full = true;
-        boolean enterprise = true;
-        int day = 13;
-        int month = 11;
-        int year = 2012;
-        int nodes = 9876;
-        for (int i = 0; i < count; i++) {
-            char[] key = KG.gen(full, enterprise, day, month, year, nodes);
-            Assert.assertTrue(keys.add(new String(key)));
-        }
-    }
 
     @Test
     public void testLicenseValid() {
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE);
         Config config = new Config();
-        config.setLicenseKey(new String(KG.gen(false, false, 1, 1, 2015, 10)));
         Hazelcast.newHazelcastInstance(config);
     }
 
-    @Test(expected = InvalidLicenseError.class)
+    @Test
     public void testLicenseNotFound() {
+        expectedEx.expect(InvalidLicenseException.class);
+        expectedEx.expectMessage("Invalid license key! Please contact sales@hazelcast.com");
         final String systemKey = System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
         try {
             System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
@@ -109,13 +87,15 @@ public class LicenseTest {
         }
     }
 
-    @Test(expected = TrialLicenseExpiredError.class)
+    @Test
     public void testLicenseExpired() {
+        expectedEx.expect(InvalidLicenseException.class);
+        expectedEx.expectMessage("Trial license has been expired! Please contact sales@hazelcast.com");
         final String systemKey = System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
         try {
-            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "");
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, EXPIRED_ENTERPRISE_LICENSE);
             Config config = new Config();
-            config.setLicenseKey(new String(KG.gen(false, false, 1, 1, 2011, 10)));
+            config.setLicenseKey(EXPIRED_ENTERPRISE_LICENSE);
             Hazelcast.newHazelcastInstance(config);
         } finally {
             System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, systemKey);

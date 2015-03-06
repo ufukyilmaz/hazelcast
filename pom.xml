@@ -30,6 +30,7 @@
 
         <mockito.all.version>1.9.5</mockito.all.version>
         <log4j.version>1.2.12</log4j.version>
+        <license.extractor.version>1.0.1</license.extractor.version>
     </properties>
 
     <licenses>
@@ -51,6 +52,11 @@
             <id>snapshot-repository</id>
             <name>Maven2 Snapshot Repository</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+        <repository>
+            <id>private-repository</id>
+            <name>Hazelcast Private Repository</name>
+            <url>https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
         </repository>
     </repositories>
 
@@ -281,6 +287,11 @@
             <version>1.2.12</version>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast.marketing</groupId>
+            <artifactId>hazelcast-license-extractor</artifactId>
+            <version>${license.extractor.version}</version>
         </dependency>
     </dependencies>
 

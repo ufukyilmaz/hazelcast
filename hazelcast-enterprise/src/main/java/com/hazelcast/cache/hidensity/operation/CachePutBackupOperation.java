@@ -34,9 +34,13 @@ public class CachePutBackupOperation
     @Override
     public void runInternal() throws Exception {
         EnterpriseCacheService service = getService();
+        SerializationService ss = getNodeEngine().getSerializationService();
         HiDensityCacheRecordStore cache =
                 (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
-        cache.putBackup(key, value, expiryPolicy);
+        if (!cache.putBackup(key, value, expiryPolicy)) {
+            // Since there no new put (just update), no need to for this key. So dispose it.
+            ss.disposeData(key);
+        }
         response = Boolean.TRUE;
     }
 

@@ -236,6 +236,8 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                 memoryManager.free(memoryBlock.address(), memoryBlock.size());
                 memoryBlock.reset(MemoryManager.NULL_ADDRESS);
             }
+        } else {
+            super.disposeData(data);
         }
     }
 

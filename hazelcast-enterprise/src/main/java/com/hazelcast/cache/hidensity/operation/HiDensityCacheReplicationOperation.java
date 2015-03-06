@@ -95,19 +95,22 @@ public final class HiDensityCacheReplicationOperation
             return;
         }
         EnterpriseCacheService service = getService();
+        SerializationService ss = getNodeEngine().getSerializationService();
         try {
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
-                HiDensityCacheRecordStore cache
-                        = (HiDensityCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
+                HiDensityCacheRecordStore cache =
+                        (HiDensityCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
                 Map<Data, CacheRecordHolder> map = entry.getValue();
-
                 Iterator<Map.Entry<Data, CacheRecordHolder>> iter = map.entrySet().iterator();
                 while (iter.hasNext()) {
                     Map.Entry<Data, CacheRecordHolder> next = iter.next();
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
+                    if (!cache.own(key, holder.value, holder.ttl)) {
+                        // Since there no new put (just update), no need to for this key. So dispose it.
+                        ss.disposeData(key);
+                    }
                     iter.remove();
-                    cache.own(key, holder.value, holder.ttl);
                 }
             }
         } catch (NativeOutOfMemoryError e) {
@@ -186,12 +189,10 @@ public final class HiDensityCacheReplicationOperation
             String name = in.readUTF();
             Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
             offHeapDestination.put(name, m);
-
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-
-                Data key = readOffHeapBinary(in);
-                Data value = readOffHeapBinary(in);
+                Data key = readNativeMemoryData(in);
+                Data value = readNativeMemoryData(in);
                 if (key != null) {
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }
@@ -200,7 +201,7 @@ public final class HiDensityCacheReplicationOperation
         super.readInternal(in);
     }
 
-    private Data readOffHeapBinary(ObjectDataInput in) throws IOException {
+    private Data readNativeMemoryData(ObjectDataInput in) throws IOException {
         try {
             return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
         } catch (NativeOutOfMemoryError e) {

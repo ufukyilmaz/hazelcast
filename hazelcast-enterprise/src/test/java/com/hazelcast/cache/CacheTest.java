@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.Assert.assertEquals;
@@ -39,7 +40,6 @@ public class CacheTest extends AbstractCacheTest {
         Config config = createConfig();
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
         instance = factory.newHazelcastInstance(config);
-        //factory.newHazelcastInstance(config);
     }
 
     @Override
@@ -86,8 +86,6 @@ public class CacheTest extends AbstractCacheTest {
 
         assertEquals("value3", cache.getAndReplace("key1", "value4"));
         assertEquals("value4", cache.get("key1"));
-
-        cache.destroy();
     }
 
     @Test
@@ -158,7 +156,6 @@ public class CacheTest extends AbstractCacheTest {
             }
         });
         assertEquals(0, cache.size());
-
 
         cache.putAsync(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
         assertTrueEventually(new AssertTask() {
@@ -252,6 +249,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testIteratorDuringInsertion() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
@@ -261,10 +259,10 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt();
                     try {
-                        cache.putAsync(i, i);
+                        cache.put(i, i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -273,23 +271,29 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            int value = e.getValue();
-            assertEquals(key, value);
-            k++;
-        }
-        assertTrue(k >= size);
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
-        thread.interrupt();
-        thread.join(10000);
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                int value = e.getValue();
+                assertEquals(key, value);
+                k++;
+            }
+            assertTrue(k >= size);
+        } finally {
+            stop.set(true);
+            thread.join();
+        }
     }
 
     @Test
     public void testIteratorDuringUpdate() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         final int size = 1111;
         for (int i = 0; i < size; i++) {
@@ -299,10 +303,10 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
-                        cache.putAsync(i, -i);
+                        cache.put(i, -i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -311,23 +315,29 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            int value = e.getValue();
-            assertTrue("Key: " + key + ", Value: " + value, key == Math.abs(value));
-            k++;
-        }
-        assertEquals(size, k);
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
-        thread.interrupt();
-        thread.join(10000);
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                int value = e.getValue();
+                assertTrue("Key: " + key + ", Value: " + value, key == Math.abs(value));
+                k++;
+            }
+            assertEquals(size, k);
+        } finally {
+            stop.set(true);
+            thread.join();
+        }
     }
 
     @Test
     public void testIteratorDuringRemoval() throws InterruptedException {
+        final AtomicBoolean stop = new AtomicBoolean(false);
         final ICache cache = createCache();
         final int size = 2222;
         for (int i = 0; i < size; i++) {
@@ -337,10 +347,10 @@ public class CacheTest extends AbstractCacheTest {
         final Thread thread = new Thread() {
             public void run() {
                 Random rand = new Random();
-                while (!isInterrupted()) {
+                while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
-                        cache.removeAsync(i);
+                        cache.remove(i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -349,20 +359,26 @@ public class CacheTest extends AbstractCacheTest {
         };
         thread.start();
 
-        int k = 0;
-        Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
-        while (iter.hasNext()) {
-            Cache.Entry<Integer, Integer> e = iter.next();
-            int key = e.getKey();
-            Integer value = e.getValue();
-            if (value != null) {
-                assertEquals(key, value.intValue());
-            }
-            k++;
-        }
-        assertTrue(k <= size);
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
-        thread.interrupt();
-        thread.join(10000);
+        try {
+            int k = 0;
+            Iterator<Cache.Entry<Integer, Integer>> iter = cache.iterator();
+            while (iter.hasNext()) {
+                Cache.Entry<Integer, Integer> e = iter.next();
+                int key = e.getKey();
+                Integer value = e.getValue();
+                if (value != null) {
+                    assertEquals(key, value.intValue());
+                }
+                k++;
+            }
+            assertTrue(k <= size);
+        } finally {
+            stop.set(true);
+            thread.join();
+        }
     }
+
 }

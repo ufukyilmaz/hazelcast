@@ -262,7 +262,7 @@ public class CacheTest extends AbstractCacheTest {
                 while (!stop.get()) {
                     int i = rand.nextInt();
                     try {
-                        cache.putAsync(i, i);
+                        cache.put(i, i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -270,6 +270,9 @@ public class CacheTest extends AbstractCacheTest {
             }
         };
         thread.start();
+
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
         try {
             int k = 0;
@@ -303,7 +306,7 @@ public class CacheTest extends AbstractCacheTest {
                 while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
-                        cache.putAsync(i, -i);
+                        cache.put(i, -i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -311,6 +314,9 @@ public class CacheTest extends AbstractCacheTest {
             }
         };
         thread.start();
+
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
         try {
             int k = 0;
@@ -344,7 +350,7 @@ public class CacheTest extends AbstractCacheTest {
                 while (!stop.get()) {
                     int i = rand.nextInt(size);
                     try {
-                        cache.removeAsync(i);
+                        cache.remove(i);
                         LockSupport.parkNanos(1);
                     } catch (Throwable ignored) {
                     }
@@ -352,6 +358,9 @@ public class CacheTest extends AbstractCacheTest {
             }
         };
         thread.start();
+
+        // Give chance to thread for starting
+        sleepSeconds(1);
 
         try {
             int k = 0;

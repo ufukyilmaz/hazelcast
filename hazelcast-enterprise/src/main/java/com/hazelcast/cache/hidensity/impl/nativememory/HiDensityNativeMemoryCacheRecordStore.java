@@ -35,7 +35,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<HiDensityNativeMemoryCacheRecord, HiDensityNativeMemoryCacheRecordMap>
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
-    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 10; // DEFAULT_INITIAL_CAPACITY;
+    // DEFAULT_INITIAL_CAPACITY;
+    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 10;
 
     private HiDensityCacheInfo cacheInfo;
     private EnterpriseSerializationService serializationService;

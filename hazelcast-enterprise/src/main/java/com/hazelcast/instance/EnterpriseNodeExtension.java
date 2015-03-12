@@ -157,10 +157,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return;
         }
         final int count = node.getClusterService().getSize();
-        if (count > license.getAllowedMembers()) {
+        if (count > license.getAllowedNumberOfNodes()) {
             logger.log(Level.SEVERE,
                     "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
-                            + license.getAllowedMembers() + ", Current: " + count);
+                            + license.getAllowedNumberOfNodes() + ", Current: " + count);
             node.shutdown(true);
         }
     }
@@ -316,8 +316,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         cal.setTime(license.getExpiryDate());
         validUntil = cal.getTime();
         logger.log(Level.INFO,
-                "Licensed type: " + (license.getIsLicensed() ? "Full" : "Trial")
-                        + ", Valid until: " + validUntil + ", Max nodes: " + license.getAllowedMembers());
+                "Licensed type: " + (license.isTrial() ? "Trial" : "Full")
+                        + ", Valid until: " + validUntil + ", Max nodes: " + license.getAllowedNumberOfNodes());
         return validUntil;
     }
 

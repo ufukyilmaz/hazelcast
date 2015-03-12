@@ -82,8 +82,8 @@ public class LicenseTest {
 
     @Test
     public void testLicenseNotFound() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Invalid License Key!");
+        expectedEx.expect(IllegalArgumentException.class);
+        expectedEx.expectMessage("Invalid key!");
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "blabla");
         Hazelcast.newHazelcastInstance(new Config());
     }

@@ -30,7 +30,7 @@
 
         <mockito.all.version>1.9.5</mockito.all.version>
         <log4j.version>1.2.12</log4j.version>
-        <license.extractor.version>1.0.4</license.extractor.version>
+        <license.extractor.version>1.0.3</license.extractor.version>
     </properties>
 
     <licenses>

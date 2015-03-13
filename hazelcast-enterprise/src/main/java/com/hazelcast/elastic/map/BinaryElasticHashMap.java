@@ -35,10 +35,10 @@ import java.util.concurrent.Callable;
  * the capacity exceeds the given load factor, the buffer size is doubled.
  * </p>
  *
- * @author This code is inspired by the collaboration and implementation in the <a
- *         href="http://fastutil.dsi.unimi.it/">fastutil</a> project.
+ * @author This code is inspired by the collaboration and implementation in the
+ *         <a href="http://fastutil.dsi.unimi.it/">fastutil</a> project.
  */
-// TODO: can we move key + value to the same cache line?
+// TODO Can we move key + value to the same cache line?
 public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<Data, V> {
 
     private static final long allocationFactor = 17L;
@@ -95,6 +95,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @see "http://issues.carrot2.org/browse/HPPC-80"
      */
     private int perturbation;
+
+    private final MemoryAllocator malloc;
 
     /**
      * Creates a hash map with the default capacity of {@value #DEFAULT_CAPACITY},
@@ -168,9 +170,38 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         this.loadFactor = loadFactor;
         this.memoryBlockProcessor = memoryBlockProcessor;
+        this.malloc = memoryBlockProcessor.unwrapMemoryAllocator();
 
         initialCapacity = roundCapacity(initialCapacity);
         allocateBuffers(initialCapacity);
+    }
+
+    /**
+     * Allocate internal buffers for a given capacity.
+     *
+     * @param capacity New capacity (must be a power of two).
+     */
+    private void allocateBuffers(int capacity) {
+        long allocationCapacity = capacity * allocationFactor;
+        try {
+            baseAddress = malloc.allocate(allocationCapacity);
+        } catch (NativeOutOfMemoryError e) {
+            throw onOome(e);
+        }
+        UnsafeHelper.UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
+
+        // TODO: can we move key + value to the same cache line?
+        keys = baseAddress;
+        values = keys + (capacity * 8L);
+        allocated = values + (capacity * 8L);
+
+        allocatedLength = capacity;
+        resizeAt = Math.max(2, (int) Math.ceil(capacity * loadFactor)) - 1;
+        perturbation = computePerturbationValue(capacity);
+    }
+
+    protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
+        return e;
     }
 
     /**
@@ -214,7 +245,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 final long oldValue = getValue(slot);
                 setValue(slot, value.address());
                 if (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey) {
-                    memoryBlockProcessor.disposeData((NativeMemoryData) key);
+                    memoryBlockProcessor.disposeData(key);
                 }
                 return memoryBlockProcessor.read(oldValue);
             }
@@ -253,7 +284,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
         return current;
     }
-
 
     @Override
     public void putAll(Map<? extends Data, ? extends V> map) {
@@ -355,36 +385,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 setValue(slot, v);
             }
         }
-        memoryBlockProcessor.free(oldAddress, oldAllocatedLength * allocationFactor);
-    }
-
-    /**
-     * Allocate internal buffers for a given capacity.
-     *
-     * @param capacity New capacity (must be a power of two).
-     */
-
-    private void allocateBuffers(int capacity) {
-        long allocationCapacity = capacity * allocationFactor;
-        try {
-            baseAddress = memoryBlockProcessor.allocate(allocationCapacity);
-        } catch (NativeOutOfMemoryError e) {
-            throw onOome(e);
-        }
-        UnsafeHelper.UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
-
-        // TODO: can we move key + value to the same cache line?
-        keys = baseAddress;
-        values = keys + (capacity * 8L);
-        allocated = values + (capacity * 8L);
-
-        allocatedLength = capacity;
-        resizeAt = Math.max(2, (int) Math.ceil(capacity * loadFactor)) - 1;
-        perturbation = computePerturbationValue(capacity);
-    }
-
-    protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
-        return e;
+        malloc.free(oldAddress, oldAllocatedLength * allocationFactor);
     }
 
     @Override
@@ -723,7 +724,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 //throw new IllegalArgumentException("Slot: " + slot + ", capacity: " + allocatedLength);
             }
             nextSlot = advance(slot);
-
         }
 
         @Override
@@ -768,7 +768,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             EntryIter iter = new EntryIter();
             while (iter.hasNext()) {
                 Entry<Data, V> e = iter.next();
-                memoryBlockProcessor.disposeData((NativeMemoryData) e.getKey());
+                memoryBlockProcessor.disposeData(e.getKey());
                 memoryBlockProcessor.dispose(e.getValue());
             }
 
@@ -786,7 +786,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             clear();
         }
         if (baseAddress > 0L) {
-            memoryBlockProcessor.free(baseAddress, allocatedLength * allocationFactor);
+            malloc.free(baseAddress, allocatedLength * allocationFactor);
         }
         allocatedLength = 0;
         baseAddress = -1L;
@@ -953,6 +953,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             malloc.free(address, size);
         }
 
+        @Override
+        public MemoryAllocator unwrapMemoryAllocator() {
+            return malloc;
+        }
     }
 
 }

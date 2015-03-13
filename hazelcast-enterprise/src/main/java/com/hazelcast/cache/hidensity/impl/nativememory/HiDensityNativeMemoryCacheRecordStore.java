@@ -36,7 +36,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
     // DEFAULT_INITIAL_CAPACITY;
-    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 10;
+    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 256;
 
     private HiDensityCacheInfo cacheInfo;
     private EnterpriseSerializationService serializationService;
@@ -134,8 +134,30 @@ public class HiDensityNativeMemoryCacheRecordStore
             return records;
         }
         ensureInitialized();
-        return new HiDensityNativeMemoryCacheRecordMap(NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY, cacheRecordProcessor,
-                createEvictionCallback(), cacheInfo);
+
+        HiDensityNativeMemoryCacheRecordMap cacheRecordMap = null;
+        int capacity = NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY;
+        NativeOutOfMemoryError oome = null;
+
+        do {
+            try {
+                cacheRecordMap =
+                        new HiDensityNativeMemoryCacheRecordMap(
+                                capacity,
+                                cacheRecordProcessor,
+                                createEvictionCallback(),
+                                cacheInfo);
+                break;
+            } catch (NativeOutOfMemoryError e) {
+                oome = e;
+            }
+            capacity = capacity >> 1;
+        } while (capacity > 0);
+
+        if (cacheRecordMap == null && oome != null) {
+            throw oome;
+        }
+        return cacheRecordMap;
     }
 
     @Override

@@ -16,4 +16,6 @@ public interface MemoryBlockProcessor<V extends MemoryBlock>
     long allocate(long size);
     void free(long address, long size);
 
+    MemoryAllocator unwrapMemoryAllocator();
+
 }

@@ -20,9 +20,8 @@ import static org.junit.Assert.fail;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest {
 
-    private static final String ENTERPRISE_LICENSE = "Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214";
-    private static final String EXPIRED_ENTERPRISE_LICENSE = "Hazelcast Enterprise|10 Nodes|10 Clients|HD Memory: 10GB|zIBRNEUbjfOJy6uTHlF10am160eP06v00G04npGY1001x0g11000030020L0";
-    private static final String TWO_NODES_ENTERPRISE_LICENSE = "Hazelcast Enterprise|2 Nodes|2 Clients|HD Memory: 1024GB|6OawTzb3VFmBU7H5IRE1ySu203Y400024g002P0t0191210L1Xt0s0dW00g2";
+    private static final String EXPIRED_ENTERPRISE_LICENSE = "Hazelcast Enterprise|2 Nodes|2 Clients|HD Memory: 1024GB|jaN1HRbBl5OTrFmyw7AVcKfI681Q52C0s000P00040110102hW120X0hQ220";
+    private static final String TWO_NODES_ENTERPRISE_LICENSE = "Hazelcast Enterprise|2 Nodes|2 Clients|HD Memory: 1024GB|OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
 
@@ -47,7 +46,7 @@ public class LicenseTest {
                 "        <name>dev</name>\n" +
                 "        <password>dev-pass</password>\n" +
                 "    </group>\n" +
-                "    <license-key>Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214</license-key>\n" +
+                "    <license-key>Hazelcast Enterprise|2 Nodes|2 Clients|HD Memory: 1024GB|OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n" +
                 "    <network>\n" +
                 "        <port auto-increment=\"true\">5701</port>\n" +
                 "        <join>\n" +
@@ -66,13 +65,13 @@ public class LicenseTest {
                 "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        assertEquals("Hazelcast Enterprise|40 Nodes|100 Clients|HD Memory: 1024GB|kRAKjuU10Hrfcz7OIEy56Tm1501eL1P440g1Q00300stL0M00e4000x05214", config.getLicenseKey());
+        assertEquals("Hazelcast Enterprise|2 Nodes|2 Clients|HD Memory: 1024GB|OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo", config.getLicenseKey());
     }
 
 
     @Test
     public void testLicenseValid() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE);
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
         try {
             Hazelcast.newHazelcastInstance(new Config());
         } catch (InvalidLicenseException ile) {
@@ -82,8 +81,8 @@ public class LicenseTest {
 
     @Test
     public void testLicenseNotFound() {
-        expectedEx.expect(IllegalArgumentException.class);
-        expectedEx.expectMessage("Invalid key!");
+        expectedEx.expect(InvalidLicenseException.class);
+        expectedEx.expectMessage("Invalid License Key!");
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "blabla");
         Hazelcast.newHazelcastInstance(new Config());
     }

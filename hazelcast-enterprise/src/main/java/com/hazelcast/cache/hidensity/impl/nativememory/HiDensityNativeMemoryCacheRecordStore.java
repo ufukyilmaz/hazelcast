@@ -1,5 +1,3 @@
-    // DEFAULT_INITIAL_CAPACITY;
-    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 256;
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
@@ -36,6 +34,8 @@ import javax.cache.expiry.ExpiryPolicy;
 public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<HiDensityNativeMemoryCacheRecord, HiDensityNativeMemoryCacheRecordMap>
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
+
+    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 256;
 
     private HiDensityCacheInfo cacheInfo;
     private EnterpriseSerializationService serializationService;
@@ -133,7 +133,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             return records;
         }
         ensureInitialized();
-        return new HiDensityNativeMemoryCacheRecordMap(DEFAULT_INITIAL_CAPACITY, cacheRecordProcessor,
 
         HiDensityNativeMemoryCacheRecordMap cacheRecordMap = null;
         int capacity = NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY;

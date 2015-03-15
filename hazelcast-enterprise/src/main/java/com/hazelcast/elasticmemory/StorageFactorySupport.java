@@ -3,7 +3,7 @@ package com.hazelcast.elasticmemory;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.storage.Storage;
+import com.hazelcast.internal.storage.Storage;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;

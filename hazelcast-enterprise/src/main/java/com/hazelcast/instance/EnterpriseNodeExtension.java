@@ -39,7 +39,7 @@ import com.hazelcast.nio.tcp.SymmetricCipherPacketWriter;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
-import com.hazelcast.storage.Storage;
+import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;

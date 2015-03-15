@@ -4,7 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.storage.Storage;
+import com.hazelcast.internal.storage.Storage;
 
 import java.io.Closeable;
 import java.util.logging.Level;

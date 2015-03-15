@@ -19,7 +19,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.nio.serialization.StreamSerializer;
-import com.hazelcast.storage.Storage;
+import com.hazelcast.internal.storage.Storage;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

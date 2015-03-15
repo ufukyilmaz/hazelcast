@@ -1,6 +1,6 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.storage.DataRef;
+import com.hazelcast.internal.storage.DataRef;
 
 public class DataRefImpl implements DataRef {
 

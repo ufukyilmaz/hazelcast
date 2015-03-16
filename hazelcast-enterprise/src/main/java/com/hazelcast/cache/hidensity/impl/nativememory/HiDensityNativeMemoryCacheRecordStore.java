@@ -628,7 +628,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
             // Check if key is created outside of cache record store and not disposed yet.
             // Note that it can be disposed at "records.remove(keyData)"
-            if (!keyDataCreated && !keyDisposed) {
+            if (!keyDataCreated && !keyDisposed && isMemoryBlockValid(keyData)) {
                 // Since key data is created at outside of cache record store, its memory usage must be removed
                 cacheInfo.removeUsedMemory(
                         cacheRecordProcessor.getSize(

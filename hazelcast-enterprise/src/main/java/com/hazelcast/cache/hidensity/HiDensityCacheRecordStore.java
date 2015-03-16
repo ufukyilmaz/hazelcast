@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity;
 
+import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.memory.MemoryManager;
@@ -25,7 +26,7 @@ import javax.cache.expiry.ExpiryPolicy;
  * @author sozal 18/10/14
  */
 public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
-        extends ICacheRecordStore {
+        extends EnterpriseCacheRecordStore {
 
     /**
      * Constant value for default forced eviction percentage

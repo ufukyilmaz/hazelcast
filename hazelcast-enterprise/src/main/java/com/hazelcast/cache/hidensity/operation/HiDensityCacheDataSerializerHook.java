@@ -18,7 +18,7 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     /**
      * Id of "Enterprise Cache DataSerializer Factory"
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY, -26);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY, -26);
     /**
      * Id of "GET" operation
      */
@@ -103,6 +103,15 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
      * Id of "DESTROY" operation
      */
     public static final short DESTROY = 23;
+    /**
+     * Id of "WAN_MERGE" operation
+     */
+    public static final short WAN_MERGE = 24;
+    /**
+     * Id of "WAN_REMOVE" operation
+     */
+    public static final short WAN_REMOVE = 25;
+
 
     @Override
     public int getFactoryId() {
@@ -166,6 +175,10 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
 
                     case ENTRY_PROCESSOR:
                         return new CacheEntryProcessorOperation();
+                    case WAN_MERGE:
+                        return new WanCacheMergeOperation();
+                    case WAN_REMOVE:
+                        return new WanCacheRemoveOperation();
                 }
                 throw new IllegalArgumentException("Unknown type-id: " + typeId);
             }

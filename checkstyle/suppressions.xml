@@ -45,5 +45,9 @@
     <suppress checks="CyclomaticComplexity" files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
     <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook"/>
 
-</suppressions>
+    <!-- Enterprise Cache -->
+    <suppress checks="ParameterNumber" files="com.hazelcast.cache.EnterpriseCacheRecordStoreImpl"/>
+    <suppress checks="ClassDataAbstractionCouplingC|ClassFanOutComplexityCheck|ParameterNumber"
+              files="com.hazelcast.cache.EnterpriseCacheService"/>
 
+</suppressions>

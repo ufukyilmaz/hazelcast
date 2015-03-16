@@ -20,3 +20,4 @@ com.hazelcast.cache.impl.CacheDataSerializerHook
 
 # enterprise hooks
 com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook
+com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook

@@ -9,27 +9,42 @@ import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
+import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.merge.CacheMergePolicyProvider;
+import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
+import com.hazelcast.cache.wan.CacheReplicationRemove;
+import com.hazelcast.cache.wan.CacheReplicationSupportingService;
+import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
+import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanReplicationPublisher;
+import com.hazelcast.wan.WanReplicationService;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -51,9 +66,14 @@ import java.util.concurrent.TimeUnit;
  *
  * @author mdogan 05/02/14
  */
-public class EnterpriseCacheService extends CacheService {
+public class EnterpriseCacheService extends CacheService implements ReplicationSupportingService {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
+
+    protected final ConcurrentMap<String, WanReplicationPublisher> wanReplicationPublishers =
+            new ConcurrentHashMap<String, WanReplicationPublisher>();
+    protected final ConcurrentMap<String, String> cacheMergePolicies =
+            new ConcurrentHashMap<String, String>();
 
     private final ConcurrentMap<String, HiDensityCacheInfo> hiDensityCacheInfoMap =
             new ConcurrentHashMap<String, HiDensityCacheInfo>();
@@ -64,6 +84,14 @@ public class EnterpriseCacheService extends CacheService {
                     return new HiDensityCacheInfo(cacheNameWithPrefix);
                 }
             };
+    private ReplicationSupportingService replicationSupportingService;
+    private CacheMergePolicyProvider cacheMergePolicyProvider;
+
+    @Override
+    protected void postInit(NodeEngine nodeEngine, Properties properties) {
+        replicationSupportingService = new CacheReplicationSupportingService(this);
+        cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
+    }
 
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
@@ -92,12 +120,14 @@ public class EnterpriseCacheService extends CacheService {
         } else if (inMemoryFormat == null
                 || InMemoryFormat.BINARY.equals(inMemoryFormat)
                 || InMemoryFormat.OBJECT.equals(inMemoryFormat)) {
-            return super.createNewRecordStore(name, partitionId);
+            return new EnterpriseCacheRecordStoreImpl(name, partitionId, nodeEngine, this);
         }
 
         throw new IllegalArgumentException("Cannot create record store for the storage type: "
                 + inMemoryFormat);
     }
+
+
 
     /**
      * Destroys the segments for specified <code>object name/cache name</code>.
@@ -268,7 +298,7 @@ public class EnterpriseCacheService extends CacheService {
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             return new HiDensityCacheOperationProvider(cacheNameWithPrefix);
         }
-        return super.getCacheOperationProvider(cacheNameWithPrefix, inMemoryFormat);
+        return new EnterpriseCacheOperationProvider(cacheNameWithPrefix);
     }
 
     /**
@@ -280,7 +310,6 @@ public class EnterpriseCacheService extends CacheService {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
     }
 
-
     /**
      * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityCacheInfo} instance
      * which holds live information about cache.
@@ -291,7 +320,68 @@ public class EnterpriseCacheService extends CacheService {
      */
     public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {
         return ConcurrencyUtil.getOrPutSynchronized(hiDensityCacheInfoMap, cacheNameWithPrefix,
-                    this, hiDensityCacheInfoConstructorFunction);
+                this, hiDensityCacheInfoConstructorFunction);
+    }
+
+    @Override
+    public CacheConfig createCacheConfigIfAbsent(CacheConfig config) {
+        CacheConfig localConfig = super.createCacheConfigIfAbsent(config);
+        if (localConfig != null) {
+            config = localConfig;
+        }
+        WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
+        if (wanReplicationRef != null) {
+            WanReplicationService wanReplicationService = nodeEngine.getWanReplicationService();
+            wanReplicationPublishers.putIfAbsent(config.getNameWithPrefix(),
+                    wanReplicationService.getWanReplicationPublisher(wanReplicationRef.getName()));
+            cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());
+        }
+        return localConfig;
+    }
+
+    @Override
+    public CacheConfig deleteCacheConfig(String name) {
+        wanReplicationPublishers.remove(name);
+        return super.deleteCacheConfig(name);
+    }
+
+    public CacheMergePolicyProvider getCacheMergePolicyProvider() {
+        return cacheMergePolicyProvider;
+    }
+
+    @Override
+    public void onReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+        replicationSupportingService.onReplicationEvent(wanReplicationEvent);
+    }
+
+    @Override
+    public void publishEvent(String cacheName, CacheEventType eventType, Data dataKey, Data dataValue,
+                             Data dataOldValue, boolean isOldValueAvailable,
+                             int orderKey, int completionId, long expirationTime,
+                             String origin) {
+        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
+
+        if (wanReplicationPublisher != null) {
+
+            String groupName = origin == null ? nodeEngine.getConfig().getGroupConfig().getName() : origin;
+            CacheConfig config = configs.get(cacheName);
+            if (eventType == CacheEventType.UPDATED
+                    || eventType == CacheEventType.CREATED
+                    || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
+                CacheReplicationUpdate update =
+                        new CacheReplicationUpdate(config.getName(), cacheMergePolicies.get(cacheName),
+                                new SimpleCacheEntryView(dataKey, dataValue, expirationTime),
+                                groupName, config.getUriString());
+                wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
+            } else if (eventType == CacheEventType.REMOVED) {
+                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), dataKey,
+                        Clock.currentTimeMillis(), groupName, config.getUriString());
+                wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
+            }
+        }
+
+        super.publishEvent(cacheName, eventType, dataKey, dataValue, dataOldValue,
+                isOldValueAvailable, orderKey, completionId, expirationTime, origin);
     }
 
     @Override

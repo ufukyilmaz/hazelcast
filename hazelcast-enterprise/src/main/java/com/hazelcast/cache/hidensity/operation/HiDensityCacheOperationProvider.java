@@ -1,8 +1,9 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
 import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
+import com.hazelcast.cache.merge.CacheMergePolicy;
+import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
@@ -15,12 +16,10 @@ import java.util.Set;
 /**
  * Provide operations for {@link InMemoryFormat#NATIVE}
  */
-public class HiDensityCacheOperationProvider implements CacheOperationProvider {
-
-    private final String nameWithPrefix;
+public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationProvider {
 
     public HiDensityCacheOperationProvider(String nameWithPrefix) {
-        this.nameWithPrefix = nameWithPrefix;
+        super(nameWithPrefix);
     }
 
     @Override
@@ -84,6 +83,16 @@ public class HiDensityCacheOperationProvider implements CacheOperationProvider {
     @Override
     public Operation createKeyIteratorOperation(int lastTableIndex, int fetchSize) {
         return new CacheKeyIteratorOperation(nameWithPrefix, lastTableIndex, fetchSize);
+    }
+
+    @Override
+    public Operation createWanRemoveOperation(String origin, Data key, Data value, int completionId) {
+        return new WanCacheRemoveOperation(nameWithPrefix, origin, key, value, completionId);
+    }
+
+    @Override
+    public Operation createWanMergeOperation(String origin, Data key, Data value, CacheMergePolicy mergePolicy, long expiryTime, int completionId) {
+        return new WanCacheMergeOperation(nameWithPrefix, origin, key, value, mergePolicy, expiryTime, completionId);
     }
 
     @Override

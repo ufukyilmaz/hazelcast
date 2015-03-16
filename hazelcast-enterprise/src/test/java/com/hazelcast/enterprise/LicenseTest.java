@@ -21,9 +21,7 @@ import static org.junit.Assert.fail;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest {
 
-    private static final String EXPIRED_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#jaN1HRbBl5OTrFmyw7AVcKfI681Q52C0s000P00040110102hW120X0hQ220";
-    private static final String TWO_NODES_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
-    private static final String ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART = "OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
+
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
 
@@ -73,7 +71,7 @@ public class LicenseTest {
 
     @Test
     public void testLicenseValid() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
         try {
             Hazelcast.newHazelcastInstance(new Config());
         } catch (InvalidLicenseException ile) {
@@ -84,7 +82,7 @@ public class LicenseTest {
     @Test
     public void testLicenseValidWithoutHumanReadablePart() {
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
-                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+                SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         try {
             Hazelcast.newHazelcastInstance(new Config());
         } catch (InvalidLicenseException ile) {
@@ -104,14 +102,14 @@ public class LicenseTest {
     public void testEnterpriseLicenseExpired() {
         expectedEx.expect(InvalidLicenseException.class);
         expectedEx.expectMessage("Enterprise License has expired! Please contact sales@hazelcast.com");
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, EXPIRED_ENTERPRISE_LICENSE);
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.EXPIRED_ENTERPRISE_LICENSE);
         Hazelcast.newHazelcastInstance(new Config());
     }
 
     @Test
     public void testNumberOfAllowedNodes() {
         expectedEx.expect(IllegalStateException.class);
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
         Hazelcast.newHazelcastInstance(new Config());
         Hazelcast.newHazelcastInstance(new Config());
         Hazelcast.newHazelcastInstance(new Config());//this node should not start!

@@ -22,7 +22,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DefaultData;
-import com.hazelcast.storage.Storage;
+import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 

@@ -21,6 +21,9 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
         this.entryView = entryView;
     }
 
+    public CacheReplicationUpdate() {
+    }
+
     public String getMergePolicy() {
         return mergePolicy;
     }

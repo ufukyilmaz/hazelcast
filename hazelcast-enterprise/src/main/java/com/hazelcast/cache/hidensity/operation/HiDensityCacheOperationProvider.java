@@ -91,7 +91,8 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, Data key, Data value, CacheMergePolicy mergePolicy, long expiryTime, int completionId) {
+    public Operation createWanMergeOperation(String origin, Data key, Data value,
+                                             CacheMergePolicy mergePolicy, long expiryTime, int completionId) {
         return new WanCacheMergeOperation(nameWithPrefix, origin, key, value, mergePolicy, expiryTime, completionId);
     }
 

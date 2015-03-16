@@ -806,7 +806,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public boolean merge(Data key, Object value, CacheMergePolicy mergePolicy, long expiryTime, String caller, int completionId, String origin) {
+    public boolean merge(Data key, Object value, CacheMergePolicy mergePolicy,
+                         long expiryTime, String caller, int completionId, String origin) {
         final long now = Clock.currentTimeMillis();
         final long start = isStatisticsEnabled() ? System.nanoTime() : 0;
 

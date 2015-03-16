@@ -4,7 +4,6 @@ import com.hazelcast.cache.impl.AbstractCacheService;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.cache.impl.record.SampleableCacheRecordMap;
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.nio.serialization.Data;
@@ -16,8 +15,7 @@ import com.hazelcast.util.ExceptionUtil;
  * The {@link com.hazelcast.cache.EnterpriseCacheRecordStore} implementation that provides
  * merge function implementation
  */
-public class EnterpriseCacheRecordStoreImpl<R extends CacheRecord, CRM extends SampleableCacheRecordMap<Data, R>>
-        extends CacheRecordStore
+public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
         implements EnterpriseCacheRecordStore {
 
     public EnterpriseCacheRecordStoreImpl(String name, int partitionId, NodeEngine nodeEngine,

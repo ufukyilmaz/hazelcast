@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordProcessor;
+import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
@@ -161,4 +162,8 @@ public class HiDensityNativeMemoryCacheRecordProcessor
         return cacheRecordAccessor.getSize(memoryBlock);
     }
 
+    @Override
+    public MemoryAllocator unwrapMemoryAllocator() {
+        return memoryManager.unwrapMemoryAllocator();
+    }
 }

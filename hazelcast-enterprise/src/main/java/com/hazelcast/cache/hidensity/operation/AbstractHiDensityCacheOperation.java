@@ -183,13 +183,13 @@ abstract class AbstractHiDensityCacheOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         name = in.readUTF();
-        key = readNativeData(in);
+        key = readOperationData(in);
         completionId = in.readInt();
     }
 
-    protected final Data readNativeData(ObjectDataInput in) throws IOException {
+    protected final Data readOperationData(ObjectDataInput in) throws IOException {
         try {
-            return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
+            return ((EnterpriseObjectDataInput) in).readData(DataType.HEAP);
         } catch (NativeOutOfMemoryError e) {
             oome = e;
         }

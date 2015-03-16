@@ -70,7 +70,7 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        value = readNativeData(in);
+        value = readOperationData(in);
         expiryPolicy = in.readObject();
     }
 

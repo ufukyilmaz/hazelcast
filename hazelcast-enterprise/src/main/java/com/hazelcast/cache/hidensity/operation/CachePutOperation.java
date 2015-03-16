@@ -75,7 +75,7 @@ public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
         super.readInternal(in);
         get = in.readBoolean();
         expiryPolicy = in.readObject();
-        value = readNativeData(in);
+        value = readOperationData(in);
     }
 
     @Override

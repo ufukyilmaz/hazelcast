@@ -9,11 +9,9 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.NonThreadSafe;
@@ -191,23 +189,14 @@ public final class HiDensityCacheReplicationOperation
             offHeapDestination.put(name, m);
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-                Data key = readNativeMemoryData(in);
-                Data value = readNativeMemoryData(in);
+                Data key = AbstractHiDensityCacheOperation.readOperationData(in);
+                Data value = AbstractHiDensityCacheOperation.readOperationData(in);
                 if (key != null) {
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }
             }
         }
         super.readInternal(in);
-    }
-
-    private Data readNativeMemoryData(ObjectDataInput in) throws IOException {
-        try {
-            return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
-        } catch (NativeOutOfMemoryError e) {
-            oome = e;
-        }
-        return null;
     }
 
     public boolean isEmpty() {

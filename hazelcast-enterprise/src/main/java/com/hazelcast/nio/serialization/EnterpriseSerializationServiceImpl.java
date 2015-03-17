@@ -119,6 +119,15 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
     @Override
     public Data readData(EnterpriseObjectDataInput in, DataType type) {
+        return readDataInternal(in, type, false);
+    }
+
+    @Override
+    public Data tryReadData(EnterpriseObjectDataInput in, DataType type) {
+        return readDataInternal(in, type, true);
+    }
+
+    private Data readDataInternal(EnterpriseObjectDataInput in, DataType type, boolean readToHeapOnOOME) {
         if (type == DataType.HEAP) {
             return readData(in);
         }
@@ -139,7 +148,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             int dataSize = in.readInt();
             if (dataSize > 0) {
-                return readNativeData(in, typeId, partitionHash, dataSize, header);
+                return readNativeData(in, typeId, partitionHash, dataSize, header, readToHeapOnOOME);
             }
             return new DefaultData(typeId, null, partitionHash, header);
         } catch (Throwable e) {
@@ -148,7 +157,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     private Data readNativeData(EnterpriseObjectDataInput in, int typeId, int partitionHash, int dataSize,
-            byte[] header) throws IOException {
+            byte[] header, boolean readToHeapOnOOME) throws IOException {
 
         int size = dataSize + NativeMemoryData.HEADER_LENGTH;
         if (header != null) {
@@ -158,32 +167,45 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             size += INT_SIZE_IN_BYTES;
         }
 
-        NativeMemoryData nativeData = allocateNativeData(in, dataSize, size);
-        nativeData.setType(typeId);
+        MutableData mutableData = null;
 
-        if (in instanceof EnterpriseBufferObjectDataInput) {
+        try {
+            mutableData = allocateNativeData(in, dataSize, size, !readToHeapOnOOME);
+        } catch (NativeOutOfMemoryError oome) {
+            if (readToHeapOnOOME) {
+                mutableData = new DefaultData();
+            } else {
+                throw oome;
+            }
+        }
+        mutableData.setType(typeId);
+
+        if (in instanceof EnterpriseBufferObjectDataInput && mutableData instanceof NativeMemoryData) {
+            NativeMemoryData nativeMemoryData = (NativeMemoryData) mutableData;
             EnterpriseBufferObjectDataInput bufferInput = (EnterpriseBufferObjectDataInput) in;
-            bufferInput.copyToMemoryBlock(nativeData, NativeMemoryData.HEADER_LENGTH, dataSize);
-            nativeData.setDataSize(dataSize);
+            bufferInput.copyToMemoryBlock(nativeMemoryData, NativeMemoryData.HEADER_LENGTH, dataSize);
+            nativeMemoryData.setDataSize(dataSize);
         } else {
             byte[] data = new byte[dataSize];
             in.readFully(data);
-            nativeData.setData(data);
+            mutableData.setData(data);
         }
 
-        nativeData.setPartitionHash(partitionHash);
-        nativeData.setHeader(header);
-        return nativeData;
+        mutableData.setPartitionHash(partitionHash);
+        mutableData.setHeader(header);
+        return mutableData;
     }
 
     @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
-    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int dataSize, int size)
+    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int dataSize, int size, boolean skipBytes)
             throws IOException {
         try {
             long address = memoryManager.allocate(size);
             return new NativeMemoryData(address, size);
         } catch (NativeOutOfMemoryError e) {
-            in.skipBytes(dataSize);
+            if (skipBytes) {
+                in.skipBytes(dataSize);
+            }
             throw e;
         }
     }

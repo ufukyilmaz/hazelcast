@@ -53,4 +53,9 @@ final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput
     public Data readData(DataType type) throws IOException {
         return enterpriseSerializationService.readData(this, type);
     }
+
+    @Override
+    public Data tryReadData(DataType type) throws IOException {
+        return enterpriseSerializationService.tryReadData(this, type);
+    }
 }

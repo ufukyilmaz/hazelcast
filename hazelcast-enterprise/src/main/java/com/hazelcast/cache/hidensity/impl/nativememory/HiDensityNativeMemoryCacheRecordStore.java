@@ -611,31 +611,33 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             return recordPut;
         } catch (NativeOutOfMemoryError e) {
-            boolean keyDisposed = false;
             if (recordCreated) {
                 if (recordPut) {
-                    // If record has been created and put, delete it (also dispose its key).
+                    // If record has been created and put, delete it.
                     // Since its value is not assigned yet, its value is not disposed here but at below if created
                     records.remove(keyData);
-                    // Reset key data so it will not be disposed again by caller of this method
-                    keyData.reset(HiDensityCacheRecordStore.NULL_PTR);
-                    keyDisposed = true;
                 } else {
                     // If record has been created and put, delete it.
                     // Since its value is not assigned yet, its value is not disposed here but at below if created
                     cacheRecordProcessor.dispose(record);
                 }
             }
-            // Check if key is created outside of cache record store and not disposed yet.
-            // Note that it can be disposed at "records.remove(keyData)"
-            if (!keyDataCreated && !keyDisposed && isMemoryBlockValid(keyData)) {
+
+            // Check if key is created inside of cache record store.
+            if (keyDataCreated) {
+                // If key data is created here, dispose it
+                cacheRecordProcessor.disposeData(keyData);
+            } else {
                 // Since key data is created at outside of cache record store, its memory usage must be removed
-                cacheInfo.removeUsedMemory(
-                        cacheRecordProcessor.getSize(
-                                keyData.address(),
-                                keyData.size()));
+                if (isMemoryBlockValid(keyData)) {
+                    cacheInfo.removeUsedMemory(
+                            cacheRecordProcessor.getSize(
+                                    keyData.address(),
+                                    keyData.size()));
+                }
             }
-            // Check if value is created outside of cache record store.
+
+            // Check if value is created inside of cache record store.
             if (valueDataCreated) {
                 // If value data is created here, dispose it
                 cacheRecordProcessor.disposeData(valueData);
@@ -648,6 +650,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                                     valueData.size()));
                 }
             }
+
             throw e;
         }
     }

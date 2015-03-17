@@ -30,13 +30,15 @@ import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
  */
 public final class NativeMemoryData extends MemoryBlock implements Data {
 
-    static final int DATA_SIZE_OFFSET = 0;
+    static final int SIZE_OFFSET = 0;
     static final int TYPE_OFFSET = 4;
     // we can store this bit in sign-bit of data-size
     // for the sake of simplicity and make structure same as DefaultData
     // we will use a byte to store partition_hash bit
     static final int PARTITION_HASH_BIT_OFFSET = 8;
     static final int DATA_OFFSET = 9;
+
+    static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - DefaultData.TYPE_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 
@@ -49,22 +51,22 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public int totalSize() {
-        throw new UnsupportedOperationException();
+        if (address == 0L) {
+            return 0;
+        }
+        return readInt(SIZE_OFFSET);
     }
 
     @Override
     public int dataSize() {
-        if (address == 0L) {
-            return 0;
-        }
-        return readInt(DATA_SIZE_OFFSET);
+        return Math.max(totalSize() - DATA_OFFSET + NATIVE_HEADER_OVERHEAD, 0);
     }
 
     @Override
     public int getPartitionHash() {
         if (hasPartitionHash()) {
-            int dataSize = readInt(DATA_SIZE_OFFSET);
-            int hash = readInt(DATA_OFFSET + dataSize - INT_SIZE_IN_BYTES);
+            int size = totalSize();
+            int hash = readInt(size);
             return BIG_ENDIAN ? hash : Integer.reverseBytes(hash);
         }
         return hashCode();
@@ -72,13 +74,15 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public boolean hasPartitionHash() {
+        if (address == 0L) {
+            return false;
+        }
         return readByte(PARTITION_HASH_BIT_OFFSET) != 0;
     }
 
     @Override
-    public byte[] getData() {
-        int dataSize = dataSize();
-        int len = dataSize + DefaultData.DATA_OFFSET;
+    public byte[] toByteArray() {
+        int len = totalSize();
         byte[] buffer = new byte[len];
         copyTo(TYPE_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET, len);
         return buffer;
@@ -133,18 +137,24 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         if (data instanceof NativeMemoryData) {
             return NativeMemoryDataUtil.equals(address(), ((NativeMemoryData) data).address(), dataSize);
         }
-        byte[] bytes = data.getData();
+        byte[] bytes = data.toByteArray();
         return NativeMemoryDataUtil.equals(address(), dataSize, bytes);
     }
     //CHECKSTYLE:ON
 
     @Override
     public int hashCode() {
+        if (address == 0L) {
+            return 0;
+        }
         return HashUtil.MurmurHash3_x86_32_direct(address(), DATA_OFFSET, dataSize());
     }
 
     @Override
     public long hash64() {
+        if (address == 0L) {
+            return 0L;
+        }
         return HashUtil.MurmurHash3_x64_64_direct(address(), DATA_OFFSET, dataSize());
     }
 
@@ -171,6 +181,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
             sb.append("type=").append(getType());
             sb.append(", hashCode=").append(hashCode());
             sb.append(", partitionHash=").append(getPartitionHash());
+            sb.append(", totalSize=").append(totalSize());
             sb.append(", dataSize=").append(dataSize());
             sb.append(", heapCost=").append(getHeapCost());
             sb.append(", address=").append(address());

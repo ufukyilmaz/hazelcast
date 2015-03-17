@@ -55,7 +55,7 @@ public class BufferSegment implements Closeable {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.getData();
+        final byte[] value = data.toByteArray();
         if (value == null || value.length == 0) {
             return new DataRefImpl(null, 0); // volatile write;
         }

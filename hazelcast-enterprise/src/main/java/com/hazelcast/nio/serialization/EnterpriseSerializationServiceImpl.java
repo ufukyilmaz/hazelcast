@@ -20,7 +20,6 @@ import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -32,8 +31,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
-import static com.hazelcast.nio.serialization.NativeMemoryData.DATA_OFFSET;
-import static com.hazelcast.nio.serialization.NativeMemoryData.DATA_SIZE_OFFSET;
 import static com.hazelcast.nio.serialization.NativeMemoryData.NATIVE_HEADER_OVERHEAD;
 import static com.hazelcast.nio.serialization.NativeMemoryData.SIZE_OFFSET;
 import static com.hazelcast.nio.serialization.NativeMemoryData.TYPE_OFFSET;
@@ -102,12 +99,12 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             }
 
             int size = out.position();
-            int memSize = size + Bits.INT_SIZE_IN_BYTES;
+            int memSize = size + NATIVE_HEADER_OVERHEAD;
             long address = memoryManager.allocate(memSize);
             assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
-            data.writeInt(DATA_SIZE_OFFSET, size - DefaultData.DATA_OFFSET);
+            data.writeInt(SIZE_OFFSET, size);
             out.copyToMemoryBlock(data, TYPE_OFFSET, size);
             return data;
         } catch (Throwable e) {
@@ -119,14 +116,17 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
     @Override
     protected void writeDataInternal(ObjectDataOutput out, Data data) throws IOException {
-        if (data instanceof NativeMemoryData && out instanceof EnterpriseBufferObjectDataOutput) {
-            EnterpriseBufferObjectDataOutput bufferOut = (EnterpriseBufferObjectDataOutput) out;
-            NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
-            bufferOut.writeInt(nativeMemoryData.dataSize());
-            bufferOut.copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.TYPE_OFFSET,
-                    data.dataSize() + DefaultData.DATA_OFFSET);
-        } else {
-            super.writeDataInternal(out, data);
+        try {
+            if (data instanceof NativeMemoryData && out instanceof EnterpriseBufferObjectDataOutput) {
+                EnterpriseBufferObjectDataOutput bufferOut = (EnterpriseBufferObjectDataOutput) out;
+                NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+                bufferOut.writeInt(nativeMemoryData.totalSize());
+                bufferOut.copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.TYPE_OFFSET, data.totalSize());
+            } else {
+                out.writeByteArray(data.toByteArray());
+            }
+        } catch (Throwable e) {
+            throw handleException(e);
         }
     }
 
@@ -150,6 +150,11 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
 
         try {
+            boolean isNull = in.readBoolean();
+            if (isNull) {
+                return null;
+            }
+
             int size = in.readInt();
             if (size == 0) {
                 return new DefaultData(null);
@@ -191,6 +196,11 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
     private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int memSize, int size, boolean skipBytes)
             throws IOException {
+
+        if (memoryManager == null) {
+            throw new HazelcastSerializationException("MemoryManager is required!");
+        }
+
         try {
             long address = memoryManager.allocate(memSize);
             return new NativeMemoryData(address, memSize);
@@ -213,13 +223,13 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                         throw new HazelcastSerializationException("MemoryManager is required!");
                     }
 
-                    int dataSize = data.dataSize();
-                    int memSize = dataSize + DATA_OFFSET;
+                    int size = data.totalSize();
+                    int memSize = size + NATIVE_HEADER_OVERHEAD;
 
                     long address = memoryManager.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
-                    nativeData.writeInt(DATA_SIZE_OFFSET, dataSize);
-                    nativeData.copyFrom(TYPE_OFFSET, data.getData(), BYTE_ARRAY_BASE_OFFSET, dataSize + DefaultData.DATA_OFFSET);
+                    nativeData.writeInt(SIZE_OFFSET, size);
+                    nativeData.copyFrom(TYPE_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
 
                     return nativeData;
                 }
@@ -227,7 +237,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             case HEAP:
                 if (data instanceof NativeMemoryData) {
-                    return new DefaultData(data.getData());
+                    return new DefaultData(data.toByteArray());
                 }
                 break;
 

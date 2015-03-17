@@ -112,7 +112,7 @@ public class OffHeapStorageTest {
 
         Data resultData = s.get(hash, ref);
         assertNotNull(resultData);
-        byte[] result = resultData.getData();
+        byte[] result = resultData.toByteArray();
         assertArrayEquals(data, result);
 
         s.remove(hash, ref);

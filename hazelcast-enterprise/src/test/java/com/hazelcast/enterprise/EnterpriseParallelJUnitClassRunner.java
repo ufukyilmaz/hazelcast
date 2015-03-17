@@ -12,7 +12,7 @@ public class EnterpriseParallelJUnitClassRunner extends HazelcastParallelClassRu
     public EnterpriseParallelJUnitClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
         if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
-            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         }
     }
 }

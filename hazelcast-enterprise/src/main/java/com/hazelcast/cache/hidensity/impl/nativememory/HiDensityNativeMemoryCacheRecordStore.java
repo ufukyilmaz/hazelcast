@@ -359,11 +359,14 @@ public class HiDensityNativeMemoryCacheRecordStore
                 cacheRecordProcessor.disposeData(data);
             }
 
+            throw e;
+            /*
             if (retryOnOutOfMemoryError) {
                 return createRecordInternal(value, creationTime, expiryTime, true, false);
             } else {
                 throw e;
             }
+            */
         }
     }
 
@@ -554,6 +557,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                 recordCreated = true;
                 creationTime = now;
                 // Create data for new key
+
                 keyData = toNativeMemoryData(key);
                 keyDataCreated = keyData != key;
                 if (!keyDataCreated) {
@@ -614,11 +618,9 @@ public class HiDensityNativeMemoryCacheRecordStore
             if (recordCreated) {
                 if (recordPut) {
                     // If record has been created and put, delete it.
-                    // Since its value is not assigned yet, its value is not disposed here but at below if created
-                    records.remove(keyData);
+                    records.delete(keyData);
                 } else {
-                    // If record has been created and put, delete it.
-                    // Since its value is not assigned yet, its value is not disposed here but at below if created
+                    // Otherwise, just dispose record.
                     cacheRecordProcessor.dispose(record);
                 }
             }
@@ -650,7 +652,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                                     valueData.size()));
                 }
             }
-
             throw e;
         }
     }

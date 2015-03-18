@@ -9,9 +9,11 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.NonThreadSafe;
@@ -189,8 +191,8 @@ public final class HiDensityCacheReplicationOperation
             offHeapDestination.put(name, m);
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-                Data key = AbstractHiDensityCacheOperation.readOperationData(in);
-                Data value = AbstractHiDensityCacheOperation.readOperationData(in);
+                Data key = ((EnterpriseObjectDataInput) in).readData(DataType.HEAP);
+                Data value = ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
                 if (key != null) {
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }

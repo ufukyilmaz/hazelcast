@@ -73,6 +73,8 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 cacheConfig = (CacheConfig) cache.getConfiguration(CacheConfig.class);
             }
 
+            cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), cacheReplicationObject);
+
             if (cacheReplicationObject instanceof CacheReplicationUpdate) {
                 handleCacheUpdate(replicationEvent, (CacheReplicationUpdate) cacheReplicationObject, cacheConfig);
             } else if (cacheReplicationObject instanceof CacheReplicationRemove) {

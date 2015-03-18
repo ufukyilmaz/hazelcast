@@ -37,6 +37,7 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -361,9 +362,10 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
                              String origin) {
         WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
 
-        if (wanReplicationPublisher != null) {
+        if (wanReplicationPublisher != null
+                && origin == null) {
 
-            String groupName = origin == null ? nodeEngine.getConfig().getGroupConfig().getName() : origin;
+            String groupName = nodeEngine.getConfig().getGroupConfig().getName();
             CacheConfig config = configs.get(cacheName);
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
@@ -382,6 +384,13 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
 
         super.publishEvent(cacheName, eventType, dataKey, dataValue, dataOldValue,
                 isOldValueAvailable, orderKey, completionId, expirationTime, origin);
+    }
+
+    public void publishWanEvent(String cacheName, ReplicationEventObject replicationEventObject) {
+        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
+        if (wanReplicationPublisher != null) {
+            wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, replicationEventObject);
+        }
     }
 
     @Override

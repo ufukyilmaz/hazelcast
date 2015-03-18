@@ -47,7 +47,7 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                                                     now, true, completionId, origin);
                 }
                 publishEvent(CacheEventType.COMPLETED, key, null, null, false,
-                             completionId, CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin);
+                        completionId, CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin);
             }
 
             onMerge(key, value, mergePolicy, expiryTime, caller,

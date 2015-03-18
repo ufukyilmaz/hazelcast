@@ -802,9 +802,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public int forceEvict() {
-        records.clear();
-        return 0;
-        //return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE);
+        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE);
     }
 
 }

@@ -10,7 +10,6 @@ import java.io.IOException;
 
 import static com.hazelcast.nio.serialization.EnterprisePortableTest.createSerializationService;
 import static com.hazelcast.nio.serialization.PortableClassVersionTest.createInnerPortableClassDefinition;
-import static com.hazelcast.nio.serialization.PortableTest.transferClassDefinition;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -139,9 +138,8 @@ public class EnterprisePortableClassVersionTest {
 
     private void testPreDefinedDifferentVersions(SerializationService serializationService,
             SerializationService serializationService2, MainPortable mainPortable) {
-        final Data data = serializationService.toData(mainPortable);
 
-        transferClassDefinition(data, serializationService, serializationService2);
+        Data data = serializationService.toData(mainPortable);
         assertEquals(mainPortable, serializationService2.toObject(data));
     }
 }

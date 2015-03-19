@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 
 class EnterpriseByteArrayObjectDataOutput extends ByteArrayObjectDataOutput
-        implements EnterpriseBufferObjectDataOutput, PortableDataOutput {
+        implements EnterpriseBufferObjectDataOutput {
 
     EnterpriseByteArrayObjectDataOutput(int size, EnterpriseSerializationService service, ByteOrder byteOrder) {
         super(size, service, byteOrder);

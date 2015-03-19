@@ -16,10 +16,11 @@
 
 package com.hazelcast.nio.serialization;
 
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.HashUtil;
 import sun.misc.Unsafe;
+
+import java.nio.ByteOrder;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -29,6 +30,8 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 public final class NativeMemoryDataUtil {
 
+    private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
+
     private NativeMemoryDataUtil() {
     }
 
@@ -37,7 +40,7 @@ public final class NativeMemoryDataUtil {
             return equals(address, ((NativeMemoryData) data).address());
         }
 
-        short type = UnsafeHelper.UNSAFE.getShort(address + NativeMemoryData.TYPE_OFFSET);
+        int type = readType(address);
         if (type != data.getType()) {
             return false;
         }
@@ -50,14 +53,17 @@ public final class NativeMemoryDataUtil {
         if (bufferSize == 0) {
             return true;
         }
-        return equals(address, bufferSize, data.getData());
+        return equals(address, bufferSize, data.toByteArray());
+    }
+
+    private static int readType(long address) {
+        int type = UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.TYPE_OFFSET);
+        return BIG_ENDIAN ? type : Integer.reverseBytes(type);
     }
 
     private static int readDataSize(long address) {
-        int bufferSize = UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.DATA_SIZE_OFFSET);
-        bufferSize = Bits.clearBit(bufferSize, NativeMemoryData.PARTITION_HASH_BIT);
-        bufferSize = Bits.clearBit(bufferSize, NativeMemoryData.HEADER_BIT);
-        return bufferSize;
+        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET)
+                - NativeMemoryData.DATA_OFFSET + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
     }
 
     public static boolean equals(long address1, long address2) {
@@ -71,8 +77,8 @@ public final class NativeMemoryDataUtil {
             return false;
         }
 
-        short type1 = UnsafeHelper.UNSAFE.getShort(address1 + NativeMemoryData.TYPE_OFFSET);
-        short type2 = UnsafeHelper.UNSAFE.getShort(address2 + NativeMemoryData.TYPE_OFFSET);
+        int type1 = readType(address1);
+        int type2 = readType(address2);
         if (type1 != type2) {
             return false;
         }
@@ -123,14 +129,15 @@ public final class NativeMemoryDataUtil {
     }
 
     public static boolean equals(long address, final int bufferSize, byte[] bytes) {
-        if (address <= 0 || bytes == null || bytes.length == 0 || bufferSize != bytes.length) {
+        if (address <= 0 || bytes == null || bytes.length == 0
+                || bufferSize != bytes.length - DefaultData.DATA_OFFSET) {
             return false;
         }
         int bufferOffset = NativeMemoryData.DATA_OFFSET;
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < bufferSize; i++) {
             byte b = unsafe.getByte(address + bufferOffset + i);
-            if (b != bytes[i]) {
+            if (b != bytes[i + DefaultData.DATA_OFFSET]) {
                 return false;
             }
         }

@@ -16,12 +16,14 @@
 
 package com.hazelcast.memory;
 
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 
-import java.nio.ByteOrder;
-
-import static com.hazelcast.nio.Bits.*;
+import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 /**
  * @author mdogan 12/10/13
@@ -62,15 +64,6 @@ public class MemoryBlock {
         return UnsafeHelper.UNSAFE.getInt(address + offset);
     }
 
-    public final int readInt(long offset, ByteOrder byteOrder) {
-        if (byteOrder == ByteOrder.nativeOrder()) {
-            return readInt(offset);
-        }
-        byte[] bb = new byte[INT_SIZE_IN_BYTES];
-        copyTo(offset, bb, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, INT_SIZE_IN_BYTES);
-        return byteOrder == ByteOrder.BIG_ENDIAN ? Bits.readIntB(bb, 0) : Bits.readIntL(bb, 0);
-    }
-
     public final void writeInt(long offset, int value) {
         if ((offset + INT_SIZE_IN_BYTES) > size || offset < 0) {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
@@ -85,15 +78,6 @@ public class MemoryBlock {
                     + ", Length: " + LONG_SIZE_IN_BYTES);
         }
         return UnsafeHelper.UNSAFE.getLong(address + offset);
-    }
-
-    public final long readLong(long offset, ByteOrder byteOrder) {
-        if (byteOrder == ByteOrder.nativeOrder()) {
-            return readLong(offset);
-        }
-        byte[] bb = new byte[LONG_SIZE_IN_BYTES];
-        copyTo(offset, bb, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, LONG_SIZE_IN_BYTES);
-        return byteOrder == ByteOrder.BIG_ENDIAN ? Bits.readLongB(bb, 0) : Bits.readLongL(bb, 0);
     }
 
     public final void writeLong(long offset, long value) {
@@ -198,6 +182,10 @@ public class MemoryBlock {
             offset += chunk;
             realAddress += chunk;
         }
+    }
+
+    public final void zero() {
+        UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
     }
 
     public final long address() {

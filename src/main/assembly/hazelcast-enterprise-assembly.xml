@@ -40,6 +40,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>hazelcast-enterprise-sessions/tomcat8/target/</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-enterprise-tomcat8-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>hazelcast-enterprise/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>

@@ -23,7 +23,7 @@ import com.hazelcast.nio.UnsafeHelper;
 import java.io.IOException;
 
 final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
-        implements EnterpriseBufferObjectDataOutput, PortableDataOutput {
+        implements EnterpriseBufferObjectDataOutput {
 
     EnterpriseUnsafeObjectDataOutput(int size, EnterpriseSerializationService service) {
         super(size, service);

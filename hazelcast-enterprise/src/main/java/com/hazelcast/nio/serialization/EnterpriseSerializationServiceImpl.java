@@ -16,7 +16,6 @@
 
 package com.hazelcast.nio.serialization;
 
-import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
@@ -27,10 +26,14 @@ import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.Map;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
+import static com.hazelcast.nio.serialization.NativeMemoryData.NATIVE_HEADER_OVERHEAD;
+import static com.hazelcast.nio.serialization.NativeMemoryData.SIZE_OFFSET;
+import static com.hazelcast.nio.serialization.NativeMemoryData.TYPE_OFFSET;
 
 public final class EnterpriseSerializationServiceImpl extends SerializationServiceImpl
         implements EnterpriseSerializationService {
@@ -51,19 +54,6 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         this.memoryManager = memoryManager;
     }
 
-    protected SerializerAdapter createSerializerAdapter(Serializer serializer) {
-        final SerializerAdapter s;
-        if (serializer instanceof StreamSerializer) {
-            s = new EnterpriseStreamSerializerAdapter(this, (StreamSerializer) serializer);
-        } else if (serializer instanceof ByteArraySerializer) {
-            s = new EnterpriseByteArraySerializerAdapter((ByteArraySerializer) serializer);
-        } else {
-            throw new IllegalArgumentException("Serializer must be instance of either "
-                    + "StreamSerializer or ByteArraySerializer!");
-        }
-        return s;
-    }
-
     @Override
     public Data toData(Object obj, DataType type) {
         return toData(obj, type, globalPartitioningStrategy);
@@ -71,9 +61,6 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
     @Override
     public Data toData(Object obj, DataType type, PartitioningStrategy strategy) {
-        if (obj == null) {
-            return null;
-        }
         if (obj instanceof Data) {
             return convertData((Data) obj, type);
         }
@@ -87,33 +74,59 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     private Data toNativeData(Object obj, PartitioningStrategy strategy) {
+        if (obj == null) {
+            return null;
+        }
+
         if (memoryManager == null) {
             throw new IllegalArgumentException("MemoryManager is required!");
         }
 
-        int partitionHash = calculatePartitionHash(obj, strategy);
+        EnterpriseBufferObjectDataOutput out = (EnterpriseBufferObjectDataOutput) pop();
         try {
-            final EnterpriseSerializerAdapter serializer = (EnterpriseSerializerAdapter) serializerFor(obj.getClass());
-            if (serializer == null) {
-                if (isActive()) {
-                    throw new HazelcastSerializationException("There is no suitable serializer for " + obj.getClass());
-                }
-                throw new HazelcastInstanceNotActiveException();
+            SerializerAdapter serializer = serializerFor(obj.getClass());
+
+            out.writeInt(serializer.getTypeId(), ByteOrder.BIG_ENDIAN);
+
+            int partitionHash = calculatePartitionHash(obj, strategy);
+            boolean hasPartitionHash = partitionHash != 0;
+            out.writeBoolean(hasPartitionHash);
+
+            serializer.write(out, obj);
+
+            if (hasPartitionHash) {
+                out.writeInt(partitionHash, ByteOrder.BIG_ENDIAN);
             }
-            return serializer.write(obj, memoryManager, partitionHash);
+
+            int size = out.position();
+            int memSize = size + NATIVE_HEADER_OVERHEAD;
+            long address = memoryManager.allocate(memSize);
+            assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
+
+            NativeMemoryData data = new NativeMemoryData(address, memSize);
+            data.writeInt(SIZE_OFFSET, size);
+            out.copyToMemoryBlock(data, TYPE_OFFSET, size);
+            return data;
         } catch (Throwable e) {
             throw handleException(e);
+        } finally {
+            push(out);
         }
     }
 
     @Override
     protected void writeDataInternal(ObjectDataOutput out, Data data) throws IOException {
-        if (data instanceof NativeMemoryData && out instanceof EnterpriseBufferObjectDataOutput) {
-            EnterpriseBufferObjectDataOutput bufferOut = (EnterpriseBufferObjectDataOutput) out;
-            NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
-            bufferOut.copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.HEADER_LENGTH, data.dataSize());
-        } else {
-            out.write(data.getData());
+        try {
+            if (data instanceof NativeMemoryData && out instanceof EnterpriseBufferObjectDataOutput) {
+                EnterpriseBufferObjectDataOutput bufferOut = (EnterpriseBufferObjectDataOutput) out;
+                NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+                bufferOut.writeInt(nativeMemoryData.totalSize());
+                bufferOut.copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.TYPE_OFFSET, data.totalSize());
+            } else {
+                out.writeByteArray(data.toByteArray());
+            }
+        } catch (Throwable e) {
+            throw handleException(e);
         }
     }
 
@@ -129,7 +142,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
     private Data readDataInternal(EnterpriseObjectDataInput in, DataType type, boolean readToHeapOnOOME) {
         if (type == DataType.HEAP) {
-            return readData(in);
+            return super.readData(in);
         }
 
         if (memoryManager == null) {
@@ -142,69 +155,58 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                 return null;
             }
 
-            int typeId = in.readInt();
-            int partitionHash = in.readInt();
-            byte[] header = readPortableHeader(in);
-
-            int dataSize = in.readInt();
-            if (dataSize > 0) {
-                return readNativeData(in, typeId, partitionHash, dataSize, header, readToHeapOnOOME);
+            int size = in.readInt();
+            if (size == 0) {
+                return new DefaultData(null);
             }
-            return new DefaultData(typeId, null, partitionHash, header);
+
+            return readNativeData(in, size, readToHeapOnOOME);
         } catch (Throwable e) {
             throw handleException(e);
         }
     }
 
-    private Data readNativeData(EnterpriseObjectDataInput in, int typeId, int partitionHash, int dataSize,
-            byte[] header, boolean readToHeapOnOOME) throws IOException {
-
-        int size = dataSize + NativeMemoryData.HEADER_LENGTH;
-        if (header != null) {
-            size += (INT_SIZE_IN_BYTES + header.length);
-        }
-        if (partitionHash != 0) {
-            size += INT_SIZE_IN_BYTES;
-        }
-
-        MutableData mutableData = null;
-
+    private Data readNativeData(EnterpriseObjectDataInput in, int size,  boolean readToHeapOnOOME) throws IOException {
         try {
-            mutableData = allocateNativeData(in, dataSize, size, !readToHeapOnOOME);
-        } catch (NativeOutOfMemoryError oome) {
-            if (readToHeapOnOOME) {
-                mutableData = new DefaultData();
+            int memSize = size + NATIVE_HEADER_OVERHEAD;
+            NativeMemoryData data = allocateNativeData(in, memSize, size, !readToHeapOnOOME);
+            data.writeInt(SIZE_OFFSET, size);
+
+            if (in instanceof EnterpriseBufferObjectDataInput) {
+                EnterpriseBufferObjectDataInput bufferIn = (EnterpriseBufferObjectDataInput) in;
+                bufferIn.copyToMemoryBlock(data, TYPE_OFFSET, size);
             } else {
-                throw oome;
+                byte[] bytes = new byte[size];
+                in.readFully(bytes);
+                data.copyFrom(TYPE_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
+            }
+            return data;
+
+        } catch (NativeOutOfMemoryError e) {
+            if (readToHeapOnOOME) {
+                byte[] bytes = new byte[size];
+                in.readFully(bytes);
+                return new DefaultData(bytes);
+            } else {
+                throw e;
             }
         }
-        mutableData.setType(typeId);
-
-        if (in instanceof EnterpriseBufferObjectDataInput && mutableData instanceof NativeMemoryData) {
-            NativeMemoryData nativeMemoryData = (NativeMemoryData) mutableData;
-            EnterpriseBufferObjectDataInput bufferInput = (EnterpriseBufferObjectDataInput) in;
-            bufferInput.copyToMemoryBlock(nativeMemoryData, NativeMemoryData.HEADER_LENGTH, dataSize);
-            nativeMemoryData.setDataSize(dataSize);
-        } else {
-            byte[] data = new byte[dataSize];
-            in.readFully(data);
-            mutableData.setData(data);
-        }
-
-        mutableData.setPartitionHash(partitionHash);
-        mutableData.setHeader(header);
-        return mutableData;
     }
 
     @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
-    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int dataSize, int size, boolean skipBytes)
+    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int memSize, int size, boolean skipBytes)
             throws IOException {
+
+        if (memoryManager == null) {
+            throw new HazelcastSerializationException("MemoryManager is required!");
+        }
+
         try {
-            long address = memoryManager.allocate(size);
-            return new NativeMemoryData(address, size);
+            long address = memoryManager.allocate(memSize);
+            return new NativeMemoryData(address, memSize);
         } catch (NativeOutOfMemoryError e) {
             if (skipBytes) {
-                in.skipBytes(dataSize);
+                in.skipBytes(size);
             }
             throw e;
         }
@@ -220,23 +222,22 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                     if (memoryManager == null) {
                         throw new HazelcastSerializationException("MemoryManager is required!");
                     }
-                    int size = data.dataSize() + NativeMemoryData.HEADER_LENGTH;
-                    int partitionHash = data.hasPartitionHash() ? data.getPartitionHash() : 0;
-                    if (partitionHash != 0) {
-                        size += INT_SIZE_IN_BYTES;
-                    }
-                    long address = memoryManager.allocate(size);
-                    NativeMemoryData bin = new NativeMemoryData(address, size);
-                    bin.setType(data.getType());
-                    bin.setData(data.getData());
-                    bin.setPartitionHash(partitionHash);
-                    return bin;
+
+                    int size = data.totalSize();
+                    int memSize = size + NATIVE_HEADER_OVERHEAD;
+
+                    long address = memoryManager.allocate(memSize);
+                    NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
+                    nativeData.writeInt(SIZE_OFFSET, size);
+                    nativeData.copyFrom(TYPE_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
+
+                    return nativeData;
                 }
                 break;
 
             case HEAP:
                 if (data instanceof NativeMemoryData) {
-                    return new DefaultData(data.getType(), data.getData(), data.getPartitionHash());
+                    return new DefaultData(data.toByteArray());
                 }
                 break;
 
@@ -253,8 +254,6 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             }
             NativeMemoryData memoryBlock = (NativeMemoryData) data;
             if (memoryBlock.address() != MemoryManager.NULL_ADDRESS) {
-                memoryBlock.setType(SerializationConstants.CONSTANT_TYPE_NULL);
-                memoryBlock.setData(null);
                 memoryManager.free(memoryBlock.address(), memoryBlock.size());
                 memoryBlock.reset(MemoryManager.NULL_ADDRESS);
             }

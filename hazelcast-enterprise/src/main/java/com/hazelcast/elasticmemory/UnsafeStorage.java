@@ -88,9 +88,9 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.getData();
+        final byte[] value = data.toByteArray();
         if (value == null || value.length == 0) {
-            return new DataRefImpl(data.getType(), null, 0); // volatile write;
+            return new DataRefImpl(null, 0); // volatile write;
         }
 
         final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
@@ -103,7 +103,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (address + pos), len);
             offset += len;
         }
-        return new DataRefImpl(data.getType(), indexes, value.length); // volatile write
+        return new DataRefImpl(indexes, value.length); // volatile write
     }
 
     public Data get(int hash, final DataRefImpl ref) {
@@ -111,7 +111,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             return null;
         }
         if (ref.isEmpty()) {
-            return new DefaultData(ref.getType(), null);
+            return new DefaultData(null);
         }
 
         final byte[] value = new byte[ref.size()];
@@ -126,7 +126,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         }
 
         if (isEntryRefValid(ref)) { // volatile read
-            return new DefaultData(ref.getType(), value);
+            return new DefaultData(value);
         }
         return null;
     }

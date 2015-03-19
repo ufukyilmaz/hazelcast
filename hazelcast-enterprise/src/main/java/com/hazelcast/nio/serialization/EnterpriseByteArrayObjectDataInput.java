@@ -9,17 +9,13 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 
 class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput
-        implements EnterpriseBufferObjectDataInput, PortableDataInput {
+        implements EnterpriseBufferObjectDataInput {
 
     private final EnterpriseSerializationService enterpriseSerializationService;
 
-    EnterpriseByteArrayObjectDataInput(Data data, EnterpriseSerializationService service, ByteOrder byteOrder) {
-        super(data, service, byteOrder);
-        this.enterpriseSerializationService = service;
-    }
-
-    EnterpriseByteArrayObjectDataInput(byte[] buffer, EnterpriseSerializationService service, ByteOrder byteOrder) {
-        super(buffer, service, byteOrder);
+    EnterpriseByteArrayObjectDataInput(byte[] buffer, int offset,
+            EnterpriseSerializationService service, ByteOrder byteOrder) {
+        super(buffer, offset, service, byteOrder);
         this.enterpriseSerializationService = service;
     }
 

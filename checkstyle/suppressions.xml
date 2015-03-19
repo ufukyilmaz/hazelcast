@@ -22,7 +22,7 @@
     <suppress checks="JavadocMethod" files="com.hazelcast.nio.serialization[\\/]"/>
     <suppress checks="JavadocType" files="com.hazelcast.nio.serialization[\\/]"/>
     <suppress checks="ParameterNumber" files="com.hazelcast.nio.serialization.EnterpriseSerializationServiceImpl"/>
-    <suppress checks="MethodCount" files="com.hazelcast.nio.serialization.MemoryBlockDataInput"/>
+    <suppress checks="MethodCount|MagicNumber" files="com.hazelcast.nio.serialization.MemoryBlockDataInput"/>
     <suppress checks="IllegalImport|NPathComplexity" files="com.hazelcast.nio.serialization.NativeMemoryDataUtil"/>
 
     <suppress checks="ClassFanOutComplexityCheck" files="com.hazelcast.instance.EnterpriseNodeExtension"/>

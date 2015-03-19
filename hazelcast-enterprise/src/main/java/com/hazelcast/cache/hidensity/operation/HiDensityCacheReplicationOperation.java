@@ -191,23 +191,14 @@ public final class HiDensityCacheReplicationOperation
             offHeapDestination.put(name, m);
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-                Data key = readNativeMemoryData(in);
-                Data value = readNativeMemoryData(in);
+                Data key = ((EnterpriseObjectDataInput) in).readData(DataType.HEAP);
+                Data value = ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
                 if (key != null) {
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }
             }
         }
         super.readInternal(in);
-    }
-
-    private Data readNativeMemoryData(ObjectDataInput in) throws IOException {
-        try {
-            return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
-        } catch (NativeOutOfMemoryError e) {
-            oome = e;
-        }
-        return null;
     }
 
     public boolean isEmpty() {

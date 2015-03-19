@@ -187,13 +187,10 @@ abstract class AbstractHiDensityCacheOperation
         completionId = in.readInt();
     }
 
-    protected final Data readOperationData(ObjectDataInput in) throws IOException {
-        try {
-            return ((EnterpriseObjectDataInput) in).readData(DataType.HEAP);
-        } catch (NativeOutOfMemoryError e) {
-            oome = e;
-        }
-        return null;
+    public static Data readOperationData(ObjectDataInput in) throws IOException {
+        // Try read data as NATIVE memory format.
+        // If there is no available memory (in case of OOME), read as HEAP memory format.
+        return ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
     }
 
     @Override

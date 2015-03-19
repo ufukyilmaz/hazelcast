@@ -296,7 +296,7 @@ public final class NativeMemoryData extends MemoryBlock implements MutableData {
             sb.append('}');
             return sb.toString();
         } else {
-            return "OffHeapBinary{ NULL }";
+            return "NativeMemoryData{ NULL }";
         }
     }
 }

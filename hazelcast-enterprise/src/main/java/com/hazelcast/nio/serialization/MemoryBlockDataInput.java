@@ -407,6 +407,11 @@ final class MemoryBlockDataInput extends InputStream
     }
 
     @Override
+    public Data tryReadData(DataType type) throws IOException {
+        return service.tryReadData(this, type);
+    }
+
+    @Override
     public long skip(long n) {
         if (n <= 0 || n >= Integer.MAX_VALUE) {
             return 0L;

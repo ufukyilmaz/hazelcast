@@ -11,5 +11,6 @@ import java.io.IOException;
 public interface EnterpriseObjectDataInput extends ObjectDataInput {
 
     Data readData(DataType type) throws IOException;
+    Data tryReadData(DataType type) throws IOException;
 
 }

@@ -12,6 +12,8 @@ public interface EnterpriseSerializationService extends SerializationService {
 
     <B extends Data> B readData(EnterpriseObjectDataInput in, DataType type);
 
+    <B extends Data> B tryReadData(EnterpriseObjectDataInput in, DataType type);
+
     <B extends Data> B convertData(Data data, DataType type);
 
     MemoryManager getMemoryManager();

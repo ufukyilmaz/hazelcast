@@ -68,7 +68,7 @@ public class CacheGetAndReplaceOperation extends BackupAwareHiDensityCacheOperat
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        value = readNativeData(in);
+        value = AbstractHiDensityCacheOperation.readOperationData(in);
         expiryPolicy = in.readObject();
     }
 

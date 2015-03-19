@@ -64,7 +64,7 @@ public class CachePutBackupOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         expiryPolicy = in.readObject();
-        value = readNativeData(in);
+        value = AbstractHiDensityCacheOperation.readOperationData(in);
     }
 
     @Override

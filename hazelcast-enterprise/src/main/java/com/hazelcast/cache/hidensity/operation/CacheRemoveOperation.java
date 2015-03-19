@@ -68,7 +68,7 @@ public class CacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        currentValue = readNativeData(in);
+        currentValue = AbstractHiDensityCacheOperation.readOperationData(in);
     }
 
     @Override

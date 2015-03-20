@@ -21,7 +21,6 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -31,7 +30,13 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.nio.serialization.PortableTest.*;
+import static com.hazelcast.nio.serialization.PortableTest.ChildPortableObject;
+import static com.hazelcast.nio.serialization.PortableTest.GrandParentPortableObject;
+import static com.hazelcast.nio.serialization.PortableTest.ParentPortableObject;
+import static com.hazelcast.nio.serialization.PortableTest.TestObject1;
+import static com.hazelcast.nio.serialization.PortableTest.TestObject2;
+import static com.hazelcast.nio.serialization.PortableTest.TestPortableFactory;
+import static com.hazelcast.nio.serialization.PortableTest.createNamedPortableClassDefinition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -75,7 +80,6 @@ public class EnterprisePortableTest {
         NamedPortable np = nn[0];
         data = serializationService.toData(np);
         assertEquals(np, serializationService.toObject(data));
-        transferClassDefinition(data, serializationService, serializationService2);
         assertEquals(np, serializationService2.toObject(data));
 
         InnerPortable inner = new InnerPortable(new byte[]{0, 1, 2}, new char[]{'c', 'h', 'a', 'r'},
@@ -84,7 +88,6 @@ public class EnterprisePortableTest {
 
         data = serializationService.toData(inner);
         assertEquals(inner, serializationService.toObject(data));
-        transferClassDefinition(data, serializationService, serializationService2);
         assertEquals(inner, serializationService2.toObject(data));
 
         MainPortable main = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
@@ -92,7 +95,6 @@ public class EnterprisePortableTest {
 
         data = serializationService.toData(main);
         assertEquals(main, serializationService.toObject(data));
-        transferClassDefinition(data, serializationService, serializationService2);
         assertEquals(main, serializationService2.toObject(data));
     }
 
@@ -213,7 +215,6 @@ public class EnterprisePortableTest {
         Data data = serializationService.toData(o1);
 
         SerializationService serializationService2 = createSerializationService(2);
-        transferClassDefinition(data, serializationService, serializationService2);
 
         Object o2 = serializationService2.toObject(data);
         assertEquals(o1, o2);
@@ -257,7 +258,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupBigEndianHeapData() {
+    public void testClassDefinitionLookupBigEndianHeapData() throws IOException {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
                 .build();
@@ -266,7 +267,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupLittleEndianHeapData() {
+    public void testClassDefinitionLookupLittleEndianHeapData() throws IOException {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
                 .build();
@@ -275,7 +276,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupNativeOrderHeapData() {
+    public void testClassDefinitionLookupNativeOrderHeapData() throws IOException {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .build();
@@ -284,7 +285,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupBigEndianOffHeapData() {
+    public void testClassDefinitionLookupBigEndianOffHeapData() throws IOException {
         MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
@@ -296,7 +297,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupLittleEndianOffHeapData() {
+    public void testClassDefinitionLookupLittleEndianOffHeapData() throws IOException {
         MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
@@ -308,7 +309,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupNativeOrderOffHeapData() {
+    public void testClassDefinitionLookupNativeOrderOffHeapData() throws IOException {
         MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
@@ -320,7 +321,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() {
+    public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() throws IOException {
         MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
@@ -332,21 +333,9 @@ public class EnterprisePortableTest {
         memoryManager.destroy();
     }
 
-    private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) {
+    private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) throws IOException {
         NamedPortableV2 p = new NamedPortableV2("test-portable", 123456789);
         Data data = ss.toData(p, dataType);
-
-        byte[] metadata = data.getHeader();
-        assertNotNull(metadata);
-
-        boolean bigEndian = ss.getByteOrder() == ByteOrder.BIG_ENDIAN;
-        assertEquals(p.getFactoryId(), Bits.readInt(metadata, 0, bigEndian));
-        assertEquals(p.getClassId(), Bits.readInt(metadata, 4, bigEndian));
-        assertEquals(p.getClassVersion(), Bits.readInt(metadata, 8, bigEndian));
-
-        assertEquals(p.getFactoryId(), data.readIntHeader(0, ss.getByteOrder()));
-        assertEquals(p.getClassId(), data.readIntHeader(4, ss.getByteOrder()));
-        assertEquals(p.getClassVersion(), data.readIntHeader(8, ss.getByteOrder()));
 
         PortableContext portableContext = ss.getPortableContext();
         ClassDefinition cd = portableContext.lookupClassDefinition(data);

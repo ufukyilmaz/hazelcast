@@ -16,10 +16,12 @@
 
 package com.hazelcast.nio.serialization;
 
+import com.hazelcast.core.PartitionAware;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Assert;
@@ -27,6 +29,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.Serializable;
 import java.nio.ByteOrder;
 
 import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.Address;
@@ -60,35 +63,39 @@ public class EnterpriseDataTest {
     }
 
     @Test
-    public void testHeapAndOffDefaultDataEqualityBigEndian() {
-        testHeapAndOffDefaultDataEquality(ByteOrder.BIG_ENDIAN, false);
+    public void testHeapAndNativeDataEqualityBigEndian() {
+        testHeapAndNativeDataEquality(ByteOrder.BIG_ENDIAN, false);
     }
 
     @Test
-    public void testHeapAndOffDefaultDataEqualityLittleEndian() {
-        testHeapAndOffDefaultDataEquality(ByteOrder.LITTLE_ENDIAN, false);
+    public void testHeapAndNativeDataEqualityLittleEndian() {
+        testHeapAndNativeDataEquality(ByteOrder.LITTLE_ENDIAN, false);
     }
 
     @Test
-    public void testHeapAndOffDefaultDataEqualityNativeOrder() {
-        testHeapAndOffDefaultDataEquality(ByteOrder.nativeOrder(), false);
+    public void testHeapAndNativeDataEqualityNativeOrder() {
+        testHeapAndNativeDataEquality(ByteOrder.nativeOrder(), false);
     }
 
     @Test
-    public void testHeapAndOffDefaultDataEqualityNativeOrderUsingUnsafe() {
-        testHeapAndOffDefaultDataEquality(ByteOrder.nativeOrder(), true);
+    public void testHeapAndNativeDataEqualityNativeOrderUsingUnsafe() {
+        testHeapAndNativeDataEquality(ByteOrder.nativeOrder(), true);
     }
 
-    private void testHeapAndOffDefaultDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
+    private void testHeapAndNativeDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
         MemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
-                    .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder).build();
+                    .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
+                    .setPartitioningStrategy(new DefaultPartitioningStrategy())
+                    .build();
 
             Object[] objects = new Object[]{
                     System.currentTimeMillis(),
                     "abcdefghijklmnopqrstuvwxyz 0123456789 !?@#$%&*()[]{}|/<>",
-                    person, portablePerson
+                    person,
+                    portablePerson,
+                    new PartitionAwareDummyObject(System.nanoTime())
             };
 
             for (Object object : objects) {
@@ -167,6 +174,19 @@ public class EnterpriseDataTest {
             ss.disposeData(offheap2);
         } finally {
             memPool.destroy();
+        }
+    }
+
+    private static class PartitionAwareDummyObject implements Serializable, PartitionAware {
+        private final Object key;
+
+        PartitionAwareDummyObject(Object key) {
+            this.key = key;
+        }
+
+        @Override
+        public Object getPartitionKey() {
+            return key;
         }
     }
 }

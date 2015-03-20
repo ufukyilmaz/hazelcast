@@ -106,13 +106,13 @@ public class OffHeapStorageTest {
         rand.nextBytes(data);
         final int hash = rand.nextInt();
 
-        final DataRefImpl ref = s.put(hash, new DefaultData(0, data));
+        final DataRefImpl ref = s.put(hash, new DefaultData(data));
         assertEquals(k, ref.size());
         assertEquals((int) Math.ceil((double) k / chunkSize), ref.getChunkCount());
 
         Data resultData = s.get(hash, ref);
         assertNotNull(resultData);
-        byte[] result = resultData.getData();
+        byte[] result = resultData.toByteArray();
         assertArrayEquals(data, result);
 
         s.remove(hash, ref);
@@ -153,7 +153,7 @@ public class OffHeapStorageTest {
                 : new ByteBufferStorage(total.bytes(), (int) chunk.bytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
-            s.put(i, new DefaultData(0, data));
+            s.put(i, new DefaultData(data));
         }
         s.destroy();
     }

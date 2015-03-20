@@ -94,6 +94,11 @@ abstract class AbstractHiDensityCacheOperation
         return service.forceEvict(name, getPartitionId());
     }
 
+    private int forceEvictOnOthers() {
+        EnterpriseCacheService service = getService();
+        return service.forceEvictOnOthers(name, getPartitionId());
+    }
+
     @Override
     public final void run() throws Exception {
         try {
@@ -112,6 +117,19 @@ abstract class AbstractHiDensityCacheOperation
                 break;
             } catch (NativeOutOfMemoryError e) {
                 oome = e;
+            }
+        }
+
+        if (oome != null) {
+            for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
+                try {
+                    forceEvictOnOthers();
+                    runInternal();
+                    oome = null;
+                    break;
+                } catch (NativeOutOfMemoryError e) {
+                    oome = e;
+                }
             }
         }
 
@@ -188,9 +206,8 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     public static Data readOperationData(ObjectDataInput in) throws IOException {
-        // Try read data as NATIVE memory format.
-        // If there is no available memory (in case of OOME), read as HEAP memory format.
-        return ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
+        // TODO If there is enough memory try to read into native memory
+        return ((EnterpriseObjectDataInput) in).tryReadData(DataType.HEAP);
     }
 
     @Override

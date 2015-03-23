@@ -544,6 +544,10 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public boolean own(Data key, Object value, long ttlMillis) {
+        if (!records.containsKey(key)) {
+            evictIfRequired();
+        }
+
         long now = Clock.currentTimeMillis();
         long creationTime;
         HiDensityNativeMemoryCacheRecord record = null;

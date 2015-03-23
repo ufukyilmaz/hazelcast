@@ -46,7 +46,7 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.logging.Level;
 
-import static com.hazelcast.map.impl.MapServiceConstructor.getDefaultMapServiceConstructor;
+import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
@@ -323,7 +323,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         } else if (ICacheService.class.isAssignableFrom(clazz)) {
             return (T) new EnterpriseCacheService();
         } else if (MapService.class.isAssignableFrom(clazz)) {
-            return (T) getDefaultMapServiceConstructor().createNew(node.getNodeEngine());
+            return (T) getEnterpriseMapServiceConstructor().createNew(node.getNodeEngine());
         }
         throw new IllegalArgumentException("Unknown service class: " + clazz);
     }

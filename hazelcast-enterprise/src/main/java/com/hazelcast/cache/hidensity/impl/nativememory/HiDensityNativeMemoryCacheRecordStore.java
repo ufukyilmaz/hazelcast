@@ -235,8 +235,12 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected Data toData(Object obj) {
-        if ((obj instanceof Data) && !(obj instanceof NativeMemoryData)) {
-            return cacheRecordProcessor.convertData((Data) obj, DataType.NATIVE);
+        if (obj instanceof Data) {
+            if (obj instanceof NativeMemoryData) {
+                return (NativeMemoryData) obj;
+            } else {
+                return cacheRecordProcessor.convertData((Data) obj, DataType.NATIVE);
+            }
         } else {
             return super.toData(obj);
         }
@@ -544,6 +548,10 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public boolean own(Data key, Object value, long ttlMillis) {
+        if (!records.containsKey(key)) {
+            evictIfRequired();
+        }
+
         long now = Clock.currentTimeMillis();
         long creationTime;
         HiDensityNativeMemoryCacheRecord record = null;
@@ -551,8 +559,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         NativeMemoryData valueData = null;
         boolean recordCreated = false;
         boolean recordPut = false;
-        boolean keyDataCreated = false;
-        boolean valueDataCreated = false;
 
         try {
             record = records.get(key);
@@ -560,22 +566,8 @@ public class HiDensityNativeMemoryCacheRecordStore
                 record = createRecord(now);
                 recordCreated = true;
                 creationTime = now;
-                // Create data for new key
-
                 keyData = toNativeMemoryData(key);
-                keyDataCreated = keyData != key;
-                if (!keyDataCreated) {
-                    // Since new key data is created at outside of cache record store, its memory usage must be added
-                    /**
-                     * See {@link com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation#run}
-                     */
-                    cacheInfo.addUsedMemory(
-                            cacheRecordProcessor.getSize(
-                                    keyData.address(),
-                                    keyData.size()));
-                }
-
-                records.set(keyData, record);
+                records.put(keyData, record);
                 recordPut = true;
             } else {
                 creationTime = record.getCreationTime();
@@ -583,17 +575,6 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             // Create data for new value
             valueData = toNativeMemoryData(value);
-            valueDataCreated = valueData != value;
-            if (!valueDataCreated) {
-                // Since new value data is created at outside of cache record store, its memory usage must be added
-                /**
-                 * See {@link com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation#run}
-                 */
-                cacheInfo.addUsedMemory(
-                        cacheRecordProcessor.getSize(
-                                valueData.address(),
-                                valueData.size()));
-            }
 
             // Dispose old value if exist
             if (record.getValueAddress() != NULL_PTR) {
@@ -629,33 +610,16 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
             }
 
-            // Check if key is created inside of cache record store.
-            if (keyDataCreated) {
+            if (isMemoryBlockValid(keyData)) {
                 // If key data is created here, dispose it
                 cacheRecordProcessor.disposeData(keyData);
-            } else {
-                // Since key data is created at outside of cache record store, its memory usage must be removed
-                if (isMemoryBlockValid(keyData)) {
-                    cacheInfo.removeUsedMemory(
-                            cacheRecordProcessor.getSize(
-                                    keyData.address(),
-                                    keyData.size()));
-                }
             }
 
-            // Check if value is created inside of cache record store.
-            if (valueDataCreated) {
+            if (isMemoryBlockValid(valueData)) {
                 // If value data is created here, dispose it
                 cacheRecordProcessor.disposeData(valueData);
-            } else {
-                // Since value data is created at outside of cache record store, its memory usage must be removed
-                if (isMemoryBlockValid(valueData)) {
-                    cacheInfo.removeUsedMemory(
-                            cacheRecordProcessor.getSize(
-                                    valueData.address(),
-                                    valueData.size()));
-                }
             }
+
             throw e;
         }
     }

@@ -236,6 +236,59 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
+     * Does forced eviction on other caches. Runs on the operation threads.
+     *
+     * @param name                the name of the cache not to be evicted
+     * @param originalPartitionId the partition id of the record store stores the records of cache
+     * @return the number of evicted records
+     */
+    public int forceEvictOnOthers(String name, int originalPartitionId) {
+        int evicted = 0;
+        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
+        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int mod = originalPartitionId % threadCount;
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            if (partitionId % threadCount == mod) {
+                for (CacheConfig cacheConfig : getCacheConfigs()) {
+                    String cacheName = cacheConfig.getNameWithPrefix();
+                    if (!cacheName.equals(name)) {
+                        ICacheRecordStore cache = getCacheRecordStore(cacheName, partitionId);
+                        if (cache instanceof HiDensityCacheRecordStore) {
+                            evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
+                        }
+                    }
+                }
+            }
+        }
+        return evicted;
+    }
+
+    /**
+     * Does forced eviction on all caches. Runs on the operation threads.
+     *
+     * @param originalPartitionId the partition id of the record store stores the records of cache
+     * @return the number of evicted records
+     */
+    public int forceEvictOnAll(int originalPartitionId) {
+        int evicted = 0;
+        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
+        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int mod = originalPartitionId % threadCount;
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            if (partitionId % threadCount == mod) {
+                for (CacheConfig cacheConfig : getCacheConfigs()) {
+                    String cacheName = cacheConfig.getNameWithPrefix();
+                    ICacheRecordStore cache = getCacheRecordStore(cacheName, partitionId);
+                    if (cache instanceof HiDensityCacheRecordStore) {
+                        evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
+                    }
+                }
+            }
+        }
+        return evicted;
+    }
+
+    /**
      * Creates a {@link com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation} to start the replication.
      *
      * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>

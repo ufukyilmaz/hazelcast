@@ -52,10 +52,6 @@ import static org.junit.Assert.assertNotNull;
 @Category(NightlyTest.class)
 public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
 
-    static {
-        System.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
-    }
-
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
 
 
@@ -96,6 +92,7 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         config.setInstanceName(instanceName);
         config.getNetworkConfig().setPort(port);
         config.setClassLoader(classLoader);
+        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
         CacheSimpleConfig cacheConfig = config.getCacheConfig("default");
         CacheEvictionConfig evictionConfig = new CacheEvictionConfig();
         if (nativeMemoryEnabled) {

@@ -53,6 +53,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(config);//This node does not join.
     }
 
+    @Test
     public void node_should_join_when_max_memory_does_not_exceed_licensed_value() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         configureCacheWithNativeMemory(factory);

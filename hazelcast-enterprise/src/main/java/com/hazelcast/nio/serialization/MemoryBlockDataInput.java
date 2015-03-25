@@ -342,7 +342,7 @@ final class MemoryBlockDataInput extends InputStream
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedByte() throws IOException {
-        return readByte();
+        return readByte() & 0xff;
     }
 
     /**
@@ -359,7 +359,7 @@ final class MemoryBlockDataInput extends InputStream
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedShort() throws IOException {
-        return readShort();
+        return readShort() & 0xffff;
     }
 
     @Deprecated

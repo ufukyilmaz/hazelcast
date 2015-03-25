@@ -33,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Ignore // https://github.com/hazelcast/hazelcast-enterprise/issues/160
 public class EnterpriseMapWanReplicationTest extends WanReplicationTest {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;

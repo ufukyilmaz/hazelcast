@@ -15,6 +15,7 @@ import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-public class EnterpriseMapWanReplicationTest extends WanReplicationTest {
+public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
 

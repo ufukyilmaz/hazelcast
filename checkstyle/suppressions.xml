@@ -41,9 +41,18 @@
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
-    <suppress checks="MethodCountCheck|NPathComplexity" files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
-    <suppress checks="CyclomaticComplexity" files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
-    <suppress checks="ClassDataAbstractionCouplingC" files="com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook"/>
+    <suppress checks="MethodCountCheck|NPathComplexity|ParameterNumber"
+              files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+    <suppress checks="CyclomaticComplexity|ParameterNumber"
+              files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+    <suppress checks="ClassDataAbstractionCouplingC"
+              files="com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook"/>
+    <suppress checks="ClassDataAbstractionCouplingC"
+              files="com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider"/>
+
+    <!-- Enterprise Cache -->
+    <suppress checks="ParameterNumber" files="com.hazelcast.cache.EnterpriseCacheRecordStoreImpl"/>
+    <suppress checks="ClassDataAbstractionCouplingC|ClassFanOutComplexityCheck|ParameterNumber"
+              files="com.hazelcast.cache.EnterpriseCacheService"/>
 
 </suppressions>
-

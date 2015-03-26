@@ -9,12 +9,11 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.internal.monitors.HealthMonitorLevel;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.util.HealthMonitorLevel;
 import com.hazelcast.util.StringUtil;
-
 import org.junit.After;
 import org.junit.Before;
 

@@ -346,10 +346,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void beforeJoin() {
         NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
+        if (!memoryConfig.isEnabled())
+            return;
         long totalNativeMemorySize = node.getClusterService().getSize()
                 * memoryConfig.getSize().bytes();
         long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());
-        if (memoryConfig.isEnabled() && totalNativeMemorySize >= licensedNativeMemorySize) {
+        if ( totalNativeMemorySize >= licensedNativeMemorySize) {
             throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
                     + "Please contact sales@hazelcast.com");
         }

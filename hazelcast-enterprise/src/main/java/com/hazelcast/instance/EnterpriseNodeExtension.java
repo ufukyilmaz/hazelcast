@@ -24,6 +24,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
@@ -69,11 +70,26 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
+        String licenseKey = getLicenseKeyFromNodeConfig(node);
+        checkLicenseKey(licenseKey);
+
+        systemLogger = node.getLogger("com.hazelcast.system");
+
+        createSecurityContext(node);
+        createMemoryManager(node.config);
+        createStorage(node);
+        createSocketInterceptor(node.config.getNetworkConfig());
+    }
+
+    private String getLicenseKeyFromNodeConfig(Node node) {
         String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
+        return licenseKey;
+    }
 
+    private void checkLicenseKey(String licenseKey) {
         if (licenseKey == null) {
             throw new InvalidLicenseException("License Key not configured!");
         }
@@ -93,13 +109,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (license.getType() != LicenseType.ENTERPRISE) {
             throw new InvalidLicenseException("Invalid License Type! Please contact sales@hazelcast.com");
         }
-
-       systemLogger = node.getLogger("com.hazelcast.system");
-
-        createSecurityContext(node);
-        createMemoryManager(node.config);
-        createStorage(node);
-        createSocketInterceptor(node.config.getNetworkConfig());
     }
 
     private void createSecurityContext(Node node) {
@@ -332,5 +341,20 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public MemoryStats getMemoryStats() {
         MemoryManager mm = memoryManager;
         return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
+    }
+
+    @Override
+    public void beforeJoin() {
+        NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
+        if (!memoryConfig.isEnabled()) {
+            return;
+        }
+        long totalNativeMemorySize = node.getClusterService().getSize()
+                * memoryConfig.getSize().bytes();
+        long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());
+        if (totalNativeMemorySize >= licensedNativeMemorySize) {
+            throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
+                    + "Please contact sales@hazelcast.com");
+        }
     }
 }

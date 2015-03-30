@@ -7,6 +7,8 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -31,6 +33,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         ClientConfig clientConfig = client.getClientConfig();
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         initSocketInterceptor(networkConfig.getSocketInterceptorConfig());
+        String licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
+        LicenseHelper.checkLicenseKey(licenseKey);
     }
 
     @Override

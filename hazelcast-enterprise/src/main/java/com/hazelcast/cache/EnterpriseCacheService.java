@@ -2,16 +2,16 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.operation.CacheDestroyOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.merge.CacheMergePolicyProvider;
+import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;

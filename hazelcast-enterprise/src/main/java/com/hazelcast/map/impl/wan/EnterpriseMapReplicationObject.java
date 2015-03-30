@@ -44,7 +44,4 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
         mapName = in.readUTF();
         groupName = in.readUTF();
     }
-
-
-
 }

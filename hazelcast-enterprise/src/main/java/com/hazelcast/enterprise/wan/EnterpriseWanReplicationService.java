@@ -16,7 +16,6 @@
 
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.instance.HazelcastThreadGroup;

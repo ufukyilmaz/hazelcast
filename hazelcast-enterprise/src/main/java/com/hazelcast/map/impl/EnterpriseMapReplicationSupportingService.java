@@ -37,7 +37,6 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
-
             if (eventObject instanceof EnterpriseMapReplicationUpdate) {
                 EnterpriseMapReplicationUpdate replicationUpdate = (EnterpriseMapReplicationUpdate) eventObject;
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
@@ -50,7 +49,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
                 WanOriginatedDeleteOperation operation = new WanOriginatedDeleteOperation(mapName,
                         replicationRemove.getKey());
-               invokeOnPartition(replicationRemove.getKey(), operation);
+                invokeOnPartition(replicationRemove.getKey(), operation);
             }
 
             /* Below lines are supposed to be enabled after publishers are implemented.

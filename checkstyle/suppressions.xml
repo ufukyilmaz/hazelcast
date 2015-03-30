@@ -12,7 +12,7 @@
     <!--To enable checking on a module, comment out its suppression. e.g. mapreduce is enabled.-->
 
     <suppress checks="" files="com.hazelcast.elasticmemory[\\/]"/>
-    <suppress checks="" files="com.hazelcast.enterprise[\\/]"/>
+    <suppress checks="" files="com.hazelcast.enterprise.util[\\/]"/>
     <suppress checks="" files="com.hazelcast.security[\\/]"/>
     <suppress checks="" files="com.hazelcast.memory[\\/]"/>
     <suppress checks="" files="com.hazelcast.elastic[\\/]"/>

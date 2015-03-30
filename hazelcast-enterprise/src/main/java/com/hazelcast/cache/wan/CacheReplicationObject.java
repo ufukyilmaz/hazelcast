@@ -29,13 +29,13 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         return cacheName;
     }
 
+    public String getUriString() {
+        return uriString;
+    }
+
     @Override
     public String getGroupName() {
         return groupName;
-    }
-
-    public String getUriString() {
-        return uriString;
     }
 
     @Override
@@ -51,6 +51,4 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         groupName = in.readUTF();
         uriString = in.readUTF();
     }
-
-
 }

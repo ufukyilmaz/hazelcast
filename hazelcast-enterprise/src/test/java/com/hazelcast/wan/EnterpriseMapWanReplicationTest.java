@@ -34,7 +34,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore // https://github.com/hazelcast/hazelcast-enterprise/issues/160
 public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
@@ -227,6 +226,15 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
     private void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
             public void run() {
+                sleepSeconds(10);
+                assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
+            }
+        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+    }
+
+    private void assertDataInFromNoSleep(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
+        assertTrueEventually(new AssertTask() {
+            public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
@@ -288,10 +296,10 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         initAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
+        assertDataInFromNoSleep(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 10, 20);
-        assertDataInFrom(clusterC, "map", 10, 20, clusterB);
+        assertDataInFromNoSleep(clusterC, "map", 10, 20, clusterB);
 
         sleepSeconds(10);
         assertKeysNotIn(clusterA, "map", 0, 10);
@@ -377,8 +385,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
-
-    //"Issue #1373  this test passes when run in isolation")//TODO
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_HigherHitsMapMergePolicy() {
 
@@ -393,7 +399,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 1000, 10);
+        increaseHitCount(clusterB, "map", 0, 1000, 1000);
         createDataIn(clusterB, "map", 0, 1000);
 
 
@@ -467,7 +473,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 500, 10);
+        increaseHitCount(clusterB, "map", 0, 500, 1000);
         createDataIn(clusterB, "map", 0, 500);
         assertDataInFrom(clusterA, "map", 0, 500, clusterB);
     }

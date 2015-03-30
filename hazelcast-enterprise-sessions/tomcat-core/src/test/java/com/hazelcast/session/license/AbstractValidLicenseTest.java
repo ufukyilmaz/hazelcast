@@ -1,18 +1,16 @@
 package com.hazelcast.session.license;
 
 import com.hazelcast.core.Hazelcast;
+import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.session.AbstractHazelcastSessionsTest;
-import com.hazelcast.session.Tomcat8Configurator;
-import com.hazelcast.session.WebContainerConfigurator;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import org.apache.catalina.LifecycleException;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
-public class Tomcat8ValidLicenseCheck extends AbstractHazelcastSessionsTest {
-
-    @Override
-    protected WebContainerConfigurator<?> getWebContainerConfigurator() {
-        return new Tomcat8Configurator("hazelcast-with-valid-license.xml","hazelcast-client-with-valid-license.xml");
-    }
+@RunWith(HazelcastSerialClassRunner.class)
+public abstract class AbstractValidLicenseTest extends AbstractHazelcastSessionsTest {
 
     @After
     @Override
@@ -34,4 +32,3 @@ public class Tomcat8ValidLicenseCheck extends AbstractHazelcastSessionsTest {
         instance1.port(SERVER_PORT_1).sticky(false).clientOnly(false).sessionTimeout(10).start();
     }
 }
-

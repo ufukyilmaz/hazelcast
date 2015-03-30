@@ -112,11 +112,17 @@ final class GlobalPoolingMemoryManager
     }
 
     @Override
-    protected boolean markUnavailable(long address) {
+    protected boolean markUnavailable(long address, int expectedSize) {
         assertNotNullPtr(address);
 
         long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
         int header = Bits.extractInt(value, true);
+        // This memory address may be merged up (after acquired but not marked as unavailable yet)
+        // as buddy by our GarbageCollector thread so its size may be changed.
+        // In this case, it must be discarded since it is not served by its current address queue.
+        if (Bits.clearBit(header, AVAILABLE_BIT) != expectedSize) {
+            return false;
+        }
         int offset = Bits.extractInt(value, false);
 
         long expected = Bits.combineToLong(offset, Bits.setBit(header, AVAILABLE_BIT));
@@ -256,7 +262,6 @@ final class GlobalPoolingMemoryManager
         }
 
         private LongLinkedBlockingQueue createQueue() {
-//            return new LongConcurrentLinkedQueue(systemAllocator, INVALID_ADDRESS);
             return new LongLinkedBlockingQueue(systemAllocator, INVALID_ADDRESS);
         }
 

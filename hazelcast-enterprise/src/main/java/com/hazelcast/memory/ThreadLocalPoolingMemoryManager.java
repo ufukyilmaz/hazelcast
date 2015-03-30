@@ -102,7 +102,7 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected boolean markUnavailable(long address) {
+    protected boolean markUnavailable(long address, int expectedSize) {
         assertNotNullPtr(address);
         byte b = UnsafeHelper.UNSAFE.getByte(address);
         b = Bits.clearBit(b, AVAILABLE_BIT);

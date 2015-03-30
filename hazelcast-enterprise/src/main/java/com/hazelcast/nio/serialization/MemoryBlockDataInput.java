@@ -40,6 +40,9 @@ import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 final class MemoryBlockDataInput extends InputStream
         implements EnterpriseBufferObjectDataInput, PortableDataInput {
 
+    private static final int BYTE_MASK = 0xFF;
+    private static final int SHORT_MASK = 0xFFFF;
+
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
     private ByteBuffer header;
@@ -342,7 +345,7 @@ final class MemoryBlockDataInput extends InputStream
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedByte() throws IOException {
-        return readByte() & 0xff;
+        return readByte() & BYTE_MASK;
     }
 
     /**
@@ -359,7 +362,7 @@ final class MemoryBlockDataInput extends InputStream
      * @see java.io.FilterInputStream#in
      */
     public int readUnsignedShort() throws IOException {
-        return readShort() & 0xffff;
+        return readShort() & SHORT_MASK;
     }
 
     @Deprecated

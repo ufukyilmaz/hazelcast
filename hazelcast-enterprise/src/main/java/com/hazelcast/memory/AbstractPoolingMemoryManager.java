@@ -91,10 +91,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         AddressQueue queue = getAddressQueue(size);
         long address;
         if (queue != null) {
+            int memorySize = queue.getMemorySize();
             do {
                 address = acquireInternal(queue);
                 assertNotNullPtr(address);
-            } while (!markUnavailable(address));
+            } while (!markUnavailable(address, memorySize));
 
             assert !isAvailable(address);
             address += getHeaderSize();
@@ -215,6 +216,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             initialize(buddyAddress, nextQ.getMemorySize(), buddyOffset);
             releaseInternal(nextQ, buddyAddress);
         }
+
         return true;
     }
 
@@ -291,7 +293,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract void markAvailable(long address);
 
-    protected abstract boolean markUnavailable(long address);
+    protected abstract boolean markUnavailable(long address, int expectedSize);
 
     protected abstract boolean isAvailable(long address);
 

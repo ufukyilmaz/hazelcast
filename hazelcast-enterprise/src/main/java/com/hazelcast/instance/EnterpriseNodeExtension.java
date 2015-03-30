@@ -14,9 +14,7 @@ import com.hazelcast.elasticmemory.InstanceStorageFactory;
 import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
 import com.hazelcast.license.domain.License;
-import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.exception.InvalidLicenseException;
-import com.hazelcast.license.extractor.LicenseExtractor;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.MemoryManager;
@@ -70,8 +68,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-        String licenseKey = getLicenseKeyFromNodeConfig(node);
-        checkLicenseKey(licenseKey);
+        String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
+        if (licenseKey == null || "".equals(licenseKey)) {
+            licenseKey = node.getConfig().getLicenseKey();
+        }
+        license = LicenseHelper.checkLicenseKey(licenseKey);
 
         systemLogger = node.getLogger("com.hazelcast.system");
 
@@ -79,36 +80,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         createMemoryManager(node.config);
         createStorage(node);
         createSocketInterceptor(node.config.getNetworkConfig());
-    }
-
-    private String getLicenseKeyFromNodeConfig(Node node) {
-        String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
-        if (licenseKey == null || "".equals(licenseKey)) {
-            licenseKey = node.getConfig().getLicenseKey();
-        }
-        return licenseKey;
-    }
-
-    private void checkLicenseKey(String licenseKey) {
-        if (licenseKey == null) {
-            throw new InvalidLicenseException("License Key not configured!");
-        }
-
-        license = LicenseExtractor.extractLicense(licenseKey);
-
-        logger.log(Level.INFO, license.toString());
-
-        if (license.isTrial() && LicenseHelper.isExpired(license)) {
-            throw new InvalidLicenseException("Trial license has expired! Please contact sales@hazelcast.com");
-        }
-
-        if (LicenseHelper.isExpired(license)) {
-            throw new InvalidLicenseException("Enterprise License has expired! Please contact sales@hazelcast.com");
-        }
-
-        if (license.getType() != LicenseType.ENTERPRISE) {
-            throw new InvalidLicenseException("Invalid License Type! Please contact sales@hazelcast.com");
-        }
     }
 
     private void createSecurityContext(Node node) {

@@ -2,15 +2,20 @@ package com.hazelcast.session.license;
 
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.session.Java6ExcludeRule;
 import com.hazelcast.session.JettyConfigurator;
 import com.hazelcast.session.WebContainerConfigurator;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.After;
+import org.junit.Rule;
 
 
 public class Jetty9InvalidLicenseTest extends AbstractInvalidLicenseTest {
+
+    @Rule
+    public Java6ExcludeRule java6ExcludeRule = new Java6ExcludeRule();
 
     @Override
     protected WebContainerConfigurator<?> getWebContainerConfigurator() {
@@ -24,23 +29,4 @@ public class Jetty9InvalidLicenseTest extends AbstractInvalidLicenseTest {
         instance1.stop();
     }
 
-    @Override
-    protected Matcher<? extends Throwable> getCause() {
-        return new BaseMatcher<Throwable>() {
-            @Override
-            public boolean matches(Object o) {
-                return o == null;
-            }
-
-            @Override
-            public void describeTo(Description description) {
-
-            }
-        };
-    }
-
-    @Override
-    protected Class<? extends Throwable> getException() {
-        return InvalidLicenseException.class;
-    }
 }

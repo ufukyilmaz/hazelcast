@@ -1,8 +1,11 @@
 package com.hazelcast.session.license;
 
 import com.hazelcast.core.Hazelcast;
+import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.session.AbstractHazelcastSessionsTest;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Rule;
@@ -38,8 +41,23 @@ public abstract class AbstractInvalidLicenseTest extends AbstractHazelcastSessio
         instance1.port(SERVER_PORT_1).sticky(false).clientOnly(false).sessionTimeout(10).start();
     }
 
-    protected abstract Matcher<? extends Throwable> getCause();
 
-    protected abstract Class<? extends Throwable> getException();
+    protected Matcher<? extends Throwable> getCause() {
+        return new BaseMatcher<Throwable>() {
+            @Override
+            public boolean matches(Object o) {
+                return o == null;
+            }
+
+            @Override
+            public void describeTo(Description description) {
+
+            }
+        };
+    }
+
+    protected Class<? extends Throwable> getException() {
+        return InvalidLicenseException.class;
+    }
 
 }

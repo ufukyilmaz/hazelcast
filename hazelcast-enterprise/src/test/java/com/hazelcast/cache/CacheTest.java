@@ -4,7 +4,6 @@ import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
@@ -59,25 +58,18 @@ public class CacheTest extends AbstractCacheTest {
     // test code is originally taken from here.
     @Test(expected = IllegalStateException.class)
     public void cacheCreateShouldFailWithInformativeMessageIfNativeMemoryIsNotEnabled() {
-        HazelcastInstance hz = null;
-        try {
-            hz = Hazelcast.newHazelcastInstance();
-            HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
+        HazelcastInstance hz = createHazelcastInstance();
+        HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
 
-            CacheConfig cacheConfig = new CacheConfig();
-            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        CacheConfig cacheConfig = new CacheConfig();
+        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
-            // create cache should fail here with an informative exception
-            Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
+        // create cache should fail here with an informative exception
+        Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
 
-            // trigger cache record store creation by accessing cache
-            // since cache record stores are created as lazy when they are accessed
-            cache.get("key");
-        } finally {
-            if (hz != null) {
-                hz.shutdown();
-            }
-        }
+        // trigger cache record store creation by accessing cache
+        // since cache record stores are created as lazy when they are accessed
+        cache.get("key");
     }
 
     @Test

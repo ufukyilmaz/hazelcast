@@ -1,6 +1,9 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
+import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
@@ -49,6 +52,32 @@ public class CacheTest extends AbstractCacheTest {
     @Override
     protected HazelcastInstance getHazelcastInstance() {
         return instance;
+    }
+
+    // Test to reproduce issue 129 (https://github.com/hazelcast/hazelcast-enterprise/issues/129) and
+    // test code is originally taken from here.
+    @Test(expected = IllegalStateException.class)
+    public void cacheCreateShouldFailWithInformativeMessageIfNativeMemoryIsNotEnabled() {
+        TestHazelcastInstanceFactory factory = null;
+        try {
+            factory = new TestHazelcastInstanceFactory(1);
+            HazelcastInstance hz = factory.newHazelcastInstance();
+            HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
+
+            CacheConfig cacheConfig = new CacheConfig();
+            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+
+            // create cache should fail here with an informative exception
+            Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
+
+            // trigger cache record store creation by accessing cache
+            // since cache record stores are created as lazy when they are accessed
+            cache.get("key");
+        } finally {
+            if (factory != null) {
+                factory.shutdownAll();
+            }
+        }
     }
 
     @Test

@@ -114,6 +114,11 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (memoryManager == null) {
             memoryManager = serializationService.getMemoryManager();
         }
+
+        if (memoryManager == null) {
+            throw new IllegalStateException("Native memory must be enabled to use Hi-Density storage !");
+        }
+
         if (cacheRecordAccessor == null) {
             cacheRecordAccessor = new HiDensityNativeMemoryCacheRecordAccessor(serializationService);
         }

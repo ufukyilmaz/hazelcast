@@ -58,18 +58,26 @@ public class CacheTest extends AbstractCacheTest {
     // test code is originally taken from here.
     @Test(expected = IllegalStateException.class)
     public void cacheCreateShouldFailWithInformativeMessageIfNativeMemoryIsNotEnabled() {
-        HazelcastInstance hz = createHazelcastInstance();
-        HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
+        TestHazelcastInstanceFactory factory = null;
+        try {
+            factory = new TestHazelcastInstanceFactory(1);
+            HazelcastInstance hz = factory.newHazelcastInstance();
+            HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
 
-        CacheConfig cacheConfig = new CacheConfig();
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+            CacheConfig cacheConfig = new CacheConfig();
+            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
-        // create cache should fail here with an informative exception
-        Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
+            // create cache should fail here with an informative exception
+            Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
 
-        // trigger cache record store creation by accessing cache
-        // since cache record stores are created as lazy when they are accessed
-        cache.get("key");
+            // trigger cache record store creation by accessing cache
+            // since cache record stores are created as lazy when they are accessed
+            cache.get("key");
+        } finally {
+            if (factory != null) {
+                factory.shutdownAll();
+            }
+        }
     }
 
     @Test

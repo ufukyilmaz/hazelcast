@@ -175,8 +175,10 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
 
                     case ENTRY_PROCESSOR:
                         return new CacheEntryProcessorOperation();
+
                     case WAN_MERGE:
                         return new WanCacheMergeOperation();
+
                     case WAN_REMOVE:
                         return new WanCacheRemoveOperation();
                 }

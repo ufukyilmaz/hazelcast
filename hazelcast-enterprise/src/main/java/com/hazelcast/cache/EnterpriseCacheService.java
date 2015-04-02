@@ -1,13 +1,10 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.hidensity.client.CacheInvalidationListener;
-import com.hazelcast.cache.hidensity.client.CacheInvalidationMessage;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.hidensity.operation.CacheDestroyOperation;
+import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
@@ -23,12 +20,10 @@ import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.spi.EventRegistration;
-import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -43,7 +38,6 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,13 +70,13 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     protected final ConcurrentMap<String, String> cacheMergePolicies =
             new ConcurrentHashMap<String, String>();
 
-    private final ConcurrentMap<String, HiDensityCacheInfo> hiDensityCacheInfoMap =
-            new ConcurrentHashMap<String, HiDensityCacheInfo>();
-    private final ConstructorFunction<String, HiDensityCacheInfo> hiDensityCacheInfoConstructorFunction =
-            new ConstructorFunction<String, HiDensityCacheInfo>() {
+    private final ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap =
+            new ConcurrentHashMap<String, HiDensityStorageInfo>();
+    private final ConstructorFunction<String, HiDensityStorageInfo> hiDensityCacheInfoConstructorFunction =
+            new ConstructorFunction<String, HiDensityStorageInfo>() {
                 @Override
-                public HiDensityCacheInfo createNew(String cacheNameWithPrefix) {
-                    return new HiDensityCacheInfo(cacheNameWithPrefix);
+                public HiDensityStorageInfo createNew(String cacheNameWithPrefix) {
+                    return new HiDensityStorageInfo(cacheNameWithPrefix);
                 }
             };
     private ReplicationSupportingService replicationSupportingService;
@@ -127,8 +121,6 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         throw new IllegalArgumentException("Cannot create record store for the storage type: "
                 + inMemoryFormat);
     }
-
-
 
     /**
      * Destroys the segments for specified <code>object name/cache name</code>.
@@ -304,46 +296,12 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
-     * Registers and {@link CacheInvalidationListener} for specified <code>cacheName</code>.
-     *
-     * @param cacheName the name of the cache that {@link CacheInvalidationListener} will be registered for
-     * @param listener  the {@link CacheInvalidationListener} to be registered for specified <code>cache</code>
-     * @return the id which is unique for current registration
-     */
-    public String addInvalidationListener(String cacheName, CacheInvalidationListener listener) {
-        EventService eventService = nodeEngine.getEventService();
-        EventRegistration registration =
-                eventService.registerLocalListener(SERVICE_NAME, cacheName, listener);
-        return registration.getId();
-    }
-
-    /**
-     * Sends an invalidation event for given <code>cacheName</code> with specified <code>key</code>
-     * from mentioned source with <code>sourceUuid</code>.
-     *
-     * @param cacheName  the name of the cache that invalidation event is sent for
-     * @param key        the {@link Data} represents the invalidation event
-     * @param sourceUuid an id that represents the source for invalidation event
-     */
-    public void sendInvalidationEvent(String cacheName, Data key, String sourceUuid) {
-        EventService eventService = nodeEngine.getEventService();
-        Collection<EventRegistration> registrations =
-                eventService.getRegistrations(SERVICE_NAME, cacheName);
-        if (!registrations.isEmpty()) {
-            EnterpriseSerializationService ss = getSerializationService();
-            Data event = ss.convertData(key, DataType.HEAP);
-            eventService.publishEvent(SERVICE_NAME, registrations,
-                    new CacheInvalidationMessage(cacheName, event, sourceUuid), cacheName.hashCode());
-        }
-    }
-
-    /**
      * Creates a {@link CacheOperationProvider} as specified {@link InMemoryFormat}
      * for specified <code>cacheNameWithPrefix</code>
      *
      * @param cacheNameWithPrefix the name of the cache with prefix that operation works on
      * @param inMemoryFormat      the format of memory such as <code>BINARY</code>, <code>OBJECT</code>
-     *                            or <code>OFFHEAP</code>
+     *                            or <code>NATIVE</code>
      * @return
      */
     @Override
@@ -365,14 +323,14 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
-     * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityCacheInfo} instance
+     * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityStorageInfo} instance
      * which holds live information about cache.
      *
      * @param cacheNameWithPrefix Name (with prefix) of the cache whose live information is requested
      *
-     * @return the {@link HiDensityCacheInfo} instance which holds live information about Hi-Density cache
+     * @return the {@link HiDensityStorageInfo} instance which holds live information about Hi-Density cache
      */
-    public HiDensityCacheInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {
+    public HiDensityStorageInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {
         return ConcurrencyUtil.getOrPutSynchronized(hiDensityCacheInfoMap, cacheNameWithPrefix,
                 this, hiDensityCacheInfoConstructorFunction);
     }
@@ -410,27 +368,27 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
 
     @Override
     public void publishEvent(String cacheName, CacheEventType eventType, Data dataKey, Data dataValue,
-                             Data dataOldValue, boolean isOldValueAvailable,
-                             int orderKey, int completionId, long expirationTime,
-                             String origin) {
+                             Data dataOldValue, boolean isOldValueAvailable, int orderKey,
+                             int completionId, long expirationTime, String origin) {
         WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
 
-        if (wanReplicationPublisher != null
-                && origin == null) {
-
+        if (wanReplicationPublisher != null && origin == null) {
             String groupName = nodeEngine.getConfig().getGroupConfig().getName();
             CacheConfig config = configs.get(cacheName);
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
                 CacheReplicationUpdate update =
-                        new CacheReplicationUpdate(config.getName(), cacheMergePolicies.get(cacheName),
+                        new CacheReplicationUpdate(
+                                config.getName(), cacheMergePolicies.get(cacheName),
                                 new SimpleCacheEntryView(dataKey, dataValue, expirationTime),
                                 groupName, config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), dataKey,
-                        Clock.currentTimeMillis(), groupName, config.getUriString());
+                CacheReplicationRemove remove =
+                        new CacheReplicationRemove(config.getName(), dataKey,
+                                Clock.currentTimeMillis(), groupName,
+                                config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }

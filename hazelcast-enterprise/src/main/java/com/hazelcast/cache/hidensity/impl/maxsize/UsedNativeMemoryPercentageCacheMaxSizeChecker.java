@@ -1,19 +1,19 @@
 package com.hazelcast.cache.hidensity.impl.maxsize;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
 import com.hazelcast.config.CacheEvictionConfig;
+import com.hazelcast.hidensity.HiDensityStorageInfo;
 
 /**
  * @author sozal 20/11/14
  */
 public class UsedNativeMemoryPercentageCacheMaxSizeChecker implements CacheMaxSizeChecker {
 
-    private final HiDensityCacheInfo cacheInfo;
+    private final HiDensityStorageInfo cacheInfo;
     private final long maxUsedMemorySize;
 
-    public UsedNativeMemoryPercentageCacheMaxSizeChecker(HiDensityCacheInfo cacheInfo,
+    public UsedNativeMemoryPercentageCacheMaxSizeChecker(HiDensityStorageInfo cacheInfo,
             int size, long maxNativeMemory) {
         this.cacheInfo = cacheInfo;
         final int maxSizePercentage = size;

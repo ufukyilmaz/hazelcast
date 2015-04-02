@@ -23,6 +23,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
+import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         implements EnterpriseSerializationService {
 
     private final MemoryManager memoryManager;
+    private final ThreadLocal<MemoryManager> memoryManagerThreadLocal = new ThreadLocal<MemoryManager>();
 
     public EnterpriseSerializationServiceImpl(InputOutputFactory inputOutputFactory, int version,
             ClassLoader classLoader, Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
@@ -48,19 +50,46 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             MemoryManager memoryManager) {
 
         super(inputOutputFactory, version, classLoader, dataSerializableFactories, portableFactories, classDefinitions,
-                checkClassDefErrors, managedContext, partitionStrategy, initialOutputBufferSize, enableCompression,
-                enableSharedObject);
+              checkClassDefErrors, managedContext, partitionStrategy, initialOutputBufferSize, enableCompression,
+              enableSharedObject);
 
         this.memoryManager = memoryManager;
     }
 
+    private MemoryManager getMemoryManagerToUse() {
+        MemoryManager mm = memoryManagerThreadLocal.get();
+        if (mm != null) {
+            return mm;
+        } else {
+            return memoryManager;
+        }
+    }
+
     @Override
     public Data toData(Object obj, DataType type) {
-        return toData(obj, type, globalPartitioningStrategy);
+        return toDataInternal(obj, type, globalPartitioningStrategy, getMemoryManagerToUse());
+    }
+
+    @Override
+    public Data toNativeData(Object obj, MemoryManager memoryManager) {
+        return toDataInternal(obj, DataType.NATIVE, globalPartitioningStrategy, memoryManager);
     }
 
     @Override
     public Data toData(Object obj, DataType type, PartitioningStrategy strategy) {
+        return toDataInternal(obj, type, strategy, getMemoryManagerToUse());
+    }
+
+    @Override
+    public Data toNativeData(Object obj, PartitioningStrategy strategy, MemoryManager memoryManager) {
+        return toDataInternal(obj, DataType.NATIVE, strategy, memoryManager);
+    }
+
+    private Data toDataInternal(Object obj, DataType type, PartitioningStrategy strategy,
+                                MemoryManager memoryManager) {
+        if (obj == null) {
+            return null;
+        }
         if (obj instanceof Data) {
             return convertData((Data) obj, type);
         }
@@ -68,12 +97,12 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             return super.toData(obj, strategy);
         }
         if (type == DataType.NATIVE) {
-            return toNativeData(obj, strategy);
+            return toNativeDataInternal(obj, strategy, memoryManager);
         }
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private Data toNativeData(Object obj, PartitioningStrategy strategy) {
+    private Data toNativeDataInternal(Object obj, PartitioningStrategy strategy, MemoryManager memoryManager) {
         if (obj == null) {
             return null;
         }
@@ -136,11 +165,26 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     @Override
+    public Data readNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager) {
+        return readDataInternal(in, DataType.NATIVE, memoryManager, false);
+    }
+
+    @Override
     public Data tryReadData(EnterpriseObjectDataInput in, DataType type) {
         return readDataInternal(in, type, true);
     }
 
+    @Override
+    public Data tryReadNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager) {
+        return readDataInternal(in, DataType.NATIVE, memoryManager, true);
+    }
+
     private Data readDataInternal(EnterpriseObjectDataInput in, DataType type, boolean readToHeapOnOOME) {
+        return readDataInternal(in, type, getMemoryManagerToUse(), readToHeapOnOOME);
+    }
+
+    private Data readDataInternal(EnterpriseObjectDataInput in, DataType type, MemoryManager memoryManager,
+                                  boolean readToHeapOnOOME) {
         if (type == DataType.HEAP) {
             return super.readData(in);
         }
@@ -160,16 +204,17 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                 return new DefaultData(null);
             }
 
-            return readNativeData(in, size, readToHeapOnOOME);
+            return readNativeData(in, memoryManager, size, readToHeapOnOOME);
         } catch (Throwable e) {
             throw handleException(e);
         }
     }
 
-    private Data readNativeData(EnterpriseObjectDataInput in, int size,  boolean readToHeapOnOOME) throws IOException {
+    private Data readNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager,
+                                int size,  boolean readToHeapOnOOME) throws IOException {
         try {
             int memSize = size + NATIVE_HEADER_OVERHEAD;
-            NativeMemoryData data = allocateNativeData(in, memSize, size, !readToHeapOnOOME);
+            NativeMemoryData data = allocateNativeData(in, memoryManager, memSize, size, !readToHeapOnOOME);
             data.writeInt(SIZE_OFFSET, size);
 
             if (in instanceof EnterpriseBufferObjectDataInput) {
@@ -194,25 +239,33 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
-    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, int memSize, int size, boolean skipBytes)
-            throws IOException {
-
+    private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager,
+                                                int memSize, int size, boolean skipBytesOnOome) throws IOException {
         if (memoryManager == null) {
             throw new HazelcastSerializationException("MemoryManager is required!");
         }
-
         try {
             long address = memoryManager.allocate(memSize);
             return new NativeMemoryData(address, memSize);
         } catch (NativeOutOfMemoryError e) {
-            if (skipBytes) {
+            if (skipBytesOnOome) {
                 in.skipBytes(size);
             }
             throw e;
         }
     }
 
+    @Override
     public Data convertData(Data data, DataType type) {
+        return convertDataInternal(data, type, getMemoryManagerToUse());
+    }
+
+    @Override
+    public Data convertToNativeData(Data data, DataType type, MemoryManager memoryManager) {
+        return convertDataInternal(data, type, memoryManager);
+    }
+
+    private Data convertDataInternal(Data data, DataType type, MemoryManager memoryManager) {
         if (data == null) {
             return null;
         }
@@ -247,7 +300,17 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         return data;
     }
 
+    @Override
     public void disposeData(Data data) {
+        disposeDataInternal(data, getMemoryManagerToUse());
+    }
+
+    @Override
+    public void disposeData(Data data, MemoryManager memoryManager) {
+        disposeDataInternal(data, memoryManager);
+    }
+
+    private void disposeDataInternal(Data data, MemoryManager memoryManager) {
         if (data instanceof NativeMemoryData) {
             if (memoryManager == null) {
                 throw new HazelcastSerializationException("MemoryManager is required!");
@@ -263,14 +326,66 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     @Override
+    public <T> T toObject(Object data, MemoryManager memoryManager) {
+        try {
+            memoryManagerThreadLocal.set(memoryManager);
+            return super.toObject(data);
+        } finally {
+            memoryManagerThreadLocal.remove();
+        }
+    }
+
+    @Override
+    public void writeObject(ObjectDataOutput out, Object obj, MemoryManager memoryManager) {
+        try {
+            memoryManagerThreadLocal.set(memoryManager);
+            super.writeObject(out, obj);
+        } finally {
+            memoryManagerThreadLocal.remove();
+        }
+    }
+
+    @Override
+    public <T> T readObject(ObjectDataInput in, MemoryManager memoryManager) {
+        try {
+            memoryManagerThreadLocal.set(memoryManager);
+            return super.readObject(in);
+        } finally {
+            memoryManagerThreadLocal.remove();
+        }
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out, Data data, MemoryManager memoryManager) {
+        try {
+            memoryManagerThreadLocal.set(memoryManager);
+            super.writeData(out, data);
+        } finally {
+            memoryManagerThreadLocal.remove();
+        }
+    }
+
+    @Override
+    public <B extends Data> B readData(ObjectDataInput in, MemoryManager memoryManager) {
+        try {
+            memoryManagerThreadLocal.set(memoryManager);
+            return (B) super.readData(in);
+        } finally {
+            memoryManagerThreadLocal.remove();
+        }
+    }
+
+    @Override
     public MemoryManager getMemoryManager() {
         return memoryManager;
     }
 
+    @Override
     public void destroy() {
         super.destroy();
         if (memoryManager != null) {
             memoryManager.destroy();
         }
     }
+
 }

@@ -150,7 +150,7 @@ public class CachePutAllBackupOperation
         try {
             final boolean recordNotNull = in.readBoolean();
             if (recordNotNull) {
-                record = cache.getCacheRecordProcessor().newRecord();
+                record = (HiDensityCacheRecord) cache.getRecordProcessor().newRecord();
 
                 record.setCreationTime(in.readLong());
                 record.setAccessTimeDiff(in.readInt());
@@ -160,7 +160,7 @@ public class CachePutAllBackupOperation
                 final boolean valueNotNull = in.readBoolean();
                 if (valueNotNull) {
                     Data valueData = in.readData();
-                    nativeMemoryData = (NativeMemoryData) cache.getCacheRecordProcessor().convertData(valueData, DataType.NATIVE);
+                    nativeMemoryData = (NativeMemoryData) cache.getRecordProcessor().convertData(valueData, DataType.NATIVE);
                     record.setValue(nativeMemoryData);
                 } else {
                     record.setValue(null);
@@ -171,10 +171,10 @@ public class CachePutAllBackupOperation
             }
         } catch (Throwable t) {
             if (record != null && record.address() != MemoryManager.NULL_ADDRESS) {
-                cache.getCacheRecordProcessor().dispose(record);
+                cache.getRecordProcessor().dispose(record);
             }
             if (nativeMemoryData != null && nativeMemoryData.address() != MemoryManager.NULL_ADDRESS) {
-                cache.getCacheRecordProcessor().disposeData(nativeMemoryData);
+                cache.getRecordProcessor().disposeData(nativeMemoryData);
             }
             throw ExceptionUtil.rethrow(t);
         }

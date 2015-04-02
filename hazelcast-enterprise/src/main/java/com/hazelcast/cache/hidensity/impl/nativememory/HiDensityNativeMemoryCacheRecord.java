@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
-import com.hazelcast.cache.hidensity.HiDensityCacheRecordAccessor;
+import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
@@ -28,15 +28,15 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     static final int TTL_OFFSET = 12;
 
-    private HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
+    private HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
 
     public HiDensityNativeMemoryCacheRecord(
-            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor) {
+            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor) {
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
     public HiDensityNativeMemoryCacheRecord(
-            HiDensityCacheRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
+            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
             long address) {
         super(address, SIZE);
         this.cacheRecordAccessor = cacheRecordAccessor;

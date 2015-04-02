@@ -1,5 +1,7 @@
 package com.hazelcast.client.impl;
 
+import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
+import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -81,18 +83,18 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     @Override
-    public SocketChannelWrapperFactory getSocketChannelWrapperFactory() {
+    public SocketChannelWrapperFactory createSocketChannelWrapperFactory() {
         final ClientNetworkConfig networkConfig = client.getClientConfig().getNetworkConfig();
         SSLConfig sslConfig = networkConfig.getSSLConfig();
         if (sslConfig != null && sslConfig.isEnabled()) {
             LOGGER.info("SSL is enabled");
             return new SSLSocketChannelWrapperFactory(sslConfig);
         }
-        return super.getSocketChannelWrapperFactory();
+        return super.createSocketChannelWrapperFactory();
     }
 
     @Override
-    public SocketInterceptor getSocketInterceptor() {
+    public SocketInterceptor createSocketInterceptor() {
         return socketInterceptor;
     }
 
@@ -114,4 +116,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             socketInterceptor = implementation;
         }
     }
+
+    @Override
+    public NearCacheManager createNearCacheManager() {
+        return new HiDensityNearCacheManager();
+    }
+
 }

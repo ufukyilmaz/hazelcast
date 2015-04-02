@@ -46,7 +46,7 @@ public class CacheIteratorOperation extends PartitionWideCacheOperation {
                 Data key = entry.getKey();
                 keys[count] = ss.convertData(key, DataType.HEAP);
                 HiDensityCacheRecord record = entry.getValue();
-                Data value = cache.getCacheRecordProcessor().readData(record.getValueAddress());
+                Data value = cache.getRecordProcessor().readData(record.getValueAddress());
                 values[count] = ss.convertData(value, DataType.HEAP);
                 if (++count == batch) {
                     break;

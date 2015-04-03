@@ -21,7 +21,7 @@ public interface EnterpriseSerializationService extends SerializationService {
     <B extends Data> B tryReadNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager);
 
     <B extends Data> B convertData(Data data, DataType type);
-    <B extends Data> B convertToNativeData(Data data, DataType type, MemoryManager memoryManager);
+    <B extends Data> B convertToNativeData(Data data, MemoryManager memoryManager);
 
     void disposeData(Data data);
     void disposeData(Data data, MemoryManager memoryManager);

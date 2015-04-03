@@ -127,7 +127,12 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
 
     @Override
     public Data convertData(Data data, DataType dataType) {
-        Data convertedData = serializationService.convertToNativeData(data, dataType, memoryManager);
+        Data convertedData;
+        if (dataType == DataType.NATIVE) {
+            convertedData = serializationService.convertToNativeData(data, memoryManager);
+        } else {
+            convertedData = serializationService.convertData(data, dataType);
+        }
         if (convertedData instanceof NativeMemoryData && convertedData != data) {
             storageInfo.addUsedMemory(recordAccessor.getSize((NativeMemoryData) convertedData));
         }

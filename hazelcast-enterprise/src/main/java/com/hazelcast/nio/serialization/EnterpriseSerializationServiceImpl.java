@@ -261,8 +261,8 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     }
 
     @Override
-    public Data convertToNativeData(Data data, DataType type, MemoryManager memoryManager) {
-        return convertDataInternal(data, type, memoryManager);
+    public Data convertToNativeData(Data data,  MemoryManager memoryManager) {
+        return convertDataInternal(data, DataType.NATIVE, memoryManager);
     }
 
     private Data convertDataInternal(Data data, DataType type, MemoryManager memoryManager) {

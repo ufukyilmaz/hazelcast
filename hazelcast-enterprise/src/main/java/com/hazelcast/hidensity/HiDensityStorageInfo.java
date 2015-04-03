@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.hazelcast.cache.hidensity;
+package com.hazelcast.hidensity;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Holds information about Hi-Density cache such as entry count, used memory, etc ...
+ * Holds information about Hi-Density storage such as entry count, used memory, etc ...
+ *
+ * @author sozal 18/02/15
  */
-public class HiDensityCacheInfo {
+public class HiDensityStorageInfo {
 
-    protected final String cacheNameWithPrefix;
+    protected final String storageName;
     protected final AtomicLong entryCount = new AtomicLong(0L);
     protected final AtomicLong usedMemory = new AtomicLong(0L);
 
-
-    public HiDensityCacheInfo(String cacheNameWithPrefix) {
-       this.cacheNameWithPrefix = cacheNameWithPrefix;
+    public HiDensityStorageInfo(String storageName) {
+        this.storageName = storageName;
     }
 
-    public String getCacheNameWithPrefix() {
-        return cacheNameWithPrefix;
+    public String getStorageName() {
+        return storageName;
     }
 
     public long addEntryCount(long count) {
@@ -70,21 +71,21 @@ public class HiDensityCacheInfo {
 
     @Override
     public int hashCode() {
-        return cacheNameWithPrefix.hashCode();
+        return storageName.hashCode();
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof HiDensityCacheInfo)) {
+        if (!(obj instanceof HiDensityStorageInfo)) {
             return false;
         }
-        return cacheNameWithPrefix.equals(((HiDensityCacheInfo) obj).cacheNameWithPrefix);
+        return storageName.equals(((HiDensityStorageInfo) obj).storageName);
     }
 
     @Override
     public String toString() {
-        return "HiDensityCacheInfo{"
-                + "cacheNameWithPrefix=" + cacheNameWithPrefix
+        return "HiDensityStorageInfo{"
+                + "storageName=" + storageName
                 + ", entryCount=" + entryCount
                 + ", usedMemory=" + usedMemory
                 + '}';

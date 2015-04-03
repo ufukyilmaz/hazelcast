@@ -1,4 +1,4 @@
 /**
- * <p>This package contains Enterprise cache functionality for Hazelcast.<br/>
+ * This package contains Enterprise cache functionality.
  */
 package com.hazelcast.cache;

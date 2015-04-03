@@ -3,10 +3,12 @@ package com.hazelcast.cache.hidensity;
 import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.hidensity.HiDensityRecordStore;
 import com.hazelcast.nio.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;
+import java.util.Map;
 
 /**
  * <p>
@@ -20,23 +22,13 @@ import javax.cache.expiry.ExpiryPolicy;
  *
  * @param <R> Type of the cache record to be stored
  *
- * @see com.hazelcast.cache.impl.ICacheRecordStore
+ * @see com.hazelcast.cache.hidensity.HiDensityCacheRecordStore
  * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
  *
  * @author sozal 18/10/14
  */
 public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
-        extends EnterpriseCacheRecordStore {
-
-    /**
-     * Constant value for default forced eviction percentage
-     */
-    int DEFAULT_FORCED_EVICT_PERCENTAGE = 20;
-
-    /**
-     * Constant value for representing the empty address
-     */
-    long NULL_PTR = MemoryManager.NULL_ADDRESS;
+        extends HiDensityRecordStore<R>, EnterpriseCacheRecordStore {
 
     /**
      * Constant for system property name for enabling/disabling throwing exception behaviour
@@ -46,7 +38,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
             "disableInvalidMaxSizePolicyException";
 
     /**
-     * Gets the value of specified cache record.
+     * Gets the value of specified record.
      *
      * @param record The record whose value is extracted
      * @return value of the record
@@ -54,19 +46,12 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     Object getRecordValue(R record);
 
     /**
-     * Gets the {@link MemoryManager} which is used by this {@link HiDensityCacheRecordStore}.
-     *
-     * @return the used memory manager.
-     */
-    MemoryManager getMemoryManager();
-
-    /**
-     * Gets the {@link HiDensityCacheRecordProcessor}
+     * Gets the {@link HiDensityRecordProcessor}
      * which is used by this {@link HiDensityCacheRecordStore}.
      *
      * @return the used Hi-Density cache record processor.
      */
-    HiDensityCacheRecordProcessor<R> getCacheRecordProcessor();
+    HiDensityRecordProcessor<R> getRecordProcessor();
 
     /**
      * Puts the <code>value</code> with the specified <code>key</code> to this {@link HiDensityCacheRecordStore}.
@@ -148,16 +133,8 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * Returns an slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
      *
      * @param slot the slot number (or index) to start the <code>iterator</code>
-     * @param <E>  the type of the entry iterated by the <code>iterator</code>
      * @return the slottable iterator for specified <code>slot</code>
      */
-    <E> SlottableIterator<E> iterator(int slot);
-
-    /**
-     * Forcefully evict records.
-     *
-     * @return evicted entry count
-     */
-    int forceEvict();
+    SlottableIterator<Map.Entry<Data, R>> iterator(int slot);
 
 }

@@ -1,25 +1,27 @@
-package com.hazelcast.cache.hidensity.impl.nativememory;
+package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
+import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
 /**
- * @author sozal 14/10/14
+ * @author sozal 26/10/14
  */
-public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord {
+public class HiDensityNativeMemoryNearCacheRecord
+        extends HiDensityNearCacheRecord {
 
     /**
-     * Header size of native memory based cache record
+     * Header size of native memory based near-cache record
      */
     public static final int HEADER_SIZE = 8;
     /**
-     * Value offset of native memory based cache record
+     * Value offset of native memory based near-cache record
      */
     public static final int VALUE_OFFSET = 16;
     /**
-     * Size of native memory based cache record
+     * Size of native memory based near-cache record
      */
     public static final int SIZE = VALUE_OFFSET + HEADER_SIZE;
 
@@ -28,18 +30,18 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     static final int TTL_OFFSET = 12;
 
-    private HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
+    private HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor;
 
-    public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor) {
-        this.cacheRecordAccessor = cacheRecordAccessor;
+    public HiDensityNativeMemoryNearCacheRecord(
+            HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor) {
+        this.nearCacheRecordAccessor = nearCacheRecordAccessor;
     }
 
-    public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
+    public HiDensityNativeMemoryNearCacheRecord(
+            HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor,
             long address) {
         super(address, SIZE);
-        this.cacheRecordAccessor = cacheRecordAccessor;
+        this.nearCacheRecordAccessor = nearCacheRecordAccessor;
     }
 
     @Override
@@ -123,7 +125,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     @Override
-    public HiDensityNativeMemoryCacheRecord reset(long address) {
+    public HiDensityNativeMemoryNearCacheRecord reset(long address) {
         setAddress(address);
         setSize(SIZE);
         return this;
@@ -142,7 +144,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return cacheRecordAccessor.readData(getValueAddress());
+            return nearCacheRecordAccessor.readData(address);
         }
     }
 
@@ -158,7 +160,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     @Override
     public long getExpirationTime() {
         int ttlMillis = getTtlMillis();
-        if (ttlMillis < 0) {
+        if (ttlMillis <= 0) {
             return Long.MAX_VALUE;
         }
         return getCreationTime() + ttlMillis;
@@ -178,7 +180,17 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     @Override
     public boolean isExpiredAt(long now) {
         long expirationTime = getExpirationTime();
-        return expirationTime > -1 && expirationTime <= now;
+        return (expirationTime > TIME_NOT_SET) && (expirationTime <= now);
+    }
+
+    @Override
+    public boolean isIdleAt(long maxIdleMilliSeconds, long now) {
+        long accessTime = getAccessTime();
+        if (accessTime > TIME_NOT_SET && maxIdleMilliSeconds > 0) {
+            return accessTime + maxIdleMilliSeconds < now;
+        } else {
+            return false;
+        }
     }
 
     public static long getCreationTime(long address) {
@@ -206,7 +218,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
             return false;
         }
 
-        HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) o;
+        HiDensityNativeMemoryNearCacheRecord record = (HiDensityNativeMemoryNearCacheRecord) o;
 
         if (address != record.address) {
             return false;
@@ -227,14 +239,15 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public String toString() {
-        if (address() > HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
-            return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
+        if (address() >= HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+            return "HiDensityNearCacheNativeMemoryRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()
                     + ", valueAddress: " + getValueAddress()
                     + " }";
         } else {
-            return "HiDensityNativeMemoryCacheRecord{ NULL }";
+            return "HiDensityNearCacheNativeMemoryRecord{ NULL }";
         }
     }
+
 }

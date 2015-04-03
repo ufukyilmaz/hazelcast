@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.maxsize;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheInfo;
 import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
+import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.MemoryUnit;
 
 /**
@@ -9,10 +9,10 @@ import com.hazelcast.memory.MemoryUnit;
  */
 public class UsedNativeMemorySizeCacheMaxSizeChecker implements CacheMaxSizeChecker {
 
-    private final HiDensityCacheInfo cacheInfo;
+    private final HiDensityStorageInfo cacheInfo;
     private final long maxUsedMemorySize;
 
-    public UsedNativeMemorySizeCacheMaxSizeChecker(HiDensityCacheInfo cacheInfo, int size) {
+    public UsedNativeMemorySizeCacheMaxSizeChecker(HiDensityStorageInfo cacheInfo, int size) {
         this.cacheInfo = cacheInfo;
         this.maxUsedMemorySize = MemoryUnit.BYTES.convert(size, MemoryUnit.MEGABYTES);
     }

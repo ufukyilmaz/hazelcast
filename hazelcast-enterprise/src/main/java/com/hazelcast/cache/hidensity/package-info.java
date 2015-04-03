@@ -1,4 +1,4 @@
 /**
- * <p>This package contains Hi-Density cache functionality for Hazelcast.<br/>
+ * This package contains Hi-Density cache functionality.
  */
 package com.hazelcast.cache.hidensity;

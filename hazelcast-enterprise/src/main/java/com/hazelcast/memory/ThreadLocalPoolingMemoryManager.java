@@ -308,6 +308,7 @@ final class ThreadLocalPoolingMemoryManager
         }
 
         private LongArrayQueue purgeEmptySpaceAndResizeQueue(LongArrayQueue current, int newCap) {
+            compact();
             purgeEmptySpace();
             return resizeQueue(current, newCap, false);
         }

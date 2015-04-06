@@ -17,8 +17,8 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
     EntryView<Data, Data> entryView;
 
     public EnterpriseMapReplicationUpdate(String mapName, MapMergePolicy mergePolicy,
-                                          EntryView entryView, String groupName) {
-        super(mapName, groupName);
+                                          EntryView entryView) {
+        super(mapName);
         this.mergePolicy = mergePolicy;
         this.entryView = entryView;
     }

@@ -36,6 +36,8 @@ import java.util.concurrent.BlockingQueue;
 public class WanNoDelayReplication
         implements Runnable, WanReplicationEndpoint {
 
+    private String targetGroupName;
+    private String localGroupName;
     private Node node;
     private ILogger logger;
     private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
@@ -45,9 +47,11 @@ public class WanNoDelayReplication
 
     public void init(Node node, String groupName, String password, String... targets) {
         this.node = node;
+        this.targetGroupName = groupName;
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
 
         int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUESIZE.getInteger();
+        localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
         this.eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(queueSize);
 
         connectionManager = new WanConnectionManager(node);
@@ -60,18 +64,22 @@ public class WanNoDelayReplication
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
         WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
 
-        //if the replication event is published, we are done.
-        if (eventQueue.offer(replicationEvent)) {
-            return;
-        }
+        EnterpriseReplicationEventObject replicationEventObject = (EnterpriseReplicationEventObject) eventObject;
+        if (!replicationEventObject.getGroupNames().contains(targetGroupName)) {
+            replicationEventObject.getGroupNames().add(localGroupName);
+            //if the replication event is published, we are done.
+            if (eventQueue.offer(replicationEvent)) {
+                return;
+            }
 
-        //the replication event could not be published because the eventQueue is full. So we are going
-        //to drain one item and then offer it again.
-        //todo: isn't it dangerous to drop a ReplicationEvent?
-        eventQueue.poll();
+            //the replication event could not be published because the eventQueue is full. So we are going
+            //to drain one item and then offer it again.
+            //todo: isn't it dangerous to drop a ReplicationEvent?
+            eventQueue.poll();
 
-        if (!eventQueue.offer(replicationEvent)) {
-            logger.warning("Could not publish replication event: " + replicationEvent);
+            if (!eventQueue.offer(replicationEvent)) {
+                logger.warning("Could not publish replication event: " + replicationEvent);
+            }
         }
     }
 

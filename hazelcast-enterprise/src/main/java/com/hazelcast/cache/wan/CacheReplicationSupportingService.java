@@ -8,6 +8,7 @@ import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -28,6 +29,11 @@ import static com.hazelcast.cache.impl.CacheProxyUtil.getPartitionId;
  * This class handles incoming WAN replication events
  */
 public class CacheReplicationSupportingService implements ReplicationSupportingService {
+
+    /**
+     * Event origin
+     */
+    public static final String ORIGIN = "ENTERPRISE_WAN";
 
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;
@@ -73,7 +79,10 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 cacheConfig = (CacheConfig) cache.getConfiguration(CacheConfig.class);
             }
 
-            cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), cacheReplicationObject);
+            WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
+            if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
+                cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), cacheReplicationObject);
+            }
 
             if (cacheReplicationObject instanceof CacheReplicationUpdate) {
                 handleCacheUpdate(replicationEvent, (CacheReplicationUpdate) cacheReplicationObject, cacheConfig);
@@ -89,8 +98,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(cacheConfig.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
         Operation operation = operationProvider
-                .createWanRemoveOperation(cacheReplicationRemove.getGroupName(),
-                        cacheReplicationRemove.getKey(), null,
+                .createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(), null,
                         MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationRemove.getKey());
@@ -107,7 +115,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         CacheMergePolicy mergePolicy = cacheService
                 .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
         Operation operation = operationProvider.createWanMergeOperation(
-                cacheReplicationUpdate.getGroupName(),
+                ORIGIN,
                 cacheReplicationUpdate.getEntryView().getKey(),
                 cacheReplicationUpdate.getEntryView().getValue(), mergePolicy,
                 cacheReplicationUpdate.getEntryView().getExpirationTime(), MutableOperation.IGNORE_COMPLETION);

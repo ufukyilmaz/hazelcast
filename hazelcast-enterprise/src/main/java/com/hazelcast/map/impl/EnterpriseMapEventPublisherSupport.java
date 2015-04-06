@@ -12,26 +12,21 @@ import com.hazelcast.nio.serialization.Data;
 class EnterpriseMapEventPublisherSupport
         extends MapEventPublisherSupport {
 
-    private String groupName;
-
     protected EnterpriseMapEventPublisherSupport(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.groupName = mapServiceContext.getNodeEngine().getConfig().getGroupConfig().getName();
     }
 
     @Override
     public void publishWanReplicationUpdate(String mapName, EntryView entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
-                mapContainer.getWanMergePolicy(),
-                entryView, groupName);
+                mapContainer.getWanMergePolicy(), entryView);
         publishWanReplicationEventInternal(mapName, replicationEvent);
     }
 
     @Override
     public void publishWanReplicationRemove(String mapName, Data key, long removeTime) {
-        final EnterpriseMapReplicationRemove event = new EnterpriseMapReplicationRemove(mapName, key, removeTime,
-                groupName);
+        final EnterpriseMapReplicationRemove event = new EnterpriseMapReplicationRemove(mapName, key, removeTime);
         publishWanReplicationEventInternal(mapName, event);
     }
 }

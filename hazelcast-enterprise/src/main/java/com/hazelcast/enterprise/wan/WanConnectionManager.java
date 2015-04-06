@@ -88,7 +88,7 @@ class WanConnectionManager {
             }
         }
 
-        return new WanConnectionWrapper(targetAddress, conn);
+        return new WanConnectionWrapper(targetAddress, groupName, conn);
     }
 
     void reportFailedConnection(String targetAddress) {

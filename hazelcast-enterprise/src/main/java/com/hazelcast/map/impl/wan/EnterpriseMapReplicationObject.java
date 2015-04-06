@@ -6,6 +6,8 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Base class for {@link com.hazelcast.core.IMap} related WAN
@@ -13,12 +15,11 @@ import java.io.IOException;
  */
 public abstract class EnterpriseMapReplicationObject implements EnterpriseReplicationEventObject, DataSerializable {
 
-    String groupName;
+    Set<String> groupNames = new HashSet<String>();
     String mapName;
 
-    public EnterpriseMapReplicationObject(String mapName, String groupName) {
+    public EnterpriseMapReplicationObject(String mapName) {
         this.mapName = mapName;
-        this.groupName = groupName;
     }
 
     public EnterpriseMapReplicationObject() {
@@ -29,19 +30,19 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
     }
 
     @Override
-    public String getGroupName() {
-        return groupName;
+    public Set<String> getGroupNames() {
+        return groupNames;
     }
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(mapName);
-        out.writeUTF(groupName);
+        out.writeObject(groupNames);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         mapName = in.readUTF();
-        groupName = in.readUTF();
+        groupNames = in.readObject();
     }
 }

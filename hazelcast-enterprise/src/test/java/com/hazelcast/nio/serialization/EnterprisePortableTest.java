@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 @Category(QuickTest.class)
 public class EnterprisePortableTest {
 
-    static final int FACTORY_ID = 1;
+    static final int FACTORY_ID = TestSerializationConstants.PORTABLE_FACTORY_ID;
 
     @Test
     public void testBasics() {
@@ -167,7 +167,7 @@ public class EnterprisePortableTest {
         serializationConfig.addPortableFactory(FACTORY_ID, new TestPortableFactory());
         serializationConfig.setPortableVersion(1);
         serializationConfig.addClassDefinition(
-                new ClassDefinitionBuilder(FACTORY_ID, RawDataPortable.CLASS_ID).addLongField("l")
+                new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE).addLongField("l")
                         .addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition()).build());
 
         try {
@@ -191,9 +191,9 @@ public class EnterprisePortableTest {
         serializationConfig.setPortableVersion(1);
         serializationConfig
                 .addClassDefinition(
-                        new ClassDefinitionBuilder(FACTORY_ID, RawDataPortable.CLASS_ID)
+                        new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE)
                                 .addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition()).build())
-                .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, NamedPortable.CLASS_ID).addUTFField("name")
+                .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE).addUTFField("name")
                                 .addIntField("myint").build());
 
         SerializationService serializationService = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();

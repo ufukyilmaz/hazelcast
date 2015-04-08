@@ -2,6 +2,8 @@ package com.hazelcast.enterprise;
 
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.test.HazelcastParallelClassRunner;
+import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 
 /**
@@ -11,8 +13,14 @@ public class EnterpriseParallelJUnitClassRunner extends HazelcastParallelClassRu
 
     public EnterpriseParallelJUnitClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
+    }
+
+    @Override
+    protected void runChild(FrameworkMethod method, RunNotifier notifier) {
         if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
             System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         }
+        super.runChild(method, notifier);
     }
 }
+

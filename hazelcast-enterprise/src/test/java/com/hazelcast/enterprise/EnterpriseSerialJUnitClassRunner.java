@@ -22,4 +22,12 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
         }
         super.runChild(method, notifier);
     }
+
+    @Override
+    public void run(RunNotifier notifier) {
+        if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
+            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
+        }
+        super.run(notifier);
+    }
 }

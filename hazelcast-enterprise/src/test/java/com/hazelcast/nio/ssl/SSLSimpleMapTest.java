@@ -9,6 +9,7 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.Partition;
+import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.logging.ILogger;
 import java.io.IOException;
@@ -42,7 +43,7 @@ public final class SSLSimpleMapTest {
     private final boolean load;
 
     static {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "ENPDHM9KIAB45600S318R01S0W5162");
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         System.setProperty("hazelcast.version.check.enabled", "false");
         System.setProperty("java.net.preferIPv4Stack", "true");
     }

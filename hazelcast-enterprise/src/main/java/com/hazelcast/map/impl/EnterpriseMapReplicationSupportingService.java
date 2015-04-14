@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.operation.MergeOperation;
 import com.hazelcast.map.impl.operation.WanOriginatedDeleteOperation;
@@ -13,6 +14,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
+import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.concurrent.Future;
 
@@ -37,12 +39,19 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
+            MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+            WanReplicationRef wanReplicationRef = mapContainer.getMapConfig().getWanReplicationRef();
 
+            if (wanReplicationRef !=  null && wanReplicationRef.isRepublishingEnabled()) {
+                WanReplicationPublisher wanPublisher = mapContainer.getWanReplicationPublisher();
+                if (wanPublisher != null) {
+                    wanPublisher.publishReplicationEvent(MapService.SERVICE_NAME, mapReplicationObject);
+                }
+            }
             if (eventObject instanceof EnterpriseMapReplicationUpdate) {
                 EnterpriseMapReplicationUpdate replicationUpdate = (EnterpriseMapReplicationUpdate) eventObject;
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
                 MapMergePolicy mergePolicy = replicationUpdate.getMergePolicy();
-                MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
                 MergeOperation operation = new MergeOperation(mapName, mapServiceContext.toData(entryView.getKey(),
                         mapContainer.getPartitioningStrategy()), entryView, mergePolicy);
                 invokeOnPartition(entryView.getKey(), operation);
@@ -50,15 +59,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
                 WanOriginatedDeleteOperation operation = new WanOriginatedDeleteOperation(mapName,
                         replicationRemove.getKey());
-               invokeOnPartition(replicationRemove.getKey(), operation);
+                invokeOnPartition(replicationRemove.getKey(), operation);
             }
-
-            /* Below lines are supposed to be enabled after publishers are implemented.
-            WanReplicationPublisher wanPublisher = mapServiceContext.getMapContainer(mapName).getWanReplicationPublisher();
-
-            if (wanPublisher != null) {
-                wanPublisher.publishReplicationEvent(MapService.SERVICE_NAME, mapReplicationObject);
-            }*/
         }
     }
 

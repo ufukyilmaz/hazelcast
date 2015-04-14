@@ -34,7 +34,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore // https://github.com/hazelcast/hazelcast-enterprise/issues/160
 public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
@@ -122,7 +121,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         target.setEndpoints(getClusterEndPoints(config, count));
         return target;
     }
-
 
     private void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
@@ -227,6 +225,15 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
     private void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
             public void run() {
+                sleepSeconds(10);
+                assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
+            }
+        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+    }
+
+    private void assertDataInFromNoSleep(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
+        assertTrueEventually(new AssertTask() {
+            public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceCluster));
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
@@ -288,10 +295,10 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         initAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
+        assertDataInFromNoSleep(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 10, 20);
-        assertDataInFrom(clusterC, "map", 10, 20, clusterB);
+        assertDataInFromNoSleep(clusterC, "map", 10, 20, clusterB);
 
         sleepSeconds(10);
         assertKeysNotIn(clusterA, "map", 0, 10);
@@ -302,14 +309,13 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     //"Issue #1371 this topology requested hear https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ")
     @Test
-    @Ignore //replica of replica is not supported
     public void VTopo_1activeActiveReplicar_2producers_Test_PassThroughMergePolicy() {
 
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
 
-        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughMergePolicy.class.getName());
-        setupReplicateFrom(configC, configB, clusterB.length, "ctob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configC, configA, clusterA.length, "ctoab", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configC, configB, clusterB.length, "ctoab", PassThroughMergePolicy.class.getName());
 
         initAllClusters();
 
@@ -377,8 +383,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
-
-    //"Issue #1373  this test passes when run in isolation")//TODO
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_HigherHitsMapMergePolicy() {
 
@@ -393,7 +397,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 1000, 10);
+        increaseHitCount(clusterB, "map", 0, 1000, 1000);
         createDataIn(clusterB, "map", 0, 1000);
 
 
@@ -467,14 +471,12 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 500, 10);
+        increaseHitCount(clusterB, "map", 0, 500, 1000);
         createDataIn(clusterB, "map", 0, 500);
         assertDataInFrom(clusterA, "map", 0, 500, clusterB);
     }
 
-    //("Issue #1372  is a chain of replicars a valid topology")//TODO
     @Test
-    @Ignore // replica of replica is not supported
     public void chainTopo_2passiveReplicars_1producer() {
 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
@@ -514,7 +516,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
 
     @Test
-    @Ignore // currently Ring is not supported!
     public void replicationRing() {
 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());

@@ -2,16 +2,16 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
-import com.hazelcast.cache.operation.CacheDestroyOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.merge.CacheMergePolicyProvider;
+import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;
@@ -373,22 +373,17 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
 
         if (wanReplicationPublisher != null && origin == null) {
-            String groupName = nodeEngine.getConfig().getGroupConfig().getName();
             CacheConfig config = configs.get(cacheName);
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
                 CacheReplicationUpdate update =
-                        new CacheReplicationUpdate(
-                                config.getName(), cacheMergePolicies.get(cacheName),
-                                new SimpleCacheEntryView(dataKey, dataValue, expirationTime),
-                                groupName, config.getUriString());
+                        new CacheReplicationUpdate(config.getName(), cacheMergePolicies.get(cacheName),
+                                new SimpleCacheEntryView(dataKey, dataValue, expirationTime), config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove =
-                        new CacheReplicationRemove(config.getName(), dataKey,
-                                Clock.currentTimeMillis(), groupName,
-                                config.getUriString());
+                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), dataKey,
+                        Clock.currentTimeMillis(), config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }

@@ -16,19 +16,11 @@
 
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.cluster.impl.operations.AuthorizationOperation;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
-import com.hazelcast.nio.ConnectionManager;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.InvocationBuilder;
-import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
-import com.hazelcast.util.AddressUtil;
-import com.hazelcast.util.AddressUtil.AddressHolder;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEndpoint;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -37,8 +29,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * No delaying distribution implementation on WAN replication
@@ -46,28 +36,27 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class WanNoDelayReplication
         implements Runnable, WanReplicationEndpoint {
 
-    private static final int RETRY_CONNECTION_MAX = 10;
-    private static final int RETRY_CONNECTION_SLEEP_MILLIS = 1000;
-
+    private String targetGroupName;
+    private String localGroupName;
     private Node node;
     private ILogger logger;
-    private String groupName;
-    private String password;
-    private final LinkedBlockingQueue<String> addressQueue = new LinkedBlockingQueue<String>();
     private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
     private BlockingQueue<WanReplicationEvent> eventQueue;
     private volatile boolean running = true;
+    private WanConnectionManager connectionManager;
 
     public void init(Node node, String groupName, String password, String... targets) {
         this.node = node;
+        this.targetGroupName = groupName;
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
-        this.groupName = groupName;
-        this.password = password;
 
         int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUESIZE.getInteger();
+        localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
         this.eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(queueSize);
 
-        addressQueue.addAll(Arrays.asList(targets));
+        connectionManager = new WanConnectionManager(node);
+        connectionManager.init(groupName, password, Arrays.asList(targets));
+
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -75,18 +64,22 @@ public class WanNoDelayReplication
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
         WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
 
-        //if the replication event is published, we are done.
-        if (eventQueue.offer(replicationEvent)) {
-            return;
-        }
+        EnterpriseReplicationEventObject replicationEventObject = (EnterpriseReplicationEventObject) eventObject;
+        if (!replicationEventObject.getGroupNames().contains(targetGroupName)) {
+            replicationEventObject.getGroupNames().add(localGroupName);
+            //if the replication event is published, we are done.
+            if (eventQueue.offer(replicationEvent)) {
+                return;
+            }
 
-        //the replication event could not be published because the eventQueue is full. So we are going
-        //to drain one item and then offer it again.
-        //todo: isn't it dangerous to drop a ReplicationEvent?
-        eventQueue.poll();
+            //the replication event could not be published because the eventQueue is full. So we are going
+            //to drain one item and then offer it again.
+            //todo: isn't it dangerous to drop a ReplicationEvent?
+            eventQueue.poll();
 
-        if (!eventQueue.offer(replicationEvent)) {
-            logger.warning("Could not publish replication event: " + replicationEvent);
+            if (!eventQueue.offer(replicationEvent)) {
+                logger.warning("Could not publish replication event: " + replicationEvent);
+            }
         }
     }
 
@@ -95,16 +88,15 @@ public class WanNoDelayReplication
     }
 
     public void run() {
-        Connection conn = null;
         while (running) {
+            WanConnectionWrapper connectionWrapper = null;
             try {
                 WanReplicationEvent event = (failureQ.size() > 0) ? failureQ.removeFirst() : eventQueue.take();
-                if (conn == null) {
-                    conn = getConnection();
-                    if (conn != null) {
-                        conn = authorizeConnection(conn);
-                    }
-                }
+                EnterpriseReplicationEventObject replicationEventObject
+                        = (EnterpriseReplicationEventObject) event.getEventObject();
+                connectionWrapper = connectionManager.getConnection(getPartitionId(replicationEventObject.getKey()));
+                Connection conn = connectionWrapper.getConnection();
+
                 if (conn != null && conn.isAlive()) {
                     Data data = node.nodeEngine.getSerializationService().toData(event);
                     Packet packet = new Packet(data);
@@ -112,7 +104,6 @@ public class WanNoDelayReplication
                     node.nodeEngine.getPacketTransceiver().transmit(packet, conn);
                 } else {
                     failureQ.addFirst(event);
-                    conn = null;
                 }
             } catch (InterruptedException e) {
                 running = false;
@@ -120,62 +111,14 @@ public class WanNoDelayReplication
                 if (logger != null) {
                     logger.warning(e);
                 }
-                conn = null;
-            }
-        }
-    }
-
-    @SuppressWarnings("BusyWait")
-    Connection getConnection()
-            throws InterruptedException {
-        final int defaultPort = node.getConfig().getNetworkConfig().getPort();
-        while (running) {
-            String targetStr = addressQueue.take();
-            try {
-                final AddressHolder addressHolder = AddressUtil.getAddressHolder(targetStr, defaultPort);
-                final Address target = new Address(addressHolder.getAddress(), addressHolder.getPort());
-                final ConnectionManager connectionManager = node.getConnectionManager();
-                Connection conn = connectionManager.getOrConnect(target);
-                for (int i = 0; i < RETRY_CONNECTION_MAX; i++) {
-                    if (conn == null) {
-                        Thread.sleep(RETRY_CONNECTION_SLEEP_MILLIS);
-                    } else {
-                        return conn;
-                    }
-                    conn = connectionManager.getConnection(target);
+                if (connectionWrapper != null) {
+                    connectionManager.reportFailedConnection(connectionWrapper.getTargetAddress());
                 }
-            } catch (Throwable e) {
-                Thread.sleep(RETRY_CONNECTION_SLEEP_MILLIS);
-            } finally {
-                addressQueue.offer(targetStr);
             }
         }
-        return null;
     }
 
-    public boolean checkAuthorization(String groupName, String groupPassword, Address target) {
-        Operation authorizationCall = new AuthorizationOperation(groupName, groupPassword);
-        OperationService operationService = node.nodeEngine.getOperationService();
-        String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
-        InvocationBuilder invocationBuilder = operationService.createInvocationBuilder(serviceName, authorizationCall, target);
-        Future<Boolean> future = invocationBuilder.setTryCount(1).invoke();
-        try {
-            return future.get();
-        } catch (Exception ignored) {
-            logger.finest(ignored);
-        }
-        return false;
-    }
-
-    private Connection authorizeConnection(Connection conn) {
-        boolean authorized = checkAuthorization(groupName, password, conn.getEndPoint());
-        if (!authorized) {
-            conn.close();
-            if (logger != null) {
-                logger.severe("Invalid groupName or groupPassword! ");
-            }
-            return null;
-        }
-        return conn;
+    private int getPartitionId(Object key) {
+        return  node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 }

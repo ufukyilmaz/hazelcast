@@ -20,16 +20,13 @@ class EnterpriseMapEventPublisherSupport
     public void publishWanReplicationUpdate(String mapName, EntryView entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
-                mapContainer.getWanMergePolicy(),
-                entryView,
-                mapServiceContext.getNodeEngine().getConfig().getGroupConfig().getName());
-        mapContainer.getWanReplicationPublisher().publishReplicationEvent(mapServiceContext.serviceName(), replicationEvent);
+                mapContainer.getWanMergePolicy(), entryView);
+        publishWanReplicationEventInternal(mapName, replicationEvent);
     }
 
     @Override
     public void publishWanReplicationRemove(String mapName, Data key, long removeTime) {
-        final EnterpriseMapReplicationRemove event = new EnterpriseMapReplicationRemove(mapName, key, removeTime,
-                mapServiceContext.getNodeEngine().getConfig().getGroupConfig().getName());
+        final EnterpriseMapReplicationRemove event = new EnterpriseMapReplicationRemove(mapName, key, removeTime);
         publishWanReplicationEventInternal(mapName, event);
     }
 }

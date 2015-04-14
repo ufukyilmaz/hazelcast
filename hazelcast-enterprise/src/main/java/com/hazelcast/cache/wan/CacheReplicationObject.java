@@ -6,6 +6,8 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects
@@ -13,12 +15,11 @@ import java.io.IOException;
 public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, DataSerializable {
 
     String cacheName;
-    String groupName;
     String uriString;
+    Set<String> groupNames = new HashSet<String>();
 
-    public CacheReplicationObject(String cacheName, String groupName, String uriString) {
+    public CacheReplicationObject(String cacheName, String uriString) {
         this.cacheName = cacheName;
-        this.groupName = groupName;
         this.uriString = uriString;
     }
 
@@ -29,28 +30,26 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         return cacheName;
     }
 
-    @Override
-    public String getGroupName() {
-        return groupName;
-    }
-
     public String getUriString() {
         return uriString;
     }
 
     @Override
+    public Set<String> getGroupNames() {
+        return groupNames;
+    }
+
+    @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(cacheName);
-        out.writeUTF(groupName);
         out.writeUTF(uriString);
+        out.writeObject(groupNames);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         cacheName = in.readUTF();
-        groupName = in.readUTF();
         uriString = in.readUTF();
+        groupNames = in.readObject();
     }
-
-
 }

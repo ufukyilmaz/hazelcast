@@ -76,7 +76,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     }
 
     @Test(expected = IllegalStateException.class)
-    public void destoryStoreFromHiDensityNativeMemoryNearCacheRecordStore() {
+    public void destroyStoreFromHiDensityNativeMemoryNearCacheRecordStore() {
         clearRecordsOrDestroyStoreFromNearCacheDataRecordStore(InMemoryFormat.NATIVE, true);
     }
 
@@ -93,6 +93,16 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     @Test
     public void maxIdleTimeEvaluatedSuccessfullyOnHiDensityNativeMemoryNearCacheRecordStore() {
         maxIdleTimeEvaluatedSuccessfully(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void expiredRecordsCleanedUpSuccessfullyBecauseOfTTLOnHiDensityNativeMemoryNearCacheRecordStore() {
+        expiredRecordsCleanedUpSuccessfully(InMemoryFormat.NATIVE, false);
+    }
+
+    @Test
+    public void expiredRecordsCleanedUpSuccessfullyBecauseOfIdleTimeOnHiDensityNativeMemoryNearCacheRecordStore() {
+        expiredRecordsCleanedUpSuccessfully(InMemoryFormat.NATIVE, true);
     }
 
 }

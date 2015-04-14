@@ -2,6 +2,7 @@ package com.hazelcast.hidensity.impl;
 
 import com.hazelcast.cache.impl.eviction.Evictable;
 import com.hazelcast.cache.impl.eviction.EvictionCandidate;
+import com.hazelcast.cache.impl.eviction.Expirable;
 import com.hazelcast.cache.impl.eviction.impl.strategy.sampling.SampleableEvictableStore;
 import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
@@ -14,7 +15,7 @@ import com.hazelcast.spi.Callback;
  *
  * @param <R> the type of the {@link HiDensityRecord} to be stored
  */
-public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable>
+public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
         extends EvictableHiDensityRecordMap<R>
         implements SampleableEvictableStore<Data, R> {
 

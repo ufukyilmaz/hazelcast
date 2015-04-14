@@ -22,7 +22,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
     private final NearCacheConfig nearCacheConfig;
-    private final NearCacheContext nearCacheContext;
     private final NearCacheStatsImpl nearCacheStats;
     private final HiDensityStorageInfo storageInfo;
 
@@ -35,7 +34,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                               NearCacheContext nearCacheContext) {
         this.nearCacheConfig = nearCacheConfig;
-        this.nearCacheContext = nearCacheContext;
         this.nearCacheStats = new NearCacheStatsImpl();
         this.storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
 
@@ -97,8 +95,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public V get(K key) {
         checkAvailable();
 
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment =
-                segmentFor(key);
+        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.get(key);
     }
 
@@ -106,8 +103,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public void put(K key, V value) {
         checkAvailable();
 
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment =
-                segmentFor(key);
+        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         segment.put(key, value);
     }
 
@@ -115,8 +111,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public boolean remove(K key) {
         checkAvailable();
 
-        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment =
-                segmentFor(key);
+        HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.remove(key);
     }
 
@@ -203,6 +198,19 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         return evictedCount;
     }
 
+    @Override
+    public void doExpiration() {
+        checkAvailable();
+
+        for (int i = 0; i < segments.length; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            segment.doExpiration();
+        }
+    }
+
     /**
      * Represents a segment block (lockable by a thread) in this near-cache storage
      */
@@ -285,6 +293,17 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
                 lock.unlock();
             }
         }
+
+        @Override
+        public void doExpiration() {
+            lock.lock();
+            try {
+                super.doExpiration();
+            } finally {
+                lock.unlock();
+            }
+        }
+
     }
 
 }

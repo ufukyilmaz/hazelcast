@@ -1,6 +1,8 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
+import com.hazelcast.cache.impl.eviction.EvictionListener;
+import com.hazelcast.cache.impl.eviction.ExpirationChecker;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
 import com.hazelcast.cache.impl.nearcache.impl.store.AbstractNearCacheRecordStore;
@@ -38,6 +40,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     private final HiDensityNativeMemoryNearCacheRecordAccessor recordAccessor;
     private final HiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord> recordProcessor;
     private SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryNearCacheRecord> recordMap;
+    private final RecordEvictionListener recordEvictionListener = new RecordEvictionListener();
+    private final RecordExpirationChecker recordExpirationChecker = new RecordExpirationChecker();
 
     public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                      NearCacheContext nearCacheContext) {
@@ -60,8 +64,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             this.memoryManager = mm;
         }
         this.recordAccessor =
-                new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService,
-                        memoryManager);
+                new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
         this.recordProcessor =
                 new DefaultHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
                         serializationService, recordAccessor,
@@ -157,7 +160,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected long getKeyStorageMemoryCost(K key) {
         if (key instanceof Data) {
-            return ((Data) key).totalSize();
+            if (key instanceof NativeMemoryData) {
+                return ((NativeMemoryData) key).totalSize();
+            } else {
+                // Because key will saved as native memory data
+                return NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize();
+            }
         } else {
             // Memory cost for non-data typed instance is not supported.
             return 0L;
@@ -194,7 +202,10 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected HiDensityNativeMemoryNearCacheRecord putRecord(K key, HiDensityNativeMemoryNearCacheRecord record) {
-        return recordMap.put(toData(key), record);
+        NativeMemoryData keyData = toNativeMemoryData(key);
+        HiDensityNativeMemoryNearCacheRecord oldRecord = recordMap.put(toData(key), record);
+        nearCacheStats.incrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, record));
+        return oldRecord;
     }
 
     @Override
@@ -204,7 +215,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected HiDensityNativeMemoryNearCacheRecord removeRecord(K key) {
-        return recordMap.remove(toData(key));
+        Data keyData = toData(key);
+        HiDensityNativeMemoryNearCacheRecord removedRecord = recordMap.remove(keyData);
+        if (removedRecord != null) {
+            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, removedRecord));
+        }
+        return removedRecord;
     }
 
     @Override
@@ -319,7 +335,40 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     public int forceEvict() {
         checkAvailable();
 
-        return recordMap.forceEvict(HiDensityRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE);
+        return recordMap.forceEvict(HiDensityRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE,
+                                    recordEvictionListener);
     }
+
+    @Override
+    public void doExpiration() {
+        checkAvailable();
+
+        recordMap.evictExpiredRecords(recordEvictionListener, recordExpirationChecker);
+    }
+
+    /**
+     * {@link EvictionListener} implementation for listening record eviction
+     */
+    private class RecordEvictionListener implements EvictionListener<Data, HiDensityNativeMemoryNearCacheRecord> {
+
+        @Override
+        public void onEvict(Data key, HiDensityNativeMemoryNearCacheRecord record) {
+            nearCacheStats.decrementOwnedEntryCount();
+            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
+        }
+
+    };
+
+    /**
+     * {@link ExpirationChecker} implementation for checking record expiration
+     */
+    private class RecordExpirationChecker implements ExpirationChecker<HiDensityNativeMemoryNearCacheRecord> {
+
+        @Override
+        public boolean isExpired(HiDensityNativeMemoryNearCacheRecord record) {
+            return isRecordExpired(record);
+        }
+
+    };
 
 }

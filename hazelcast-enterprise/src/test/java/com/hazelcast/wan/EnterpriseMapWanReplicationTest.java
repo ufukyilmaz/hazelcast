@@ -49,17 +49,25 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     private Random random = new Random();
 
+    Config getConfig() {
+        Config config = new Config();
+        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
+        config.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1");
+        return config;
+    }
+
     @Before
     public void setup() throws Exception {
-        configA = new Config();
+        configA = getConfig();
         configA.getGroupConfig().setName("A");
         configA.getNetworkConfig().setPort(5701);
 
-        configB = new Config();
+        configB = getConfig();
         configB.getGroupConfig().setName("B");
         configB.getNetworkConfig().setPort(5801);
 
-        configC = new Config();
+        configC = getConfig();
         configC.getGroupConfig().setName("C");
         configC.getNetworkConfig().setPort(5901);
 
@@ -457,7 +465,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         assertDataSizeEventually(clusterA, "map", 1000);
         assertDataSizeEventually(clusterB, "map", 1000);
     }
-
 
 
     @Test

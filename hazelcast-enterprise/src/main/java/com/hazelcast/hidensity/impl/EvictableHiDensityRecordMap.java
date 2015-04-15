@@ -97,9 +97,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         int ix = start;
         int k = 0;
         while (true) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
-            }
             if (isAllocated(ix)) {
                 long key = getKey(ix);
                 NativeMemoryData keyData = recordProcessor.readData(key);
@@ -159,9 +156,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         boolean shifted;
 
         while (true) {
-            if (Thread.currentThread().isInterrupted()) {
-                break;
-            }
             shifted = false;
             if (isAllocated(ix)) {
                 long key = getKey(ix);

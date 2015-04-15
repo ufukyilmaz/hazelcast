@@ -186,8 +186,13 @@ public class HiDensityNativeMemoryNearCacheRecord
     @Override
     public boolean isIdleAt(long maxIdleMilliSeconds, long now) {
         long accessTime = getAccessTime();
-        if (accessTime > TIME_NOT_SET && maxIdleMilliSeconds > 0) {
-            return accessTime + maxIdleMilliSeconds < now;
+        if (maxIdleMilliSeconds > 0) {
+            if (accessTime > TIME_NOT_SET) {
+                return accessTime + maxIdleMilliSeconds < now;
+            } else {
+                long creationTime = getCreationTime();
+                return creationTime + maxIdleMilliSeconds < now;
+            }
         } else {
             return false;
         }

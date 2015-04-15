@@ -43,11 +43,13 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
-                        .build(), null);
+                        .build(),
+                createNearCacheExecutor());
     }
 
     @After
     public void tearDown() {
+        super.tearDown();
         if (memoryManager != null) {
             memoryManager.destroy();
             memoryManager = null;
@@ -116,6 +118,16 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Test
     public void selectToSaveFromNearCache() {
         doSelectToSaveFromNearCache();
+    }
+
+    @Test
+    public void createNearCacheAndWaitForExpirationCalledWithTTL() {
+        doCreateNearCacheAndWaitForExpirationCalled(true);
+    }
+
+    @Test
+    public void createNearCacheAndWaitForExpirationCalledWithMaxIdleTime() {
+        doCreateNearCacheAndWaitForExpirationCalled(false);
     }
 
     private String getValuePrefix() {

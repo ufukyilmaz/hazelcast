@@ -30,6 +30,11 @@ import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
  */
 public final class NativeMemoryData extends MemoryBlock implements Data {
 
+    /**
+     * Native memory data size overhead relative to wrapped data
+     */
+    public static final int NATIVE_MEMORY_DATA_OVERHEAD;
+
     static final int SIZE_OFFSET = 0;
     static final int TYPE_OFFSET = 4;
     // we can store this bit in sign-bit of data-size
@@ -41,6 +46,13 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - DefaultData.TYPE_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
+
+    static {
+        // Because of checkstyle rule (public fields must be declared before private + package protected fields)
+        // and since public field "NATIVE_MEMORY_DATA_OVERHEAD" is dependent to package protected field "DATA_OFFSET",
+        // "NATIVE_MEMORY_DATA_OVERHEAD" static field is initialized here.
+        NATIVE_MEMORY_DATA_OVERHEAD = DATA_OFFSET;
+    }
 
     public NativeMemoryData() {
     }

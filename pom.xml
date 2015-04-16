@@ -163,7 +163,7 @@
                         -Dhazelcast.elastic.memory.chunk.size=1k
                         -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
                     </argLine>
-                    <excludedGroups>com.hazelcast.test.annotation.NightlyTest</excludedGroups>
+                    <excludedGroups>com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest</excludedGroups>
                 </configuration>
             </plugin>
 
@@ -271,7 +271,7 @@
                         <configuration combine.self="override">
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <testFailureIgnore>true</testFailureIgnore>
-                            <groups>com.hazelcast.test.annotation.NightlyTest</groups>
+                            <groups>com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest</groups>
                         </configuration>
                     </plugin>
                 </plugins>

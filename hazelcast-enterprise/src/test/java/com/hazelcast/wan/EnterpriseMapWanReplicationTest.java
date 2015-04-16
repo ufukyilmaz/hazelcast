@@ -1,6 +1,7 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.WanTargetClusterConfig;
@@ -49,17 +50,26 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     private Random random = new Random();
 
+    Config getConfig() {
+        Config config = new Config();
+        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
+        joinConfig.getMulticastConfig().setEnabled(false);
+        joinConfig.getTcpIpConfig().setEnabled(true);
+        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
+        return config;
+    }
+
     @Before
     public void setup() throws Exception {
-        configA = new Config();
+        configA = getConfig();
         configA.getGroupConfig().setName("A");
         configA.getNetworkConfig().setPort(5701);
 
-        configB = new Config();
+        configB = getConfig();
         configB.getGroupConfig().setName("B");
         configB.getNetworkConfig().setPort(5801);
 
-        configC = new Config();
+        configC = getConfig();
         configC.getGroupConfig().setName("C");
         configC.getNetworkConfig().setPort(5901);
 
@@ -457,7 +467,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         assertDataSizeEventually(clusterA, "map", 1000);
         assertDataSizeEventually(clusterB, "map", 1000);
     }
-
 
 
     @Test

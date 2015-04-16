@@ -4,19 +4,16 @@ import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.cache.merge.HigherHitCacheMergePolicy;
-import com.hazelcast.cluster.SystemClockChangeTest;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheEvictionConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.WanTargetClusterConfig;
-import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.config.XmlConfigImportVariableReplacementTest;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
@@ -28,7 +25,6 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.wan.impl.WanNoDelayReplication;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -84,10 +80,18 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         configC = createConfig("C", "confC", 5901, classLoaderC, nativeMemoryEnabled);
     }
 
+    Config getConfig() {
+        Config config = new Config();
+        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
+        joinConfig.getMulticastConfig().setEnabled(false);
+        joinConfig.getTcpIpConfig().setEnabled(true);
+        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
+        return config;
+    }
+
     private Config createConfig(String groupName, String instanceName, int port,
                                 ClassLoader classLoader, boolean nativeMemoryEnabled) {
-        XmlConfigBuilder configBuilder = new XmlConfigBuilder();
-        Config config = configBuilder.build();
+        Config config = getConfig();
         config.getGroupConfig().setName(groupName);
         config.setInstanceName(instanceName);
         config.getNetworkConfig().setPort(port);
@@ -288,7 +292,7 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         return true;
     }
 
-    protected CacheConfig createCacheConfig(String cacheName, HazelcastInstance node, InMemoryFormat inMemoryFormat) throws Exception{
+    protected CacheConfig createCacheConfig(String cacheName, HazelcastInstance node, InMemoryFormat inMemoryFormat) throws Exception {
         CacheConfig cacheConfig = new CacheConfig(node.getConfig().getCacheConfig(cacheName));
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);

@@ -1,6 +1,7 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.config.WanTargetClusterConfig;
@@ -51,9 +52,10 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
     Config getConfig() {
         Config config = new Config();
-        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true);
-        config.getNetworkConfig().getJoin().getTcpIpConfig().addMember("127.0.0.1");
+        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
+        joinConfig.getMulticastConfig().setEnabled(false);
+        joinConfig.getTcpIpConfig().setEnabled(true);
+        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
         return config;
     }
 

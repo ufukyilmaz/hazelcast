@@ -76,6 +76,7 @@ public class WanNoDelayReplication
             //to drain one item and then offer it again.
             //todo: isn't it dangerous to drop a ReplicationEvent?
             eventQueue.poll();
+            logger.warning("Event queue is full, dropping an event." + replicationEvent);
 
             if (!eventQueue.offer(replicationEvent)) {
                 logger.warning("Could not publish replication event: " + replicationEvent);

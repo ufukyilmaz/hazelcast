@@ -18,8 +18,10 @@ package com.hazelcast.client.cache.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -54,6 +56,16 @@ public class ClientHiDensityNearCacheTest extends ClientNearCacheTestSupport {
                         .setEnabled(true);
         clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
         return clientConfig;
+    }
+
+    @Override
+    protected NearCacheConfig createNearCacheConfig(InMemoryFormat inMemoryFormat) {
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(inMemoryFormat);
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setSize(99);
+        nearCacheConfig.setEvictionConfig(evictionConfig);
+        return nearCacheConfig;
     }
 
     @Test

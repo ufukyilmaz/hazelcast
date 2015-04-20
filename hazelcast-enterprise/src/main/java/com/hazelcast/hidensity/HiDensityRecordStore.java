@@ -17,19 +17,19 @@ import com.hazelcast.memory.MemoryManager;
 public interface HiDensityRecordStore<R extends HiDensityRecord> {
 
     /**
-     * Constant value for hundred percentage
+     * Constant value for hundred percent
      */
-    int HUNDRED_PERCENTAGE = 100;
+    int HUNDRED_PERCENT = 100;
 
     /**
      * Constant value for default forced eviction percentage
      */
-    int DEFAULT_FORCED_EVICT_PERCENTAGE = 20;
+    int DEFAULT_FORCED_EVICTION_PERCENTAGE = 20;
 
     /**
      * Constant value for force eviction try count
      */
-    int FORCE_EVICTION_TRY_COUNT = HUNDRED_PERCENTAGE / DEFAULT_FORCED_EVICT_PERCENTAGE;
+    int FORCE_EVICTION_TRY_COUNT = HUNDRED_PERCENT / DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
     /**
      * Constant value for representing the empty address

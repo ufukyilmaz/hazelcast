@@ -21,6 +21,12 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
 
     public SampleableEvictableHiDensityRecordMap(int initialCapacity,
                                                  HiDensityRecordProcessor<R> recordProcessor,
+                                                 HiDensityStorageInfo storageInfo) {
+        this(initialCapacity, recordProcessor, null, storageInfo);
+    }
+
+    public SampleableEvictableHiDensityRecordMap(int initialCapacity,
+                                                 HiDensityRecordProcessor<R> recordProcessor,
                                                  Callback<Data> evictionCallback,
                                                  HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, evictionCallback, storageInfo);

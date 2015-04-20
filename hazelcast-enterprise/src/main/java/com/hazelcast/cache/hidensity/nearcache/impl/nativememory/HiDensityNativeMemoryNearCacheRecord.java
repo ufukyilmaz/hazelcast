@@ -244,7 +244,7 @@ public class HiDensityNativeMemoryNearCacheRecord
 
     @Override
     public String toString() {
-        if (address() >= HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() > HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return "HiDensityNearCacheNativeMemoryRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

@@ -211,6 +211,19 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
     }
 
+    @Override
+    public void doEvictionIfRequired() {
+        checkAvailable();
+
+        for (int i = 0; i < segments.length; i++) {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            segment.doEvictionIfRequired();
+        }
+    }
+
     /**
      * Represents a segment block (lockable by a thread) in this near-cache storage
      */
@@ -304,6 +317,15 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             }
         }
 
+        @Override
+        public void doEvictionIfRequired() {
+            lock.lock();
+            try {
+                super.doEvictionIfRequired();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
 }

@@ -41,10 +41,10 @@
     <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
-    <suppress checks="MethodCountCheck|NPathComplexity|ParameterNumber"
+    <suppress checks="MethodCountCheck|NPathComplexity|CyclomaticComplexity|ParameterNumber"
               files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
-    <suppress checks="CyclomaticComplexity|ParameterNumber"
-              files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+    <suppress checks="NPathComplexity"
+              files="com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore"/>
     <suppress checks="ClassDataAbstractionCouplingC"
               files="com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook"/>
     <suppress checks="ClassDataAbstractionCouplingC"

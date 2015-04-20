@@ -3,6 +3,7 @@ package com.hazelcast.cache.nearcache;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCache;
 import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -47,6 +48,16 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                 createNearCacheExecutor());
     }
 
+    @Override
+    protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setSize(99);
+        nearCacheConfig.setEvictionConfig(evictionConfig);
+        return nearCacheConfig;
+    }
+
     @After
     public void tearDown() {
         super.tearDown();
@@ -76,8 +87,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     }
 
     @Test
-    public void putFromNearCache() {
-        doPutFromNearCache();
+    public void putToNearCache() {
+        doPutToNearCache();
     }
 
     @Test
@@ -128,6 +139,11 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Test
     public void createNearCacheAndWaitForExpirationCalledWithMaxIdleTime() {
         doCreateNearCacheAndWaitForExpirationCalled(false);
+    }
+
+    @Test
+    public void putToNearCacheStatsAndSeeEvictionCheckIsDone() {
+        doPutToNearCacheStatsAndSeeEvictionCheckIsDone();
     }
 
     private String getValuePrefix() {

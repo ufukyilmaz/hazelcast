@@ -5,9 +5,9 @@ import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.cache.merge.HigherHitCacheMergePolicy;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.CacheEvictionConfig;
 import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
@@ -24,6 +24,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.wan.impl.WanNoDelayReplication;
+
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -98,14 +99,14 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         config.setClassLoader(classLoader);
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
         CacheSimpleConfig cacheConfig = config.getCacheConfig("default");
-        CacheEvictionConfig evictionConfig = new CacheEvictionConfig();
+        EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {
             config.setNativeMemoryConfig(getMemoryConfig());
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
             evictionConfig.setSize(90);
-            evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return config;
@@ -296,12 +297,12 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         CacheConfig cacheConfig = new CacheConfig(node.getConfig().getCacheConfig(cacheName));
         cacheConfig.setInMemoryFormat(inMemoryFormat);
         cacheConfig.setStatisticsEnabled(true);
-        CacheEvictionConfig evictionConfig = new CacheEvictionConfig();
+        EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setSize(90);
         if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;

@@ -32,6 +32,12 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
     public EvictableHiDensityRecordMap(int initialCapacity,
                                        HiDensityRecordProcessor<R> recordProcessor,
+                                       HiDensityStorageInfo storageInfo) {
+        this(initialCapacity, recordProcessor, null, storageInfo);
+    }
+
+    public EvictableHiDensityRecordMap(int initialCapacity,
+                                       HiDensityRecordProcessor<R> recordProcessor,
                                        Callback<Data> evictionCallback,
                                        HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, storageInfo);

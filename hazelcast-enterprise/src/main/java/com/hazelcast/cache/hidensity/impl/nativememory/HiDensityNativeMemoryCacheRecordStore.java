@@ -2,19 +2,19 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
-import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemoryPercentageCacheMaxSizeChecker;
-import com.hazelcast.cache.hidensity.impl.maxsize.FreeNativeMemorySizeCacheMaxSizeChecker;
-import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemoryPercentageCacheMaxSizeChecker;
-import com.hazelcast.cache.hidensity.impl.maxsize.UsedNativeMemorySizeCacheMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.CacheEventType;
-import com.hazelcast.cache.impl.maxsize.CacheMaxSizeChecker;
+import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.wan.SimpleCacheEntryView;
-import com.hazelcast.config.CacheEvictionConfig;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
@@ -70,8 +70,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     //CHECKSTYLE:OFF
     @Override
-    protected CacheMaxSizeChecker createCacheMaxSizeChecker(int size,
-                                                            CacheEvictionConfig.CacheMaxSizePolicy maxSizePolicy) {
+    protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
             if (isInvalidMaxSizePolicyExceptionDisabled()) {
                 // Don't throw exception, just ignore max-size policy
@@ -86,13 +85,13 @@ public class HiDensityNativeMemoryCacheRecordStore
                         .getMemoryManager().getMemoryStats().getMaxNativeMemory();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
-                return new UsedNativeMemorySizeCacheMaxSizeChecker(cacheInfo, size);
+                return new HiDensityUsedNativeMemorySizeMaxSizeChecker(cacheInfo, size);
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                return new UsedNativeMemoryPercentageCacheMaxSizeChecker(cacheInfo, size, maxNativeMemory);
+                return new HiDensityUsedNativeMemoryPercentageMaxSizeChecker(cacheInfo, size, maxNativeMemory);
             case FREE_NATIVE_MEMORY_SIZE:
-                return new FreeNativeMemorySizeCacheMaxSizeChecker(memoryManager, size);
+                return new HiDensityFreeNativeMemorySizeMaxSizeChecker(memoryManager, size);
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                return new FreeNativeMemoryPercentageCacheMaxSizeChecker(memoryManager, size, maxNativeMemory);
+                return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
                 if (isInvalidMaxSizePolicyExceptionDisabled()) {
                     // Don't throw exception, just ignore max-size policy
@@ -100,11 +99,11 @@ public class HiDensityNativeMemoryCacheRecordStore
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
                             + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                            + CacheEvictionConfig.CacheMaxSizePolicy.ENTRY_COUNT + ", "
-                            + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
-                            + CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
-                            + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
-                            + CacheEvictionConfig.CacheMaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
+                            + EvictionConfig.MaxSizePolicy.ENTRY_COUNT + ", "
+                            + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
+                            + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
+                            + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
+                            + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
                             + " are supported.");
                 }
         }
@@ -750,7 +749,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public int forceEvict() {
-        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICT_PERCENTAGE);
+        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
     }
 
     @Override

@@ -2,8 +2,8 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.CacheEvictionConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -14,6 +14,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,9 +67,9 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         CacheManager cacheManager = provider.getCacheManager();
         CacheConfig cacheConfig = new CacheConfig();
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        CacheEvictionConfig evictionConfig = new CacheEvictionConfig();
+        EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setSize(90);
-        evictionConfig.setMaxSizePolicy(CacheEvictionConfig.CacheMaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         cacheConfig.setEvictionConfig(evictionConfig);
         String cacheName = randomString();
         cache = cacheManager.createCache(cacheName,cacheConfig);

@@ -68,7 +68,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
             Future f = nodeEngine.getOperationService()
-                    .invokeOnPartition(mapServiceContext.serviceName(), operation, partitionId);
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
             f.get();
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);

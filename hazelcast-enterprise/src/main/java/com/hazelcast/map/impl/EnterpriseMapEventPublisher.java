@@ -7,12 +7,10 @@ import com.hazelcast.nio.serialization.Data;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
- *
  */
-class EnterpriseMapEventPublisherSupport
-        extends MapEventPublisherSupport {
+class EnterpriseMapEventPublisher extends MapEventPublisherImpl {
 
-    protected EnterpriseMapEventPublisherSupport(MapServiceContext mapServiceContext) {
+    protected EnterpriseMapEventPublisher(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 

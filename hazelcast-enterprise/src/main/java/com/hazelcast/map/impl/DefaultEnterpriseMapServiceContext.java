@@ -16,7 +16,7 @@ class DefaultEnterpriseMapServiceContext extends MapServiceContextImpl implement
     }
 
     @Override
-    MapEventPublisherSupport createMapEventPublisherSupport() {
-        return new EnterpriseMapEventPublisherSupport(this);
+    EnterpriseMapEventPublisher createMapEventPublisherSupport() {
+        return new EnterpriseMapEventPublisher(this);
     }
 }

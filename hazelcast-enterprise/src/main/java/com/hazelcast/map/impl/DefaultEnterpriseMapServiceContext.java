@@ -9,7 +9,7 @@ import com.hazelcast.spi.NodeEngine;
  *
  * @see MapServiceContext
  */
-class DefaultEnterpriseMapServiceContext extends DefaultMapServiceContext implements EnterpriseMapServiceContext {
+class DefaultEnterpriseMapServiceContext extends MapServiceContextImpl implements EnterpriseMapServiceContext {
 
     public DefaultEnterpriseMapServiceContext(NodeEngine nodeEngine) {
         super(nodeEngine);

@@ -13,8 +13,8 @@ public final class EnterpriseMapServiceConstructor {
         @Override
         public MapService createNew(NodeEngine nodeEngine) {
             EnterpriseMapServiceContext enterpriseMapServiceContext = new DefaultEnterpriseMapServiceContext(nodeEngine);
-            MapServiceContextAwareFactory factory
-                    = new EnterpriseMapServiceContextAwareFactory(enterpriseMapServiceContext);
+            MapServiceFactory factory
+                    = new EnterpriseMapServiceFactory(enterpriseMapServiceContext);
             return factory.createMapService();
         }
     };

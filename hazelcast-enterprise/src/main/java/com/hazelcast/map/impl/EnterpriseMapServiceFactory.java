@@ -6,11 +6,11 @@ import com.hazelcast.spi.ReplicationSupportingService;
  * Enterprise implementation of {@link MapServiceContextAwareFactory}.
  * Contains enterprise specific implementations of spi services.
  *
- * @see MapServiceContextAwareFactory
+ * @see DefaultMapServiceFactory
  */
-class EnterpriseMapServiceContextAwareFactory extends DefaultMapServiceContextAwareFactory {
+class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
 
-    public EnterpriseMapServiceContextAwareFactory(EnterpriseMapServiceContext mapServiceContext) {
+    public EnterpriseMapServiceFactory(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 

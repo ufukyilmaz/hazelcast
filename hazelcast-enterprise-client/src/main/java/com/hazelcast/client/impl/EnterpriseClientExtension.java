@@ -35,7 +35,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         ClientConfig clientConfig = client.getClientConfig();
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
         initSocketInterceptor(networkConfig.getSocketInterceptorConfig());
-        String licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
+        String licenseKey = clientConfig.getLicenseKey();
+        if (licenseKey == null) {
+            licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
+        }
         LicenseHelper.checkLicenseKey(licenseKey);
     }
 

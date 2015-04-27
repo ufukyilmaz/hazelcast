@@ -50,7 +50,7 @@ public class WanNoDelayReplication
         this.targetGroupName = groupName;
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
 
-        int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUESIZE.getInteger();
+        int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUE_CAPACITY.getInteger();
         localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
         this.eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(queueSize);
 

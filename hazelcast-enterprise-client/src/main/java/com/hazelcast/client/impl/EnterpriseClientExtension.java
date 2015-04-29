@@ -10,7 +10,7 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.instance.GroupProperties;
-import com.hazelcast.license.domain.License;
+import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -40,8 +40,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
         }
-        License license = LicenseHelper.checkLicenseKey(licenseKey);
-        LicenseHelper.checkLicenseType(license, "Enterprise Java Client");
+        LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE);
     }
 
     @Override

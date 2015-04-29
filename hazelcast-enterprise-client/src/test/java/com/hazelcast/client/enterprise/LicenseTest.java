@@ -159,7 +159,7 @@ public class LicenseTest extends HazelcastTestSupport{
     @Test
     public void testClientWithSecurityLicense() {
         expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Enterprise Java Client is not avaliable for your license.Please contact sales@hazelcast.com");
+        expectedEx.expectMessage("Invalid License Type! Please contact sales@hazelcast.com");
 
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
                 SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);

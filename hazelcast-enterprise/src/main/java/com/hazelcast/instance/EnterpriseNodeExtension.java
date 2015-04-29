@@ -74,7 +74,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
-        license = LicenseHelper.checkLicenseKey(licenseKey);
+        license = LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
 
         systemLogger = node.getLogger("com.hazelcast.system");
 
@@ -326,7 +326,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!memoryConfig.isEnabled()) {
             return;
         }
-        LicenseHelper.checkLicenseType(license, "HD Memory");
+        LicenseHelper.checkLicenseKey(license.getKey(), LicenseType.ENTERPRISE);
         long totalNativeMemorySize = node.getClusterService().getSize()
                 * memoryConfig.getSize().bytes();
         long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());

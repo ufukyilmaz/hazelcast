@@ -54,6 +54,14 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(config);//This node does not join.
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void node_should_not_start_with_security_only_license() {
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
+        configureCacheWithNativeMemory(factory);
+        factory.newHazelcastInstance(config);//This node should not start with HD memory
+    }
+
     @Test
     public void node_should_join_when_max_memory_does_not_exceed_licensed_value() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);

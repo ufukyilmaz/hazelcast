@@ -46,8 +46,8 @@ public class LicenseTest extends HazelcastTestSupport{
     @After
     public void cleanup() {
         Hazelcast.shutdownAll();
+        HazelcastClient.shutdownAll();
         System.getProperties().remove(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
-
     }
 
     @Test
@@ -155,6 +155,28 @@ public class LicenseTest extends HazelcastTestSupport{
         HazelcastClient.newHazelcastClient(clientConfig);
         fail("Client should not be able to connect!");
     }
+
+    @Test
+    public void testClientWithSecurityLicense() {
+        expectedEx.expect(InvalidLicenseException.class);
+        expectedEx.expectMessage("Enterprise Java Client is not avaliable for your license.Please contact sales@hazelcast.com");
+
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
+                SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+
+        Config config = new Config();
+        HazelcastInstance h1 = Hazelcast.newHazelcastInstance(config);
+        HazelcastInstance h2 = Hazelcast.newHazelcastInstance(config);
+        assertSizeEventually(2, h2.getCluster().getMembers());
+        assertSizeEventually(2, h1.getCluster().getMembers());
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+
+        HazelcastClient.newHazelcastClient(clientConfig);
+        fail("Client should not be able to connect!");
+    }
+
 
 
     private File createConfigFile(String filename, String suffix) throws IOException {

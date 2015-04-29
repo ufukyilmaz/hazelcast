@@ -16,6 +16,7 @@ import com.hazelcast.elasticmemory.StorageFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.license.domain.License;
+import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
@@ -42,6 +43,7 @@ import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.logging.Level;
 
@@ -299,7 +301,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public <T> T createService(Class<T> clazz) {
         if (WanReplicationService.class.isAssignableFrom(clazz)) {
-            return (T) new EnterpriseWanReplicationService(node);
+            if (license.getType() == LicenseType.ENTERPRISE_SECURITY_ONLY) {
+                return (T) new WanReplicationServiceImpl(node);
+            } else {
+                return (T) new EnterpriseWanReplicationService(node);
+            }
         } else if (ICacheService.class.isAssignableFrom(clazz)) {
             return (T) new EnterpriseCacheService();
         } else if (MapService.class.isAssignableFrom(clazz)) {
@@ -320,6 +326,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!memoryConfig.isEnabled()) {
             return;
         }
+        LicenseHelper.checkLicenseType(license, "HD Memory");
         long totalNativeMemorySize = node.getClusterService().getSize()
                 * memoryConfig.getSize().bytes();
         long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());

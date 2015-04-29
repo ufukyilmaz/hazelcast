@@ -3,9 +3,17 @@ package com.hazelcast.enterprise;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.instance.DefaultNodeContext;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.HazelcastInstanceImpl;
+import com.hazelcast.instance.Node;
+import com.hazelcast.instance.NodeContext;
 import com.hazelcast.license.exception.InvalidLicenseException;
-import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.nio.ConnectionManager;
+import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -14,8 +22,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+
+import java.nio.channels.ServerSocketChannel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -114,4 +126,37 @@ public class LicenseTest {
         Hazelcast.newHazelcastInstance(new Config());
         Hazelcast.newHazelcastInstance(new Config());//this node should not start!
     }
+
+    @Test
+    public void testSecurityOnlyLicenseOnlyUsesOpenSourceWANReplication() {
+        EnterpriseNodeExtension extension = new EnterpriseNodeExtension();
+        Node node = getMockNode(SampleLicense.SECURITY_ONLY_LICENSE);
+        extension.beforeStart(node);
+        WanReplicationService wanReplicationService = extension.createService(WanReplicationService.class);
+        assertTrue(wanReplicationService instanceof WanReplicationServiceImpl);
+    }
+
+    @Test
+    public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
+        EnterpriseNodeExtension extension = new EnterpriseNodeExtension();
+        Node node = getMockNode(SampleLicense.UNLIMITED_LICENSE);
+        extension.beforeStart(node);
+        WanReplicationService wanReplicationService = extension.createService(WanReplicationService.class);
+        assertTrue(wanReplicationService instanceof EnterpriseWanReplicationService);
+    }
+
+    private Node getMockNode(String licenseKey) {
+        Config config = new Config();
+        config.setLicenseKey(licenseKey);
+        HazelcastInstanceImpl instance = Mockito.mock(HazelcastInstanceImpl.class);
+        NodeContext nodeContext = new DefaultNodeContext() {
+            @Override
+            public ConnectionManager createConnectionManager(Node node, ServerSocketChannel serverSocketChannel) {
+                return super.createConnectionManager(node, serverSocketChannel);
+            }
+        };
+        return new Node(instance, config, nodeContext);
+    }
+
+
 }

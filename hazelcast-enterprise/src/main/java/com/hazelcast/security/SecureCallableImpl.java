@@ -32,6 +32,7 @@ import com.hazelcast.mapreduce.JobTracker;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.quorum.QuorumService;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -265,7 +266,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 		public LifecycleService getLifecycleService() {
 			throw new UnsupportedOperationException();
 		}
-	}
+
+        @Override
+        public QuorumService getQuorumService() {
+            return instance.getQuorumService();
+        }
+    }
 
     private <T> T getProxy(SecureInvocationHandler handler) {
         final DistributedObject distributedObject = handler.getDistributedObject();

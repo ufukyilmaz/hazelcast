@@ -149,12 +149,7 @@ public class LicenseTest {
         Config config = new Config();
         config.setLicenseKey(licenseKey);
         HazelcastInstanceImpl instance = Mockito.mock(HazelcastInstanceImpl.class);
-        NodeContext nodeContext = new DefaultNodeContext() {
-            @Override
-            public ConnectionManager createConnectionManager(Node node, ServerSocketChannel serverSocketChannel) {
-                return super.createConnectionManager(node, serverSocketChannel);
-            }
-        };
+        NodeContext nodeContext = new DefaultNodeContext();
         return new Node(instance, config, nodeContext);
     }
 

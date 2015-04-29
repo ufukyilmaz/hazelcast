@@ -1,4 +1,4 @@
-package com.hazelcast.wan;
+package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.HazelcastCachingProvider;
 import com.hazelcast.cache.ICache;
@@ -9,26 +9,16 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
-import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperties;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.wan.impl.WanNoDelayReplication;
-
-import org.junit.After;
+import com.hazelcast.wan.AbstractWanReplicationTest;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
 
 import javax.cache.CacheManager;
 import javax.cache.Caching;
@@ -37,34 +27,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Properties;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(NightlyTest.class)
-public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
-
-    private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
-
-
-    private HazelcastInstance[] clusterA = new HazelcastInstance[2];
-    private HazelcastInstance[] clusterB = new HazelcastInstance[2];
-    private HazelcastInstance[] clusterC = new HazelcastInstance[2];
-
-    private Random random = new Random();
+public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplicationTest {
 
     private ClassLoader classLoaderA;
     private ClassLoader classLoaderB;
     private ClassLoader classLoaderC;
-
-    private Config configA;
-    private Config configB;
-    private Config configC;
 
     private void initConfigA(boolean nativeMemoryEnabled) {
         classLoaderA = createCacheManagerClassLoader();
@@ -79,15 +51,6 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
     private void initConfigC(boolean nativeMemoryEnabled) {
         classLoaderC = createCacheManagerClassLoader();
         configC = createConfig("C", "confC", 5901, classLoaderC, nativeMemoryEnabled);
-    }
-
-    Config getConfig() {
-        Config config = new Config();
-        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
-        joinConfig.getMulticastConfig().setEnabled(false);
-        joinConfig.getTcpIpConfig().setEnabled(true);
-        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
-        return config;
     }
 
     private Config createConfig(String groupName, String instanceName, int port,
@@ -118,55 +81,6 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
                 new NativeMemoryConfig()
                         .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
                         .setSize(memorySize).setEnabled(true);
-    }
-
-    private void startClusterA() {
-        initCluster(clusterA, configA);
-    }
-
-    private void startClusterB() {
-        initCluster(clusterB, configB);
-    }
-
-    private void startClusterC() {
-        initCluster(clusterC, configC);
-    }
-
-    @After
-    public void cleanup() {
-        HazelcastInstanceFactory.shutdownAll();
-    }
-
-
-    private void initCluster(HazelcastInstance[] cluster, Config config) {
-        for (int i = 0; i < cluster.length; i++) {
-            config.setInstanceName(config.getInstanceName() + i);
-            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(config);
-        }
-    }
-
-    private HazelcastInstance getNode(HazelcastInstance[] cluster) {
-        return cluster[random.nextInt(cluster.length)];
-    }
-
-
-    private List getClusterEndPoints(Config config, int count) {
-        List ends = new ArrayList<String>();
-
-        int port = config.getNetworkConfig().getPort();
-
-        for (int i = 0; i < count; i++) {
-            ends.add(new String("127.0.0.1:" + port++));
-        }
-        return ends;
-    }
-
-    private WanTargetClusterConfig targetCluster(Config config, int count) {
-        WanTargetClusterConfig target = new WanTargetClusterConfig();
-        target.setGroupName(config.getGroupConfig().getName());
-        target.setReplicationImpl(WanNoDelayReplication.class.getName());
-        target.setEndpoints(getClusterEndPoints(config, count));
-        return target;
     }
 
     private void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String cacheName) {
@@ -338,5 +252,4 @@ public class EnterpriseCacheWanReplicationTest extends HazelcastTestSupport {
         checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", cacheSize);
 
     }
-
 }

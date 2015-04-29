@@ -17,7 +17,6 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.wan.ReplicationEventObject;
-import com.hazelcast.wan.WanReplicationEndpoint;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 /**

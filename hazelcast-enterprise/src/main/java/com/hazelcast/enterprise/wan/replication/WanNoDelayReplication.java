@@ -1,31 +1,14 @@
-/*
- * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package com.hazelcast.enterprise.wan.replication;
 
-package com.hazelcast.enterprise.wan;
-
+import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
+import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
+import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Connection;
-import com.hazelcast.nio.Packet;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.wan.ReplicationEventObject;
-import com.hazelcast.wan.WanReplicationEndpoint;
 import com.hazelcast.wan.WanReplicationEvent;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -33,30 +16,19 @@ import java.util.concurrent.BlockingQueue;
 /**
  * No delaying distribution implementation on WAN replication
  */
-public class WanNoDelayReplication
+public class WanNoDelayReplication extends AbstractWanReplication
         implements Runnable, WanReplicationEndpoint {
 
-    private String targetGroupName;
-    private String localGroupName;
-    private Node node;
     private ILogger logger;
-    private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
     private BlockingQueue<WanReplicationEvent> eventQueue;
+    private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
     private volatile boolean running = true;
-    private WanConnectionManager connectionManager;
 
-    public void init(Node node, String groupName, String password, String... targets) {
-        this.node = node;
-        this.targetGroupName = groupName;
+    @Override
+    public void init(Node node, String groupName, String password, boolean snapshotEnabled, String... targets) {
+        super.init(node, groupName, password, snapshotEnabled, targets);
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
-
-        int queueSize = node.getGroupProperties().ENTERPRISE_WAN_REP_QUEUE_CAPACITY.getInteger();
-        localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
         this.eventQueue = new ArrayBlockingQueue<WanReplicationEvent>(queueSize);
-
-        connectionManager = new WanConnectionManager(node);
-        connectionManager.init(groupName, password, Arrays.asList(targets));
-
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -67,16 +39,23 @@ public class WanNoDelayReplication
         EnterpriseReplicationEventObject replicationEventObject = (EnterpriseReplicationEventObject) eventObject;
         if (!replicationEventObject.getGroupNames().contains(targetGroupName)) {
             replicationEventObject.getGroupNames().add(localGroupName);
+
             //if the replication event is published, we are done.
             if (eventQueue.offer(replicationEvent)) {
                 return;
             }
 
+            long curTime = System.currentTimeMillis();
+            if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
+                lastQueueFullLogTimeMs = curTime;
+                logger.severe("Wan replication event queue is full. Dropping events.");
+            } else {
+                logger.finest("Wan replication event queue is full. An event is dropped.");
+            }
+
             //the replication event could not be published because the eventQueue is full. So we are going
             //to drain one item and then offer it again.
-            //todo: isn't it dangerous to drop a ReplicationEvent?
             eventQueue.poll();
-            logger.warning("Event queue is full, dropping an event." + replicationEvent);
 
             if (!eventQueue.offer(replicationEvent)) {
                 logger.warning("Could not publish replication event: " + replicationEvent);
@@ -97,14 +76,17 @@ public class WanNoDelayReplication
                         = (EnterpriseReplicationEventObject) event.getEventObject();
                 connectionWrapper = connectionManager.getConnection(getPartitionId(replicationEventObject.getKey()));
                 Connection conn = connectionWrapper.getConnection();
-
+                boolean eventSuccessfullySent = false;
                 if (conn != null && conn.isAlive()) {
-                    Data data = node.nodeEngine.getSerializationService().toData(event);
-                    Packet packet = new Packet(data);
-                    packet.setHeader(Packet.HEADER_WAN_REPLICATION);
-                    node.nodeEngine.getPacketTransceiver().transmit(packet, conn);
-                } else {
-                    failureQ.addFirst(event);
+                    try {
+                        invokeOnWanTarget(conn.getEndPoint(), event).get();
+                        eventSuccessfullySent = true;
+                    } catch (Exception ignored) {
+                        logger.warning(ignored);
+                    }
+                }
+                if (!eventSuccessfullySent) {
+                    failureQ.add(event);
                 }
             } catch (InterruptedException e) {
                 running = false;
@@ -117,9 +99,5 @@ public class WanNoDelayReplication
                 }
             }
         }
-    }
-
-    private int getPartitionId(Object key) {
-        return  node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 }

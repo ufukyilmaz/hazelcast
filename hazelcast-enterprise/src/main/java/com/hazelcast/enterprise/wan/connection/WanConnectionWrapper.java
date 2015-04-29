@@ -1,4 +1,4 @@
-package com.hazelcast.enterprise.wan;
+package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.nio.Connection;
 

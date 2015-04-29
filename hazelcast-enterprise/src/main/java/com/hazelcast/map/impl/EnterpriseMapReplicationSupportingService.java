@@ -16,8 +16,6 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
-import java.util.concurrent.Future;
-
 /**
  * This class handles incoming map WAN replication events
  */
@@ -67,9 +65,8 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private void invokeOnPartition(Data key, Operation operation) {
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
-            Future f = nodeEngine.getOperationService()
+            nodeEngine.getOperationService()
                     .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
-            f.get();
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }

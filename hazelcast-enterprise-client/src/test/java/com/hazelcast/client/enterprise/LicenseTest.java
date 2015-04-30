@@ -32,10 +32,6 @@ import static org.junit.Assert.fail;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest extends HazelcastTestSupport{
 
-
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     @BeforeClass
     @AfterClass
     public static void cleanupClass() {
@@ -116,10 +112,8 @@ public class LicenseTest extends HazelcastTestSupport{
         HazelcastClient.newHazelcastClient(clientConfig);
     }
 
-    @Test
+    @Test(expected = InvalidLicenseException.class)
     public void testLicenseNotFound() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Invalid License Key!");
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
                 SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
@@ -135,11 +129,8 @@ public class LicenseTest extends HazelcastTestSupport{
         HazelcastClient.newHazelcastClient(clientConfig);
     }
 
-    @Test
+    @Test(expected = InvalidLicenseException.class)
     public void testClientEnterpriseLicenseExpired() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Enterprise License has expired! Please contact sales@hazelcast.com");
-
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
                 SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
@@ -153,14 +144,10 @@ public class LicenseTest extends HazelcastTestSupport{
         clientConfig.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,SampleLicense.EXPIRED_ENTERPRISE_LICENSE);
 
         HazelcastClient.newHazelcastClient(clientConfig);
-        fail("Client should not be able to connect!");
     }
 
-    @Test
+    @Test(expected = InvalidLicenseException.class)
     public void testClientWithSecurityLicense() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Invalid License Type! Please contact sales@hazelcast.com");
-
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
                 SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
@@ -174,7 +161,6 @@ public class LicenseTest extends HazelcastTestSupport{
         clientConfig.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
 
         HazelcastClient.newHazelcastClient(clientConfig);
-        fail("Client should not be able to connect!");
     }
 
 

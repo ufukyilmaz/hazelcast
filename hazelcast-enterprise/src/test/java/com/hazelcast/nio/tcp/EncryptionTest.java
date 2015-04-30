@@ -24,9 +24,11 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -35,6 +37,7 @@ import static com.hazelcast.instance.TestUtil.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(NightlyTest.class)
 public class EncryptionTest {
 
     @BeforeClass

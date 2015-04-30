@@ -3,9 +3,19 @@ package com.hazelcast.enterprise;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.instance.DefaultNodeContext;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.HazelcastInstanceImpl;
+import com.hazelcast.instance.Node;
+import com.hazelcast.instance.NodeContext;
+import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
-import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.nio.ConnectionManager;
+import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -14,8 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
+
+import java.nio.channels.ServerSocketChannel;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -113,5 +127,23 @@ public class LicenseTest {
         Hazelcast.newHazelcastInstance(new Config());
         Hazelcast.newHazelcastInstance(new Config());
         Hazelcast.newHazelcastInstance(new Config());//this node should not start!
+    }
+
+    @Test
+    public void testSecurityOnlyLicenseOnlyUsesOpenSourceWANReplication() {
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+        HazelcastInstance h = Hazelcast.newHazelcastInstance(new Config());
+        Node node = TestUtil.getNode(h);
+        WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
+        assertTrue(wanReplicationService instanceof WanReplicationServiceImpl);
+    }
+
+    @Test
+    public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
+        HazelcastInstance h = Hazelcast.newHazelcastInstance(new Config());
+        Node node = TestUtil.getNode(h);
+        WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
+        assertTrue(wanReplicationService instanceof EnterpriseWanReplicationService);
     }
 }

@@ -67,9 +67,9 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
             config.setNativeMemoryConfig(getMemoryConfig());
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
             evictionConfig.setSize(90);
-            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return config;
@@ -214,9 +214,9 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setSize(90);
         if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         } else {
-            evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+            evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;

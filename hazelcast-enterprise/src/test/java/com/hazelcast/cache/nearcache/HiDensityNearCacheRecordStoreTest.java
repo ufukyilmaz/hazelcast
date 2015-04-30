@@ -50,7 +50,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
         NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
         nearCacheConfig.setEvictionConfig(evictionConfig);
         return nearCacheConfig;
@@ -214,7 +214,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
             evictionPolicy = EvictionConfig.DEFAULT_EVICTION_POLICY;
         }
         EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaxSizePolicy(maxSizePolicy);
+        evictionConfig.setMaximumSizePolicy(maxSizePolicy);
         if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
             evictionConfig.setSize(DEFAULT_SIZE);
         } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {

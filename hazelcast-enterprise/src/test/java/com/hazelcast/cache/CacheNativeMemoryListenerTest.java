@@ -52,7 +52,7 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setSize(90);
-        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         cacheConfig.setEvictionConfig(evictionConfig);
         String cacheName = randomString();
         cache = cacheManager.createCache(cacheName, cacheConfig);

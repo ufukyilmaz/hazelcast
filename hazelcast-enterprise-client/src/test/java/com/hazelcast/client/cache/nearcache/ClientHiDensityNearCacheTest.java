@@ -62,7 +62,7 @@ public class ClientHiDensityNearCacheTest extends ClientNearCacheTestSupport {
     protected NearCacheConfig createNearCacheConfig(InMemoryFormat inMemoryFormat) {
         NearCacheConfig nearCacheConfig = super.createNearCacheConfig(inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
         nearCacheConfig.setEvictionConfig(evictionConfig);
         return nearCacheConfig;

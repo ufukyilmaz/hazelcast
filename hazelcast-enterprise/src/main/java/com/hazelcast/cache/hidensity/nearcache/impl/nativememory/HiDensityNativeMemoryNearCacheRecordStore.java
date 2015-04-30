@@ -119,7 +119,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                                                            NearCacheContext nearCacheContext) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
 
-        EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaxSizePolicy();
+        EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
         if (maxSizePolicy== null) {
             throw new IllegalArgumentException("Max-Size policy cannot be null");
         }

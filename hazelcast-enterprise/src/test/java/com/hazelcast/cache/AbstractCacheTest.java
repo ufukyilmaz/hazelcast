@@ -84,7 +84,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         cacheConfig.setStatisticsEnabled(true);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setSize(90);
-        evictionConfig.setMaxSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }

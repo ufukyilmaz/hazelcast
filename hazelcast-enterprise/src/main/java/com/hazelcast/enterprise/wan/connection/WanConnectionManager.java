@@ -1,6 +1,7 @@
-package com.hazelcast.enterprise.wan;
+package com.hazelcast.enterprise.wan.connection;
 
 import com.hazelcast.cluster.impl.operations.AuthorizationOperation;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Maintains connections for WAN replication
  */
-class WanConnectionManager {
+public class WanConnectionManager {
 
     private static final int RETRY_CONNECTION_MAX = 10;
     private static final int RETRY_CONNECTION_SLEEP_MILLIS = 1000;
@@ -41,13 +42,13 @@ class WanConnectionManager {
     private final Set<String> failedAddressSet = new ConcurrentSkipListSet<String>();
     private final int defaultPort;
 
-    WanConnectionManager(Node node) {
+    public WanConnectionManager(Node node) {
         this.node = node;
         this.defaultPort = node.getConfig().getNetworkConfig().getPort();
         this.logger = node.getLogger(WanConnectionManager.class.getName());
     }
 
-    void init(String groupName, String password, List<String> targets) {
+    public void init(String groupName, String password, List<String> targets) {
         this.groupName = groupName;
         this.password = password;
         targetAddressList.addAll(targets);
@@ -55,8 +56,48 @@ class WanConnectionManager {
                 FAILURE_MONITOR_PERIOD, TimeUnit.SECONDS);
     }
 
-    WanConnectionWrapper getConnection(int partitionId) throws InterruptedException {
+    public WanConnectionWrapper getConnection(int partitionId) throws InterruptedException {
         String targetAddress = selectTarget(partitionId);
+        Connection conn = getConnectionByTargetAddress(targetAddress);
+        return new WanConnectionWrapper(targetAddress, groupName, conn);
+    }
+
+    public WanConnectionWrapper getConnection(String target) throws InterruptedException {
+        String targetAddress = selectTarget(target);
+        Connection conn = getConnectionByTargetAddress(targetAddress);
+        return new WanConnectionWrapper(targetAddress, groupName, conn);
+    }
+
+    public void reportFailedConnection(String targetAddress) {
+        synchronized (targetAddressList) {
+            targetAddressList.remove(targetAddress);
+        }
+        failedAddressSet.add(targetAddress);
+    }
+
+    private String selectTarget(int partitionId) {
+        String targetAddress = null;
+        synchronized (targetAddressList) {
+            if (!targetAddressList.isEmpty()) {
+                targetAddress = targetAddressList.get(partitionId % targetAddressList.size());
+            }
+        }
+        return targetAddress;
+    }
+
+    private String selectTarget(String target) {
+        String targetAddress;
+        synchronized (targetAddressList) {
+            if (targetAddressList.contains(target)) {
+                targetAddress = target;
+            } else {
+                targetAddress = selectTarget(0);
+            }
+        }
+        return targetAddress;
+    }
+
+    private Connection getConnectionByTargetAddress(String targetAddress) {
         Connection conn = null;
         if (targetAddress != null) {
             conn = connectionPool.get(targetAddress);
@@ -87,25 +128,7 @@ class WanConnectionManager {
                 connectionPool.remove(targetAddress);
             }
         }
-
-        return new WanConnectionWrapper(targetAddress, groupName, conn);
-    }
-
-    void reportFailedConnection(String targetAddress) {
-        synchronized (targetAddressList) {
-            targetAddressList.remove(targetAddress);
-        }
-        failedAddressSet.add(targetAddress);
-    }
-
-    private String selectTarget(int partitionId) {
-        String targetAddress = null;
-        synchronized (targetAddressList) {
-            if (!targetAddressList.isEmpty()) {
-                targetAddress = targetAddressList.get(partitionId % targetAddressList.size());
-            }
-        }
-        return targetAddress;
+        return conn;
     }
 
     private boolean checkAuthorization(String groupName, String groupPassword, Address target) {

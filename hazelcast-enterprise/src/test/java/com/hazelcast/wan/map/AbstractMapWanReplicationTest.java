@@ -1,135 +1,46 @@
-package com.hazelcast.wan;
+package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
-import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.wan.WanNoDelayReplication;
 import com.hazelcast.instance.GroupProperties;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.HazelcastTestSupport;
-import org.junit.After;
+import com.hazelcast.wan.AbstractWanReplicationTest;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
+public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicationTest {
 
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
-
-
-    private HazelcastInstance[] clusterA = new HazelcastInstance[2];
-    private HazelcastInstance[] clusterB = new HazelcastInstance[2];
-    private HazelcastInstance[] clusterC = new HazelcastInstance[2];
-
-    private Config configA;
-    private Config configB;
-    private Config configC;
-
-    private Random random = new Random();
-
-    Config getConfig() {
-        Config config = new Config();
-        JoinConfig joinConfig = config.getNetworkConfig().getJoin();
-        joinConfig.getMulticastConfig().setEnabled(false);
-        joinConfig.getTcpIpConfig().setEnabled(true);
-        joinConfig.getTcpIpConfig().addMember("127.0.0.1");
-        return config;
-    }
 
     @Before
     public void setup() throws Exception {
         configA = getConfig();
         configA.getGroupConfig().setName("A");
+        configA.setInstanceName("confA");
         configA.getNetworkConfig().setPort(5701);
 
         configB = getConfig();
         configB.getGroupConfig().setName("B");
+        configB.setInstanceName("confB");
         configB.getNetworkConfig().setPort(5801);
 
         configC = getConfig();
         configC.getGroupConfig().setName("C");
+        configC.setInstanceName("confC");
         configC.getNetworkConfig().setPort(5901);
 
         disableElasticMemory();
-    }
-
-    @After
-    public void cleanup() {
-        HazelcastInstanceFactory.shutdownAll();
-    }
-
-
-    private void initCluster(HazelcastInstance[] cluster, Config config) {
-        for (int i = 0; i < cluster.length; i++) {
-            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(config);
-        }
-    }
-
-
-    private void initClusterA() {
-        initCluster(clusterA, configA);
-    }
-
-    private void initClusterB() {
-        initCluster(clusterB, configB);
-    }
-
-    private void initClusterC() {
-        initCluster(clusterC, configC);
-    }
-
-    private void initAllClusters() {
-        initClusterA();
-        initClusterB();
-        initClusterC();
-    }
-
-
-    private HazelcastInstance getNode(HazelcastInstance[] cluster) {
-        return cluster[random.nextInt(cluster.length)];
-    }
-
-
-    private List getClusterEndPoints(Config config, int count) {
-        List ends = new ArrayList<String>();
-
-        int port = config.getNetworkConfig().getPort();
-
-        for (int i = 0; i < count; i++) {
-            ends.add(new String("127.0.0.1:" + port++));
-        }
-        return ends;
-    }
-
-    private WanTargetClusterConfig targetCluster(Config config, int count) {
-        WanTargetClusterConfig target = new WanTargetClusterConfig();
-        target.setGroupName(config.getGroupConfig().getName());
-        target.setReplicationImpl(WanNoDelayReplication.class.getName());
-        target.setEndpoints(getClusterEndPoints(config, count));
-        return target;
     }
 
     private void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
@@ -139,6 +50,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
             wanConfig.setName(setupName);
         }
         wanConfig.addTargetClusterConfig(targetCluster(toConfig, clusterSz));
+        wanConfig.setSnapshotEnabled(isSnapshotEnabled());
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
@@ -264,7 +176,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
         createDataIn(clusterB, "map", 1000, 2000);
@@ -297,12 +209,11 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
 
-        configA.getMapConfig("default").setTimeToLiveSeconds(10);
-        configB.getMapConfig("default").setTimeToLiveSeconds(10);
-        configC.getMapConfig("default").setTimeToLiveSeconds(10);
+        configA.getMapConfig("default").setTimeToLiveSeconds(20);
+        configB.getMapConfig("default").setTimeToLiveSeconds(20);
+        configC.getMapConfig("default").setTimeToLiveSeconds(20);
 
-
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
         assertDataInFromNoSleep(clusterC, "map", 0, 10, clusterA);
@@ -310,7 +221,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         createDataIn(clusterB, "map", 10, 20);
         assertDataInFromNoSleep(clusterC, "map", 10, 20, clusterB);
 
-        sleepSeconds(10);
+        sleepSeconds(20);
         assertKeysNotIn(clusterA, "map", 0, 10);
         assertKeysNotIn(clusterB, "map", 10, 20);
         assertKeysNotIn(clusterC, "map", 0, 20);
@@ -327,7 +238,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         setupReplicateFrom(configC, configA, clusterA.length, "ctoab", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configC, configB, clusterB.length, "ctoab", PassThroughMergePolicy.class.getName());
 
-        initAllClusters();
+        startAllClusters();
 
         printAllReplicarConfig();
 
@@ -347,7 +258,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
         createDataIn(clusterB, "map", 1000, 2000);
@@ -374,7 +285,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", LatestUpdateMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", LatestUpdateMapMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
@@ -398,7 +309,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMapMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
@@ -422,7 +333,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         String replicaName = "multiReplica";
         setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
 
         createDataIn(clusterA, "map", 0, 1000);
@@ -445,8 +356,8 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
-        initClusterA();
-        initClusterB();
+        startClusterA();
+        startClusterB();
 
 
         createDataIn(clusterA, "map", 0, 1000);
@@ -474,8 +385,8 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
-        initClusterA();
-        initClusterB();
+        startClusterA();
+        startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
@@ -490,7 +401,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
 
@@ -504,8 +415,8 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
     @Test
     public void wan_events_should_be_processed_in_order() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        initClusterA();
-        initClusterB();
+        startClusterA();
+        startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
         removeAndCreateDataIn(clusterA, "map", 0, 1000);
@@ -530,7 +441,7 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughMergePolicy.class.getName());
-        initAllClusters();
+        startAllClusters();
 
         createDataIn(clusterA, "map", 0, 1000);
 
@@ -539,27 +450,6 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
 
         assertKeysIn(clusterC, "map", 0, 1000);
         assertDataSizeEventually(clusterC, "map", 1000);
-    }
-
-
-    private void printReplicaConfig(Config c) {
-
-        Map m = c.getWanReplicationConfigs();
-        Set<Map.Entry> s = m.entrySet();
-        for (Map.Entry e : s) {
-            System.out.println(e.getKey() + " ==> " + e.getValue());
-        }
-    }
-
-    private void printAllReplicarConfig() {
-        System.out.println();
-        System.out.println("==configA==");
-        printReplicaConfig(configA);
-        System.out.println("==configB==");
-        printReplicaConfig(configB);
-        System.out.println("==configC==");
-        printReplicaConfig(configC);
-        System.out.println();
     }
 
     private void disableElasticMemory() {
@@ -572,28 +462,4 @@ public class EnterpriseMapWanReplicationTest extends HazelcastTestSupport {
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
     }
 
-    abstract public class GatedThread extends Thread {
-        private final CyclicBarrier gate;
-
-        public GatedThread(CyclicBarrier gate) {
-            this.gate = gate;
-        }
-
-        public void run() {
-            try {
-                gate.await();
-                go();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (BrokenBarrierException e) {
-                e.printStackTrace();
-            }
-        }
-
-        abstract public void go();
-    }
-
-    void startGatedThread(GatedThread t) {
-        t.start();
-    }
 }

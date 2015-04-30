@@ -1,23 +1,8 @@
-/*
- * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
@@ -28,7 +13,6 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
-import com.hazelcast.wan.WanReplicationEndpoint;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -93,7 +77,7 @@ public class EnterpriseWanReplicationService
                 String password = targetClusterConfig.getGroupPassword();
                 String[] addresses = new String[targetClusterConfig.getEndpoints().size()];
                 targetClusterConfig.getEndpoints().toArray(addresses);
-                target.init(node, groupName, password, addresses);
+                target.init(node, groupName, password, wanReplicationConfig.isSnapshotEnabled(), addresses);
                 targetEndpoints[count++] = target;
             }
             wr = new WanReplicationPublisherDelegate(name, targetEndpoints);
@@ -104,13 +88,28 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void handleEvent(final Packet packet) {
+        final Data data = packet.getData();
+        handleEvent(data);
+    }
+
+    public void handleEvent(final Data data) {
         StripedExecutor ex = getExecutor();
         ex.execute(new StripedRunnable() {
             @Override
             public void run() {
-                final Data data = packet.getData();
+                Object event = node.nodeEngine.toObject(data);
+                if (event instanceof BatchWanReplicationEvent) {
+                    BatchWanReplicationEvent batchWanEvent = (BatchWanReplicationEvent) event;
+                    for (WanReplicationEvent ev : batchWanEvent.getEventList()) {
+                        handleRepEvent(ev);
+                    }
+                } else {
+                    handleRepEvent((WanReplicationEvent) event);
+                }
+            }
+
+            private void handleRepEvent(WanReplicationEvent replicationEvent) {
                 try {
-                    WanReplicationEvent replicationEvent = (WanReplicationEvent) node.nodeEngine.toObject(data);
                     String serviceName = replicationEvent.getServiceName();
                     ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
                     service.onReplicationEvent(replicationEvent);
@@ -121,7 +120,7 @@ public class EnterpriseWanReplicationService
 
             @Override
             public int getKey() {
-                return packet.getPartitionId();
+                return -1;
             }
         });
     }

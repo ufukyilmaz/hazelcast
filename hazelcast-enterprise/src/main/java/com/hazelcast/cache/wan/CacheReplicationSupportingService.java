@@ -9,7 +9,6 @@ import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.WanReplicationRef;
-import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -102,9 +101,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                         MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationRemove.getKey());
-        InternalCompletableFuture<Boolean> f = operationService
-                .invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
-        f.getSafely();
+        operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
     }
 
     private void handleCacheUpdate(WanReplicationEvent replicationEvent, CacheReplicationUpdate cacheReplicationUpdate,
@@ -121,8 +118,6 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 cacheReplicationUpdate.getEntryView().getExpirationTime(), MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationUpdate.getKey());
-        InternalCompletableFuture<Boolean> f = operationService
-                .invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
-        f.getSafely();
+        operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
     }
 }

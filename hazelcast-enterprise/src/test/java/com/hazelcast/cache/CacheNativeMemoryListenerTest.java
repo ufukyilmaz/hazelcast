@@ -7,8 +7,6 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -42,7 +40,6 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
 
     @Before
     public void setup() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         Config config = new Config();
         config.getNativeMemoryConfig().setEnabled(true);

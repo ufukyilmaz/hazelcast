@@ -17,17 +17,13 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
 
     @Override
     protected void runChild(FrameworkMethod method, RunNotifier notifier) {
-        if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
-            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
-        }
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         super.runChild(method, notifier);
     }
 
     @Override
     public void run(RunNotifier notifier) {
-        if (System.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY) == null) {
-            System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
-        }
+        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         super.run(notifier);
     }
 }

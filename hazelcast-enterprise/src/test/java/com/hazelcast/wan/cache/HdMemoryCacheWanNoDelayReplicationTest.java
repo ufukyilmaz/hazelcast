@@ -6,7 +6,7 @@ import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.experimental.categories.Category;
 
 @Category(NightlyTest.class)
-public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationTest {
+public class HdMemoryCacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationTest {
 
     @Override
     public String getReplicationImpl() {
@@ -15,6 +15,6 @@ public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationT
 
     @Override
     public InMemoryFormat getMemoryFormat() {
-        return InMemoryFormat.BINARY;
+        return InMemoryFormat.NATIVE;
     }
 }

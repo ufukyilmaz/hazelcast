@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
@@ -26,7 +28,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author mdogan 02/06/14
  */
-
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class MemoryManagerTest {
@@ -99,12 +100,13 @@ public class MemoryManagerTest {
     @Test
     public void testGlobalConcurrency() throws InterruptedException {
         int nThreads = 16;
-        final int iterations = 50000;
+        final int iterations = 500000;
         final CountDownLatch latch = new CountDownLatch(nThreads);
         ExecutorService ex = Executors.newFixedThreadPool(nThreads);
 
         final int maxBlockSize = pageSize / 4;
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
+        final AtomicBoolean shutdown = new AtomicBoolean(false);
 
         for (int i = 0; i < nThreads; i++) {
             ex.execute(new Runnable() {
@@ -114,6 +116,9 @@ public class MemoryManagerTest {
                         Random rand = new Random();
                         MemoryBlock last = null;
                         for (int j = 0; j < iterations; j++) {
+                            if (shutdown.get()) {
+                                break;
+                            }
                             if (error.get() != null) {
                                 break;
                             }
@@ -146,8 +151,14 @@ public class MemoryManagerTest {
             });
         }
 
-        assertTrue(latch.await(2, TimeUnit.MINUTES));
-        ex.shutdown();
+        if (!latch.await(2, TimeUnit.MINUTES)) {
+            shutdown.set(true);
+            ex.shutdown();
+            ex.awaitTermination(30, TimeUnit.SECONDS);
+        }
+
+        assertEquals("Memory processor threads have not terminated on time. So there may be possible double free issue !",
+                0, latch.getCount());
 
         Throwable t = error.get();
         assertNull(toString(t), t);

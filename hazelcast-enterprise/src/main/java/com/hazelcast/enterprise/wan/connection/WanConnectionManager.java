@@ -80,6 +80,12 @@ public class WanConnectionManager {
         synchronized (targetAddressList) {
             if (!targetAddressList.isEmpty()) {
                 targetAddress = targetAddressList.get(partitionId % targetAddressList.size());
+            } else {
+                try {
+                    targetAddressList.wait(RETRY_CONNECTION_SLEEP_MILLIS);
+                } catch (InterruptedException e) {
+                    logger.finest("WanConnectionManager wait interrupted.");
+                }
             }
         }
         return targetAddress;
@@ -178,6 +184,7 @@ public class WanConnectionManager {
                     if (conn != null) {
                         synchronized (targetAddressList) {
                             targetAddressList.add(targetAddress);
+                            targetAddressList.notify();
                         }
                         failedAddressSet.remove(targetAddress);
                     }

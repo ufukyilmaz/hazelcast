@@ -100,7 +100,7 @@ public class MemoryManagerTest {
     @Test
     public void testGlobalConcurrency() throws InterruptedException {
         int nThreads = 16;
-        final int iterations = 500000;
+        final int iterations = 50000;
         final CountDownLatch latch = new CountDownLatch(nThreads);
         ExecutorService ex = Executors.newFixedThreadPool(nThreads);
 

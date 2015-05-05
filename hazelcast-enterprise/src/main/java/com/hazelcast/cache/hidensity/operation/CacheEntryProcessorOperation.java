@@ -44,7 +44,16 @@ public class CacheEntryProcessorOperation extends BackupAwareHiDensityCacheOpera
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutBackupOperation(name, key, backupData, null);
+        if (backupData != null) {
+            // After entry processor is executed if there is a record, this means that possible add/update
+            return new CachePutBackupOperation(name, key, backupData, null);
+        } else {
+            // If there is no record, this means possible remove by entry processor.
+            // TODO In case of non-existing key, this cause redundant remove operation to backups
+            // Better solution may be using a new interface like "EntryProcessorListener" on "invoke" method
+            // for handling add/update/remove cases properly at execution of "EntryProcessor".
+            return new CacheRemoveBackupOperation(name, key);
+        }
     }
 
     @Override

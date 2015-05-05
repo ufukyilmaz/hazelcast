@@ -33,6 +33,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.quorum.QuorumService;
+import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -270,6 +271,11 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public QuorumService getQuorumService() {
             return instance.getQuorumService();
+        }
+
+        @Override
+        public <E> Ringbuffer<E> getRingbuffer(String name) {
+            return instance.getRingbuffer(name);
         }
     }
 

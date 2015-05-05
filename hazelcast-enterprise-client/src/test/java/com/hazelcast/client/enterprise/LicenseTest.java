@@ -146,7 +146,7 @@ public class LicenseTest extends HazelcastTestSupport{
         HazelcastClient.newHazelcastClient(clientConfig);
     }
 
-    @Test(expected = InvalidLicenseException.class)
+
     public void testClientWithSecurityLicense() {
         System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
                 SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);

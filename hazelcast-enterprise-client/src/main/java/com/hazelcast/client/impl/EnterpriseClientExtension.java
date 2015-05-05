@@ -40,7 +40,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
         }
-        LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE);
+        LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE,
+                LicenseType.ENTERPRISE_SECURITY_ONLY);
     }
 
     @Override

@@ -1,0 +1,189 @@
+package com.hazelcast.map.impl.querycache.accumulator;
+
+import com.hazelcast.config.QueryCacheConfig;
+import com.hazelcast.map.impl.client.EnterpriseMapPortableHook;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.Portable;
+import com.hazelcast.nio.serialization.PortableReader;
+import com.hazelcast.nio.serialization.PortableWriter;
+import com.hazelcast.query.Predicate;
+
+import java.io.IOException;
+
+import static com.hazelcast.util.Preconditions.checkNotNull;
+
+/**
+ * Metadata for an {@link Accumulator}.
+ * <p/>
+ * Note: This metadata is used in communications between: node <--> node and client <--> node
+ * that is the reason it implements both {@link DataSerializable} and {@link Portable} interfaces.
+ * See {@link com.hazelcast.map.impl.client.PublisherCreateRequest PublisherCreateRequest} for further information.
+ *
+ * @see com.hazelcast.map.impl.client.PublisherCreateRequest
+ * @see QueryCacheConfig
+ */
+public class AccumulatorInfo implements Portable {
+
+    private String mapName;
+    private String cacheName;
+    private Predicate predicate;
+    private int batchSize;
+    private int bufferSize;
+    private long delaySeconds;
+    private boolean includeValue;
+    private boolean populate;
+    private boolean coalesce;
+
+    /**
+     * Used to enable/disable {@link Accumulator} event sending functionality.
+     * Used in the phase of initial population for preventing any event to be sent before taking the snapshot of {@code IMap}.
+     */
+    private volatile boolean publishable;
+
+    public AccumulatorInfo() {
+    }
+
+    public static AccumulatorInfo createAccumulatorInfo(QueryCacheConfig config, String mapName,
+                                                        String cacheName, Predicate predicate) {
+        checkNotNull(config, "config cannot be null");
+
+        AccumulatorInfo info = new AccumulatorInfo();
+        info.batchSize = calculateBatchSize(config);
+        info.bufferSize = config.getBufferSize();
+        info.delaySeconds = config.getDelaySeconds();
+        info.includeValue = config.isIncludeValue();
+        info.populate = config.isPopulate();
+        info.mapName = mapName;
+        info.cacheName = cacheName;
+        info.publishable = false;
+        info.predicate = getPredicate(config, predicate);
+        info.coalesce = config.isCoalesce();
+        return info;
+    }
+
+    private static Predicate getPredicate(QueryCacheConfig config, Predicate predicate) {
+        if (predicate != null) {
+            return predicate;
+        }
+
+        Predicate implementation = config.getPredicateConfig().getImplementation();
+        if (implementation != null) {
+            return implementation;
+        }
+
+        throw new IllegalArgumentException("Predicate cannot be null");
+    }
+
+    private static int calculateBatchSize(QueryCacheConfig config) {
+        // batchSize can not be higher than bufferSize.
+        int batchSize = config.getBatchSize();
+        int bufferSize = config.getBufferSize();
+        if (batchSize > bufferSize) {
+            return bufferSize;
+        } else {
+            return batchSize;
+        }
+    }
+
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public int getBufferSize() {
+        return bufferSize;
+    }
+
+    public long getDelaySeconds() {
+        return delaySeconds;
+    }
+
+    public boolean isIncludeValue() {
+        return includeValue;
+    }
+
+    public String getMapName() {
+        return mapName;
+    }
+
+    public String getCacheName() {
+        return cacheName;
+    }
+
+    public Predicate getPredicate() {
+        return predicate;
+    }
+
+    public boolean isPublishable() {
+        return publishable;
+    }
+
+    public boolean isPopulate() {
+        return populate;
+    }
+
+    public void setPublishable(boolean publishable) {
+        this.publishable = publishable;
+    }
+
+    public boolean isCoalesce() {
+        return coalesce;
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapPortableHook.F_ID;
+    }
+
+    @Override
+    public int getClassId() {
+        return EnterpriseMapPortableHook.CREATE_ACCUMULATOR_INFO;
+    }
+
+    @Override
+    public void writePortable(PortableWriter writer) throws IOException {
+        writer.writeUTF("mn", mapName);
+        writer.writeUTF("cn", cacheName);
+        writer.writeInt("bas", batchSize);
+        writer.writeInt("bus", bufferSize);
+        writer.writeLong("ds", delaySeconds);
+        writer.writeBoolean("iv", includeValue);
+        writer.writeBoolean("ps", publishable);
+        writer.writeBoolean("co", coalesce);
+        writer.writeBoolean("po", populate);
+        ObjectDataOutput output = writer.getRawDataOutput();
+        output.writeObject(predicate);
+    }
+
+    @Override
+    public void readPortable(PortableReader reader) throws IOException {
+        mapName = reader.readUTF("mn");
+        cacheName = reader.readUTF("cn");
+        batchSize = reader.readInt("bas");
+        bufferSize = reader.readInt("bus");
+        delaySeconds = reader.readLong("ds");
+        includeValue = reader.readBoolean("iv");
+        publishable = reader.readBoolean("ps");
+        coalesce = reader.readBoolean("co");
+        populate = reader.readBoolean("po");
+        ObjectDataInput input = reader.getRawDataInput();
+        predicate = input.readObject();
+    }
+
+    @Override
+    public String toString() {
+        return "AccumulatorInfo{"
+                + "batchSize=" + batchSize
+                + ", mapName='" + mapName + '\''
+                + ", cacheName='" + cacheName + '\''
+                + ", predicate=" + predicate
+                + ", bufferSize=" + bufferSize
+                + ", delaySeconds=" + delaySeconds
+                + ", includeValue=" + includeValue
+                + ", populate=" + populate
+                + ", coalesce=" + coalesce
+                + ", publishable=" + publishable
+                + '}';
+    }
+}

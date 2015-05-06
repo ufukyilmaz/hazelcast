@@ -12,7 +12,7 @@ public final class EnterpriseMapServiceConstructor {
             = new ConstructorFunction<NodeEngine, MapService>() {
         @Override
         public MapService createNew(NodeEngine nodeEngine) {
-            EnterpriseMapServiceContext enterpriseMapServiceContext = new DefaultEnterpriseMapServiceContext(nodeEngine);
+            EnterpriseMapServiceContext enterpriseMapServiceContext = new EnterpriseMapServiceContextImpl(nodeEngine);
             MapServiceFactory factory
                     = new EnterpriseMapServiceFactory(enterpriseMapServiceContext);
             return factory.createMapService();

@@ -5,6 +5,7 @@
     <modules>
         <module>hazelcast-enterprise</module>
         <module>hazelcast-enterprise-client</module>
+        <module>hazelcast-enterprise-client-new</module>
         <module>hazelcast-enterprise-sessions</module>
         <module>hazelcast-enterprise-all</module>
     </modules>

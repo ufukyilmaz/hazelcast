@@ -55,4 +55,7 @@
     <suppress checks="ClassDataAbstractionCouplingC|ClassFanOutComplexityCheck|ParameterNumber"
               files="com.hazelcast.cache.EnterpriseCacheService"/>
 
+    <!-- Query Cache -->
+    <suppress checks="MethodCountCheck" files="com.hazelcast.map.impl.querycache.subscriber.DefaultQueryCache"/>
+
 </suppressions>

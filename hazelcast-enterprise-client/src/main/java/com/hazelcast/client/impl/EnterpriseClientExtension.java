@@ -4,6 +4,7 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
+import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
@@ -12,6 +13,7 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -125,6 +127,15 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public NearCacheManager createNearCacheManager() {
         return new HiDensityNearCacheManager();
+    }
+
+    @Override
+    public <T> Class<? extends ClientProxy> getServiceProxy(Class<T> service) {
+        if (MapService.class.isAssignableFrom(service)) {
+            return EnterpriseClientMapProxyImpl.class;
+        }
+
+        throw new IllegalArgumentException("Unknown service for proxy creation: " + service);
     }
 
 }

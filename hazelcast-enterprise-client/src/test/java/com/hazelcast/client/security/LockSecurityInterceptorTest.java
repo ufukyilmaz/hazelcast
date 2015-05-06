@@ -3,13 +3,16 @@ package com.hazelcast.client.security;
 import com.hazelcast.concurrent.lock.LockService;
 import com.hazelcast.core.ILock;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class LockSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

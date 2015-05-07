@@ -49,6 +49,7 @@ import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
+import com.hazelcast.transaction.HazelcastXAResource;
 import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.TransactionOptions;
@@ -276,6 +277,16 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public <E> Ringbuffer<E> getRingbuffer(String name) {
             return instance.getRingbuffer(name);
+        }
+
+        @Override
+        public <E> ITopic<E> getReliableTopic(String name) {
+            return instance.getReliableTopic(name);
+        }
+
+        @Override
+        public HazelcastXAResource getXAResource() {
+            return instance.getXAResource();
         }
     }
 

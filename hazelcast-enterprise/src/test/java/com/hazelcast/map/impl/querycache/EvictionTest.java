@@ -38,9 +38,9 @@ public class EvictionTest extends HazelcastTestSupport {
         HazelcastInstance node = createHazelcastInstance(config);
         IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
 
-        // expecting at least populationCount - maxSize + 10 evicted entries according to max size.
-        // 20 states an error margin since eviction does not sweep precise number of entries.
-        int margin = 20;
+        // expecting at least populationCount - maxSize - 50 evicted entries according to max size.
+        // 50 states an error margin since eviction does not sweep precise number of entries.
+        int margin = 50;
         final CountDownLatch evictedCount = new CountDownLatch(populationCount - maxSize - margin);
         final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
         String listener = cache.addEntryListener(new EntryEvictedListener() {

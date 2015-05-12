@@ -11,49 +11,49 @@
 
     <!--To enable checking on a module, comment out its suppression. e.g. mapreduce is enabled.-->
 
-    <suppress checks="" files="com.hazelcast.elasticmemory[\\/]"/>
-    <suppress checks="" files="com.hazelcast.enterprise.util[\\/]"/>
-    <suppress checks="" files="com.hazelcast.security[\\/]"/>
-    <suppress checks="" files="com.hazelcast.memory[\\/]"/>
-    <suppress checks="" files="com.hazelcast.elastic[\\/]"/>
+    <suppress checks="" files="com/hazelcast/elasticmemory/"/>
+    <suppress checks="" files="com/hazelcast/enterprise/util/"/>
+    <suppress checks="" files="com/hazelcast/security/"/>
+    <suppress checks="" files="com/hazelcast/memory/"/>
+    <suppress checks="" files="com/hazelcast/elastic/"/>
 
-    <suppress checks="JavadocMethod" files="com.hazelcast.nio[\\/]"/>
-    <suppress checks="JavadocType" files="com.hazelcast.nio[\\/]"/>
-    <suppress checks="JavadocMethod" files="com.hazelcast.nio.serialization[\\/]"/>
-    <suppress checks="JavadocType" files="com.hazelcast.nio.serialization[\\/]"/>
-    <suppress checks="ParameterNumber" files="com.hazelcast.nio.serialization.EnterpriseSerializationServiceImpl"/>
-    <suppress checks="MethodCount|MagicNumber" files="com.hazelcast.nio.serialization.MemoryBlockDataInput"/>
-    <suppress checks="IllegalImport|NPathComplexity" files="com.hazelcast.nio.serialization.NativeMemoryDataUtil"/>
+    <suppress checks="JavadocMethod" files="com/hazelcast/nio/"/>
+    <suppress checks="JavadocType" files="com/hazelcast/nio/"/>
+    <suppress checks="JavadocMethod" files="com/hazelcast/nio/serialization/"/>
+    <suppress checks="JavadocType" files="com/hazelcast/nio/serialization/"/>
+    <suppress checks="ParameterNumber" files="com/hazelcast/nio/serialization/EnterpriseSerializationServiceImpl"/>
+    <suppress checks="MethodCount|MagicNumber" files="com/hazelcast/nio/serialization/MemoryBlockDataInput"/>
+    <suppress checks="IllegalImport|NPathComplexity" files="com/hazelcast/nio/serialization/NativeMemoryDataUtil"/>
 
-    <suppress checks="ClassFanOutComplexityCheck" files="com.hazelcast.instance.EnterpriseNodeExtension"/>
+    <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/instance/EnterpriseNodeExtension"/>
 
     <!-- Sessions -->
-    <suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocType" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocMethod" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="JavadocVariable" files="com.hazelcast.session[\\/]"/>
-    <suppress checks="MethodCountCheck" files="com.hazelcast.session.HazelcastSessionManager"/>
+    <suppress checks="JavadocMethod" files="com/hazelcast/session/"/>
+    <suppress checks="JavadocType" files="com/hazelcast/session/"/>
+    <suppress checks="JavadocMethod" files="com/hazelcast/session/"/>
+    <suppress checks="JavadocVariable" files="com/hazelcast/session/"/>
+    <suppress checks="MethodCountCheck" files="com/hazelcast/session/HazelcastSessionManager"/>
 
     <suppress checks="MagicNumber|MethodLength|MagicNumber|CyclomaticComplexity|EmptyBlock|NPathComplexity"
-              files="com.hazelcast.nio.ssl.SSLSocketChannelWrapper"/>
+              files="com/hazelcast/nio/ssl/SSLSocketChannelWrapper"/>
 
-    <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketReader"/>
-    <suppress checks="NPathComplexity" files="com.hazelcast.nio.tcp.SymmetricCipherPacketWriter"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketReader"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
     <suppress checks="MethodCountCheck|NPathComplexity|CyclomaticComplexity|ParameterNumber"
-              files="com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore"/>
+              files="com/hazelcast/cache/hidensity/impl/nativememory/HiDensityNativeMemoryCacheRecordStore"/>
     <suppress checks="NPathComplexity"
-              files="com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore"/>
+              files="com/hazelcast/cache/hidensity/nearcache/impl/nativememory/HiDensityNativeMemoryNearCacheRecordStore"/>
     <suppress checks="ClassDataAbstractionCouplingC"
-              files="com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook"/>
+              files="com/hazelcast/cache/hidensity/operation/HiDensityCacheDataSerializerHook"/>
     <suppress checks="ClassDataAbstractionCouplingC"
-              files="com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider"/>
+              files="com/hazelcast/cache/hidensity/operation/HiDensityCacheOperationProvider"/>
 
     <!-- Enterprise Cache -->
-    <suppress checks="ParameterNumber" files="com.hazelcast.cache.EnterpriseCacheRecordStoreImpl"/>
+    <suppress checks="ParameterNumber" files="com/hazelcast/cache/EnterpriseCacheRecordStoreImpl"/>
     <suppress checks="ClassDataAbstractionCouplingC|ClassFanOutComplexityCheck|ParameterNumber"
-              files="com.hazelcast.cache.EnterpriseCacheService"/>
+              files="com/hazelcast/cache/EnterpriseCacheService"/>
 
     <!-- Query Cache -->
     <suppress checks="MethodCountCheck" files="com.hazelcast.map.impl.querycache.subscriber.DefaultQueryCache"/>

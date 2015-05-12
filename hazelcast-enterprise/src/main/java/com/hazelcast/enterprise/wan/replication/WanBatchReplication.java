@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WanBatchReplication extends AbstractWanReplication
         implements Runnable, WanReplicationEndpoint {
 
+    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1;
+
     private ILogger logger;
     private Queue<WanReplicationEvent> eventQueue;
     private volatile boolean running = true;
@@ -165,7 +167,7 @@ public class WanBatchReplication extends AbstractWanReplication
                             threadGroup.getThreadNamePrefix("wan-batch-replication"),
                             threadGroup.getInternalThreadGroup(),
                             ExecutorConfig.DEFAULT_POOL_SIZE,
-                            ExecutorConfig.DEFAULT_QUEUE_CAPACITY);
+                            STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }
                 ex = executor;
             }

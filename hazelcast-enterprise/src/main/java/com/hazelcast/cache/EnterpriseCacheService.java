@@ -79,7 +79,8 @@ public class EnterpriseCacheService extends CacheService {
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
         CacheConfig cacheConfig = configs.get(name);
         if (cacheConfig == null) {
-            throw new IllegalArgumentException("CacheConfig is null! " + name);
+            throw new CacheNotExistsException("Cache is already destroyed or not created yet, on "
+                    + nodeEngine.getLocalMember());
         }
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {

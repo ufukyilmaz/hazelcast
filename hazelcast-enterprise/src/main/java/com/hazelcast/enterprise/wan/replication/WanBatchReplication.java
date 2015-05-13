@@ -12,6 +12,7 @@ import com.hazelcast.nio.Connection;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
+import com.hazelcast.util.executor.TimeoutRunnable;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Wan replication publisher that sends events in batches.
@@ -35,7 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class WanBatchReplication extends AbstractWanReplication
         implements Runnable, WanReplicationEndpoint {
 
-    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1;
+    private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
+    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 100;
 
     private ILogger logger;
     private Queue<WanReplicationEvent> eventQueue;
@@ -51,8 +55,8 @@ public class WanBatchReplication extends AbstractWanReplication
     @Override
     public void init(Node node, String groupName, String password, boolean snapshotEnabled, String... targets) {
         super.init(node, groupName, password, snapshotEnabled, targets);
-        this.eventQueue = new LinkedList<WanReplicationEvent>();
-        this.logger = node.getLogger(WanBatchReplication.class.getName());
+        eventQueue = new LinkedList<WanReplicationEvent>();
+        logger = node.getLogger(WanBatchReplication.class.getName());
         this.targets.addAll(Arrays.asList(targets));
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
@@ -144,7 +148,12 @@ public class WanBatchReplication extends AbstractWanReplication
 
     private void handleBatchReplicationEventObject(final String target, final BatchWanReplicationEvent batchReplicationEvent) {
         StripedExecutor ex = getExecutor();
-        ex.execute(new BatchStripedRunnable(target, batchReplicationEvent));
+        try {
+            ex.execute(new BatchStripedRunnable(target, batchReplicationEvent));
+        } catch (RejectedExecutionException ree) {
+            logger.info("WanBatchReplication striped runnable job queue is full. Retrying.");
+            handleBatchReplicationEventObject(target, batchReplicationEvent);
+        }
     }
 
     private String getTarget(Data key) {
@@ -179,7 +188,7 @@ public class WanBatchReplication extends AbstractWanReplication
      * {@link StripedRunnable} implementation to send Batch of wan replication events to
      * target cluster
      */
-    private class BatchStripedRunnable implements StripedRunnable {
+    private class BatchStripedRunnable implements StripedRunnable, TimeoutRunnable {
 
         private String target;
         private BatchWanReplicationEvent batchReplicationEvent;
@@ -219,6 +228,16 @@ public class WanBatchReplication extends AbstractWanReplication
         @Override
         public int getKey() {
             return target.hashCode();
+        }
+
+        @Override
+        public long getTimeout() {
+            return STRIPED_RUNNABLE_TIMEOUT_SECONDS;
+        }
+
+        @Override
+        public TimeUnit getTimeUnit() {
+            return TimeUnit.SECONDS;
         }
     }
 }

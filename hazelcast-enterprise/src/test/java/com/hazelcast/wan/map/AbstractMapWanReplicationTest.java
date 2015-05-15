@@ -173,7 +173,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     // V topo config 1 passive replicar, 2 producers
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_PassThroughMergePolicy() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         startAllClusters();
@@ -205,7 +204,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void Vtopo_TTL_Replication_Issue254() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
 
@@ -231,7 +229,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     //"Issue #1371 this topology requested hear https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ")
     @Test
     public void VTopo_1activeActiveReplicar_2producers_Test_PassThroughMergePolicy() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
 
@@ -255,7 +252,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_PutIfAbsentMapMergePolicy() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
         startAllClusters();
@@ -280,9 +276,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
 
     @Test
-    @Ignore
     public void VTopo_1passiveReplicar_2producers_Test_LatestUpdateMapMergePolicy() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", LatestUpdateMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", LatestUpdateMapMergePolicy.class.getName());
         startAllClusters();
@@ -306,7 +300,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_HigherHitsMapMergePolicy() {
-
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMapMergePolicy.class.getName());
         startAllClusters();
@@ -329,7 +322,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     //("Issue #1368 multi replicar topology cluster A replicates to B and C")
     @Test
     public void VTopo_2passiveReplicar_1producer_Test() {
-
         String replicaName = "multiReplica";
         setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName());
@@ -353,7 +345,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void linkTopo_ActiveActiveReplication_Test() {
-
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -382,7 +373,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void linkTopo_ActiveActiveReplication_2clusters_Test_HigherHitsMapMergePolicy() {
-
         setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
         startClusterA();
@@ -398,7 +388,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void chainTopo_2passiveReplicars_1producer() {
-
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         startAllClusters();
@@ -437,7 +426,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void replicationRing() {
-
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughMergePolicy.class.getName());

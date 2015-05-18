@@ -3,6 +3,7 @@ package com.hazelcast.client.enterprise;
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.XmlClientConfigBuilder;
+import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -10,15 +11,13 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.test.HazelcastTestSupport;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import com.hazelcast.config.Config;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -52,7 +50,7 @@ public class LicenseTest extends HazelcastTestSupport{
         FileOutputStream os = new FileOutputStream(file);
         String licenseConfig = "<hazelcast-client>" +
                 "<properties>" +
-                "<property name=\"hazelcast.enterprise.license.key\">HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</property>" +
+                "<property name=\"hazelcast.enterprise.license.key\">"+SampleLicense.TWO_NODES_ENTERPRISE_LICENSE+"</property>" +
                 "</properties>" +
                 "</hazelcast-client>";
 
@@ -62,7 +60,7 @@ public class LicenseTest extends HazelcastTestSupport{
 
         writeStringToStreamAndClose(os, licenseConfig);
         ClientConfig config = buildConfig(xml, "config.location", file.getAbsolutePath());
-        assertEquals("HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo"
+        assertEquals(SampleLicense.TWO_NODES_ENTERPRISE_LICENSE
                 ,config.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY));
     }
 

@@ -1,39 +1,14 @@
 package com.hazelcast.enterprise;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
-
 /**
  * Created by ibo9 on 16/03/15.
  */
-public class SampleLicense {
+public interface SampleLicense {
 
-    public static final Properties licenses;
-    public static String EXPIRED_ENTERPRISE_LICENSE, TWO_NODES_ENTERPRISE_LICENSE,
-            ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART, UNLIMITED_LICENSE,
-            TWO_GB_NATIVE_MEMORY_LICENSE, SECURITY_ONLY_LICENSE;
-
-    static {
-        licenses = new Properties();
-        try {
-            InputStream stream = SampleLicense.class.getClassLoader().getResourceAsStream("com.hazelcast.enterprise/license.properties");
-            try {
-                licenses.load(stream);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                EXPIRED_ENTERPRISE_LICENSE = licenses.getProperty("EXPIRED_ENTERPRISE_LICENSE");
-                TWO_NODES_ENTERPRISE_LICENSE = licenses.getProperty("TWO_NODES_ENTERPRISE_LICENSE");
-                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART = licenses.getProperty("ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART");
-                UNLIMITED_LICENSE = licenses.getProperty("UNLIMITED_LICENSE");
-                TWO_GB_NATIVE_MEMORY_LICENSE = licenses.getProperty("TWO_GB_NATIVE_MEMORY_LICENSE");
-                SECURITY_ONLY_LICENSE = licenses.getProperty("SECURITY_ONLY_LICENSE");
-                stream.close();
-            }
-        } catch (IOException ex) {
-    /* Handle exception. */
-        }
-    }
-
+    public static final String EXPIRED_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#jaN1HRbBl5OTrFmyw7AVcKfI681Q52C0s000P00040110102hW120X0hQ220";
+    public static final String TWO_NODES_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
+    public static final String ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART = "OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
+    public static final String UNLIMITED_LICENSE = "HazelcastEnterprise#9999Nodes#9999Clients#HDMemory:99999999GB#w7yAkRj1IbHcBfVimEOuKr638599939999peZ319999z05999Wn149zGxG09";
+    public static final String TWO_GB_NATIVE_MEMORY_LICENSE = "HazelcastEnterprise#10Nodes#10Clients#HDMemory:2GB#B3FIOyTNJRwSi1657mruVU0k96d0001000000C0250hz100v1012Zz20022G";
+    public static final String SECURITY_ONLY_LICENSE = "SecurityOnlyEnterprise#3iJN6wEk1AUOfHRSV7j05yKr10x2G01Zv0h00000W0DX1000005002401v90";
 }

@@ -52,7 +52,7 @@ public class LicenseTest extends HazelcastTestSupport{
         FileOutputStream os = new FileOutputStream(file);
         String licenseConfig = "<hazelcast-client>" +
                 "<properties>" +
-                "<property name=\"hazelcast.enterprise.license.key\">"+SampleLicense.TWO_NODES_ENTERPRISE_LICENSE+"</property>" +
+                "<property name=\"hazelcast.enterprise.license.key\">HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</property>" +
                 "</properties>" +
                 "</hazelcast-client>";
 
@@ -62,7 +62,7 @@ public class LicenseTest extends HazelcastTestSupport{
 
         writeStringToStreamAndClose(os, licenseConfig);
         ClientConfig config = buildConfig(xml, "config.location", file.getAbsolutePath());
-        assertEquals(SampleLicense.TWO_NODES_ENTERPRISE_LICENSE
+        assertEquals("HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo"
                 ,config.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY));
     }
 

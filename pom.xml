@@ -138,8 +138,6 @@
                         <exclude>**/*.html</exclude>
                         <exclude>**/*.sh</exclude>
                         <exclude>**/*.bat</exclude>
-                        <exclude>**/*license.properties</exclude>
-                        <exclude>**/*license.xml</exclude>
                     </excludes>
                 </configuration>
                 <executions>

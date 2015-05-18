@@ -49,8 +49,6 @@ public class LicenseTest {
     @After
     public void cleanup() {
         Hazelcast.shutdownAll();
-        System.getProperties().remove(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
-
     }
 
     @Test

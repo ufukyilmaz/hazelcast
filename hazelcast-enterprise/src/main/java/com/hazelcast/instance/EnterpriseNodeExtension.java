@@ -136,10 +136,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void printNodeInfo(Node node) {
         BuildInfo buildInfo = node.getBuildInfo();
-        systemLogger.log(Level.INFO,
-                "Hazelcast Enterprise " + buildInfo.getVersion()
-                        + " (" + buildInfo.getBuild() + ") starting at " + node.getThisAddress());
-        systemLogger.log(Level.INFO, "Copyright (C) 2008-2014 Hazelcast.com");
+        String build = buildInfo.getBuild();
+        String revision = buildInfo.getRevision();
+        if (!revision.isEmpty()) {
+            build += " - " + revision;
+        }
+
+        systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
+                        + " (" + build + ") starting at " + node.getThisAddress());
+        systemLogger.info("Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.");
     }
 
     @Override

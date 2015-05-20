@@ -49,8 +49,6 @@ public class LicenseTest {
     @After
     public void cleanup() {
         Hazelcast.shutdownAll();
-        System.getProperties().remove(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
-
     }
 
     @Test
@@ -140,7 +138,6 @@ public class LicenseTest {
 
     @Test
     public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         HazelcastInstance h = Hazelcast.newHazelcastInstance(new Config());
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);

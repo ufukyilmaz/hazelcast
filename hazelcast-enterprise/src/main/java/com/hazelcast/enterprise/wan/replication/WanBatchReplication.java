@@ -39,7 +39,7 @@ public class WanBatchReplication extends AbstractWanReplication
         implements Runnable, WanReplicationEndpoint {
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
-    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 100;
+    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 50;
 
     private ILogger logger;
     private Queue<WanReplicationEvent> eventQueue;
@@ -148,12 +148,16 @@ public class WanBatchReplication extends AbstractWanReplication
 
     private void handleBatchReplicationEventObject(final String target, final BatchWanReplicationEvent batchReplicationEvent) {
         StripedExecutor ex = getExecutor();
-        try {
-            ex.execute(new BatchStripedRunnable(target, batchReplicationEvent));
-        } catch (RejectedExecutionException ree) {
-            logger.info("WanBatchReplication striped runnable job queue is full. Retrying.");
-            handleBatchReplicationEventObject(target, batchReplicationEvent);
-        }
+        boolean taskSubmitted = false;
+        BatchStripedRunnable batchStripedRunnable = new BatchStripedRunnable(target, batchReplicationEvent);
+        do {
+            try {
+                ex.execute(batchStripedRunnable);
+                taskSubmitted = true;
+            } catch (RejectedExecutionException ree) {
+                logger.info("WanBatchReplication striped runnable job queue is full. Retrying.");
+            }
+        } while (!taskSubmitted);
     }
 
     private String getTarget(Data key) {
@@ -175,7 +179,7 @@ public class WanBatchReplication extends AbstractWanReplication
                     executor = new StripedExecutor(node.getLogger(WanBatchReplication.class),
                             threadGroup.getThreadNamePrefix("wan-batch-replication"),
                             threadGroup.getInternalThreadGroup(),
-                            ExecutorConfig.DEFAULT_POOL_SIZE,
+                            targets.size(),
                             STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }
                 ex = executor;

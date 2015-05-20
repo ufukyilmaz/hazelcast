@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public abstract class AbstractWanReplicationTest extends HazelcastTestSupport {
@@ -118,6 +120,31 @@ public abstract class AbstractWanReplicationTest extends HazelcastTestSupport {
         System.out.println("==configC==");
         printReplicaConfig(configC);
         System.out.println();
+    }
+
+    public abstract class GatedThread extends Thread {
+        private final CyclicBarrier gate;
+
+        public GatedThread(CyclicBarrier gate) {
+            this.gate = gate;
+        }
+
+        public void run() {
+            try {
+                gate.await();
+                go();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }
+
+        abstract public void go();
+    }
+
+    public void startGatedThread(GatedThread t) {
+        t.start();
     }
 
 }

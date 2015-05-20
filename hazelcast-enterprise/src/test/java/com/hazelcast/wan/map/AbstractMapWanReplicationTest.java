@@ -16,6 +16,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -169,6 +172,14 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
+    private void removeAndCreateDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+        HazelcastInstance node = getNode(cluster);
+        IMap<Integer, String> m = node.getMap(mapName);
+        for (; start < end; start++) {
+            m.remove(start);
+            m.put(start, node.getConfig().getGroupConfig().getName() + start);
+        }
+    }
 
     // V topo config 1 passive replicar, 2 producers
     @Test
@@ -414,16 +425,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertDataSizeEventually(clusterB, "map", 1000);
     }
 
-    private void removeAndCreateDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
-        HazelcastInstance node = getNode(cluster);
-        IMap<Integer, String> m = node.getMap(mapName);
-        for (; start < end; start++) {
-            m.remove(start);
-            m.put(start, node.getConfig().getGroupConfig().getName() + start);
-        }
-    }
-
-
     @Test
     public void replicationRing() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
@@ -438,6 +439,50 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
         assertKeysIn(clusterC, "map", 0, 1000);
         assertDataSizeEventually(clusterC, "map", 1000);
+    }
+
+    @Test
+    public void linkTopo_ActiveActiveReplication_Threading_Test() throws InterruptedException, BrokenBarrierException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        CyclicBarrier gate = new CyclicBarrier(3);
+        startGatedThread(new GatedThread(gate) {
+            public void go() {
+                createDataIn(clusterA, "map", 0, 1000);
+            }
+        });
+        startGatedThread(new GatedThread(gate) {
+            public void go() {
+                createDataIn(clusterB, "map", 500, 1500);
+            }
+        });
+        gate.await();
+
+        assertDataInFrom(clusterB, "map", 0, 500, clusterA);
+        assertDataInFrom(clusterA, "map", 1000, 1500, clusterB);
+        assertKeysIn(clusterA, "map", 500, 1000);
+
+        gate = new CyclicBarrier(3);
+        startGatedThread(new GatedThread(gate) {
+            public void go() {
+                removeDataIn(clusterA, "map", 0, 1000);
+            }
+        });
+        startGatedThread(new GatedThread(gate) {
+            public void go() {
+                removeDataIn(clusterB, "map", 500, 1500);
+            }
+        });
+        gate.await();
+
+        assertKeysNotIn(clusterA, "map", 0, 1500);
+        assertKeysNotIn(clusterB, "map", 0, 1500);
+
+        assertDataSizeEventually(clusterA, "map", 0);
+        assertDataSizeEventually(clusterB, "map", 0);
     }
 
     private void disableElasticMemory() {

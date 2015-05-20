@@ -1,6 +1,5 @@
 package com.hazelcast.enterprise.wan.replication;
 
-import com.hazelcast.config.ExecutorConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;

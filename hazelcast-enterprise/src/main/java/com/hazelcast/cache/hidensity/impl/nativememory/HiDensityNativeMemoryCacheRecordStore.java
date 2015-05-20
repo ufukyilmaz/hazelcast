@@ -186,26 +186,27 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    protected <T> Data valueToData(T value) {
+    protected Data valueToData(Object value) {
         return cacheRecordProcessor.toData(value, DataType.NATIVE);
     }
 
     @Override
-    protected <T> T dataToValue(Data data) {
-        return (T) cacheService.toObject(data);
+    protected Object dataToValue(Data data) {
+        return cacheService.toObject(data);
     }
 
     @Override
-    protected <T> HiDensityNativeMemoryCacheRecord valueToRecord(T value) {
+    protected HiDensityNativeMemoryCacheRecord valueToRecord(Object value) {
         return createRecord(value, -1, -1);
     }
 
     @Override
-    protected <T> T recordToValue(HiDensityNativeMemoryCacheRecord record) {
+    protected Object recordToValue(HiDensityNativeMemoryCacheRecord record) {
         if (!isMemoryBlockValid(record)) {
             return null;
         }
-        return (T) cacheRecordProcessor.readValue(record, true);
+        NativeMemoryData valueData = record.getValue();
+        return cacheRecordProcessor.convertData(valueData, DataType.HEAP);
     }
 
     @Override
@@ -293,7 +294,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public Object getRecordValue(HiDensityNativeMemoryCacheRecord record) {
-        return recordToValue(record);
+        return serializationService.toObject(record.getValue());
     }
 
     @Override

@@ -35,7 +35,6 @@
                                 <includes>
                                     <include>com.hazelcast:hazelcast-all</include>
                                     <include>com.hazelcast:hazelcast-enterprise</include>
-                                    <!--<include>com.hazelcast:hazelcast-enterprise-jcache</include>-->
                                     <include>com.hazelcast:hazelcast-enterprise-client</include>
                                 </includes>
                             </artifactSet>
@@ -71,6 +70,11 @@
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-enterprise-client</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

@@ -13,6 +13,7 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
+import com.hazelcast.util.executor.TimeoutRunnable;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -20,9 +21,10 @@ import com.hazelcast.wan.WanReplicationService;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
-import static com.hazelcast.config.ExecutorConfig.DEFAULT_QUEUE_CAPACITY;
 
 /**
  * Enterprise implementation for WAN replication
@@ -30,6 +32,9 @@ import static com.hazelcast.config.ExecutorConfig.DEFAULT_QUEUE_CAPACITY;
 public class EnterpriseWanReplicationService
         implements WanReplicationService {
 
+
+    private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
+    private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
 
     private final Node node;
     private final ILogger logger;
@@ -93,36 +98,69 @@ public class EnterpriseWanReplicationService
     }
 
     public void handleEvent(final Data data) {
+        Object event = node.nodeEngine.toObject(data);
+        if (event instanceof BatchWanReplicationEvent) {
+            BatchWanReplicationEvent batchWanEvent = (BatchWanReplicationEvent) event;
+            for (WanReplicationEvent wanReplicationEvent : batchWanEvent.getEventList()) {
+                handleRepEvent(wanReplicationEvent);
+            }
+        } else {
+            handleRepEvent((WanReplicationEvent) event);
+        }
+    }
+
+    private void handleRepEvent(final WanReplicationEvent replicationEvent) {
         StripedExecutor ex = getExecutor();
-        ex.execute(new StripedRunnable() {
-            @Override
-            public void run() {
-                Object event = node.nodeEngine.toObject(data);
-                if (event instanceof BatchWanReplicationEvent) {
-                    BatchWanReplicationEvent batchWanEvent = (BatchWanReplicationEvent) event;
-                    for (WanReplicationEvent ev : batchWanEvent.getEventList()) {
-                        handleRepEvent(ev);
-                    }
-                } else {
-                    handleRepEvent((WanReplicationEvent) event);
-                }
+        boolean taskSubmitted = false;
+        WanEventStripedRunnable wanEventStripedRunnable = new WanEventStripedRunnable(replicationEvent);
+        do {
+            try {
+                ex.execute(wanEventStripedRunnable);
+                taskSubmitted = true;
+            } catch (RejectedExecutionException ree) {
+                logger.info("Can not handle incoming wan replication event. Retrying.");
             }
+        } while (!taskSubmitted);
+    }
 
-            private void handleRepEvent(WanReplicationEvent replicationEvent) {
-                try {
-                    String serviceName = replicationEvent.getServiceName();
-                    ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
-                    service.onReplicationEvent(replicationEvent);
-                } catch (Exception e) {
-                    logger.severe(e);
-                }
-            }
+    /**
+     * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
+     * related {@link ReplicationSupportingService}
+     */
+    private class WanEventStripedRunnable implements StripedRunnable, TimeoutRunnable {
 
-            @Override
-            public int getKey() {
-                return -1;
+        WanReplicationEvent wanReplicationEvent;
+
+        public WanEventStripedRunnable(WanReplicationEvent wanReplicationEvent) {
+            this.wanReplicationEvent = wanReplicationEvent;
+        }
+
+        @Override
+        public int getKey() {
+            return node.nodeEngine.getPartitionService().getPartitionId(
+                    ((EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject()).getKey());
+        }
+
+        @Override
+        public long getTimeout() {
+            return STRIPED_RUNNABLE_TIMEOUT_SECONDS;
+        }
+
+        @Override
+        public TimeUnit getTimeUnit() {
+            return TimeUnit.SECONDS;
+        }
+
+        @Override
+        public void run() {
+            try {
+                String serviceName = wanReplicationEvent.getServiceName();
+                ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
+                service.onReplicationEvent(wanReplicationEvent);
+            } catch (Exception e) {
+                logger.severe(e);
             }
-        });
+        }
     }
 
     private StripedExecutor getExecutor() {
@@ -133,7 +171,8 @@ public class EnterpriseWanReplicationService
                     HazelcastThreadGroup hazelcastThreadGroup = node.getHazelcastThreadGroup();
                     String prefix = hazelcastThreadGroup.getThreadNamePrefix("wan");
                     ThreadGroup threadGroup = hazelcastThreadGroup.getInternalThreadGroup();
-                    executor = new StripedExecutor(logger, prefix, threadGroup, DEFAULT_POOL_SIZE, DEFAULT_QUEUE_CAPACITY);
+                    executor = new StripedExecutor(logger, prefix, threadGroup,
+                            DEFAULT_POOL_SIZE, STRIPED_RUNNABLE_JOB_QUEUE_SIZE);
                 }
                 ex = executor;
             }

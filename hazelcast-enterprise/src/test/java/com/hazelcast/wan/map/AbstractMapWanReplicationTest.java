@@ -212,7 +212,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
-
     @Test
     public void Vtopo_TTL_Replication_Issue254() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
@@ -236,7 +235,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertKeysNotIn(clusterC, "map", 0, 20);
     }
 
-
     //"Issue #1371 this topology requested hear https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ")
     @Test
     public void VTopo_1activeActiveReplicar_2producers_Test_PassThroughMergePolicy() {
@@ -259,7 +257,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertDataInFrom(clusterA, "map", 1000, 2000, clusterB);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
     }
-
 
     @Test
     public void VTopo_1passiveReplicar_2producers_Test_PutIfAbsentMapMergePolicy() {
@@ -325,7 +322,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         increaseHitCount(clusterB, "map", 0, 1000, 1000);
         createDataIn(clusterB, "map", 0, 1000);
 
-
         assertDataInFrom(clusterC, "map", 0, 1000, clusterB);
     }
 
@@ -337,7 +333,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName());
         startAllClusters();
-
 
         createDataIn(clusterA, "map", 0, 1000);
 
@@ -353,14 +348,12 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertDataSizeEventually(clusterC, "map", 0);
     }
 
-
     @Test
     public void linkTopo_ActiveActiveReplication_Test() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
-
 
         createDataIn(clusterA, "map", 0, 1000);
         assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
@@ -483,6 +476,34 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
         assertDataSizeEventually(clusterA, "map", 0);
         assertDataSizeEventually(clusterB, "map", 0);
+    }
+
+    @Test
+    public void recoverAfterTargetClusterFailure() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+
+        /* Default event queue size is 100000,
+         20000 events should be dropped
+          */
+        createDataIn(clusterA, "map", 0, 120000);
+
+        sleepSeconds(30);
+        startClusterB();
+        assertKeysNotIn(clusterB, "map", 0, 20000);
+        assertDataInFrom(clusterB, "map", 20000, 120000, clusterA);
+    }
+
+    @Test
+    public void checkAuthorization() {
+        String groupName = configB.getGroupConfig().getName();
+        configB.getGroupConfig().setName("wrongGroupName");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        configB.getGroupConfig().setName(groupName);
+        startClusterA();
+        startClusterB();
+        createDataIn(clusterA, "map", 0, 10);
+        assertKeysNotIn(clusterB, "map", 0, 10);
     }
 
     private void disableElasticMemory() {

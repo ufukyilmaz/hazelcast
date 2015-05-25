@@ -712,7 +712,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             return;
         }
         super.clear();
-        onClear();
     }
 
     @Override
@@ -723,29 +722,18 @@ public class HiDensityNativeMemoryCacheRecordStore
             return;
         }
         super.destroy();
-        onDestroy();
-    }
-
-    protected void onClear() {
-        records.clear();
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
-    }
-
-    protected void onDestroy() {
-        records.destroy();
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), null, "<NA>");
     }
 
     protected Callback<Data> createEvictionCallback() {
         return new Callback<Data>() {
-            public void notify(Data object) {
-                cacheService.sendInvalidationEvent(cacheConfig.getName(), object, "<NA>");
+            public void notify(Data key) {
+                invalidateEntry(key);
             }
         };
     }
 
     protected void onEntryInvalidated(Data key, String source) {
-        cacheService.sendInvalidationEvent(cacheConfig.getName(), key, source);
+        invalidateEntry(key, source);
     }
 
     @Override
@@ -774,7 +762,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                                 new SimpleCacheEntryView(key, record.getValue()));
                 if (record.getValue() != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                            now, true, completionId, origin);
+                            now, true, completionId, caller, origin);
                 }
                 publishEvent(CacheEventType.COMPLETED, key, null, null, false,
                         completionId, CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin);

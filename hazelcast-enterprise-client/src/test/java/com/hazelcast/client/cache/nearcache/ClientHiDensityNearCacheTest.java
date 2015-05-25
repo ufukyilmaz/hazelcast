@@ -17,6 +17,7 @@
 package com.hazelcast.client.cache.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
@@ -56,6 +57,16 @@ public class ClientHiDensityNearCacheTest extends ClientNearCacheTestSupport {
                         .setEnabled(true);
         clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
         return clientConfig;
+    }
+
+    @Override
+    protected CacheConfig createCacheConfig(InMemoryFormat inMemoryFormat) {
+        CacheConfig cacheConfig = super.createCacheConfig(inMemoryFormat);
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setSize(99);
+        cacheConfig.setEvictionConfig(evictionConfig);
+        return cacheConfig;
     }
 
     @Override

@@ -128,6 +128,12 @@ public class TestSubscriberContext extends NodeSubscriberContext {
             return sequence.peek();
         }
 
+        @Override
+        public synchronized void reset(int partitionId) {
+            Deque<Long> sequence = getPartitionSequence(partitionId);
+            sequence.clear();
+        }
+
         private Deque<Long> createUnorderedSequence(boolean allowEventLoss) {
             int lostEventCounter = 0;
             List<Long> sequence = new ArrayList<Long>();

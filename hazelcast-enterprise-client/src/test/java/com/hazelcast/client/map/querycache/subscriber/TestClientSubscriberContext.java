@@ -133,6 +133,12 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
             return sequence.peek();
         }
 
+        @Override
+        public void reset(int partitionId) {
+            Deque<Long> sequence = getPartitionSequence(partitionId);
+            sequence.clear();
+        }
+
         private Deque<Long> createUnorderedSequence(boolean allowEventLoss) {
             int lostEventCounter = 0;
             List<Long> sequence = new ArrayList<Long>();

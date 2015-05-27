@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.map.impl.querycache.publisher.AccumulatorSweeper.flushAllAccumulators;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
 
 /**
@@ -100,6 +101,11 @@ public class DefaultPublisherContext implements PublisherContext {
     @Override
     public void handleConnectedSubscriber(String uuid) {
         cancelRemovalTask(uuid);
+    }
+
+    @Override
+    public void flush() {
+        flushAllAccumulators(this);
     }
 
     private Collection<PartitionAccumulatorRegistry> getRemovalCandidates(String uuid) {

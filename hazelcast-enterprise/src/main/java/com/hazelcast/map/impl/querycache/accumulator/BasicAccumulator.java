@@ -73,13 +73,14 @@ public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E
         int count = 0;
         E next;
         do {
-            E current = buffer.getAndAdvance();
+            E current = readCurrentExpiredOrNull(now, delay, unit);
             if (current == null) {
                 break;
             }
             next = readNextExpiredOrNull(now, delay, unit);
             handler.handle(current, next == null);
             count++;
+            buffer.getAndAdvance();
         } while (next != null);
 
         return count;
@@ -145,6 +146,15 @@ public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E
     private E readNextExpiredOrNull(long now, long delay, TimeUnit unit) {
         long headSequence = buffer.getHeadSequence();
         headSequence++;
+        E sequenced = buffer.get(headSequence);
+        if (sequenced == null) {
+            return null;
+        }
+        return isExpired((SingleEventData) sequenced, unit.toMillis(delay), now) ? sequenced : null;
+    }
+
+    private E readCurrentExpiredOrNull(long now, long delay, TimeUnit unit) {
+        long headSequence = buffer.getHeadSequence();
         E sequenced = buffer.get(headSequence);
         if (sequenced == null) {
             return null;

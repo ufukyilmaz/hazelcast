@@ -1,9 +1,9 @@
 package com.hazelcast.map.impl.querycache.publisher;
 
-import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
-import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
-import com.hazelcast.map.impl.querycache.accumulator.AccumulatorProcessor;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
+import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
+import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
+import com.hazelcast.map.impl.querycache.accumulator.AccumulatorProcessor;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.SingleEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
@@ -53,7 +53,6 @@ public class PublisherAccumulatorHandler implements AccumulatorHandler<Sequenced
         if (eventCollection.isEmpty()) {
             return;
         }
-
         if (eventCollection.size() < 2) {
             SingleEventData eventData = eventCollection.poll();
             processor.process(eventData);

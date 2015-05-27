@@ -61,12 +61,20 @@ public class SubscriberAccumulator extends BasicAccumulator<SingleEventData> {
     private boolean hasNextSequence(Sequenced event) {
         int partitionId = event.getPartitionId();
         long newSequence = event.getSequence();
+
+        // if sequence is -1, it means an instance sequence should be reset.
+        if (newSequence == -1L) {
+            sequenceProvider.reset(partitionId);
+            return false;
+        }
         long currentSequence = sequenceProvider.getSequence(partitionId);
 
         // if new-sequence is not the next-expected-sequence.
         long expectedSequence = currentSequence + 1L;
         if (newSequence != expectedSequence) {
-            logger.warning("Event lost detected for partitionId = " + partitionId);
+            logger.warning("Event lost detected for partitionId = " + partitionId
+                    + ", expected sequence = " + expectedSequence
+                    + " but found = " + newSequence);
             Long prev = brokenSequences.putIfAbsent(partitionId, expectedSequence);
             if (prev == null) {
                 publishEventLost(context, info.getMapName(), info.getCacheName(), partitionId);

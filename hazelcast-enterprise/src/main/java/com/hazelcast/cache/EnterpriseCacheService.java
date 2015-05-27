@@ -84,6 +84,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
+        super.postInit(nodeEngine, properties);
         replicationSupportingService = new CacheReplicationSupportingService(this);
         cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
     }

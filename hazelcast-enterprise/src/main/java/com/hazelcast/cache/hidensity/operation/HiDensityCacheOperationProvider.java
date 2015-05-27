@@ -4,6 +4,7 @@ import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
 import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
+import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
@@ -91,9 +92,9 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanMergeOperation(String origin, Data key, Data value,
-                                             CacheMergePolicy mergePolicy, long expiryTime, int completionId) {
-        return new WanCacheMergeOperation(nameWithPrefix, origin, key, value, mergePolicy, expiryTime, completionId);
+    public Operation createWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,
+                                             CacheMergePolicy mergePolicy, int completionId) {
+        return new WanCacheMergeOperation(nameWithPrefix, origin, mergePolicy, cacheEntryView, completionId);
     }
 
     @Override

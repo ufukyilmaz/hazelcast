@@ -5,6 +5,7 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCach
 import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
+import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
@@ -22,7 +23,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -368,29 +368,31 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     @Override
-    public void publishEvent(String cacheName, CacheEventType eventType, Data dataKey, Data dataValue,
-                             Data dataOldValue, boolean isOldValueAvailable, int orderKey,
-                             int completionId, long expirationTime, String origin) {
-        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
+    public void publishEvent(CacheEventContext cacheEventContext) {
+        String cacheName = cacheEventContext.getCacheName();
+        CacheEventType eventType = cacheEventContext.getEventType();
+        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheEventContext.getCacheName());
 
-        if (wanReplicationPublisher != null && origin == null) {
+        if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = configs.get(cacheName);
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
                 CacheReplicationUpdate update =
                         new CacheReplicationUpdate(config.getName(), cacheMergePolicies.get(cacheName),
-                                new SimpleCacheEntryView(dataKey, dataValue, expirationTime), config.getUriString());
+                                new SimpleCacheEntryView(cacheEventContext.getDataKey(),
+                                        cacheEventContext.getDataValue(),
+                                        cacheEventContext.getExpirationTime(),
+                                        cacheEventContext.getAccessHit()), config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), dataKey,
+                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
                         Clock.currentTimeMillis(), config.getUriString());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }
 
-        super.publishEvent(cacheName, eventType, dataKey, dataValue, dataOldValue,
-                isOldValueAvailable, orderKey, completionId, expirationTime, origin);
+        super.publishEvent(cacheEventContext);
     }
 
     public void publishWanEvent(String cacheName, ReplicationEventObject replicationEventObject) {

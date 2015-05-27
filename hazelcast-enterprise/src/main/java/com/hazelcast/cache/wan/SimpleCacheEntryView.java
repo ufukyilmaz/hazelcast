@@ -19,12 +19,13 @@ public class SimpleCacheEntryView<K, V> implements CacheEntryView<K, V>, DataSer
     K key;
     V value;
     long expirationTime = CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
-    int accessHit;
+    long accessHit = CacheRecord.ACCESS_HIT_NOT_AVAILABLE;
 
-    public SimpleCacheEntryView(K key, V value, long expirationTime) {
+    public SimpleCacheEntryView(K key, V value, long expirationTime, long accessHit) {
         this.key = key;
         this.value = value;
         this.expirationTime = expirationTime;
+        this.accessHit = accessHit;
     }
 
     public SimpleCacheEntryView(K key, V value) {
@@ -68,7 +69,7 @@ public class SimpleCacheEntryView<K, V> implements CacheEntryView<K, V>, DataSer
         IOUtil.writeObject(out, key);
         IOUtil.writeObject(out, value);
         out.writeLong(expirationTime);
-        out.writeInt(accessHit);
+        out.writeLong(accessHit);
     }
 
     @Override
@@ -76,6 +77,6 @@ public class SimpleCacheEntryView<K, V> implements CacheEntryView<K, V>, DataSer
         key = IOUtil.readObject(in);
         value = IOUtil.readObject(in);
         expirationTime = in.readLong();
-        accessHit = in.readInt();
+        accessHit = in.readLong();
     }
 }

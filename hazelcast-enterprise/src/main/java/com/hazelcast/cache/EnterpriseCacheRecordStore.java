@@ -2,6 +2,7 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.merge.CacheMergePolicy;
+import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.serialization.Data;
 
 /**
@@ -12,8 +13,8 @@ import com.hazelcast.nio.serialization.Data;
 public interface EnterpriseCacheRecordStore
         extends ICacheRecordStore {
 
-    boolean merge(Data key, Object value, CacheMergePolicy mergePolicy,
-                  long expiryTime, String caller, int completionId, String origin);
+    boolean merge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
+                  String caller, int completionId, String origin);
 
     boolean remove(Data key, String caller, int completionId, String origin);
 

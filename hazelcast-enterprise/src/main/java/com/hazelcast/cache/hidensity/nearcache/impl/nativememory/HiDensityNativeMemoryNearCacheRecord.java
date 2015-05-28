@@ -141,10 +141,11 @@ public class HiDensityNativeMemoryNearCacheRecord
 
     @Override
     public NativeMemoryData getValue() {
-        if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        long valueAddress = getValueAddress();
+        if (valueAddress == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return nearCacheRecordAccessor.readData(address);
+            return nearCacheRecordAccessor.readData(valueAddress);
         }
     }
 

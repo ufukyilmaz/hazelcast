@@ -277,6 +277,10 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void putToRecord(HiDensityNativeMemoryNearCacheRecord record, V value) {
+        NativeMemoryData oldValue = record.getValue();
+        if (isMemoryBlockValid(oldValue)) {
+            recordProcessor.disposeData(oldValue);
+        }
         record.setValue(toNativeMemoryData(value));
     }
 
@@ -332,8 +336,9 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void onRemove(K key, HiDensityNativeMemoryNearCacheRecord record, boolean removed) {
-        // If the record is available, put this to queue for reusing later
+        // If the record is available, dispose its data and put this to queue for reusing later
         if (record != null) {
+            recordProcessor.dispose(record);
             recordProcessor.enqueueRecord(record);
         }
     }

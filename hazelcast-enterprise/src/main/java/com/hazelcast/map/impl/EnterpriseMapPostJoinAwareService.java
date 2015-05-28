@@ -34,12 +34,12 @@ class EnterpriseMapPostJoinAwareService extends MapPostJoinAwareService {
             operation.addMapIndex(mapContainer);
             operation.addMapInterceptors(mapContainer);
         }
-        List<AccumulatorInfo> infoList = getQueryCacheNameAndSequenceList();
+        List<AccumulatorInfo> infoList = getAccumulatorInfoList();
         operation.setInfoList(infoList);
         return operation;
     }
 
-    private List<AccumulatorInfo> getQueryCacheNameAndSequenceList() {
+    private List<AccumulatorInfo> getAccumulatorInfoList() {
         List<AccumulatorInfo> infoList = new ArrayList<AccumulatorInfo>();
 
         MapPublisherRegistry mapPublisherRegistry = getPublisherContext().getMapPublisherRegistry();

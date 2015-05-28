@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.querycache.publisher;
 
 import com.hazelcast.core.IFunction;
-import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
+import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.spi.NodeEngine;
 
 /**
@@ -74,5 +74,11 @@ public interface PublisherContext {
      * @see #handleDisconnectedSubscriber
      */
     void handleConnectedSubscriber(String uuid);
+
+    /**
+     * Flushes this publisher context.
+     * For example during graceful shutdown we need to flush all events in the registered accumulators of this context.
+     */
+    void flush();
 
 }

@@ -76,7 +76,7 @@ public class AtomicLongSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void getAndAdd() {
-        final long count = randomLong();
+        final long count = randomLong() + 1;
         atomicLong.getAndAdd(count);
         interceptor.assertMethod(getObjectType(), objectName, "getAndAdd", count);
     }

@@ -113,9 +113,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
         Operation operation = operationProvider.createWanMergeOperation(
                 ORIGIN,
-                cacheReplicationUpdate.getEntryView().getKey(),
-                cacheReplicationUpdate.getEntryView().getValue(), mergePolicy,
-                cacheReplicationUpdate.getEntryView().getExpirationTime(), MutableOperation.IGNORE_COMPLETION);
+                cacheReplicationUpdate.getEntryView(), mergePolicy, MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationUpdate.getKey());
         operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);

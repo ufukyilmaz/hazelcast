@@ -4,6 +4,7 @@ import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
 import com.hazelcast.cache.merge.CacheMergePolicy;
+import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -18,19 +19,17 @@ import java.io.IOException;
 public class WanCacheMergeOperation
         extends AbstractMutatingCacheOperation {
 
-    private Data value;
-    private long expiryTime;
+    private CacheEntryView<Data, Data> cacheEntryView;
     private CacheMergePolicy mergePolicy;
     private String wanGroupName;
 
     public WanCacheMergeOperation() {
     }
 
-    public WanCacheMergeOperation(String name, String wanGroupName, Data key, Data value, CacheMergePolicy mergePolicy,
-                                  long expiryTime, int completionId) {
-        super(name, key, completionId);
-        this.value = value;
-        this.expiryTime = expiryTime;
+    public WanCacheMergeOperation(String name, String wanGroupName, CacheEntryView<Data, Data> cacheEntryView,
+                                  CacheMergePolicy mergePolicy, int completionId) {
+        super(name, cacheEntryView.getKey(), completionId);
+        this.cacheEntryView = cacheEntryView;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
     }
@@ -41,7 +40,7 @@ public class WanCacheMergeOperation
 
         response =
                 ((EnterpriseCacheRecordStore) cache)
-                    .merge(key, value, mergePolicy, expiryTime, getCallerUuid(), completionId, wanGroupName);
+                    .merge(cacheEntryView, mergePolicy, getCallerUuid(), completionId, wanGroupName);
 
         if (Boolean.TRUE.equals(response)) {
             backupRecord = cache.getRecord(key);
@@ -62,16 +61,14 @@ public class WanCacheMergeOperation
     protected void writeInternal(ObjectDataOutput out)
             throws IOException {
         super.writeInternal(out);
-        out.writeData(value);
-        out.writeLong(expiryTime);
+        out.writeObject(cacheEntryView);
         out.writeObject(mergePolicy);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        value = in.readData();
-        expiryTime = in.readLong();
+        cacheEntryView = in.readObject();
         mergePolicy = in.readObject();
     }
 

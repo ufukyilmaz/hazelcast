@@ -41,6 +41,12 @@ public class DefaultSubscriberSequencerProvider implements SubscriberSequencerPr
         return sequence.getSequence();
     }
 
+    @Override
+    public void reset(int partitionId) {
+        PartitionSequencer sequence = getOrCreateSequence(partitionId);
+        sequence.reset();
+    }
+
     private PartitionSequencer getOrCreateSequence(int partitionId) {
         return getOrPutIfAbsent(partitionSequences, partitionId, PARTITION_SEQUENCER_CONSTRUCTOR);
     }

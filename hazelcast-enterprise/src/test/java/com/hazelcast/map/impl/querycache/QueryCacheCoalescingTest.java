@@ -8,7 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
-import com.hazelcast.map.listener.EntryAddedListener;
+import com.hazelcast.map.listener.EntryUpdatedListener;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -35,18 +35,19 @@ public class QueryCacheCoalescingTest extends HazelcastTestSupport {
 
         final CountDownLatch addCount = new CountDownLatch(1);
         final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
-        cache.addEntryListener(new EntryAddedListener() {
+        cache.addEntryListener(new EntryUpdatedListener() {
             @Override
-            public void entryAdded(EntryEvent event) {
+            public void entryUpdated(EntryEvent event) {
                 addCount.countDown();
             }
         }, false);
 
+        // update same key to control whether coalescing kicks in.
         for (int i = 0; i < populationCount; i++) {
             map.put(0, i);
         }
 
-        assertOpenEventually(addCount, 10);
+        assertOpenEventually(addCount);
     }
 
     private Config getConfig(String mapName, String cacheName) {
@@ -56,7 +57,7 @@ public class QueryCacheCoalescingTest extends HazelcastTestSupport {
         cacheConfig.setCoalesce(true);
         cacheConfig.setBatchSize(64);
         cacheConfig.setBufferSize(64);
-        cacheConfig.setDelaySeconds(60);
+        cacheConfig.setDelaySeconds(3);
         mapConfig.addQueryCacheConfig(cacheConfig);
         return config;
     }

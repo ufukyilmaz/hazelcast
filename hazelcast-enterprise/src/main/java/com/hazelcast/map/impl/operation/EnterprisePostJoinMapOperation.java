@@ -10,7 +10,6 @@ import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.map.impl.querycache.publisher.MapPublisherRegistry;
-import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
 import com.hazelcast.nio.ObjectDataInput;
@@ -81,7 +80,7 @@ public class EnterprisePostJoinMapOperation extends PostJoinMapOperation {
             addAccumulatorInfo(queryCacheContext, info);
 
             PublisherRegistry publisherRegistry = mapPublisherRegistry.getOrCreate(info.getMapName());
-            PartitionAccumulatorRegistry accumulatorRegistry = publisherRegistry.getOrCreate(info.getCacheName());
+            publisherRegistry.getOrCreate(info.getCacheName());
             String eventListener = enterpriseMapServiceContext.addLocalListenerAdapter(new ListenerAdapter() {
                 @Override
                 public void onEvent(IMapEvent event) {

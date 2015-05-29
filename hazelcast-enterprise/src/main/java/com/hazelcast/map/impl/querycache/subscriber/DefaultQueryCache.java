@@ -430,7 +430,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
     @Override
     public String getName() {
-        return cacheName;
+        return userGivenCacheName;
     }
 
 

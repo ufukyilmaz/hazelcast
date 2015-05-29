@@ -154,6 +154,16 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
         assertQueryCacheSizeEventually(0, clear, queryCache);
     }
 
+    @Test
+    public void test_getName() throws Exception {
+        String cacheName = "cache-name";
+        QueryCache<Integer, Employee> queryCache
+                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+
+        assertEquals(cacheName, queryCache.getName());
+
+    }
+
     private void testWithInitialPopulation(boolean enableInitialPopulation,
                                            int expectedSize, int numberOfElementsToPut) {
         String cacheName = randomString();

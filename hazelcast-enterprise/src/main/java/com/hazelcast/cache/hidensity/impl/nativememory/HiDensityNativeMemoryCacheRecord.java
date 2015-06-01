@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
@@ -17,16 +18,21 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     /**
      * Value offset of native memory based cache record
      */
-    public static final int VALUE_OFFSET = 16;
+    public static final int VALUE_OFFSET;
     /**
      * Size of native memory based cache record
      */
-    public static final int SIZE = VALUE_OFFSET + HEADER_SIZE;
+    public static final int SIZE;
 
     static final int CREATION_TIME_OFFSET = 0;
-    static final int ACCESS_TIME_OFFSET = 8;
-    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    static final int TTL_OFFSET = 12;
+    static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
+    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET + Bits.INT_SIZE_IN_BYTES;
+    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+
+    static {
+        VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;
+        SIZE = VALUE_OFFSET + HEADER_SIZE;
+    }
 
     private HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
 

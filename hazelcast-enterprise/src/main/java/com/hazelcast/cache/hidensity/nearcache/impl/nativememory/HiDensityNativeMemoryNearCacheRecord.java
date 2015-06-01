@@ -3,6 +3,7 @@ package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
@@ -19,16 +20,24 @@ public class HiDensityNativeMemoryNearCacheRecord
     /**
      * Value offset of native memory based near-cache record
      */
-    public static final int VALUE_OFFSET = 16;
+    public static final int VALUE_OFFSET;
     /**
      * Size of native memory based near-cache record
      */
-    public static final int SIZE = VALUE_OFFSET + HEADER_SIZE;
+    public static final int SIZE;
 
     static final int CREATION_TIME_OFFSET = 0;
-    static final int ACCESS_TIME_OFFSET = 8;
+    static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
+    // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is same for near-cache record
+    // since these fields (access hit count and access time) are not used at same time.
+    // Because their usage scenario is based on eviction type (LRU or LFU).
     static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    static final int TTL_OFFSET = 12;
+    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+
+    static {
+        VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;
+        SIZE = VALUE_OFFSET + HEADER_SIZE;
+    }
 
     private HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor;
 

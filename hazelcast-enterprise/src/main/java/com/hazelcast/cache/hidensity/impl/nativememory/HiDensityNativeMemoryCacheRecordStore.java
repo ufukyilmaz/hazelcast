@@ -761,12 +761,13 @@ public class HiDensityNativeMemoryCacheRecordStore
                 merged = createRecordWithExpiry(key, value, expiryTime,
                         now, true, completionId, origin) != null;
             } else {
+                Object existingValue = record.getValue();
                 Object newValue =
                         mergePolicy.merge(name,
                                 cacheEntryView,
-                                new SimpleCacheEntryView(key, record.getValue(),
+                                new SimpleCacheEntryView(key, existingValue,
                                         record.getExpirationTime(), record.getAccessHit()));
-                if (record.getValue() != newValue) {
+                if (existingValue != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
                             now, true, completionId, caller, origin);
                 }

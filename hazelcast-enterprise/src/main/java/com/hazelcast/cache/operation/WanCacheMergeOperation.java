@@ -63,6 +63,7 @@ public class WanCacheMergeOperation
         super.writeInternal(out);
         out.writeObject(cacheEntryView);
         out.writeObject(mergePolicy);
+        out.writeUTF(wanGroupName);
     }
 
     @Override
@@ -70,6 +71,7 @@ public class WanCacheMergeOperation
         super.readInternal(in);
         cacheEntryView = in.readObject();
         mergePolicy = in.readObject();
+        wanGroupName = in.readUTF();
     }
 
     @Override

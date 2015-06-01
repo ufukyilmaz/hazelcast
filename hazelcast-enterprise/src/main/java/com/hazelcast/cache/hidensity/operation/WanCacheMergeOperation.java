@@ -67,6 +67,7 @@ public class WanCacheMergeOperation extends BackupAwareHiDensityCacheOperation {
         super.writeInternal(out);
         out.writeObject(cacheEntryView);
         out.writeObject(mergePolicy);
+        out.writeUTF(wanGroupName);
     }
 
     @Override
@@ -74,6 +75,7 @@ public class WanCacheMergeOperation extends BackupAwareHiDensityCacheOperation {
         super.readInternal(in);
         cacheEntryView = in.readObject();
         mergePolicy = in.readObject();
+        wanGroupName = in.readUTF();
     }
 
     @Override

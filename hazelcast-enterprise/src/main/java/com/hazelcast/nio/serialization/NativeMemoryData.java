@@ -49,9 +49,10 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     static {
         // Because of checkstyle rule (public fields must be declared before private + package protected fields)
-        // and since public field "NATIVE_MEMORY_DATA_OVERHEAD" is dependent to package protected field "DATA_OFFSET",
+        // and since public field "NATIVE_MEMORY_DATA_OVERHEAD" is dependent to
+        // package protected field "NATIVE_HEADER_OVERHEAD",
         // "NATIVE_MEMORY_DATA_OVERHEAD" static field is initialized here.
-        NATIVE_MEMORY_DATA_OVERHEAD = DATA_OFFSET;
+        NATIVE_MEMORY_DATA_OVERHEAD = NATIVE_HEADER_OVERHEAD;
     }
 
     public NativeMemoryData() {

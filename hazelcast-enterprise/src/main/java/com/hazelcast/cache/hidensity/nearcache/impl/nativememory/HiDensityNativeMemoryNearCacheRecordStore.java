@@ -227,12 +227,9 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected long getKeyStorageMemoryCost(K key) {
         if (key instanceof Data) {
-            if (key instanceof NativeMemoryData) {
-                return ((NativeMemoryData) key).totalSize();
-            } else {
-                // Because key will saved as native memory data
-                return NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize();
-            }
+            // Because key will saved as native memory data with native memory data header
+            // and this is not covered at "totalSize()" method.
+            return NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize();
         } else {
             // Memory cost for non-data typed instance is not supported.
             return 0L;

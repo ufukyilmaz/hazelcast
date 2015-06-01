@@ -285,7 +285,8 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
 
 
         increaseHitCount(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, 1000);
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 100, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 50, 100, clusterA);
         checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, clusterB);
     }
 

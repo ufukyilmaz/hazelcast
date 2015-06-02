@@ -39,7 +39,8 @@ public final class CacheMergePolicyProvider {
     }
 
     private void addOutOfBoxPolicies() {
-        mergePolicyMap.put(HigherHitCacheMergePolicy.class.getName(), new HigherHitCacheMergePolicy());
+        mergePolicyMap.put(HigherHitsCacheMergePolicy.class.getName(), new HigherHitsCacheMergePolicy());
+        mergePolicyMap.putIfAbsent(PassThroughCacheMergePolicy.class.getName(), new PassThroughCacheMergePolicy());
     }
 
     public CacheMergePolicy getMergePolicy(String className) {

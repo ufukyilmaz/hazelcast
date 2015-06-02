@@ -10,7 +10,7 @@ import java.io.IOException;
  * HigherHitsCacheMergePolicy causes the merging entry to be merged from source to destination cache
  * if source entry has more hits than the destination one.
  */
-public class HigherHitCacheMergePolicy implements CacheMergePolicy {
+public class HigherHitsCacheMergePolicy implements CacheMergePolicy {
 
     @Override
     public Object merge(String cacheName, CacheEntryView mergingEntry, CacheEntryView existingEntry) {

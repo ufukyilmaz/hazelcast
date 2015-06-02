@@ -7,9 +7,9 @@ import com.hazelcast.nio.ObjectDataOutput;
 import java.io.IOException;
 
 /**
- * CachePassThroughMerge policy causes the merging entry to be merged from source to destination directly.
+ * PassThroughCacheMergePolicy policy causes the merging entry to be merged from source to destination directly.
  */
-public class CachePassThroughMergePolicy implements CacheMergePolicy {
+public class PassThroughCacheMergePolicy implements CacheMergePolicy {
 
 
     @Override

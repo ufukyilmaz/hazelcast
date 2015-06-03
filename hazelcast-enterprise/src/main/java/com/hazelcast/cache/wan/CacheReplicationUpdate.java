@@ -15,8 +15,9 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
     CacheEntryView<Data, Data> entryView;
 
     public CacheReplicationUpdate(String cacheName, String mergePolicy,
-                                  CacheEntryView entryView, String uriString) {
-        super(cacheName, uriString);
+                                  CacheEntryView entryView,
+                                  String managerPrefix) {
+        super(cacheName, managerPrefix);
         this.mergePolicy = mergePolicy;
         this.entryView = entryView;
     }

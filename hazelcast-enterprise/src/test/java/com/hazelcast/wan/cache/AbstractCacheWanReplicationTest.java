@@ -118,6 +118,10 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
             super(urls, classLoader);
         }
 
+        @Override
+        public String toString() {
+            return "test";
+        }
     }
 
     private int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
@@ -361,9 +365,9 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configB, clusterB.length, "wanReplication", PassThroughCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configB, configC, clusterC.length, "wanReplication", PassThroughCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configC, configA, clusterA.length, "wanReplication", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughCacheMergePolicy.class.getName(), "default");
         startAllClusters();
 
         int cacheSize = createCacheDataIn(clusterB, classLoaderB, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);

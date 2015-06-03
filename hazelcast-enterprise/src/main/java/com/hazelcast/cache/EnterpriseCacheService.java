@@ -384,11 +384,12 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
                                 new SimpleCacheEntryView(cacheEventContext.getDataKey(),
                                         cacheEventContext.getDataValue(),
                                         cacheEventContext.getExpirationTime(),
-                                        cacheEventContext.getAccessHit()), config.getUriString());
+                                        cacheEventContext.getAccessHit()),
+                                config.getManagerPrefix());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
                 CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
-                        Clock.currentTimeMillis(), config.getUriString());
+                        Clock.currentTimeMillis(), config.getManagerPrefix());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }

@@ -50,7 +50,7 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                                                   record.getExpirationTime(), record.getAccessHit()));
                 if (record.getValue() != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                                                    now, true, completionId, origin);
+                                                    now, true, completionId, caller, origin);
                 }
                 publishEvent(createCacheCompleteEvent(key,
                         CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin, completionId));

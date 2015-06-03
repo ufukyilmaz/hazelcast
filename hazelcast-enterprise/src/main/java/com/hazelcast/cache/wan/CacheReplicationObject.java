@@ -15,23 +15,27 @@ import java.util.Set;
 public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, DataSerializable {
 
     String cacheName;
-    String uriString;
+    String managerPrefix;
     Set<String> groupNames = new HashSet<String>();
 
-    public CacheReplicationObject(String cacheName, String uriString) {
+    public CacheReplicationObject(String cacheName, String managerPrefix) {
         this.cacheName = cacheName;
-        this.uriString = uriString;
+        this.managerPrefix = managerPrefix;
     }
 
     public CacheReplicationObject() {
+    }
+
+    public String getManagerPrefix() {
+        return managerPrefix;
     }
 
     public String getCacheName() {
         return cacheName;
     }
 
-    public String getUriString() {
-        return uriString;
+    public String getNameWithPrefix() {
+        return managerPrefix + cacheName;
     }
 
     @Override
@@ -42,14 +46,14 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(cacheName);
-        out.writeUTF(uriString);
+        out.writeUTF(managerPrefix);
         out.writeObject(groupNames);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         cacheName = in.readUTF();
-        uriString = in.readUTF();
+        managerPrefix = in.readUTF();
         groupNames = in.readObject();
     }
 }

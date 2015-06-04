@@ -314,8 +314,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         cal.set(license.year, license.month, license.day, HOUR_OF_DAY, MINUTE, SECOND);
         validUntil = cal.getTime();
         logger.log(Level.INFO,
-                "Licensed type: " + (license.full ? "Full" : "Trial") + ", Valid until: " + validUntil + ", Max nodes: "
-                        + license.nodes);
+                "License INFO [ Valid until: " + validUntil + ", Max nodes: "
+                        + license.nodes + " ]");
         return validUntil;
     }
 

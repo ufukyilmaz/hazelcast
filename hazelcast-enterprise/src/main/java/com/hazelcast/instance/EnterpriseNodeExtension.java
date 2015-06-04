@@ -75,7 +75,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             licenseKey = node.getConfig().getLicenseKey();
         }
         license = LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
-
+        logger.log(Level.INFO, license.toString());
         systemLogger = node.getLogger("com.hazelcast.system");
 
         createSecurityContext(node);

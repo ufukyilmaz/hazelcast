@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

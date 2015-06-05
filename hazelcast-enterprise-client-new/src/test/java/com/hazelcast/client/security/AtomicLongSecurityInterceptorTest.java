@@ -4,12 +4,10 @@ import com.hazelcast.concurrent.atomiclong.AtomicLongService;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class AtomicLongSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

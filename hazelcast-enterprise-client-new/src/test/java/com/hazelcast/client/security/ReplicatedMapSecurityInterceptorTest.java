@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

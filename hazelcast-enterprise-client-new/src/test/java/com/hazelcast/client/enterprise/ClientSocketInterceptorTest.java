@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class ClientSocketInterceptorTest {
 
     @Before

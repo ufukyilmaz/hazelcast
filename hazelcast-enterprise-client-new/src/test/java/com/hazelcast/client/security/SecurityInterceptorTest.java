@@ -39,7 +39,6 @@ import java.security.AccessControlException;
 import static com.hazelcast.config.PermissionConfig.PermissionType;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class SecurityInterceptorTest {
 
     @Before

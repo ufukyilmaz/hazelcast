@@ -201,11 +201,25 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void evictWithIllegalPercentageArgumentFreeNativeMemory() {
+        doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,150);
+    }
+    @Test(expected = IllegalArgumentException.class)
+    public void evictWithIllegalPercentageArgumentUsedNativeMemory() {
+        doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE,150);
+    }
+
     private void doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy evictionPolicy,
                                                       EvictionConfig.MaxSizePolicy maxSizePolicy) {
+        doEvictionWithHiDensityMaxSizePolicy(evictionPolicy, maxSizePolicy, 50);
+    }
+
+    private void doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy evictionPolicy,
+                                                      EvictionConfig.MaxSizePolicy maxSizePolicy, int percentage) {
         final int HUGE_RECORD_COUNT = 1000000;
         final int DEFAULT_SIZE = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
-        final int DEFAULT_PERCENTAGE = 50;
+        final int DEFAULT_PERCENTAGE = percentage;
 
         NearCacheConfig nearCacheConfig =
                 createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);

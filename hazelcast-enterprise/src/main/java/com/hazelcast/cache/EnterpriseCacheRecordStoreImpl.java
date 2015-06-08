@@ -82,14 +82,4 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                                 CacheRecord record, Throwable error) {
     }
 
-    @Override
-    public boolean remove(Data key, String caller, int completionId, String origin) {
-        return super.remove(key, caller, completionId, origin);
-    }
-
-    @Override
-    public boolean remove(Data key, Object value, String caller, int completionId, String origin) {
-        return super.remove(key, value, caller, completionId, origin);
-    }
-
 }

@@ -87,8 +87,8 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createWanRemoveOperation(String origin, Data key, Data value, int completionId) {
-        return new WanCacheRemoveOperation(nameWithPrefix, origin, key, value, completionId);
+    public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
+        return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 
     @Override

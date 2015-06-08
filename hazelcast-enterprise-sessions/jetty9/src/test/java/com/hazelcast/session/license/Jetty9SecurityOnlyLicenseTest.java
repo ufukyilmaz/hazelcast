@@ -7,7 +7,6 @@ import com.hazelcast.session.WebContainerConfigurator;
 import org.junit.After;
 import org.junit.Rule;
 
-
 public class Jetty9SecurityOnlyLicenseTest extends AbstractInvalidLicenseTest {
 
     @Rule
@@ -15,7 +14,7 @@ public class Jetty9SecurityOnlyLicenseTest extends AbstractInvalidLicenseTest {
 
     @Override
     protected WebContainerConfigurator<?> getWebContainerConfigurator() {
-        return new JettyConfigurator("hazelcast-with-security-license.xml","hazelcast-client-with-security-license.xml");
+        return new JettyConfigurator("hazelcast-with-security-license.xml", "hazelcast-client-with-security-license.xml");
     }
 
     @After
@@ -24,5 +23,4 @@ public class Jetty9SecurityOnlyLicenseTest extends AbstractInvalidLicenseTest {
         Hazelcast.shutdownAll();
         instance1.stop();
     }
-
 }

@@ -5,15 +5,10 @@ import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.instance.DefaultNodeContext;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.GroupProperties;
-import com.hazelcast.instance.HazelcastInstanceImpl;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.NodeContext;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
-import com.hazelcast.nio.ConnectionManager;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import org.junit.After;
@@ -24,9 +19,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-
-import java.nio.channels.ServerSocketChannel;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,7 +26,6 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class LicenseTest {
-
 
     @Rule
     public ExpectedException expectedEx = ExpectedException.none();
@@ -53,33 +44,33 @@ public class LicenseTest {
 
     @Test
     public void testXmlConfig() {
-        String xml = "<hazelcast>\n" +
-                "    <group>\n" +
-                "        <name>dev</name>\n" +
-                "        <password>dev-pass</password>\n" +
-                "    </group>\n" +
-                "    <license-key>HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n" +
-                "    <network>\n" +
-                "        <port auto-increment=\"true\">5701</port>\n" +
-                "        <join>\n" +
-                "            <multicast enabled=\"true\">\n" +
-                "                <multicast-group>224.2.2.3</multicast-group>\n" +
-                "                <multicast-port>54327</multicast-port>\n" +
-                "            </multicast>\n" +
-                "            <tcp-ip enabled=\"false\">\n" +
-                "                <interface>127.0.0.1</interface>\n" +
-                "            </tcp-ip>\n" +
-                "        </join>\n" +
-                "        <interfaces enabled=\"false\">\n" +
-                "            <interface>10.10.1.*</interface>\n" +
-                "        </interfaces>\n" +
-                "    </network>" +
-                "</hazelcast>";
+        String xml = "<hazelcast>\n"
+                + "    <group>\n"
+                + "        <name>dev</name>\n"
+                + "        <password>dev-pass</password>\n"
+                + "    </group>\n"
+                + "    <license-key>HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
+                + "    <network>\n"
+                + "        <port auto-increment=\"true\">5701</port>\n"
+                + "        <join>\n"
+                + "            <multicast enabled=\"true\">\n"
+                + "                <multicast-group>224.2.2.3</multicast-group>\n"
+                + "                <multicast-port>54327</multicast-port>\n"
+                + "            </multicast>\n"
+                + "            <tcp-ip enabled=\"false\">\n"
+                + "                <interface>127.0.0.1</interface>\n"
+                + "            </tcp-ip>\n"
+                + "        </join>\n"
+                + "        <interfaces enabled=\"false\">\n"
+                + "            <interface>10.10.1.*</interface>\n"
+                + "        </interfaces>\n"
+                + "    </network>"
+                + "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        assertEquals("HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo", config.getLicenseKey());
+        assertEquals("HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
+                config.getLicenseKey());
     }
-
 
     @Test
     public void testLicenseValid() {

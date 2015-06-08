@@ -1,7 +1,5 @@
 package com.hazelcast.session.license;
 
-
-
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.session.Java6ExcludeRule;
 import com.hazelcast.session.Tomcat8Configurator;
@@ -17,7 +15,7 @@ public class Tomcat8InvalidLicenseTest extends AbstractInvalidLicenseTest {
 
     @Override
     protected WebContainerConfigurator<?> getWebContainerConfigurator() {
-        return new Tomcat8Configurator("hazelcast-without-license.xml","hazelcast-client-without-license.xml");
+        return new Tomcat8Configurator("hazelcast-without-license.xml", "hazelcast-client-without-license.xml");
     }
 
     @Override
@@ -30,4 +28,3 @@ public class Tomcat8InvalidLicenseTest extends AbstractInvalidLicenseTest {
         return LifecycleException.class;
     }
 }
-

@@ -26,6 +26,8 @@ public abstract class AbstractWanReplicationTest extends HazelcastTestSupport {
     protected HazelcastInstance[] clusterA = new HazelcastInstance[2];
     protected HazelcastInstance[] clusterB = new HazelcastInstance[2];
     protected HazelcastInstance[] clusterC = new HazelcastInstance[2];
+    protected HazelcastInstance[] singleNodeA = new HazelcastInstance[1];
+    protected HazelcastInstance[] singleNodeB = new HazelcastInstance[1];
 
     protected Config configA;
     protected Config configB;

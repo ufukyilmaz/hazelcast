@@ -15,8 +15,8 @@ public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
         super(nameWithPrefix);
     }
 
-    public Operation createWanRemoveOperation(String origin, Data key, Data value, int completionId) {
-        return new WanCacheRemoveOperation(nameWithPrefix, origin, key, value, completionId);
+    public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
+        return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }
 
     public Operation createWanMergeOperation(String origin, CacheEntryView<Data, Data> cacheEntryView,

@@ -18,29 +18,20 @@ public class WanCacheRemoveOperation
         extends AbstractMutatingCacheOperation {
 
     private String wanGroupName;
-    // if same
-    private Data oldValue;
 
     public WanCacheRemoveOperation() {
     }
 
-    public WanCacheRemoveOperation(String name, String wanGroupName, Data key,
-                                   Data oldValue, int completionId) {
+    public WanCacheRemoveOperation(String name, String wanGroupName, Data key, int completionId) {
         super(name, key, completionId);
-        this.oldValue = oldValue;
         this.wanGroupName = wanGroupName;
     }
 
     @Override
     public void run()
             throws Exception {
-        if (oldValue == null) {
             response = ((EnterpriseCacheRecordStore) cache)
                     .remove(key, getCallerUuid(), completionId, wanGroupName);
-        } else {
-            response = ((EnterpriseCacheRecordStore) cache)
-                    .remove(key, oldValue, getCallerUuid(), completionId, wanGroupName);
-        }
     }
 
     @Override
@@ -57,7 +48,6 @@ public class WanCacheRemoveOperation
     protected void writeInternal(ObjectDataOutput out)
             throws IOException {
         super.writeInternal(out);
-        out.writeData(oldValue);
         out.writeUTF(wanGroupName);
     }
 
@@ -65,7 +55,6 @@ public class WanCacheRemoveOperation
     protected void readInternal(ObjectDataInput in)
             throws IOException {
         super.readInternal(in);
-        oldValue = in.readData();
         wanGroupName = in.readUTF();
     }
 

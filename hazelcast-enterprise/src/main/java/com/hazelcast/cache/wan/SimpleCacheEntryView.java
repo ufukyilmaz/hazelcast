@@ -28,11 +28,6 @@ public class SimpleCacheEntryView<K, V> implements CacheEntryView<K, V>, DataSer
         this.accessHit = accessHit;
     }
 
-    public SimpleCacheEntryView(K key, V value) {
-        this.key = key;
-        this.value = value;
-    }
-
     public SimpleCacheEntryView() {
     }
 
@@ -46,17 +41,9 @@ public class SimpleCacheEntryView<K, V> implements CacheEntryView<K, V>, DataSer
         return value;
     }
 
-    public void setExpirationTime(long expirationTime) {
-        this.expirationTime = expirationTime;
-    }
-
     @Override
     public long getExpirationTime() {
         return expirationTime;
-    }
-
-    public void setAccessHit(int accessHit) {
-        this.accessHit = accessHit;
     }
 
     @Override

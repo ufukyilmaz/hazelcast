@@ -102,8 +102,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
                 .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
         Operation operation = operationProvider
-                .createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(), null,
-                        MutableOperation.IGNORE_COMPLETION);
+                .createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(), MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationRemove.getKey());
         operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);

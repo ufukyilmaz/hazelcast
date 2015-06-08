@@ -89,7 +89,8 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
         QueryCacheContext queryCacheContext = request.getContext();
         SubscriberContext subscriberContext = queryCacheContext.getSubscriberContext();
         QueryCacheEndToEndProvider queryCacheEndToEndProvider = subscriberContext.getEndToEndQueryCacheProvider();
-        return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getUserGivenCacheName(), constructorFunction);
+        return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
+                request.getUserGivenCacheName(), constructorFunction);
     }
 
 }

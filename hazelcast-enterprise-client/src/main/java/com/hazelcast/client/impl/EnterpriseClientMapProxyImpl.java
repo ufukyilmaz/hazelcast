@@ -100,7 +100,8 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
                 = new ClientQueryCacheEndToEndConstructor(request);
         SubscriberContext subscriberContext = getQueryContext().getSubscriberContext();
         QueryCacheEndToEndProvider queryCacheEndToEndProvider = subscriberContext.getEndToEndQueryCacheProvider();
-        return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getUserGivenCacheName(), constructorFunction);
+        return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
+                request.getUserGivenCacheName(), constructorFunction);
     }
 
 }

@@ -1,6 +1,7 @@
 package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.HazelcastCachingProvider;
+import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cache.impl.AbstractHazelcastCacheManager;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
@@ -23,6 +24,7 @@ import org.junit.Test;
 
 import javax.cache.CacheManager;
 import javax.cache.Caching;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.spi.CachingProvider;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,9 +33,13 @@ import java.net.URLClassLoader;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplicationTest {
+
+    protected static final String DEFAULT_CACHE_MANAGER = "my-cache-manager";
+    protected static final String DEFAULT_CACHE_NAME = "default";
 
     protected ClassLoader classLoaderA;
     protected ClassLoader classLoaderB;
@@ -68,7 +74,7 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         config.getNetworkConfig().setPort(port);
         config.setClassLoader(classLoader);
         config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
-        CacheSimpleConfig cacheConfig = config.getCacheConfig("default");
+        CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
         EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {
             config.setNativeMemoryConfig(getMemoryConfig());
@@ -125,12 +131,24 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
     }
 
     protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
+                                    String cacheManager, String cacheName, InMemoryFormat format,
+                                    int start, int end, boolean removeBeforePut) {
+        return createCacheDataIn(cluster, classLoader, cacheManager, cacheName, format, start, end, removeBeforePut, null);
+    }
+
+    protected int createCacheDataIn(HazelcastInstance[] cluster, ClassLoader classLoader,
                                   String cacheManager, String cacheName, InMemoryFormat format, 
-                                  int start, int end, boolean removeBeforePut) {
+                                  int start, int end, boolean removeBeforePut, ExpiryPolicy expiryPolicy) {
         ICache myCache = getOrCreateCache(cluster, cacheManager, cacheName, format, classLoader);
         for (; start < end; start++) {
-            if (removeBeforePut) myCache.remove(start);
-            myCache.put(start, getNode(cluster).getConfig().getGroupConfig().getName() + start);
+            if (removeBeforePut) {
+                myCache.remove(start);
+            }
+            if (expiryPolicy == null) {
+                myCache.put(start, getNode(cluster).getConfig().getGroupConfig().getName() + start);
+            } else {
+                myCache.put(start, getNode(cluster).getConfig().getGroupConfig().getName() + start, expiryPolicy);
+            }
         }
         return myCache.size();
     }
@@ -208,6 +226,21 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         return true;
     }
 
+    protected boolean checkKeysNotIn(HazelcastInstance[] targetCluster, ClassLoader classLoader,
+                                           String cacheManager, final String cacheName, final int start, final int end) {
+        final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
+        final ICache cache = (ICache) manager.getCache(cacheName);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                for (int i = start; i < end; i++)
+                    assertFalse(cache.containsKey(i));
+            }
+        });
+
+        return true;
+    }
+
     protected boolean checkCacheDataSize(HazelcastInstance[] targetCluster, ClassLoader classLoader,
                                        String cacheManager, final String cacheName, final int size) {
 
@@ -263,33 +296,33 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         initConfigA();
         initConfigB();
         setupReplicateFrom(configA, configB,
-                clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), "default");
+                clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
 
         startClusterA();
         startClusterB();
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, clusterA);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        removeCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50);
-        checkCacheDataSize(clusterB, classLoaderB, "my-cache-manager", "default", 0);
+        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
+        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
     }
 
     @Test
     public void linkTopo_ActivePassiveReplication_2clusters_Test_HigherHitsCacheMergePolicy() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
 
         // create data in B then increase hit count
-        createCacheDataIn(clusterB, classLoaderB, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
 
 
-        increaseHitCount(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, 1000);
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 100, false);
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 50, 100, clusterA);
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, clusterB);
+        increaseHitCount(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, 1000);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 100, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100, clusterA);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
 
@@ -297,14 +330,14 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
     public void cache_wan_events_should_be_processed_in_order() {
         initConfigA();
         initConfigB();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startClusterA();
         startClusterB();
 
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, true);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, true);
 
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 
 
@@ -314,19 +347,19 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        int cacheSize = createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
+        int cacheSize = createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
 
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, clusterA);
-        checkCacheDataInFrom(clusterC, classLoaderC, "my-cache-manager", "default", 0, 50, clusterA);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        removeCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50);
+        removeCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50);
 
-        checkCacheDataSize(clusterB, classLoaderB, "my-cache-manager", "default", 0);
-        checkCacheDataSize(clusterC, classLoaderC, "my-cache-manager", "default", 0);
+        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
+        checkCacheDataSize(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0);
     }
 
     @Test
@@ -334,20 +367,20 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        createCacheDataIn(clusterA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterC, classLoaderC, "my-cache-manager", "default", 0, 50, clusterA);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        createCacheDataIn(clusterB, classLoaderB, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
-        checkCacheDataInFrom(clusterC, classLoaderC, "my-cache-manager", "default", 0, 50, clusterA);
+        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
 
-        increaseHitCount(clusterB, classLoaderB, "my-cache-manager", "default", 0, 50, 1000);
-        createCacheDataIn(clusterB, classLoaderB, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
+        increaseHitCount(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, 1000);
+        createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
 
-        checkCacheDataInFrom(clusterC, classLoaderC, "my-cache-manager", "default", 0, 50, clusterB);
+        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
     @Test
@@ -355,15 +388,42 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         initConfigA();
         initConfigB();
         initConfigC();
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughCacheMergePolicy.class.getName(), "default");
-        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughCacheMergePolicy.class.getName(), "default");
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         startAllClusters();
 
-        int cacheSize = createCacheDataIn(clusterB, classLoaderB, "my-cache-manager", "default", getMemoryFormat(), 0, 50, false);
+        int cacheSize = createCacheDataIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
 
-        checkCacheDataInFrom(clusterC, classLoaderC, "my-cache-manager", "default", 0, 50, clusterB);
-        checkCacheDataInFrom(clusterA, classLoaderA, "my-cache-manager", "default", 0, 50, clusterB);
+        checkCacheDataInFrom(clusterC, classLoaderC, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
+        checkCacheDataInFrom(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterB);
     }
 
+    @Test
+    public void createEntryWithExpiry() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(10000, 10000, 10000);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, expiryPolicy);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+        sleepSeconds(20);
+        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50);
+    }
+
+    @Test
+    public void updateExpiredEntry() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(10000, 10000, 10000);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, expiryPolicy);
+        sleepSeconds(20);
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, expiryPolicy);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+    }
 }

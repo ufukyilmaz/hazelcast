@@ -2,14 +2,11 @@ package com.hazelcast.wan.cache;
 
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.merge.CacheMergePolicyProvider;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.ExceptionUtil;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -45,7 +42,7 @@ public class CacheMergePolicyProviderTest extends HazelcastTestSupport{
         try {
             cacheMergePolicyProvider.getMergePolicy("test");
         } catch (Throwable ex) {
-            ExceptionUtil.rethrow(ex.getCause(), ClassNotFoundException.class);
+            throw ex.getCause();
         }
     }
 

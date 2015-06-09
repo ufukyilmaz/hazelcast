@@ -36,8 +36,8 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
         Object value = cacheEntryView.getValue();
         long expiryTime = cacheEntryView.getExpirationTime();
         CacheRecord record = records.get(key);
-        boolean isExpired = processExpiredEntry(key, record, now);
 
+        boolean isExpired = processExpiredEntry(key, record, now);
         try {
             if (record == null || isExpired) {
                 merged = createRecordWithExpiry(key, value, cacheEntryView.getExpirationTime(),
@@ -56,8 +56,6 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                         CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin, completionId));
             }
 
-            onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);
-
             updateHasExpiringEntry(record);
 
             if (merged && isStatisticsEnabled()) {
@@ -67,19 +65,8 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
 
             return merged;
         } catch (Throwable error) {
-            onMergeError(cacheEntryView, mergePolicy, caller, true, record, error);
             throw ExceptionUtil.rethrow(error);
         }
-    }
-
-    protected void onMerge(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                           String caller, boolean disableWriteThrough, CacheRecord record,
-                           boolean isExpired, boolean isSaveSucceed) {
-    }
-
-    protected void onMergeError(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                                String caller, boolean disableWriteThrough,
-                                CacheRecord record, Throwable error) {
     }
 
 }

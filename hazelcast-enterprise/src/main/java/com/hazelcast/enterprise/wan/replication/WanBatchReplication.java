@@ -221,9 +221,6 @@ public class WanBatchReplication extends AbstractWanReplication
                     if (logger != null) {
                         logger.warning(e);
                     }
-                    if (connectionWrapper != null) {
-                        connectionManager.reportFailedConnection(connectionWrapper.getTargetAddress());
-                    }
                 }
             } while (!transmitSucceed);
         }

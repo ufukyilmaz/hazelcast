@@ -18,12 +18,12 @@ public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationT
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);
-        createCacheDataIn(singleNodeA, classLoaderA, "my-cache-manager", "default", getMemoryFormat(), 0, 200, false);
+        createCacheDataIn(singleNodeA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 200, false);
         sleepSeconds(10);
         startClusterB();
-        checkCacheDataInFrom(clusterB, classLoaderB, "my-cache-manager", "default", 100, 200, singleNodeA);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 100, 200, singleNodeA);
         //One event comes from failure queue, others (between 1-100) should be dropped
-        checkCacheDataSize(clusterB, classLoaderB, "my-cache-manager", "default", 101);
+        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 101);
     }
 
     @Override

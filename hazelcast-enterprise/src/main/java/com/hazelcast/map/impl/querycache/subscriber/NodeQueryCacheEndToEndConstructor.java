@@ -1,11 +1,13 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
-import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.core.Member;
+import com.hazelcast.instance.AbstractMember;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.FutureUtil;
@@ -42,10 +44,11 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
 
     private Collection<QueryResultSet> createPublishersAndGetQueryResultSets(AccumulatorInfo info) {
         InvokerWrapper invokerWrapper = context.getInvokerWrapper();
-        Collection<MemberImpl> members = context.getMemberList();
+        Collection<Member> members = context.getMemberList();
         List<Future<QueryResultSet>> futures = new ArrayList<Future<QueryResultSet>>(members.size());
-        for (MemberImpl member : members) {
-            Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), member.getAddress());
+        for (Member member : members) {
+            Address address = ((AbstractMember) member).getAddress();
+            Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), address);
             futures.add(future);
         }
         return FutureUtil.returnWithDeadline(futures, PUBLISHER_CREATE_TIMEOUT_MINUTES, TimeUnit.MINUTES);

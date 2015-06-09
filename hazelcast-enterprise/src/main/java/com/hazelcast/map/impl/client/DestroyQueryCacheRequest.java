@@ -68,7 +68,12 @@ public class DestroyQueryCacheRequest extends InvocationClientRequest implements
         List<Future<Boolean>> futures = new ArrayList<Future<Boolean>>(members.size());
         createInvocations(members, futures);
         Collection<Boolean> results = FutureUtil.returnWithDeadline(futures, 1, TimeUnit.MINUTES);
-        getEndpoint().sendResponse(results, getCallId());
+        boolean response = reduce(results);
+        getEndpoint().sendResponse(response, getCallId());
+    }
+
+    private boolean reduce(Collection<Boolean> results) {
+        return !results.contains(Boolean.FALSE);
     }
 
     private void createInvocations(Collection<MemberImpl> members, List<Future<Boolean>> futures) {

@@ -50,16 +50,33 @@ public class AccumulatorInfo implements Portable {
         checkNotNull(config, "config cannot be null");
 
         AccumulatorInfo info = new AccumulatorInfo();
+        info.mapName = mapName;
+        info.cacheName = cacheName;
         info.batchSize = calculateBatchSize(config);
         info.bufferSize = config.getBufferSize();
         info.delaySeconds = config.getDelaySeconds();
         info.includeValue = config.isIncludeValue();
         info.populate = config.isPopulate();
-        info.mapName = mapName;
-        info.cacheName = cacheName;
-        info.publishable = false;
         info.predicate = getPredicate(config, predicate);
         info.coalesce = config.isCoalesce();
+        info.publishable = false;
+        return info;
+    }
+
+    public static AccumulatorInfo createAccumulatorInfo(String mapName, String cacheName, Predicate predicate,
+                                                        int batchSize, int bufferSize, long delaySeconds,
+                                                        boolean includeValue, boolean populate, boolean coalesce) {
+        AccumulatorInfo info = new AccumulatorInfo();
+        info.mapName = mapName;
+        info.cacheName = cacheName;
+        info.batchSize = batchSize;
+        info.bufferSize = bufferSize;
+        info.delaySeconds = delaySeconds;
+        info.includeValue = includeValue;
+        info.populate = populate;
+        info.predicate = predicate;
+        info.coalesce = coalesce;
+        info.publishable = false;
         return info;
     }
 

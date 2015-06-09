@@ -56,5 +56,9 @@
 
     <!-- Query Cache -->
     <suppress checks="MethodCountCheck" files="com.hazelcast.map.impl.querycache.subscriber.DefaultQueryCache"/>
+    <suppress checks="ParameterNumber" files="com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo"/>
+
+    <!-- CLIENT PROTOCOL -->
+    <suppress checks="" files="com.hazelcast.client.impl.protocol.template.*Template*"/>
 
 </suppressions>

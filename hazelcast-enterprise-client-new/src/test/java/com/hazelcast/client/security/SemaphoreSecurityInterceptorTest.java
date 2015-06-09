@@ -4,14 +4,12 @@ import com.hazelcast.concurrent.semaphore.SemaphoreService;
 import com.hazelcast.core.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;
@@ -35,7 +33,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test1_acquire() throws InterruptedException {
         semaphore.acquire();
-        interceptor.assertMethod(getObjectType(), objectName, "acquire",1);
+        interceptor.assertMethod(getObjectType(), objectName, "acquire", 1);
     }
 
     @Test
@@ -67,7 +65,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test1_release() {
         semaphore.release();
-        interceptor.assertMethod(getObjectType(), objectName, "release",1);
+        interceptor.assertMethod(getObjectType(), objectName, "release", 1);
     }
 
     @Test
@@ -80,7 +78,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void test1_tryAcquire() {
         semaphore.tryAcquire();
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire",1);
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", 1);
     }
 
     @Test
@@ -94,7 +92,7 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
     public void test3_tryAcquire() throws InterruptedException {
         final long timeout = randomLong() + 1;
         semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", 1,timeout, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", 1, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test

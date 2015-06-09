@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class MapSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

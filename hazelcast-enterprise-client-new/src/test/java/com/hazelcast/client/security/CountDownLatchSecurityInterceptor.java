@@ -11,7 +11,6 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class CountDownLatchSecurityInterceptor extends BaseInterceptorTest {
 
     String objectName;

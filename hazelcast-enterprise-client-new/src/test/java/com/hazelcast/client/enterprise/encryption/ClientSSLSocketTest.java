@@ -42,7 +42,6 @@ import static org.junit.Assert.assertEquals;
  */
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class ClientSSLSocketTest {
 
     @After

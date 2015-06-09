@@ -10,7 +10,6 @@ import org.junit.runner.RunWith;
 import java.util.HashSet;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
     @Test

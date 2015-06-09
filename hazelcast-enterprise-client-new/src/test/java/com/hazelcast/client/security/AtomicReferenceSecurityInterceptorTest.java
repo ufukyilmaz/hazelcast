@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Ignore
 public class AtomicReferenceSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

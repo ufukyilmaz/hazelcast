@@ -81,14 +81,4 @@ public class HiDensityStorageInfo {
         }
         return storageName.equals(((HiDensityStorageInfo) obj).storageName);
     }
-
-    @Override
-    public String toString() {
-        return "HiDensityStorageInfo{"
-                + "storageName=" + storageName
-                + ", entryCount=" + entryCount
-                + ", usedMemory=" + usedMemory
-                + '}';
-    }
-
 }

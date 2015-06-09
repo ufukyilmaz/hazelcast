@@ -102,6 +102,26 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     }
 
     @Test
+    public void recoverFromNativeOutOfMemory() {
+        NearCacheConfig nearCacheConfig =
+                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+        NearCacheContext nearCacheContext = createNearCacheContext();
+        NearCache<Integer, byte[]> nearCache =
+                new HiDensityNearCache<Integer, byte[]>(
+                        DEFAULT_NEAR_CACHE_NAME,
+                        nearCacheConfig,
+                        nearCacheContext);
+
+        final long finishTime = Clock.currentTimeMillis() + TIMEOUT;
+        for (int i = 0; Clock.currentTimeMillis() < finishTime; i++) {
+            byte[] value = new byte[128 * 1024 * 1024];
+            nearCache.put(i, value);
+            //Each put after 1st one should cause NativeOutOfMemory and force evict the previous entry
+            assertEquals(1, nearCache.size());
+        }
+    }
+
+    @Test
     public void putRemoveAndGetOnSoManyRecordsFromMultipleThreadsWithoutOOME() {
         NearCacheConfig nearCacheConfig =
                 createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);

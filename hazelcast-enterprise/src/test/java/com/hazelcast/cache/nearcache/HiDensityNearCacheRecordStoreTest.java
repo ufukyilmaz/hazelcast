@@ -205,9 +205,20 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     public void evictWithIllegalPercentageArgumentFreeNativeMemory() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,150);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void evictWithNegativePercentageArgumentFreeNativeMemory() {
+        doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,-1);
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void evictWithIllegalPercentageArgumentUsedNativeMemory() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE,150);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void evictWithNegativePercentageArgumentUsedNativeMemory() {
+        doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE,-1);
     }
 
     private void doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy evictionPolicy,

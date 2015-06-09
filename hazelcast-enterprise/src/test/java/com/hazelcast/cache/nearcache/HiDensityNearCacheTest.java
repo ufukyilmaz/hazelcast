@@ -9,10 +9,10 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,7 +28,11 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Override
     protected NearCacheContext createNearCacheContext() {
-        memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
+        return createNearCacheContext(DEFAULT_MEMORY_SIZE);
+    }
+
+    private NearCacheContext createNearCacheContext(MemorySize memorySize) {
+        memoryManager = new PoolingMemoryManager(memorySize);
         memoryManager.registerThread(Thread.currentThread());
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
@@ -133,6 +137,21 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Test
     public void putToNearCacheStatsAndSeeEvictionCheckIsDone() {
         doPutToNearCacheStatsAndSeeEvictionCheckIsDone();
+    }
+
+    @Test(expected = NativeOutOfMemoryError.class)
+    public void createEntryBiggerThanNativeMemory() {
+        MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
+        NearCacheConfig nearCacheConfig =
+                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+        NearCacheContext nearCacheContext = createNearCacheContext(memorySize);
+        NearCache<Integer, byte[]> nearCache =
+                new HiDensityNearCache<Integer, byte[]>(
+                        DEFAULT_NEAR_CACHE_NAME,
+                        nearCacheConfig,
+                        nearCacheContext);
+        byte[] value = new byte[40 * 1024 * 1024];
+        nearCache.put(1, value);
     }
 
 }

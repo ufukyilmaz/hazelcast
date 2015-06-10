@@ -76,7 +76,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     private String getValuePrefix() {
         Random random = new Random();
-        byte[] bytes = new byte[256];
+        byte[] bytes = new byte[512];
         random.nextBytes(bytes);
         return new String(bytes) + "_";
     }

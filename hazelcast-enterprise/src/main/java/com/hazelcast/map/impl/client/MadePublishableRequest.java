@@ -60,11 +60,9 @@ public class MadePublishableRequest extends AllPartitionsClientRequest implement
         return new MadePublishableOperationFactory(mapName, cacheName);
     }
 
-    // TODO implement this.
     @Override
     protected Object reduce(Map<Integer, Object> map) {
-        return null;
-
+        return !map.containsValue(Boolean.FALSE);
     }
 
     @Override

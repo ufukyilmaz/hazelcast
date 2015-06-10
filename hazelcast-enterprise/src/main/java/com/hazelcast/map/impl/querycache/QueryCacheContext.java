@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache;
 
-import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.core.Member;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.subscriber.SubscriberContext;
 import com.hazelcast.nio.Address;
@@ -74,7 +74,7 @@ public interface QueryCacheContext {
      *
      * @return Member list of the cluster.
      */
-    Collection<MemberImpl> getMemberList();
+    Collection<Member> getMemberList();
 
     /**
      * Returns {@link InvokerWrapper} for this context.

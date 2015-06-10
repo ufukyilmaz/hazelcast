@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.querycache;
 
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMapEvent;
+import com.hazelcast.core.Member;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.ListenerAdapter;
@@ -17,7 +18,9 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.NodeEngine;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Node side implementation of {@link QueryCacheContext}.
@@ -103,8 +106,11 @@ public class NodeQueryCacheContext implements QueryCacheContext {
     }
 
     @Override
-    public Collection<MemberImpl> getMemberList() {
-        return nodeEngine.getClusterService().getMemberList();
+    public Collection<Member> getMemberList() {
+        Collection<MemberImpl> memberList = nodeEngine.getClusterService().getMemberList();
+        List<Member> members = new ArrayList<Member>(memberList.size());
+        members.addAll(memberList);
+        return members;
     }
 
     @Override

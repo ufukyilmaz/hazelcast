@@ -23,7 +23,6 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
         sleepSeconds(20);
         startClusterB();//At least the last 100 should be on target
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 9900, 10000, singleNodeA);
-        checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 100);
     }
 
     @Override

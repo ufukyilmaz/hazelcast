@@ -4,7 +4,6 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.map.impl.client.EnterpriseMapPortableHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.Portable;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
@@ -16,10 +15,8 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * Metadata for an {@link Accumulator}.
- * <p/>
- * Note: This metadata is used in communications between: node <--> node and client <--> node
- * that is the reason it implements both {@link DataSerializable} and {@link Portable} interfaces.
- * See {@link com.hazelcast.map.impl.client.PublisherCreateRequest PublisherCreateRequest} for further information.
+ *
+ * This metadata is used in communications between: node <--> node and client <--> node.
  *
  * @see com.hazelcast.map.impl.client.PublisherCreateRequest
  * @see QueryCacheConfig

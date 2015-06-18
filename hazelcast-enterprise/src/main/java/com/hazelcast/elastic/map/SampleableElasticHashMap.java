@@ -180,7 +180,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     int segmentEnd = Math.min(segmentStart + segmentSize, end);
                     int ix = segmentStart + randomIndex;
                     // Find an allocated index to be sampled from current random index
-                    while (!isAllocated(ix) && ix < segmentEnd) {
+                    while (!isAssigned(ix) && ix < segmentEnd) {
                         ix = (ix + 1) & mask; // Move to right in right-half of bucket
                     }
                     if (ix < segmentEnd) {
@@ -205,7 +205,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     int segmentStart = currentSegmentNo * segmentSize;
                     int ix = segmentStart + randomIndex - 1;
                     // Find an allocated index to be sampled from current random index
-                    while (!isAllocated(ix) && ix >= segmentStart) {
+                    while (!isAssigned(ix) && ix >= segmentStart) {
                         ix = (ix - 1) & mask; // Move to left in left-half of bucket
                     }
                     if (ix >= segmentStart) {

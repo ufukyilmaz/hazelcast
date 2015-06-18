@@ -2,13 +2,18 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.serialization.*;
 import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
 * @author mdogan 07/01/14

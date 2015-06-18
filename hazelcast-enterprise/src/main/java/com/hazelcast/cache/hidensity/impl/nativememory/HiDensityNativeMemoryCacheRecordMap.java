@@ -79,7 +79,7 @@ public final class HiDensityNativeMemoryCacheRecordMap
         int ix = start;
         int k = 0;
         while (true) {
-            if (isAllocated(ix)) {
+            if (isAssigned(ix)) {
                 long key = getKey(ix);
                 NativeMemoryData keyData = recordProcessor.readData(key);
                 delete(keyData);

@@ -103,7 +103,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         int ix = start;
         int k = 0;
         while (true) {
-            if (isAllocated(ix)) {
+            if (isAssigned(ix)) {
                 long key = getKey(ix);
                 NativeMemoryData keyData = recordProcessor.readData(key);
                 R value = remove(keyData);
@@ -163,7 +163,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
         while (true) {
             shifted = false;
-            if (isAllocated(ix)) {
+            if (isAssigned(ix)) {
                 long key = getKey(ix);
                 NativeMemoryData keyData = recordProcessor.readData(key);
                 R value = get(keyData);
@@ -181,7 +181,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     recordProcessor.disposeData(keyData);
                     evictedEntryCount++;
                     // If disposed key is still allocated, this means next keys are shifted
-                    shifted = isAllocated(ix);
+                    shifted = isAssigned(ix);
                 }
             }
             if (!shifted) {

@@ -1,10 +1,25 @@
+/*
+ * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hazelcast.elastic.queue;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -25,10 +40,11 @@ import java.util.concurrent.locks.LockSupport;
 @Category(QuickTest.class)
 public class LongConcurrentQueueTest {
 
-    private static final int MAX_VALUE = 999999;
-    private static final long NULL = MAX_VALUE + 1;
+    private static final int MAX_VALUE = 1000000;
+    private static final long NULL = 0L;
+    private static final int WORKER_COUNT = 8;
 
-    private MemoryAllocator malloc;
+    private MemoryManager malloc;
     private LongQueue queue;
 
     @Before
@@ -41,6 +57,7 @@ public class LongConcurrentQueueTest {
         if (queue != null) {
             queue.destroy();
         }
+        malloc.destroy();
     }
 
     @Test
@@ -62,10 +79,9 @@ public class LongConcurrentQueueTest {
     }
 
     private void testProduceConsume() throws InterruptedException {
-        int pairs = 8;
-        QueueWorker[] workers = new QueueWorker[pairs * 2];
+        QueueWorker[] workers = new QueueWorker[WORKER_COUNT * 2];
         int ix = 0;
-        for (int i = 0; i < pairs; i++) {
+        for (int i = 0; i < WORKER_COUNT; i++) {
             Producer p = new Producer(queue);
             workers[ix++] = p;
 
@@ -98,6 +114,7 @@ public class LongConcurrentQueueTest {
         final LongQueue queue;
         final CountDownLatch latch = new CountDownLatch(1);
         Throwable error;
+        int counter;
 
         protected QueueWorker(LongQueue queue) {
             this.queue = queue;
@@ -106,11 +123,9 @@ public class LongConcurrentQueueTest {
         @Override
         public final void run() {
             try {
-                for (int i = 0; i < ITERATIONS && error == null; i++) {
+                while (!isDone() && error == null) {
                     try {
                         runInternal();
-                    } catch (NativeOutOfMemoryError e) {
-                        LockSupport.parkNanos(1);
                     } catch (Throwable t) {
                         error = t;
                         break;
@@ -125,23 +140,28 @@ public class LongConcurrentQueueTest {
             return latch.await(time, unit);
         }
 
+        private boolean isDone() {
+            return counter == ITERATIONS;
+        }
+
         protected abstract void runInternal();
     }
 
     private static class Producer extends QueueWorker {
         final Random rand = new Random();
-        final boolean hasCapacity = queue.capacity() < Integer.MAX_VALUE;
 
         private Producer(LongQueue queue) {
             super(queue);
+            setName("Producer-" + getId());
         }
 
         @Override
         public void runInternal() {
-            long value = rand.nextInt(MAX_VALUE);
-            boolean offered = queue.offer(value);
-            if (!hasCapacity && !offered) {
-                error = new AssertionError("Offer failed! -> " + queue);
+            long value = rand.nextInt(MAX_VALUE) + 1;
+            if (queue.offer(value)) {
+                counter++;
+            } else {
+                LockSupport.parkNanos(1);
             }
         }
     }
@@ -157,9 +177,15 @@ public class LongConcurrentQueueTest {
             long value = queue.poll();
             if (value == NULL) {
                 LockSupport.parkNanos(1);
-            } else if (value < 0 || value > MAX_VALUE) {
-                error = new AssertionError("Invalid value: " + value);
+                return;
             }
+
+            if (value < 0 || value > MAX_VALUE) {
+                error = new AssertionError("Invalid value: " + value);
+                return;
+            }
+
+            counter++;
         }
     }
 

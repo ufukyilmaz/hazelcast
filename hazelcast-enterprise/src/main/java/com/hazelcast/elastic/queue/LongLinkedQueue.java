@@ -64,9 +64,14 @@ public final class LongLinkedQueue implements LongQueue {
         UnsafeHelper.UNSAFE.putLong(node + NEXT_OFFSET, value);
     }
 
+    @Override
     public boolean offer(long value) {
-        assert value != nullItem;
-
+        if (tail == NULL_PTR) {
+            throw new IllegalStateException("Queue is already destroyed! " + toString());
+        }
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
         if (hasCapacity && size == capacity) {
             return false;
         }
@@ -77,7 +82,9 @@ public final class LongLinkedQueue implements LongQueue {
         return true;
     }
 
+    @Override
     public long poll() {
+        ensureMemory();
         if (size == 0) {
             return nullItem;
         }
@@ -95,7 +102,9 @@ public final class LongLinkedQueue implements LongQueue {
         return item;
     }
 
+    @Override
     public long peek() {
+        ensureMemory();
         if (size == 0) {
             return nullItem;
         }
@@ -107,27 +116,33 @@ public final class LongLinkedQueue implements LongQueue {
         }
     }
 
+    @Override
     public int size() {
         long c = size;
         return c < Integer.MAX_VALUE ? (int) c : Integer.MAX_VALUE;
     }
 
+    @Override
     public boolean isEmpty() {
         return size == 0;
     }
 
+    @Override
     public int capacity() {
         return capacity;
     }
 
+    @Override
     public int remainingCapacity() {
         return hasCapacity ? capacity - size() : Integer.MAX_VALUE ;
     }
 
+    @Override
     public void clear() {
         while (poll() != nullItem);
     }
 
+    @Override
     public void destroy() {
         if (head != NULL_PTR) {
             clear();
@@ -137,15 +152,25 @@ public final class LongLinkedQueue implements LongQueue {
             if (ptr != NULL_PTR) {
                 malloc.free(ptr, NODE_SIZE);
             }
+            head = tail = NULL_PTR;
         }
     }
 
+    @Override
     public long nullItem() {
         return nullItem;
     }
 
+    @Override
     public LongIterator iterator() {
+        ensureMemory();
         return new Iter();
+    }
+
+    private void ensureMemory() {
+        if (head == NULL_PTR) {
+            throw new IllegalStateException("Queue is already destroyed! " + toString());
+        }
     }
 
     private class Iter implements LongIterator {
@@ -155,19 +180,23 @@ public final class LongLinkedQueue implements LongQueue {
             reset();
         }
 
+        @Override
         public boolean hasNext() {
             return currentNode != NULL_PTR;
         }
 
+        @Override
         public long next() {
             if (currentNode == NULL_PTR) {
                 throw new NoSuchElementException();
             }
+            ensureMemory();
             long item = getItem(currentNode);
             currentNode = getNextNode(currentNode);
             return item;
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -176,6 +205,18 @@ public final class LongLinkedQueue implements LongQueue {
         public void reset() {
             currentNode = getNextNode(head);
         }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("LongLinkedQueue{");
+        sb.append("nullItem=").append(nullItem);
+        sb.append(", capacity=").append(capacity);
+        sb.append(", head=").append(head);
+        sb.append(", tail=").append(tail);
+        sb.append(", size=").append(size);
+        sb.append('}');
+        return sb.toString();
     }
 }
 

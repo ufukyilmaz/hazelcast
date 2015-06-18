@@ -224,6 +224,10 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
     }
 
+    public void doEviction() {
+
+    }
+
     /**
      * Represents a segment block (lockable by a thread) in this near-cache storage
      */

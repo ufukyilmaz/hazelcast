@@ -1,22 +1,27 @@
 package com.hazelcast.elastic.set;
 
+import com.hazelcast.elastic.CapacityUtil;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.HashUtil;
-import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.Callable;
 
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.elastic.CapacityUtil.MIN_CAPACITY;
+import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
+import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 /**
  * A hash set of <code>long</code>s, implemented using using open
  * addressing with linear probing for collision resolution.
  *
  * <p>
- * The internal buffers of this implementation ({@link #keys},
- * {@link #allocated}) are always allocated to the nearest size that is a power of two. When
+ * The internal buffer of this implementation
+ * {@link #allocated}) is always allocated to the nearest size that is a power of two. When
  * the capacity exceeds the given load factor, the buffer size is doubled.
  * </p>
  *
@@ -25,27 +30,13 @@ import java.util.concurrent.Callable;
  */
 public class LongHashSet implements LongSet {
 
-    private static final long allocationFactor = 9L;
+    private static final long ENTRY_LENGTH = 12L;
 
-    protected final MemoryAllocator malloc;
+    private final MemoryAllocator malloc;
 
-    private long baseAddress;
+    private long address;
 
-    /**
-     * Hash-indexed array holding all keys.
-     *
-     */
-    private long keys; // long[] keys
-
-    /**
-     * Information if an entry (slot) in the {@link #keys} table is allocated
-     * or empty.
-     *
-     * @see #assigned
-     */
-    private long allocated;  // boolean[] allocated
-
-    private int allocatedLength;
+    private int allocated;
 
     /**
      * Cached number of assigned slots in {@link #allocated}.
@@ -59,7 +50,7 @@ public class LongHashSet implements LongSet {
     private final float loadFactor;
 
     /**
-     * Resize buffers when {@link #allocatedLength} hits this value.
+     * Resize buffers when {@link #allocated} hits this value.
      */
     private int resizeAt;
 
@@ -72,8 +63,8 @@ public class LongHashSet implements LongSet {
     private int perturbation;
 
     /**
-     * Creates a hash map with the default capacity of {@value #DEFAULT_CAPACITY},
-     * load factor of {@value #DEFAULT_LOAD_FACTOR}.
+     * Creates a hash map with the default capacity of {@value CapacityUtil#DEFAULT_CAPACITY},
+     * load factor of {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public LongHashSet(MemoryAllocator malloc) {
         this(DEFAULT_CAPACITY, malloc);
@@ -81,7 +72,7 @@ public class LongHashSet implements LongSet {
 
     /**
      * Creates a hash map with the given initial capacity, default load factor of
-     * {@value #DEFAULT_LOAD_FACTOR}.
+     * {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      *
      * @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
@@ -113,41 +104,14 @@ public class LongHashSet implements LongSet {
         allocateBuffers(roundCapacity(initialCapacity));
     }
 
-    /**
-     * Round the capacity to the next allowed value.
-     */
-    public static int roundCapacity(int requestedCapacity) {
-        if (requestedCapacity > MAX_CAPACITY)
-            return MAX_CAPACITY;
-
-        return Math.max(MIN_CAPACITY, QuickMath.nextPowerOfTwo(requestedCapacity));
-    }
-
-    /**
-     * Return the next possible capacity, counting from the current buffers'
-     * size.
-     */
-    public static int nextCapacity(int current) {
-        assert current > 0 && Long.bitCount(current) == 1 : "Capacity must be a power of two.";
-
-        if (current < MIN_CAPACITY / 2) {
-            current = MIN_CAPACITY / 2;
-        }
-
-        current <<= 1;
-        if (current < 0) {
-            throw new RuntimeException("Maximum capacity exceeded.");
-        }
-        return current;
-    }
-
     @Override
     public boolean add(long key) {
-        assert assigned < allocatedLength;
+        ensureMemory();
+        assert assigned < allocated;
 
-        final int mask = allocatedLength - 1;
+        final int mask = allocated - 1;
         int slot = rehash(key, perturbation) & mask;
-        while (isAllocated(slot)) {
+        while (isAssigned(slot)) {
             long slotKey = getKey(slot);
             if (slotKey == key) {
                 return false;
@@ -161,7 +125,7 @@ public class LongHashSet implements LongSet {
             expandAndAdd(key, slot);
         } else {
             assigned++;
-            setAllocated(slot, true);
+            setAssigned(slot, true);
             setKey(slot, key);
         }
         return true;
@@ -172,39 +136,37 @@ public class LongHashSet implements LongSet {
      */
     private void expandAndAdd(long pendingKey, int freeSlot) {
         assert assigned == resizeAt;
-        assert !isAllocated(freeSlot);
+        assert !isAssigned(freeSlot);
 
         // Try to allocate new buffers first. If we OOM, it'll be now without
         // leaving the data structure in an inconsistent state.
-        final long oldAddress = baseAddress;
-        final long oldKeys = keys;
-        final long oldAllocated = allocated;
-        final int oldAllocatedLength = allocatedLength;
+        final long oldAddress = address;
+        final int oldAllocated = allocated;
 
-        allocateBuffers(nextCapacity(allocatedLength));
+        allocateBuffers(nextCapacity(allocated));
 
         // We have succeeded at allocating new data so insert the pending key/value at
         // the free slot in the temp arrays before rehashing.
         assigned++;
-        writeBool(oldAllocated, freeSlot, true);
-        writeLong(oldKeys, freeSlot, pendingKey);
+        setAssigned(oldAddress, freeSlot, true);
+        setKey(oldAddress, freeSlot, pendingKey);
 
         // Rehash all stored keys into the new buffers.
-        final int mask = allocatedLength - 1;
-        for (int i = oldAllocatedLength; --i >= 0; ) {
-            if (readBool(oldAllocated, i)) {
-                final long key = readLong(oldKeys, i);
+        final int mask = allocated - 1;
+        for (int slot = oldAllocated; --slot >= 0; ) {
+            if (isAssigned(oldAddress, slot)) {
+                long key = getKey(oldAddress, slot);
 
-                int slot = rehash(key, perturbation) & mask;
-                while (isAllocated(slot)) {
-                    slot = (slot + 1) & mask;
+                int newSlot = rehash(key, perturbation) & mask;
+                while (isAssigned(newSlot)) {
+                    newSlot = (newSlot + 1) & mask;
                 }
 
-                setAllocated(slot, true);
-                setKey(slot, key);
+                setAssigned(newSlot, true);
+                setKey(newSlot, key);
             }
         }
-        malloc.free(oldAddress, oldAllocatedLength * allocationFactor);
+        malloc.free(oldAddress, oldAllocated * ENTRY_LENGTH);
     }
 
     /**
@@ -214,24 +176,22 @@ public class LongHashSet implements LongSet {
      */
 
     private void allocateBuffers(int capacity) {
-        long allocationCapacity = capacity * allocationFactor;
-        baseAddress = malloc.allocate(allocationCapacity);
-        UnsafeHelper.UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
+        long allocationCapacity = capacity * ENTRY_LENGTH;
+        address = malloc.allocate(allocationCapacity);
+        UnsafeHelper.UNSAFE.setMemory(address, allocationCapacity, (byte) 0);
 
-        keys = baseAddress;
-        allocated = baseAddress + (capacity * 8L);
-
-        allocatedLength = capacity;
+        allocated = capacity;
         resizeAt = Math.max(2, (int) Math.ceil(capacity * loadFactor)) - 1;
         perturbation = computePerturbationValue(capacity);
     }
 
     @Override
     public boolean remove(long key) {
-        final int mask = allocatedLength - 1;
+        ensureMemory();
+        final int mask = allocated - 1;
         int slot = rehash(key, perturbation) & mask;
         final int wrappedAround = slot;
-        while (isAllocated(slot)) {
+        while (isAssigned(slot)) {
             long slotKey = getKey(slot);
             if (slotKey == key) {
                 assigned--;
@@ -250,12 +210,12 @@ public class LongHashSet implements LongSet {
      */
     protected void shiftConflictingKeys(int slotCurr) {
         // Copied nearly verbatim from fastutil's impl.
-        final int mask = allocatedLength - 1;
+        final int mask = allocated - 1;
         int slotPrev, slotOther;
         while (true) {
             slotCurr = ((slotPrev = slotCurr) + 1) & mask;
 
-            while (isAllocated(slotCurr)) {
+            while (isAssigned(slotCurr)) {
                 slotOther = rehash(getKey(slotCurr), perturbation) & mask;
 
                 if (slotPrev <= slotCurr) {
@@ -270,7 +230,7 @@ public class LongHashSet implements LongSet {
                 slotCurr = (slotCurr + 1) & mask;
             }
 
-            if (!isAllocated(slotCurr)) {
+            if (!isAssigned(slotCurr)) {
                 break;
             }
 
@@ -278,16 +238,17 @@ public class LongHashSet implements LongSet {
             setKey(slotPrev, getKey(slotCurr));
         }
 
-        setAllocated(slotPrev, false);
+        setAssigned(slotPrev, false);
         setKey(slotPrev, 0L);
     }
 
     @Override
     public boolean contains(long key) {
-        final int mask = allocatedLength - 1;
+        ensureMemory();
+        final int mask = allocated - 1;
         int slot = rehash(key, perturbation) & mask;
         final int wrappedAround = slot;
-        while (isAllocated(slot)) {
+        while (isAssigned(slot)) {
             long slotKey = getKey(slot);
             if (slotKey == key) {
                 return true;
@@ -300,6 +261,7 @@ public class LongHashSet implements LongSet {
 
     @Override
     public LongIterator iterator() {
+        ensureMemory();
         return new KeysIter();
     }
 
@@ -320,8 +282,9 @@ public class LongHashSet implements LongSet {
         }
 
         private int advance() {
-            for (int slot = nextSlot + 1; slot < allocatedLength; slot++) {
-                if (isAllocated(slot)) {
+            ensureMemory();
+            for (int slot = nextSlot + 1; slot < allocated; slot++) {
+                if (isAssigned(slot)) {
                     return slot;
                 }
             }
@@ -347,6 +310,14 @@ public class LongHashSet implements LongSet {
             }
             assigned--;
             shiftConflictingKeys(currentSlot);
+
+            // if current slot is assigned after
+            // removal and shift
+            // then it means entry in the next slot
+            // is moved to current slot
+            if (isAssigned(currentSlot)) {
+                nextSlot = currentSlot;
+            }
         }
 
         @Override
@@ -362,24 +333,23 @@ public class LongHashSet implements LongSet {
      */
     @Override
     public void clear() {
-        if (baseAddress > 0L) {
+        ensureMemory();
+        if (address > 0L) {
             assigned = 0;
             Unsafe unsafe = UnsafeHelper.UNSAFE;
-            unsafe.setMemory(keys, allocatedLength * 8L, (byte) 0);
-            unsafe.setMemory(allocated, allocatedLength, (byte) 0);
+            unsafe.setMemory(address, allocated * ENTRY_LENGTH, (byte) 0);
         }
     }
 
     @Override
     public void destroy() {
         assigned = 0;
-        if (baseAddress > 0L) {
-            malloc.free(baseAddress, allocatedLength * allocationFactor);
+        if (address > 0L) {
+            malloc.free(address, allocated * ENTRY_LENGTH);
         }
-        allocatedLength = 0;
-        baseAddress = -1L;
-        keys = -1L;
-        allocated = -1L;
+        allocated = 0;
+        address = -1L;
+        allocated = -1;
         resizeAt = 0;
     }
 
@@ -389,7 +359,7 @@ public class LongHashSet implements LongSet {
     }
 
     public int capacity() {
-        return allocatedLength;
+        return allocated;
     }
 
     @Override
@@ -397,36 +367,40 @@ public class LongHashSet implements LongSet {
         return size() == 0;
     }
 
-    protected long getKey(int index) {
-        return UnsafeHelper.UNSAFE.getLong(keys + (index * 8L));
+    protected final boolean isAssigned(int slot) {
+        return isAssigned(address, slot);
     }
 
-    private void setKey(int index, long key) {
-        UnsafeHelper.UNSAFE.putLong(keys + (index * 8L), key);
+    private void setAssigned(int slot, boolean value) {
+        setAssigned(address, slot, value);
     }
 
-    protected boolean isAllocated(int index) {
-        return UnsafeHelper.UNSAFE.getByte(allocated + index) != 0;
+    protected final long getKey(int slot) {
+        return getKey(address, slot);
     }
 
-    private void setAllocated(int index, boolean b) {
-        UnsafeHelper.UNSAFE.putByte(allocated + index, (byte) (b ? 1 : 0));
+    private void setKey(int slot, long key) {
+        setKey(address, slot, key);
     }
 
-    protected static long readLong(long address, int index) {
-        return UnsafeHelper.UNSAFE.getLong(address + (index * 8L));
+    private static boolean isAssigned(long address, int slot) {
+        long offset = slot * ENTRY_LENGTH;
+        return UnsafeHelper.UNSAFE.getByte(address + offset) != 0;
     }
 
-    private static void writeLong(long address, int index, long value) {
-        UnsafeHelper.UNSAFE.putLong(address + (index * 8L), value);
+    private static void setAssigned(long address, int slot, boolean value) {
+        long offset = slot * ENTRY_LENGTH;
+        UnsafeHelper.UNSAFE.putByte(address + offset, (byte) (value ? 1 : 0));
     }
 
-    protected static boolean readBool(long address, int index) {
-        return UnsafeHelper.UNSAFE.getByte(address + index) != 0;
+    private static long getKey(long address, int slot) {
+        long offset = slot * ENTRY_LENGTH + 4;
+        return UnsafeHelper.UNSAFE.getLong(address + offset);
     }
 
-    private static void writeBool(long address, int index, boolean b) {
-        UnsafeHelper.UNSAFE.putByte(address + index, (byte) (b ? 1 : 0));
+    private static void setKey(long address, int slot, long key) {
+        long offset = slot * ENTRY_LENGTH + 4;
+        UnsafeHelper.UNSAFE.putLong(address + offset, key);
     }
 
     private static int rehash(long o, int p) {
@@ -464,11 +438,17 @@ public class LongHashSet implements LongSet {
         return PERTURBATIONS[Integer.numberOfLeadingZeros(capacity)];
     }
 
+    private void ensureMemory() {
+        if (address < 0L) {
+            throw new IllegalStateException("Set is already destroyed!");
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LongHashSet{");
-        sb.append("baseAddress=").append(baseAddress);
-        sb.append(", allocatedLength=").append(allocatedLength);
+        sb.append("address=").append(address);
+        sb.append(", allocated=").append(allocated);
         sb.append(", assigned=").append(assigned);
         sb.append(", loadFactor=").append(loadFactor);
         sb.append(", resizeAt=").append(resizeAt);

@@ -76,7 +76,9 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
     }
 
     public boolean offer(long value) {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         if (hasCapacity && size.get() == capacity) {
             return false;
@@ -108,7 +110,9 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
     }
 
     public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         long nanos = unit.toNanos(timeout);
         long c = -1;
@@ -144,7 +148,9 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
     }
 
     public void put(long value) throws InterruptedException {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         long c = -1;
         tailLock.lock();

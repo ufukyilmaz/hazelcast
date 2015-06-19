@@ -113,6 +113,9 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     private boolean tryToPutByEvictingOnOtherNearCaches(K key, V value) {
+        if (nearCacheManager == null) {
+            return false;
+        }
         NativeOutOfMemoryError oomeError = null;
         boolean anyOtherAvailableNearCacheToEvict = false;
         Collection<NearCache> nearCacheList = nearCacheManager.listAllNearCaches();

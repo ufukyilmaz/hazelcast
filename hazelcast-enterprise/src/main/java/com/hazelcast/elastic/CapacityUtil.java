@@ -30,7 +30,8 @@ public class CapacityUtil {
      */
     public static int roundCapacity(int requestedCapacity) {
         if (requestedCapacity > MAX_CAPACITY) {
-            return MAX_CAPACITY;
+            throw new IllegalArgumentException(requestedCapacity + " is greater than max allowed capacity["
+                + MAX_CAPACITY + "].");
         }
 
         return Math.max(MIN_CAPACITY, QuickMath.nextPowerOfTwo(requestedCapacity));

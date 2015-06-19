@@ -37,7 +37,7 @@ import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
  * addressing with linear probing for collision resolution.
  * <p>
  * The internal buffer of this implementation is
- * always allocated to the nearest size that is a power of two. When
+ * always allocated to the nearest higher size that is a power of two. When
  * the capacity exceeds the given load factor, the buffer size is doubled.
  * </p>
  *
@@ -46,10 +46,18 @@ import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
  */
 public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<Data, V> {
 
-    private static final long ENTRY_LENGTH = 20L;
-    private static final int ASSIGNED_OFFSET = 0;
-    private static final int KEY_OFFSET = 4;
-    private static final int VALUE_OFFSET = 12;
+    /**
+     * An entry consists only a key pointer (8 bytes) and a value pointer (8 bytes)
+     */
+    private static final long ENTRY_LENGTH = 16L;
+    /**
+     * Position of key pointer in an entry
+     */
+    private static final int KEY_OFFSET = 0;
+    /**
+     * Position of value pointer in an entry
+     */
+    private static final int VALUE_OFFSET = 8;
 
     protected final MemoryBlockProcessor<V> memoryBlockProcessor;
 
@@ -124,8 +132,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             EnterpriseSerializationService serializationService,
             MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         this(initialCapacity, loadFactor,
-                new BinaryElasticHashMapMemoryBlockProcessor<V>(serializationService,
-                        memoryBlockAccessor, malloc));
+                new BinaryElasticHashMapMemoryBlockProcessor<V>(serializationService, memoryBlockAccessor, malloc));
     }
 
     /**
@@ -214,7 +221,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             expandAndPut(memKey.address(), value.address(), slot);
         } else {
             assigned++;
-            setAssigned(slot, true);
             setKey(slot, memKey.address());
             setValue(slot, value.address());
         }
@@ -316,7 +322,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         // We have succeeded at allocating new data so insert the pending key/value at
         // the free slot in the temp arrays before rehashing.
         assigned++;
-        setAssigned(oldAddress, freeSlot, true);
         setKey(oldAddress, freeSlot, pendingKey);
         setValue(oldAddress, freeSlot, pendingValue);
 
@@ -332,7 +337,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                     newSlot = (newSlot + 1) & mask;
                 }
 
-                setAssigned(newSlot, true);
                 setKey(newSlot, key);
                 setValue(newSlot, value);
             }
@@ -443,7 +447,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             setValue(slotPrev, getValue(slotCurr));
         }
 
-        setAssigned(slotPrev, false);
         setKey(slotPrev, 0L);
         setValue(slotPrev, 0L);
     }
@@ -778,10 +781,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return isAssigned(address, slot);
     }
 
-    private void setAssigned(int slot, boolean value) {
-        setAssigned(address, slot, value);
-    }
-
     protected final long getKey(int slot) {
         return getKey(address, slot);
     }
@@ -799,13 +798,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private static boolean isAssigned(long address, int slot) {
-        long offset = slot * ENTRY_LENGTH + ASSIGNED_OFFSET;
-        return UnsafeHelper.UNSAFE.getByte(address + offset) != 0;
-    }
-
-    private static void setAssigned(long address, int slot, boolean value) {
-        long offset = slot * ENTRY_LENGTH + ASSIGNED_OFFSET;
-        UnsafeHelper.UNSAFE.putByte(address + offset, (byte) (value ? 1 : 0));
+        return getKey(address, slot) != 0L;
     }
 
     private static long getKey(long address, int slot) {

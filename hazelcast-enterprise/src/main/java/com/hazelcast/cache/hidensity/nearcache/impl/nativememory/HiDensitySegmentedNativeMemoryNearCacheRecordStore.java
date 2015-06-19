@@ -4,9 +4,12 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -24,6 +27,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final NearCacheConfig nearCacheConfig;
     private final NearCacheStatsImpl nearCacheStats;
     private final HiDensityStorageInfo storageInfo;
+    private final MemoryManager memoryManager;
 
     private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final int hashSeed;
@@ -57,6 +61,15 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
                             nearCacheContext,
                             nearCacheStats,
                             storageInfo);
+        }
+        EnterpriseSerializationService serializationService =
+                (EnterpriseSerializationService) nearCacheContext.getSerializationService();
+
+        MemoryManager mm = serializationService.getMemoryManager();
+        if (mm instanceof PoolingMemoryManager) {
+            this.memoryManager = ((PoolingMemoryManager) mm).getGlobalMemoryManager();
+        } else {
+            this.memoryManager = mm;
         }
     }
     //CHECKSTYLE:ON
@@ -202,8 +215,9 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public void doExpiration() {
         checkAvailable();
 
+        Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
-            if (Thread.currentThread().isInterrupted()) {
+            if (currentThread.isInterrupted()) {
                 return;
             }
             HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
@@ -215,8 +229,9 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     public void doEvictionIfRequired() {
         checkAvailable();
 
+        Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
-            if (Thread.currentThread().isInterrupted()) {
+            if (currentThread.isInterrupted()) {
                 return;
             }
             HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
@@ -224,8 +239,23 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
     }
 
+    @Override
     public void doEviction() {
+        checkAvailable();
 
+        Thread currentThread = Thread.currentThread();
+        for (int i = 0; i < segments.length; i++) {
+            if (currentThread.isInterrupted()) {
+                return;
+            }
+            HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
+            segment.doEviction();
+        }
+    }
+
+    @Override
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
     }
 
     /**
@@ -330,6 +360,17 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
                 lock.unlock();
             }
         }
+
+        @Override
+        public void doEviction() {
+            lock.lock();
+            try {
+                super.doEviction();
+            } finally {
+                lock.unlock();
+            }
+        }
+
     }
 
 }

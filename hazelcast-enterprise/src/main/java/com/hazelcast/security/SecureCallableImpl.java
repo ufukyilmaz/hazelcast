@@ -199,11 +199,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             checkPermission(new MultiMapPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new MultiMapInvocationHandler(instance.getMultiMap(name)));
 		}
-		public ILock getLock(final Object key) {
-            final String name = LockProxy.convertToStringKey(key, node.getSerializationService());
-            checkPermission(new LockPermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new ILockInvocationHandler(instance.getLock(name)));
-		}
 		public IExecutorService getExecutorService(final String name) {
             checkPermission(new ExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ExecutorServiceInvocationHandler(instance.getExecutorService(name)));

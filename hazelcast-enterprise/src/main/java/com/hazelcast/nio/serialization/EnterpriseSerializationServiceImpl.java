@@ -25,6 +25,8 @@ import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.bufferpool.BufferPool;
+import com.hazelcast.nio.serialization.bufferpool.BufferPoolFactory;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -47,11 +49,12 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             Map<Integer, ? extends PortableFactory> portableFactories, Collection<ClassDefinition> classDefinitions,
             boolean checkClassDefErrors, ManagedContext managedContext, PartitioningStrategy partitionStrategy,
             int initialOutputBufferSize, boolean enableCompression, boolean enableSharedObject,
+                                              BufferPoolFactory bufferPoolFactory,
             MemoryManager memoryManager) {
 
         super(inputOutputFactory, version, classLoader, dataSerializableFactories, portableFactories, classDefinitions,
               checkClassDefErrors, managedContext, partitionStrategy, initialOutputBufferSize, enableCompression,
-              enableSharedObject);
+              enableSharedObject, bufferPoolFactory);
 
         this.memoryManager = memoryManager;
     }
@@ -111,7 +114,8 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             throw new IllegalArgumentException("MemoryManager is required!");
         }
 
-        EnterpriseBufferObjectDataOutput out = (EnterpriseBufferObjectDataOutput) pop();
+        BufferPool pool = bufferPoolThreadLocal.get();
+        EnterpriseBufferObjectDataOutput out = (EnterpriseBufferObjectDataOutput) pool.takeOutputBuffer();
         try {
             SerializerAdapter serializer = serializerFor(obj.getClass());
 
@@ -139,7 +143,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         } catch (Throwable e) {
             throw handleException(e);
         } finally {
-            push(out);
+            pool.returnOutputBuffer(out);
         }
     }
 

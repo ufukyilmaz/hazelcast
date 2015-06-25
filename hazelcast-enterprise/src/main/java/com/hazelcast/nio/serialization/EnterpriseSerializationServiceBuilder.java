@@ -6,6 +6,7 @@ import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.nio.serialization.bufferpool.BufferPoolFactory;
 
 import java.nio.ByteOrder;
 
@@ -13,7 +14,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         implements SerializationServiceBuilder {
 
     private MemoryManager memoryManager;
-
+    private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
 
     public EnterpriseSerializationServiceBuilder setMemoryManager(MemoryManager memoryManager) {
         this.memoryManager = memoryManager;
@@ -110,7 +111,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         return new EnterpriseSerializationServiceImpl(inputOutputFactory, version,
                 classLoader, dataSerializableFactories,
                 portableFactories, classDefinitions, checkClassDefErrors, managedContext, partitioningStrategy,
-                initialOutputBufferSize, enableCompression, enableSharedObject, memoryManager);
+                initialOutputBufferSize, enableCompression, enableSharedObject, bufferPoolFactory, memoryManager);
     }
 
     protected InputOutputFactory createInputOutputFactory() {

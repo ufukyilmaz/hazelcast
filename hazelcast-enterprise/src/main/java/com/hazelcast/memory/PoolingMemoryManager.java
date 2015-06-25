@@ -178,6 +178,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         gc();
     }
 
+    @Override
     public final void gc() {
         if (!threadLocalManagers.isEmpty()) {
             Iterator<Map.Entry<Thread, MemoryManager>> iter = threadLocalManagers.entrySet().iterator();
@@ -193,6 +194,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
     }
 
+    @Override
     public MemoryStats getMemoryStats() {
         return memoryStats;
     }

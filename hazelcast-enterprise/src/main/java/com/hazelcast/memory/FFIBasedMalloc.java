@@ -15,6 +15,7 @@ abstract class FFIBasedMalloc implements LibMalloc {
 
     protected abstract String libraryName();
 
+    @Override
     public final long malloc(long size) {
         long address = malloc.malloc(size);
         if (address <= 0L) {
@@ -23,6 +24,7 @@ abstract class FFIBasedMalloc implements LibMalloc {
         return address;
     }
 
+    @Override
     public final void free(long address) {
         malloc.free(address);
     }

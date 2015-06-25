@@ -10,6 +10,7 @@ import javax.security.auth.spi.LoginModule;
 
 public class DefaultLoginModule extends ClusterLoginModule implements LoginModule {
 
+    @Override
     public boolean onLogin() throws LoginException {
         if (credentials instanceof UsernamePasswordCredentials) {
             final UsernamePasswordCredentials usernamePasswordCredentials = (UsernamePasswordCredentials) credentials;
@@ -31,14 +32,17 @@ public class DefaultLoginModule extends ClusterLoginModule implements LoginModul
         return false;
     }
 
+    @Override
     public boolean onCommit() throws LoginException {
         return loginSucceeded;
     }
 
+    @Override
     protected boolean onAbort() throws LoginException {
         return true;
     }
 
+    @Override
     protected boolean onLogout() throws LoginException {
         return true;
     }

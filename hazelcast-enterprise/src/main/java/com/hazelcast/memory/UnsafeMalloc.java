@@ -7,10 +7,12 @@ import com.hazelcast.nio.UnsafeHelper;
  */
 public final class UnsafeMalloc implements LibMalloc {
 
+    @Override
     public long malloc(long size) {
         return UnsafeHelper.UNSAFE.allocateMemory(size);
     }
 
+    @Override
     public void free(long address) {
         UnsafeHelper.UNSAFE.freeMemory(address);
     }

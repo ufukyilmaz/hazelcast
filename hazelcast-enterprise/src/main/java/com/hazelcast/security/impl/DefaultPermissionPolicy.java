@@ -43,6 +43,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
 
     volatile ConfigPatternMatcher configPatternMatcher;
 
+    @Override
     public void configure(Config config, Properties properties) {
         logger.log(Level.FINEST, "Configuring and initializing policy.");
         this.configPatternMatcher = config.getConfigPatternMatcher();
@@ -69,6 +70,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
         }
     }
 
+    @Override
     public PermissionCollection getPermissions(Subject subject, Class<? extends Permission> type) {
         final ClusterPrincipal principal = getPrincipal(subject);
         if (principal == null) {
@@ -181,6 +183,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             this.endpoint = endpoint;
         }
 
+        @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
@@ -191,6 +194,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             return result;
         }
 
+        @Override
         public boolean equals(Object obj) {
             if (this == obj)
                 return true;
@@ -220,6 +224,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
                 new ConcurrentHashMap<Class<? extends Permission>, PermissionCollection>();
     }
 
+    @Override
     public void destroy() {
         principalPermissions.clear();
         configPermissions.clear();

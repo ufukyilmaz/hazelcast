@@ -43,7 +43,6 @@ public class NodeInvokerWrapper implements InvokerWrapper {
         return operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, factory);
     }
 
-
     @Override
     public Future invokeOnTarget(Object operation, Address address) {
         checkNotNull(operation, "operation cannot be null");

@@ -14,6 +14,7 @@ class EnterpriseByteArrayObjectDataOutput extends ByteArrayObjectDataOutput
         super(size, service, byteOrder);
     }
 
+    @Override
     public void copyFromMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         ensureAvailable(length);
         if (memory.size() < offset + length) {
@@ -23,6 +24,7 @@ class EnterpriseByteArrayObjectDataOutput extends ByteArrayObjectDataOutput
         pos += length;
     }
 
+    @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         if (pos < length) {
             throw new IOException("Not enough data available!");

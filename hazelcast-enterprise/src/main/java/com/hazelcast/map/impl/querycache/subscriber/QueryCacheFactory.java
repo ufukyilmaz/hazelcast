@@ -41,7 +41,6 @@ class QueryCacheFactory {
         this.internalQueryCaches = new ConcurrentHashMap<String, InternalQueryCache>();
     }
 
-
     public InternalQueryCache create(QueryCacheRequest request) {
         return ConcurrencyUtil.getOrPutIfAbsent(internalQueryCaches,
                 request.getCacheName(), new InternalQueryCacheConstructor(request));
@@ -50,6 +49,4 @@ class QueryCacheFactory {
     public InternalQueryCache getOrNull(String cacheName) {
         return internalQueryCaches.get(cacheName);
     }
-
-
 }

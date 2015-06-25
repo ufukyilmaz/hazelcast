@@ -147,7 +147,6 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         return config.isIncludeValue();
     }
 
-
     protected QueryCacheEventService getEventService() {
         SubscriberContext subscriberContext = context.getSubscriberContext();
         return subscriberContext.getEventService();

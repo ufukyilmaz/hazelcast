@@ -58,7 +58,6 @@ public final class SingleEventDataBuilder {
         return this;
     }
 
-
     public SingleEventData build() {
         DefaultSingleEventData eventData = new DefaultSingleEventData();
         eventData.setDataKey(dataKey);

@@ -41,7 +41,6 @@ public class AccumulatorScannerTask implements Runnable {
         scanAccumulators();
     }
 
-
     void scanAccumulators() {
         PublisherContext publisherContext = context.getPublisherContext();
         MapPublisherRegistry mapPublisherRegistry = publisherContext.getMapPublisherRegistry();

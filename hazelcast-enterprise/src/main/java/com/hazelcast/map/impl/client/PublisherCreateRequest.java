@@ -101,7 +101,6 @@ public class PublisherCreateRequest extends InvocationClientRequest implements R
     public void write(PortableWriter writer) throws IOException {
         super.write(writer);
         info.writePortable(writer);
-
     }
 
     @Override

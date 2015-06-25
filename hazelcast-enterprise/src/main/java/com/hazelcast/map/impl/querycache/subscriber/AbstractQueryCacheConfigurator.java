@@ -55,7 +55,6 @@ public abstract class AbstractQueryCacheConfigurator implements QueryCacheConfig
         predicateConfig.setImplementation(predicate);
     }
 
-
     private Predicate getPredicate(PredicateConfig predicateConfig) {
 
         if (!isNullOrEmpty(predicateConfig.getClassName())) {

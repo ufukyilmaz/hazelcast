@@ -81,7 +81,6 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
         return EnterpriseMapPortableHook.ADD_LISTENER_ADAPTER;
     }
 
-
     @Override
     public int getFactoryId() {
         return EnterpriseMapPortableHook.F_ID;
@@ -91,7 +90,6 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
     public String getServiceName() {
         return MapService.SERVICE_NAME;
     }
-
 
     @Override
     public Permission getRequiredPermission() {

@@ -32,7 +32,6 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
         return key;
     }
 
-
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         super.writeData(out);

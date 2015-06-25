@@ -57,6 +57,16 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         pos = offset;
     }
 
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void init(byte[] data, int offset) {
+        throw new UnsupportedOperationException();
+    }
+
     public int read() throws IOException {
         return (pos < size) ? memory.readByte(pos++) : -1;
     }

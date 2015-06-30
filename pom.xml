@@ -22,6 +22,7 @@
         <timestamp>${maven.build.timestamp}</timestamp>
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
 
+        <maven.compiler.plugin.version>2.5.1</maven.compiler.plugin.version>
         <maven.assembly.plugin.version>2.4</maven.assembly.plugin.version>
         <findbugs.maven.plugin.version>2.5.5</findbugs.maven.plugin.version>
         <checkstyle.maven.plugin.version>2.12</checkstyle.maven.plugin.version>

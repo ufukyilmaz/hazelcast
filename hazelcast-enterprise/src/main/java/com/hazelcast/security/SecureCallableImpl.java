@@ -175,11 +175,6 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         }
 
         @Override
-        public <T extends DistributedObject> T getDistributedObject(String serviceName, Object id) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public <T extends DistributedObject> T getDistributedObject(String serviceName, String name) {
             throw new UnsupportedOperationException();
         }

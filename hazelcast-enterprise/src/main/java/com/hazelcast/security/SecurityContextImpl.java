@@ -191,10 +191,12 @@ public class SecurityContextImpl implements SecurityContext {
         return module;
     }
 
+    @Override
     public ICredentialsFactory getCredentialsFactory() {
         return credentialsFactory;
     }
 
+    @Override
     public void checkPermission(Subject subject, Permission permission) throws SecurityException {
         PermissionCollection coll = policy.getPermissions(subject, permission.getClass());
         final boolean b = coll != null && coll.implies(permission);
@@ -203,6 +205,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
     }
 
+    @Override
     public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {
         return new SecureCallableImpl<V>(subject, callable);
     }
@@ -211,6 +214,7 @@ public class SecurityContextImpl implements SecurityContext {
         return node.getLogger(name);
     }
 
+    @Override
     public void destroy() {
         logger.log(Level.INFO, "Destroying Hazelcast Enterprise security context.");
         policy.destroy();

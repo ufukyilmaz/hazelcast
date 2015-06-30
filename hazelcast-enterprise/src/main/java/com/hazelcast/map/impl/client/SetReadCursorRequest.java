@@ -58,6 +58,7 @@ public class SetReadCursorRequest extends PartitionClientRequest implements Port
         return EnterpriseMapPortableHook.SET_READ_CURSOR_REQUEST;
     }
 
+    @Override
     public void write(PortableWriter writer) throws IOException {
         writer.writeUTF("mn", mapName);
         writer.writeUTF("cn", cacheName);
@@ -65,6 +66,7 @@ public class SetReadCursorRequest extends PartitionClientRequest implements Port
         writer.writeInt("pi", partitionId);
     }
 
+    @Override
     public void read(PortableReader reader) throws IOException {
         mapName = reader.readUTF("mn");
         cacheName = reader.readUTF("cn");

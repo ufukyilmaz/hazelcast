@@ -70,7 +70,6 @@ public class ReadAndResetAccumulatorOperation extends AbstractMapOperation imple
         out.writeUTF(cacheName);
     }
 
-
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);

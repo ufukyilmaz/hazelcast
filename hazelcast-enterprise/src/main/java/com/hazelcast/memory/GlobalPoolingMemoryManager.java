@@ -295,14 +295,17 @@ final class GlobalPoolingMemoryManager
             return queue.offer(address);
         }
 
+        @Override
         public final int getMemorySize() {
             return memorySize;
         }
 
+        @Override
         public int capacity() {
             return queue.capacity();
         }
 
+        @Override
         public final int remaining() {
             return queue.size();
         }

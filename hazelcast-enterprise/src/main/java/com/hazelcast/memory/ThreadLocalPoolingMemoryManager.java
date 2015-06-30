@@ -153,6 +153,7 @@ final class ThreadLocalPoolingMemoryManager
         return allocations.contains(address - offset);
     }
 
+    @Override
     protected int getSizeInternal(long address) {
         byte b = UnsafeHelper.UNSAFE.getByte(address);
         b = Bits.clearBit(b, AVAILABLE_BIT);
@@ -164,6 +165,7 @@ final class ThreadLocalPoolingMemoryManager
         return getSizeInternal(address - getHeaderSize());
     }
 
+    @Override
     protected int getOffset(long address) {
         return UnsafeHelper.UNSAFE.getInt(address + HEADER_OFFSET);
     }
@@ -246,6 +248,7 @@ final class ThreadLocalPoolingMemoryManager
         public void afterCompaction() {
         }
 
+        @Override
         public final long acquire() {
             if (queue != null) {
                 shrink(false);
@@ -265,6 +268,7 @@ final class ThreadLocalPoolingMemoryManager
             }
         }
 
+        @Override
         public final boolean release(long address) {
             if (address == INVALID_ADDRESS) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
@@ -326,10 +330,12 @@ final class ThreadLocalPoolingMemoryManager
             }
         }
 
+        @Override
         public int remaining() {
             return queue != null ? queue.size() : 0;
         }
 
+        @Override
         public int capacity() {
             return queue != null ? queue.capacity() : INITIAL_CAPACITY;
         }

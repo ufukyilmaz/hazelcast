@@ -22,7 +22,6 @@ public class EnterpriseMapMigrationAwareService extends MapMigrationAwareService
         this.mapServiceContext = mapServiceContext;
     }
 
-
     @Override
     public void commitMigration(PartitionMigrationEvent event) {
         super.commitMigration(event);
@@ -35,7 +34,5 @@ public class EnterpriseMapMigrationAwareService extends MapMigrationAwareService
             flushAccumulator(publisherContext, partitionId);
             removeAccumulator(publisherContext, partitionId);
         }
-
     }
-
 }

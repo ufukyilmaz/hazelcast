@@ -34,8 +34,8 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 /**
-* @author mdogan 06/16/13
-*/
+ * @author mdogan 06/16/13
+ */
 final class MemoryBlockDataInput extends InputStream implements EnterpriseBufferObjectDataInput {
 
     private MemoryBlock memory;
@@ -67,14 +67,17 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int read() throws IOException {
         return (pos < size) ? memory.readByte(pos++) : -1;
     }
 
+    @Override
     public int read(int position) throws IOException {
         return (position < size) ? memory.readByte(position) : -1;
     }
 
+    @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (b == null) {
             throw new NullPointerException();
@@ -95,6 +98,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return len;
     }
 
+    @Override
     public boolean readBoolean() throws IOException {
         final int ch = read();
         if (ch < 0) {
@@ -103,6 +107,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return (ch != 0);
     }
 
+    @Override
     public boolean readBoolean(int position) throws IOException {
         final int ch = read(position);
         if (ch < 0) {
@@ -118,11 +123,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      * Bytes for this operation are read from the contained input stream.
      *
      * @return the next byte of this input stream as a signed 8-bit
-     *         <code>byte</code>.
+     * <code>byte</code>.
      * @throws java.io.EOFException if this input stream has reached the end.
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
+    @Override
     public byte readByte() throws IOException {
         final int ch = read();
         if (ch < 0) {
@@ -131,6 +137,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return (byte) (ch);
     }
 
+    @Override
     public byte readByte(int position) throws IOException {
         final int ch = read(position);
         if (ch < 0) {
@@ -139,12 +146,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return (byte) (ch);
     }
 
+    @Override
     public char readChar() throws IOException {
         char c = readChar(pos);
         pos += CHAR_SIZE_IN_BYTES;
         return c;
     }
 
+    @Override
     public char readChar(int position) throws IOException {
         try {
             return memory.readChar(position);
@@ -153,12 +162,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
     }
 
+    @Override
     public double readDouble() throws IOException {
         final double d = readDouble(pos);
         pos += DOUBLE_SIZE_IN_BYTES;
         return d;
     }
 
+    @Override
     public double readDouble(int position) throws IOException {
         try {
             return memory.readDouble(position);
@@ -183,12 +194,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return readDouble(position);
     }
 
+    @Override
     public float readFloat() throws IOException {
         final float f = readFloat(pos);
         pos += FLOAT_SIZE_IN_BYTES;
         return f;
     }
 
+    @Override
     public float readFloat(int position) throws IOException {
         try {
             return memory.readFloat(position);
@@ -213,12 +226,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return readFloat(position);
     }
 
+    @Override
     public int readInt() throws IOException {
         int i = readInt(pos);
         pos += INT_SIZE_IN_BYTES;
         return i;
     }
 
+    @Override
     public int readInt(int position) throws IOException {
         try {
             return memory.readInt(position);
@@ -245,12 +260,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return v;
     }
 
+    @Override
     public long readLong() throws IOException {
         final long l = readLong(pos);
         pos += LONG_SIZE_IN_BYTES;
         return l;
     }
 
+    @Override
     public long readLong(int position) throws IOException {
         try {
             return memory.readLong(position);
@@ -277,12 +294,14 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return v;
     }
 
+    @Override
     public short readShort() throws IOException {
         short s = readShort(pos);
         pos += SHORT_SIZE_IN_BYTES;
         return s;
     }
 
+    @Override
     public short readShort(int position) throws IOException {
         try {
             return memory.readShort(position);
@@ -309,6 +328,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return v;
     }
 
+    @Override
     public byte[] readByteArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -319,6 +339,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new byte[0];
     }
 
+    @Override
     public char[] readCharArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -329,6 +350,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new char[0];
     }
 
+    @Override
     public int[] readIntArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -339,6 +361,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new int[0];
     }
 
+    @Override
     public long[] readLongArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -349,6 +372,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new long[0];
     }
 
+    @Override
     public double[] readDoubleArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -359,6 +383,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new double[0];
     }
 
+    @Override
     public float[] readFloatArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -369,6 +394,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new float[0];
     }
 
+    @Override
     public short[] readShortArray() throws IOException {
         int len = readInt();
         if (len > 0) {
@@ -393,10 +419,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
     }
 
+    @Override
     public ByteOrder getByteOrder() {
         return ByteOrder.nativeOrder();
     }
 
+    @Override
     public void readFully(final byte[] b) throws IOException {
         int r = read(b);
         if (r != b.length) {
@@ -404,6 +432,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
     }
 
+    @Override
     public void readFully(final byte[] b, final int off, final int len) throws IOException {
         int r = read(b, off, len);
         if (r != len) {
@@ -423,6 +452,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
+    @Override
     public int readUnsignedByte() throws IOException {
         return readByte() & 0xFF;
     }
@@ -440,6 +470,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      * @throws java.io.IOException  if an I/O error occurs.
      * @see java.io.FilterInputStream#in
      */
+    @Override
     public int readUnsignedShort() throws IOException {
         return readShort() & 0xffff;
     }
@@ -457,12 +488,13 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      *
      * @return a Unicode string.
      * @throws java.io.EOFException           if this input stream reaches the end before reading all
-     *                                the bytes.
+     *                                        the bytes.
      * @throws java.io.IOException            if an I/O error occurs.
      * @throws java.io.UTFDataFormatException if the bytes do not represent a valid modified UTF-8
-     *                                encoding of a string.
+     *                                        encoding of a string.
      * @see java.io.DataInputStream#readUTF(java.io.DataInput)
      */
+    @Override
     public String readUTF() throws IOException {
         if (utfBuffer == null) {
             utfBuffer = new byte[UTF_BUFFER_SIZE];
@@ -470,10 +502,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return UTFEncoderDecoder.readUTF(this, utfBuffer);
     }
 
+    @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public Object readObject() throws IOException {
         return service.readObject(this);
     }
@@ -501,6 +535,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return skipBytes((int) n);
     }
 
+    @Override
     public int skipBytes(final int n) {
         if (n <= 0) {
             return 0;
@@ -517,10 +552,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     /**
      * Returns this buffer's position.
      */
+    @Override
     public int position() {
         return pos;
     }
 
+    @Override
     public void position(int newPos) {
         if ((newPos > size) || (newPos < 0)) {
             throw new IllegalArgumentException();

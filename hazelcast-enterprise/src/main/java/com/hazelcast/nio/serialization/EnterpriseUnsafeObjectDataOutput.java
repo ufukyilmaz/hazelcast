@@ -29,6 +29,7 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         super(size, service);
     }
 
+    @Override
     public void copyFromMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         ensureAvailable(length);
         if (memory.size() < offset + length) {
@@ -38,6 +39,7 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         pos += length;
     }
 
+    @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         if (pos < length) {
             throw new IOException("Not enough data available!");

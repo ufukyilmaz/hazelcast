@@ -7,6 +7,7 @@ import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 import java.nio.channels.SocketChannel;
 
 public class SSLSocketChannelWrapperFactory implements SocketChannelWrapperFactory {
+
     final SSLContextFactory sslContextFactory;
 
     public SSLSocketChannelWrapperFactory(SSLConfig sslConfig) {

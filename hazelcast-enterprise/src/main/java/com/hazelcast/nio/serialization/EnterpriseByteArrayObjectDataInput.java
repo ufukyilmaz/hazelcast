@@ -19,6 +19,7 @@ class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput
         this.enterpriseSerializationService = service;
     }
 
+    @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         if (pos + length > size) {
             throw new EOFException("Size: " + size + ", Position: " + pos + ", Length: " + length);

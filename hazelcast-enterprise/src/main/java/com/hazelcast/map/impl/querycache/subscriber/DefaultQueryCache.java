@@ -411,21 +411,16 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
     public void addIndex(String attribute, boolean ordered) {
         getIndexService().addOrGetIndex(attribute, ordered);
 
-        context.getQueryCacheScheduler().execute(new Runnable() {
-            @Override
-            public void run() {
-                SerializationService serializationService = context.getSerializationService();
+        SerializationService serializationService = context.getSerializationService();
 
-                Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();
-                for (Map.Entry<Data, QueryCacheRecord> entry : entries) {
-                    Data keyData = entry.getKey();
-                    QueryCacheRecord record = entry.getValue();
-                    Object value = record.getValue();
-                    QueryEntry queryable = new QueryEntry(serializationService, keyData, keyData, value);
-                    indexService.saveEntryIndex(queryable);
-                }
-            }
-        });
+        Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();
+        for (Map.Entry<Data, QueryCacheRecord> entry : entries) {
+            Data keyData = entry.getKey();
+            QueryCacheRecord record = entry.getValue();
+            Object value = record.getValue();
+            QueryEntry queryable = new QueryEntry(serializationService, keyData, keyData, value);
+            indexService.saveEntryIndex(queryable);
+        }
     }
 
     @Override

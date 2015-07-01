@@ -4,7 +4,7 @@ import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DefaultData;
+import com.hazelcast.nio.serialization.impl.DefaultData;
 import com.hazelcast.util.QuickMath;
 
 import java.io.Closeable;

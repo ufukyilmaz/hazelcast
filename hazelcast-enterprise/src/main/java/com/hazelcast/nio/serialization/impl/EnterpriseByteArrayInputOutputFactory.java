@@ -1,7 +1,11 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.nio.serialization.impl;
 
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.InputOutputFactory;
+import com.hazelcast.nio.serialization.SerializationService;
 
 import java.nio.ByteOrder;
 

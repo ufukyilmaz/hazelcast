@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.hazelcast.nio.serialization;
+package com.hazelcast.nio.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.EOFException;
 import java.io.IOException;

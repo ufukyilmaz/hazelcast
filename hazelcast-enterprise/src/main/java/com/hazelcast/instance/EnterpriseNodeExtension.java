@@ -33,7 +33,7 @@ import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.PacketReader;

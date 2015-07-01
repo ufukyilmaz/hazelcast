@@ -1,6 +1,7 @@
 package com.hazelcast.hidensity;
 
 import com.hazelcast.memory.MemoryBlockProcessor;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * Record processor implementation for:
@@ -21,7 +22,7 @@ import com.hazelcast.memory.MemoryBlockProcessor;
  *
  * @see com.hazelcast.memory.MemoryBlockAccessor
  * @see com.hazelcast.hidensity.HiDensityRecordAccessor
- * @see com.hazelcast.nio.serialization.NativeMemoryData
+ * @see NativeMemoryData
  * @see com.hazelcast.hidensity.HiDensityRecord
  *
  * @author sozal 18/02/15

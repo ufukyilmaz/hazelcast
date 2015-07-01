@@ -21,8 +21,8 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.internal.storage.Storage;
+import com.hazelcast.nio.serialization.impl.DefaultData;
 import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 

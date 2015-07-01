@@ -1,4 +1,4 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.nio.serialization.impl;
 
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -6,7 +6,13 @@ import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.bufferpool.BufferPoolFactory;
+import com.hazelcast.nio.serialization.ClassDefinition;
+import com.hazelcast.nio.serialization.DataSerializableFactory;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.InputOutputFactory;
+import com.hazelcast.nio.serialization.PortableFactory;
+import com.hazelcast.nio.serialization.SerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.bufferpool.BufferPoolFactory;
 
 import java.nio.ByteOrder;
 

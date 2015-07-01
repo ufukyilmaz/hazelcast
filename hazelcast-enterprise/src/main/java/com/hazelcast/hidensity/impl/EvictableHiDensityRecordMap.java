@@ -10,7 +10,7 @@ import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;

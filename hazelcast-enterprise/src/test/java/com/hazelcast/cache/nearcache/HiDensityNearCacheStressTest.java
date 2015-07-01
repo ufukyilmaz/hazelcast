@@ -10,7 +10,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.Clock;
 import org.junit.After;

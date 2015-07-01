@@ -14,7 +14,7 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.annotation.QuickTest;
 
 import org.junit.After;

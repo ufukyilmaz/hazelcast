@@ -1,8 +1,8 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.NativeMemoryData;
-import com.hazelcast.nio.serialization.NativeMemoryDataUtil;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.nio.serialization.SerializationService;
 
 /**

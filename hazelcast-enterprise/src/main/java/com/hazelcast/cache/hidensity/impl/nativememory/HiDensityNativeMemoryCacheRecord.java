@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * @author sozal 14/10/14

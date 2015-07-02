@@ -1,12 +1,13 @@
 package com.hazelcast.hidensity;
 
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * Base class of all record implementations for Hi-Density storage
  *
  * @see com.hazelcast.memory.MemoryBlock
- * @see com.hazelcast.nio.serialization.NativeMemoryData
+ * @see NativeMemoryData
  *
  * @author sozal 18/02/15
  */

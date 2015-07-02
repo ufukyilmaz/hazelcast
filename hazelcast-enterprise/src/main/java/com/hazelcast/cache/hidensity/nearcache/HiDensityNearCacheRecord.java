@@ -2,7 +2,7 @@ package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * <p>
@@ -12,7 +12,7 @@ import com.hazelcast.nio.serialization.NativeMemoryData;
  *
  * @see com.hazelcast.hidensity.HiDensityRecord
  * @see com.hazelcast.cache.impl.nearcache.NearCacheRecord
- * @see com.hazelcast.nio.serialization.NativeMemoryData
+ * @see NativeMemoryData
  * @see com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore
  *
  * @author sozal 26/10/14

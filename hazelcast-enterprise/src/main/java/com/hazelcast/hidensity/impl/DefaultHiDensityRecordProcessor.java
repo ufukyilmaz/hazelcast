@@ -10,7 +10,7 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * @author sozal 18/02/15

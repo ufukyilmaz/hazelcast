@@ -5,7 +5,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.ArrayDeque;

@@ -7,7 +7,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 

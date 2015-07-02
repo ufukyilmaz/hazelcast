@@ -7,7 +7,7 @@ import com.hazelcast.cache.impl.operation.CacheGetOperation;
 import com.hazelcast.cache.impl.operation.CacheSizeOperationFactory;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
-import com.hazelcast.nio.serialization.FactoryIdHelper;
+import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
 /**

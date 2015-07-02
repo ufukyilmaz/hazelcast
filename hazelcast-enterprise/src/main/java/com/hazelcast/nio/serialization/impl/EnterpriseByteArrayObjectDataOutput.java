@@ -1,8 +1,9 @@
-package com.hazelcast.nio.serialization;
+package com.hazelcast.nio.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
 import java.nio.ByteOrder;

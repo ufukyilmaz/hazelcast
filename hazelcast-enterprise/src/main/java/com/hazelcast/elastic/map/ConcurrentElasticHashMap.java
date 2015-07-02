@@ -3,6 +3,7 @@ package com.hazelcast.elastic.map;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.*;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 import java.util.Collection;
 import java.util.Map;

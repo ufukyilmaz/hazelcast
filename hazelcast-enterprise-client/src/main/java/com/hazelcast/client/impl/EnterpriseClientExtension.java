@@ -19,7 +19,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.nio.serialization.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;

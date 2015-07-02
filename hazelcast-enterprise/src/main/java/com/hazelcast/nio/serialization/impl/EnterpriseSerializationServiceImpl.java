@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.nio.serialization;
+package com.hazelcast.nio.serialization.impl;
 
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
@@ -25,8 +25,17 @@ import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.bufferpool.BufferPool;
-import com.hazelcast.nio.serialization.bufferpool.BufferPoolFactory;
+import com.hazelcast.nio.serialization.ClassDefinition;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataSerializableFactory;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.HazelcastSerializationException;
+import com.hazelcast.nio.serialization.InputOutputFactory;
+import com.hazelcast.nio.serialization.PortableFactory;
+import com.hazelcast.nio.serialization.impl.bufferpool.BufferPool;
+import com.hazelcast.nio.serialization.impl.bufferpool.BufferPoolFactory;
+
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -34,9 +43,9 @@ import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
-import static com.hazelcast.nio.serialization.NativeMemoryData.NATIVE_HEADER_OVERHEAD;
-import static com.hazelcast.nio.serialization.NativeMemoryData.SIZE_OFFSET;
-import static com.hazelcast.nio.serialization.NativeMemoryData.TYPE_OFFSET;
+import static com.hazelcast.nio.serialization.impl.NativeMemoryData.NATIVE_HEADER_OVERHEAD;
+import static com.hazelcast.nio.serialization.impl.NativeMemoryData.SIZE_OFFSET;
+import static com.hazelcast.nio.serialization.impl.NativeMemoryData.TYPE_OFFSET;
 
 public final class EnterpriseSerializationServiceImpl extends SerializationServiceImpl
         implements EnterpriseSerializationService {

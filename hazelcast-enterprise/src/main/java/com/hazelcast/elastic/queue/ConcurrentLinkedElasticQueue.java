@@ -3,7 +3,7 @@ package com.hazelcast.elastic.queue;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.Iterator;

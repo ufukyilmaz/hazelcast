@@ -8,7 +8,7 @@ import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.hidensity.impl.SampleableEvictableHiDensityRecordMap;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;

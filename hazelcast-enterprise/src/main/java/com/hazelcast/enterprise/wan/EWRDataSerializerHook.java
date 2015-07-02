@@ -2,8 +2,8 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
-import com.hazelcast.nio.serialization.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 
 /**
  * {@link com.hazelcast.nio.serialization.DataSerializerHook} implementation for Enterprise Wan Replication

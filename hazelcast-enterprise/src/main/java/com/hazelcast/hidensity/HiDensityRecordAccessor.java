@@ -2,7 +2,7 @@ package com.hazelcast.hidensity;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
 /**
  * Record accessor implementation for:
@@ -22,7 +22,7 @@ import com.hazelcast.nio.serialization.NativeMemoryData;
  * @param <R> Type of the hi-density record to be accessed
  *
  * @see com.hazelcast.memory.MemoryBlockAccessor
- * @see com.hazelcast.nio.serialization.NativeMemoryData
+ * @see NativeMemoryData
  * @see com.hazelcast.hidensity.HiDensityRecord
  *
  * @author sozal 18/02/15

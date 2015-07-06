@@ -402,6 +402,11 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
     }
 
+    @Override
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
+    }
+
     /**
      * {@link EvictionListener} implementation for listening record eviction
      */

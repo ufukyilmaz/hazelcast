@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.hidensity.HiDensityRecordStore;
+import com.hazelcast.memory.MemoryManager;
 
 /**
  * {@link HiDensityNearCacheRecordStore} is the contract point to store keys and values as
@@ -15,5 +16,12 @@ import com.hazelcast.hidensity.HiDensityRecordStore;
  */
 public interface HiDensityNearCacheRecordStore<K, V, R extends HiDensityNearCacheRecord>
         extends HiDensityRecordStore<R>, NearCacheRecordStore<K, V> {
+
+    /*
+     * Gets underlying {@link MemoryManager} implementation.
+     *
+     * @return the underlying {@link MemoryManager} implementation
+     */
+    MemoryManager getMemoryManager();
 
 }

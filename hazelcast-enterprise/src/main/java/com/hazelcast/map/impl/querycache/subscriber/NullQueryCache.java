@@ -49,6 +49,11 @@ public final class NullQueryCache implements InternalQueryCache {
     }
 
     @Override
+    public void clear() {
+
+    }
+
+    @Override
     public Object get(Object key) {
         return null;
     }

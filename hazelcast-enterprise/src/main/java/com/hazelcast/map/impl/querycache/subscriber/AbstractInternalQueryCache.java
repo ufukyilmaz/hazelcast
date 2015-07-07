@@ -161,4 +161,8 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         return serializationService.toData(key, partitioningStrategy);
     }
 
+    public void clear() {
+        recordStore.clear();
+        indexService.clearIndexes();
+    }
 }

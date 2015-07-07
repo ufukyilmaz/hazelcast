@@ -19,7 +19,7 @@ public class EnterpriseMapPortableHook implements PortableHook {
     /**
      * Factory id for map portable factory.
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.MAP_PORTABLE_FACTORY, -25);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_MAP_PORTABLE_FACTORY, -25);
 
     /**
      * Array index variable for constructors.

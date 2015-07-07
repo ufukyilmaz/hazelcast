@@ -47,6 +47,7 @@ public class DestroyQueryCacheRequest extends InvocationClientRequest implements
         return MapService.SERVICE_NAME;
     }
 
+    @Override
     public int getFactoryId() {
         return EnterpriseMapPortableHook.F_ID;
     }
@@ -91,8 +92,8 @@ public class DestroyQueryCacheRequest extends InvocationClientRequest implements
     @Override
     public void write(PortableWriter writer) throws IOException {
         super.write(writer);
-        writer.writeUTF(mapName, "mn");
-        writer.writeUTF(cacheName, "cn");
+        writer.writeUTF("mn", mapName);
+        writer.writeUTF("cn", cacheName);
 
     }
 

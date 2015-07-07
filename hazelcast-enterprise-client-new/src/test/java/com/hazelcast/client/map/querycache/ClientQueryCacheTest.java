@@ -168,11 +168,6 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertTrueEventually(task);
     }
 
-    private void assertQueryCacheSizeEventually(final int expected, final QueryCache queryCache) {
-        assertQueryCacheSizeEventually(expected, null, queryCache);
-
-    }
-
     private IEnterpriseMap<Integer, Integer> getMap() {
         String mapName = randomString();
         HazelcastInstance client = HazelcastClient.newHazelcastClient();
@@ -201,6 +196,26 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         };
 
         assertQueryCacheSizeEventually(0, clear, queryCache);
+    }
+
+
+    @Test
+    public void testDestroy_emptiesQueryCache() throws Exception {
+        String cacheName = randomString();
+        final IEnterpriseMap<Integer, Integer> map = getMap();
+        final QueryCache<Integer, Integer> queryCache
+                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i);
+        }
+
+        queryCache.destroy();
+
+        int size = queryCache.size();
+
+        assertEquals(0, size);
+
     }
 
 

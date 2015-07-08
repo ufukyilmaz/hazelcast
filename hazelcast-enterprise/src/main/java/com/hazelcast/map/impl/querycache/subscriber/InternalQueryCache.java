@@ -22,4 +22,6 @@ public interface InternalQueryCache<K, V> extends QueryCache<K, V> {
     IMap<K, V> getDelegate();
 
     IndexService getIndexService();
+
+    void clear();
 }

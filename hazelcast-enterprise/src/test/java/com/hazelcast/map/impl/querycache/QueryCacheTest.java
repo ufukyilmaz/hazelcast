@@ -164,6 +164,24 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
 
     }
 
+    @Test
+    public void testDestroy_emptiesQueryCache() throws Exception {
+        String cacheName = randomString();
+        final QueryCache<Integer, Integer> queryCache
+                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i);
+        }
+
+        queryCache.destroy();
+
+        int size = queryCache.size();
+
+        assertEquals(0, size);
+
+    }
+
     private void testWithInitialPopulation(boolean enableInitialPopulation,
                                            int expectedSize, int numberOfElementsToPut) {
         String cacheName = randomString();
@@ -172,7 +190,8 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
         for (int i = 0; i < numberOfElementsToPut; i++) {
             map.put(i, i);
         }
-        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName,
+                TruePredicate.INSTANCE, true);
 
         assertEquals(expectedSize, queryCache.size());
     }

@@ -27,7 +27,7 @@ public abstract class AbstractQueryCacheTestSupport extends HazelcastTestSupport
     }
 
     private <K, V> IEnterpriseMap<K, V> getMap() {
-        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(1);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(3);
         HazelcastInstance[] instances = factory.newInstances(config);
         HazelcastInstance node = instances[0];
         return (IEnterpriseMap) node.getMap(mapName);

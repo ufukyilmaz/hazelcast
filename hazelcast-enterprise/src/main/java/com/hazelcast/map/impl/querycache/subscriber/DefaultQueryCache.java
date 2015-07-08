@@ -2,9 +2,12 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
+import com.hazelcast.instance.AbstractMember;
 import com.hazelcast.map.impl.EntryEventFilter;
 import com.hazelcast.map.impl.QueryEventFilter;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
+import com.hazelcast.map.impl.querycache.NodeInvokerWrapper;
 import com.hazelcast.map.impl.querycache.QueryCacheConfigurator;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
@@ -12,6 +15,7 @@ import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.map.listener.MapListener;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.query.Predicate;
@@ -169,9 +173,19 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
     private void destroyRemoteResources() {
         SubscriberContext subscriberContext = context.getSubscriberContext();
         SubscriberContextSupport subscriberContextSupport = subscriberContext.getSubscriberContextSupport();
-        Object removePublisher = subscriberContextSupport.createDestroyQueryCacheOperation(mapName, cacheName);
+
         InvokerWrapper invokerWrapper = context.getInvokerWrapper();
-        invokerWrapper.invoke(removePublisher);
+        if (invokerWrapper instanceof NodeInvokerWrapper) {
+            Collection<Member> memberList = context.getMemberList();
+            for (Member member : memberList) {
+                Address address = ((AbstractMember) member).getAddress();
+                Object removePublisher = subscriberContextSupport.createDestroyQueryCacheOperation(mapName, userGivenCacheName);
+                invokerWrapper.invokeOnTarget(removePublisher, address);
+            }
+        } else {
+            Object removePublisher = subscriberContextSupport.createDestroyQueryCacheOperation(mapName, userGivenCacheName);
+            invokerWrapper.invoke(removePublisher);
+        }
     }
 
     private boolean destroyLocalResources() {
@@ -208,7 +222,12 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
     private boolean removeInternalQueryCache() {
         SubscriberContext subscriberContext = context.getSubscriberContext();
         QueryCacheEndToEndProvider cacheProvider = subscriberContext.getEndToEndQueryCacheProvider();
-        return cacheProvider.remove(mapName, cacheName) != null;
+        InternalQueryCache internalQueryCache = cacheProvider.remove(mapName, userGivenCacheName);
+        boolean exists = internalQueryCache != null;
+        if (exists) {
+            internalQueryCache.clear();
+        }
+        return exists;
     }
 
     @Override

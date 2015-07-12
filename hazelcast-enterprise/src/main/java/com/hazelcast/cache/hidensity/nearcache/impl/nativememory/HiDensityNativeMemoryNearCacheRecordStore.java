@@ -308,7 +308,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record, boolean newPut) {
+    protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
+                         HiDensityNativeMemoryNearCacheRecord oldRecord) {
+        // If old record is available, dispose it since it is replaced
+        if (isMemoryBlockValid(oldRecord)) {
+            recordProcessor.dispose(oldRecord);
+        }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             recordProcessor.enqueueRecord(record);
@@ -317,17 +322,10 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void onPutError(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
-                              boolean newPut, Throwable error) {
-        // If this record has been somehow saved, dispose it
-        if (newPut && isMemoryBlockValid(record)) {
-            if (!records.delete(toData(key))) {
-                recordProcessor.dispose(record);
-                return;
-            }
-        }
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            recordProcessor.enqueueRecord(record);
+                              HiDensityNativeMemoryNearCacheRecord oldRecord, Throwable error) {
+        // If old record is somehow allocated, dispose it since it is not in use
+        if (isMemoryBlockValid(record)) {
+            recordProcessor.dispose(record);
         }
     }
 

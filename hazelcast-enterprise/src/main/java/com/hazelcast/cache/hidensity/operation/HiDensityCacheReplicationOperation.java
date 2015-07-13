@@ -93,7 +93,6 @@ public final class HiDensityCacheReplicationOperation
             return;
         }
         EnterpriseCacheService service = getService();
-        SerializationService ss = getNodeEngine().getSerializationService();
         try {
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
                 HiDensityCacheRecordStore cache =
@@ -104,10 +103,9 @@ public final class HiDensityCacheReplicationOperation
                     Map.Entry<Data, CacheRecordHolder> next = iter.next();
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
-                    if (!cache.own(key, holder.value, holder.ttl)) {
-                        // Since there no new put (just update), no need to for this key. So dispose it.
-                        ss.disposeData(key);
-                    }
+                    cache.own(key, holder.value, holder.ttl);
+                    // If there is an update, the key from outside is already disposed in "BinaryElasticHashMap"
+                    // So no need to dispose key here.
                     iter.remove();
                 }
             }

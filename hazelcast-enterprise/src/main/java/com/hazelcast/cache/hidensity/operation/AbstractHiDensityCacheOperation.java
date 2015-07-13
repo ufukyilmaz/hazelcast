@@ -206,8 +206,7 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     public static Data readOperationData(ObjectDataInput in) throws IOException {
-        // TODO If there is enough memory try to read into native memory
-        return ((EnterpriseObjectDataInput) in).tryReadData(DataType.HEAP);
+        return ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
     }
 
     @Override

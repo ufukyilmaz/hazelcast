@@ -20,7 +20,7 @@ public class Jetty9InvalidLicenseTest extends AbstractInvalidLicenseTest {
 
     @Override
     protected WebContainerConfigurator<?> getWebContainerConfigurator() {
-        return new JettyConfigurator("hazelcast-without-license.xml", "hazelcast-client-without-license.xml");
+        return new JettyConfigurator("hazelcast-invalid-license.xml", "hazelcast-client-invalid-license.xml");
     }
 
     @After

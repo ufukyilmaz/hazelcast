@@ -18,5 +18,5 @@
 <hazelcast-client xsi:schemaLocation="http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.5.xsd"
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-
+        <license-key>INVALID-LICENSE</license-key>
 </hazelcast-client>

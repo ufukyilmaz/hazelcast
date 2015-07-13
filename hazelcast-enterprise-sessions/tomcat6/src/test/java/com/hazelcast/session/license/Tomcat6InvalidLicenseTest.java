@@ -13,6 +13,6 @@ public class Tomcat6InvalidLicenseTest extends AbstractInvalidLicenseTest {
 
     @Override
     protected WebContainerConfigurator<?> getWebContainerConfigurator() {
-        return new Tomcat6Configurator("hazelcast-without-license.xml", "hazelcast-client-without-license.xml");
+        return new Tomcat6Configurator("hazelcast-invalid-license.xml", "hazelcast-client-invalid-license.xml");
     }
 }

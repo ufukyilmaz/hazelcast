@@ -9,10 +9,7 @@ import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
-<<<<<<< HEAD
-=======
 import com.hazelcast.test.annotation.QuickTest;
->>>>>>> added category to all uncategorized tests
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import org.junit.After;

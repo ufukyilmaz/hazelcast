@@ -586,12 +586,12 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
             }
 
-            if (isMemoryBlockValid(keyData)) {
+            if (isMemoryBlockValid(keyData) && keyData != key) {
                 // If key data is created here, dispose it
                 cacheRecordProcessor.disposeData(keyData);
             }
 
-            if (isMemoryBlockValid(valueData)) {
+            if (isMemoryBlockValid(valueData) && valueData != value) {
                 // If value data is created here, dispose it
                 cacheRecordProcessor.disposeData(valueData);
             }

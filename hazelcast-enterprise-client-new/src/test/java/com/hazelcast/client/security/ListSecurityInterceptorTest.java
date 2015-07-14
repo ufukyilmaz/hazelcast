@@ -3,13 +3,15 @@ package com.hazelcast.client.security;
 import com.hazelcast.collection.impl.list.ListService;
 import com.hazelcast.core.IList;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import org.junit.Ignore;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
     @Test

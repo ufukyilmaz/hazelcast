@@ -9,6 +9,7 @@ import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import org.junit.After;
@@ -17,6 +18,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
@@ -25,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class LicenseTest {
 
     @Rule

@@ -23,9 +23,10 @@ import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.HashMap;
@@ -35,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class MapSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

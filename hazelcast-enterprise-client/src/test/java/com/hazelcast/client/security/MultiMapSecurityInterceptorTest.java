@@ -4,13 +4,16 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.multimap.impl.MultiMapService;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class MultiMapSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

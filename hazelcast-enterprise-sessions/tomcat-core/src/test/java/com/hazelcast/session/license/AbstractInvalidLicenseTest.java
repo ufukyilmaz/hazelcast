@@ -3,7 +3,6 @@ package com.hazelcast.session.license;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.session.AbstractHazelcastSessionsTest;
-import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -11,9 +10,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 
-@RunWith(HazelcastSerialClassRunner.class)
 public abstract class AbstractInvalidLicenseTest extends AbstractHazelcastSessionsTest {
 
     @After

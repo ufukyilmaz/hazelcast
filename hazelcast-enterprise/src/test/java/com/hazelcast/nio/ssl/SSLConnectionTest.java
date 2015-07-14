@@ -13,10 +13,12 @@ import com.hazelcast.instance.TestUtil;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.net.ssl.SSLContext;
@@ -38,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class SSLConnectionTest {
 
     private static final int PORT = 13131;

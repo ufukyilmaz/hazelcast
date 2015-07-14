@@ -15,6 +15,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by mesutcelik on 5/5/14.
  */
+
 public abstract class AbstractMapNameTest extends AbstractHazelcastSessionsTest {
 
     @Test

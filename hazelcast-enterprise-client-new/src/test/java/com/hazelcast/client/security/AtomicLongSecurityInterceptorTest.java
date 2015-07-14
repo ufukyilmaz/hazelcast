@@ -3,11 +3,14 @@ package com.hazelcast.client.security;
 import com.hazelcast.concurrent.atomiclong.AtomicLongService;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class AtomicLongSecurityInterceptorTest extends BaseInterceptorTest {
 
     String objectName;

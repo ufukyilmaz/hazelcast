@@ -1,15 +1,10 @@
 package com.hazelcast.session.license;
 
 import com.hazelcast.core.Hazelcast;
-import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.session.AbstractHazelcastSessionsTest;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import org.apache.catalina.LifecycleException;
 import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(HazelcastSerialClassRunner.class)
 public abstract class AbstractValidLicenseTest extends AbstractHazelcastSessionsTest {
 
     @After

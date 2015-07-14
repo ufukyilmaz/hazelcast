@@ -11,11 +11,13 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
@@ -27,6 +29,7 @@ import java.util.Properties;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class LicenseTest extends HazelcastTestSupport {
 
     @BeforeClass

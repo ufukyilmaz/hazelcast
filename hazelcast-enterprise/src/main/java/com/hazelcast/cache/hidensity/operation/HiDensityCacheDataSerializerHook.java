@@ -7,8 +7,11 @@ import com.hazelcast.cache.impl.operation.CacheGetOperation;
 import com.hazelcast.cache.impl.operation.CacheSizeOperationFactory;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
-import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
+
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY;
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY_ID;
 
 /**
  * @author sozal 14/10/14
@@ -18,7 +21,7 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
     /**
      * Id of "Enterprise Cache DataSerializer Factory"
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY, -26);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(HIDENSITY_CACHE_DS_FACTORY, HIDENSITY_CACHE_DS_FACTORY_ID);
     /**
      * Id of "GET" operation
      */

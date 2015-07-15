@@ -2,8 +2,11 @@ package com.hazelcast.cache.operation;
 
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
-import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
+
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY;
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY_ID;
 
 /**
  * {@link com.hazelcast.nio.serialization.DataSerializerHook} implementation for enterprise cache operations
@@ -13,7 +16,7 @@ public final class EnterpriseCacheDataSerializerHook implements DataSerializerHo
     /**
      * Id of "Enterprise Cache DataSerializer Factory"
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_CACHE_DS_FACTORY, -27);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_CACHE_DS_FACTORY, ENTERPRISE_CACHE_DS_FACTORY_ID);
     /**
      * Id of "WAN_MERGE" operation
      */

@@ -5,6 +5,9 @@ import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY;
+import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID;
+
 /**
  * {@link com.hazelcast.nio.serialization.DataSerializerHook} implementation for Enterprise Wan Replication
  */
@@ -13,7 +16,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
     /**
      * Id of "Enterprise Wan Replication DataSerializer Factory"
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY, -28);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_WAN_REPLICATION_DS_FACTORY,
+            ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID);
 
     /**
      * Id of {@link BatchWanReplicationEvent}

@@ -4,6 +4,7 @@ import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.GarbageCollectable;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.UnsafeHelper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import sun.misc.Unsafe;
 
 import java.util.Iterator;
@@ -151,7 +152,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
 
     // key of localAddressQueues is already current thread
     // so no other thread will use the same key
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings("AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION")
+    @SuppressFBWarnings("AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION")
     private LocalAddressQueue getLocalAddressQueue() {
         Thread t = Thread.currentThread();
         LocalAddressQueue queue = localAddressQueues.get(t);

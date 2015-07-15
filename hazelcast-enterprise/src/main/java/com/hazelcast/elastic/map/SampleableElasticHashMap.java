@@ -6,6 +6,7 @@ import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryBlockProcessor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.QuickMath;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -71,7 +72,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
      *
      * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
      */
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings("PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS")
+    @SuppressFBWarnings("PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS")
     public class IterableSamplingEntry
             extends SamplingEntry
             implements Iterable<IterableSamplingEntry>, Iterator<IterableSamplingEntry> {

@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber.record;
 
 import com.hazelcast.util.Clock;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Contains common functionality which is needed by a {@link QueryCacheRecord} instance.
@@ -31,7 +32,7 @@ abstract class AbstractQueryCacheRecord implements QueryCacheRecord {
     }
 
     @Override
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings(value = "VO_VOLATILE_INCREMENT",
+    @SuppressFBWarnings(value = "VO_VOLATILE_INCREMENT",
             justification = "CacheRecord can be accessed by only its own partition thread.")
     public void incrementAccessHit() {
         accessHit++;

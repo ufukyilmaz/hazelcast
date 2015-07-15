@@ -35,6 +35,7 @@ import com.hazelcast.nio.serialization.InputOutputFactory;
 import com.hazelcast.nio.serialization.PortableFactory;
 import com.hazelcast.nio.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.nio.serialization.impl.bufferpool.BufferPoolFactory;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 
 import java.io.IOException;
@@ -251,7 +252,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings("SR_NOT_CHECKED")
+    @SuppressFBWarnings("SR_NOT_CHECKED")
     private NativeMemoryData allocateNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager,
                                                 int memSize, int size, boolean skipBytesOnOome) throws IOException {
         if (memoryManager == null) {

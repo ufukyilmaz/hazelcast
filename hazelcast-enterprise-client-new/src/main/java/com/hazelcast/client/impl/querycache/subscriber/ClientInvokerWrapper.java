@@ -6,7 +6,6 @@ import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.impl.ClientInvocation;
 import com.hazelcast.client.spi.impl.ClientInvocationFuture;
-import com.hazelcast.client.util.ClientDelegatingFuture;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.nio.Address;
@@ -40,8 +39,7 @@ public class ClientInvokerWrapper implements InvokerWrapper {
 
         ClientRequest clientRequest = (ClientRequest) request;
         ClientInvocation clientInvocation = new ClientInvocation(getClient(), clientRequest, partitionId);
-        ClientInvocationFuture future = clientInvocation.invoke();
-        return new ClientDelegatingFuture(future, clientContext.getSerializationService());
+        return clientInvocation.invoke();
     }
 
     @Override

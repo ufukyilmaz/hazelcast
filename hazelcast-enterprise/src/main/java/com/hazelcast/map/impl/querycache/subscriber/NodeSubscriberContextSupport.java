@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOperation;
+import com.hazelcast.nio.serialization.SerializationService;
 
 /**
  * {@code SubscriberContextSupport} implementation for node side.
@@ -10,9 +11,20 @@ import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOpera
  */
 public class NodeSubscriberContextSupport implements SubscriberContextSupport {
 
+    private final SerializationService serializationService;
+
+    public NodeSubscriberContextSupport(SerializationService serializationService) {
+        this.serializationService = serializationService;
+    }
+
     @Override
     public Object createRecoveryOperation(String mapName, String cacheName, long sequence, int partitionId) {
         return new SetReadCursorOperation(mapName, cacheName, sequence, partitionId);
+    }
+
+    @Override
+    public Boolean resolveResponseForRecoveryOperation(Object response) {
+        return (Boolean) serializationService.toObject(response);
     }
 
     @Override

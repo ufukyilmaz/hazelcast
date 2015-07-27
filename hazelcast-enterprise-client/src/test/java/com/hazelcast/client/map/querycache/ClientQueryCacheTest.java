@@ -12,6 +12,7 @@ import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
+import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -200,21 +202,27 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
 
     @Test
     public void testDestroy_emptiesQueryCache() throws Exception {
+        int entryCount = 1000;
+        final CountDownLatch numberOfAddEvents = new CountDownLatch(entryCount);
         String cacheName = randomString();
-        final IEnterpriseMap<Integer, Integer> map = getMap();
-        final QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        IEnterpriseMap<Integer, Integer> map = getMap();
+        QueryCache<Integer, Integer> queryCache
+                = map.getQueryCache(cacheName, new EntryAddedListener<Integer, Integer>() {
+            @Override
+            public void entryAdded(EntryEvent<Integer, Integer> event) {
+                numberOfAddEvents.countDown();
+            }
+        }, TruePredicate.INSTANCE, false);
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < entryCount; i++) {
             map.put(i, i);
         }
 
+        assertOpenEventually(numberOfAddEvents);
+
         queryCache.destroy();
 
-        int size = queryCache.size();
-
-        assertEquals(0, size);
-
+        assertEquals(0, queryCache.size());
     }
 
     private void testWithInitialPopulation(boolean enableInitialPopulation,

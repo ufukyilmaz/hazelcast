@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
+@Ignore
 public class ClientQueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
 
     @Before

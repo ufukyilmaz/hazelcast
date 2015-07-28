@@ -1,5 +1,6 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
+import com.hazelcast.client.impl.ClientMessageDecoder;
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
 import com.hazelcast.client.impl.client.ClientRequest;
 import com.hazelcast.client.impl.protocol.ClientMessage;
@@ -41,7 +42,9 @@ public class ClientInvokerWrapper implements InvokerWrapper {
         ClientRequest clientRequest = (ClientRequest) request;
         ClientInvocation clientInvocation = new ClientInvocation(getClient(), clientRequest, partitionId);
         ClientInvocationFuture future = clientInvocation.invoke();
-        return new ClientDelegatingFuture(future, clientContext.getSerializationService());
+        //todo: this needs to get fixed; I put a value in here so that it at least compiles.
+        final ClientMessageDecoder clientMessageDecoder = null;
+        return new ClientDelegatingFuture(future, clientContext.getSerializationService(), clientMessageDecoder);
     }
 
     @Override

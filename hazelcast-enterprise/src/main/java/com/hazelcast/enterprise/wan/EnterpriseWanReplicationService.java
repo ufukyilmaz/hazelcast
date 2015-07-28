@@ -92,7 +92,7 @@ public class EnterpriseWanReplicationService
     }
 
     @Override
-    public void handleEvent(final Packet packet) {
+    public void handle(final Packet packet) {
         final Data data = packet.getData();
         handleEvent(data);
     }

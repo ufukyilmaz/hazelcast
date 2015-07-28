@@ -13,7 +13,7 @@ public class NodeSubscriberContext extends AbstractSubscriberContext {
 
     public NodeSubscriberContext(QueryCacheContext context) {
         super(context);
-        subscriberContextSupport = new NodeSubscriberContextSupport();
+        subscriberContextSupport = new NodeSubscriberContextSupport(context.getSerializationService());
     }
 
     @Override

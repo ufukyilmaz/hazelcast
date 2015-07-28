@@ -134,13 +134,14 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
      */
     private boolean isTryRecoverSucceeded(ConcurrentMap<Integer, Long> brokenSequences) {
         int numberOfBrokenSequences = brokenSequences.size();
+        InvokerWrapper invokerWrapper = context.getInvokerWrapper();
+        SubscriberContext subscriberContext = context.getSubscriberContext();
+        SubscriberContextSupport subscriberContextSupport = subscriberContext.getSubscriberContextSupport();
+
         List<Future<Object>> futures = new ArrayList<Future<Object>>(numberOfBrokenSequences);
         for (Map.Entry<Integer, Long> entry : brokenSequences.entrySet()) {
             Integer partitionId = entry.getKey();
             Long sequence = entry.getValue();
-            InvokerWrapper invokerWrapper = context.getInvokerWrapper();
-            SubscriberContext subscriberContext = context.getSubscriberContext();
-            SubscriberContextSupport subscriberContextSupport = subscriberContext.getSubscriberContextSupport();
             Object recoveryOperation
                     = subscriberContextSupport.createRecoveryOperation(mapName, cacheName, sequence, partitionId);
             Future<Object> future
@@ -152,6 +153,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
         Collection<Object> results = FutureUtil.returnWithDeadline(futures, 1, TimeUnit.MINUTES);
         int successCount = 0;
         for (Object object : results) {
+            subscriberContextSupport.resolveResponseForRecoveryOperation(results);
             Boolean result = (Boolean) context.toObject(object);
             if (Boolean.TRUE.equals(result)) {
                 successCount++;

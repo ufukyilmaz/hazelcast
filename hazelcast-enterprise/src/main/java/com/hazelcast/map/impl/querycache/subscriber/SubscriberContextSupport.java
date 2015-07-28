@@ -19,6 +19,14 @@ public interface SubscriberContextSupport {
      */
     Object createRecoveryOperation(String mapName, String cacheName, long sequence, int partitionId);
 
+    /**
+     * Resolves response of recoveryOperation
+     *
+     * @param response clientMessage or data
+     * @return resolved response
+     */
+    Boolean resolveResponseForRecoveryOperation(Object response);
+
 
     /**
      * Creates recovery operation for event loss cases.

@@ -7,7 +7,7 @@ import com.hazelcast.map.impl.operation.AbstractMapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.publisher.MapListenerRegistry;
 import com.hazelcast.map.impl.querycache.publisher.MapPublisherRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
@@ -165,8 +165,8 @@ public class PublisherCreateOperation extends AbstractMapOperation {
                 continue;
             }
             Object toObject = mapServiceContext.toObject(result);
-            List<SingleEventData> eventDataList = (List<SingleEventData>) toObject;
-            for (SingleEventData eventData : eventDataList) {
+            List<QueryCacheEventData> eventDataList = (List<QueryCacheEventData>) toObject;
+            for (QueryCacheEventData eventData : eventDataList) {
                 QueryResultEntry entry = createQueryResultEntry(eventData);
                 add(queryResultSet, entry);
             }
@@ -205,7 +205,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         queryResultSet.add(entry);
     }
 
-    private QueryResultEntry createQueryResultEntry(SingleEventData eventData) {
+    private QueryResultEntry createQueryResultEntry(QueryCacheEventData eventData) {
         Data dataKey = eventData.getDataKey();
         Data dataNewValue = eventData.getDataNewValue();
         return new QueryResultEntryImpl(dataKey, dataKey, dataNewValue);

@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.accumulator;
 
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.DefaultPartitionSequencer;
 import com.hazelcast.map.impl.querycache.event.sequence.PartitionSequencer;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
@@ -38,7 +38,7 @@ abstract class AbstractAccumulator<E extends Sequenced> implements Accumulator<E
         return Clock.currentTimeMillis();
     }
 
-    protected boolean isExpired(SingleEventData entry, long delayMillis, long now) {
+    protected boolean isExpired(QueryCacheEventData entry, long delayMillis, long now) {
         return entry != null
                 && (now - entry.getCreationTime()) >= delayMillis;
     }

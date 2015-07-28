@@ -10,35 +10,35 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.hazelcast.map.impl.querycache.event.SingleEventDataBuilder.newSingleEventDataBuilder;
+import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.Preconditions.checkNotNegative;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Holder for a collection of {@link SingleEventData}
+ * Holder for a collection of {@link QueryCacheEventData}
  *
- * @see SingleEventData
+ * @see QueryCacheEventData
  */
 public class BatchEventData implements Sequenced, EventData {
 
     private String source;
-    private Collection<SingleEventData> events;
+    private Collection<QueryCacheEventData> events;
     private transient int partitionId;
 
     public BatchEventData() {
     }
 
-    public BatchEventData(Collection<SingleEventData> events, String source, int partitionId) {
+    public BatchEventData(Collection<QueryCacheEventData> events, String source, int partitionId) {
         this.events = checkNotNull(events, "events cannot be null");
         this.source = checkNotNull(source, "source cannot be null");
         this.partitionId = checkNotNegative(partitionId, "partitionId cannot be negative");
     }
 
-    public void add(SingleEventData entry) {
+    public void add(QueryCacheEventData entry) {
         events.add(entry);
     }
 
-    public Collection<SingleEventData> getEvents() {
+    public Collection<QueryCacheEventData> getEvents() {
         return events;
     }
 
@@ -52,10 +52,10 @@ public class BatchEventData implements Sequenced, EventData {
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        Collection<SingleEventData> events = this.events;
+        Collection<QueryCacheEventData> events = this.events;
         out.writeUTF(source);
         out.writeInt(events.size());
-        for (SingleEventData eventData : events) {
+        for (QueryCacheEventData eventData : events) {
             eventData.writeData(out);
         }
     }
@@ -66,11 +66,11 @@ public class BatchEventData implements Sequenced, EventData {
         source = in.readUTF();
         int size = in.readInt();
         if (size > 0) {
-            this.events = new ArrayList<SingleEventData>(size);
+            this.events = new ArrayList<QueryCacheEventData>(size);
         }
-        Collection<SingleEventData> events = this.events;
+        Collection<QueryCacheEventData> events = this.events;
         for (int i = 0; i < size; i++) {
-            SingleEventData eventData = newSingleEventDataBuilder().build();
+            QueryCacheEventData eventData = newQueryCacheEventDataBuilder().build();
             eventData.readData(in);
 
             events.add(eventData);

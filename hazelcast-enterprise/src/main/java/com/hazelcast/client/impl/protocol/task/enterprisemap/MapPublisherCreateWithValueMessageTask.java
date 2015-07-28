@@ -41,6 +41,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
@@ -86,7 +87,7 @@ public class MapPublisherCreateWithValueMessageTask
         }
     }
 
-    private Map<Data, Data> getQueryResultSets(List<Future> futures) {
+    private Set<Map.Entry<Data, Data>> getQueryResultSets(List<Future> futures) {
         HashMap<Data, Data> results = new HashMap<Data, Data>(futures.size());
         for (Future future : futures) {
             Object result = null;
@@ -104,7 +105,7 @@ public class MapPublisherCreateWithValueMessageTask
                 results.put(entry.getKey(), entry.getValue());
             }
         }
-        return results;
+        return results.entrySet();
     }
 
     @Override
@@ -114,7 +115,7 @@ public class MapPublisherCreateWithValueMessageTask
 
     @Override
     protected ClientMessage encodeResponse(Object response) {
-        return EnterpriseMapPublisherCreateWithValueCodec.encodeResponse((Map<Data, Data>) response);
+        return EnterpriseMapPublisherCreateWithValueCodec.encodeResponse((Set<Map.Entry<Data, Data>>) response);
     }
 
     @Override

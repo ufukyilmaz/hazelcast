@@ -2,8 +2,8 @@ package com.hazelcast.map.impl.querycache.publisher;
 
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
-import com.hazelcast.map.impl.querycache.event.SingleEventDataBuilder;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ public final class AccumulatorSweeper {
                     accumulator.poll(handler, 0, TimeUnit.SECONDS);
 
                     // send end event
-                    SingleEventData eventData = createEndOfSequenceEvent(partitionId);
+                    QueryCacheEventData eventData = createEndOfSequenceEvent(partitionId);
                     processor.process(eventData);
                 }
             }
@@ -72,7 +72,7 @@ public final class AccumulatorSweeper {
                 // Give 0 to delay-time in order to fetch all events in the accumulator.
                 accumulator.poll(handler, 0, TimeUnit.SECONDS);
                 // send end event
-                SingleEventData eventData = createEndOfSequenceEvent(partitionId);
+                QueryCacheEventData eventData = createEndOfSequenceEvent(partitionId);
                 processor.process(eventData);
            }
         }
@@ -101,8 +101,8 @@ public final class AccumulatorSweeper {
      * After this event received by subscriber-side, subscriber resets its next-expected-sequence counter to zero for the
      * corresponding partition.
      */
-    private static SingleEventData createEndOfSequenceEvent(int partitionId) {
-        return SingleEventDataBuilder.newSingleEventDataBuilder().withSequence(-1).withPartitionId(partitionId).build();
+    private static QueryCacheEventData createEndOfSequenceEvent(int partitionId) {
+        return QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder().withSequence(-1).withPartitionId(partitionId).build();
     }
 
 }

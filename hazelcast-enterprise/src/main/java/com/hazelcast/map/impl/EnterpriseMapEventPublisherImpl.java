@@ -4,8 +4,8 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
-import com.hazelcast.map.impl.querycache.event.DefaultSingleEventData;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.DefaultQueryCacheEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.publisher.MapPublisherRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
@@ -20,7 +20,7 @@ import com.hazelcast.spi.EventRegistration;
 import java.util.Collection;
 import java.util.Collections;
 
-import static com.hazelcast.map.impl.querycache.event.SingleEventDataBuilder.newSingleEventDataBuilder;
+import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
 import static com.hazelcast.util.Preconditions.checkInstanceOf;
 
@@ -73,7 +73,7 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         int partitionId = queryCacheContext.getPartitionId(entryEvenData.dataKey);
 
         for (PartitionAccumulatorRegistry registry : partitionAccumulatorRegistries) {
-            DefaultSingleEventData singleEventData = (DefaultSingleEventData) convertSingleEventDataOrNull(registry,
+            DefaultQueryCacheEventData singleEventData = (DefaultQueryCacheEventData) convertQueryCacheEventDataOrNull(registry,
                     dataKey, dataNewValue, dataOldValue,
                     eventType, partitionId);
 
@@ -86,7 +86,7 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         }
     }
 
-    private SingleEventData convertSingleEventDataOrNull(PartitionAccumulatorRegistry registry, Data dataKey, Data dataNewValue,
+    private QueryCacheEventData convertQueryCacheEventDataOrNull(PartitionAccumulatorRegistry registry, Data dataKey, Data dataNewValue,
                                                          Data dataOldValue, int eventType,
                                                          int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
@@ -106,7 +106,7 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 throw new IllegalArgumentException("Unknown result type " + result);
         }
 
-        return newSingleEventDataBuilder()
+        return newQueryCacheEventDataBuilder()
                 .withPartitionId(partitionId)
                 .withDataKey(dataKey)
                 .withDataNewValue(includeValue ? dataNewValue : null)
@@ -126,7 +126,7 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         for (PartitionAccumulatorRegistry accumulatorRegistry : partitionAccumulatorRegistries) {
             Accumulator accumulator = accumulatorRegistry.getOrCreate(partitionId);
 
-            SingleEventData singleEventData = newSingleEventDataBuilder()
+            QueryCacheEventData singleEventData = newQueryCacheEventDataBuilder()
                     .withPartitionId(partitionId)
                     .withEventType(eventType.getType())
                     .build();

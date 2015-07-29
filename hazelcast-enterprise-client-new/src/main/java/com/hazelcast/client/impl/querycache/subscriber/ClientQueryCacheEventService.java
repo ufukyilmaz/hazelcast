@@ -16,7 +16,7 @@ import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.Data;
@@ -168,12 +168,12 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
         }
 
         @Override
-        public void handle(SingleEventData data) {
+        public void handle(QueryCacheEventData data) {
             adapter.onEvent(new SingleIMapEvent(data));
         }
 
         @Override
-        public void handle(Collection<SingleEventData> events, String source, int partitionId) {
+        public void handle(Collection<QueryCacheEventData> events, String source, int partitionId) {
             adapter.onEvent(new BatchIMapEvent(new BatchEventData(events, source, partitionId)));
         }
     }

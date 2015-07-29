@@ -15,6 +15,7 @@ import com.hazelcast.nio.serialization.Data;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Client-side implementation of {@code QueryCacheEndToEndConstructor}.
@@ -50,7 +51,7 @@ public class ClientQueryCacheEndToEndConstructor extends AbstractQueryCacheEndTo
         InvokerWrapper invokerWrapper = context.getInvokerWrapper();
         ClientMessage response = (ClientMessage) invokerWrapper.invoke(request);
 
-        Map<Data, Data> result = EnterpriseMapPublisherCreateWithValueCodec.decodeResponse(response).map;
+        Set<Map.Entry<Data, Data>> result = EnterpriseMapPublisherCreateWithValueCodec.decodeResponse(response).entrySet;
 
         populateWithValues(queryCache, result);
     }
@@ -76,8 +77,8 @@ public class ClientQueryCacheEndToEndConstructor extends AbstractQueryCacheEndTo
         context.getInvokerWrapper().invokeOnAllPartitions(request);
     }
 
-    private void populateWithValues(InternalQueryCache queryCache, Map<Data, Data> result) {
-        for (Map.Entry<Data, Data> entry : result.entrySet()) {
+    private void populateWithValues(InternalQueryCache queryCache, Set<Map.Entry<Data, Data>> result) {
+        for (Map.Entry<Data, Data> entry : result) {
             queryCache.setInternal(entry.getKey(), entry.getValue(), false, EntryEventType.ADDED);
         }
     }

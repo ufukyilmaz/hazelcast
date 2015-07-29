@@ -2,7 +2,7 @@ package com.hazelcast.map.impl.querycache.accumulator;
 
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.PartitionSequencer;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 import com.hazelcast.map.impl.querycache.publisher.EventPublisherAccumulatorProcessor;
@@ -150,7 +150,7 @@ public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E
         if (sequenced == null) {
             return null;
         }
-        return isExpired((SingleEventData) sequenced, unit.toMillis(delay), now) ? sequenced : null;
+        return isExpired((QueryCacheEventData) sequenced, unit.toMillis(delay), now) ? sequenced : null;
     }
 
     private E readCurrentExpiredOrNull(long now, long delay, TimeUnit unit) {
@@ -159,7 +159,7 @@ public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E
         if (sequenced == null) {
             return null;
         }
-        return isExpired((SingleEventData) sequenced, unit.toMillis(delay), now) ? sequenced : null;
+        return isExpired((QueryCacheEventData) sequenced, unit.toMillis(delay), now) ? sequenced : null;
     }
 
     private AccumulatorHandler createAccumulatorHandler(QueryCacheContext context, AccumulatorInfo info) {

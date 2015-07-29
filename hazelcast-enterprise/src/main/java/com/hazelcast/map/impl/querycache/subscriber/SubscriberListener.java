@@ -7,7 +7,7 @@ import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.nio.serialization.SerializationService;
 
@@ -33,7 +33,7 @@ class SubscriberListener implements ListenerAdapter {
     @Override
     public void onEvent(IMapEvent iMapEvent) {
         if (iMapEvent instanceof SingleIMapEvent) {
-            SingleEventData eventData = ((SingleIMapEvent) iMapEvent).getEventData();
+            QueryCacheEventData eventData = ((SingleIMapEvent) iMapEvent).getEventData();
             eventData.setSerializationService(serializationService);
             accumulator.accumulate(eventData);
             return;
@@ -42,8 +42,8 @@ class SubscriberListener implements ListenerAdapter {
         if (iMapEvent instanceof BatchIMapEvent) {
             BatchIMapEvent batchIMapEvent = (BatchIMapEvent) iMapEvent;
             BatchEventData batchEventData = batchIMapEvent.getBatchEventData();
-            Collection<SingleEventData> events = batchEventData.getEvents();
-            for (SingleEventData eventData : events) {
+            Collection<QueryCacheEventData> events = batchEventData.getEvents();
+            for (QueryCacheEventData eventData : events) {
                 eventData.setSerializationService(serializationService);
                 accumulator.accumulate(eventData);
             }

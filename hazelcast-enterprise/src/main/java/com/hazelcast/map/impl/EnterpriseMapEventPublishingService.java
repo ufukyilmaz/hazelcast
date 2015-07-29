@@ -6,7 +6,7 @@ import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
 import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.nio.serialization.SerializationService;
 
@@ -30,8 +30,8 @@ class EnterpriseMapEventPublishingService extends MapEventPublishingService {
 
     @Override
     public void dispatchEvent(EventData eventData, ListenerAdapter listener) {
-        if (eventData instanceof SingleEventData) {
-            dispatchSingleEventData((SingleEventData) eventData, listener);
+        if (eventData instanceof QueryCacheEventData) {
+            dispatchQueryCacheEventData((QueryCacheEventData) eventData, listener);
             return;
         }
 
@@ -75,12 +75,12 @@ class EnterpriseMapEventPublishingService extends MapEventPublishingService {
         return new BatchIMapEvent(batchEventData);
     }
 
-    private void dispatchSingleEventData(SingleEventData eventData, ListenerAdapter listener) {
+    private void dispatchQueryCacheEventData(QueryCacheEventData eventData, ListenerAdapter listener) {
         SingleIMapEvent mapEvent = createSingleIMapEvent(eventData);
         listener.onEvent(mapEvent);
     }
 
-    private SingleIMapEvent createSingleIMapEvent(SingleEventData eventData) {
+    private SingleIMapEvent createSingleIMapEvent(QueryCacheEventData eventData) {
         return new SingleIMapEvent(eventData);
     }
 }

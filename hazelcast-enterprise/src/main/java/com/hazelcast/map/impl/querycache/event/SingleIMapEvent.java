@@ -5,17 +5,17 @@ import com.hazelcast.core.IMapEvent;
 import com.hazelcast.core.Member;
 
 /**
- * {@link IMapEvent} which holds {@link SingleEventData}
+ * {@link IMapEvent} which holds {@link QueryCacheEventData}
  */
 public class SingleIMapEvent implements IMapEvent {
 
-    private final SingleEventData eventData;
+    private final QueryCacheEventData eventData;
 
-    public SingleIMapEvent(SingleEventData eventData) {
+    public SingleIMapEvent(QueryCacheEventData eventData) {
         this.eventData = eventData;
     }
 
-    public SingleEventData getEventData() {
+    public QueryCacheEventData getEventData() {
         return eventData;
     }
 

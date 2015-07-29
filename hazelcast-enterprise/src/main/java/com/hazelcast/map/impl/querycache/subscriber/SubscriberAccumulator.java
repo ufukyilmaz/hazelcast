@@ -6,7 +6,7 @@ import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.BasicAccumulator;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.DefaultSubscriberSequencerProvider;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 import com.hazelcast.map.impl.querycache.event.sequence.SubscriberSequencerProvider;
@@ -25,7 +25,7 @@ import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.
  * <p/>
  * This class can be accessed by multiple-threads at a time.
  */
-public class SubscriberAccumulator extends BasicAccumulator<SingleEventData> {
+public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData> {
 
     private final ILogger logger = Logger.getLogger(getClass());
     private final AccumulatorHandler handler;
@@ -43,7 +43,7 @@ public class SubscriberAccumulator extends BasicAccumulator<SingleEventData> {
     }
 
     @Override
-    public void accumulate(SingleEventData event) {
+    public void accumulate(QueryCacheEventData event) {
         if (!isApplicable(event)) {
             return;
         }
@@ -53,7 +53,7 @@ public class SubscriberAccumulator extends BasicAccumulator<SingleEventData> {
     /**
      * Checks whether the event data is applicable to the query cache.
      */
-    private boolean isApplicable(SingleEventData event) {
+    private boolean isApplicable(QueryCacheEventData event) {
         return getInfo().isPublishable()
                 && hasNextSequence(event);
     }
@@ -95,7 +95,7 @@ public class SubscriberAccumulator extends BasicAccumulator<SingleEventData> {
         return new SubscriberAccumulatorHandler(includeValue, queryCache, serializationService);
     }
 
-    private void addQueryCache(SingleEventData eventData) {
+    private void addQueryCache(QueryCacheEventData eventData) {
         handler.handle(eventData, false);
     }
 

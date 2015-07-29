@@ -2,14 +2,14 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.SerializationService;
 
 /**
  * This handler is used to process event data in {@link SubscriberAccumulator}.
  */
-class SubscriberAccumulatorHandler implements AccumulatorHandler<SingleEventData> {
+class SubscriberAccumulatorHandler implements AccumulatorHandler<QueryCacheEventData> {
 
     private final InternalQueryCache queryCache;
     private final boolean includeValue;
@@ -23,7 +23,7 @@ class SubscriberAccumulatorHandler implements AccumulatorHandler<SingleEventData
     }
 
     @Override
-    public void handle(SingleEventData eventData, boolean ignored) {
+    public void handle(QueryCacheEventData eventData, boolean ignored) {
         eventData.setSerializationService(serializationService);
 
         Data keyData = eventData.getDataKey();

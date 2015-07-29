@@ -27,7 +27,7 @@ import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
-import com.hazelcast.map.impl.querycache.event.SingleEventData;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.spi.impl.eventservice.impl.EmptyFilter;
@@ -74,7 +74,7 @@ public class MapAddListenerMessageTask
 
     private ClientMessage getEventData(IMapEvent iMapEvent) {
         if (iMapEvent instanceof SingleIMapEvent) {
-            SingleEventData eventData = ((SingleIMapEvent) iMapEvent).getEventData();
+            QueryCacheEventData eventData = ((SingleIMapEvent) iMapEvent).getEventData();
             ClientMessage clientMessage = EnterpriseMapAddListenerCodec.encodeQueryCacheSingleEvent(eventData);
             int partitionId = eventData.getPartitionId();
             clientMessage.setPartitionId(partitionId);

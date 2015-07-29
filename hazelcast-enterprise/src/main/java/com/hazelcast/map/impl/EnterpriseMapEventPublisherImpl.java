@@ -27,7 +27,8 @@ import static com.hazelcast.util.Preconditions.checkInstanceOf;
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
  */
-class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
+class EnterpriseMapEventPublisherImpl
+        extends MapEventPublisherImpl {
 
     protected EnterpriseMapEventPublisherImpl(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
@@ -74,8 +75,7 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
 
         for (PartitionAccumulatorRegistry registry : partitionAccumulatorRegistries) {
             DefaultQueryCacheEventData singleEventData = (DefaultQueryCacheEventData) convertQueryCacheEventDataOrNull(registry,
-                    dataKey, dataNewValue, dataOldValue,
-                    eventType, partitionId);
+                    dataKey, dataNewValue, dataOldValue, eventType, partitionId);
 
             if (singleEventData == null) {
                 continue;
@@ -86,9 +86,9 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         }
     }
 
-    private QueryCacheEventData convertQueryCacheEventDataOrNull(PartitionAccumulatorRegistry registry, Data dataKey, Data dataNewValue,
-                                                         Data dataOldValue, int eventType,
-                                                         int partitionId) {
+    private QueryCacheEventData convertQueryCacheEventDataOrNull(PartitionAccumulatorRegistry registry, Data dataKey,
+                                                                 Data dataNewValue, Data dataOldValue, int eventType,
+                                                                 int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
         // TODO handle synthetic events when applying filter.
         Result result = applyEventFilter(eventFilter, false, dataKey, dataOldValue, dataNewValue,
@@ -106,30 +106,24 @@ class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 throw new IllegalArgumentException("Unknown result type " + result);
         }
 
-        return newQueryCacheEventDataBuilder()
-                .withPartitionId(partitionId)
-                .withDataKey(dataKey)
-                .withDataNewValue(includeValue ? dataNewValue : null)
-                .withEventType(eventType)
-                .withDataOldValue(includeValue ? dataOldValue : null)
-                .build();
+        return newQueryCacheEventDataBuilder().withPartitionId(partitionId).withDataKey(dataKey)
+                                              .withDataNewValue(includeValue ? dataNewValue : null).withEventType(eventType)
+                                              .withDataOldValue(includeValue ? dataOldValue : null).build();
 
     }
 
     // TODO Problem : Locked keys will also be cleared from the query-cache after calling a map-wide event like clear/evictAll.
     @Override
-    public void hintMapEvent(Address caller, String mapName, EntryEventType eventType,
-                             int numberOfEntriesAffected, int partitionId) {
+    public void hintMapEvent(Address caller, String mapName, EntryEventType eventType, int numberOfEntriesAffected,
+                             int partitionId) {
         super.hintMapEvent(caller, mapName, eventType, numberOfEntriesAffected, partitionId);
         // this collection contains all defined query-caches on this map.
         Collection<PartitionAccumulatorRegistry> partitionAccumulatorRegistries = getPartitionAccumulatorRegistries(mapName);
         for (PartitionAccumulatorRegistry accumulatorRegistry : partitionAccumulatorRegistries) {
             Accumulator accumulator = accumulatorRegistry.getOrCreate(partitionId);
 
-            QueryCacheEventData singleEventData = newQueryCacheEventDataBuilder()
-                    .withPartitionId(partitionId)
-                    .withEventType(eventType.getType())
-                    .build();
+            QueryCacheEventData singleEventData = newQueryCacheEventDataBuilder().withPartitionId(partitionId)
+                                                                                 .withEventType(eventType.getType()).build();
 
             accumulator.accumulate(singleEventData);
         }

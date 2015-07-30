@@ -11,9 +11,9 @@ import com.hazelcast.nio.Address;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -62,16 +62,16 @@ public class PublisherAccumulatorHandler implements AccumulatorHandler<Sequenced
     }
 
     private void sendInBatches(Queue<QueryCacheEventData> events) {
-        Map<Integer, Collection<QueryCacheEventData>> partitionToEventDataMap = createPartitionToEventDataMap(events);
+        Map<Integer, List<QueryCacheEventData>> partitionToEventDataMap = createPartitionToEventDataMap(events);
         sendToSubscriber(partitionToEventDataMap);
     }
 
-    private Map<Integer, Collection<QueryCacheEventData>> createPartitionToEventDataMap(Queue<QueryCacheEventData> events) {
+    private Map<Integer, List<QueryCacheEventData>> createPartitionToEventDataMap(Queue<QueryCacheEventData> events) {
         if (events.isEmpty()) {
             return Collections.emptyMap();
         }
 
-        Map<Integer, Collection<QueryCacheEventData>> map = new HashMap<Integer, Collection<QueryCacheEventData>>();
+        Map<Integer, List<QueryCacheEventData>> map = new HashMap<Integer, List<QueryCacheEventData>>();
 
         do {
             QueryCacheEventData eventData = events.poll();
@@ -80,7 +80,7 @@ public class PublisherAccumulatorHandler implements AccumulatorHandler<Sequenced
             }
             int partitionId = eventData.getPartitionId();
 
-            Collection<QueryCacheEventData> eventDataList = map.get(partitionId);
+            List<QueryCacheEventData> eventDataList = map.get(partitionId);
             if (eventDataList == null) {
                 eventDataList = new ArrayList<QueryCacheEventData>();
                 map.put(partitionId, eventDataList);
@@ -92,11 +92,11 @@ public class PublisherAccumulatorHandler implements AccumulatorHandler<Sequenced
         return map;
     }
 
-    private void sendToSubscriber(Map<Integer, Collection<QueryCacheEventData>> map) {
-        Set<Map.Entry<Integer, Collection<QueryCacheEventData>>> entries = map.entrySet();
-        for (Map.Entry<Integer, Collection<QueryCacheEventData>> entry : entries) {
+    private void sendToSubscriber(Map<Integer, List<QueryCacheEventData>> map) {
+        Set<Map.Entry<Integer, List<QueryCacheEventData>>> entries = map.entrySet();
+        for (Map.Entry<Integer, List<QueryCacheEventData>> entry : entries) {
             Integer partitionId = entry.getKey();
-            Collection<QueryCacheEventData> eventData = entry.getValue();
+            List<QueryCacheEventData> eventData = entry.getValue();
             String thisNodesAddress = getThisNodesAddress();
             BatchEventData batchEventData = new BatchEventData(eventData, thisNodesAddress, partitionId);
             processor.process(batchEventData);

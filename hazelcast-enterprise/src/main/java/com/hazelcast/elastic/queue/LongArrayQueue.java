@@ -68,10 +68,11 @@ public final class LongArrayQueue implements LongQueue {
         UnsafeHelper.UNSAFE.putLong(address + (index * 8L), value);
     }
 
+    @Override
     public boolean offer(long value) {
-        assert value != nullItem;
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
+        ensureMemory();
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
         }
         if (size == capacity) {
             return false;
@@ -85,20 +86,18 @@ public final class LongArrayQueue implements LongQueue {
         return true;
     }
 
+    @Override
     public long peek() {
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
-        }
+        ensureMemory();
         if (size == 0) {
             return nullItem;
         }
         return get(remove);
     }
 
+    @Override
     public long poll() {
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
-        }
+        ensureMemory();
         if (size == 0) {
             return nullItem;
         }
@@ -112,26 +111,35 @@ public final class LongArrayQueue implements LongQueue {
         return value;
     }
 
+    private void ensureMemory() {
+        if (size < 0) {
+            throw new IllegalStateException("Queue is already destroyed! " + toString());
+        }
+    }
+
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
     public boolean isEmpty() {
         return size == 0;
     }
 
+    @Override
     public int capacity() {
         return capacity;
     }
 
+    @Override
     public int remainingCapacity() {
         return capacity - size;
     }
 
+    @Override
     public void clear() {
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
-        }
+        ensureMemory();
         for (int i = 0; i < capacity; i++) {
             UnsafeHelper.UNSAFE.putLong(address + (i * 8L), nullItem);
         }
@@ -140,6 +148,7 @@ public final class LongArrayQueue implements LongQueue {
         size = 0;
     }
 
+    @Override
     public void destroy() {
         if (size >= 0) {
             malloc.free(address, capacity * 8L);
@@ -154,7 +163,9 @@ public final class LongArrayQueue implements LongQueue {
         return nullItem;
     }
 
+    @Override
     public LongIterator iterator() {
+        ensureMemory();
         return new Iter();
     }
 
@@ -176,6 +187,7 @@ public final class LongArrayQueue implements LongQueue {
             if (remaining == 0) {
                 throw new NoSuchElementException();
             }
+            ensureMemory();
             long item = get(cursor);
             cursor = inc(cursor);
             remaining--;
@@ -186,6 +198,7 @@ public final class LongArrayQueue implements LongQueue {
             return (++i == capacity) ? 0 : i;
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }

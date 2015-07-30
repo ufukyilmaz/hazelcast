@@ -6,7 +6,9 @@ import com.hazelcast.core.IMapEvent;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
+import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
@@ -57,18 +59,22 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
                 if (!endpoint.isAlive()) {
                     return;
                 }
-                Object eventData = getEventData(iMapEvent);
-                endpoint.sendEvent(null, eventData, getCallId());
+                sendEvent(iMapEvent);
+
             }
 
-            private Object getEventData(IMapEvent iMapEvent) {
+            private void sendEvent(IMapEvent iMapEvent) {
                 if (iMapEvent instanceof SingleIMapEvent) {
-                    return ((SingleIMapEvent) iMapEvent).getEventData();
+                    QueryCacheEventData eventData = ((SingleIMapEvent) iMapEvent).getEventData();
+                    endpoint.sendEvent(eventData.getPartitionId(), eventData, getCallId());
+                    return;
                 }
 
                 if (iMapEvent instanceof BatchIMapEvent) {
                     BatchIMapEvent batchIMapEvent = (BatchIMapEvent) iMapEvent;
-                    return batchIMapEvent.getBatchEventData();
+                    BatchEventData eventData = batchIMapEvent.getBatchEventData();
+                    endpoint.sendEvent(eventData.getPartitionId(), eventData, getCallId());
+                    return;
                 }
 
                 throw new IllegalArgumentException("Unexpected event type found = [" + iMapEvent + "]");

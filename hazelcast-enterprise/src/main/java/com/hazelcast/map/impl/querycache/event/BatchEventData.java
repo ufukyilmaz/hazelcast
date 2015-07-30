@@ -9,6 +9,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.Preconditions.checkNotNegative;
@@ -22,13 +23,13 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public class BatchEventData implements Sequenced, EventData {
 
     private String source;
-    private Collection<QueryCacheEventData> events;
+    private List<QueryCacheEventData> events;
     private transient int partitionId;
 
     public BatchEventData() {
     }
 
-    public BatchEventData(Collection<QueryCacheEventData> events, String source, int partitionId) {
+    public BatchEventData(List<QueryCacheEventData> events, String source, int partitionId) {
         this.events = checkNotNull(events, "events cannot be null");
         this.source = checkNotNull(source, "source cannot be null");
         this.partitionId = checkNotNegative(partitionId, "partitionId cannot be negative");
@@ -38,7 +39,7 @@ public class BatchEventData implements Sequenced, EventData {
         events.add(entry);
     }
 
-    public Collection<QueryCacheEventData> getEvents() {
+    public List<QueryCacheEventData> getEvents() {
         return events;
     }
 

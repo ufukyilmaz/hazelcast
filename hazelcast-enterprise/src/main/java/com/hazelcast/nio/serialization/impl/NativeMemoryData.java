@@ -39,12 +39,12 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     static final int SIZE_OFFSET = 0;
     static final int TYPE_OFFSET = 4;
     // we can store this bit in sign-bit of data-size
-    // for the sake of simplicity and make structure same as DefaultData
+    // for the sake of simplicity and make structure same as HeapData
     // we will use a byte to store partition_hash bit
     static final int PARTITION_HASH_BIT_OFFSET = 8;
     static final int DATA_OFFSET = 9;
 
-    static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - DefaultData.TYPE_OFFSET;
+    static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - HeapData.TYPE_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 

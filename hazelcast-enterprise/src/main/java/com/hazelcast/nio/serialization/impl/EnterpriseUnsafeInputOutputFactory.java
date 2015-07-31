@@ -35,7 +35,7 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
             MemoryBlock memoryBlock = (NativeMemoryData) data;
             return new MemoryBlockDataInput(memoryBlock,  NativeMemoryData.DATA_OFFSET, serializationService);
         } else {
-            return new EnterpriseUnsafeObjectDataInput(data.toByteArray(), DefaultData.DATA_OFFSET, serializationService);
+            return new EnterpriseUnsafeObjectDataInput(data.toByteArray(), HeapData.DATA_OFFSET, serializationService);
         }
     }
 

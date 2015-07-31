@@ -21,7 +21,7 @@ final class EnterpriseByteArrayInputOutputFactory implements InputOutputFactory 
     public EnterpriseBufferObjectDataInput createInput(Data data, SerializationService service) {
         EnterpriseSerializationService serializationService = (EnterpriseSerializationService) service;
         return new EnterpriseByteArrayObjectDataInput(data.toByteArray(),
-                DefaultData.DATA_OFFSET, serializationService, byteOrder);
+                HeapData.DATA_OFFSET, serializationService, byteOrder);
     }
 
     @Override

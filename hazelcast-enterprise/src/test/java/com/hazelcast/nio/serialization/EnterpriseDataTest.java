@@ -21,8 +21,8 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.nio.serialization.impl.DefaultData;
 import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
@@ -148,7 +148,7 @@ public class EnterpriseDataTest {
             Data offheap = ss.toData(object, DataType.NATIVE);
 
             Data heap1 = ss.convertData(heap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap1 instanceof DefaultData);
+            Assert.assertTrue("Type!", heap1 instanceof HeapData);
             Assert.assertEquals(heap, heap1);
             Assert.assertEquals(offheap, heap1);
             Assert.assertTrue("Identity!", heap == heap1);
@@ -165,7 +165,7 @@ public class EnterpriseDataTest {
             Assert.assertTrue("Identity!", offheap == offheap2);
 
             Data heap2 = ss.convertData(offheap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap2 instanceof DefaultData);
+            Assert.assertTrue("Type!", heap2 instanceof HeapData);
             Assert.assertEquals(heap, heap2);
             Assert.assertEquals(offheap, heap2);
 

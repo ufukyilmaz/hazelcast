@@ -131,14 +131,14 @@ public final class NativeMemoryDataUtil {
 
     public static boolean equals(long address, final int bufferSize, byte[] bytes) {
         if (address <= 0 || bytes == null || bytes.length == 0
-                || bufferSize != bytes.length - DefaultData.DATA_OFFSET) {
+                || bufferSize != bytes.length - HeapData.DATA_OFFSET) {
             return false;
         }
         int bufferOffset = NativeMemoryData.DATA_OFFSET;
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < bufferSize; i++) {
             byte b = unsafe.getByte(address + bufferOffset + i);
-            if (b != bytes[i + DefaultData.DATA_OFFSET]) {
+            if (b != bytes[i + HeapData.DATA_OFFSET]) {
                 return false;
             }
         }

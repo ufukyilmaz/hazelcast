@@ -215,7 +215,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             int size = in.readInt();
             if (size == 0) {
-                return new DefaultData(null);
+                return new HeapData(null);
             }
 
             return readNativeData(in, memoryManager, size, readToHeapOnOOME);
@@ -245,7 +245,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             if (readToHeapOnOOME) {
                 byte[] bytes = new byte[size];
                 in.readFully(bytes);
-                return new DefaultData(bytes);
+                return new HeapData(bytes);
             } else {
                 throw e;
             }
@@ -285,7 +285,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
         }
         switch (type) {
             case NATIVE:
-                if (data instanceof DefaultData) {
+                if (data instanceof HeapData) {
                     if (memoryManager == null) {
                         throw new HazelcastSerializationException("MemoryManager is required!");
                     }
@@ -304,7 +304,7 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
 
             case HEAP:
                 if (data instanceof NativeMemoryData) {
-                    return new DefaultData(data.toByteArray());
+                    return new HeapData(data.toByteArray());
                 }
                 break;
 

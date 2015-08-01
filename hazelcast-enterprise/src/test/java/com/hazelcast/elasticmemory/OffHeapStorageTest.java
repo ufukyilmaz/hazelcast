@@ -19,7 +19,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.StreamSerializer;
 import com.hazelcast.internal.storage.Storage;
-import com.hazelcast.nio.serialization.impl.DefaultData;
+import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -109,7 +109,7 @@ public class OffHeapStorageTest {
         rand.nextBytes(data);
         final int hash = rand.nextInt();
 
-        final DataRefImpl ref = s.put(hash, new DefaultData(data));
+        final DataRefImpl ref = s.put(hash, new HeapData(data));
         assertEquals(k, ref.size());
         assertEquals((int) Math.ceil((double) k / chunkSize), ref.getChunkCount());
 
@@ -156,7 +156,7 @@ public class OffHeapStorageTest {
                 : new ByteBufferStorage(total.bytes(), (int) chunk.bytes());
         byte[] data = new byte[(int) chunk.bytes()];
         for (int i = 0; i < count; i++) {
-            s.put(i, new DefaultData(data));
+            s.put(i, new HeapData(data));
         }
         s.destroy();
     }

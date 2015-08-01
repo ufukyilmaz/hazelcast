@@ -4,7 +4,7 @@ import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.impl.DefaultData;
+import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.util.QuickMath;
 
 import java.io.Closeable;
@@ -86,7 +86,7 @@ public class BufferSegment implements Closeable {
             return null;
         }
         if (ref.isEmpty()) {
-            return new DefaultData(null);
+            return new HeapData(null);
         }
 
         final byte[] value = new byte[ref.size()];
@@ -108,7 +108,7 @@ public class BufferSegment implements Closeable {
         }
 
         if (isEntryRefValid(ref)) { // volatile read
-            return new DefaultData(value);
+            return new HeapData(value);
         }
         return null;
     }

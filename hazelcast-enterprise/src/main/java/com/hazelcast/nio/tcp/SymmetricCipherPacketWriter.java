@@ -47,14 +47,14 @@ public class SymmetricCipherPacketWriter implements PacketWriter {
             if (socketBuffer.remaining() < Bits.INT_SIZE_IN_BYTES) {
                 return false;
             }
-            int size = cipher.getOutputSize(packet.size());
+            int size = cipher.getOutputSize(packet.packetSize());
             socketBuffer.putInt(size);
 
-            if (packetBuffer.capacity() < packet.size()) {
-                packetBuffer = ByteBuffer.allocate(packet.size());
+            if (packetBuffer.capacity() < packet.packetSize()) {
+                packetBuffer = ByteBuffer.allocate(packet.packetSize());
             }
             if (!packet.writeTo(packetBuffer)) {
-                throw new HazelcastException("Packet didn't fit into the buffer! " + packet.size()
+                throw new HazelcastException("Packet didn't fit into the buffer! " + packet.packetSize()
                         + " VS " + packetBuffer);
             }
             packetBuffer.flip();

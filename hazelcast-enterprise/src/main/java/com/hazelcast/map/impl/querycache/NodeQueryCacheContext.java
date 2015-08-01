@@ -107,7 +107,7 @@ public class NodeQueryCacheContext implements QueryCacheContext {
 
     @Override
     public Collection<Member> getMemberList() {
-        Collection<MemberImpl> memberList = nodeEngine.getClusterService().getMemberList();
+        Collection<MemberImpl> memberList = nodeEngine.getClusterService().getMemberImpls();
         List<Member> members = new ArrayList<Member>(memberList.size());
         members.addAll(memberList);
         return members;

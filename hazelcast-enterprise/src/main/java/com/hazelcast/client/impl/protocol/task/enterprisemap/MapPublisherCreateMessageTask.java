@@ -57,7 +57,7 @@ public class MapPublisherCreateMessageTask
     @Override
     protected Object call() throws Exception {
         ClusterService clusterService = clientEngine.getClusterService();
-        Collection<MemberImpl> members = clusterService.getMemberList();
+        Collection<MemberImpl> members = clusterService.getMemberImpls();
         List<Future> futures = new ArrayList<Future>(members.size());
         createInvocations(members, futures);
 

@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class UnsafeStorage implements Storage<DataRefImpl> {
 
-    private static final ILogger logger = Logger.getLogger(UnsafeStorage.class.getName());
+    private static final ILogger logger = Logger.getLogger(UnsafeStorage.class);
 
     private final Lock lock = new ReentrantLock();
     private final int chunkSize;

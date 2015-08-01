@@ -41,7 +41,7 @@ public class PublisherCreateRequest extends InvocationClientRequest implements R
     @Override
     protected void invoke() {
         ClusterService clusterService = getClientEngine().getClusterService();
-        Collection<MemberImpl> members = clusterService.getMemberList();
+        Collection<MemberImpl> members = clusterService.getMemberImpls();
         List<Future> futures = new ArrayList<Future>(members.size());
         createInvocations(members, futures);
         List<QueryResultSet> results = getQueryResultSets(futures);

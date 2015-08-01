@@ -3,7 +3,6 @@ package com.hazelcast.map.impl.querycache.subscriber;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.instance.AbstractMember;
 import com.hazelcast.map.impl.EntryEventFilter;
 import com.hazelcast.map.impl.QueryEventFilter;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
@@ -180,7 +179,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
         if (invokerWrapper instanceof NodeInvokerWrapper) {
             Collection<Member> memberList = context.getMemberList();
             for (Member member : memberList) {
-                Address address = ((AbstractMember) member).getAddress();
+                Address address = member.getAddress();
                 Object removePublisher = subscriberContextSupport.createDestroyQueryCacheOperation(mapName, userGivenCacheName);
                 invokerWrapper.invokeOnTarget(removePublisher, address);
             }

@@ -65,7 +65,7 @@ public class DestroyQueryCacheRequest extends InvocationClientRequest implements
     @Override
     protected void invoke() {
         ClusterService clusterService = getClientEngine().getClusterService();
-        Collection<MemberImpl> members = clusterService.getMemberList();
+        Collection<MemberImpl> members = clusterService.getMemberImpls();
         List<Future<Boolean>> futures = new ArrayList<Future<Boolean>>(members.size());
         createInvocations(members, futures);
         Collection<Boolean> results = FutureUtil.returnWithDeadline(futures, 1, TimeUnit.MINUTES);

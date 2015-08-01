@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.Member;
-import com.hazelcast.instance.AbstractMember;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -47,7 +46,7 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
         Collection<Member> members = context.getMemberList();
         List<Future<QueryResultSet>> futures = new ArrayList<Future<QueryResultSet>>(members.size());
         for (Member member : members) {
-            Address address = ((AbstractMember) member).getAddress();
+            Address address = member.getAddress();
             Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), address);
             futures.add(future);
         }

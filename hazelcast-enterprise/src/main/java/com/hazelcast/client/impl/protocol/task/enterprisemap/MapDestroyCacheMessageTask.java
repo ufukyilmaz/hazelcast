@@ -52,7 +52,7 @@ public class MapDestroyCacheMessageTask
     @Override
     protected Object call() throws Exception {
         ClusterService clusterService = clientEngine.getClusterService();
-        Collection<MemberImpl> members = clusterService.getMemberList();
+        Collection<MemberImpl> members = clusterService.getMemberImpls();
         List<Future<Boolean>> futures = new ArrayList<Future<Boolean>>(members.size());
         createInvocations(members, futures);
         Collection<Boolean> results = FutureUtil.returnWithDeadline(futures, 1, TimeUnit.MINUTES);

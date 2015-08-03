@@ -2,24 +2,19 @@ package com.hazelcast.enterprise;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
@@ -28,26 +23,13 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class LicenseTest {
-
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
-    @BeforeClass
-    @AfterClass
-    public static void cleanupClass() {
-        Hazelcast.shutdownAll();
-    }
-
-    @Before
-    @After
-    public void cleanup() {
-        Hazelcast.shutdownAll();
-    }
+public class LicenseTest extends HazelcastTestSupport {
 
     @Test
     public void testXmlConfig() {
-        String xml = "<hazelcast>\n"
+        String xml = "<hazelcast xsi:schemaLocation=\"http://www.hazelcast.com/schema/config hazelcast-config-3.5.xsd\"\n"
+                + "           xmlns=\"http://www.hazelcast.com/schema/config\"\n"
+                + "           xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n"
                 + "    <group>\n"
                 + "        <name>dev</name>\n"
                 + "        <password>dev-pass</password>\n"
@@ -77,9 +59,10 @@ public class LicenseTest {
 
     @Test
     public void testLicenseValid() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
         try {
-            Hazelcast.newHazelcastInstance(new Config());
+            Config config = new Config();
+            config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
+            createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
         }
@@ -87,44 +70,51 @@ public class LicenseTest {
 
     @Test
     public void testLicenseValidWithoutHumanReadablePart() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
-                SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         try {
-            Hazelcast.newHazelcastInstance(new Config());
+            Config config = new Config();
+            config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
+                    SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+            createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
         }
     }
 
-    @Test
+    @Test(expected = InvalidLicenseException.class)
     public void testLicenseNotFound() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Invalid License Key!");
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "blabla");
-        Hazelcast.newHazelcastInstance(new Config());
+        Config config = new Config();
+        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "blabla");
+        createHazelcastInstance(config);
     }
 
-    @Test
+    @Test(expected = InvalidLicenseException.class)
     public void testEnterpriseLicenseExpired() {
-        expectedEx.expect(InvalidLicenseException.class);
-        expectedEx.expectMessage("Enterprise License has expired! Please contact sales@hazelcast.com");
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.EXPIRED_ENTERPRISE_LICENSE);
-        Hazelcast.newHazelcastInstance(new Config());
+        Config config = new Config();
+        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.EXPIRED_ENTERPRISE_LICENSE);
+        createHazelcastInstance(config);
     }
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void testNumberOfAllowedNodes() {
-        expectedEx.expect(IllegalStateException.class);
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
-        Hazelcast.newHazelcastInstance(new Config());
-        Hazelcast.newHazelcastInstance(new Config());
-        Hazelcast.newHazelcastInstance(new Config());//this node should not start!
+        Config config = new Config();
+        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
+
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+
+        HazelcastInstance hz1 = factory.newHazelcastInstance(config);
+        HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+
+        assertEquals(2, hz1.getCluster().getMembers().size());
+        assertEquals(2, hz2.getCluster().getMembers().size());
+
+        factory.newHazelcastInstance(config); //this node should not start!
     }
 
     @Test
     public void testSecurityOnlyLicenseOnlyUsesOpenSourceWANReplication() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
-        HazelcastInstance h = Hazelcast.newHazelcastInstance(new Config());
+        Config config = new Config();
+        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+        HazelcastInstance h = createHazelcastInstance(config);
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
         assertTrue(wanReplicationService instanceof WanReplicationServiceImpl);
@@ -132,7 +122,7 @@ public class LicenseTest {
 
     @Test
     public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
-        HazelcastInstance h = Hazelcast.newHazelcastInstance(new Config());
+        HazelcastInstance h = createHazelcastInstance();
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
         assertTrue(wanReplicationService instanceof EnterpriseWanReplicationService);

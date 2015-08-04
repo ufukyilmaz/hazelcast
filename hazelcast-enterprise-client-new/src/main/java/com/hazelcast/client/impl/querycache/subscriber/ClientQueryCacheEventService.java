@@ -1,5 +1,6 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
+import com.hazelcast.client.impl.ClientMessageDecoder;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.codec.EnterpriseMapAddListenerCodec;
 import com.hazelcast.client.spi.ClientContext;
@@ -117,7 +118,12 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
         String listenerName = generateListenerName(mapName, cacheName);
         ClientMessage request = EnterpriseMapAddListenerCodec.encodeRequest(listenerName);
         EventHandler handler = new QueryCacheHandler(adapter);
-        return listenerService.startListening(request, null, handler);
+        return listenerService.startListening(request, null, handler, new ClientMessageDecoder() {
+            @Override
+            public <T> T decodeClientMessage(ClientMessage clientMessage) {
+                return (T) EnterpriseMapAddListenerCodec.decodeResponse(clientMessage).response;
+            }
+        });
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.CipherHelper;
 import com.hazelcast.nio.IOService;
+import com.hazelcast.nio.Packet;
 import com.hazelcast.util.ExceptionUtil;
 
 import javax.crypto.Cipher;
@@ -14,25 +15,26 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
 
     private final Cipher cipher;
     private final ILogger logger;
+    private final IOService ioService;
     private int size = -1;
-    private ByteBuffer cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
+    private ByteBuffer cipherBuffer;
 
     public SymmetricCipherPacketReader(TcpIpConnection connection, IOService ioService) {
-        super(connection, ioService);
-        logger = ioService.getLogger(getClass().getName());
-        cipher = init();
+        super(connection, ioService.getSerializationService(), ioService.getPacketTransceiver());
+        this.ioService = ioService;
+        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
+        this.logger = ioService.getLogger(getClass().getName());
+        this.cipher = init();
     }
 
     Cipher init() {
-        Cipher c;
         try {
-            c = CipherHelper.createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig());
+            return CipherHelper.createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig());
         } catch (Exception e) {
             logger.severe("Symmetric Cipher for ReadHandler cannot be initialized.", e);
             CipherHelper.handleCipherException(e, connection);
             throw ExceptionUtil.rethrow(e);
         }
-        return c;
     }
 
     @Override
@@ -69,7 +71,7 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
             cipherBuffer.flip();
             while (cipherBuffer.hasRemaining()) {
                 if (packet == null) {
-                    packet = obtainPacket();
+                    packet = new Packet();
                 }
                 boolean complete = packet.readFrom(cipherBuffer);
                 if (complete) {

@@ -101,7 +101,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
                             + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                            + EvictionConfig.MaxSizePolicy.ENTRY_COUNT + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
                             + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "

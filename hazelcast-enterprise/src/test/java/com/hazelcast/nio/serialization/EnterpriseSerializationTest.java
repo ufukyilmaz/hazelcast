@@ -34,13 +34,12 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.UuidUtil;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -60,6 +59,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -92,11 +92,11 @@ public class EnterpriseSerializationTest
         SerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         DummyValue value = new DummyValue("test", 111);
         Data data = ss1.toData(value);
-        Assert.assertNotNull(data);
+        assertNotNull(data);
 
         SerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Object o = ss2.toObject(data);
-        Assert.assertEquals(value, o);
+        assertEquals(value, o);
     }
 
     @Test
@@ -164,11 +164,11 @@ public class EnterpriseSerializationTest
 
         SerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Data data = ss1.toData(new SingletonValue());
-        Assert.assertNotNull(data);
+        assertNotNull(data);
 
         SerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Object o = ss2.toObject(data);
-        Assert.assertEquals(new SingletonValue(), o);
+        assertEquals(new SingletonValue(), o);
     }
 
     private static class SingletonValue {
@@ -271,7 +271,7 @@ public class EnterpriseSerializationTest
         Data data = ss.toData(new Foo());
         Foo foo = ss.toObject(data);
 
-        Assert.assertFalse("Objects should not be identical!", foo == foo.getBar().getFoo());
+        assertFalse("Objects should not be identical!", foo == foo.getBar().getFoo());
     }
 
     private static class Foo implements Serializable {

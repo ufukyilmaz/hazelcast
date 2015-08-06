@@ -8,7 +8,6 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -45,31 +44,31 @@ public class LongHashSetTest {
     @Test
     public void testAdd() throws Exception {
         long key = random.nextLong();
-        Assert.assertTrue(set.add(key));
-        Assert.assertFalse(set.add(key));
+        assertTrue(set.add(key));
+        assertFalse(set.add(key));
     }
 
     @Test
     public void testAddMany() throws Exception {
         for (int i = 0; i < 1000; i++) {
-            Assert.assertTrue(set.add(i));
+            assertTrue(set.add(i));
         }
     }
 
     @Test
     public void testRemove() throws Exception {
         long key = random.nextLong();
-        Assert.assertFalse(set.remove(key));
+        assertFalse(set.remove(key));
         set.add(key);
-        Assert.assertTrue(set.remove(key));
+        assertTrue(set.remove(key));
     }
 
     @Test
     public void testContains() throws Exception {
         long key = random.nextLong();
-        Assert.assertFalse(set.contains(key));
+        assertFalse(set.contains(key));
         set.add(key);
-        Assert.assertTrue(set.contains(key));
+        assertTrue(set.contains(key));
     }
 
     @Test

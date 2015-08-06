@@ -27,7 +27,6 @@ import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -40,6 +39,8 @@ import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.FACTO
 import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.PortableAddress;
 import static com.hazelcast.nio.serialization.SerializationConcurrencyTest.PortablePerson;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
@@ -105,19 +106,19 @@ public class EnterpriseDataTest {
                 Data data1 = ss.toData(object, DataType.HEAP);
                 Data data2 = ss.toData(object, DataType.NATIVE);
 
-                Assert.assertEquals("Types are not matching! Object: "
+                assertEquals("Types are not matching! Object: "
                                             + object, data1.getType(), data2.getType());
-                Assert.assertEquals("Sizes are not matching! Object: "
+                assertEquals("Sizes are not matching! Object: "
                                             + object, data1.dataSize(), data2.dataSize());
-                Assert.assertEquals("Hash codes are not matching! Object: "
+                assertEquals("Hash codes are not matching! Object: "
                                             + object, data1.hashCode(), data2.hashCode());
-                Assert.assertEquals("Hash64 codes are not matching! Object: "
+                assertEquals("Hash64 codes are not matching! Object: "
                                             + object, data1.hash64(), data2.hash64());
-                Assert.assertEquals("Partition hashes are not matching! Object: "
+                assertEquals("Partition hashes are not matching! Object: "
                                             + object, data1.getPartitionHash(), data2.getPartitionHash());
 
-                Assert.assertEquals("Not equal! Object: " + object, data1, data2);  // compare both side of equals
-                Assert.assertEquals("Not equal! Object: " + object, data2, data1);  // compare both side of equals
+                assertEquals("Not equal! Object: " + object, data1, data2);  // compare both side of equals
+                assertEquals("Not equal! Object: " + object, data2, data1);  // compare both side of equals
 
                 ss.disposeData(data1);
                 ss.disposeData(data2);
@@ -148,26 +149,26 @@ public class EnterpriseDataTest {
             Data offheap = ss.toData(object, DataType.NATIVE);
 
             Data heap1 = ss.convertData(heap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap1 instanceof HeapData);
-            Assert.assertEquals(heap, heap1);
-            Assert.assertEquals(offheap, heap1);
-            Assert.assertTrue("Identity!", heap == heap1);
+            assertTrue("Type!", heap1 instanceof HeapData);
+            assertEquals(heap, heap1);
+            assertEquals(offheap, heap1);
+            assertTrue("Identity!", heap == heap1);
 
             Data offheap1 = ss.convertData(heap, DataType.NATIVE);
-            Assert.assertTrue("Type!", offheap1 instanceof NativeMemoryData);
-            Assert.assertEquals(heap, offheap1);
-            Assert.assertEquals(offheap, offheap1);
+            assertTrue("Type!", offheap1 instanceof NativeMemoryData);
+            assertEquals(heap, offheap1);
+            assertEquals(offheap, offheap1);
 
             Data offheap2 = ss.convertData(offheap, DataType.NATIVE);
-            Assert.assertTrue("Type!", offheap2 instanceof NativeMemoryData);
-            Assert.assertEquals(heap, offheap2);
-            Assert.assertEquals(offheap, offheap2);
-            Assert.assertTrue("Identity!", offheap == offheap2);
+            assertTrue("Type!", offheap2 instanceof NativeMemoryData);
+            assertEquals(heap, offheap2);
+            assertEquals(offheap, offheap2);
+            assertTrue("Identity!", offheap == offheap2);
 
             Data heap2 = ss.convertData(offheap, DataType.HEAP);
-            Assert.assertTrue("Type!", heap2 instanceof HeapData);
-            Assert.assertEquals(heap, heap2);
-            Assert.assertEquals(offheap, heap2);
+            assertTrue("Type!", heap2 instanceof HeapData);
+            assertEquals(heap, heap2);
+            assertEquals(offheap, heap2);
 
             ss.disposeData(heap);
             ss.disposeData(heap1);

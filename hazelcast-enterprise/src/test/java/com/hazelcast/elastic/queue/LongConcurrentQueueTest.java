@@ -23,7 +23,6 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -35,6 +34,9 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
@@ -93,9 +95,9 @@ public class LongConcurrentQueueTest {
         }
 
         for (QueueWorker worker : workers) {
-            Assert.assertTrue(worker.await(10, TimeUnit.MINUTES));
+            assertTrue(worker.await(10, TimeUnit.MINUTES));
             Throwable error = worker.error;
-            Assert.assertNull(toString(error), error);
+            assertNull(toString(error), error);
         }
     }
 

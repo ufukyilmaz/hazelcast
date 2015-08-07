@@ -27,7 +27,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -37,6 +36,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * @author mdogan 8/23/13
@@ -92,7 +92,7 @@ public class ClientSSLSocketTest {
 
         int size = 1000;
         for (int i = 0; i < size; i++) {
-            Assert.assertNull(clientMap.put(i, 2 * i + 1));
+            assertNull(clientMap.put(i, 2 * i + 1));
         }
 
         IMap<Object, Object> map = hz1.getMap("test");

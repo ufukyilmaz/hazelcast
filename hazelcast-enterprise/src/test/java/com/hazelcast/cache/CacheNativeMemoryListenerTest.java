@@ -11,9 +11,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,6 +26,8 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryRemovedListener;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -63,7 +63,6 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         provider.close();
     }
 
-
     @Test
     public void testDuplicateEventPublishing_while_put() {
         final AtomicInteger counter = new AtomicInteger();
@@ -79,7 +78,7 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         assertTrueAllTheTime(new AssertTask() {
             @Override
             public void run() throws Exception {
-                Assert.assertEquals("Created events are duplicate", count, counter.get());
+                assertEquals("Created events are duplicate", count, counter.get());
             }
         }, TEST_TIME);
     }
@@ -103,7 +102,7 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         assertTrueAllTheTime(new AssertTask() {
             @Override
             public void run() throws Exception {
-                Assert.assertEquals("Removed events are duplicate", count, counter.get());
+                assertEquals("Removed events are duplicate", count, counter.get());
             }
         }, TEST_TIME);
     }
@@ -139,5 +138,4 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
             }
         }
     }
-
 }

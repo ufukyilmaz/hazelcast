@@ -1,6 +1,5 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
@@ -20,8 +19,7 @@ public class HiDensityNativeMemoryCacheRecordAccessor
     }
 
     @Override
-    protected HiDensityNativeMemoryCacheRecord createRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor) {
+    protected HiDensityNativeMemoryCacheRecord createRecord() {
         return new HiDensityNativeMemoryCacheRecord(this);
     }
 

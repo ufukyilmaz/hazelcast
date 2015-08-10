@@ -1,5 +1,6 @@
 package com.hazelcast.hidensity;
 
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockProcessor;
 import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 
@@ -31,5 +32,9 @@ public interface HiDensityRecordProcessor<R extends HiDensityRecord>
         extends MemoryBlockProcessor<R>, HiDensityRecordAccessor<R> {
 
     long getUsedMemory();
+
+    void addDeferredDispose(MemoryBlock memoryBlock);
+
+    void disposeDeferredBlocks();
 
 }

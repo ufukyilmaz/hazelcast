@@ -1,7 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -33,9 +31,6 @@ public class CachePutBackupOperation
 
     @Override
     public void runInternal() throws Exception {
-        EnterpriseCacheService service = getService();
-        HiDensityCacheRecordStore cache =
-                (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
         cache.putBackup(key, value, expiryPolicy);
         // If there is an update, the key from outside is already disposed in "BinaryElasticHashMap"
         // So no need to dispose key here.
@@ -43,12 +38,8 @@ public class CachePutBackupOperation
     }
 
     @Override
-    public void afterRun() throws Exception {
-    }
-
-    @Override
-    protected void disposeInternal(SerializationService binaryService) {
-        binaryService.disposeData(value);
+    protected void disposeInternal(SerializationService serializationService) {
+        serializationService.disposeData(value);
     }
 
     @Override

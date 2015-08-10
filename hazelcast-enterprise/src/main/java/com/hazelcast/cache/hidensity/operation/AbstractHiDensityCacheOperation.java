@@ -194,6 +194,10 @@ abstract class AbstractHiDensityCacheOperation
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
         } else {
+            // TODO: introduce a proper method to handle operation failures.
+            // right now, this is the only place we can dispose
+            // native memory allocations on failure.
+            dispose();
             super.logError(e);
         }
     }
@@ -206,6 +210,11 @@ abstract class AbstractHiDensityCacheOperation
     @Override
     public void setCompletionId(int completionId) {
         this.completionId = completionId;
+    }
+
+    @Override
+    public String getServiceName() {
+        return EnterpriseCacheService.SERVICE_NAME;
     }
 
     @Override

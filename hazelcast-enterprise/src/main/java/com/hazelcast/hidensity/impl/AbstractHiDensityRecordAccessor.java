@@ -41,14 +41,14 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     public R newRecord() {
         R record = recordQ.poll();
         if (record == null) {
-            record = createRecord(this);
+            record = createRecord();
         }
         return record;
     }
 
     @Override
     public R read(long address) {
-        if (address <= MemoryManager.NULL_ADDRESS) {
+        if (address == MemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + address);
         }
         R record = newRecord();
@@ -58,7 +58,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long dispose(R record) {
-        if (record.address() <= MemoryManager.NULL_ADDRESS) {
+        if (record.address() == MemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + record.address());
         }
         long size = 0L;
@@ -78,7 +78,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public NativeMemoryData readData(long valueAddress) {
-        if (valueAddress <= MemoryManager.NULL_ADDRESS) {
+        if (valueAddress == MemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + valueAddress);
         }
         NativeMemoryData value = dataQ.poll();
@@ -113,6 +113,9 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long disposeData(NativeMemoryData value) {
+        if (value.address() == MemoryManager.NULL_ADDRESS) {
+            throw new IllegalArgumentException("Illegal memory address: " + value.address());
+        }
         long size = getSize(value);
         ss.disposeData(value, memoryManager);
         dataQ.offer(value);
@@ -151,6 +154,9 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long getSize(long address, long expectedSize) {
+        if (address == MemoryManager.NULL_ADDRESS) {
+            throw new IllegalArgumentException("Illegal memory address: " + address);
+        }
         long size = memoryManager.getSize(address);
         if (size == MemoryManager.SIZE_INVALID) {
             size = expectedSize;

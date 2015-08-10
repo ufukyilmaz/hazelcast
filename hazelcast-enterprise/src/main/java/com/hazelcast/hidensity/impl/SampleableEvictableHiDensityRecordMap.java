@@ -8,7 +8,6 @@ import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.Callback;
 
 /**
  * @author sozal 18/02/15
@@ -22,14 +21,7 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
     public SampleableEvictableHiDensityRecordMap(int initialCapacity,
                                                  HiDensityRecordProcessor<R> recordProcessor,
                                                  HiDensityStorageInfo storageInfo) {
-        this(initialCapacity, recordProcessor, null, storageInfo);
-    }
-
-    public SampleableEvictableHiDensityRecordMap(int initialCapacity,
-                                                 HiDensityRecordProcessor<R> recordProcessor,
-                                                 Callback<Data> evictionCallback,
-                                                 HiDensityStorageInfo storageInfo) {
-        super(initialCapacity, recordProcessor, evictionCallback, storageInfo);
+        super(initialCapacity, recordProcessor, storageInfo);
     }
 
     /**

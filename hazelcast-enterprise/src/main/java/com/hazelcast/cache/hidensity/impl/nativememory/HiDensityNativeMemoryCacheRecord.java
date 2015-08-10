@@ -137,10 +137,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public void clear() {
-        writeLong(CREATION_TIME_OFFSET, 0L);
-        setAccessTimeDiff(0);
-        setTtlMillis(0);
-        setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+        zero();
     }
 
     @Override

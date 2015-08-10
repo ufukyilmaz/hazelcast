@@ -14,6 +14,7 @@ import com.hazelcast.nio.serialization.DefaultData;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 import com.hazelcast.nio.serialization.NativeMemoryDataUtil;
+import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.HashUtil;
 import sun.misc.Unsafe;
 
@@ -215,10 +216,24 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
 
         NativeMemoryData memKey = (NativeMemoryData) memoryBlockProcessor.convertData(key, DataType.NATIVE);
+
+        assert memKey.address() != MemoryAllocator.NULL_ADDRESS : "Null key!";
+        assert value.address() != MemoryAllocator.NULL_ADDRESS : "Null value!";
+
         // Check if we need to grow. If so, reallocate new data, fill in the last element
         // and rehash.
         if (assigned == resizeAt) {
-            expandAndPut(memKey.address(), value.address(), slot);
+            try {
+                expandAndPut(memKey.address(), value.address(), slot);
+            } catch (Throwable error) {
+                // If they are not same, this means that the key is converted to native memory data at here.
+                // So, it must be disposed at here
+                if (memKey != key) {
+                    memoryBlockProcessor.disposeData(memKey);
+                }
+                throw ExceptionUtil.rethrow(error);
+            }
+
         } else {
             assigned++;
             setKey(slot, memKey.address());

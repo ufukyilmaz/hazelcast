@@ -11,7 +11,6 @@ import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.NativeMemoryData;
-import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
@@ -27,27 +26,13 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
-    protected final transient Callback<Data> evictionCallback;
-    protected int evictionLastIndex;
+    // for reuse every time a key is read from a reference
+    private final NativeMemoryData keyHolder = new NativeMemoryData();
 
     public EvictableHiDensityRecordMap(int initialCapacity,
                                        HiDensityRecordProcessor<R> recordProcessor,
-                                       HiDensityStorageInfo storageInfo) {
-        this(initialCapacity, recordProcessor, null, storageInfo);
-    }
-
-    public EvictableHiDensityRecordMap(int initialCapacity,
-                                       HiDensityRecordProcessor<R> recordProcessor,
-                                       Callback<Data> evictionCallback,
                                        HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, storageInfo);
-        this.evictionCallback = evictionCallback;
-    }
-
-    protected void callbackEvictionListeners(NativeMemoryData data) {
-        if (evictionCallback != null) {
-            evictionCallback.notify(data);
-        }
     }
 
     /**
@@ -76,11 +61,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     //CHECKSTYLE:OFF
     protected <C extends EvictionCandidate<Data, R>> int doForceEvict(int evictionPercentage,
                                                                       EvictionListener<Data, R> evictionListener) {
-        if (evictionPercentage <= 0) {
-            return 0;
-        }
         int size = size();
-        if (size == 0) {
+        if (evictionPercentage < 0 || size == 0) {
             return 0;
         }
 
@@ -92,39 +74,28 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         int len = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
         len = Math.max(len, MIN_EVICTION_ELEMENT_COUNT);
 
-        final int start = evictionLastIndex;
-        final int end = capacity();
-        final int mask = end - 1;
+        int evictedEntryCount = 0;
 
-        // assert capacity is power of 2, otherwise loop below will not work...
-        // we know BinaryOffHeapHashMap.capacity() is power of 2
-        assert QuickMath.isPowerOfTwo(end);
+        int startSlot = (int) (Math.random() * capacity());
+        KeyIter iter = new KeyIter(startSlot);
 
-        int ix = start;
-        int k = 0;
-        while (true) {
-            if (isAssigned(ix)) {
-                long key = getKey(ix);
-                NativeMemoryData keyData = recordProcessor.readData(key);
-                R value = remove(keyData);
-                if (evictionListener != null) {
-                    evictionListener.onEvict(keyData, value);
-                }
-                if (value != null) {
-                    memoryBlockProcessor.dispose(value);
-                }
-                recordProcessor.disposeData(keyData);
-                if (++k >= len) {
-                    break;
-                }
+        while (iter.hasNext()) {
+            iter.nextSlot();
+
+            if (evictionListener != null) {
+                int slot = iter.getCurrentSlot();
+                keyHolder.reset(getKey(slot));
+                R value = recordProcessor.read(getValue(slot));
+                evictionListener.onEvict(keyHolder, value);
+                recordProcessor.enqueueRecord(value);
             }
-            ix = (ix + 1) & mask;
-            if (ix == start) {
+
+            iter.remove();
+            if (++evictedEntryCount >= len) {
                 break;
             }
         }
-        evictionLastIndex = ix;
-        return k;
+        return evictedEntryCount;
     }
     //CHECKSTYLE:ON
 
@@ -180,7 +151,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     delete(keyData);
                     recordProcessor.disposeData(keyData);
                     evictedEntryCount++;
-                    // If disposed key is still allocated, this means next keys are shifted
+                    // If disposed index is still allocated, this means next keys are shifted
                     shifted = isAssigned(ix);
                 }
             }

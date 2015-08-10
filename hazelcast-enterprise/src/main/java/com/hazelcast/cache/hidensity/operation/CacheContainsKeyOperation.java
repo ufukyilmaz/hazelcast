@@ -25,6 +25,7 @@ public class CacheContainsKeyOperation
 
     @Override
     public void afterRun() throws Exception {
+        super.afterRun();
         dispose();
     }
 

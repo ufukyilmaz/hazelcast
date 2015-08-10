@@ -294,7 +294,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     @Override
-    public V replace(Data key, MemoryBlock value) {
+    public V replace(Data key, V value) {
         ensureMemory();
         final int mask = allocated - 1;
         int slot = rehash(key, perturbation) & mask;
@@ -530,9 +530,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     private abstract class SlotIter<E> implements SlottableIterator<E> {
         int nextSlot = -1;
         int currentSlot = -1;
+        private NativeMemoryData keyHolder;
 
         SlotIter() {
             nextSlot = advance(0);
+        }
+
+        SlotIter(int startSlot) {
+            nextSlot = advance(startSlot);
         }
 
         @Override
@@ -568,11 +573,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 throw new NoSuchElementException();
             }
 
+            long key = getKey(currentSlot);
             long value = getValue(currentSlot);
-            memoryBlockProcessor.dispose(value);
 
             assigned--;
             shiftConflictingKeys(currentSlot);
+
+            memoryBlockProcessor.disposeData(readIntoKeyHolder(key));
+            memoryBlockProcessor.dispose(value);
 
             // if current slot is assigned after
             // removal and shift
@@ -581,6 +589,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
+        }
+
+        private NativeMemoryData readIntoKeyHolder(long key) {
+            if (keyHolder == null) {
+                keyHolder = new NativeMemoryData();
+            }
+            keyHolder.reset(key);
+            return keyHolder;
         }
 
         @Override
@@ -619,6 +635,13 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     public class KeyIter extends SlotIter<Data> implements Iterator<Data> {
+        public KeyIter() {
+        }
+
+        public KeyIter(int startSlot) {
+            super(startSlot);
+        }
+
         @Override
         public Data next() {
             nextSlot();
@@ -751,11 +774,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     public void clear() {
         ensureMemory();
         if (address > 0L) {
-            EntryIter iter = new EntryIter();
+            KeyIter iter = new KeyIter();
             while (iter.hasNext()) {
-                Entry<Data, V> e = iter.next();
-                memoryBlockProcessor.disposeData(e.getKey());
-                memoryBlockProcessor.dispose(e.getValue());
+                iter.nextSlot();
+                iter.remove();
             }
 
             assigned = 0;

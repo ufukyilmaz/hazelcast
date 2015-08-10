@@ -372,6 +372,13 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected void onUpdateRecord(Data key, HiDensityNativeMemoryCacheRecord record,
                                   Object value, Data oldDataValue) {
+        // on update, just value-ref inside the record is replaced
+        if (key instanceof NativeMemoryData) {
+            NativeMemoryData nativeKey = (NativeMemoryData) key;
+            if (isMemoryBlockValid(nativeKey)) {
+                cacheRecordProcessor.addDeferredDispose(nativeKey);
+            }
+        }
         // If there is valid old value, dispose it
         if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
             NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
@@ -588,6 +595,11 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             // Put this record to queue for reusing later
             cacheRecordProcessor.enqueueRecord(record);
+
+            if (!recordCreated && key instanceof NativeMemoryData) {
+                // on update, just value-ref inside the record is replaced
+                cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
+            }
 
             return recordPut;
         } catch (NativeOutOfMemoryError e) {

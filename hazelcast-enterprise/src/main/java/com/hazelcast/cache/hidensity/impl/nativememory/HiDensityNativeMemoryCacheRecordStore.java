@@ -36,6 +36,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
 
 import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
+import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 
 /**
  * @author sozal 14/10/14
@@ -291,8 +292,41 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public HiDensityRecordProcessor getRecordProcessor() {
+    public HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> getRecordProcessor() {
         return cacheRecordProcessor;
+    }
+
+    @Override
+    public HiDensityNativeMemoryCacheRecord createRecordWithExpiry(Data key, Object value, long expiryTime,
+            long now, boolean disableWriteThrough, int completionId, String origin) {
+        if (!disableWriteThrough) {
+            writeThroughCache(key, value);
+        }
+        if (!isExpiredAt(expiryTime, now)) {
+
+            if (key instanceof NativeMemoryData) {
+                assert ((NativeMemoryData) key).address() != NULL_PTR;
+            }
+
+            HiDensityNativeMemoryCacheRecord record = createRecord(key, value, expiryTime, completionId, origin);
+            try {
+                doPutRecord(key, record);
+            } catch (Throwable error) {
+                if (isMemoryBlockValid(record)) {
+                    if (value instanceof NativeMemoryData) {
+                        cacheRecordProcessor.free(record.address(), record.size());
+                        record.reset(NULL_PTR);
+                    } else {
+                        cacheRecordProcessor.dispose(record);
+                    }
+                }
+                throw ExceptionUtil.rethrow(error);
+            }
+            return record;
+        }
+        publishEvent(createCacheCompleteEvent(key, CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
+                origin, completionId));
+        return null;
     }
 
     @Override

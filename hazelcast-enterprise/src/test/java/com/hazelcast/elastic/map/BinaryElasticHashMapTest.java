@@ -2,7 +2,9 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -504,13 +506,246 @@ public class BinaryElasticHashMapTest {
         iterator.next();
     }
 
+    @Test
+    public void testMemoryLeak() {
+        int keyRange = 100;
+
+        for (int i = 0; i < 1000000; i++) {
+            int k = random.nextInt(8);
+            switch (k) {
+                case 0:
+                    _put_(keyRange);
+                    break;
+
+                case 1:
+                    _set_(keyRange);
+                    break;
+
+                case 2:
+                    _putIfAbsent_(keyRange);
+                    break;
+
+                case 3:
+                    _replace_(keyRange);
+                    break;
+
+                case 4:
+                    _replaceIfSame_(keyRange);
+                    break;
+
+                case 5:
+                    _remove_(keyRange);
+                    break;
+
+                case 6:
+                    _removeIfPresent_(keyRange);
+                    break;
+
+                case 7:
+                    _delete_(keyRange);
+            }
+        }
+
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    private void _put_(int keyRange) {
+        Data key;
+        NativeMemoryData value;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        value = newValue();
+        old = map.put(key, value);
+        if (old != null) {
+            serializationService.disposeData(old);
+        }
+    }
+
+    private void _set_(int keyRange) {
+        Data key;
+        NativeMemoryData value;
+        key = newKey(random.nextInt(keyRange));
+        value = newValue();
+        map.set(key, value);
+    }
+
+    private void _putIfAbsent_(int keyRange) {
+        Data key;
+        NativeMemoryData value;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        value = newValue();
+        old = map.putIfAbsent(key, value);
+        if (old != null) {
+            serializationService.disposeData(value);
+        }
+    }
+
+    private void _replace_(int keyRange) {
+        Data key;
+        NativeMemoryData value;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        value = newValue();
+        old = map.replace(key, value);
+        serializationService.disposeData(key);
+        if (old != null) {
+            serializationService.disposeData(old);
+        } else {
+            serializationService.disposeData(value);
+        }
+    }
+
+    private void _replaceIfSame_(int keyRange) {
+        Data key;
+        NativeMemoryData value;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        value = newValue();
+        old = map.get(key);
+        if (old != null) {
+            map.replace(key, old, value);
+        } else {
+            serializationService.disposeData(value);
+        }
+        serializationService.disposeData(key);
+    }
+
+    private void _remove_(int keyRange) {
+        Data key;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        old = map.remove(key);
+        serializationService.disposeData(key);
+        if (old != null) {
+            serializationService.disposeData(old);
+        }
+    }
+
+    private void _removeIfPresent_(int keyRange) {
+        Data key;
+        NativeMemoryData old;
+        key = newKey(random.nextInt(keyRange));
+        old = map.get(key);
+        if (old != null) {
+            map.remove(key, old);
+            serializationService.disposeData(key);
+            serializationService.disposeData(old);
+        }
+    }
+
+    private void _delete_(int keyRange) {
+        Data key;
+        key = newKey(random.nextInt(keyRange));
+        map.delete(key);
+        serializationService.disposeData(key);
+    }
+
+    @Test
+    public void testDestroyMemoryLeak() {
+        for (int i = 0; i < 100; i++) {
+            map.set(newKey(), newValue());
+        }
+
+        map.clear();
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    @Test
+    public void testKeyIterMemoryLeak() {
+        for (int i = 0; i < 100; i++) {
+            map.set(newKey(), newValue());
+        }
+
+        BinaryElasticHashMap<NativeMemoryData>.KeyIter iter = map.new KeyIter();
+        while (iter.hasNext()) {
+            iter.nextSlot();
+            iter.remove();
+        }
+        assertEquals(0, map.size());
+
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    @Test
+    public void testValueIterMemoryLeak() {
+        for (int i = 0; i < 100; i++) {
+            map.set(newKey(), newValue());
+        }
+
+        BinaryElasticHashMap<NativeMemoryData>.ValueIter iter = map.new ValueIter();
+        while (iter.hasNext()) {
+            iter.nextSlot();
+            iter.remove();
+        }
+        assertEquals(0, map.size());
+
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    @Test
+    public void testEntryIterMemoryLeak() {
+        for (int i = 0; i < 100; i++) {
+            map.set(newKey(), newValue());
+        }
+
+        BinaryElasticHashMap<NativeMemoryData>.EntryIter iter = map.new EntryIter();
+        while (iter.hasNext()) {
+            iter.nextSlot();
+            iter.remove();
+        }
+        assertEquals(0, map.size());
+
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    @Test
+    public void testMemoryLeak_whenCapacityExpandFails() {
+        byte[] bytes = new byte[8];
+
+        while (true) {
+            // key is on-heap
+            Data key = newKey();
+            NativeMemoryData value = newValue(bytes);
+            try {
+                map.put(key, value);
+            } catch (NativeOutOfMemoryError e) {
+                // dispose native value
+                serializationService.disposeData(value);
+                break;
+            }
+        }
+
+        map.destroy();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
     private Data newKey() {
         return serializationService.toData(random.nextLong());
+    }
+
+    private Data newKey(long k) {
+        return serializationService.toData(k);
     }
 
     private NativeMemoryData newValue() {
         byte[] bytes = new byte[random.nextInt(1000) + 1];
         random.nextBytes(bytes);
+        return serializationService.toData(bytes, DataType.NATIVE);
+    }
+
+    private NativeMemoryData newValue(byte[] bytes) {
         return serializationService.toData(bytes, DataType.NATIVE);
     }
 

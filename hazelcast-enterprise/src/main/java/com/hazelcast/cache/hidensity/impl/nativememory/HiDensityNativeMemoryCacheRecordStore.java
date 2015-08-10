@@ -741,12 +741,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         super.destroy();
     }
 
-    protected Callback<Data> createEvictionCallback() {
-        return new Callback<Data>() {
-            public void notify(Data key) {
-                invalidateEntry(key);
-            }
-        };
+    @Override
+    protected void onDestroy() {
+        records.destroy();
     }
 
     protected void onEntryInvalidated(Data key, String source) {

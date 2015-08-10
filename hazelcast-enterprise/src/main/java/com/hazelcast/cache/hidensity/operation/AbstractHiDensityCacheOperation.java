@@ -4,6 +4,7 @@ import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -142,6 +143,8 @@ abstract class AbstractHiDensityCacheOperation
     public abstract void runInternal() throws Exception;
 
     protected final void dispose() {
+        disposeDeferredBlocks();
+
         try {
             SerializationService ss = getNodeEngine().getSerializationService();
             if (key != null) {
@@ -156,7 +159,23 @@ abstract class AbstractHiDensityCacheOperation
         }
     }
 
+    private void disposeDeferredBlocks() {
+        EnterpriseCacheService service = getService();
+        HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+        if (cache != null) {
+            HiDensityRecordProcessor recordProcessor = cache.getRecordProcessor();
+            recordProcessor.disposeDeferredBlocks();
+        }
+    }
+
     protected abstract void disposeInternal(SerializationService binaryService);
+
+    @Override
+    public void afterRun() throws Exception {
+        super.afterRun();
+
+        disposeDeferredBlocks();
+    }
 
     @Override
     public boolean returnsResponse() {

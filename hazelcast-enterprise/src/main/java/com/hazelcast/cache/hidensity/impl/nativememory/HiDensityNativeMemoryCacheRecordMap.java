@@ -8,10 +8,7 @@ import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.hidensity.impl.SampleableEvictableHiDensityRecordMap;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.NativeMemoryData;
-import com.hazelcast.spi.Callback;
 import com.hazelcast.util.Clock;
-import com.hazelcast.util.QuickMath;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +23,8 @@ public final class HiDensityNativeMemoryCacheRecordMap
 
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
                                                HiDensityRecordProcessor cacheRecordProcessor,
-                                               Callback<Data> evictionCallback,
                                                HiDensityStorageInfo cacheInfo) {
-        super(initialCapacity, cacheRecordProcessor, evictionCallback, cacheInfo);
+        super(initialCapacity, cacheRecordProcessor, cacheInfo);
     }
 
     @Override
@@ -50,52 +46,52 @@ public final class HiDensityNativeMemoryCacheRecordMap
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());
     }
 
-    //CHECKSTYLE:OFF
-    @Override
-    public int forceEvict(int evictionPercentage) {
-        if (evictionPercentage <= 0) {
-            return 0;
-        }
-        int size = size();
-        if (size == 0) {
-            return 0;
-        }
-
-        if (evictionPercentage >= ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
-            clear();
-            return size;
-        }
-
-        int len = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
-        len = Math.max(len, MIN_EVICTION_ELEMENT_COUNT);
-
-        final int start = evictionLastIndex;
-        final int end = capacity();
-        final int mask = end - 1;
-        // assert capacity is power of 2, otherwise loop below will not work...
-        // we know BinaryOffHeapHashMap.capacity() is power of 2
-        assert QuickMath.isPowerOfTwo(end);
-
-        int ix = start;
-        int k = 0;
-        while (true) {
-            if (isAssigned(ix)) {
-                long key = getKey(ix);
-                NativeMemoryData keyData = recordProcessor.readData(key);
-                delete(keyData);
-                recordProcessor.disposeData(keyData);
-                if (++k >= len) {
-                    break;
-                }
-            }
-            ix = (ix + 1) & mask;
-            if (ix == start) {
-                break;
-            }
-        }
-        evictionLastIndex = ix;
-        return k;
-    }
-    //CHECKSTYLE:ON
+//    //CHECKSTYLE:OFF
+//    @Override
+//    public int forceEvict(int evictionPercentage) {
+//        if (evictionPercentage <= 0) {
+//            return 0;
+//        }
+//        int size = size();
+//        if (size == 0) {
+//            return 0;
+//        }
+//
+//        if (evictionPercentage >= ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
+//            clear();
+//            return size;
+//        }
+//
+//        int len = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
+//        len = Math.max(len, MIN_EVICTION_ELEMENT_COUNT);
+//
+//        final int start = evictionLastIndex;
+//        final int end = capacity();
+//        final int mask = end - 1;
+//        // assert capacity is power of 2, otherwise loop below will not work...
+//        // we know BinaryOffHeapHashMap.capacity() is power of 2
+//        assert QuickMath.isPowerOfTwo(end);
+//
+//        int ix = start;
+//        int k = 0;
+//        while (true) {
+//            if (isAssigned(ix)) {
+//                long key = getKey(ix);
+//                NativeMemoryData keyData = recordProcessor.readData(key);
+//                delete(keyData);
+//                recordProcessor.disposeData(keyData);
+//                if (++k >= len) {
+//                    break;
+//                }
+//            }
+//            ix = (ix + 1) & mask;
+//            if (ix == start) {
+//                break;
+//            }
+//        }
+//        evictionLastIndex = ix;
+//        return k;
+//    }
+//    //CHECKSTYLE:ON
 
 }

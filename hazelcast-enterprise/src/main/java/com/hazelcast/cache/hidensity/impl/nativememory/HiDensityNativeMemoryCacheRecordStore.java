@@ -51,7 +51,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     private HiDensityStorageInfo cacheInfo;
     private EnterpriseSerializationService serializationService;
     private MemoryManager memoryManager;
-    private HiDensityNativeMemoryCacheRecordAccessor cacheRecordAccessor;
     private HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
@@ -65,10 +64,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         // This property can be set to "true" for such as TCK tests.
         // Because there is no max-size policy.
         // For example: -DdisableInvalidMaxSizePolicyException=true
-        return
-                Boolean.parseBoolean(
-                        System.getProperty(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION,
-                                "false"));
+        return Boolean.getBoolean(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION);
     }
 
     //CHECKSTYLE:OFF
@@ -113,6 +109,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
     //CHECKSTYLE:ON
 
+    @SuppressWarnings("unchecked")
     private void ensureInitialized() {
         if (cacheInfo == null) {
             cacheInfo = ((EnterpriseCacheService) cacheService)
@@ -127,18 +124,12 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (memoryManager == null) {
             throw new IllegalStateException("Native memory must be enabled to use Hi-Density storage !");
         }
-        if (cacheRecordAccessor == null) {
-            cacheRecordAccessor =
-                    new HiDensityNativeMemoryCacheRecordAccessor(serializationService,
-                            memoryManager);
-        }
         if (cacheRecordProcessor == null) {
             cacheRecordProcessor =
                     new DefaultHiDensityRecordProcessor(
                             serializationService,
-                            cacheRecordAccessor,
-                            memoryManager,
-                            cacheInfo);
+                            new HiDensityNativeMemoryCacheRecordAccessor(serializationService, memoryManager),
+                            memoryManager, cacheInfo);
         }
     }
 
@@ -155,12 +146,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
         do {
             try {
-                cacheRecordMap =
-                        new HiDensityNativeMemoryCacheRecordMap(
-                                capacity,
-                                cacheRecordProcessor,
-                                createEvictionCallback(),
-                                cacheInfo);
+                cacheRecordMap = new HiDensityNativeMemoryCacheRecordMap(capacity, cacheRecordProcessor, cacheInfo);
                 break;
             } catch (NativeOutOfMemoryError e) {
                 oome = e;
@@ -303,11 +289,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             writeThroughCache(key, value);
         }
         if (!isExpiredAt(expiryTime, now)) {
-
-            if (key instanceof NativeMemoryData) {
-                assert ((NativeMemoryData) key).address() != NULL_PTR;
-            }
-
             HiDensityNativeMemoryCacheRecord record = createRecord(key, value, expiryTime, completionId, origin);
             try {
                 doPutRecord(key, record);

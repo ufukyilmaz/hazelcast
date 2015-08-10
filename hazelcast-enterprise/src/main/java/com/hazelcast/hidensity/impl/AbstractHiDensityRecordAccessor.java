@@ -29,7 +29,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         this.memoryManager = memoryManager;
     }
 
-    protected abstract R createRecord(HiDensityRecordAccessor<R> recordAccessor);
+    protected abstract R createRecord();
     public abstract boolean isEqual(long address1, long address2);
 
     @Override
@@ -66,7 +66,8 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         record.clear();
         size += getSize(record);
         memoryManager.free(record.address(), record.size());
-        recordQ.offer((R) record.reset(MemoryManager.NULL_ADDRESS));
+        record.reset(MemoryManager.NULL_ADDRESS);
+        recordQ.offer(record);
         return size;
     }
 
@@ -88,12 +89,12 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     }
 
     @Override
-    public Object readValue(R record, boolean enqueeDataOnFinish) {
+    public Object readValue(R record, boolean enqueueDataOnFinish) {
         NativeMemoryData nativeMemoryData = readData(record.getValueAddress());
         try {
             return ss.toObject(nativeMemoryData, memoryManager);
         } finally {
-            if (enqueeDataOnFinish) {
+            if (enqueueDataOnFinish) {
                 enqueueData(nativeMemoryData);
             }
         }
@@ -125,7 +126,8 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public void enqueueRecord(R record) {
-        recordQ.offer((R) record.reset(MemoryManager.NULL_ADDRESS));
+        record.reset(MemoryManager.NULL_ADDRESS);
+        recordQ.offer(record);
     }
 
     @Override
@@ -136,7 +138,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public int getSize(MemoryBlock memoryBlock) {
-        if (memoryBlock == null) {
+        if (memoryBlock == null || memoryBlock.address() == MemoryManager.NULL_ADDRESS) {
             return  0;
         }
         int size = memoryManager.getSize(memoryBlock.address());

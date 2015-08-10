@@ -53,9 +53,9 @@ public class CacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
+    protected void disposeInternal(SerializationService serializationService) {
         if (currentValue != null) {
-            binaryService.disposeData(currentValue);
+            serializationService.disposeData(currentValue);
         }
     }
 

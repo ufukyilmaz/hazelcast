@@ -14,12 +14,12 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.EmptyStatement;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.instance.TestUtil.terminateInstance;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
@@ -95,7 +96,7 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     private static class WorkerThread extends Thread {
-        private final ICache cache;
+        private final ICache<Integer, byte[]> cache;
         private final CountDownLatch latch;
         private final Random rand = new Random();
 
@@ -128,7 +129,7 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
         private void doOp(int op, int key) {
             switch (op) {
                 case 0:
-                    cache.put(key, newValue());
+                    cache.put(key, newValue(key));
                     break;
 
                 case 1:
@@ -136,36 +137,41 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 2:
-                    cache.replace(key, newValue());
+                    cache.replace(key, newValue(key));
                     break;
 
                 case 4:
-                    cache.putIfAbsent(key, newValue());
+                    cache.putIfAbsent(key, newValue(key));
                     break;
 
                 case 5:
-                    cache.getAndPut(key, newValue());
+                    byte[] value = cache.getAndPut(key, newValue(key));
+                    verifyValue(key, value);
                     break;
 
                 case 6:
-                    cache.getAndRemove(key);
+                    value = cache.getAndRemove(key);
+                    verifyValue(key, value);
                     break;
 
                 case 7:
-                    cache.getAndReplace(key, newValue());
+                    value = cache.getAndReplace(key, newValue(key));
+                    verifyValue(key, value);
                     break;
 
                 case 8:
-                    Object current = cache.get(key);
+                    byte[] current = cache.get(key);
+                    verifyValue(key, current);
                     if (current != null) {
-                        cache.replace(key, current, newValue());
+                        cache.replace(key, current, newValue(key));
                     } else {
-                        cache.replace(key, newValue());
+                        cache.replace(key, newValue(key));
                     }
                     break;
 
                 case 9:
                     current = cache.get(key);
+                    verifyValue(key, current);
                     if (current != null) {
                         cache.remove(key, current);
                     } else {
@@ -174,13 +180,25 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 default:
-                    cache.put(key, newValue());
+                    cache.put(key, newValue(key));
             }
         }
 
-        private byte[] newValue() {
-            byte[] value = new byte[16 + rand.nextInt(1 << 12)]; // up to 4k
+        private void verifyValue(int key, byte[] value) {
+            if (value != null) {
+                assertEquals(key, Bits.readIntB(value, 0));
+                assertEquals(key, Bits.readIntB(value, value.length - 4));
+            }
+        }
+
+        private byte[] newValue(int k) {
+            int len = 16 + rand.nextInt(1 << 12); // up to 4k
+            byte[] value = new byte[len];
             rand.nextBytes(value);
+
+            Bits.writeIntB(value, 0, k);
+            Bits.writeIntB(value, len - 4, k);
+
             return value;
         }
     }
@@ -200,8 +218,8 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                     "Node1: " + toPrettyString(memoryStats.getUsedNativeMemory())
                     + ", Node2: " + toPrettyString(memoryStats2.getUsedNativeMemory());
 
-            Assert.assertEquals(message, 0, memoryStats.getUsedNativeMemory());
-            Assert.assertEquals(message, 0, memoryStats2.getUsedNativeMemory());
+            assertEquals(message, 0, memoryStats.getUsedNativeMemory());
+            assertEquals(message, 0, memoryStats2.getUsedNativeMemory());
         }
     }
 }

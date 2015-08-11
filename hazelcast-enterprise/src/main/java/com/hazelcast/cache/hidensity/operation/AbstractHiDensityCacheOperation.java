@@ -160,11 +160,15 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     private void disposeDeferredBlocks() {
-        EnterpriseCacheService service = getService();
-        HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
-        if (cache != null) {
-            HiDensityRecordProcessor recordProcessor = cache.getRecordProcessor();
-            recordProcessor.disposeDeferredBlocks();
+        try {
+            EnterpriseCacheService service = getService();
+            HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+            if (cache != null) {
+                HiDensityRecordProcessor recordProcessor = cache.getRecordProcessor();
+                recordProcessor.disposeDeferredBlocks();
+            }
+        } catch (Throwable e) {
+            getLogger().warning("Error while freeing deferred memory blocks...", e);
         }
     }
 

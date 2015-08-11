@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.nio.UnsafeHelper;
+
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
 /**
@@ -32,14 +34,21 @@ public final class StandardMemoryManager implements MemoryManager {
         assert size > 0 : "Size must be positive: " + size;
         memoryStats.checkCommittedNative(size);
         long address = malloc.malloc(size);
+
+        if (address == NULL_ADDRESS) {
+            throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
+                    "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+        }
+
+        UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
         memoryStats.addCommittedNative(size);
         return address;
     }
 
     @Override
     public final void free(long address, long size) {
-        assert address > NULL_ADDRESS : "Invalid address: " + address;
-        assert size > 0 : "Invalid memory size: " + size;
+        assert address != NULL_ADDRESS : "Invalid address: " + address + ", size: " + size;
+        assert size > 0 : "Invalid memory size: " + size + ", address: " + address;
 
         malloc.free(address);
         memoryStats.addCommittedNative(-size);

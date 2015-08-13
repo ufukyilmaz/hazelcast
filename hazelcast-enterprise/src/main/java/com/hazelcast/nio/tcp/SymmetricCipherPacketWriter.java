@@ -30,25 +30,23 @@ public class SymmetricCipherPacketWriter implements PacketWriter {
     }
 
     private Cipher init() {
-        Cipher c;
         try {
-            c = CipherHelper.createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig());
+            return CipherHelper.createSymmetricWriterCipher(ioService.getSymmetricEncryptionConfig());
         } catch (Exception e) {
             logger.severe("Symmetric Cipher for WriteHandler cannot be initialized.", e);
             CipherHelper.handleCipherException(e, connection);
             throw ExceptionUtil.rethrow(e);
         }
-        return c;
     }
 
     @Override
-    public boolean writePacket(Packet packet, ByteBuffer socketBuffer) throws Exception {
+    public boolean write(Packet packet, ByteBuffer dst) throws Exception {
         if (!packetWritten) {
-            if (socketBuffer.remaining() < Bits.INT_SIZE_IN_BYTES) {
+            if (dst.remaining() < Bits.INT_SIZE_IN_BYTES) {
                 return false;
             }
             int size = cipher.getOutputSize(packet.packetSize());
-            socketBuffer.putInt(size);
+            dst.putInt(size);
 
             if (packetBuffer.capacity() < packet.packetSize()) {
                 packetBuffer = ByteBuffer.allocate(packet.packetSize());
@@ -61,26 +59,26 @@ public class SymmetricCipherPacketWriter implements PacketWriter {
             packetWritten = true;
         }
 
-        if (socketBuffer.hasRemaining()) {
+        if (dst.hasRemaining()) {
             int outputSize = cipher.getOutputSize(packetBuffer.remaining());
-            if (outputSize <= socketBuffer.remaining()) {
-                cipher.update(packetBuffer, socketBuffer);
+            if (outputSize <= dst.remaining()) {
+                cipher.update(packetBuffer, dst);
             } else {
                 int len = packetBuffer.remaining() / 2;
-                while (len > 0 && cipher.getOutputSize(len) > socketBuffer.remaining()) {
+                while (len > 0 && cipher.getOutputSize(len) > dst.remaining()) {
                     len = len / 2;
                 }
                 if (len > 0) {
                     int limitOld = packetBuffer.limit();
                     packetBuffer.limit(packetBuffer.position() + len);
-                    cipher.update(packetBuffer, socketBuffer);
+                    cipher.update(packetBuffer, dst);
                     packetBuffer.limit(limitOld);
                 }
             }
 
             if (!packetBuffer.hasRemaining()) {
-                if (socketBuffer.remaining() >= cipher.getOutputSize(0)) {
-                    socketBuffer.put(cipher.doFinal());
+                if (dst.remaining() >= cipher.getOutputSize(0)) {
+                    dst.put(cipher.doFinal());
                     packetWritten = false;
                     packetBuffer.clear();
                     return true;

@@ -12,7 +12,7 @@ import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
 
-public class SymmetricCipherPacketReader extends DefaultPacketReader {
+public class SymmetricCipherPacketReader extends MemberPacketReader {
 
     private final Cipher cipher;
     private final ILogger logger;
@@ -39,31 +39,31 @@ public class SymmetricCipherPacketReader extends DefaultPacketReader {
     }
 
     @Override
-    public void readPacket(ByteBuffer inBuffer) throws Exception {
-        while (inBuffer.hasRemaining()) {
+    public void read(ByteBuffer src) throws Exception {
+        while (src.hasRemaining()) {
             try {
                 if (size == -1) {
-                    if (inBuffer.remaining() < Bits.INT_SIZE_IN_BYTES) {
+                    if (src.remaining() < Bits.INT_SIZE_IN_BYTES) {
                         return;
                     }
-                    size = inBuffer.getInt();
+                    size = src.getInt();
                     if (cipherBuffer.capacity() < size) {
                         cipherBuffer = ByteBuffer.allocate(size);
                     }
                 }
-                int remaining = inBuffer.remaining();
+                int remaining = src.remaining();
                 if (remaining < size) {
-                    cipher.update(inBuffer, cipherBuffer);
+                    cipher.update(src, cipherBuffer);
                     size -= remaining;
                 } else if (remaining == size) {
-                    cipher.doFinal(inBuffer, cipherBuffer);
+                    cipher.doFinal(src, cipherBuffer);
                     size = -1;
                 } else {
-                    int oldLimit = inBuffer.limit();
-                    int newLimit = inBuffer.position() + size;
-                    inBuffer.limit(newLimit);
-                    cipher.doFinal(inBuffer, cipherBuffer);
-                    inBuffer.limit(oldLimit);
+                    int oldLimit = src.limit();
+                    int newLimit = src.position() + size;
+                    src.limit(newLimit);
+                    cipher.doFinal(src, cipherBuffer);
+                    src.limit(oldLimit);
                     size = -1;
                 }
             } catch (ShortBufferException e) {

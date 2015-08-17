@@ -5,7 +5,7 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.CipherHelper;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.Packet;
-import com.hazelcast.spi.impl.packettransceiver.PacketTransceiver;
+import com.hazelcast.spi.impl.packetdispatcher.PacketDispatcher;
 import com.hazelcast.util.ExceptionUtil;
 
 import javax.crypto.Cipher;
@@ -20,8 +20,8 @@ public class SymmetricCipherPacketReader extends MemberPacketReader {
     private int size = -1;
     private ByteBuffer cipherBuffer;
 
-    public SymmetricCipherPacketReader(TcpIpConnection connection, IOService ioService, PacketTransceiver packetTransceiver) {
-        super(connection, packetTransceiver);
+    public SymmetricCipherPacketReader(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
+        super(connection, packetDispatcher);
         this.ioService = ioService;
         this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
         this.logger = ioService.getLogger(getClass().getName());

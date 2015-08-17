@@ -247,7 +247,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
-            return new SymmetricCipherPacketReader(connection, ioService, node.nodeEngine.getPacketTransceiver());
+            return new SymmetricCipherPacketReader(connection, ioService, node.nodeEngine.getPacketDispatcher());
         }
         return super.createPacketReader(connection, ioService);
     }

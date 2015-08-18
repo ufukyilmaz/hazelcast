@@ -31,7 +31,7 @@ public final class CacheDestroyOperation
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
             CachePartitionSegment segment = service.getSegment(partitionId);
-            segment.deleteCache(name);
+            segment.deleteRecordStore(name);
         } finally {
             done.countDown();
         }

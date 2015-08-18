@@ -74,7 +74,7 @@ abstract class AbstractHiDensityCacheOperation
 
         try {
             EnterpriseCacheService service = getService();
-            cache = (HiDensityCacheRecordStore) service.getOrCreateCache(name, getPartitionId());
+            cache = (HiDensityCacheRecordStore) service.getOrCreateRecordStore(name, getPartitionId());
             // This is commented-out since some TCK tests requires created cache
             // if there is no cache with specified partition id (or key) for cache miss statistics
             /*
@@ -162,7 +162,7 @@ abstract class AbstractHiDensityCacheOperation
     private void disposeDeferredBlocks() {
         try {
             EnterpriseCacheService service = getService();
-            HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+            HiDensityCacheRecordStore cache = (HiDensityCacheRecordStore) service.getRecordStore(name, getPartitionId());
             if (cache != null) {
                 HiDensityRecordProcessor recordProcessor = cache.getRecordProcessor();
                 recordProcessor.disposeDeferredBlocks();

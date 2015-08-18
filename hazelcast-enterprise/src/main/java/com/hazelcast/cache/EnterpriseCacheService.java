@@ -134,7 +134,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         OperationService operationService = nodeEngine.getOperationService();
         List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
-            if (segment.hasCache(objectName)) {
+            if (segment.hasRecordStore(objectName)) {
                 CacheDestroyOperation op = new CacheDestroyOperation(objectName);
                 ops.add(op);
                 op.setPartitionId(segment.getPartitionId())
@@ -176,7 +176,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         OperationService operationService = nodeEngine.getOperationService();
         List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
-            if (segment.hasAnyCache()) {
+            if (segment.hasAnyRecordStore()) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation();
                 op.setPartitionId(segment.getPartitionId())
                         .setNodeEngine(nodeEngine).setService(this);
@@ -220,7 +220,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
-                ICacheRecordStore cache = getCacheRecordStore(name, partitionId);
+                ICacheRecordStore cache = getRecordStore(name, partitionId);
                 if (cache instanceof HiDensityCacheRecordStore) {
                     evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
                 }
@@ -246,7 +246,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
                 for (CacheConfig cacheConfig : getCacheConfigs()) {
                     String cacheName = cacheConfig.getNameWithPrefix();
                     if (!cacheName.equals(name)) {
-                        ICacheRecordStore cache = getCacheRecordStore(cacheName, partitionId);
+                        ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
                         if (cache instanceof HiDensityCacheRecordStore) {
                             evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
                         }
@@ -272,7 +272,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
             if (partitionId % threadCount == mod) {
                 for (CacheConfig cacheConfig : getCacheConfigs()) {
                     String cacheName = cacheConfig.getNameWithPrefix();
-                    ICacheRecordStore cache = getCacheRecordStore(cacheName, partitionId);
+                    ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
                     if (cache instanceof HiDensityCacheRecordStore) {
                         evicted += ((HiDensityCacheRecordStore) cache).forceEvict();
                     }
@@ -338,8 +338,8 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     @Override
-    public CacheConfig createCacheConfigIfAbsent(CacheConfig config) {
-        CacheConfig localConfig = super.createCacheConfigIfAbsent(config);
+    public CacheConfig putCacheConfigIfAbsent(CacheConfig config) {
+        CacheConfig localConfig = super.putCacheConfigIfAbsent(config);
         if (localConfig != null) {
             config = localConfig;
         }

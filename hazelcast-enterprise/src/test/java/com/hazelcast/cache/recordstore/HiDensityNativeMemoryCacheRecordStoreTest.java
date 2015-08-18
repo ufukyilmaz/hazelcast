@@ -55,7 +55,7 @@ public class HiDensityNativeMemoryCacheRecordStoreTest
         NodeEngine nodeEngine = getNodeEngine(instance);
         ICacheService cacheService = getCacheService(instance);
         CacheConfig cacheConfig = createCacheConfig(cacheName, inMemoryFormat);
-        cacheService.createCacheConfigIfAbsent(cacheConfig);
+        cacheService.putCacheConfigIfAbsent(cacheConfig);
         return new HiDensityNativeMemoryCacheRecordStore(partitionId, CACHE_NAME_PREFIX + cacheName,
                 (EnterpriseCacheService) cacheService, nodeEngine);
     }

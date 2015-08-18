@@ -34,7 +34,7 @@ public class CacheIteratorOperation extends PartitionWideCacheOperation {
     public void run() throws Exception {
         EnterpriseCacheService service = getService();
         HiDensityCacheRecordStore cache =
-                (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+                (HiDensityCacheRecordStore) service.getRecordStore(name, getPartitionId());
         if (cache != null) {
             EnterpriseSerializationService ss = service.getSerializationService();
             SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = cache.iterator(slot);

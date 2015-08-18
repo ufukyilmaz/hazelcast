@@ -45,7 +45,7 @@ public final class HiDensityCacheReplicationOperation
         data = new HashMap<String, Map<Data, CacheRecord>>();
         offHeapSource = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
 
-        Iterator<ICacheRecordStore> iter = segment.cacheIterator();
+        Iterator<ICacheRecordStore> iter = segment.recordStoreIterator();
         while (iter.hasNext()) {
             ICacheRecordStore cacheRecordStore = iter.next();
             CacheConfig cacheConfig = cacheRecordStore.getConfig();
@@ -98,7 +98,7 @@ public final class HiDensityCacheReplicationOperation
         try {
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
                 HiDensityCacheRecordStore recordStore =
-                        (HiDensityCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
+                        (HiDensityCacheRecordStore) service.getOrCreateRecordStore(entry.getKey(), getPartitionId());
                 recordStore.clear();
 
                 Map<Data, CacheRecordHolder> map = entry.getValue();

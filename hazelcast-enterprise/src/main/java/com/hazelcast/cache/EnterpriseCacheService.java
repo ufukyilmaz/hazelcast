@@ -403,12 +403,11 @@ public class EnterpriseCacheService
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
                                         cacheEventContext.getAccessHit()),
-                                config.getManagerPrefix());
+                                config.getManagerPrefix(), config.getTotalBackupCount());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove =
-                        new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
-                                Clock.currentTimeMillis(), config.getManagerPrefix());
+                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
+                        Clock.currentTimeMillis(), config.getManagerPrefix(), config.getTotalBackupCount());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }

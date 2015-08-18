@@ -125,6 +125,8 @@ public class WanConnectionManager {
                     if (conn != null) {
                         connectionPool.put(targetAddress, conn);
                     }
+                } catch (InterruptedException ie) {
+                    logger.finest("Sleep interrupted", ie);
                 } catch (Throwable t) {
                     logger.warning("Failed to connect wan replication endpoint : " + targetAddress, t);
                 }

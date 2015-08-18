@@ -78,4 +78,7 @@
     <!-- Client Protocol -->
     <suppress checks="" files="com/hazelcast/client/impl/protocol/template/"/>
 
+    <!-- WAN Replication -->
+    <suppress checks="NestedIfDepth" files="com/hazelcast/enterprise/wan/replication/AbstractWanReplication"/>
+
 </suppressions>

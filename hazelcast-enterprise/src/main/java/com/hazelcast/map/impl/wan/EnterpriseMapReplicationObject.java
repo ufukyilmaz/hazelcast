@@ -17,9 +17,11 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
 
     Set<String> groupNames = new HashSet<String>();
     String mapName;
+    int backupCount;
 
-    public EnterpriseMapReplicationObject(String mapName) {
+    public EnterpriseMapReplicationObject(String mapName, int backupCount) {
         this.mapName = mapName;
+        this.backupCount = backupCount;
     }
 
     public EnterpriseMapReplicationObject() {
@@ -30,6 +32,11 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
     }
 
     @Override
+    public int getBackupCount() {
+        return backupCount;
+    }
+
+    @Override
     public Set<String> getGroupNames() {
         return groupNames;
     }
@@ -37,12 +44,14 @@ public abstract class EnterpriseMapReplicationObject implements EnterpriseReplic
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(mapName);
+        out.writeInt(backupCount);
         out.writeObject(groupNames);
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         mapName = in.readUTF();
+        backupCount = in.readInt();
         groupNames = in.readObject();
     }
 }

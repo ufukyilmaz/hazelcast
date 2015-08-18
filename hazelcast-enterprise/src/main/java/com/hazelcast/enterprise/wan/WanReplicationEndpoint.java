@@ -17,7 +17,10 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
+import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
+
+import java.util.List;
 
 /**
  * Implementations of this interface represent a replication endpoint, normally another
@@ -34,10 +37,17 @@ public interface WanReplicationEndpoint
      * @param password  the group password
      * @param targets   possible target endpoints bundled in this endpoint
      */
-    void init(Node node, String groupName, String password, boolean isSnapshotEnabled, String... targets);
+    void init(Node node, String groupName, String password, boolean isSnapshotEnabled,
+              String wanReplicationName, String... targets);
 
     /**
      * Closes the endpoint and its internal connections and shuts down other internal states
      */
     void shutdown();
+
+    void removeBackup(WanReplicationEvent wanReplicationEvent);
+
+    void putBackup(WanReplicationEvent wanReplicationEvent);
+
+    List<WanReplicationEventQueue> getEventQueueList(int partitionId);
 }

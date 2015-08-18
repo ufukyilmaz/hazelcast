@@ -14,8 +14,8 @@ public class CacheReplicationRemove extends CacheReplicationObject {
     private Data key;
     private long removeTime;
 
-    public CacheReplicationRemove(String cacheName, Data key, long removeTime, String managerPrefix) {
-        super(cacheName, managerPrefix);
+    public CacheReplicationRemove(String cacheName, Data key, long removeTime, String managerPrefix, int backupCount) {
+        super(cacheName, managerPrefix, backupCount);
         this.key = key;
         this.removeTime = removeTime;
     }

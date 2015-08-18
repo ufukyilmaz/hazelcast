@@ -62,7 +62,9 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     }
 
     public boolean offer(long value) {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         final ReentrantLock lock = this.lock;
         lock.lock();
@@ -77,7 +79,9 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     }
 
     public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
@@ -102,7 +106,10 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     }
 
     public void put(long value) throws InterruptedException {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
+
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -121,9 +128,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     }
 
     private boolean insert(final long value) {
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
-        }
+        ensureMemory();
         set(add, value);
         add++;
         size++;
@@ -138,9 +143,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            if (size < 0) {
-                throw new IllegalStateException("Queue is already destroyed! " + toString());
-            }
+            ensureMemory();
             if (size == 0) {
                 return nullItem;
             }
@@ -205,9 +208,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     }
 
     private long extract() {
-        if (size < 0) {
-            throw new IllegalStateException("Queue is already destroyed! " + toString());
-        }
+        ensureMemory();
         long value = get(remove);
         set(remove, nullItem);
         remove++;
@@ -217,6 +218,12 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
         notFull.signal();
         return value;
+    }
+
+    private void ensureMemory() {
+        if (size < 0) {
+            throw new IllegalStateException("Queue is already destroyed! " + toString());
+        }
     }
 
     public void consume(final LongConsumer consumer) {
@@ -303,6 +310,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
     public LongIterator iterator() {
         lock.lock();
         try {
+            ensureMemory();
             return new Iter();
         } finally {
             lock.unlock();
@@ -326,10 +334,14 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
 
         public long next() {
-            if (remaining <= 0) throw new NoSuchElementException();
+            if (remaining <= 0) {
+                throw new NoSuchElementException();
+            }
+
             final ReentrantLock lock = LongArrayBlockingQueue.this.lock;
             lock.lock();
             try {
+                ensureMemory();
                 long item = nextItem;
                 while (--remaining > 0) {
                     if ((nextItem = get(nextIndex = inc(nextIndex))) != nullItem) break;

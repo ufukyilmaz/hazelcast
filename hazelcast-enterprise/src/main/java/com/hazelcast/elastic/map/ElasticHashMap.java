@@ -9,6 +9,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+
 /**
  * @author mdogan 07/01/14
  */

@@ -12,6 +12,9 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.NativeMemoryData;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 /**
  * @author sozal 18/02/15
  *
@@ -24,6 +27,8 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     private final HiDensityRecordAccessor<R> recordAccessor;
     private final MemoryManager memoryManager;
     private final HiDensityStorageInfo storageInfo;
+
+    private final Queue<MemoryBlock> deferredBlocksQueue = new ArrayDeque<MemoryBlock>(8);
 
     public DefaultHiDensityRecordProcessor(EnterpriseSerializationService serializationService,
                                            HiDensityRecordAccessor<R> recordAccessor,
@@ -71,8 +76,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
 
     @Override
     public NativeMemoryData readData(long valueAddress) {
-        NativeMemoryData data = recordAccessor.readData(valueAddress);
-        return data;
+        return recordAccessor.readData(valueAddress);
     }
 
     @Override
@@ -161,6 +165,34 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         long disposedSize = getSize(address, size);
         memoryManager.free(address, size);
         storageInfo.removeUsedMemory(disposedSize);
+    }
+
+
+    @Override
+    public void addDeferredDispose(MemoryBlock memoryBlock) {
+        if (memoryBlock.address() == MemoryAllocator.NULL_ADDRESS) {
+            throw new IllegalArgumentException("Illegal address!");
+        }
+        deferredBlocksQueue.add(memoryBlock);
+    }
+
+    @Override
+    public void disposeDeferredBlocks() {
+        MemoryBlock block;
+        while ((block = deferredBlocksQueue.poll()) != null) {
+            if (block.address() == MemoryAllocator.NULL_ADDRESS) {
+                // already disposed
+                continue;
+            }
+
+            if (block instanceof NativeMemoryData) {
+                disposeData((NativeMemoryData) block);
+            } else if (block instanceof HiDensityRecord) {
+                dispose((R) block);
+            } else {
+                free(block.address(), block.size());
+            }
+        }
     }
 
     @Override

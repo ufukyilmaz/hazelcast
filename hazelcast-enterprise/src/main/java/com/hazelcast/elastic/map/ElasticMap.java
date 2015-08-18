@@ -9,28 +9,6 @@ import java.util.Set;
  */
 public interface ElasticMap<K, V> extends Map<K, V> {
 
-    /**
-     * Maximum capacity for an array that is of power-of-two size and still
-     * allocatable in Java (not a negative int).
-     */
-    int MAX_CAPACITY = 0x80000000 >>> 1;
-
-    /**
-     * Minimum capacity for a hash container.
-     */
-    int MIN_CAPACITY = 4;
-
-    /**
-     * Default capacity for a hash container.
-     */
-    int DEFAULT_CAPACITY = 16;
-
-    /**
-     * Default load factor.
-     */
-    float DEFAULT_LOAD_FACTOR = 0.91f;
-
-
     V put(K key, V value);
 
     /**

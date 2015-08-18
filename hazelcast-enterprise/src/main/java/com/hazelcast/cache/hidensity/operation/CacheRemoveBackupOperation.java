@@ -29,6 +29,7 @@ public class CacheRemoveBackupOperation
 
     @Override
     public void afterRun() throws Exception {
+        super.afterRun();
         dispose();
     }
 

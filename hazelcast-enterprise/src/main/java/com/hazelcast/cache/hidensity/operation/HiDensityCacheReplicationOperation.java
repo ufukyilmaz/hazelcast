@@ -9,10 +9,12 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.NativeMemoryData;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.NonThreadSafe;
 import com.hazelcast.util.Clock;
@@ -30,10 +32,10 @@ public final class HiDensityCacheReplicationOperation
         extends com.hazelcast.cache.impl.operation.CacheReplicationOperation
         implements NonThreadSafe {
 
-    protected Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;
-    protected Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
+    private Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;
+    private Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
 
-    transient NativeOutOfMemoryError oome;
+    private transient NativeOutOfMemoryError oome;
 
     public HiDensityCacheReplicationOperation() {
         offHeapDestination = new HashMap<String, Map<Data, CacheRecordHolder>>();
@@ -95,17 +97,17 @@ public final class HiDensityCacheReplicationOperation
         EnterpriseCacheService service = getService();
         try {
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
-                HiDensityCacheRecordStore cache =
+                HiDensityCacheRecordStore recordStore =
                         (HiDensityCacheRecordStore) service.getOrCreateCache(entry.getKey(), getPartitionId());
+                recordStore.clear();
+
                 Map<Data, CacheRecordHolder> map = entry.getValue();
                 Iterator<Map.Entry<Data, CacheRecordHolder>> iter = map.entrySet().iterator();
                 while (iter.hasNext()) {
                     Map.Entry<Data, CacheRecordHolder> next = iter.next();
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
-                    cache.own(key, holder.value, holder.ttl);
-                    // If there is an update, the key from outside is already disposed in "BinaryElasticHashMap"
-                    // So no need to dispose key here.
+                    recordStore.own(key, holder.value, holder.ttl);
                     iter.remove();
                 }
             }
@@ -185,18 +187,33 @@ public final class HiDensityCacheReplicationOperation
             String name = in.readUTF();
             Map<Data, CacheRecordHolder> m = new HashMap<Data, CacheRecordHolder>(subCount);
             offHeapDestination.put(name, m);
+
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-                Data key = AbstractHiDensityCacheOperation.readOperationData(in);
-                Data value = AbstractHiDensityCacheOperation.readOperationData(in);
+                Data key = readNativeData(in);
                 if (key != null) {
+                    Data value = readNativeData(in);
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
+                }
+
+                if (oome != null) {
+                    return;
                 }
             }
         }
         super.readInternal(in);
     }
 
+    private Data readNativeData(ObjectDataInput in) throws IOException {
+        try {
+            return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
+        } catch (NativeOutOfMemoryError e) {
+            oome = e;
+            return null;
+        }
+    }
+
+    @Override
     public boolean isEmpty() {
         return (offHeapSource == null || offHeapSource.isEmpty() && super.isEmpty());
     }

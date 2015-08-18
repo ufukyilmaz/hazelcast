@@ -83,7 +83,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     }
 
     static void assertNotNullPtr(long address) {
-        assert address > NULL_ADDRESS : "Illegal memory address: " + address;
+        assert address != NULL_ADDRESS : "Illegal memory address: " + address;
     }
 
     @Override

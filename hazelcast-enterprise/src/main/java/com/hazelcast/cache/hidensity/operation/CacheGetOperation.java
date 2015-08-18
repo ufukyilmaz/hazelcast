@@ -33,6 +33,7 @@ public class CacheGetOperation
 
     @Override
     public void afterRun() throws Exception {
+        super.afterRun();
         dispose();
     }
 

@@ -90,7 +90,9 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
     }
 
     public boolean offer(long value) {
-        assert value != nullItem;
+        if (value == nullItem) {
+            throw new IllegalArgumentException();
+        }
 
         long node = newNode(value);
         long t;

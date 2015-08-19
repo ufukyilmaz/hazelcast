@@ -56,7 +56,7 @@ public class CacheLoadAllOperation extends BackupAwareHiDensityCacheOperation {
         }
         try {
             final CacheService service = getService();
-            cache = service.getOrCreateCache(name, partitionId);
+            cache = service.getOrCreateRecordStore(name, partitionId);
             final Set<Data> keysLoaded = cache.loadAll(filteredKeys, replaceExistingValues);
             shouldBackup = !keysLoaded.isEmpty();
             if (shouldBackup) {

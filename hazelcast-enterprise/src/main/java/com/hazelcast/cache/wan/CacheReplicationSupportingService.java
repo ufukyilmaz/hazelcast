@@ -52,7 +52,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             } catch (Exception e) {
                 ExceptionUtil.rethrow(e);
             }
-            CacheConfig existingCacheConfig = cacheService.createCacheConfigIfAbsent(cacheConfig);
+            CacheConfig existingCacheConfig = cacheService.putCacheConfigIfAbsent(cacheConfig);
             if (existingCacheConfig == null) {
                 CacheCreateConfigOperation op =
                         new CacheCreateConfigOperation(cacheConfig, true);

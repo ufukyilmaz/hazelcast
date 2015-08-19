@@ -1,0 +1,3 @@
+The package com.hazelcast.util.concurrent
+contains code originating from the Agrona project
+(https://github.com/real-logic/Agrona).

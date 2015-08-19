@@ -1,7 +1,6 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
-import com.hazelcast.client.impl.client.ClientRequest;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.impl.ClientInvocation;
@@ -37,7 +36,7 @@ public class ClientInvokerWrapper implements InvokerWrapper {
         checkNotNull(request, "request cannot be null");
         checkNotNegative(partitionId, "partitionId");
 
-        ClientRequest clientRequest = (ClientRequest) request;
+        ClientMessage clientRequest = (ClientMessage) request;
         ClientInvocation clientInvocation = new ClientInvocation(getClient(), clientRequest, partitionId);
         return clientInvocation.invoke();
     }
@@ -59,7 +58,7 @@ public class ClientInvokerWrapper implements InvokerWrapper {
         checkNotNull(request, "request cannot be null");
         checkNotNull(address, "address cannot be null");
 
-        ClientRequest clientRequest = (ClientRequest) request;
+        ClientMessage clientRequest = (ClientMessage) request;
         ClientInvocation invocation = new ClientInvocation(getClient(), clientRequest, address);
         return invocation.invoke();
     }

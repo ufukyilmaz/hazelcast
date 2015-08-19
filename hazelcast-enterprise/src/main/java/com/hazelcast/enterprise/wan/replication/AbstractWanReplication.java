@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
@@ -15,6 +15,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Arrays;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract WAN event publisher implementation
@@ -22,9 +23,7 @@ import java.util.concurrent.Future;
 abstract class AbstractWanReplication
         implements WanReplicationPublisher {
 
-    private static final int MILLI_SECONDS = 1000;
-    private static final int SECONDS = 60;
-    private static final int QUEUE_LOGGER_PERIOD_MINS = 5;
+    private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
     String targetGroupName;
     String localGroupName;
@@ -37,7 +36,7 @@ abstract class AbstractWanReplication
     long batchFrequency;
     long operationTimeout;
     long lastQueueFullLogTimeMs;
-    int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MINS * SECONDS * MILLI_SECONDS;
+    int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
 
     private ILogger logger;
 
@@ -47,13 +46,12 @@ abstract class AbstractWanReplication
         this.snapshotEnabled = snapshotEnabled;
         this.logger = node.getLogger(AbstractWanReplication.class.getName());
 
-        GroupProperties groupProperties = node.getGroupProperties();
-        this.queueSize = groupProperties.ENTERPRISE_WAN_REP_QUEUE_CAPACITY.getInteger();
+        this.queueSize = node.groupProperties.getInteger(GroupProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY);
         localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
 
-        batchSize = groupProperties.ENTERPRISE_WAN_REP_BATCH_SIZE.getInteger();
-        batchFrequency = groupProperties.ENTERPRISE_WAN_REP_BATCH_FREQUENCY_SECONDS.getLong() * MILLI_SECONDS;
-        operationTimeout = groupProperties.ENTERPRISE_WAN_REP_OP_TIMEOUT_MILLIS.getLong();
+        batchSize = node.groupProperties.getInteger(GroupProperty.ENTERPRISE_WAN_REP_BATCH_SIZE);
+        batchFrequency = node.groupProperties.getMillis(GroupProperty.ENTERPRISE_WAN_REP_BATCH_FREQUENCY_SECONDS);
+        operationTimeout = node.groupProperties.getMillis(GroupProperty.ENTERPRISE_WAN_REP_OP_TIMEOUT_MILLIS);
 
         connectionManager = new WanConnectionManager(node);
         connectionManager.init(groupName, password, Arrays.asList(targets));
@@ -74,5 +72,4 @@ abstract class AbstractWanReplication
                 .setCallTimeout(operationTimeout)
                 .invoke();
     }
-
 }

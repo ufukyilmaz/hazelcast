@@ -1,5 +1,6 @@
 package com.hazelcast.elasticmemory;
 
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.logging.ILogger;
@@ -19,14 +20,14 @@ public class InstanceStorageFactory extends StorageFactorySupport implements Sto
     }
 
     public Storage createStorage() {
-        String total = node.groupProperties.ELASTIC_MEMORY_TOTAL_SIZE.getValue();
-        String chunk = node.groupProperties.ELASTIC_MEMORY_CHUNK_SIZE.getValue();
-        boolean useUnsafe = node.groupProperties.ELASTIC_MEMORY_UNSAFE_ENABLED.getBoolean();
+        String total = node.groupProperties.getString(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE);
+        String chunk = node.groupProperties.getString(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE);
+        boolean useUnsafe = node.groupProperties.getBoolean(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED);
 
         if (logger.isFinestEnabled()) {
-            logger.finest(format("Read %s as: %s", node.groupProperties.ELASTIC_MEMORY_TOTAL_SIZE.getName(), total));
-            logger.finest(format("Read %s as: %s", node.groupProperties.ELASTIC_MEMORY_CHUNK_SIZE.getName(), chunk));
-            logger.finest(format("Read %s as: %s", node.groupProperties.ELASTIC_MEMORY_UNSAFE_ENABLED.getName(), useUnsafe));
+            logger.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.getName(), total));
+            logger.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.getName(), chunk));
+            logger.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED.getName(), useUnsafe));
         }
 
         Storage storage = createStorage(total, chunk, useUnsafe, logger);

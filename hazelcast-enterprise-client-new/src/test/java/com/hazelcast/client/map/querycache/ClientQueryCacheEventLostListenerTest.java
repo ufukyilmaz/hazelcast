@@ -8,7 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
@@ -36,7 +36,7 @@ public class ClientQueryCacheEventLostListenerTest extends HazelcastTestSupport 
         tearDown();
 
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_PARTITION_COUNT, "1");
+        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         node = Hazelcast.newHazelcastInstance(config);
     }

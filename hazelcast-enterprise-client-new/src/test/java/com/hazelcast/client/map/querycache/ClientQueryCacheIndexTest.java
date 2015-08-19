@@ -8,7 +8,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.mapreduce.helpers.Employee;
 import com.hazelcast.query.Predicate;
@@ -36,7 +36,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
     @Before
     public void setUp() throws Exception {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_PARTITION_COUNT, "1");
+        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         Hazelcast.newHazelcastInstance(config);
     }

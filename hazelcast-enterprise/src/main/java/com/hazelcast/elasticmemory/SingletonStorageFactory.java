@@ -1,6 +1,6 @@
 package com.hazelcast.elasticmemory;
 
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.storage.DataRef;
 import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.logging.ILogger;
@@ -69,19 +69,19 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
                 throw new IllegalStateException("Storage is already initialized!");
             }
 
-            String total = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE);
-            String chunk = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE);
-            String unsafe = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED);
+            String total = GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.getSystemProperty();
+            String chunk = GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.getSystemProperty();
+            String unsafe = GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED.getSystemProperty();
 
             if (total == null || chunk == null) {
                 throw new IllegalArgumentException(format("Both '%s' and '%s' system properties are mandatory!",
-                        GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE));
+                        GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.getName(), GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.getName()));
             }
 
             if (LOGGER.isFinestEnabled()) {
-                LOGGER.finest(format("Read %s as: %s", GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, total));
-                LOGGER.finest(format("Read %s as: %s", GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, chunk));
-                LOGGER.finest(format("Read %s as: %s", GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, unsafe));
+                LOGGER.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.getName(), total));
+                LOGGER.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.getName(), chunk));
+                LOGGER.finest(format("Read %s as: %s", GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED.getName(), unsafe));
             }
 
             LOGGER.info("Initializing Singleton Storage...");

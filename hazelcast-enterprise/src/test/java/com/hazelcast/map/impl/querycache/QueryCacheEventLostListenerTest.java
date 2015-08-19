@@ -7,7 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.QueryCache;
@@ -38,7 +38,7 @@ public class QueryCacheEventLostListenerTest extends HazelcastTestSupport {
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
         Config config = new Config();
 
-        config.setProperty(GroupProperties.PROP_PARTITION_COUNT, "1");
+        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);
         queryCacheConfig.setBatchSize(1111);

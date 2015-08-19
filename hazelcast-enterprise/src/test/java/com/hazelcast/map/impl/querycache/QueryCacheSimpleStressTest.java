@@ -8,7 +8,7 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EventLostListener;
@@ -53,7 +53,7 @@ public class QueryCacheSimpleStressTest extends HazelcastTestSupport {
         MapConfig mapConfig = new MapConfig(mapName);
         mapConfig.addQueryCacheConfig(queryCacheConfig);
         config.addMapConfig(mapConfig);
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
     }
 
     @Test

@@ -8,7 +8,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.monitors.HealthMonitorLevel;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -21,7 +21,6 @@ import org.junit.Before;
 import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.spi.CachingProvider;
-import java.util.Properties;
 
 /**
  * @author mdogan 02/06/14
@@ -32,8 +31,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
     protected static final String IN_MEMORY_FORMAT_PROPERTY = "inMemoryFormat";
 
     protected static final String DEFAULT_CACHE_NAME = "CACHE";
-    protected static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT =
-            InMemoryFormat.NATIVE;
+    protected static final InMemoryFormat DEFAULT_IN_MEMORY_FORMAT = InMemoryFormat.NATIVE;
 
     protected static final String CACHE_NAME;
     protected static final InMemoryFormat IN_MEMORY_FORMAT;
@@ -65,7 +63,7 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     protected Config createConfig() {
         Config config = new Config();
-        config.setProperties(getProperties());
+        setProperties(config);
         config.setNativeMemoryConfig(getMemoryConfig());
         config.setSerializationConfig(getSerializationConfig());
         return config;
@@ -103,21 +101,18 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return serializationConfig;
     }
 
-    protected Properties getProperties() {
-        Properties props = new Properties();
-        props.setProperty(GroupProperties.PROP_PARTITION_COUNT, "111");
-        props.setProperty(GroupProperties.PROP_SOCKET_BIND_ANY, "false");
-        props.setProperty(GroupProperties.PROP_MAX_WAIT_SECONDS_BEFORE_JOIN, "0");
-        props.setProperty(GroupProperties.PROP_GENERIC_OPERATION_THREAD_COUNT, "2");
-        props.setProperty(GroupProperties.PROP_PARTITION_OPERATION_THREAD_COUNT, "4");
-        props.setProperty(GroupProperties.PROP_LOGGING_TYPE, "log4j");
-        props.setProperty(GroupProperties.PROP_HEALTH_MONITORING_LEVEL, HealthMonitorLevel.OFF.name());
-        return props;
+    protected void setProperties(Config config) {
+        config.setProperty(GroupProperty.PARTITION_COUNT, "111");
+        config.setProperty(GroupProperty.SOCKET_BIND_ANY, "false");
+        config.setProperty(GroupProperty.MAX_WAIT_SECONDS_BEFORE_JOIN, "0");
+        config.setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT, "2");
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, "4");
+        config.setProperty(GroupProperty.LOGGING_TYPE, "log4j");
+        config.setProperty(GroupProperty.HEALTH_MONITORING_LEVEL, HealthMonitorLevel.OFF.name());
     }
 
     protected ICache createCache() {
-        Cache<Object, Object> cache =
-                cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
+        Cache<Object, Object> cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
         return cache.unwrap(ICache.class);
     }
 
@@ -144,5 +139,4 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         }
         onTearDown();
     }
-
 }

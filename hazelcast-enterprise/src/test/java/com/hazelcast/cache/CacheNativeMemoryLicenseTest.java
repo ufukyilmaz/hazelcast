@@ -8,7 +8,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -29,16 +29,15 @@ import javax.cache.CacheManager;
 public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
     HazelcastServerCachingProvider provider;
-    Cache cache;;
+    Cache cache;
     Config config;
-
 
     @Before
     public void setup() {
         config = new Config();
         config.getNativeMemoryConfig().setEnabled(true);
         config.getNativeMemoryConfig().setSize(MemorySize.parse("1", MemoryUnit.GIGABYTES));
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_GB_NATIVE_MEMORY_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.TWO_GB_NATIVE_MEMORY_LICENSE);
     }
 
     @After
@@ -56,7 +55,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void node_should_not_start_with_security_only_license() {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.SECURITY_ONLY_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         configureCacheWithNativeMemory(factory);
         factory.newHazelcastInstance(config);//This node should not start with HD memory

@@ -15,7 +15,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
@@ -73,7 +73,7 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         config.setInstanceName(instanceName);
         config.getNetworkConfig().setPort(port);
         config.setClassLoader(classLoader);
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
         CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
         EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {

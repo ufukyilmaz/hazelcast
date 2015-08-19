@@ -192,16 +192,17 @@ abstract class AbstractHiDensityCacheOperation
     }
 
     @Override
+    public void onExecutionFailure(Throwable e) {
+        dispose();
+    }
+
+    @Override
     public void logError(Throwable e) {
         ILogger logger = getLogger();
         if (e instanceof NativeOutOfMemoryError) {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
         } else {
-            // We need to introduce a proper method to handle operation failures.
-            // right now, this is the only place we can dispose
-            // native memory allocations on failure.
-            dispose();
             super.logError(e);
         }
     }

@@ -1,20 +1,23 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.hidensity.operation.CacheContainsKeyOperation;
+import com.hazelcast.cache.hidensity.operation.CacheEntryProcessorOperation;
+import com.hazelcast.cache.hidensity.operation.CacheGetAndRemoveOperation;
 import com.hazelcast.cache.hidensity.operation.CacheGetAndReplaceOperation;
 import com.hazelcast.cache.hidensity.operation.CacheKeyIteratorOperation;
 import com.hazelcast.cache.hidensity.operation.CacheLoadAllOperationFactory;
 import com.hazelcast.cache.hidensity.operation.CachePutIfAbsentOperation;
 import com.hazelcast.cache.hidensity.operation.CacheReplaceOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSizeOperation;
+import com.hazelcast.cache.hidensity.operation.CacheSizeOperationFactory;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.cache.impl.operation.CacheEntryProcessorOperation;
-import com.hazelcast.cache.impl.operation.CacheGetAndRemoveOperation;
-import com.hazelcast.cache.impl.operation.CacheSizeOperationFactory;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.CacheConfiguration;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -23,21 +26,30 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import javax.cache.Cache;
+import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.integration.CacheLoader;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CompletionListener;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.junit.Assert.assertEquals;
@@ -85,7 +97,7 @@ public class CacheTest extends AbstractCacheTest {
 
             // trigger cache record store creation by accessing cache
             // since cache record stores are created as lazy when they are accessed
-            cache.get("key");
+            cache.put("key", "value");
         } finally {
             if (factory != null) {
                 factory.shutdownAll();
@@ -420,6 +432,75 @@ public class CacheTest extends AbstractCacheTest {
         } finally {
             stop.set(true);
             thread.join();
+        }
+    }
+
+    // Issue https://github.com/hazelcast/hazelcast-enterprise/issues/296
+    @Test
+    public void testCacheLoadAll() throws InterruptedException {
+        EvictionConfig evictionConfig =
+                new EvictionConfig()
+                        .setEvictionPolicy(EvictionPolicy.LRU)
+                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                        .setSize(100);
+
+        Factory<CacheLoader> cacheLoaderFactory = new CacheLoaderFactory();
+
+        CacheConfiguration configuration =
+                new CacheConfig()
+                    .setInMemoryFormat(InMemoryFormat.NATIVE)
+                    .setEvictionConfig(evictionConfig)
+                    .setCacheLoaderFactory(cacheLoaderFactory);
+
+        ICache cache = (ICache) cacheManager.createCache("test", configuration);
+
+        Map map = new HashMap();
+        for (int i = 0; i < 10; i++) {
+            map.put(String.valueOf(i), i);
+        }
+
+        MyCompletionListener completionListener = new MyCompletionListener();
+        cache.loadAll(map.keySet(), true, completionListener);
+
+        Assert.assertTrue(completionListener.done.await(1, TimeUnit.MINUTES));
+        Assert.assertNull("Got error: " + completionListener.error, completionListener.error.get());
+    }
+
+    private static class CacheLoaderFactory implements Factory<CacheLoader> {
+        @Override
+        public CacheLoader create() {
+            return new CacheLoader() {
+                @Override
+                public Object load(Object key) throws CacheLoaderException {
+                    return String.valueOf(key);
+                }
+
+                @Override
+                public Map loadAll(Iterable keys) throws CacheLoaderException {
+                    Map map = new HashMap();
+                    for (Object key : keys) {
+                        map.put(key, load(key));
+                    }
+                    return map;
+                }
+            };
+        }
+    }
+
+    private static class MyCompletionListener implements CompletionListener {
+        final CountDownLatch done = new CountDownLatch(1);
+        final AtomicReference<Exception> error = new AtomicReference<Exception>();
+
+        @Override
+        public void onCompletion() {
+            done.countDown();
+        }
+
+        @Override
+        public void onException(Exception e) {
+            e.printStackTrace();
+            error.set(e);
+            done.countDown();
         }
     }
 

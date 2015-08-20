@@ -1,12 +1,13 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -16,7 +17,9 @@ import java.io.IOException;
  * Operation implementation for merging entries
  * This operation is used by WAN replication services
  */
-public class WanCacheMergeOperation extends BackupAwareHiDensityCacheOperation {
+public class WanCacheMergeOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     private CacheEntryView<Data, Data> cacheEntryView;
     private CacheMergePolicy mergePolicy;
@@ -35,14 +38,13 @@ public class WanCacheMergeOperation extends BackupAwareHiDensityCacheOperation {
     }
 
     @Override
-    public void runInternal()
-            throws Exception {
+    public void runInternal() throws Exception {
         response = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), completionId, wanGroupName);
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
-        binaryService.disposeData(cacheEntryView.getValue());
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(cacheEntryView.getValue());
     }
 
     @Override
@@ -87,4 +89,5 @@ public class WanCacheMergeOperation extends BackupAwareHiDensityCacheOperation {
     public int getFactoryId() {
         return HiDensityCacheDataSerializerHook.F_ID;
     }
+
 }

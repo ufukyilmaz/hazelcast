@@ -100,7 +100,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * load factor of {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public BinaryElasticHashMap(EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         this(DEFAULT_CAPACITY, serializationService, memoryBlockAccessor, malloc);
     }
 
@@ -115,7 +115,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @param malloc
      */
     public BinaryElasticHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR, serializationService, memoryBlockAccessor, malloc);
     }
 
@@ -130,8 +130,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @param malloc
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
-            EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                EnterpriseSerializationService serializationService,
+                                MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         this(initialCapacity, loadFactor,
                 new BinaryElasticHashMapMemoryBlockProcessor<V>(serializationService, memoryBlockAccessor, malloc));
     }
@@ -156,7 +156,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * @param memoryBlockProcessor
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
-            MemoryBlockProcessor<V> memoryBlockProcessor) {
+                                MemoryBlockProcessor<V> memoryBlockProcessor) {
         initialCapacity = Math.max(initialCapacity, MIN_CAPACITY);
 
         assert initialCapacity > 0
@@ -207,9 +207,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 final long oldValue = getValue(slot);
                 setValue(slot, value.address());
-                if (key instanceof NativeMemoryData && ((NativeMemoryData) key).address() != slotKey) {
-                    memoryBlockProcessor.disposeData(key);
-                }
                 return memoryBlockProcessor.read(oldValue);
             }
             slot = (slot + 1) & mask;
@@ -905,7 +902,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         private final MemoryAllocator malloc;
 
         private BinaryElasticHashMapMemoryBlockProcessor(EnterpriseSerializationService serializationService,
-                MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                                         MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
             this.serializationService = serializationService;
             this.memoryBlockAccessor = memoryBlockAccessor;
             this.malloc = malloc;

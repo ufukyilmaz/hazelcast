@@ -27,7 +27,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.NativeMemoryData;
-import com.hazelcast.spi.Callback;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
@@ -36,7 +35,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
 
 import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
-import static com.hazelcast.cache.impl.record.CacheRecordFactory.isExpiredAt;
 
 /**
  * @author sozal 14/10/14
@@ -251,8 +249,20 @@ public class HiDensityNativeMemoryCacheRecordStore
         cacheRecord.setCreationTime(record.getAccessTime());
         cacheRecord.setAccessTime(record.getAccessTime());
         cacheRecord.setAccessHit(record.getAccessHit());
+        cacheRecord.setExpirationTime(record.getExpirationTime());
         cacheRecord.setValue(toHeapData(record.getValue()));
         return cacheRecord;
+    }
+
+    private HiDensityNativeMemoryCacheRecord toNativeMemoryCacheRecord(CacheRecord record) {
+        if (record instanceof HiDensityNativeMemoryCacheRecord) {
+            return (HiDensityNativeMemoryCacheRecord) record;
+        }
+        HiDensityNativeMemoryCacheRecord nativeMemoryRecord =
+                createRecord(record.getValue(), record.getCreationTime(), record.getExpirationTime());
+        nativeMemoryRecord.setAccessTime(record.getAccessTime());
+        nativeMemoryRecord.setAccessHit(record.getAccessHit());
+        return nativeMemoryRecord;
     }
 
     private NativeMemoryData toNativeMemoryData(Object data) {
@@ -283,48 +293,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public HiDensityNativeMemoryCacheRecord createRecordWithExpiry(Data key, Object value, long expiryTime,
-            long now, boolean disableWriteThrough, int completionId, String origin) {
-        if (!disableWriteThrough) {
-            writeThroughCache(key, value);
-        }
-        if (!isExpiredAt(expiryTime, now)) {
-            HiDensityNativeMemoryCacheRecord record = createRecord(key, value, expiryTime, completionId, origin);
-            try {
-                doPutRecord(key, record);
-            } catch (Throwable error) {
-                if (isMemoryBlockValid(record)) {
-                    if (value instanceof NativeMemoryData) {
-                        cacheRecordProcessor.free(record.address(), record.size());
-                        record.reset(NULL_PTR);
-                    } else {
-                        cacheRecordProcessor.dispose(record);
-                    }
-                }
-                throw ExceptionUtil.rethrow(error);
-            }
-            return record;
-        }
-        publishEvent(createCacheCompleteEvent(key, CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
-                origin, completionId));
-        return null;
+    protected HiDensityNativeMemoryCacheRecord createRecord(Object value, long creationTime, long expiryTime) {
+        return createRecordInternal(value, creationTime, expiryTime);
     }
 
-    @Override
-    protected HiDensityNativeMemoryCacheRecord createRecord(Object value, long creationTime,
-                                                            long expiryTime) {
-        return createRecordInternal(value, creationTime, expiryTime, false, true);
-    }
-
-    private HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime,
-                                                                  long expiryTime, boolean forceEvict,
-                                                                  boolean retryOnOutOfMemoryError) {
-        if (forceEvict) {
-            forceEvict();
-        } else {
-            evictIfRequired();
-        }
-
+    private HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime, long expiryTime) {
         NativeMemoryData data = null;
         HiDensityNativeMemoryCacheRecord record;
         long recordAddress = NULL_PTR;
@@ -359,26 +332,39 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
 
             throw e;
-            /*
-            if (retryOnOutOfMemoryError) {
-                return createRecordInternal(value, creationTime, expiryTime, true, false);
+        }
+    }
+
+    @Override
+    //CHECKSTYLE:OFF
+    protected void onCreateRecordWithExpiryError(Data key, Object value, long expiryTime, long now,
+                                                 boolean disableWriteThrough, int completionId, String origin,
+                                                 HiDensityNativeMemoryCacheRecord record, Throwable error) {
+        if (isMemoryBlockValid(record)) {
+            if (value instanceof NativeMemoryData) {
+                // If value is allocated outside of record store, disposing value is its responsibility.
+                // So just dispose record which is allocated here.
+                cacheRecordProcessor.free(record.address(), record.size());
+                record.reset(NULL_PTR);
+                cacheRecordProcessor.enqueueRecord(record);
             } else {
-                throw e;
+                cacheRecordProcessor.dispose(record);
             }
-            */
+        }
+    }
+    //CHECKSTYLE:ON
+
+    @Override
+    protected void onProcessExpiredEntry(Data key, HiDensityNativeMemoryCacheRecord record, long expiryTime,
+                                         long now, String source, String origin) {
+        if (isMemoryBlockValid(record)) {
+            cacheRecordProcessor.dispose(record);
         }
     }
 
     @Override
     protected void onUpdateRecord(Data key, HiDensityNativeMemoryCacheRecord record,
                                   Object value, Data oldDataValue) {
-        // on update, just value-ref inside the record is replaced
-        if (key instanceof NativeMemoryData) {
-            NativeMemoryData nativeKey = (NativeMemoryData) key;
-            if (isMemoryBlockValid(nativeKey)) {
-                cacheRecordProcessor.addDeferredDispose(nativeKey);
-            }
-        }
         // If there is valid old value, dispose it
         if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
             NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
@@ -391,39 +377,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected void onUpdateRecordError(Data key, HiDensityNativeMemoryCacheRecord record,
                                        Object value, Data newDataValue, Data oldDataValue, Throwable error) {
-        boolean newValueInUse = false;
-        // If new value is valid
-        if (newDataValue != null && newDataValue instanceof NativeMemoryData) {
+        // If there is valid new value and it is created at here, dispose it
+        if (newDataValue != null && newDataValue instanceof NativeMemoryData && newDataValue != value) {
             NativeMemoryData nativeMemoryData = (NativeMemoryData) newDataValue;
             if (isMemoryBlockValid(nativeMemoryData)) {
-                // Check about that if new value is in use or not for this record
-                if (isMemoryBlockValid(record)
-                        && record.getValueAddress() == nativeMemoryData.address()) {
-                    newValueInUse = true;
-                }
-                // If new value is not in use, dispose its data since it is not used
-                if (!newValueInUse) {
-                    cacheRecordProcessor.disposeData(nativeMemoryData);
-                }
-            }
-        }
-        if (newValueInUse) {
-            // If new value in used and old value is still valid, dispose it
-            if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
-                NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
-                if (isMemoryBlockValid(nativeMemoryData)) {
-                    cacheRecordProcessor.disposeData(nativeMemoryData);
-                }
-            }
-        } else {
-            // If new value is not used and old value is still valid, restore old value of this record
-            if (oldDataValue != null && oldDataValue instanceof NativeMemoryData) {
-                NativeMemoryData nativeMemoryData = (NativeMemoryData) oldDataValue;
-                if (isMemoryBlockValid(nativeMemoryData)) {
-                    if (isMemoryBlockValid(record)) {
-                        record.setValue(nativeMemoryData);
-                    }
-                }
+                cacheRecordProcessor.disposeData(nativeMemoryData);
             }
         }
     }
@@ -451,17 +409,66 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    private HiDensityNativeMemoryCacheRecord putRecordInternal(Data key, CacheRecord record) {
+        if (!records.containsKey(key)) {
+            evictIfRequired();
+        }
+
+        HiDensityNativeMemoryCacheRecord newRecord = toNativeMemoryCacheRecord(record);
+        HiDensityNativeMemoryCacheRecord oldRecord = null;
+        try {
+            oldRecord = doPutRecord(key, newRecord);
+        } catch (Throwable t) {
+            if (newRecord != record) {
+                // If record is created at here, dispose it before throwing error
+                cacheRecordProcessor.dispose(newRecord);
+            }
+            throw ExceptionUtil.rethrow(t);
+        }
+
+        // No exception means that put is successful.
+
+        // Add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+        // Because since old record is null, this means that put was handled as replace.
+        // So key is not stored actually.
+        if (oldRecord != null && key instanceof NativeMemoryData) {
+            NativeMemoryData nativeKey = (NativeMemoryData) key;
+            if (isMemoryBlockValid(nativeKey)) {
+                cacheRecordProcessor.addDeferredDispose(nativeKey);
+            }
+        }
+
+        // If old record is not exist (null) and there is no convertion for key,
+        // add key memory usage to used memory explicitly.
+        if (oldRecord == null && key instanceof NativeMemoryData) {
+            long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
+            cacheRecordProcessor.increaseUsedMemory(size);
+        }
+
+        // If the new record is already native memory based, this means that there is no convertion,
+        // add record and value memory usage to used memory explicitly.
+        if (record instanceof HiDensityNativeMemoryCacheRecord) {
+            long size = cacheRecordProcessor.getSize(newRecord);
+            size += cacheRecordProcessor.getSize(newRecord.getValue());
+            cacheRecordProcessor.increaseUsedMemory(size);
+        }
+
+        return oldRecord;
+    }
+
+    @Override
+    public void putRecord(Data key, CacheRecord record) {
+        HiDensityNativeMemoryCacheRecord oldRecord = putRecordInternal(key, record);
+        if (isMemoryBlockValid(oldRecord)) {
+            cacheRecordProcessor.dispose(oldRecord);
+        }
+    }
+
     @Override
     public void setRecord(Data key, CacheRecord record) {
-        if (!(record instanceof HiDensityNativeMemoryCacheRecord)) {
-            throw new IllegalArgumentException("record must be an instance of "
-                    + HiDensityNativeMemoryCacheRecord.class.getName());
-        }
-        HiDensityNativeMemoryCacheRecord updatedRecord = records.get(key);
-        records.set(key, (HiDensityNativeMemoryCacheRecord) record);
-        // If old record is valid, dispose it and its data
-        if (isMemoryBlockValid(updatedRecord)) {
-            cacheRecordProcessor.dispose(updatedRecord);
+        HiDensityNativeMemoryCacheRecord oldRecord = putRecordInternal(key, record);
+        if (isMemoryBlockValid(oldRecord)) {
+            cacheRecordProcessor.dispose(oldRecord);
         }
     }
 
@@ -495,8 +502,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    private void onAccess(long now, HiDensityNativeMemoryCacheRecord record,
-                          long creationTime) {
+    private void onAccess(long now, HiDensityNativeMemoryCacheRecord record, long creationTime) {
         if (isEvictionEnabled()) {
             if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LRU) {
                 long longDiff = now - creationTime;
@@ -513,6 +519,54 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                          boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                          Object oldValue, boolean isExpired, boolean isNewPut, boolean isSaveSucceed) {
+        // Old value is disposed at `onUpdateRecord`
+
+        // If put is successful
+        if (isSaveSucceed) {
+            // If key is `NativeMemoryData`, since there is no convertion,
+            // add its memory to used memory explicitly.
+            if (isNewPut && key instanceof NativeMemoryData) {
+                long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
+                cacheRecordProcessor.increaseUsedMemory(size);
+            }
+            // If value is `NativeMemoryData`, since there is no convertion,
+            // add its memory to used memory explicitly.
+            if (value instanceof NativeMemoryData) {
+                long size = cacheRecordProcessor.getSize((NativeMemoryData) value);
+                cacheRecordProcessor.increaseUsedMemory(size);
+            }
+        }
+
+        if (isSaveSucceed) {
+            if (!isNewPut) {
+                if (key instanceof NativeMemoryData) {
+                    // If save is successful as new put, this means that key is not stored.
+                    // So add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+                    NativeMemoryData nativeKey = (NativeMemoryData) key;
+                    if (isMemoryBlockValid(nativeKey)) {
+                        cacheRecordProcessor.addDeferredDispose(nativeKey);
+                    }
+                }
+            }
+        } else {
+            // If save is not successful, this means that key is not stored.
+            // So add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+            if (key instanceof NativeMemoryData) {
+                NativeMemoryData nativeKey = (NativeMemoryData) key;
+                if (isMemoryBlockValid(nativeKey)) {
+                    cacheRecordProcessor.addDeferredDispose(nativeKey);
+                }
+            }
+            // If save is not successful, this means that value is not stored.
+            // So add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+            if (value instanceof NativeMemoryData) {
+                NativeMemoryData nativeValue = (NativeMemoryData) value;
+                if (isMemoryBlockValid(nativeValue)) {
+                    cacheRecordProcessor.addDeferredDispose(nativeValue);
+                }
+            }
+        }
+
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
@@ -525,27 +579,82 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onPutError(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                               boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                               Object oldValue, boolean wouldBeNewPut, Throwable error) {
-        // If this record has been somehow saved, dispose it
-        if (wouldBeNewPut && isMemoryBlockValid(record)) {
-            if (!records.delete(key)) {
-                cacheRecordProcessor.dispose(record);
-                return;
-            }
-        }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
         }
     }
 
-    @Override
-    public boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
-        long ttl = expiryPolicyToTTL(expiryPolicy);
-        return own(key, value, ttl);
+    protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
+                         NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
+        // Dispose old value if exist
+        if (oldValueData != null) {
+            cacheRecordProcessor.disposeData(oldValueData);
+        }
+
+        // If there is no new put, this means that key is not used.
+        if (!isNewPut && key instanceof NativeMemoryData) {
+            if (disableDeferredDispose) {
+                // If deferred dispose is disabled, disabling unused key is our responsibility.
+                // So dispose unused key at here.
+                // But since it is allocated outside (it is already `NativeMemoryData`)
+                // as not through `cacheRecordProcessor` but serialization service,
+                // don't dispose it through `cacheRecordProcessor`.
+                serializationService.disposeData(key);
+            } else {
+                // Add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later
+                cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
+            }
+        }
+
+        // If key is `NativeMemoryData`, since there is no convertion,
+        // add its memory to used memory explicitly.
+        if (isNewPut && key instanceof NativeMemoryData) {
+            long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
+            cacheRecordProcessor.increaseUsedMemory(size);
+        }
+
+        // If value is `NativeMemoryData`, since there is no convertion,
+        // add its memory to used memory explicitly.
+        if (value instanceof NativeMemoryData) {
+            long size = cacheRecordProcessor.getSize((NativeMemoryData) value);
+            cacheRecordProcessor.increaseUsedMemory(size);
+        }
+
+        // Put this record to queue for reusing later
+        cacheRecordProcessor.enqueueRecord(record);
+    }
+
+    protected void onOwnError(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
+                              NativeMemoryData oldValueData, boolean isNewPut,
+                              boolean disableDeferredDispose, Throwable error) {
+        // If record is created
+        if (isNewPut && isMemoryBlockValid(record)) {
+            if (value instanceof NativeMemoryData) {
+                record.setValue(null);
+                // If value is allocated outside of record store, disposing value is its responsibility.
+                // So just dispose record which is allocated here.
+                cacheRecordProcessor.free(record.address(), record.size());
+                record.reset(NULL_PTR);
+                cacheRecordProcessor.enqueueRecord(record);
+            } else {
+                cacheRecordProcessor.dispose(record);
+            }
+        }
     }
 
     @Override
-    public boolean own(Data key, Object value, long ttlMillis) {
+    public boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
+        long ttl = expiryPolicyToTTL(expiryPolicy);
+        return own(key, value, ttl, false);
+    }
+
+    @Override
+    public boolean putReplica(Data key, Object value, long ttlMillis) {
+        return own(key, value, ttlMillis, true);
+    }
+
+    private boolean own(Data key, Object value, long ttlMillis, boolean disableDeferredDispose) {
         if (!records.containsKey(key)) {
             evictIfRequired();
         }
@@ -553,39 +662,23 @@ public class HiDensityNativeMemoryCacheRecordStore
         long now = Clock.currentTimeMillis();
         long creationTime;
         HiDensityNativeMemoryCacheRecord record = null;
-        NativeMemoryData keyData = null;
-        NativeMemoryData valueData = null;
-        boolean recordCreated = false;
-        boolean recordPut = false;
+        NativeMemoryData oldValueData = null;
+        boolean isNewPut = false;
 
         try {
             record = records.get(key);
             if (record == null) {
-                record = createRecord(null, now);
-                recordCreated = true;
+                isNewPut = true;
+                record = createRecord(value, now);
                 creationTime = now;
-                keyData = toNativeMemoryData(key);
-                records.put(keyData, record);
-                recordPut = true;
+                records.put(key, record);
             } else {
+                oldValueData = record.getValue();
                 creationTime = record.getCreationTime();
+                record.setValue(toNativeMemoryData(value));
             }
-
-            // Create data for new value
-            valueData = toNativeMemoryData(value);
-
-            // Dispose old value if exist
-            if (record.getValueAddress() != NULL_PTR) {
-                cacheRecordProcessor.disposeValue(record);
-            }
-
-            // Assign new value to record
-            record.setValue(valueData);
 
             onAccess(now, record, creationTime);
-            if (recordPut) {
-                record.resetAccessHit();
-            }
 
             ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
             if (!hasExpiringEntry && ttlMillis > 0) {
@@ -593,37 +686,13 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
             record.setTtlMillis((int) ttlMillis);
 
-            // Put this record to queue for reusing later
-            cacheRecordProcessor.enqueueRecord(record);
+            onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
 
-            if (!recordCreated && key instanceof NativeMemoryData) {
-                // on update, just value-ref inside the record is replaced
-                cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
-            }
+            return isNewPut;
+        } catch (Throwable error) {
+            onOwnError(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose, error);
 
-            return recordPut;
-        } catch (NativeOutOfMemoryError e) {
-            if (recordCreated) {
-                if (recordPut) {
-                    // If record has been created and put, delete it.
-                    records.delete(keyData);
-                } else {
-                    // Otherwise, just dispose record.
-                    cacheRecordProcessor.dispose(record);
-                }
-            }
-
-            if (isMemoryBlockValid(keyData) && keyData != key) {
-                // If key data is created here, dispose it
-                cacheRecordProcessor.disposeData(keyData);
-            }
-
-            if (isMemoryBlockValid(valueData) && valueData != value) {
-                // If value data is created here, dispose it
-                cacheRecordProcessor.disposeData(valueData);
-            }
-
-            throw e;
+            throw ExceptionUtil.rethrow(error);
         }
     }
     //CHECKSTYLE:ON
@@ -632,6 +701,22 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onPutIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                                  boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                                  boolean isExpired, boolean isSaveSucceed) {
+        // If put is successful
+        if (isSaveSucceed) {
+            // If key is `NativeMemoryData`, since there is no convertion,
+            // add its memory to used memory explicitly.
+            if (key instanceof NativeMemoryData) {
+                long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
+                cacheRecordProcessor.increaseUsedMemory(size);
+            }
+            // If value is `NativeMemoryData`, since there is no convertion,
+            // add its memory to used memory explicitly.
+            if (value instanceof NativeMemoryData) {
+                long size = cacheRecordProcessor.getSize((NativeMemoryData) value);
+                cacheRecordProcessor.increaseUsedMemory(size);
+            }
+        }
+
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
@@ -641,13 +726,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected void onPutIfAbsentError(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                                       boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record, Throwable error) {
-        // If this record has been somehow saved, dispose it
-        if (isMemoryBlockValid(record)) {
-            if (!records.delete(key)) {
-                cacheRecordProcessor.dispose(record);
-                return;
-            }
-        }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
@@ -664,11 +742,18 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onReplace(Data key, Object oldValue, Object newValue, ExpiryPolicy expiryPolicy,
                              String caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
                              boolean isExpired, boolean replaced) {
-        // If record is valid and expired, dispose it
-        if (isExpired && isMemoryBlockValid(record)) {
-            cacheRecordProcessor.dispose(record);
-            return;
+        // Old value is disposed at `onUpdateRecord`
+
+        // If replace is successful
+        if (replaced) {
+            // If value is `NativeMemoryData`, since there is no convertion,
+            // add its memory to used memory explicitly.
+            if (newValue instanceof NativeMemoryData) {
+                long size = cacheRecordProcessor.getSize((NativeMemoryData) newValue);
+                cacheRecordProcessor.increaseUsedMemory(size);
+            }
         }
+
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
@@ -681,11 +766,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onReplaceError(Data key, Object oldValue, Object newValue, ExpiryPolicy expiryPolicy,
                                   String caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
                                   boolean isExpired, boolean replaced, Throwable error) {
-        // If record is valid and expired, dispose it
-        if (isExpired && isMemoryBlockValid(record)) {
-            cacheRecordProcessor.dispose(record);
-            return;
-        }
         // If the record is available, put this to queue for reusing later
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
@@ -720,8 +800,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected void onRemoveError(Data key, Object value, String caller, boolean getValue,
-                                 HiDensityNativeMemoryCacheRecord record, boolean removed,
-                                 Throwable error) {
+                                 HiDensityNativeMemoryCacheRecord record, boolean removed, Throwable error) {
         // If record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
@@ -731,40 +810,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (record != null) {
             cacheRecordProcessor.enqueueRecord(record);
         }
-    }
-
-    @Override
-    public void clear() {
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
-            // otherwise will cause a SIGSEGV
-            return;
-        }
-        super.clear();
-    }
-
-    @Override
-    public void destroy() {
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
-            // otherwise will cause a SIGSEGV
-            return;
-        }
-        super.destroy();
-    }
-
-    @Override
-    protected void onDestroy() {
-        records.destroy();
-    }
-
-    protected void onEntryInvalidated(Data key, String source) {
-        invalidateEntry(key, source);
-    }
-
-    @Override
-    public int forceEvict() {
-        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
     }
 
     @Override
@@ -790,13 +835,14 @@ public class HiDensityNativeMemoryCacheRecordStore
                         mergePolicy.merge(name,
                                 cacheEntryView,
                                 new SimpleCacheEntryView(key, existingValue,
-                                        record.getExpirationTime(), record.getAccessHit()));
+                                                         record.getExpirationTime(), record.getAccessHit()));
                 if (existingValue != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                            now, true, completionId, caller, origin);
+                                                    now, true, completionId, caller, origin);
                 }
                 publishEvent(createCacheCompleteEvent(cacheEntryView.getKey(),
-                        CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin, completionId));
+                                                      CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
+                                                      origin, completionId));
             }
 
             onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);
@@ -821,8 +867,46 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     protected void onMergeError(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
-                                String caller, boolean disableWriteThrough,
-                                CacheRecord record, Throwable error) {
+                                String caller, boolean disableWriteThrough, CacheRecord record, Throwable error) {
+    }
+
+    @Override
+    protected void invalidateEntry(Data key, String source) {
+        super.invalidateEntry(toEventData(key), source);
+    }
+
+    protected void onEntryInvalidated(Data key, String source) {
+        invalidateEntry(key, source);
+    }
+
+    @Override
+    public int forceEvict() {
+        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
+    }
+
+    @Override
+    public void clear() {
+        MemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager == null || memoryManager.isDestroyed()) {
+            // otherwise will cause a SIGSEGV
+            return;
+        }
+        super.clear();
+    }
+
+    @Override
+    protected void onDestroy() {
+        records.destroy();
+    }
+
+    @Override
+    public void destroy() {
+        MemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager == null || memoryManager.isDestroyed()) {
+            // otherwise will cause a SIGSEGV
+            return;
+        }
+        super.destroy();
     }
 
 }

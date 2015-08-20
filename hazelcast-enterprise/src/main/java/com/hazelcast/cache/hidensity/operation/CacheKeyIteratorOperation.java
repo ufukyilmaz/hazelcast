@@ -1,7 +1,5 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.elastic.SlottableIterator;
@@ -9,7 +7,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
@@ -20,7 +18,9 @@ import java.util.Map;
 /**
  * @author sozal 25/10/14
  */
-public class CacheKeyIteratorOperation extends PartitionWideCacheOperation {
+public class CacheKeyIteratorOperation
+        extends AbstractHiDensityCacheOperation
+        implements ReadonlyOperation {
 
     private int slot;
     private int batch;
@@ -29,19 +29,15 @@ public class CacheKeyIteratorOperation extends PartitionWideCacheOperation {
     }
 
     public CacheKeyIteratorOperation(String name, int slot, int batch) {
-        super(name);
+        super(name, true);
         this.slot = slot;
         this.batch = batch;
     }
 
     @Override
-    public void run() throws Exception {
-        EnterpriseCacheService service = getService();
-        HiDensityCacheRecordStore cache =
-                (HiDensityCacheRecordStore) service.getCacheRecordStore(name, getPartitionId());
+    protected void runInternal() throws Exception {
         if (cache != null) {
             long now = Clock.currentTimeMillis();
-            EnterpriseSerializationService ss = service.getSerializationService();
             SlottableIterator<Map.Entry<Data, HiDensityCacheRecord>> iter = cache.iterator(slot);
             List<Data> keys = new ArrayList<Data>();
             int count = 0;
@@ -51,7 +47,7 @@ public class CacheKeyIteratorOperation extends PartitionWideCacheOperation {
                 HiDensityCacheRecord record = entry.getValue();
                 final boolean isExpired = record.isExpiredAt(now);
                 if (!isExpired) {
-                    keys.add(ss.convertData(key, DataType.HEAP));
+                    keys.add(serializationService.convertData(key, DataType.HEAP));
                     if (++count == batch) {
                         break;
                     }
@@ -80,4 +76,5 @@ public class CacheKeyIteratorOperation extends PartitionWideCacheOperation {
     public int getId() {
         return HiDensityCacheDataSerializerHook.ITERATE;
     }
+
 }

@@ -1,27 +1,23 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.spi.ReadonlyOperation;
 
 /**
  * @author mdogan 06/02/14
  */
 public class CacheSizeOperation
-        extends PartitionWideCacheOperation
+        extends AbstractHiDensityCacheOperation
         implements ReadonlyOperation {
 
     public CacheSizeOperation() {
     }
 
     public CacheSizeOperation(String name) {
-        super(name);
+        super(name, true);
     }
 
     @Override
-    public void run() throws Exception {
-        CacheService service = getService();
-        ICacheRecordStore cache = service.getCacheRecordStore(name, getPartitionId());
+    protected void runInternal() throws Exception {
         response = cache != null ? cache.size() : 0;
     }
 
@@ -29,4 +25,5 @@ public class CacheSizeOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.SIZE;
     }
+
 }

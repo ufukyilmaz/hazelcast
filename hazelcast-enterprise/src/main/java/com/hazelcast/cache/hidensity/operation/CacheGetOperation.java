@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.operation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ReadonlyOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -13,7 +13,7 @@ import java.io.IOException;
  * @author mdogan 05/02/14
  */
 public class CacheGetOperation
-        extends AbstractHiDensityCacheOperation
+        extends AbstractKeyBasedHiDensityCacheOperation
         implements ReadonlyOperation {
 
     private ExpiryPolicy expiryPolicy;
@@ -22,12 +22,12 @@ public class CacheGetOperation
     }
 
     public CacheGetOperation(String name, Data key, ExpiryPolicy expiryPolicy) {
-        super(name, key);
+        super(name, key, true);
         this.expiryPolicy = expiryPolicy;
     }
 
     @Override
-    public void runInternal() throws Exception {
+    protected void runInternal() throws Exception {
         response = cache != null ? cache.get(key, expiryPolicy) : null;
     }
 
@@ -38,7 +38,8 @@ public class CacheGetOperation
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
     }
 
     @Override
@@ -57,4 +58,5 @@ public class CacheGetOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.GET;
     }
+
 }

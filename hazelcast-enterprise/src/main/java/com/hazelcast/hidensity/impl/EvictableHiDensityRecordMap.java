@@ -176,20 +176,15 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         int actualEvictedCount = 0;
         for (EvictionCandidate<Data, R> evictionCandidate : evictionCandidates) {
             Data key = evictionCandidate.getAccessor();
-            if (key instanceof NativeMemoryData) {
-                boolean deleted = delete(key);
-                recordProcessor.disposeData(key);
-                if (deleted) {
-                    actualEvictedCount++;
+            R removedRecord = remove(key);
+            if (removedRecord != null) {
+                actualEvictedCount++;
+                if (evictionListener != null) {
+                    evictionListener.onEvict(key, removedRecord);
                 }
-            } else {
-                if (remove(key) != null) {
-                    actualEvictedCount++;
-                    if (evictionListener != null) {
-                        evictionListener.onEvict(evictionCandidate.getAccessor(), evictionCandidate.getEvictable());
-                    }
-                }
+                recordProcessor.dispose(removedRecord);
             }
+            recordProcessor.disposeData(key);
         }
         return actualEvictedCount;
     }

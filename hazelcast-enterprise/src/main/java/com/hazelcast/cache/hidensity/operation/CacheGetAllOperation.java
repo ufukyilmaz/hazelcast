@@ -1,10 +1,11 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.map.impl.MapEntrySet;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.spi.ReadonlyOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -19,8 +20,10 @@ import java.util.Set;
  * {@link com.hazelcast.cache.impl.ICacheRecordStore#getAll(java.util.Set, javax.cache.expiry.ExpiryPolicy)}</p>
  */
 public class CacheGetAllOperation
-        extends PartitionWideCacheOperation
+        extends AbstractHiDensityCacheOperation
         implements ReadonlyOperation {
+
+    private static final MapEntrySet EMPTY_ENTRY_SET = new MapEntrySet();
 
     private Set<Data> keys = new HashSet<Data>();
     private ExpiryPolicy expiryPolicy;
@@ -29,28 +32,45 @@ public class CacheGetAllOperation
     }
 
     public CacheGetAllOperation(String name, Set<Data> keys, ExpiryPolicy expiryPolicy) {
-        super(name);
+        super(name, true);
         this.keys = keys;
         this.expiryPolicy = expiryPolicy;
     }
 
-    public void run() {
-        CacheService service = getService();
-        ICacheRecordStore cache = service.getOrCreateCache(name, getPartitionId());
-
-        int partitionId = getPartitionId();
-        Set<Data> partitionKeySet = new HashSet<Data>();
-        for (Data key : keys) {
-            if (partitionId == getNodeEngine().getPartitionService().getPartitionId(key)) {
-                partitionKeySet.add(key);
+    @Override
+    protected void runInternal() throws Exception {
+        if (cache != null) {
+            Set<Data> partitionKeySet = new HashSet<Data>();
+            InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+            for (Data key : keys) {
+                if (partitionId == partitionService.getPartitionId(key)) {
+                    partitionKeySet.add(key);
+                }
             }
+            response = cache.getAll(partitionKeySet, expiryPolicy);
+        } else {
+            response = EMPTY_ENTRY_SET;
         }
-        response = cache.getAll(partitionKeySet, expiryPolicy);
     }
 
     @Override
+    public void afterRun() throws Exception {
+        super.afterRun();
+        dispose();
+    }
+
+    @Override
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        for (Data key : keys) {
+            serializationService.disposeData(key);
+        }
+    }
+
+    // Currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
+    // it is not sent over network and not serialized.
+    @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        //TODO not used validate and remove !!
+        // TODO not used validate and remove
         super.writeInternal(out);
         out.writeObject(expiryPolicy);
         if (keys == null) {
@@ -63,17 +83,17 @@ public class CacheGetAllOperation
         }
     }
 
+    // Currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
+    // it is not received over network and not deserialized.
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        //TODO not used validate and remove !!
+        // TODO not used validate and remove
         super.readInternal(in);
         expiryPolicy = in.readObject();
         int size = in.readInt();
-        if (size > -1) {
-            for (int i = 0; i < size; i++) {
-                Data key = in.readData();
-                keys.add(key);
-            }
+        for (int i = 0; i < size; i++) {
+            Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+            keys.add(key);
         }
     }
 
@@ -81,4 +101,5 @@ public class CacheGetAllOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.GET_ALL;
     }
+
 }

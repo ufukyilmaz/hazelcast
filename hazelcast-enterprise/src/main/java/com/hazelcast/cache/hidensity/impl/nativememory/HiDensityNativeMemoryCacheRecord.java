@@ -41,6 +41,10 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         this.cacheRecordAccessor = cacheRecordAccessor;
     }
 
+    public HiDensityNativeMemoryCacheRecord(long address) {
+        super(address, SIZE);
+    }
+
     public HiDensityNativeMemoryCacheRecord(
             HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
             long address) {
@@ -145,7 +149,17 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
             return null;
         } else {
-            return cacheRecordAccessor.readData(getValueAddress());
+            long valueAddress = getValueAddress();
+            if (valueAddress == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+                return null;
+            }
+            if (cacheRecordAccessor != null) {
+                return cacheRecordAccessor.readData(valueAddress);
+            } else {
+                NativeMemoryData nativeMemoryData = new NativeMemoryData();
+                nativeMemoryData.reset(valueAddress);
+                return nativeMemoryData;
+            }
         }
     }
 

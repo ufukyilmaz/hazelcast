@@ -1,10 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
-import com.hazelcast.cache.impl.operation.CacheEntryProcessorOperation;
-import com.hazelcast.cache.impl.operation.CacheGetAndRemoveOperation;
-import com.hazelcast.cache.impl.operation.CacheGetOperation;
-import com.hazelcast.cache.impl.operation.CacheSizeOperationFactory;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.FactoryIdHelper;
@@ -112,7 +108,6 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
      */
     public static final short WAN_REMOVE = 25;
 
-
     @Override
     public int getFactoryId() {
         return F_ID;
@@ -124,65 +119,101 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
         return new DataSerializableFactory() {
 
             public IdentifiedDataSerializable create(int typeId) {
+                IdentifiedDataSerializable dataSerializable;
                 switch (typeId) {
                     case GET:
-                        return new CacheGetOperation();
+                        dataSerializable = new CacheGetOperation();
+                        break;
 
                     case CONTAINS_KEY:
-                        return new CacheContainsKeyOperation();
+                        dataSerializable = new CacheContainsKeyOperation();
+                        break;
 
                     case PUT:
-                        return new CachePutOperation();
+                        dataSerializable = new CachePutOperation();
+                        break;
 
                     case PUT_IF_ABSENT:
-                        return new CachePutIfAbsentOperation();
+                        dataSerializable = new CachePutIfAbsentOperation();
+                        break;
 
                     case REMOVE:
-                        return new CacheRemoveOperation();
+                        dataSerializable = new CacheRemoveOperation();
+                        break;
 
                     case GET_AND_REMOVE:
-                        return new CacheGetAndRemoveOperation();
+                        dataSerializable = new CacheGetAndRemoveOperation();
+                        break;
 
                     case REPLACE:
-                        return new CacheReplaceOperation();
+                        dataSerializable = new CacheReplaceOperation();
+                        break;
 
                     case GET_AND_REPLACE:
-                        return new CacheGetAndReplaceOperation();
+                        dataSerializable = new CacheGetAndReplaceOperation();
+                        break;
 
                     case PUT_BACKUP:
-                        return new CachePutBackupOperation();
+                        dataSerializable = new CachePutBackupOperation();
+                        break;
+
+                    case PUT_ALL_BACKUP:
+                        dataSerializable = new CachePutAllBackupOperation();
+                        break;
 
                     case REMOVE_BACKUP:
-                        return new CacheRemoveBackupOperation();
+                        dataSerializable = new CacheRemoveBackupOperation();
+                        break;
 
                     case SIZE:
-                        return new CacheSizeOperation();
+                        dataSerializable = new CacheSizeOperation();
+                        break;
 
                     case SIZE_FACTORY:
-                        return new CacheSizeOperationFactory();
+                        dataSerializable = new CacheSizeOperationFactory();
+                        break;
 
                     case ITERATE:
-                        return new CacheKeyIteratorOperation();
+                        dataSerializable = new CacheKeyIteratorOperation();
+                        break;
 
                     case ITERATION_RESULT:
-                        return new CacheKeyIteratorResult();
+                        dataSerializable = new CacheKeyIteratorResult();
+                        break;
+
+                    case GET_ALL:
+                        dataSerializable = new CacheGetAllOperation();
+                        break;
+
+                    case GET_ALL_FACTORY:
+                        dataSerializable = new CacheGetAllOperationFactory();
+                        break;
 
                     case LOAD_ALL:
-                        return new CacheLoadAllOperation();
+                        dataSerializable = new CacheLoadAllOperation();
+                        break;
 
                     case LOAD_ALL_FACTORY:
-                        return new CacheLoadAllOperationFactory();
+                        dataSerializable = new CacheLoadAllOperationFactory();
+                        break;
 
                     case ENTRY_PROCESSOR:
-                        return new CacheEntryProcessorOperation();
+                        dataSerializable = new CacheEntryProcessorOperation();
+                        break;
 
                     case WAN_MERGE:
-                        return new WanCacheMergeOperation();
+                        dataSerializable = new WanCacheMergeOperation();
+                        break;
 
                     case WAN_REMOVE:
-                        return new WanCacheRemoveOperation();
+                        dataSerializable = new WanCacheRemoveOperation();
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unknown type-id: " + typeId);
                 }
-                throw new IllegalArgumentException("Unknown type-id: " + typeId);
+
+                return dataSerializable;
             }
         };
     }

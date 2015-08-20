@@ -158,6 +158,10 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     }
 
     @Override
+    public EnterpriseSerializationService getSerializationService() {
+        return service;
+    }
+
     public double readDouble(ByteOrder byteOrder) throws IOException {
         if (byteOrder != ByteOrder.nativeOrder()) {
             return Double.longBitsToDouble(readLong(byteOrder));

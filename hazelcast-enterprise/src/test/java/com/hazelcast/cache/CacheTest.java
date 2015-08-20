@@ -97,7 +97,7 @@ public class CacheTest extends AbstractCacheTest {
 
             // trigger cache record store creation by accessing cache
             // since cache record stores are created as lazy when they are accessed
-            cache.get("key");
+            cache.put("key", "value");
         } finally {
             if (factory != null) {
                 factory.shutdownAll();

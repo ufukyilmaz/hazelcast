@@ -10,7 +10,8 @@ import java.io.IOException;
 /**
  * @author mdogan 15/05/14
  */
-public final class CacheIterationResult implements IdentifiedDataSerializable {
+public final class CacheIterationResult
+        implements IdentifiedDataSerializable {
 
     private Data[] keys;
     private Data[] values;
@@ -92,4 +93,5 @@ public final class CacheIterationResult implements IdentifiedDataSerializable {
         sb.append('}');
         return sb.toString();
     }
+
 }

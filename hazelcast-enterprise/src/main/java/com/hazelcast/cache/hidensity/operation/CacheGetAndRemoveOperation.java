@@ -1,30 +1,38 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 /**
  * @author mdogan 05/02/14
  */
-public class CacheGetAndRemoveOperation extends BackupAwareHiDensityCacheOperation {
+public class CacheGetAndRemoveOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     public CacheGetAndRemoveOperation() {
     }
 
     public CacheGetAndRemoveOperation(String name, Data key) {
-        super(name, key);
+        super(name, key, true);
     }
 
     @Override
-    public void runInternal() throws Exception {
+    protected void runInternal() throws Exception {
         response = cache != null ? cache.getAndRemove(key, getCallerUuid(), completionId) : null;
     }
 
     @Override
     public void afterRun() throws Exception {
-        dispose();
         super.afterRun();
+        dispose();
+    }
+
+    @Override
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
     }
 
     @Override
@@ -38,11 +46,8 @@ public class CacheGetAndRemoveOperation extends BackupAwareHiDensityCacheOperati
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
-    }
-
-    @Override
     public int getId() {
         return HiDensityCacheDataSerializerHook.GET_AND_REMOVE;
     }
+
 }

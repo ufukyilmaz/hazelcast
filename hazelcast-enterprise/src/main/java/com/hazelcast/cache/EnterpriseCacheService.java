@@ -2,9 +2,9 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
-import com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
@@ -79,6 +79,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
                     return new HiDensityStorageInfo(cacheNameWithPrefix);
                 }
             };
+
     private ReplicationSupportingService replicationSupportingService;
     private CacheMergePolicyProvider cacheMergePolicyProvider;
 
@@ -125,23 +126,24 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
-     * Destroys the segments for specified <code>object name/cache name</code>.
+     * Destroys the segments for specified cache name.
      *
-     * @param objectName the name of object/cache whose segments will be destroyed
+     * @param cacheName the name of cache whose segments will be destroyed
      */
     @Override
-    protected void destroySegments(String objectName) {
+    protected void destroySegments(String cacheName) {
         OperationService operationService = nodeEngine.getOperationService();
         List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
-            if (segment.hasRecordStore(objectName)) {
-                CacheDestroyOperation op = new CacheDestroyOperation(objectName);
+            if (segment.hasRecordStore(cacheName)) {
+                CacheDestroyOperation op = new CacheDestroyOperation(cacheName);
                 ops.add(op);
                 op.setPartitionId(segment.getPartitionId())
                         .setNodeEngine(nodeEngine).setService(this);
                 operationService.executeOperation(op);
             }
         }
+        hiDensityCacheInfoMap.remove(cacheName);
         // TODO This is commented-out since
         // there is a deadlock between HiDensity cache destroy and open-source destroy operations
         // Currently operations are fire and forget :)
@@ -283,17 +285,17 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
-     * Creates a {@link com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation} to start the replication.
+     * Creates a {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation} to start the replication.
      *
      * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>
      *              and <code>replica index</code>
-     * @return the created {@link com.hazelcast.cache.hidensity.operation.HiDensityCacheReplicationOperation}
+     * @return the created {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation}
      */
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
         CachePartitionSegment segment = segments[event.getPartitionId()];
-        HiDensityCacheReplicationOperation op =
-                new HiDensityCacheReplicationOperation(segment, event.getReplicaIndex());
+        CacheReplicationOperation op =
+                new CacheReplicationOperation(segment, event.getReplicaIndex());
         return op.isEmpty() ? null : op;
     }
 

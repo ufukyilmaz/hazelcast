@@ -47,4 +47,5 @@ public class CacheSizeOperationFactory
     public int getId() {
         return HiDensityCacheDataSerializerHook.SIZE_FACTORY;
     }
+
 }

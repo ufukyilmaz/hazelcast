@@ -179,8 +179,12 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     int segmentStart = currentSegmentNo * segmentSize;
                     int segmentEnd = Math.min(segmentStart + segmentSize, end);
                     int ix = segmentStart + randomIndex;
+                    // If randomly selected index points to outside of allocated storage, start from head of segment
+                    if (ix >= segmentEnd) {
+                        ix = segmentStart;
+                    }
                     // Find an allocated index to be sampled from current random index
-                    while (!isAssigned(ix) && ix < segmentEnd) {
+                    while (ix < segmentEnd && !isAssigned(ix)) {
                         ix = (ix + 1) & mask; // Move to right in right-half of bucket
                     }
                     if (ix < segmentEnd) {
@@ -203,9 +207,14 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 for (; passedSegmentCount < segmentCount;
                      passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
                     int segmentStart = currentSegmentNo * segmentSize;
-                    int ix = segmentStart + randomIndex - 1;
+                    int segmentEnd = Math.min(segmentStart + segmentSize, end);
+                    int ix = Math.max(segmentStart, segmentStart + randomIndex - 1);
+                    // If randomly selected index points to outside of allocated storage, start from tail of segment
+                    if (ix >= segmentEnd) {
+                        ix = segmentEnd - 1;
+                    }
                     // Find an allocated index to be sampled from current random index
-                    while (!isAssigned(ix) && ix >= segmentStart) {
+                    while (ix >= segmentStart && !isAssigned(ix)) {
                         ix = (ix - 1) & mask; // Move to left in left-half of bucket
                     }
                     if (ix >= segmentStart) {

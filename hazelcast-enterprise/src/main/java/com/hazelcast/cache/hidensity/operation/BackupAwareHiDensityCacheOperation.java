@@ -1,10 +1,9 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 
 /**
- * @author mdogan 05/02/14
+ * @author sozal 07/08/15
  */
 abstract class BackupAwareHiDensityCacheOperation
         extends AbstractHiDensityCacheOperation
@@ -17,12 +16,18 @@ abstract class BackupAwareHiDensityCacheOperation
         super(name);
     }
 
-    protected BackupAwareHiDensityCacheOperation(String name, Data key) {
-        super(name, key);
+    protected BackupAwareHiDensityCacheOperation(String name,
+                                                 boolean dontCreateCacheRecordStoreIfNotExist) {
+        super(name, dontCreateCacheRecordStoreIfNotExist);
     }
 
-    protected BackupAwareHiDensityCacheOperation(String name, Data key, int completionId) {
-        super(name, key, completionId);
+    protected BackupAwareHiDensityCacheOperation(String name, int completionId) {
+        super(name, completionId);
+    }
+
+    protected BackupAwareHiDensityCacheOperation(String name, int completionId,
+                                              boolean dontCreateCacheRecordStoreIfNotExist) {
+        super(name, completionId, dontCreateCacheRecordStoreIfNotExist);
     }
 
     @Override
@@ -34,4 +39,10 @@ abstract class BackupAwareHiDensityCacheOperation
     public final int getAsyncBackupCount() {
         return cache != null ? cache.getConfig().getAsyncBackupCount() : 0;
     }
+
+    @Override
+    public boolean shouldBackup() {
+        return true;
+    }
+
 }

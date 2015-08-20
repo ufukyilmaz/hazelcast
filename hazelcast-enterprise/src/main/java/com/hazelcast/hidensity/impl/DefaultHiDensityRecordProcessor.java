@@ -186,18 +186,13 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
             }
 
             if (block instanceof NativeMemoryData) {
-                disposeData((NativeMemoryData) block);
+                recordAccessor.disposeData((NativeMemoryData) block);
             } else if (block instanceof HiDensityRecord) {
-                dispose((R) block);
+                recordAccessor.dispose((R) block);
             } else {
-                free(block.address(), block.size());
+                memoryManager.free(block.address(), block.size());
             }
         }
-    }
-
-    @Override
-    public long getUsedMemory() {
-        return storageInfo.getUsedMemory();
     }
 
     @Override
@@ -213,6 +208,21 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     @Override
     public MemoryAllocator unwrapMemoryAllocator() {
         return memoryManager.unwrapMemoryAllocator();
+    }
+
+    @Override
+    public long getUsedMemory() {
+        return storageInfo.getUsedMemory();
+    }
+
+    @Override
+    public long increaseUsedMemory(long size) {
+        return storageInfo.addUsedMemory(size);
+    }
+
+    @Override
+    public long decreaseUsedMemory(long size) {
+        return storageInfo.removeUsedMemory(size);
     }
 
 }

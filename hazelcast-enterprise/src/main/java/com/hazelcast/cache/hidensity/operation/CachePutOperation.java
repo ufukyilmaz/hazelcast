@@ -1,9 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -12,7 +13,9 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
+public class CachePutOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     private Data value;
     private boolean get;
@@ -38,13 +41,19 @@ public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
     }
 
     @Override
-    public void runInternal() throws Exception {
+    protected void runInternal() throws Exception {
         if (get) {
             response = cache.getAndPut(key, value, expiryPolicy, getCallerUuid(), completionId);
         } else {
             cache.put(key, value, expiryPolicy, getCallerUuid(), completionId);
             response = null;
         }
+    }
+
+    @Override
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
+        serializationService.disposeData(value);
     }
 
     @Override
@@ -55,11 +64,6 @@ public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
     @Override
     public Operation getBackupOperation() {
         return new CachePutBackupOperation(name, key, value, expiryPolicy);
-    }
-
-    @Override
-    protected void disposeInternal(SerializationService serializationService) {
-        serializationService.disposeData(value);
     }
 
     @Override
@@ -75,11 +79,12 @@ public class CachePutOperation extends BackupAwareHiDensityCacheOperation {
         super.readInternal(in);
         get = in.readBoolean();
         expiryPolicy = in.readObject();
-        value = readOperationData(in);
+        value = readNativeMemoryOperationData(in);
     }
 
     @Override
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT;
     }
+
 }

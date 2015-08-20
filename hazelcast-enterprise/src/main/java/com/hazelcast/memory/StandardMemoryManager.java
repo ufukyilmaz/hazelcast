@@ -12,7 +12,8 @@ import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 public final class StandardMemoryManager implements MemoryManager {
 
     public static final String PROPERTY_DEBUG_ENABLED = "hazelcast.memory.manager.debug.enabled";
-    private static final boolean DEBUG = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
+
+    private final boolean DEBUG;
 
     private final LibMalloc malloc;
     private final NativeMemoryStats memoryStats;
@@ -20,6 +21,8 @@ public final class StandardMemoryManager implements MemoryManager {
     private final Long2LongHashMap allocatedBlocks;
 
     public StandardMemoryManager(MemorySize cap) {
+        DEBUG = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
+
         long size = cap.bytes();
         checkFreeMemory(size);
         malloc = new UnsafeMalloc();
@@ -29,13 +32,15 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     StandardMemoryManager(LibMalloc malloc, NativeMemoryStats memoryStats) {
+        DEBUG = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
+
         this.malloc = malloc;
         this.memoryStats = memoryStats;
 
         allocatedBlocks = initAllocatedBlocks();
     }
 
-    private static Long2LongHashMap initAllocatedBlocks() {
+    private Long2LongHashMap initAllocatedBlocks() {
         if (DEBUG) {
             return new Long2LongHashMap(NULL_ADDRESS);
         }
@@ -138,4 +143,5 @@ public final class StandardMemoryManager implements MemoryManager {
         }
         throw new UnsupportedOperationException("Allocated blocks are tracked only in DEBUG mode!");
     }
+
 }

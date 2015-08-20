@@ -1,9 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -12,7 +13,9 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
+public class CacheReplaceOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     private Data value;
     private Data currentValue;
@@ -23,14 +26,14 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
 
     public CacheReplaceOperation(String name, Data key, Data oldValue,
                                  Data newValue, ExpiryPolicy expiryPolicy) {
-        super(name, key);
+        super(name, key, true);
         this.value = newValue;
         this.currentValue = oldValue;
         this.expiryPolicy = expiryPolicy;
     }
 
     @Override
-    public void runInternal() throws Exception {
+    protected void runInternal() throws Exception {
         if (cache != null) {
             if (currentValue == null) {
                 response = cache.replace(key, value, getCallerUuid(), completionId);
@@ -44,17 +47,19 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
 
     @Override
     public void afterRun() throws Exception {
-        SerializationService ss = getNodeEngine().getSerializationService();
-        ss.disposeData(key);
-
-        if (Boolean.FALSE.equals(response)) {
-            disposeInternal(ss);
-        } else {
-            if (currentValue != null) {
-                ss.disposeData(currentValue);
-            }
-        }
         super.afterRun();
+        dispose();
+    }
+
+    @Override
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
+        if (!Boolean.TRUE.equals(response)) {
+            serializationService.disposeData(value);
+        }
+        if (currentValue != null) {
+            serializationService.disposeData(currentValue);
+        }
     }
 
     @Override
@@ -68,14 +73,6 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
     }
 
     @Override
-    protected void disposeInternal(SerializationService serializationService) {
-        serializationService.disposeData(value);
-        if (currentValue != null) {
-            serializationService.disposeData(currentValue);
-        }
-    }
-
-    @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeData(value);
@@ -86,8 +83,8 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        value = readOperationData(in);
-        currentValue = readOperationData(in);
+        value = readNativeMemoryOperationData(in);
+        currentValue = readNativeMemoryOperationData(in);
         expiryPolicy = in.readObject();
     }
 
@@ -95,4 +92,5 @@ public class CacheReplaceOperation extends BackupAwareHiDensityCacheOperation {
     public int getId() {
         return HiDensityCacheDataSerializerHook.REPLACE;
     }
+
 }

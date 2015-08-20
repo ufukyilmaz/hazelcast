@@ -54,19 +54,19 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     HiDensityRecordProcessor<R> getRecordProcessor();
 
     /**
-     * Puts the <code>value</code> with the specified <code>key</code> to this {@link HiDensityCacheRecordStore}.
-     * without sending any events
+     * Puts and saves (replaces if exist) the backup <code>value</code> with the specified <code>key</code>
+     * to this {@link HiDensityCacheRecordStore}.
      *
-     * @param key          the key of the <code>value</code> to be put
-     * @param value        the value to be put
-     * @param expiryPolicy expiry policy of the record
+     * @param key           the key of the <code>value</code> to be owned
+     * @param value         the value to be owned
+     * @param expiryPolicy  expiry policy of the owned value
      * @return <code>true</code> if the <code>value</code> has been added as new record,
      * otherwise (in case of update) <code>false</code>
      */
     boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy);
 
     /**
-     * Owns and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>
+     * Puts and saves (replaces if exist) the replicated <code>value</code> with the specified <code>key</code>
      * to this {@link HiDensityCacheRecordStore}.
      *
      * @param key       the key of the <code>value</code> to be owned
@@ -75,7 +75,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      * @return <code>true</code> if the <code>value</code> has been added as new record,
      * otherwise (in case of update) <code>false</code>
      */
-    boolean own(Data key, Object value, long ttlMillis);
+    boolean putReplica(Data key, Object value, long ttlMillis);
 
     /**
      * Puts the <code>value</code> with the specified <code>key</code>

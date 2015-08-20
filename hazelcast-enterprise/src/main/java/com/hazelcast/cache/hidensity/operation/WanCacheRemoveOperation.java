@@ -1,9 +1,9 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
@@ -12,7 +12,9 @@ import java.io.IOException;
  * Operation implementation for cache remove functionality to be used
  * by WAN replication services
  */
-public class WanCacheRemoveOperation extends BackupAwareHiDensityCacheOperation {
+public class WanCacheRemoveOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     private String wanGroupName;
 
@@ -27,20 +29,16 @@ public class WanCacheRemoveOperation extends BackupAwareHiDensityCacheOperation 
     @Override
     public void runInternal() throws Exception {
         if (cache != null) {
-                response = cache.remove(key, getCallerUuid(), completionId, wanGroupName);
+            response = cache.remove(key, getCallerUuid(), completionId, wanGroupName);
         } else {
             response = Boolean.FALSE;
         }
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
-    }
-
-    @Override
     public void afterRun() throws Exception {
-        dispose();
         super.afterRun();
+        dispose();
     }
 
     @Override
@@ -69,4 +67,5 @@ public class WanCacheRemoveOperation extends BackupAwareHiDensityCacheOperation 
     public int getId() {
         return HiDensityCacheDataSerializerHook.WAN_REMOVE;
     }
+
 }

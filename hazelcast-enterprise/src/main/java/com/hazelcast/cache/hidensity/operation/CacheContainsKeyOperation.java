@@ -1,26 +1,26 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ReadonlyOperation;
 
 /**
  * @author mdogan 05/02/14
  */
 public class CacheContainsKeyOperation
-        extends AbstractHiDensityCacheOperation
+        extends AbstractKeyBasedHiDensityCacheOperation
         implements ReadonlyOperation {
 
     public CacheContainsKeyOperation() {
     }
 
     public CacheContainsKeyOperation(String name, Data key) {
-        super(name, key);
+        super(name, key, true);
     }
 
     @Override
-    public void runInternal() throws Exception {
-        response = cache != null && cache.contains(key);
+    protected void runInternal() throws Exception {
+        response = cache != null ? cache.contains(key) : false;
     }
 
     @Override
@@ -30,11 +30,13 @@ public class CacheContainsKeyOperation
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
     }
 
     @Override
     public int getId() {
         return HiDensityCacheDataSerializerHook.CONTAINS_KEY;
     }
+
 }

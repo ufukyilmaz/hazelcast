@@ -1,11 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -14,7 +13,9 @@ import java.io.IOException;
 /**
  * @author mdogan 05/02/14
  */
-public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperation {
+public class CachePutIfAbsentOperation
+        extends BackupAwareKeyBasedHiDensityCacheOperation
+        implements MutableOperation {
 
     private Data value;
     private ExpiryPolicy expiryPolicy;
@@ -30,19 +31,22 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
     }
 
     @Override
-    public void runInternal() throws Exception {
-        EnterpriseCacheService service = getService();
-        HiDensityCacheRecordStore cache =
-                (HiDensityCacheRecordStore) service.getOrCreateRecordStore(name, getPartitionId());
+    protected void runInternal() throws Exception {
         response = cache.putIfAbsent(key, value, expiryPolicy, getCallerUuid(), completionId);
     }
 
     @Override
     public void afterRun() throws Exception {
-        if (Boolean.FALSE.equals(response)) {
-            dispose();
-        }
         super.afterRun();
+        dispose();
+    }
+
+    @Override
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        if (!Boolean.TRUE.equals(response)) {
+            serializationService.disposeData(key);
+            serializationService.disposeData(value);
+        }
     }
 
     @Override
@@ -56,11 +60,6 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
     }
 
     @Override
-    protected void disposeInternal(SerializationService binaryService) {
-        binaryService.disposeData(value);
-    }
-
-    @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeData(value);
@@ -70,7 +69,7 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        value = readOperationData(in);
+        value = readNativeMemoryOperationData(in);
         expiryPolicy = in.readObject();
     }
 
@@ -78,4 +77,5 @@ public class CachePutIfAbsentOperation extends BackupAwareHiDensityCacheOperatio
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT_IF_ABSENT;
     }
+
 }

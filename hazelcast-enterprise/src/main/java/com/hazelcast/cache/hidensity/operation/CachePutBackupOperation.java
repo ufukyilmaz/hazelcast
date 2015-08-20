@@ -1,9 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -13,8 +14,8 @@ import java.io.IOException;
  * @author mdogan 05/02/14
  */
 public class CachePutBackupOperation
-        extends AbstractHiDensityCacheOperation
-        implements BackupOperation {
+        extends AbstractKeyBasedHiDensityCacheOperation
+        implements BackupOperation, MutableOperation {
 
     private Data value;
     private ExpiryPolicy expiryPolicy;
@@ -32,13 +33,12 @@ public class CachePutBackupOperation
     @Override
     public void runInternal() throws Exception {
         cache.putBackup(key, value, expiryPolicy);
-        // If there is an update, the key from outside is already disposed in "BinaryElasticHashMap"
-        // So no need to dispose key here.
         response = Boolean.TRUE;
     }
 
     @Override
-    protected void disposeInternal(SerializationService serializationService) {
+    protected void disposeInternal(EnterpriseSerializationService serializationService) {
+        serializationService.disposeData(key);
         serializationService.disposeData(value);
     }
 
@@ -53,11 +53,12 @@ public class CachePutBackupOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         expiryPolicy = in.readObject();
-        value = readOperationData(in);
+        value = readNativeMemoryOperationData(in);
     }
 
     @Override
     public int getId() {
         return HiDensityCacheDataSerializerHook.PUT_BACKUP;
     }
+
 }

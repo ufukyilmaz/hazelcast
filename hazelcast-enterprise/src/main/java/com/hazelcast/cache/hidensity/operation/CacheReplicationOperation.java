@@ -9,14 +9,11 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.SerializationService;
-import com.hazelcast.spi.NonThreadSafe;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
@@ -28,20 +25,22 @@ import java.util.Map;
 /**
  * @author mdogan 05/02/14
  */
-public final class HiDensityCacheReplicationOperation
-        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation
-        implements NonThreadSafe {
+@edu.umd.cs.findbugs.annotations.SuppressWarnings(
+        value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",
+        justification = "Class names shouldn't shadow simple name of superclass")
+public final class CacheReplicationOperation
+        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation {
 
     private Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;
     private Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
 
     private transient NativeOutOfMemoryError oome;
 
-    public HiDensityCacheReplicationOperation() {
+    public CacheReplicationOperation() {
         offHeapDestination = new HashMap<String, Map<Data, CacheRecordHolder>>();
     }
 
-    public HiDensityCacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
+    public CacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
         data = new HashMap<String, Map<Data, CacheRecord>>();
         offHeapSource = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
 
@@ -63,14 +62,6 @@ public final class HiDensityCacheReplicationOperation
         configs = new ArrayList<CacheConfig>(segment.getCacheConfigs());
     }
 
-    @Override
-    public void beforeRun() throws Exception {
-        super.beforeRun();
-        if (oome != null) {
-            dispose();
-        }
-    }
-
     private void dispose() {
         SerializationService ss = getNodeEngine().getSerializationService();
         for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
@@ -89,13 +80,11 @@ public final class HiDensityCacheReplicationOperation
 
     @Override
     public void run() throws Exception {
-        super.run();
-        if (oome != null) {
-            offHeapDestination.clear();
-            return;
-        }
-        EnterpriseCacheService service = getService();
         try {
+            super.run();
+
+            EnterpriseCacheService service = getService();
+
             for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
                 HiDensityCacheRecordStore recordStore =
                         (HiDensityCacheRecordStore) service.getOrCreateRecordStore(entry.getKey(), getPartitionId());
@@ -107,23 +96,32 @@ public final class HiDensityCacheReplicationOperation
                     Map.Entry<Data, CacheRecordHolder> next = iter.next();
                     Data key = next.getKey();
                     CacheRecordHolder holder = next.getValue();
-                    recordStore.own(key, holder.value, holder.ttl);
+                    recordStore.putReplica(key, holder.value, holder.ttl);
                     iter.remove();
                 }
             }
-        } catch (NativeOutOfMemoryError e) {
+        } catch (Throwable e) {
             dispose();
-            oome = e;
+            if (e instanceof NativeOutOfMemoryError) {
+                oome = (NativeOutOfMemoryError) e;
+            }
         }
         offHeapDestination.clear();
     }
 
     @Override
     public void afterRun() throws Exception {
+        super.afterRun();
         if (oome != null) {
             ILogger logger = getLogger();
             logger.warning(oome.getMessage());
         }
+    }
+
+    @Override
+    public void onExecutionFailure(Throwable e) {
+        dispose();
+        super.onExecutionFailure(e);
     }
 
     @Override
@@ -190,27 +188,14 @@ public final class HiDensityCacheReplicationOperation
 
             for (int j = 0; j < subCount; j++) {
                 int ttlMillis = in.readInt();
-                Data key = readNativeData(in);
+                Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 if (key != null) {
-                    Data value = readNativeData(in);
+                    Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
-                }
-
-                if (oome != null) {
-                    return;
                 }
             }
         }
         super.readInternal(in);
-    }
-
-    private Data readNativeData(ObjectDataInput in) throws IOException {
-        try {
-            return ((EnterpriseObjectDataInput) in).readData(DataType.NATIVE);
-        } catch (NativeOutOfMemoryError e) {
-            oome = e;
-            return null;
-        }
     }
 
     @Override
@@ -230,4 +215,5 @@ public final class HiDensityCacheReplicationOperation
             this.value = value;
         }
     }
+
 }

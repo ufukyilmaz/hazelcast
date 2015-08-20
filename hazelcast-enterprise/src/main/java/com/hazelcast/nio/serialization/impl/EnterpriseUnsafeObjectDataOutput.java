@@ -31,6 +31,9 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
     }
 
     @Override
+    public EnterpriseSerializationService getSerializationService() {
+        return (EnterpriseSerializationService) service;
+    }
     public void copyFromMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         ensureAvailable(length);
         if (memory.size() < offset + length) {

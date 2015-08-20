@@ -1,10 +1,10 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
 
 /**
  * This handler is used to process event data in {@link SubscriberAccumulator}.

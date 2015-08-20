@@ -17,13 +17,13 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitionAware;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.nio.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.nio.serialization.impl.HeapData;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;

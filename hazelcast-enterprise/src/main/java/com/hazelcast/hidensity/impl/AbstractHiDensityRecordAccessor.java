@@ -5,7 +5,7 @@ import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.ArrayDeque;
 import java.util.Queue;

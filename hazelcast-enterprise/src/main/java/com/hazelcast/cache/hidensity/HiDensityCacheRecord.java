@@ -2,7 +2,7 @@ package com.hazelcast.cache.hidensity;
 
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
  * Base class of all {@link CacheRecord} managed by {@link HiDensityCacheRecordStore}.

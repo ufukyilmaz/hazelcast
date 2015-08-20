@@ -1,10 +1,10 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.util.QuickMath;
 
 import java.io.Closeable;
@@ -33,8 +33,6 @@ public class BufferSegment implements Closeable {
     private IntegerQueue chunks;
 
     public BufferSegment(int capacity, int chunkSize) {
-        super();
-
         this.chunkSize = chunkSize;
         assertTrue((capacity % chunkSize == 0), "Segment size[" + capacity + "] must be multitude of chunk size[" + chunkSize + "]!");
 

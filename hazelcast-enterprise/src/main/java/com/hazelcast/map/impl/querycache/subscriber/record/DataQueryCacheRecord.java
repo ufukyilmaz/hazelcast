@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber.record;
 
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
 
 /**
  * Represents a record with {@link Data} key and value.

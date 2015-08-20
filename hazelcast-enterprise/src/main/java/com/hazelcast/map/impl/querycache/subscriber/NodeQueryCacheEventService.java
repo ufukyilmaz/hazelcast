@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.IMapEvent;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryEventFilter;
@@ -14,7 +15,6 @@ import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.EventFilter;

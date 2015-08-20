@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.hazelcast.nio.serialization.impl;
+package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.internal.serialization.InputOutputFactory;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.InputOutputFactory;
-import com.hazelcast.nio.serialization.SerializationService;
 
 import java.nio.ByteOrder;
 

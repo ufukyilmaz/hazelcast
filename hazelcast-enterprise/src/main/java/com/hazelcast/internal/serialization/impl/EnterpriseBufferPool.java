@@ -1,9 +1,9 @@
-package com.hazelcast.nio.serialization.impl;
+package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolImpl;
 import com.hazelcast.nio.BufferObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
-import com.hazelcast.nio.serialization.impl.bufferpool.BufferPoolImpl;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 

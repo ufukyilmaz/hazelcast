@@ -5,7 +5,7 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
  * @author sozal 26/10/14

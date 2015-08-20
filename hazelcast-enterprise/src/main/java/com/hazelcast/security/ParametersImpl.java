@@ -16,7 +16,7 @@
 
 package com.hazelcast.security;
 
-import com.hazelcast.nio.serialization.SerializationService;
+import com.hazelcast.internal.serialization.SerializationService;
 
 import java.util.ArrayList;
 import java.util.Collection;

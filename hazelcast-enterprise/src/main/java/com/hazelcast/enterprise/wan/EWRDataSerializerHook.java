@@ -1,15 +1,16 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.internal.serialization.DataSerializerHook;
+import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.nio.serialization.DataSerializerHook;
-import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 
-import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY;
-import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY;
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_WAN_REPLICATION_DS_FACTORY_ID;
 
 /**
- * {@link com.hazelcast.nio.serialization.DataSerializerHook} implementation for Enterprise Wan Replication
+ * {@link com.hazelcast.internal.serialization.DataSerializerHook} implementation for Enterprise Wan Replication
  */
 public class EWRDataSerializerHook implements DataSerializerHook {
 

@@ -1,6 +1,7 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;

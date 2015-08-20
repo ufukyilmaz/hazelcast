@@ -180,6 +180,11 @@ public final class HiDensityCacheReplicationOperation
     }
 
     @Override
+    public void onExecutionFailure(Throwable e) {
+        dispose();
+    }
+
+    @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         int count = in.readInt();
         for (int i = 0; i < count; i++) {

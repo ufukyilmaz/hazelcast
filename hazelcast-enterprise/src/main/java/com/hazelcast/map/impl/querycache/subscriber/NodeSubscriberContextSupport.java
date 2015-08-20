@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOperation;
-import com.hazelcast.nio.serialization.SerializationService;
 
 /**
  * {@code SubscriberContextSupport} implementation for node side.

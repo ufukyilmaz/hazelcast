@@ -26,7 +26,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;

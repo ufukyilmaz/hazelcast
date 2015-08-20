@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.hazelcast.nio.serialization.impl;
+package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.internal.serialization.InputOutputFactory;
+import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
+import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
@@ -31,10 +34,7 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
-import com.hazelcast.nio.serialization.InputOutputFactory;
 import com.hazelcast.nio.serialization.PortableFactory;
-import com.hazelcast.nio.serialization.impl.bufferpool.BufferPool;
-import com.hazelcast.nio.serialization.impl.bufferpool.BufferPoolFactory;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 
@@ -44,9 +44,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
-import static com.hazelcast.nio.serialization.impl.NativeMemoryData.NATIVE_HEADER_OVERHEAD;
-import static com.hazelcast.nio.serialization.impl.NativeMemoryData.SIZE_OFFSET;
-import static com.hazelcast.nio.serialization.impl.NativeMemoryData.TYPE_OFFSET;
 
 public final class EnterpriseSerializationServiceImpl extends SerializationServiceImpl
         implements EnterpriseSerializationService {
@@ -142,13 +139,13 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
             }
 
             int size = out.position();
-            int memSize = size + NATIVE_HEADER_OVERHEAD;
+            int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
             long address = memoryManager.allocate(memSize);
             assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
-            data.writeInt(SIZE_OFFSET, size);
-            out.copyToMemoryBlock(data, TYPE_OFFSET, size);
+            data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
+            out.copyToMemoryBlock(data, NativeMemoryData.TYPE_OFFSET, size);
             return data;
         } catch (Throwable e) {
             throw handleException(e);
@@ -227,17 +224,17 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
     private Data readNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager,
                                 int size,  boolean readToHeapOnOOME) throws IOException {
         try {
-            int memSize = size + NATIVE_HEADER_OVERHEAD;
+            int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
             NativeMemoryData data = allocateNativeData(in, memoryManager, memSize, size, !readToHeapOnOOME);
-            data.writeInt(SIZE_OFFSET, size);
+            data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
 
             if (in instanceof EnterpriseBufferObjectDataInput) {
                 EnterpriseBufferObjectDataInput bufferIn = (EnterpriseBufferObjectDataInput) in;
-                bufferIn.copyToMemoryBlock(data, TYPE_OFFSET, size);
+                bufferIn.copyToMemoryBlock(data, NativeMemoryData.TYPE_OFFSET, size);
             } else {
                 byte[] bytes = new byte[size];
                 in.readFully(bytes);
-                data.copyFrom(TYPE_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
+                data.copyFrom(NativeMemoryData.TYPE_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
             }
             return data;
 
@@ -291,12 +288,12 @@ public final class EnterpriseSerializationServiceImpl extends SerializationServi
                     }
 
                     int size = data.totalSize();
-                    int memSize = size + NATIVE_HEADER_OVERHEAD;
+                    int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
 
                     long address = memoryManager.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
-                    nativeData.writeInt(SIZE_OFFSET, size);
-                    nativeData.copyFrom(TYPE_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
+                    nativeData.writeInt(NativeMemoryData.SIZE_OFFSET, size);
+                    nativeData.copyFrom(NativeMemoryData.TYPE_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
 
                     return nativeData;
                 }

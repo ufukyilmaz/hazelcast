@@ -17,12 +17,12 @@
 package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.storage.Storage;
-import com.hazelcast.nio.serialization.impl.HeapData;
 import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 
@@ -41,7 +41,6 @@ class UnsafeStorage implements Storage<DataRefImpl> {
     private IntegerQueue chunks;
 
     public UnsafeStorage(long capacity, int chunkSize) {
-        super();
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }

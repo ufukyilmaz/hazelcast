@@ -1,4 +1,4 @@
 /**
  * This package contains serialization implementation for enterprise.
  */
-package com.hazelcast.nio.serialization.impl;
+package com.hazelcast.internal.serialization.impl;

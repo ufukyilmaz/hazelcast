@@ -1,11 +1,11 @@
 package com.hazelcast.map.impl.client;
 
+import com.hazelcast.internal.serialization.PortableHook;
+import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.Portable;
 import com.hazelcast.nio.serialization.PortableFactory;
-import com.hazelcast.nio.serialization.PortableHook;
-import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 import com.hazelcast.util.ConstructorFunction;
 import com.hazelcast.util.MutableInteger;
 

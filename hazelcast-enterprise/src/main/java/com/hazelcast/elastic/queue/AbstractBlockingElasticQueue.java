@@ -4,7 +4,7 @@ import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.AbstractQueue;
 import java.util.Collection;

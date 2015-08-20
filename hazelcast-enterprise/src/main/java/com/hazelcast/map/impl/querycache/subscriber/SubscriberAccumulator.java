@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
@@ -10,7 +11,6 @@ import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.DefaultSubscriberSequencerProvider;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 import com.hazelcast.map.impl.querycache.event.sequence.SubscriberSequencerProvider;
-import com.hazelcast.nio.serialization.SerializationService;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

@@ -1,13 +1,17 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.operation.CacheEntryProcessorOperation;
+import com.hazelcast.cache.impl.operation.CacheGetAndRemoveOperation;
+import com.hazelcast.cache.impl.operation.CacheGetOperation;
+import com.hazelcast.cache.impl.operation.CacheSizeOperationFactory;
+import com.hazelcast.internal.serialization.DataSerializerHook;
+import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
-import com.hazelcast.nio.serialization.DataSerializerHook;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.nio.serialization.impl.FactoryIdHelper;
 
-import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY;
-import static com.hazelcast.nio.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY_ID;
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY;
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.HIDENSITY_CACHE_DS_FACTORY_ID;
 
 /**
  * @author sozal 14/10/14

@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMapEvent;
 import com.hazelcast.core.MapEvent;
 import com.hazelcast.core.Member;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.DataAwareEntryEvent;
 import com.hazelcast.map.impl.EntryEventFilter;
@@ -14,7 +15,6 @@ import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.SerializationService;
 import com.hazelcast.spi.EventFilter;
 
 /**

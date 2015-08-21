@@ -47,6 +47,9 @@
     <!-- Enable suppression of file contents using //CHECKSTYLE:[ON|OFF] comments -->
     <module name="SuppressionCommentFilter"/>
 
+    <!-- Enable the suppression annotation @SuppressWarnings("checkstyle:lowercasecheckname"} -->
+    <module name="SuppressWarningsFilter" />
+
     <!-- Checks that a package-info.java file exists for each package.     -->
     <!-- See http://checkstyle.sf.net/config_javadoc.html#JavadocPackage -->
     <module name="JavadocPackage"/>
@@ -86,13 +89,17 @@
      <!--</module>-->
 
     <module name="TreeWalker">
-        <!-- Activate comment suppression filters -->
+        <!-- Needed for SuppressionCommentFilter to work -->
         <module name="FileContentsHolder"/>
+
+        <!-- Needed for SuppressWarningsFilter to work -->
+        <module name="SuppressWarningsHolder" />
 
         <!-- Checks for Javadoc comments.                     -->
         <!-- See http://checkstyle.sf.net/config_javadoc.html -->
-        <!-- All types should have JavaDoc -->
-        <module name="JavadocType"/>
+        <module name="JavadocType">
+            <property name="scope" value="package"/>
+        </module>
         <!-- Only some methods, on public APIs we agreed to JavaDoc. TODO figure out how to do that -->
         <!--<module name="JavadocMethod">-->
             <!--<property name="scope" value="public"/>-->

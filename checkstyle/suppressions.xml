@@ -9,8 +9,6 @@
     <!-- Suppress duplicate checking of copyright notice -->
     <suppress checks="StrictDuplicateCode" files=".java" lines="1-15"/>
 
-    <!--To enable checking on a module, comment out its suppression. e.g. mapreduce is enabled.-->
-
     <suppress checks="" files="com/hazelcast/elasticmemory/"/>
     <suppress checks="" files="com/hazelcast/enterprise/util/"/>
     <suppress checks="" files="com/hazelcast/security/"/>
@@ -55,6 +53,13 @@
     <!-- Enterprise Cache -->
     <suppress checks="ClassDataAbstractionCouplingC|ClassFanOutComplexityCheck"
               files="com/hazelcast/cache/EnterpriseCacheService"/>
+
+    <!-- Hot Restart module -->
+    <suppress checks="InnerAssignment|VisibilityModifier" files="com/hazelcast/spi/hotrestart/impl/gc/"/>
+    <suppress checks="VisibilityModifier|MagicNumber" files="com/hazelcast/spi/hotrestart/impl/HeavyKey"/>
+    <suppress checks="ClassData" files="com/hazelcast/spi/hotrestart/impl/HotRestartStoreImpl"/>
+    <suppress checks="MagicNumber|Complexity" files="com/hazelcast/spi/hotrestart/impl/lz4"/>
+    <suppress checks="OuterTypeNumber|MultipleVariableDeclarations|MagicNumber" files="com/hazelcast/util/concurrent"/>
 
     <!-- Query Cache -->
     <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/querycache/subscriber/DefaultQueryCache"/>

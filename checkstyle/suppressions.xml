@@ -24,6 +24,7 @@
     <suppress checks="ParameterNumber" files="com/hazelcast/internal/serialization/impl/EnterpriseSerializationServiceImpl"/>
     <suppress checks="MethodCount|MagicNumber" files="com/hazelcast/internal/serialization/impl/MemoryBlockDataInput"/>
     <suppress checks="IllegalImport|NPathComplexity" files="com/hazelcast/internal/serialization/impl/NativeMemoryDataUtil"/>
+    <suppress checks="MagicNumber" files="com/hazelcast/nio/CipherHelper"/>
 
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/instance/EnterpriseNodeExtension"/>
 

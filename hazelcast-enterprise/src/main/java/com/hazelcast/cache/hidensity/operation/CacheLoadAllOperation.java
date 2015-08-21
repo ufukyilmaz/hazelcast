@@ -7,6 +7,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.CacheException;
 import java.io.IOException;
@@ -22,7 +23,7 @@ import java.util.Set;
  * {@link com.hazelcast.cache.impl.ICacheRecordStore#loadAll(java.util.Set keys, boolean replaceExistingValues)}.</p>
  */
 public class CacheLoadAllOperation
-        extends BackupAwareKeyBasedHiDensityCacheOperation {
+        extends BackupAwareKeyBasedHiDensityCacheOperation implements MutatingOperation {
 
     private Set<Data> keys;
     private boolean replaceExistingValues;

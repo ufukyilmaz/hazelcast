@@ -4,13 +4,14 @@ import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.BackupOperation;
+import com.hazelcast.spi.impl.MutatingOperation;
 
 /**
  * @author mdogan 05/02/14
  */
 public class CacheRemoveBackupOperation
         extends AbstractKeyBasedHiDensityCacheOperation
-        implements BackupOperation, MutableOperation {
+        implements BackupOperation, MutableOperation, MutatingOperation {
 
     public CacheRemoveBackupOperation() {
     }

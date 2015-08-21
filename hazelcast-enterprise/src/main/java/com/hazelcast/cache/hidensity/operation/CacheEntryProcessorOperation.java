@@ -9,6 +9,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.processor.EntryProcessor;
 import java.io.IOException;
@@ -21,7 +22,7 @@ import java.io.IOException;
  */
 public class CacheEntryProcessorOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation
-        implements MutableOperation {
+        implements MutableOperation, MutatingOperation {
 
     private EntryProcessor entryProcessor;
     private Object[] arguments;

@@ -60,7 +60,12 @@ public class CacheLoadAllOperation
             if (shouldBackup) {
                 backupRecords = new HashMap<Data, CacheRecord>();
                 for (Data key : keysLoaded) {
-                    backupRecords.put(key, cache.getRecord(key));
+                    CacheRecord record = cache.getRecord(key);
+                    // Loaded keys may have been evicted, then record will be null.
+                    // So if the loaded key is evicted, don't send it to backup.
+                    if (record != null) {
+                        backupRecords.put(key, record);
+                    }
                 }
             }
         } catch (CacheException e) {

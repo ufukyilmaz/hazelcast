@@ -14,9 +14,9 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.impl.AbstractNamedOperation;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -27,13 +27,12 @@ import java.util.logging.Level;
  * @author sozal 07/08/15
  */
 abstract class AbstractHiDensityCacheOperation
-        extends AbstractOperation
+        extends AbstractNamedOperation
         implements PartitionAwareOperation, IdentifiedDataSerializable {
 
     protected static final int FORCED_EVICTION_RETRY_COUNT =
             ICacheRecordStore.ONE_HUNDRED_PERCENT / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
-    protected String name;
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;
 
@@ -61,7 +60,7 @@ abstract class AbstractHiDensityCacheOperation
 
     protected AbstractHiDensityCacheOperation(String name, int completionId,
                                               boolean dontCreateCacheRecordStoreIfNotExist) {
-        this.name = name;
+        super(name);
         this.completionId = completionId;
         this.dontCreateCacheRecordStoreIfNotExist = dontCreateCacheRecordStoreIfNotExist;
     }
@@ -229,14 +228,12 @@ abstract class AbstractHiDensityCacheOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeUTF(name);
         out.writeInt(completionId);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        name = in.readUTF();
         completionId = in.readInt();
     }
 

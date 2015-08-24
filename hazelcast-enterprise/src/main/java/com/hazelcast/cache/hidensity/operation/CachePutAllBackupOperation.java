@@ -16,6 +16,7 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.BackupOperation;
+import com.hazelcast.spi.impl.MutatingOperation;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.Map;
  */
 public class CachePutAllBackupOperation
         extends AbstractHiDensityCacheOperation
-        implements BackupOperation, MutableOperation {
+        implements BackupOperation, MutableOperation, MutatingOperation {
 
     private Map<Data, CacheRecord> cacheRecords;
 

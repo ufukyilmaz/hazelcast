@@ -21,6 +21,7 @@ public class HiDensityClientCacheQuorumTestSupport
         extends HazelcastTestSupport {
 
     private static String hazelcastElasticMemoryEnabledProperty;
+    private static final String elasticMemoryPropertyString = "hazelcast.elastic.memory.enabled";
 
     static NativeMemPartitionedCluster cluster;
 
@@ -47,8 +48,8 @@ public class HiDensityClientCacheQuorumTestSupport
 
     public static void initialize(QuorumType quorumType) throws InterruptedException {
         //As we create 5 instances, elastic memory causes out of memory error. We do not need elastic memory in this test.
-        hazelcastElasticMemoryEnabledProperty = System.getProperty("hazelcast.elastic.memory.enabled");
-        System.setProperty("hazelcast.elastic.memory.enabled", "false");
+        hazelcastElasticMemoryEnabledProperty = System.getProperty(elasticMemoryPropertyString);
+        System.setProperty(elasticMemoryPropertyString, "false");
 
         QuorumConfig quorumConfig = new QuorumConfig();
         quorumConfig.setName(QUORUM_ID);
@@ -104,7 +105,11 @@ public class HiDensityClientCacheQuorumTestSupport
     @AfterClass
     public static void killAllHazelcastInstances() throws IOException {
         factory.terminateAll();
-        System.setProperty("hazelcast.elastic.memory.enabled", hazelcastElasticMemoryEnabledProperty);
+        if (hazelcastElasticMemoryEnabledProperty != null ) {
+            System.setProperty(elasticMemoryPropertyString, hazelcastElasticMemoryEnabledProperty);
+        } else {
+            System.clearProperty(elasticMemoryPropertyString);
+        }
     }
 
 }

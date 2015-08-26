@@ -39,6 +39,7 @@ import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
@@ -112,7 +113,7 @@ public class MapPublisherCreateMessageTask
 
     @Override
     protected ClientMessage encodeResponse(Object response) {
-        return EnterpriseMapPublisherCreateCodec.encodeResponse((List<Data>) response);
+        return EnterpriseMapPublisherCreateCodec.encodeResponse((Set<Data>) response);
     }
 
     @Override

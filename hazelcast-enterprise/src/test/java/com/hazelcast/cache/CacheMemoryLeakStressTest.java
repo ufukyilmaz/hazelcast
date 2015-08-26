@@ -31,7 +31,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
-import com.hazelcast.test.annotation.Repeat;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.EmptyStatement;
 
@@ -101,7 +100,6 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     @Test
-    @Repeat(100)
     public void testNativeMemoryLeakWithExpiryPolicy() throws InterruptedException {
         testNativeMemoryLeakInternal(new CacheExpiryPolicyFactory());
     }

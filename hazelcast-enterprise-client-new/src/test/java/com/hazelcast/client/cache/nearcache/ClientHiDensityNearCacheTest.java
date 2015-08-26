@@ -90,12 +90,12 @@ public class ClientHiDensityNearCacheTest extends ClientNearCacheTestSupport {
     }
 
     @Test
+    @Ignore
     public void putToCacheAndUpdateFromOtherNodeThenGetUpdatedFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
         putToCacheAndUpdateFromOtherNodeThenGetUpdatedFromClientNearCache(InMemoryFormat.NATIVE);
     }
 
     @Test
-    @Ignore
     public void putToCacheAndRemoveFromOtherNodeThenCantGetUpdatedFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
         putToCacheAndRemoveFromOtherNodeThenCantGetUpdatedFromClientNearCache(InMemoryFormat.NATIVE);
     }

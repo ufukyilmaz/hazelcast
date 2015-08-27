@@ -51,9 +51,8 @@ public class NativeMemPartitionedCluster {
         config.addCacheConfig(cacheSimpleConfig);
         config.addQuorumConfig(quorumConfig);
         config.setNativeMemoryConfig(new NativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES)));
-        config = addSuccessfulSplitTestQuorum(config);
+        config.addQuorumConfig(createSuccessfulSplitTestQuorum());
         createInstances(config);
-
         return this;
     }
 
@@ -91,15 +90,14 @@ public class NativeMemPartitionedCluster {
         return this;
     }
 
-    private Config addSuccessfulSplitTestQuorum(Config config) {
+    private QuorumConfig createSuccessfulSplitTestQuorum() {
         QuorumConfig splitConfig = new QuorumConfig();
         splitConfig.setEnabled(true);
         splitConfig.setSize(3);
         splitConfig.setName(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME);
-
-        config.addQuorumConfig(splitConfig);
-        return config;
+        return splitConfig;
     }
+
     private void createInstances(Config config) {
         h1 = factory.newHazelcastInstance(config);
         h2 = factory.newHazelcastInstance(config);

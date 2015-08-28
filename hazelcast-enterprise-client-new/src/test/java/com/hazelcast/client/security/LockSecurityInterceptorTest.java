@@ -1,6 +1,7 @@
 package com.hazelcast.client.security;
 
 import com.hazelcast.concurrent.lock.LockService;
+import com.hazelcast.core.ICondition;
 import com.hazelcast.core.ILock;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import org.junit.Before;
@@ -91,6 +92,30 @@ public class LockSecurityInterceptorTest extends BaseInterceptorTest {
         final long ttl = randomLong();
         lock.tryLock(ttl, TimeUnit.MILLISECONDS);
         interceptor.assertMethod(getObjectType(), objectName, "tryLock", ttl, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void test_condition_await() throws InterruptedException {
+        ICondition iCondition = lock.newCondition(randomString());
+        lock.lock();
+        iCondition.await(1, TimeUnit.MILLISECONDS);
+        interceptor.assertMethod(getObjectType(), objectName, "await", 1l, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void test_condition_signal() throws InterruptedException {
+        ICondition iCondition = lock.newCondition(randomString());
+        lock.lock();
+        iCondition.signal();
+        interceptor.assertMethod(getObjectType(), objectName, "signal");
+    }
+
+    @Test
+    public void test_condition_signalAll() throws InterruptedException {
+        ICondition iCondition = lock.newCondition(randomString());
+        lock.lock();
+        iCondition.signalAll();
+        interceptor.assertMethod(getObjectType(), objectName, "signalAll");
     }
 
     @Override

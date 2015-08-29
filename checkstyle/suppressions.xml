@@ -9,12 +9,14 @@
     <!-- Suppress duplicate checking of copyright notice -->
     <suppress checks="StrictDuplicateCode" files=".java" lines="1-15"/>
 
+    <!-- TODO: these wildcard suppressions need to be fixed -->
     <suppress checks="" files="com/hazelcast/elasticmemory/"/>
     <suppress checks="" files="com/hazelcast/enterprise/util/"/>
     <suppress checks="" files="com/hazelcast/security/"/>
     <suppress checks="" files="com/hazelcast/memory/"/>
     <suppress checks="" files="com/hazelcast/elastic/"/>
 
+    <!-- NIO -->
     <suppress checks="JavadocMethod" files="com/hazelcast/nio/"/>
     <suppress checks="JavadocType" files="com/hazelcast/nio/"/>
     <suppress checks="JavadocMethod" files="com/hazelcast/nio/serialization/"/>
@@ -25,21 +27,21 @@
     <suppress checks="MethodCount|MagicNumber" files="com/hazelcast/internal/serialization/impl/MemoryBlockDataInput"/>
     <suppress checks="IllegalImport|NPathComplexity" files="com/hazelcast/internal/serialization/impl/NativeMemoryDataUtil"/>
     <suppress checks="MagicNumber" files="com/hazelcast/nio/CipherHelper"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketReader"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketWriter"/>
 
+    <!-- Instance -->
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/instance/EnterpriseNodeExtension"/>
 
     <!-- Sessions -->
     <suppress checks="JavadocMethod" files="com/hazelcast/session/"/>
     <suppress checks="JavadocType" files="com/hazelcast/session/"/>
-    <suppress checks="JavadocMethod" files="com/hazelcast/session/"/>
     <suppress checks="JavadocVariable" files="com/hazelcast/session/"/>
     <suppress checks="MethodCountCheck" files="com/hazelcast/session/HazelcastSessionManager"/>
 
+    <!-- SSL -->
     <suppress checks="MagicNumber|MethodLength|MagicNumber|CyclomaticComplexity|EmptyBlock|NPathComplexity"
               files="com/hazelcast/nio/ssl/SSLSocketChannelWrapper"/>
-
-    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketReader"/>
-    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketWriter"/>
 
     <!-- HiDensity -->
     <suppress checks="MethodCountCheck|NPathComplexity|CyclomaticComplexity"
@@ -66,7 +68,7 @@
     <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/querycache/subscriber/DefaultQueryCache"/>
     <suppress checks="ParameterNumber" files="com/hazelcast/map/impl/querycache/accumulator/AccumulatorInfo"/>
 
-    <!-- CLIENT PROTOCOL -->
+    <!-- Client Protocol -->
     <suppress checks="" files="com/hazelcast/client/impl/protocol/template/"/>
 
 </suppressions>

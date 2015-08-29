@@ -38,6 +38,7 @@ import com.hazelcast.util.QueryResultSet;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -85,8 +86,8 @@ public class MapPublisherCreateMessageTask
         }
     }
 
-    private List<Data> getQueryResultSets(List<Future> futures) {
-        List<Data> results = new ArrayList<Data>(futures.size());
+    private Set<Data> getQueryResultSets(List<Future> futures) {
+        Set<Data> results = new HashSet<Data>(futures.size());
         for (Future future : futures) {
             Object result = null;
             try {

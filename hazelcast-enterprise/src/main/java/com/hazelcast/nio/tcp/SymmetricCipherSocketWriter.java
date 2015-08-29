@@ -11,7 +11,7 @@ import com.hazelcast.util.ExceptionUtil;
 import javax.crypto.Cipher;
 import java.nio.ByteBuffer;
 
-public class SymmetricCipherPacketWriter implements PacketWriter {
+public class SymmetricCipherSocketWriter implements SocketWriter<Packet> {
 
     private final IOService ioService;
     private final TcpIpConnection connection;
@@ -21,7 +21,7 @@ public class SymmetricCipherPacketWriter implements PacketWriter {
 //    private boolean sizeWritten;
     private boolean packetWritten;
 
-    public SymmetricCipherPacketWriter(TcpIpConnection connection, IOService ioService) {
+    public SymmetricCipherSocketWriter(TcpIpConnection connection, IOService ioService) {
         this.connection = connection;
         this.ioService = ioService;
         logger = ioService.getLogger(getClass().getName());

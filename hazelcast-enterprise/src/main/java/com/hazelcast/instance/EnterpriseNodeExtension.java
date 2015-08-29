@@ -36,12 +36,12 @@ import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
+import com.hazelcast.nio.tcp.ReadHandler;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
-import com.hazelcast.nio.tcp.SocketReader;
-import com.hazelcast.nio.tcp.SocketWriter;
-import com.hazelcast.nio.tcp.SymmetricCipherSocketReader;
-import com.hazelcast.nio.tcp.SymmetricCipherSocketWriter;
+import com.hazelcast.nio.tcp.SymmetricCipherMemberReadHandler;
+import com.hazelcast.nio.tcp.SymmetricCipherMemberWriteHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
+import com.hazelcast.nio.tcp.WriteHandler;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.util.ExceptionUtil;
@@ -241,27 +241,27 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public SocketReader createSocketReader(final TcpIpConnection connection, final IOService ioService) {
+    public ReadHandler createReadHandler(final TcpIpConnection connection, final IOService ioService) {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Reader started with SymmetricEncryption");
-            return new SymmetricCipherSocketReader(connection, ioService, node.nodeEngine.getPacketDispatcher());
+            return new SymmetricCipherMemberReadHandler(connection, ioService, node.nodeEngine.getPacketDispatcher());
         }
-        return super.createSocketReader(connection, ioService);
+        return super.createReadHandler(connection, ioService);
     }
 
     @Override
-    public SocketWriter createSocketWriter(final TcpIpConnection connection, final IOService ioService) {
+    public WriteHandler createWriteHandler(final TcpIpConnection connection, final IOService ioService) {
         final NetworkConfig networkConfig = node.config.getNetworkConfig();
         final SymmetricEncryptionConfig symmetricEncryptionConfig = networkConfig.getSymmetricEncryptionConfig();
 
         if (symmetricEncryptionConfig != null && symmetricEncryptionConfig.isEnabled()) {
             logger.info("Writer started with SymmetricEncryption");
-            return new SymmetricCipherSocketWriter(connection, ioService);
+            return new SymmetricCipherMemberWriteHandler(connection, ioService);
         }
-        return super.createSocketWriter(connection, ioService);
+        return super.createWriteHandler(connection, ioService);
     }
 
     @Override

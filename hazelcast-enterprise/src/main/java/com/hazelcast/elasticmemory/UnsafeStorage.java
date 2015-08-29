@@ -18,21 +18,20 @@ package com.hazelcast.elasticmemory;
 
 import com.hazelcast.elasticmemory.error.BufferSegmentClosedError;
 import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.util.QuickMath;
 import sun.misc.Unsafe;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
 class UnsafeStorage implements Storage<DataRefImpl> {
 
-    private static final ILogger logger = Logger.getLogger(UnsafeStorage.class);
+    private static final ILogger LOGGER = Logger.getLogger(UnsafeStorage.class);
 
     private final Lock lock = new ReentrantLock();
     private final int chunkSize;
@@ -59,7 +58,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         long cc = capacity / chunkSize;
         if (cc > Integer.MAX_VALUE) {
             throw new IllegalArgumentException("Chunk count limit exceeded; max: " + Integer.MAX_VALUE
-                + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSize + "KB.");
+                    + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSize + "KB.");
         }
 
         Unsafe unsafe = UnsafeHelper.UNSAFE;
@@ -80,7 +79,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         for (int i = 0; i < chunkCount; i++) {
             chunks.offer(i);
         }
-        logger.finest("UnsafeStorage started!");
+        LOGGER.finest("UnsafeStorage started!");
     }
 
     public DataRefImpl put(int hash, final Data data) {
@@ -89,11 +88,13 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         }
         final byte[] value = data.toByteArray();
         if (value == null || value.length == 0) {
-            return new DataRefImpl(null, 0); // volatile write;
+            // volatile write
+            return new DataRefImpl(null, 0);
         }
 
         final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
-        final int[] indexes = reserve(count);  // operation under lock
+        // operation under lock
+        final int[] indexes = reserve(count);
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         int offset = 0;
         for (int i = 0; i < count; i++) {
@@ -102,11 +103,13 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             unsafe.copyMemory(value, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, null, (address + pos), len);
             offset += len;
         }
-        return new DataRefImpl(indexes, value.length); // volatile write
+        // volatile write
+        return new DataRefImpl(indexes, value.length);
     }
 
     public Data get(int hash, final DataRefImpl ref) {
-        if (!isEntryRefValid(ref)) {  // volatile read
+        // volatile read
+        if (!isEntryRefValid(ref)) {
             return null;
         }
         if (ref.isEmpty()) {
@@ -124,17 +127,20 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             offset += len;
         }
 
-        if (isEntryRefValid(ref)) { // volatile read
+        // volatile read
+        if (isEntryRefValid(ref)) {
             return new HeapData(value);
         }
         return null;
     }
 
     public void remove(int hash, final DataRefImpl ref) {
-        if (!isEntryRefValid(ref)) { // volatile read
+        // volatile read
+        if (!isEntryRefValid(ref)) {
             return;
         }
-        ref.invalidate(); // volatile write
+        // volatile write
+        ref.invalidate();
         final int chunkCount = ref.getChunkCount();
         if (chunkCount > 0) {
             final int[] indexes = new int[chunkCount];
@@ -146,7 +152,8 @@ class UnsafeStorage implements Storage<DataRefImpl> {
     }
 
     private boolean isEntryRefValid(final DataRefImpl ref) {
-        return ref != null && ref.isValid();  //isValid() volatile read
+        //isValid() volatile read
+        return ref != null && ref.isValid();
     }
 
     private static void assertTrue(boolean condition, String message) {

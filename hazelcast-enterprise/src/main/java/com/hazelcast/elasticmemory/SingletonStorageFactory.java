@@ -1,8 +1,8 @@
 package com.hazelcast.elasticmemory;
 
+import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.internal.storage.DataRef;
 import com.hazelcast.internal.storage.Storage;
-import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.serialization.Data;
@@ -11,10 +11,11 @@ import java.util.logging.Level;
 
 public class SingletonStorageFactory extends StorageFactorySupport implements StorageFactory {
 
-    private static Storage STORAGE = null;
-    private static int REF_COUNT = 0;
+    private static final ILogger LOGGER = Logger.getLogger(StorageFactory.class);
     private static final Object MUTEX = SingletonStorageFactory.class;
-    private static final ILogger logger = Logger.getLogger(StorageFactory.class);
+
+    private static Storage storage;
+    private static int refCount;
 
     public SingletonStorageFactory() {
         super();
@@ -22,11 +23,11 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
 
     public Storage createStorage() {
         synchronized (MUTEX) {
-            if (STORAGE == null) {
+            if (storage == null) {
                 initStorage();
             }
-            REF_COUNT++;
-            return new StorageProxy(STORAGE);
+            refCount++;
+            return new StorageProxy(storage);
         }
     }
 
@@ -62,7 +63,7 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
 
     private static void initStorage() {
         synchronized (MUTEX) {
-            if (STORAGE != null) {
+            if (storage != null) {
                 throw new IllegalStateException("Storage is already initialized!");
             }
             final String total = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE);
@@ -74,32 +75,32 @@ public class SingletonStorageFactory extends StorageFactorySupport implements St
             }
 
             final String unsafe = System.getProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED);
-            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE + " as: " + total);
-            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE + " as: " + chunk);
-            logger.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED + " as: " + unsafe);
-            logger.log(Level.INFO, "Initializing Singleton Storage...");
-            STORAGE = createStorage(total, chunk, Boolean.parseBoolean(unsafe), logger);
+            LOGGER.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE + " as: " + total);
+            LOGGER.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE + " as: " + chunk);
+            LOGGER.finest("Read " + GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED + " as: " + unsafe);
+            LOGGER.log(Level.INFO, "Initializing Singleton Storage...");
+            storage = createStorage(total, chunk, Boolean.parseBoolean(unsafe), LOGGER);
         }
     }
 
     private static void destroyStorage() {
         synchronized (MUTEX) {
-            if (STORAGE != null) {
-                if (REF_COUNT <= 0) {
-                    logger.log(Level.SEVERE, "Storage reference count is invalid: " + REF_COUNT);
-                    REF_COUNT = 1;
+            if (storage != null) {
+                if (refCount <= 0) {
+                    LOGGER.log(Level.SEVERE, "Storage reference count is invalid: " + refCount);
+                    refCount = 1;
                 }
-                REF_COUNT--;
-                if (REF_COUNT == 0) {
-                    logger.log(Level.INFO, "Destroying Singleton Storage ...");
-                    STORAGE.destroy();
-                    STORAGE = null;
+                refCount--;
+                if (refCount == 0) {
+                    LOGGER.log(Level.INFO, "Destroying Singleton Storage ...");
+                    storage.destroy();
+                    storage = null;
                 }
             } else {
-                logger.log(Level.WARNING, "Storage is already destroyed !");
-                if (REF_COUNT != 0) {
+                LOGGER.log(Level.WARNING, "Storage is already destroyed !");
+                if (refCount != 0) {
                     final String errorMsg = "Storage reference count must be zero (0), but it is not !!!";
-                    logger.log(Level.SEVERE, errorMsg);
+                    LOGGER.log(Level.SEVERE, errorMsg);
                     throw new IllegalStateException(errorMsg);
                 }
             }

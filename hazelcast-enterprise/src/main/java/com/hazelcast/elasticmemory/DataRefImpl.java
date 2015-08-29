@@ -4,6 +4,11 @@ import com.hazelcast.internal.storage.DataRef;
 
 public class DataRefImpl implements DataRef {
 
+    private static final int INT_SIZE = 4;
+    private static final int ARRAY_SIZE = 16;
+    private static final int REF_SIZE = 4;
+    private static final int BOOLEAN_SIZE = 1;
+
     private final int length;
     private final int[] chunks;
 
@@ -12,7 +17,7 @@ public class DataRefImpl implements DataRef {
     DataRefImpl(int[] indexes, int length) {
         this.chunks = indexes;
         this.length = length;
-        this.valid = true; // volatile write
+        this.valid = true;
     }
 
     public boolean isEmpty() {
@@ -26,7 +31,8 @@ public class DataRefImpl implements DataRef {
 
     @Override
     public int heapCost() {
-        return 4 + 4 + 16 + 4 + 1; // 2x integers + 1x array + 1x ref + 1x bool
+        // 2x integers + 1x array + 1x ref + 1x bool
+        return INT_SIZE + INT_SIZE + ARRAY_SIZE + REF_SIZE + BOOLEAN_SIZE;
     }
 
     public int getChunkCount() {
@@ -38,10 +44,12 @@ public class DataRefImpl implements DataRef {
     }
 
     public boolean isValid() {
-        return valid; // volatile read
+        // volatile read
+        return valid;
     }
 
     public void invalidate() {
-        valid = false;  // volatile write
+        // volatile write
+        valid = false;
     }
 }

@@ -1,9 +1,10 @@
 package com.hazelcast.elasticmemory;
 
+import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.internal.storage.Storage;
+import com.hazelcast.util.EmptyStatement;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -26,12 +27,12 @@ public abstract class StorageFactorySupport implements StorageFactory {
             jvmSize = getJvmHeapMemorySize(logger);
         }
         if (jvmSize == null) {
-            logger.log(Level.WARNING, "Either JVM max memory argument (" + MAX_HEAP_MEMORY_PARAM + ") or" +
-                    " max direct memory size argument (" +
-                    MAX_DIRECT_MEMORY_PARAM + ") should be configured in order to use " +
-                    "Hazelcast Elastic Memory! " +
-                    "(Ex: java " + MAX_DIRECT_MEMORY_PARAM + "=1G -Xmx1G -cp ...)" +
-                    " Using defaults...");
+            logger.log(Level.WARNING, "Either JVM max memory argument (" + MAX_HEAP_MEMORY_PARAM + ") or"
+                    + " max direct memory size argument ("
+                    + MAX_DIRECT_MEMORY_PARAM + ") should be configured in order to use "
+                    + "Hazelcast Elastic Memory! "
+                    + "(Ex: java " + MAX_DIRECT_MEMORY_PARAM + "=1G -Xmx1G -cp ...)"
+                    + " Using defaults...");
             jvmSize = totalSize;
         }
         checkOffHeapParams(jvmSize, totalSize, chunkSize);
@@ -50,6 +51,7 @@ public abstract class StorageFactorySupport implements StorageFactory {
         try {
             return UnsafeHelper.UNSAFE != null;
         } catch (Throwable ignored) {
+            EmptyStatement.ignore(ignored);
         }
         return false;
     }

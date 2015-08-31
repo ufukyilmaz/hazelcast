@@ -19,7 +19,7 @@ public class HiDensityFreeNativeMemoryPercentageMaxSizeChecker implements MaxSiz
         final int maxSizePercentage = size;
         if (maxSizePercentage < 0 || maxSizePercentage > HiDensityRecordStore.HUNDRED_PERCENT) {
             throw new IllegalArgumentException("\"maxSize\" can only be 0-100 for "
-                    + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
+                    + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
         }
         final double maxSizeRatio = (double) maxSizePercentage / (double) HiDensityRecordStore.HUNDRED_PERCENT;
         this.minFreeMemorySize = (long) (maxNativeMemory * maxSizeRatio);

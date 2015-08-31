@@ -96,7 +96,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
                             + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
-                            + EvictionConfig.MaxSizePolicy.ENTRY_COUNT + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
                             + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
@@ -868,11 +867,6 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     protected void onMergeError(CacheEntryView<Data, Data> cacheEntryView, CacheMergePolicy mergePolicy,
                                 String caller, boolean disableWriteThrough, CacheRecord record, Throwable error) {
-    }
-
-    @Override
-    protected void invalidateEntry(Data key, String source) {
-        super.invalidateEntry(toEventData(key), source);
     }
 
     protected void onEntryInvalidated(Data key, String source) {

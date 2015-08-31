@@ -12,18 +12,20 @@ import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import java.nio.ByteBuffer;
 
-public class SymmetricCipherPacketReader extends MemberPacketReader {
+import static com.hazelcast.nio.IOService.KILO_BYTE;
+
+public class SymmetricCipherSocketReader extends MemberSocketReader {
 
     private final Cipher cipher;
     private final ILogger logger;
     private final IOService ioService;
-    private int size = -1;
     private ByteBuffer cipherBuffer;
+    private int size = -1;
 
-    public SymmetricCipherPacketReader(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
+    public SymmetricCipherSocketReader(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
         super(connection, packetDispatcher);
         this.ioService = ioService;
-        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * IOService.KILO_BYTE);
+        this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
         this.logger = ioService.getLogger(getClass().getName());
         this.cipher = init();
     }
@@ -82,6 +84,7 @@ public class SymmetricCipherPacketReader extends MemberPacketReader {
                     break;
                 }
             }
+
             if (cipherBuffer.hasRemaining()) {
                 cipherBuffer.compact();
             } else {

@@ -57,7 +57,9 @@ public abstract class BaseInterceptorTest {
         Hazelcast.shutdownAll();
     }
 
-    abstract String getObjectType();
+    String getObjectType() {
+        return null;
+    }
 
     private static Config createConfig(TestSecurityInterceptor interceptor) {
         final Config config = new Config();

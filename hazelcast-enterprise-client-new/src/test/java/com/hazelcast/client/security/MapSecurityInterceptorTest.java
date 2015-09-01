@@ -22,9 +22,10 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
+import com.hazelcast.map.MapPartitionLostEvent;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.listener.MapPartitionLostListener;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -493,6 +494,33 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         IMap<Object, Object> map = client.getMap(objectName);
         map.loadAll(keys, true);
         interceptor.assertMethod(getObjectType(), objectName, "loadAll", keys, true);
+    }
+
+    @Test
+    public void addPartitionLostListener() {
+        final HashMap hashMap = new HashMap();
+        hashMap.put(randomString(), randomString());
+        hashMap.put(randomString(), randomString());
+        hashMap.put(randomString(), randomString());
+        map.addPartitionLostListener(new MapPartitionLostListener() {
+            @Override
+            public void partitionLost(MapPartitionLostEvent event) {
+
+            }
+        });
+        interceptor.assertMethod(getObjectType(), objectName, "addPartitionLostListener", new Object[]{null});
+    }
+
+    @Test
+    public void removePartitionLostListener() {
+        String id = map.addPartitionLostListener(new MapPartitionLostListener() {
+            @Override
+            public void partitionLost(MapPartitionLostEvent event) {
+
+            }
+        });
+        map.removePartitionLostListener(id);
+        interceptor.assertMethod(getObjectType(), objectName, "removePartitionLostListener", id);
     }
 
     @Override

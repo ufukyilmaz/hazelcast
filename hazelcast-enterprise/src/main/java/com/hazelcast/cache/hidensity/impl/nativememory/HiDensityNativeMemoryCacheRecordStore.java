@@ -164,17 +164,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         return new HiDensityNativeMemoryCacheEntryProcessorEntry(key, record, this, now, completionId);
     }
 
-    @Override
-    protected void updateHasExpiringEntry(HiDensityNativeMemoryCacheRecord record) {
-        if (record != null && record.address() != NULL_PTR) {
-            long ttlMillis = record.getTtlMillis();
-            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
-            if (!hasExpiringEntry && ttlMillis >= 0) {
-                hasExpiringEntry = true;
-            }
-        }
-    }
-
     private boolean isMemoryBlockValid(MemoryBlock memoryBlock) {
         return memoryBlock != null && memoryBlock.address() != NULL_PTR;
     }
@@ -680,9 +669,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             onAccess(now, record, creationTime);
 
             ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
-            if (!hasExpiringEntry && ttlMillis > 0) {
-                hasExpiringEntry = true;
-            }
             record.setTtlMillis((int) ttlMillis);
 
             onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);

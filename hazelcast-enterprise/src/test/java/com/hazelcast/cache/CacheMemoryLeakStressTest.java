@@ -73,10 +73,6 @@ import static org.junit.Assert.assertNull;
 @Category(SlowTest.class)
 public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
 
-    static {
-        System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "true");
-    }
-
     private static final int KEY_RANGE = 10000000;
     private static final int MAX_VALUE_SIZE = 1 << 12; // Up to 4K
     private static final int OPERATION_COUNT = 15;

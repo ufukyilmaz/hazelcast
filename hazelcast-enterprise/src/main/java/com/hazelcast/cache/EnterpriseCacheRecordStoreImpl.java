@@ -56,8 +56,6 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                         CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin, completionId));
             }
 
-            updateHasExpiringEntry(record);
-
             if (merged && isStatisticsEnabled()) {
                 statistics.increaseCachePuts(1);
                 statistics.addPutTimeNanos(System.nanoTime() - start);

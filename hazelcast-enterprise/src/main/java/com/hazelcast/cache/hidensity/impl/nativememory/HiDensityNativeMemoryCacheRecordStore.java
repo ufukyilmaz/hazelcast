@@ -832,8 +832,6 @@ public class HiDensityNativeMemoryCacheRecordStore
 
             onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);
 
-            updateHasExpiringEntry(record);
-
             if (merged && isStatisticsEnabled()) {
                 statistics.increaseCachePuts(1);
                 statistics.addPutTimeNanos(System.nanoTime() - start);

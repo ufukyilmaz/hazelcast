@@ -27,6 +27,7 @@ import com.hazelcast.executor.impl.operations.CancellationOperation;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.SimpleMemberImpl;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -36,11 +37,10 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.UuidUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Random;
 
+import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -103,8 +104,8 @@ public class EnterpriseSerializationTest
     @Test
     public void test_callid_on_correct_stream_position() throws Exception {
         SerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
-        CancellationOperation operation = new CancellationOperation(UuidUtil.buildRandomUuidString(), true);
-        operation.setCallerUuid(UuidUtil.buildRandomUuidString());
+        CancellationOperation operation = new CancellationOperation(newUnsecureUuidString(), true);
+        operation.setCallerUuid(newUnsecureUuidString());
         OperationAccessor.setCallId(operation, 12345);
 
         Data data = serializationService.toData(operation);
@@ -124,13 +125,21 @@ public class EnterpriseSerializationTest
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             DummyValue that = (DummyValue) o;
 
-            if (k != that.k) return false;
-            if (s != null ? !s.equals(that.s) : that.s != null) return false;
+            if (k != that.k) {
+                return false;
+            }
+            if (s != null ? !s.equals(that.s) : that.s != null) {
+                return false;
+            }
 
             return true;
         }
@@ -200,9 +209,9 @@ public class EnterpriseSerializationTest
     @Test
     public void testLinkedListSerialization() {
         SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
-        LinkedList linkedList = new LinkedList();
-        linkedList.add(new SerializationConcurrencyTest.Person(35, 180, 100, "Orhan", null));
-        linkedList.add(new SerializationConcurrencyTest.Person(12, 120, 60, "Osman", null));
+        LinkedList<Person> linkedList = new LinkedList<Person>();
+        linkedList.add(new Person(35, 180, 100, "Orhan", null));
+        linkedList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(linkedList);
         LinkedList deserialized = ss.toObject(data);
         assertTrue("Objects are not identical!", linkedList.equals(deserialized));
@@ -211,9 +220,9 @@ public class EnterpriseSerializationTest
     @Test
     public void testArrayListSerialization() {
         SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
-        ArrayList arrayList = new ArrayList();
-        arrayList.add(new SerializationConcurrencyTest.Person(35, 180, 100, "Orhan", null));
-        arrayList.add(new SerializationConcurrencyTest.Person(12, 120, 60, "Osman", null));
+        ArrayList<Person> arrayList = new ArrayList<Person>();
+        arrayList.add(new Person(35, 180, 100, "Orhan", null));
+        arrayList.add(new Person(12, 120, 60, "Osman", null));
         Data data = ss.toData(arrayList);
         ArrayList deserialized = ss.toObject(data);
         assertTrue("Objects are not identical!", arrayList.equals(deserialized));
@@ -225,7 +234,7 @@ public class EnterpriseSerializationTest
         byte[] array = new byte[1024];
         new Random().nextBytes(array);
         Data data = ss.toData(array);
-        byte[] deserialized =  ss.toObject(data);
+        byte[] deserialized = ss.toObject(data);
         assertArrayEquals(array, deserialized);
     }
 
@@ -295,7 +304,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testMemberLeftException_usingMemberImpl() throws IOException, ClassNotFoundException {
-        String uuid = UuidUtil.buildRandomUuidString();
+        String uuid = newUnsecureUuidString();
         String host = "127.0.0.1";
         int port = 5000;
 
@@ -306,7 +315,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testMemberLeftException_usingSimpleMember() throws IOException, ClassNotFoundException {
-        String uuid = UuidUtil.buildRandomUuidString();
+        String uuid = newUnsecureUuidString();
         String host = "127.0.0.1";
         int port = 5000;
 

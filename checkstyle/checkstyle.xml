@@ -295,13 +295,18 @@
             <property name="max" value="50"/>
         </module>
 
-
-
         <!-- Miscellaneous other checks.                   -->
         <!-- See http://checkstyle.sf.net/config_misc.html -->
         <module name="ArrayTypeStyle"/>
         <module name="TodoComment"/>
         <module name="UpperEll"/>
+
+        <!-- Check for usage of UuidUtil instead of UUID -->
+        <module name="RegexpSinglelineJava">
+            <property name="format" value="(import static java\.util\.UUID\.randomUUID|UUID\.randomUUID\(\))"/>
+            <property name="ignoreComments" value="true"/>
+            <property name="message" value="Please use UuidUtil.buildRandomUUID() instead of UUID.randomUUID()!"/>
+        </module>
 
     </module>
 

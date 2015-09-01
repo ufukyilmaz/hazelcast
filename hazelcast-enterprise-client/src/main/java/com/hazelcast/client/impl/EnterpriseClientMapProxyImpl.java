@@ -15,8 +15,8 @@ import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.UuidUtil;
 
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -85,7 +85,7 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
         QueryCacheContext context = getQueryContext();
         QueryCacheRequest request = newQueryCacheRequest()
                 .withUserGivenCacheName(name)
-                .withCacheName(UUID.randomUUID().toString())
+                .withCacheName(UuidUtil.newUnsecureUuidString())
                 .withListener(listener)
                 .withPredicate(predicate)
                 .withIncludeValue(includeValue)

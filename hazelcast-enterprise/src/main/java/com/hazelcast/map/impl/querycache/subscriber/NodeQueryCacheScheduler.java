@@ -4,9 +4,9 @@ import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.querycache.QueryCacheScheduler;
 import com.hazelcast.spi.ExecutionService;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.util.UuidUtil;
 import com.hazelcast.util.executor.ExecutorType;
 
-import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +34,7 @@ public class NodeQueryCacheScheduler implements QueryCacheScheduler {
 
     public NodeQueryCacheScheduler(EnterpriseMapServiceContext mapServiceContext) {
         executionService = getExecutionService(mapServiceContext);
-        executorName = EXECUTOR_NAME_PREFIX + UUID.randomUUID().toString();
+        executorName = EXECUTOR_NAME_PREFIX + UuidUtil.newUnsecureUuidString();
         executionService.register(executorName, 1, EXECUTOR_DEFAULT_QUEUE_CAPACITY, ExecutorType.CACHED);
         scheduledExecutor = executionService.getScheduledExecutor(executorName);
     }

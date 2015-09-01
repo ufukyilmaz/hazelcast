@@ -15,8 +15,7 @@ import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConstructorFunction;
-
-import java.util.UUID;
+import com.hazelcast.util.UuidUtil;
 
 import static com.hazelcast.map.impl.querycache.subscriber.QueryCacheRequests.newQueryCacheRequest;
 import static com.hazelcast.util.Preconditions.checkNotInstanceOf;
@@ -66,7 +65,7 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
 
         QueryCacheRequest request = newQueryCacheRequest()
                 .forMap(map)
-                .withCacheName(UUID.randomUUID().toString())
+                .withCacheName(UuidUtil.newUnsecureUuidString())
                 .withUserGivenCacheName(name)
                 .withListener(listener)
                 .withPredicate(predicate)

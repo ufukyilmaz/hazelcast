@@ -14,7 +14,7 @@ import java.nio.ByteBuffer;
 
 import static com.hazelcast.nio.IOService.KILO_BYTE;
 
-public class SymmetricCipherSocketReader extends MemberSocketReader {
+public class SymmetricCipherMemberReadHandler extends MemberReadHandler {
 
     private final Cipher cipher;
     private final ILogger logger;
@@ -22,15 +22,15 @@ public class SymmetricCipherSocketReader extends MemberSocketReader {
     private ByteBuffer cipherBuffer;
     private int size = -1;
 
-    public SymmetricCipherSocketReader(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
+    public SymmetricCipherMemberReadHandler(TcpIpConnection connection, IOService ioService, PacketDispatcher packetDispatcher) {
         super(connection, packetDispatcher);
         this.ioService = ioService;
         this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
         this.logger = ioService.getLogger(getClass().getName());
-        this.cipher = init();
+        this.cipher = initCipher();
     }
 
-    Cipher init() {
+    Cipher initCipher() {
         try {
             return CipherHelper.createSymmetricReaderCipher(ioService.getSymmetricEncryptionConfig());
         } catch (Exception e) {
@@ -41,7 +41,7 @@ public class SymmetricCipherSocketReader extends MemberSocketReader {
     }
 
     @Override
-    public void read(ByteBuffer src) throws Exception {
+    public void onRead(ByteBuffer src) throws Exception {
         while (src.hasRemaining()) {
             try {
                 if (size == -1) {

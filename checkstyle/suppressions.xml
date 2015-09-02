@@ -43,8 +43,8 @@
     <suppress checks="MagicNumber|MethodLength|MagicNumber|CyclomaticComplexity|EmptyBlock|NPathComplexity"
               files="com/hazelcast/nio/ssl/SSLSocketChannelWrapper"/>
 
-    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherSocketReader"/>
-    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherSocketWriter"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherMemberWriteHandler"/>
+    <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherMemberReadHandler"/>
 
     <!-- HiDensity -->
     <suppress checks="MethodCountCheck|NPathComplexity|CyclomaticComplexity"

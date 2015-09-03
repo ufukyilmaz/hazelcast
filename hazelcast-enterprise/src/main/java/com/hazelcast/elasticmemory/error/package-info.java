@@ -1,4 +1,4 @@
 /**
- * This package contains error classes for the Hazelcast Enterprise feature Elastic Memory (High-Density Memory First Generation).
+ * Contains error classes for the Hazelcast Enterprise feature Elastic Memory (High-Density Memory First Generation).
  */
 package com.hazelcast.elasticmemory.error;

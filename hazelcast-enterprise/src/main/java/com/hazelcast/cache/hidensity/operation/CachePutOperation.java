@@ -52,8 +52,13 @@ public class CachePutOperation
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        serializationService.disposeData(key);
-        serializationService.disposeData(value);
+        // If run is completed successfully, don't dispose key and value since they are handled in the record store.
+        // Although run is completed successfully there may be still error (while sending response, ...), in this case,
+        // unused data (such as key on update) is handled (disposed) through `dispose()` > `disposeDeferredBlocks()`.
+        if (!runCompleted) {
+            serializationService.disposeData(key);
+            serializationService.disposeData(value);
+        }
     }
 
     @Override

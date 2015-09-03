@@ -43,6 +43,7 @@ abstract class AbstractHiDensityCacheOperation
     protected transient HiDensityCacheRecordStore cache;
     protected transient int partitionId;
     protected transient NativeOutOfMemoryError oome;
+    protected transient boolean runCompleted;
 
     protected AbstractHiDensityCacheOperation() {
     }
@@ -117,6 +118,7 @@ abstract class AbstractHiDensityCacheOperation
         } catch (NativeOutOfMemoryError e) {
             forceEvictAndRunInternal();
         }
+        runCompleted = true;
     }
 
     private void forceEvictAndRunInternal() throws Exception {

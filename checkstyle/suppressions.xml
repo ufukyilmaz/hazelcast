@@ -10,11 +10,16 @@
     <suppress checks="StrictDuplicateCode" files=".java" lines="1-15"/>
 
     <!-- TODO: these wildcard suppressions need to be fixed -->
-    <suppress checks="" files="com/hazelcast/elasticmemory/"/>
     <suppress checks="" files="com/hazelcast/enterprise/util/"/>
     <suppress checks="" files="com/hazelcast/security/"/>
     <suppress checks="" files="com/hazelcast/memory/"/>
     <suppress checks="" files="com/hazelcast/elastic/"/>
+
+    <!-- Elastic Memory -->
+    <suppress checks="JavadocMethod" files="com/hazelcast/elasticmemory/"/>
+    <suppress checks="JavadocType" files="com/hazelcast/elasticmemory/"/>
+    <suppress checks="ExecutableStatementCount|NPathComplexity" files="com/hazelcast/elasticmemory/ByteBufferStorage"/>
+    <suppress checks="IllegalImport" files="com/hazelcast/elasticmemory/UnsafeStorage"/>
 
     <!-- NIO -->
     <suppress checks="JavadocMethod" files="com/hazelcast/nio/"/>

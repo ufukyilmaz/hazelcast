@@ -1,10 +1,10 @@
 package com.hazelcast.elasticmemory;
 
+import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.storage.Storage;
 
 import java.io.Closeable;
 import java.util.logging.Level;
@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import static com.hazelcast.util.QuickMath.divideByAndCeilToInt;
 import static com.hazelcast.util.QuickMath.divideByAndCeilToLong;
 
+@SuppressWarnings("unused")
 class ByteBufferStorage implements Storage<DataRefImpl> {
 
     private static final int MIN_SEGMENT_COUNT = 2;
@@ -86,8 +87,8 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
 
     protected final void destroy(final Closeable... resources) {
         for (int i = 0; i < resources.length; i++) {
-            final Closeable resource;
-            if ((resource = resources[i]) != null) {
+            Closeable resource = resources[i];
+            if (resource != null) {
                 try {
                     resources[i] = null;
                     resource.close();

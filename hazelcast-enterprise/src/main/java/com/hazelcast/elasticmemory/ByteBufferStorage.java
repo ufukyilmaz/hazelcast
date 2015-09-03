@@ -7,7 +7,6 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.serialization.Data;
 
 import java.io.Closeable;
-import java.util.logging.Level;
 
 import static com.hazelcast.util.QuickMath.divideByAndCeilToInt;
 import static com.hazelcast.util.QuickMath.divideByAndCeilToLong;
@@ -18,7 +17,8 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
     private static final int MIN_SEGMENT_COUNT = 2;
     private static final long MAX_SEGMENT_SIZE = MemoryUnit.GIGABYTES.toBytes(1);
 
-    private final ILogger logger = Logger.getLogger(getClass().getName());
+    private static final ILogger LOGGER = Logger.getLogger(ByteBufferStorage.class.getName());
+
     private final int segmentCount;
     private final BufferSegment[] segments;
 
@@ -29,6 +29,7 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
         if (chunkSize <= 0) {
             throw new IllegalArgumentException("Chunk size must be positive!");
         }
+
         if (capacity >= MAX_SEGMENT_SIZE * MIN_SEGMENT_COUNT) {
             segmentCount = divideByAndCeilToInt(capacity, (int) MAX_SEGMENT_SIZE);
         } else {
@@ -51,10 +52,10 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
         }
 
         if (sizeAdjusted) {
-            logger.info("Adjusting capacity to: " + capacity + " bytes...");
+            LOGGER.info("Adjusting capacity to: " + capacity + " bytes...");
         }
 
-        logger.info(segmentCount + " off-heap segments (each " + segmentCapacity + " bytes) will be created.");
+        LOGGER.info(segmentCount + " off-heap segments (each " + segmentCapacity + " bytes) will be created.");
         this.segments = new BufferSegment[segmentCount];
         for (int i = 0; i < segmentCount; i++) {
             segments[i] = new BufferSegment((int) segmentCapacity, chunkSize);
@@ -93,7 +94,7 @@ class ByteBufferStorage implements Storage<DataRefImpl> {
                     resources[i] = null;
                     resource.close();
                 } catch (Throwable e) {
-                    logger.log(Level.WARNING, e.getMessage(), e);
+                    LOGGER.warning(e.getMessage(), e);
                 }
             }
         }

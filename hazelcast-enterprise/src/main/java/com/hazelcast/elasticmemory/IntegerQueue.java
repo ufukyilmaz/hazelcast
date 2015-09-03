@@ -2,6 +2,8 @@ package com.hazelcast.elasticmemory;
 
 import com.hazelcast.memory.NativeOutOfMemoryError;
 
+import static java.lang.String.format;
+
 class IntegerQueue {
 
     private static final int NULL_VALUE = -1;
@@ -34,7 +36,7 @@ class IntegerQueue {
         if (size == 0) {
             return NULL_VALUE;
         }
-        final int value = array[remove];
+        int value = array[remove];
         array[remove++] = NULL_VALUE;
         size--;
         if (remove == maxSize) {
@@ -43,11 +45,11 @@ class IntegerQueue {
         return value;
     }
 
-    public int[] poll(final int[] indexes) {
-        final int count = indexes.length;
+    public int[] poll(int[] indexes) {
+        int count = indexes.length;
         if (count > size) {
-            throw new NativeOutOfMemoryError("Queue has " + size + " available chunks. Data requires " + count + " chunks."
-                    + " Storage is full!");
+            throw new NativeOutOfMemoryError(format("Queue has %d available chunks. Data requires %d chunks. Storage is full!",
+                    size, count));
         }
 
         for (int i = 0; i < count; i++) {

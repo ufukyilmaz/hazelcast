@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.String.format;
 
 public class BufferSegment implements Closeable {
 
@@ -24,8 +25,8 @@ public class BufferSegment implements Closeable {
     private static int id;
 
     private final Lock lock = new ReentrantLock();
+    private final Queue<ByteBuffer> bufferPool = new ConcurrentLinkedQueue<ByteBuffer>();
     private final int chunkSize;
-    private final Queue<ByteBuffer> bufferPool;
 
     private IntegerQueue chunks;
 
@@ -33,45 +34,49 @@ public class BufferSegment implements Closeable {
     private volatile ByteBuffer mainBuffer;
 
     public BufferSegment(int capacity, int chunkSize) {
-        this.chunkSize = chunkSize;
-        assertTrue((capacity % chunkSize == 0), "Segment size[" + capacity + "] must be multitude of chunk size["
-                + chunkSize + "]!");
+        assertTrue((capacity % chunkSize == 0), format("Segment size[%d] must be multitude of chunk size[%d]!",
+                capacity, chunkSize));
 
-        final int index = nextId();
+        int index = nextId();
         int chunkCount = capacity / chunkSize;
-        LOGGER.finest("BufferSegment[" + index + "] starting with chunkCount=" + chunkCount);
+        if (LOGGER.isFinestEnabled()) {
+            LOGGER.finest("BufferSegment[" + index + "] starting with chunkCount=" + chunkCount);
+        }
 
-        chunks = new IntegerQueue(chunkCount);
-        mainBuffer = ByteBuffer.allocateDirect(capacity);
+        this.chunkSize = chunkSize;
+        this.chunks = new IntegerQueue(chunkCount);
+        this.mainBuffer = ByteBuffer.allocateDirect(capacity);
+
         for (int i = 0; i < chunkCount; i++) {
             chunks.offer(i);
         }
-        bufferPool = new ConcurrentLinkedQueue<ByteBuffer>();
-        LOGGER.finest("BufferSegment[" + index + "] started!");
+        if (LOGGER.isFinestEnabled()) {
+            LOGGER.finest("BufferSegment[" + index + "] started!");
+        }
     }
 
     private static synchronized int nextId() {
         return id++;
     }
 
-    public DataRefImpl put(final Data data) {
+    public DataRefImpl put(Data data) {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.toByteArray();
+        byte[] value = data.toByteArray();
         if (value == null || value.length == 0) {
             // volatile write;
             return new DataRefImpl(null, 0);
         }
 
-        final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
+        int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
         // volatile read
-        final ByteBuffer buffer = getBuffer();
+        ByteBuffer buffer = getBuffer();
         if (buffer == null) {
             throw new BufferSegmentClosedError();
         }
         // operation under lock
-        final int[] indexes = reserve(count);
+        int[] indexes = reserve(count);
 
         try {
             int offset = 0;
@@ -88,7 +93,7 @@ public class BufferSegment implements Closeable {
         return new DataRefImpl(indexes, value.length);
     }
 
-    public Data get(final DataRefImpl ref) {
+    public Data get(DataRefImpl ref) {
         // volatile read
         if (!isEntryRefValid(ref)) {
             return null;
@@ -97,11 +102,11 @@ public class BufferSegment implements Closeable {
             return new HeapData(null);
         }
 
-        final byte[] value = new byte[ref.size()];
-        final int chunkCount = ref.getChunkCount();
+        byte[] value = new byte[ref.size()];
+        int chunkCount = ref.getChunkCount();
         int offset = 0;
         // volatile read
-        final ByteBuffer buffer = getBuffer();
+        ByteBuffer buffer = getBuffer();
         if (buffer == null) {
             throw new BufferSegmentClosedError();
         }
@@ -125,7 +130,7 @@ public class BufferSegment implements Closeable {
 
     private ByteBuffer getBuffer() {
         // volatile read
-        final ByteBuffer mb = mainBuffer;
+        ByteBuffer mb = mainBuffer;
         if (mb != null) {
             ByteBuffer buff = bufferPool.poll();
             if (buff == null) {
@@ -133,19 +138,19 @@ public class BufferSegment implements Closeable {
             }
             return buff;
         }
-        return  null;
+        return null;
     }
 
-    public void remove(final DataRefImpl ref) {
+    public void remove(DataRefImpl ref) {
         // volatile read
         if (!isEntryRefValid(ref)) {
             return;
         }
         // volatile write
         ref.invalidate();
-        final int chunkCount = ref.getChunkCount();
+        int chunkCount = ref.getChunkCount();
         if (chunkCount > 0) {
-            final int[] indexes = new int[chunkCount];
+            int[] indexes = new int[chunkCount];
             for (int i = 0; i < chunkCount; i++) {
                 indexes[i] = ref.getChunk(i);
             }
@@ -153,7 +158,7 @@ public class BufferSegment implements Closeable {
         }
     }
 
-    private boolean isEntryRefValid(final DataRefImpl ref) {
+    private boolean isEntryRefValid(DataRefImpl ref) {
         //isValid() volatile read
         return ref != null && ref.isValid();
     }
@@ -165,7 +170,7 @@ public class BufferSegment implements Closeable {
     }
 
     public void close() {
-        final ByteBuffer buff = mainBuffer;
+        ByteBuffer buff = mainBuffer;
         // volatile write
         mainBuffer = null;
         bufferPool.clear();
@@ -189,20 +194,20 @@ public class BufferSegment implements Closeable {
         }
     }
 
-    private int[] reserve(final int count) {
+    private int[] reserve(int count) {
         lock.lock();
         try {
             if (chunks == null) {
                 throw new BufferSegmentClosedError();
             }
-            final int[] indexes = new int[count];
+            int[] indexes = new int[count];
             return chunks.poll(indexes);
         } finally {
             lock.unlock();
         }
     }
 
-    private boolean release(final int[] indexes) {
+    private boolean release(int[] indexes) {
         lock.lock();
         try {
             boolean b = true;

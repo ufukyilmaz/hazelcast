@@ -29,6 +29,9 @@ import sun.misc.Unsafe;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.util.QuickMath.divideByAndCeilToLong;
+import static java.lang.String.format;
+
 class UnsafeStorage implements Storage<DataRefImpl> {
 
     private static final ILogger LOGGER = Logger.getLogger(UnsafeStorage.class);
@@ -37,6 +40,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
     private final int chunkSize;
     private final long address;
     private final Runnable cleaner;
+
     private IntegerQueue chunks;
 
     public UnsafeStorage(long capacity, int chunkSize) {
@@ -49,16 +53,15 @@ class UnsafeStorage implements Storage<DataRefImpl> {
 
         this.chunkSize = chunkSize;
         if (capacity % chunkSize != 0) {
-            capacity = QuickMath.divideByAndCeilToLong(capacity, chunkSize) * chunkSize;
+            capacity = divideByAndCeilToLong(capacity, chunkSize) * chunkSize;
         }
-
-        assertTrue((capacity % chunkSize == 0), "Storage size[" + capacity
-                + "] must be multitude of chunk size[" + chunkSize + "]!");
+        assertTrue((capacity % chunkSize == 0), format("Storage size[%d] must be multitude of chunk size[%d]!",
+                capacity, chunkSize));
 
         long cc = capacity / chunkSize;
         if (cc > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("Chunk count limit exceeded; max: " + Integer.MAX_VALUE
-                    + ", required: " + cc + "! Please increment chunk size to a greater value than " + chunkSize + "KB.");
+            throw new IllegalArgumentException(format("Chunk count limit exceeded; max: %d, required: %d!"
+                    + " Please increment chunk size to a greater value than %d kilobytes.", Integer.MAX_VALUE, cc, chunkSize));
         }
 
         Unsafe unsafe = UnsafeHelper.UNSAFE;
@@ -82,19 +85,19 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         LOGGER.finest("UnsafeStorage started!");
     }
 
-    public DataRefImpl put(int hash, final Data data) {
+    public DataRefImpl put(int hash, Data data) {
         if (data == null) {
             return null;
         }
-        final byte[] value = data.toByteArray();
+        byte[] value = data.toByteArray();
         if (value == null || value.length == 0) {
             // volatile write
             return new DataRefImpl(null, 0);
         }
 
-        final int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
+        int count = QuickMath.divideByAndCeilToInt(value.length, chunkSize);
         // operation under lock
-        final int[] indexes = reserve(count);
+        int[] indexes = reserve(count);
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         int offset = 0;
         for (int i = 0; i < count; i++) {
@@ -107,7 +110,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         return new DataRefImpl(indexes, value.length);
     }
 
-    public Data get(int hash, final DataRefImpl ref) {
+    public Data get(int hash, DataRefImpl ref) {
         // volatile read
         if (!isEntryRefValid(ref)) {
             return null;
@@ -116,8 +119,8 @@ class UnsafeStorage implements Storage<DataRefImpl> {
             return new HeapData(null);
         }
 
-        final byte[] value = new byte[ref.size()];
-        final int chunkCount = ref.getChunkCount();
+        byte[] value = new byte[ref.size()];
+        int chunkCount = ref.getChunkCount();
         int offset = 0;
         Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < chunkCount; i++) {
@@ -134,16 +137,16 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         return null;
     }
 
-    public void remove(int hash, final DataRefImpl ref) {
+    public void remove(int hash, DataRefImpl ref) {
         // volatile read
         if (!isEntryRefValid(ref)) {
             return;
         }
         // volatile write
         ref.invalidate();
-        final int chunkCount = ref.getChunkCount();
+        int chunkCount = ref.getChunkCount();
         if (chunkCount > 0) {
-            final int[] indexes = new int[chunkCount];
+            int[] indexes = new int[chunkCount];
             for (int i = 0; i < chunkCount; i++) {
                 indexes[i] = ref.getChunk(i);
             }
@@ -151,7 +154,7 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         }
     }
 
-    private boolean isEntryRefValid(final DataRefImpl ref) {
+    private boolean isEntryRefValid(DataRefImpl ref) {
         //isValid() volatile read
         return ref != null && ref.isValid();
     }
@@ -172,20 +175,20 @@ class UnsafeStorage implements Storage<DataRefImpl> {
         cleaner.run();
     }
 
-    private int[] reserve(final int count) {
+    private int[] reserve(int count) {
         lock.lock();
         try {
             if (chunks == null) {
                 throw new BufferSegmentClosedError();
             }
-            final int[] indexes = new int[count];
+            int[] indexes = new int[count];
             return chunks.poll(indexes);
         } finally {
             lock.unlock();
         }
     }
 
-    private boolean release(final int[] indexes) {
+    private boolean release(int[] indexes) {
         lock.lock();
         try {
             boolean b = true;

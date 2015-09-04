@@ -7,7 +7,7 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.mapreduce.helpers.Employee;
@@ -61,11 +61,10 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
                 expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
     }
 
-
     @Test
     public void testQueryCache_withLocalListener() throws Exception {
         String cacheName = randomString();
-        config = new Config().setProperty(GroupProperties.PROP_PARTITION_COUNT, "1");
+        config = new Config().setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         for (int i = 0; i < 30; i++) {
             map.put(i, i);
@@ -84,7 +83,6 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
                 countRemoveEvent.incrementAndGet();
             }
         }, new SqlPredicate("this > 20"), true);
-
 
         for (int i = 0; i < 30; i++) {
             map.remove(i);
@@ -109,7 +107,6 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
             }
         });
     }
-
 
     @Test
     public void testQueryCacheCleared_afterCalling_IMap_evictAll() throws Exception {
@@ -257,5 +254,4 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
             }
         });
     }
-
 }

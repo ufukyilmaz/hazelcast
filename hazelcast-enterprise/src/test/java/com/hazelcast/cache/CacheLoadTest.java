@@ -64,7 +64,7 @@ public class CacheLoadTest extends AbstractCacheTest {
     @Override
     protected final Config createConfig() {
         Config config = new Config();
-        config.setProperties(getProperties());
+        setProperties(config);
 
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);

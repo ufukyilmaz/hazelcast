@@ -73,7 +73,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         logger = node.getLogger("com.hazelcast.enterprise.initializer");
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-        String licenseKey = node.groupProperties.ENTERPRISE_LICENSE_KEY.getString();
+        String licenseKey = node.groupProperties.getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
@@ -95,9 +95,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     private void createStorage(Node node) {
-        if (node.groupProperties.ELASTIC_MEMORY_ENABLED.getBoolean()) {
+        if (node.groupProperties.getBoolean(GroupProperty.ELASTIC_MEMORY_ENABLED)) {
             StorageFactory storageFactory;
-            if (node.groupProperties.ELASTIC_MEMORY_SHARED_STORAGE.getBoolean()) {
+            if (node.groupProperties.getBoolean(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE)) {
                 logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
                 storageFactory = new SingletonStorageFactory();
             } else {

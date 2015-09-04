@@ -5,7 +5,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -13,7 +13,6 @@ import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.AbstractWanReplicationTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.BrokenBarrierException;
@@ -513,7 +512,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     }
 
     private void disableElasticMemory(Config config) {
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "false");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
     }
 
 }

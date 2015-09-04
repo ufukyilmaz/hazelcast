@@ -4,7 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
@@ -17,6 +17,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
+import static com.hazelcast.enterprise.SampleLicense.EXPIRED_ENTERPRISE_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -61,7 +65,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseValid() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
@@ -72,8 +76,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseValidWithoutHumanReadablePart() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY,
-                    SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
@@ -83,21 +86,21 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseNotFound() {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, "blabla");
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, "blabla");
         createHazelcastInstance(config);
     }
 
     @Test(expected = InvalidLicenseException.class)
     public void testEnterpriseLicenseExpired() {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.EXPIRED_ENTERPRISE_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, EXPIRED_ENTERPRISE_LICENSE);
         createHazelcastInstance(config);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testNumberOfAllowedNodes() {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.TWO_NODES_ENTERPRISE_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
 
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
@@ -113,7 +116,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testSecurityOnlyLicenseOnlyUsesOpenSourceWANReplication() {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.SECURITY_ONLY_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
         HazelcastInstance h = createHazelcastInstance(config);
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);

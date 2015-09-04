@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise;
 
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.FrameworkMethod;
@@ -17,13 +17,13 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
 
     @Override
     protected void runChild(FrameworkMethod method, RunNotifier notifier) {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.UNLIMITED_LICENSE);
         super.runChild(method, notifier);
     }
 
     @Override
     public void run(RunNotifier notifier) {
-        System.setProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.UNLIMITED_LICENSE);
         super.run(notifier);
     }
 }

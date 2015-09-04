@@ -7,7 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.test.AssertTask;
@@ -30,7 +30,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_PARTITION_COUNT, "271");
+        config.setProperty(GroupProperty.PARTITION_COUNT, "271");
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);
         queryCacheConfig.setBatchSize(100);
@@ -63,7 +63,6 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
             map3.put(i, i);
         }
 
-
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -71,7 +70,6 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
             }
         });
     }
-
 
     @Test
     public void continuesToReceiveEvents_afterNodeShutdown() throws Exception {
@@ -111,9 +109,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
             map3.put(i, i);
         }
 
-
         node3.shutdown();
-
 
         for (int i = 220; i < 227; i++) {
             map2.put(i, i);
@@ -126,5 +122,4 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
             }
         });
     }
-
 }

@@ -3,7 +3,7 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -14,7 +14,7 @@ public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTes
     @Test
     public void recoverFromConnectionFailure() {
         initConfigA();
-        configA.setProperty(GroupProperties.PROP_ENTERPRISE_WAN_REP_QUEUE_CAPACITY, "100");
+        configA.setProperty(GroupProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY, "100");
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
         initCluster(singleNodeA, configA);

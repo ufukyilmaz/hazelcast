@@ -10,7 +10,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -174,11 +174,11 @@ public class OffHeapStorageTest {
     private void testMapStorageFull(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            c.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
@@ -208,11 +208,11 @@ public class OffHeapStorageTest {
     private void testMapStorageOom(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            c.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
@@ -237,11 +237,11 @@ public class OffHeapStorageTest {
     private void testMapStorageAfterDestroy(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            c.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
@@ -273,11 +273,11 @@ public class OffHeapStorageTest {
     private void testMapStorageAfterRemove(boolean useUnsafe) {
         Config c = new Config();
         c.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            c.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
@@ -320,11 +320,11 @@ public class OffHeapStorageTest {
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setTimeToLiveSeconds(1);
 
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        c.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            c.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            c.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(c);
 
@@ -354,18 +354,18 @@ public class OffHeapStorageTest {
         Config c1 = new Config();
         c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c1.getGroupConfig().setName("dev1");
-        c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
+        c1.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c1.setProperty(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
         c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c2.getGroupConfig().setName("dev2");
-        c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
+        c2.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c2.setProperty(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         try {
-            System.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-            System.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+            GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.setSystemProperty("1M");
+            GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.setSystemProperty("1K");
 
             HazelcastInstance hz = Hazelcast.newHazelcastInstance(c1);
             HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(c2);
@@ -378,8 +378,8 @@ public class OffHeapStorageTest {
 
             hz2.getMap("test").put(1, value);
         } finally {
-            System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE);
-            System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE);
+            GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.clearSystemProperty();
+            GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.clearSystemProperty();
         }
     }
 
@@ -388,18 +388,18 @@ public class OffHeapStorageTest {
         Config c1 = new Config();
         c1.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c1.getGroupConfig().setName("dev1");
-        c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c1.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
+        c1.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c1.setProperty(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         Config c2 = new Config();
         c2.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
         c2.getGroupConfig().setName("dev2");
-        c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        c2.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_SHARED_STORAGE, "true");
+        c2.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        c2.setProperty(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE, "true");
 
         try {
-            System.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-            System.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+            GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.setSystemProperty("1M");
+            GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.setSystemProperty("1K");
 
             HazelcastInstance hz = Hazelcast.newHazelcastInstance(c1);
             HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(c2);
@@ -417,11 +417,10 @@ public class OffHeapStorageTest {
             }
 
         } finally {
-            System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE);
-            System.clearProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE);
+            GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE.clearSystemProperty();
+            GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE.clearSystemProperty();
         }
     }
-
 
     @Test
     public void testEmptyData1() {
@@ -436,11 +435,11 @@ public class OffHeapStorageTest {
     private void testEmptyData(boolean useUnsafe) {
         final Config config = new Config();
         config.getMapConfig("default").setInMemoryFormat(InMemoryFormat.NATIVE);
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_ENABLED, "true");
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_TOTAL_SIZE, "1M");
-        config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_CHUNK_SIZE, "1K");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "true");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_TOTAL_SIZE, "1M");
+        config.setProperty(GroupProperty.ELASTIC_MEMORY_CHUNK_SIZE, "1K");
         if (useUnsafe) {
-            config.setProperty(GroupProperties.PROP_ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
+            config.setProperty(GroupProperty.ELASTIC_MEMORY_UNSAFE_ENABLED, "true");
         }
 
         config.getSerializationConfig().setGlobalSerializerConfig(new GlobalSerializerConfig()

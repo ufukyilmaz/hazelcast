@@ -10,7 +10,7 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.instance.GroupProperties;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
@@ -40,7 +40,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         initSocketInterceptor(networkConfig.getSocketInterceptorConfig());
         String licenseKey = clientConfig.getLicenseKey();
         if (licenseKey == null) {
-            licenseKey = clientConfig.getProperty(GroupProperties.PROP_ENTERPRISE_LICENSE_KEY);
+            licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
         }
         LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE,
                 LicenseType.ENTERPRISE_SECURITY_ONLY);

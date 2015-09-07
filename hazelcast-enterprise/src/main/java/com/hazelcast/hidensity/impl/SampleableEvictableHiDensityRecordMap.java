@@ -1,9 +1,9 @@
 package com.hazelcast.hidensity.impl;
 
-import com.hazelcast.cache.impl.eviction.Evictable;
-import com.hazelcast.cache.impl.eviction.EvictionCandidate;
-import com.hazelcast.cache.impl.eviction.Expirable;
-import com.hazelcast.cache.impl.eviction.impl.strategy.sampling.SampleableEvictableStore;
+import com.hazelcast.internal.eviction.Evictable;
+import com.hazelcast.internal.eviction.EvictionCandidate;
+import com.hazelcast.internal.eviction.Expirable;
+import com.hazelcast.internal.eviction.impl.strategy.sampling.SampleableEvictableStore;
 import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;

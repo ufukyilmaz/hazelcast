@@ -22,7 +22,7 @@
         <name>dev</name>
         <password>dev-pass</password>
     </group>
-    <license-key>SecurityOnlyEnterprise#3iJN6wEk1AUOfHRSV7j05yKr10x2G01Zv0h00000W0DX1000005002401v90</license-key>
+    <license-key>SecurityOnlyEnterprise#lwFJB1f5k07Ra3ISENKAmyOjrb160000L3090010106029M9q3002010WD0Q</license-key>
     <management-center enabled="false">http://localhost:8080/mancenter</management-center>
     <network>
         <port auto-increment="true" port-count="100">5701</port>

@@ -7,14 +7,12 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,6 +21,9 @@ import org.junit.runner.RunWith;
 
 import javax.cache.Cache;
 import javax.cache.CacheManager;
+
+import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.TWO_GB_NATIVE_MEMORY_LICENSE;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -37,7 +38,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         config = new Config();
         config.getNativeMemoryConfig().setEnabled(true);
         config.getNativeMemoryConfig().setSize(MemorySize.parse("1", MemoryUnit.GIGABYTES));
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.TWO_GB_NATIVE_MEMORY_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(TWO_GB_NATIVE_MEMORY_LICENSE);
     }
 
     @After
@@ -55,7 +56,7 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void node_should_not_start_with_security_only_license() {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.SECURITY_ONLY_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SECURITY_ONLY_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         configureCacheWithNativeMemory(factory);
         factory.newHazelcastInstance(config);//This node should not start with HD memory

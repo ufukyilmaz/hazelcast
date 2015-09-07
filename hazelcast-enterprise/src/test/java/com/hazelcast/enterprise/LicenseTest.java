@@ -19,11 +19,13 @@ import org.junit.runner.RunWith;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
 import static com.hazelcast.enterprise.SampleLicense.EXPIRED_ENTERPRISE_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_DIFFERENT_VERSION;
+import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -129,5 +131,19 @@ public class LicenseTest extends HazelcastTestSupport {
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
         assertTrue(wanReplicationService instanceof EnterpriseWanReplicationService);
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testLicenseInvalidForDifferentHZVersion() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_DIFFERENT_VERSION);
+        createHazelcastInstance(config);
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testLicenseInvalidForSmallerHZVersion() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
+        createHazelcastInstance(config);
     }
 }

@@ -9,9 +9,9 @@ import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.Partition;
-import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.logging.ILogger;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -21,6 +21,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 /**
  * A simple test of a map with ssl connections.
@@ -43,7 +45,7 @@ public final class SSLSimpleMapTest {
     private final boolean load;
 
     static {
-        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SampleLicense.UNLIMITED_LICENSE);
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);
         System.setProperty("hazelcast.version.check.enabled", "false");
         System.setProperty("java.net.preferIPv4Stack", "true");
     }

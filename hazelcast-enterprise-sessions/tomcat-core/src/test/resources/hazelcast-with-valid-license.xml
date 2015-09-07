@@ -22,7 +22,7 @@
         <name>dev</name>
         <password>dev-pass</password>
     </group>
-    <license-key>HazelcastEnterprise#10Nodes#10Clients#HDMemory:2GB#B3FIOyTNJRwSi1657mruVU0k96d0001000000C0250hz100v1012Zz20022G</license-key>
+    <license-key>HazelcastEnterprise#9999Nodes#9999Clients#HDMemory:99999999GB#wVm0a1TKjFy7b5HASNf6R3BIlU179990WY9999999G9019199n99923369i9</license-key>
     <management-center enabled="false">http://localhost:8080/mancenter</management-center>
     <network>
         <port auto-increment="true" port-count="100">5701</port>

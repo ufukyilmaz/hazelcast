@@ -11,6 +11,8 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.instance.BuildInfo;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
@@ -42,8 +44,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
         }
-        LicenseHelper.checkLicenseKey(licenseKey, LicenseType.ENTERPRISE,
-                LicenseType.ENTERPRISE_SECURITY_ONLY);
+
+        final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+        LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
+                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
     }
 
     @Override

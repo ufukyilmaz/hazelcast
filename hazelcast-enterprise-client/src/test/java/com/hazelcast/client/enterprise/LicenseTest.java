@@ -20,6 +20,8 @@ import java.io.IOException;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
 import static com.hazelcast.enterprise.SampleLicense.EXPIRED_ENTERPRISE_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_DIFFERENT_VERSION;
+import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.util.StringUtil.stringToBytes;
@@ -141,6 +143,40 @@ public class LicenseTest extends HazelcastTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
+
+        factory.newHazelcastClient(clientConfig);
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testLicenseInvalidForDifferentHZVersion() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY,
+                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        assertSizeEventually(2, h2.getCluster().getMembers());
+        assertSizeEventually(2, h1.getCluster().getMembers());
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_DIFFERENT_VERSION);
+
+        factory.newHazelcastClient(clientConfig);
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testClientWithSmallerHZVersion() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY,
+                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        assertSizeEventually(2, h2.getCluster().getMembers());
+        assertSizeEventually(2, h1.getCluster().getMembers());
+
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
 
         factory.newHazelcastClient(clientConfig);
     }

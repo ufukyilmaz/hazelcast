@@ -19,7 +19,7 @@
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <properties>
-        <property name="hazelcast.enterprise.license.key">HazelcastEnterprise#9999Nodes#9999Clients#HDMemory:99999999GB#w7yAkRj1IbHcBfVimEOuKr638599939999peZ319999z05999Wn149zGxG09</property>
+        <property name="hazelcast.enterprise.license.key">HazelcastEnterprise#9999Nodes#9999Clients#HDMemory:99999999GB#wVm0a1TKjFy7b5HASNf6R3BIlU179990WY9999999G9019199n99923369i9</property>
     </properties>
 
 </hazelcast-client>

@@ -19,7 +19,7 @@
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <properties>
-        <property name="hazelcast.enterprise.license.key">SecurityOnlyEnterprise#3iJN6wEk1AUOfHRSV7j05yKr10x2G01Zv0h00000W0DX1000005002401v90</property>
+        <property name="hazelcast.enterprise.license.key">SecurityOnlyEnterprise#lwFJB1f5k07Ra3ISENKAmyOjrb160000L3090010106029M9q3002010WD0Q</property>
     </properties>
 
 </hazelcast-client>

@@ -12,17 +12,21 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.tcp.FirewallingMockConnectionManager;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateRandomString;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NativeMemPartitionedCluster {
+    private static final String SUCCESSFUL_SPLIT_TEST_QUORUM_NAME = "SUCCESSFULL_SPLIT_TEST_QUORUM";
     protected TestHazelcastInstanceFactory factory;
     public HazelcastInstance h1;
     public HazelcastInstance h2;
@@ -47,8 +51,8 @@ public class NativeMemPartitionedCluster {
         config.addCacheConfig(cacheSimpleConfig);
         config.addQuorumConfig(quorumConfig);
         config.setNativeMemoryConfig(new NativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES)));
+        config.addQuorumConfig(createSuccessfulSplitTestQuorum());
         createInstances(config);
-
         return this;
     }
 
@@ -75,7 +79,23 @@ public class NativeMemPartitionedCluster {
         assertEquals(3, h3.getCluster().getMembers().size());
         assertEquals(2, h4.getCluster().getMembers().size());
         assertEquals(2, h5.getCluster().getMembers().size());
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertFalse(h4.getQuorumService().getQuorum(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME).isPresent());
+                assertFalse(h5.getQuorumService().getQuorum(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME).isPresent());
+            }
+        });
         return this;
+    }
+
+    private QuorumConfig createSuccessfulSplitTestQuorum() {
+        QuorumConfig splitConfig = new QuorumConfig();
+        splitConfig.setEnabled(true);
+        splitConfig.setSize(3);
+        splitConfig.setName(SUCCESSFUL_SPLIT_TEST_QUORUM_NAME);
+        return splitConfig;
     }
 
     private void createInstances(Config config) {

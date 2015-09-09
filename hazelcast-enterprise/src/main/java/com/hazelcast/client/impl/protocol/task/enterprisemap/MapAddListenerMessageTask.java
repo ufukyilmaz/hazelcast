@@ -59,7 +59,7 @@ public class MapAddListenerMessageTask
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
         String registrationId = mapServiceContext.addListenerAdapter(adapter, EMPTY_FILTER, parameters.listenerName);
-        endpoint.setListenerRegistration(MapService.SERVICE_NAME, parameters.listenerName, registrationId);
+        endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, parameters.listenerName, registrationId);
         return registrationId;
     }
 

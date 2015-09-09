@@ -1,5 +1,7 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
+import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.spi.EventFilter;

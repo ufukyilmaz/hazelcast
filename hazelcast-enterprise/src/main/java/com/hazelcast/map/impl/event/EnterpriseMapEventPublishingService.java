@@ -1,8 +1,10 @@
-package com.hazelcast.map.impl;
+package com.hazelcast.map.impl.event;
 
 import com.hazelcast.core.IMapEvent;
 import com.hazelcast.core.Member;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.map.impl.ListenerAdapter;
+import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
 import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
@@ -17,12 +19,12 @@ import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.
  * Includes enterprise extensions to {@link MapEventPublishingService} like {@link com.hazelcast.map.QueryCache QueryCache}
  * specific event-data dispatching functionality.
  */
-class EnterpriseMapEventPublishingService extends MapEventPublishingService {
+public class EnterpriseMapEventPublishingService extends MapEventPublishingService {
 
     private final Member member;
     private final SerializationService serializationService;
 
-    protected EnterpriseMapEventPublishingService(MapServiceContext mapServiceContext) {
+    public EnterpriseMapEventPublishingService(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
         this.member = mapServiceContext.getNodeEngine().getLocalMember();
         this.serializationService = mapServiceContext.getNodeEngine().getSerializationService();

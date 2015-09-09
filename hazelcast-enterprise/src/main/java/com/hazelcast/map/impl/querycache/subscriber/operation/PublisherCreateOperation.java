@@ -1,9 +1,9 @@
 package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.MapContextQuerySupport;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.AbstractMapOperation;
+import com.hazelcast.map.impl.query.MapQueryEngine;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
@@ -148,9 +148,9 @@ public class PublisherCreateOperation extends AbstractMapOperation {
 
     private QueryResultSet runInitialQuery() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        MapContextQuerySupport mapContextQuerySupport = mapServiceContext.getMapContextQuerySupport();
+        MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine();
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
-        return (QueryResultSet) mapContextQuerySupport.queryLocalMember(name, info.getPredicate(), iterationType, true);
+        return (QueryResultSet) queryEngine.queryLocalMember(name, info.getPredicate(), iterationType, true);
     }
 
     /**

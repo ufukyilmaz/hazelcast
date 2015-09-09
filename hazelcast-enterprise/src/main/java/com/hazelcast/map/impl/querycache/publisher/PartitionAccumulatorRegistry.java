@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.publisher;
 
-import com.hazelcast.map.impl.QueryEventFilter;
 import com.hazelcast.map.impl.SyntheticEventFilter;
+import com.hazelcast.map.impl.query.QueryEventFilter;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.Registry;

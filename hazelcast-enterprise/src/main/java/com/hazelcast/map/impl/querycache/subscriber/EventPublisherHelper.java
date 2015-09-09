@@ -8,7 +8,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.DataAwareEntryEvent;
 import com.hazelcast.map.impl.EntryEventFilter;
-import com.hazelcast.map.impl.EventData;
+import com.hazelcast.map.impl.event.EventData;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;

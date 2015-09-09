@@ -1,7 +1,10 @@
-package com.hazelcast.map.impl;
+package com.hazelcast.map.impl.event;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.event.DefaultQueryCacheEventData;
@@ -27,10 +30,10 @@ import static com.hazelcast.util.Preconditions.checkInstanceOf;
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
  */
-class EnterpriseMapEventPublisherImpl
+public class EnterpriseMapEventPublisherImpl
         extends MapEventPublisherImpl {
 
-    protected EnterpriseMapEventPublisherImpl(MapServiceContext mapServiceContext) {
+    public EnterpriseMapEventPublisherImpl(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 

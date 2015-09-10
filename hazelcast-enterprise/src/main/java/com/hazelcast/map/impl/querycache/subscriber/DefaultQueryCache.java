@@ -5,7 +5,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EntryEventFilter;
-import com.hazelcast.map.impl.QueryEventFilter;
+import com.hazelcast.map.impl.query.QueryEventFilter;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.NodeInvokerWrapper;
 import com.hazelcast.map.impl.querycache.QueryCacheConfigurator;

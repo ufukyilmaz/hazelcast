@@ -158,7 +158,6 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
-                        ${extraVmArgs}
                         -Xms128m -Xmx512m -XX:MaxPermSize=1024M
                         -Dhazelcast.version.check.enabled=false
                         -Dhazelcast.mancenter.enabled=false
@@ -239,7 +238,6 @@
             <id>test-coverage</id>
             <properties>
                 <argLine>
-                    ${extraVmArgs}
                     -Xms128m -Xmx1G -XX:MaxPermSize=1024M
                     -Dhazelcast.version.check.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -271,7 +269,6 @@
             <id>nightly-build</id>
             <properties>
                 <argLine>
-                    ${extraVmArgs}
                     -Xms128m -Xmx1G -XX:MaxPermSize=1024M
                     -Dhazelcast.version.check.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -309,7 +306,6 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <argLine>
-                                ${extraVmArgs}
                                 -Xms128m -Xmx1G
                                 -Dhazelcast.version.check.enabled=false
                                 -Dhazelcast.mancenter.enabled=false

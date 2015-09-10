@@ -23,87 +23,86 @@ public class SemaphoreSecurityInterceptorTest extends BaseInterceptorTest {
         objectName = randomString();
         semaphore = client.getSemaphore(objectName);
         semaphore.init(100);
-        interceptor.reset();
     }
 
     @Test
     public void init() {
         final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "init", permit);
         semaphore.init(permit);
-        interceptor.assertMethod(getObjectType(), objectName, "init", permit);
     }
 
     @Test
     public void test1_acquire() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "acquire", 1);
         semaphore.acquire();
-        interceptor.assertMethod(getObjectType(), objectName, "acquire",1);
     }
 
     @Test
     public void test2_acquire() throws InterruptedException {
         final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "acquire", permit);
         semaphore.acquire(permit);
-        interceptor.assertMethod(getObjectType(), objectName, "acquire", permit);
     }
 
     @Test
     public void availablePermits() {
+        interceptor.setExpectation(getObjectType(), objectName, "availablePermits");
         semaphore.availablePermits();
-        interceptor.assertMethod(getObjectType(), objectName, "availablePermits");
     }
 
     @Test
     public void drainPermits() {
+        interceptor.setExpectation(getObjectType(), objectName, "drainPermits");
         semaphore.drainPermits();
-        interceptor.assertMethod(getObjectType(), objectName, "drainPermits");
     }
 
     @Test
     public void reducePermits() {
         final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "reducePermits", permit);
         semaphore.reducePermits(permit);
-        interceptor.assertMethod(getObjectType(), objectName, "reducePermits", permit);
     }
 
     @Test
     public void test1_release() {
+        interceptor.setExpectation(getObjectType(), objectName, "release", 1);
         semaphore.release();
-        interceptor.assertMethod(getObjectType(), objectName, "release",1);
     }
 
     @Test
     public void test2_release() {
         final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "release", permit);
         semaphore.release(permit);
-        interceptor.assertMethod(getObjectType(), objectName, "release", permit);
     }
 
     @Test
     public void test1_tryAcquire() {
+        interceptor.setExpectation(getObjectType(), objectName, "tryAcquire", 1);
         semaphore.tryAcquire();
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire",1);
     }
 
     @Test
     public void test2_tryAcquire() {
         final int permit = randomInt(100) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "tryAcquire", permit);
         semaphore.tryAcquire(permit);
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit);
     }
 
     @Test
     public void test3_tryAcquire() throws InterruptedException {
         final long timeout = randomLong() + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "tryAcquire", 1, timeout, TimeUnit.MILLISECONDS);
         semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", 1,timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test4_tryAcquire() throws InterruptedException {
         final int permit = randomInt(100) + 1;
         final long timeout = randomLong() + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "tryAcquire", permit, timeout, TimeUnit.MILLISECONDS);
         semaphore.tryAcquire(permit, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryAcquire", permit, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Override

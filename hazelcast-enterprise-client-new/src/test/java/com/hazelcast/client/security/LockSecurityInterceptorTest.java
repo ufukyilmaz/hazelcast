@@ -25,97 +25,90 @@ public class LockSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void isLocked() {
+        interceptor.setExpectation(getObjectType(), objectName, "isLocked");
         lock.isLocked();
-        interceptor.assertMethod(getObjectType(), objectName, "isLocked");
     }
 
     @Test
     public void isLockedByCurrentThread() {
+        interceptor.setExpectation(getObjectType(), objectName, "isLockedByCurrentThread");
         lock.isLockedByCurrentThread();
-        interceptor.assertMethod(getObjectType(), objectName, "isLockedByCurrentThread");
     }
 
     @Test
     public void getLockCount() {
+        interceptor.setExpectation(getObjectType(), objectName, "getLockCount");
         lock.getLockCount();
-        interceptor.assertMethod(getObjectType(), objectName, "getLockCount");
     }
 
     @Test
     public void getRemainingLeaseTime() {
+        interceptor.setExpectation(getObjectType(), objectName, "getRemainingLeaseTime");
         lock.getRemainingLeaseTime();
-        interceptor.assertMethod(getObjectType(), objectName, "getRemainingLeaseTime");
     }
 
     @Test
     public void test1_lock() {
+        interceptor.setExpectation(getObjectType(), objectName, "lock");
         lock.lock();
-        interceptor.assertMethod(getObjectType(), objectName, "lock");
     }
 
     @Test
     public void tesLockWithPositiveTTL() {
         final long ttl = randomLong() + 1;
-        lock.lock(ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "lock", ttl, TimeUnit.MILLISECONDS);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testLockWithZeroTTL() {
-        final long ttl = 0;
+        interceptor.setExpectation(getObjectType(), objectName, "lock", ttl, TimeUnit.MILLISECONDS);
         lock.lock(ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void forceUnlock() {
+        interceptor.setExpectation(getObjectType(), objectName, "forceUnlock");
         lock.forceUnlock();
-        interceptor.assertMethod(getObjectType(), objectName, "forceUnlock");
     }
 
     @Test
     public void unlock() {
         lock.lock();
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "unlock");
         lock.unlock();
-        interceptor.assertMethod(getObjectType(), objectName, "unlock");
     }
 
     @Test
     public void test1_tryLock() {
+        interceptor.setExpectation(getObjectType(), objectName, "tryLock", 0l, TimeUnit.MILLISECONDS);
+        // lock.tryLock() == lock.tryLock(0,,TimeUnit.MILLISECONDS) so i pass those parameters into setExpectation
         lock.tryLock();
-        // lock.tryLock() == lock.tryLock(0,,TimeUnit.MILLISECONDS) so i pass those parameters into assertMethod
-        interceptor.assertMethod(getObjectType(), objectName, "tryLock",0l,TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test2_tryLock() throws InterruptedException {
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "tryLock", ttl, TimeUnit.MILLISECONDS);
         lock.tryLock(ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryLock", ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test_condition_await() throws InterruptedException {
         ICondition iCondition = lock.newCondition(randomString());
         lock.lock();
+        interceptor.setExpectation(getObjectType(), objectName, "await", 1l, TimeUnit.MILLISECONDS);
         iCondition.await(1, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "await", 1l, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test_condition_signal() throws InterruptedException {
         ICondition iCondition = lock.newCondition(randomString());
         lock.lock();
+        interceptor.setExpectation(getObjectType(), objectName, "signal");
         iCondition.signal();
-        interceptor.assertMethod(getObjectType(), objectName, "signal");
     }
 
     @Test
     public void test_condition_signalAll() throws InterruptedException {
         ICondition iCondition = lock.newCondition(randomString());
         lock.lock();
+        interceptor.setExpectation(getObjectType(), objectName, "signalAll");
         iCondition.signalAll();
-        interceptor.assertMethod(getObjectType(), objectName, "signalAll");
     }
 
     @Override

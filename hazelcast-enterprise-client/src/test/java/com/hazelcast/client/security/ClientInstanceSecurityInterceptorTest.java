@@ -2,82 +2,55 @@
 
 package com.hazelcast.client.security;
 
-import com.hazelcast.core.DistributedObjectEvent;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.PartitionService;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.partition.InternalPartitionService;
-import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.partition.PartitionLostListener;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static org.mockito.Mockito.mock;
+
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class ClientInstanceSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Test
     public void addPartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
-        partitionService.addPartitionLostListener(new PartitionLostListener() {
-            @Override
-            public void partitionLost(PartitionLostEvent event) {
-
-            }
-        });
-        interceptor.assertMethod(InternalPartitionService.SERVICE_NAME, null, "addPartitionLostListener");
+        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "addPartitionLostListener");
+        partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
     }
 
     @Test
     public void removePartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
-        String registrationID = partitionService.addPartitionLostListener(new PartitionLostListener() {
-            @Override
-            public void partitionLost(PartitionLostEvent event) {
-
-            }
-        });
+        String registrationID = partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
+        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "removePartitionLostListener", registrationID);
         partitionService.removePartitionLostListener(registrationID);
-        interceptor.assertMethod(InternalPartitionService.SERVICE_NAME, null, "removePartitionLostListener", registrationID);
     }
 
     @Test
     public void addDistributedObjectListener() {
-        client.addDistributedObjectListener(new DistributedObjectListener() {
-            @Override
-            public void distributedObjectCreated(DistributedObjectEvent event) {
-
-            }
-
-            @Override
-            public void distributedObjectDestroyed(DistributedObjectEvent event) {
-
-            }
-        });
-        interceptor.assertMethod(ProxyServiceImpl.SERVICE_NAME, null, "addDistributedObjectListener");
+        interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "addDistributedObjectListener");
+        client.addDistributedObjectListener(mock(DistributedObjectListener.class));
     }
 
     @Test
     public void removeDistributedObjectListener() {
-        String registrationID = client.addDistributedObjectListener(new DistributedObjectListener() {
-            @Override
-            public void distributedObjectCreated(DistributedObjectEvent event) {
-
-            }
-
-            @Override
-            public void distributedObjectDestroyed(DistributedObjectEvent event) {
-
-            }
-        });
+        String registrationID = client.addDistributedObjectListener(mock(DistributedObjectListener.class));
+        interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "removeDistributedObjectListener", registrationID);
         client.removeDistributedObjectListener(registrationID);
-        interceptor.assertMethod(ProxyServiceImpl.SERVICE_NAME, null, "removeDistributedObjectListener", registrationID);
     }
 
     @Test
     public void getDistributedObjects() {
+        interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "getDistributedObjects");
         client.getDistributedObjects();
-        interceptor.assertMethod(ProxyServiceImpl.SERVICE_NAME, null, "getDistributedObjects");
     }
 
 }

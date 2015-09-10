@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.replicatedmap.impl.ReplicatedMapService;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,8 +30,8 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
     public void test1_put() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
         replicatedMap.put(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "put", key, val);
     }
 
     @Test
@@ -38,48 +39,48 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
         replicatedMap.put(key, val, ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void size() {
+        interceptor.setExpectation(getObjectType(), objectName, "size");
         replicatedMap.size();
-        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() {
+        interceptor.setExpectation(getObjectType(), objectName, "isEmpty");
         replicatedMap.isEmpty();
-        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void containsKey() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "containsKey", key);
         replicatedMap.containsKey(key);
-        interceptor.assertMethod(getObjectType(), objectName, "containsKey", key);
     }
 
     @Test
     public void containsValue() {
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "containsValue", val);
         replicatedMap.containsValue(val);
-        interceptor.assertMethod(getObjectType(), objectName, "containsValue", val);
     }
 
     @Test
     public void get() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "get", key);
         replicatedMap.get(key);
-        interceptor.assertMethod(getObjectType(), objectName, "get", key);
     }
 
     @Test
     public void remove() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "remove", key);
         replicatedMap.remove(key);
-        interceptor.assertMethod(getObjectType(), objectName, "remove", key);
     }
 
     @Test
@@ -88,37 +89,37 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         map.put(randomString(), randomString());
         map.put(randomString(), randomString());
         map.put(randomString(), randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "putAll", map);
         replicatedMap.putAll(map);
-        interceptor.assertMethod(getObjectType(), objectName, "putAll", map);
     }
 
     @Test
     public void clear() {
+        interceptor.setExpectation(getObjectType(), objectName, "clear");
         replicatedMap.clear();
-        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void test1_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", (EntryListener) null);
         replicatedMap.addEntryListener(entryAdapter);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", (EntryListener) null);
     }
 
     @Test
     public void test2_addEntryListener() {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, key);
         replicatedMap.addEntryListener(entryAdapter, key);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, key);
     }
 
     @Test
     public void test3_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, predicate);
         replicatedMap.addEntryListener(entryAdapter, predicate);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate);
     }
 
     @Test
@@ -126,35 +127,34 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, predicate, key);
         replicatedMap.addEntryListener(entryAdapter, predicate, key);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate, key);
     }
 
     @Test
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = replicatedMap.addEntryListener(entryAdapter);
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", id);
         replicatedMap.removeEntryListener(id);
-        interceptor.assertMethod(getObjectType(), objectName, "removeEntryListener", id);
     }
 
     @Test
     public void keySet() {
+        interceptor.setExpectation(getObjectType(), objectName, "keySet");
         replicatedMap.keySet();
-        interceptor.assertMethod(getObjectType(), objectName, "keySet");
     }
 
     @Test
     public void values() {
+        interceptor.setExpectation(getObjectType(), objectName, "values");
         replicatedMap.values();
-        interceptor.assertMethod(getObjectType(), objectName, "values");
     }
 
     @Test
     public void entrySet() {
+        interceptor.setExpectation(getObjectType(), objectName, "entrySet");
         replicatedMap.entrySet();
-        interceptor.assertMethod(getObjectType(), objectName, "entrySet");
     }
 
     @Override

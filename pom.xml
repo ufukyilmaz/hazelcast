@@ -21,6 +21,7 @@
         <target.dir>target</target.dir>
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
         <timestamp>${maven.build.timestamp}</timestamp>
+        <extraVmArgs></extraVmArgs>
         <hazelcast.distribution>Hazelcast Enterprise</hazelcast.distribution>
 
         <maven.compiler.plugin.version>2.5.1</maven.compiler.plugin.version>
@@ -158,6 +159,7 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
+                        ${extraVmArgs}
                         -Xms128m -Xmx512m -XX:MaxPermSize=1024M
                         -Dhazelcast.version.check.enabled=false
                         -Dhazelcast.mancenter.enabled=false
@@ -238,6 +240,7 @@
             <id>test-coverage</id>
             <properties>
                 <argLine>
+                    ${extraVmArgs}
                     -Xms128m -Xmx1G -XX:MaxPermSize=1024M
                     -Dhazelcast.version.check.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -269,6 +272,7 @@
             <id>nightly-build</id>
             <properties>
                 <argLine>
+                    ${extraVmArgs}
                     -Xms128m -Xmx1G -XX:MaxPermSize=1024M
                     -Dhazelcast.version.check.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -306,6 +310,7 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <argLine>
+                                ${extraVmArgs}
                                 -Xms128m -Xmx1G
                                 -Dhazelcast.version.check.enabled=false
                                 -Dhazelcast.mancenter.enabled=false

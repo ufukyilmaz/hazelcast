@@ -1,14 +1,13 @@
 package com.hazelcast.client.security;
 
 
-import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.config.SecurityInterceptorConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
@@ -16,9 +15,10 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.Parameters;
 import com.hazelcast.security.SecurityInterceptor;
-import org.junit.AfterClass;
+import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.HazelcastTestSupport;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 import java.security.AccessControlException;
 import java.util.Collection;
@@ -28,33 +28,31 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public abstract class BaseInterceptorTest {
+public abstract class BaseInterceptorTest extends HazelcastTestSupport {
 
-    static HazelcastInstance instance;
-    static HazelcastInstance client;
-    static TestSecurityInterceptor interceptor;
-
-    @BeforeClass
-    public static void cleanupClass() {
-        interceptor = new TestSecurityInterceptor();
-        final Config config = createConfig(interceptor);
-        instance = Hazelcast.newHazelcastInstance(config);
-        client = HazelcastClient.newHazelcastClient();
-    }
+    TestHazelcastFactory factory = new TestHazelcastFactory();
+    TestSecurityInterceptor interceptor = new TestSecurityInterceptor();
+    HazelcastInstance instance;
+    HazelcastInstance client;
 
     @Before
-    public void reset() {
-        interceptor.reset();
+    public void before() {
+        final Config config = createConfig(interceptor);
+        instance = factory.newHazelcastInstance(config);
+        client = factory.newHazelcastClient();
     }
 
-    @AfterClass
-    public static void tearDown() {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+    @After
+    public void check() {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertTrue(interceptor.success);
+            }
+        });
+        factory.terminateAll();
     }
 
     String getObjectType() {
@@ -82,22 +80,61 @@ public abstract class BaseInterceptorTest {
 
     static class TestSecurityInterceptor implements SecurityInterceptor {
 
-        String objectType;
-        String objectName;
-        String methodName;
-        Object[] params;
+        String expectedObjectType;
+        String expectedObjectName;
+        String expectedMethodName;
+        Object[] expectedParams;
+        volatile boolean success;
 
         @Override
         public void before(Credentials credentials, String objectType, String objectName,
                            String methodName, Parameters parameters) throws AccessControlException {
-            this.objectType = objectType;
-            this.objectName = objectName;
-            this.methodName = methodName;
-            final int length = parameters.length();
-            params = new Object[length];
-            for (int i = 0; i < length; i++) {
-                params[i] = parameters.get(i);
+            if (!checkEqual(expectedObjectType, objectType)) {
+                return;
             }
+            if (!checkEqual(expectedObjectName, objectName)) {
+                return;
+            }
+            if (!checkEqual(expectedMethodName, methodName)) {
+                return;
+            }
+            if (parameters.length() != expectedParamLength()) {
+                return;
+            }
+            synchronized (this) {
+                final int length = expectedParamLength();
+                for (int i = 0; i < length; i++) {
+                    Object expectedParam = expectedParams[i];
+                    Object actualParam = parameters.get(i);
+                    if (expectedParam instanceof Map && actualParam instanceof Map) {
+                        Map expectedMap = (Map) expectedParam;
+                        Map<Object, Object> actualMap = (Map<Object, Object>) actualParam;
+                        for (Map.Entry o : actualMap.entrySet()) {
+                            if (!o.getValue().equals(expectedMap.remove(o.getKey()))) {
+                                return;
+                            }
+                        }
+                        if (!expectedMap.isEmpty()) {
+                            return;
+                        }
+                    } else if (expectedParam instanceof Collection && actualParam instanceof Collection) {
+                        Collection expectedCollection = (Collection) expectedParam;
+                        Collection actualCollection = (Collection) actualParam;
+                        expectedCollection.removeAll(actualCollection);
+                        if (!expectedCollection.isEmpty()) {
+                            return;
+                        }
+                    } else if (!checkEqual(expectedParam, actualParam)) {
+                        return;
+                    }
+
+                }
+            }
+            success = true;
+        }
+
+        private int expectedParamLength() {
+            return expectedParams == null ? 0 : expectedParams.length;
         }
 
         @Override
@@ -105,45 +142,21 @@ public abstract class BaseInterceptorTest {
                           String methodName, Parameters parameters) {
         }
 
-        void reset() {
-            methodName = null;
-            params = null;
+        void setExpectation(String objectType, String objectName, String methodName, Object... params) {
+            this.expectedObjectType = objectType;
+            this.expectedObjectName = objectName;
+            this.expectedMethodName = methodName;
+            this.expectedParams = params;
         }
 
-        void assertMethod(String objectType, String objectName, String methodName, Object... params) {
-            assertEquals(objectType, this.objectType);
-            assertEquals(objectName, this.objectName);
-            assertEquals(methodName, this.methodName);
-            int len = params.length;
-            assertNotNull(this.params);
-            assertEquals(len, this.params.length);
-            for (int i = 0; i < len; i++) {
-                if (params[i] instanceof Collection) {
-                    assertCollection((Collection) params[i], this.params[i]);
-                } else if (params[i] instanceof Map) {
-                    assertMap((Map) params[i], this.params[i]);
-                } else {
-                    assertEquals(params[i], this.params[i]);
-                }
+        private boolean checkEqual(Object expected, Object actual) {
+            if (expected == null && actual == null) {
+                return true;
             }
-        }
-
-        private void assertCollection(Collection collection, Object otherParam) {
-            assertTrue(otherParam instanceof Collection);
-            Collection otherCollection = (Collection) otherParam;
-            assertEquals(collection.size(), otherCollection.size());
-            for (Object o : collection) {
-                assertTrue(otherCollection.contains(o));
+            if (expected != null && expected.equals(actual)) {
+                return true;
             }
-        }
-
-        private void assertMap(Map<Object, Object> map, Object otherParam) {
-            assertTrue(otherParam instanceof Map);
-            Map otherMap = (Map) otherParam;
-            assertEquals(map.size(), otherMap.size());
-            for (Map.Entry entry : map.entrySet()) {
-                assertEquals(entry.getValue(), otherMap.get(entry.getKey()));
-            }
+            return false;
         }
 
     }

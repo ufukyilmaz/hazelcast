@@ -25,89 +25,89 @@ public class AtomicLongSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void apply() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "apply", dummyFunction);
         atomicLong.apply(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "apply", dummyFunction);
     }
 
     @Test
     public void alter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "alter", dummyFunction);
         atomicLong.alter(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "alter", dummyFunction);
     }
 
     @Test
     public void alterAndGet() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "alterAndGet", dummyFunction);
         atomicLong.alterAndGet(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "alterAndGet", dummyFunction);
     }
 
     @Test
     public void getAndAlter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "getAndAlter", dummyFunction);
         atomicLong.getAndAlter(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "getAndAlter", dummyFunction);
     }
 
     @Test
     public void addAndGet() {
         final long count = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "addAndGet", count);
         atomicLong.addAndGet(count);
-        interceptor.assertMethod(getObjectType(), objectName, "addAndGet", count);
     }
 
     @Test
     public void compareAndSet() {
         final long expected = randomLong();
         final long update = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "compareAndSet", expected, update);
         atomicLong.compareAndSet(expected, update);
-        interceptor.assertMethod(getObjectType(), objectName, "compareAndSet", expected, update);
     }
 
     @Test
     public void decrementAndGet() {
+        interceptor.setExpectation(getObjectType(), objectName, "decrementAndGet");
         atomicLong.decrementAndGet();
-        interceptor.assertMethod(getObjectType(), objectName, "decrementAndGet");
     }
 
     @Test
     public void get() {
+        interceptor.setExpectation(getObjectType(), objectName, "get");
         atomicLong.get();
-        interceptor.assertMethod(getObjectType(), objectName, "get");
     }
 
     @Test
     public void getAndAdd() {
         final long count = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "getAndAdd", count);
         atomicLong.getAndAdd(count);
-        interceptor.assertMethod(getObjectType(), objectName, "getAndAdd", count);
     }
 
     @Test
     public void getAndSet() {
         final long count = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "getAndSet", count);
         atomicLong.getAndSet(count);
-        interceptor.assertMethod(getObjectType(), objectName, "getAndSet", count);
     }
 
     @Test
     public void incrementAndGet() {
+        interceptor.setExpectation(getObjectType(), objectName, "incrementAndGet");
         atomicLong.incrementAndGet();
-        interceptor.assertMethod(getObjectType(), objectName, "incrementAndGet");
     }
 
     @Test
     public void getAndIncrement() {
+        interceptor.setExpectation(getObjectType(), objectName, "getAndIncrement");
         atomicLong.getAndIncrement();
-        interceptor.assertMethod(getObjectType(), objectName, "getAndIncrement");
     }
 
     @Test
     public void set() {
         final long count = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "set", count);
         atomicLong.set(count);
-        interceptor.assertMethod(getObjectType(), objectName, "set", count);
     }
 
     @Override

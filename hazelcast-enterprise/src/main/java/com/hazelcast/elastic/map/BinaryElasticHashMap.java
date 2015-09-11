@@ -32,6 +32,7 @@ import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.elastic.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
+import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * A hash map of <code>Data</code> to <code>MemoryBlock</code>, implemented using open
@@ -207,15 +208,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 final long oldValue = getValue(slot);
                 setValue(slot, value.address());
-                return memoryBlockProcessor.read(oldValue);
+                return readV(oldValue);
             }
             slot = (slot + 1) & mask;
         }
 
         NativeMemoryData memKey = (NativeMemoryData) memoryBlockProcessor.convertData(key, DataType.NATIVE);
 
-        assert memKey.address() != MemoryAllocator.NULL_ADDRESS : "Null key!";
-        assert value.address() != MemoryAllocator.NULL_ADDRESS : "Null value!";
+        assert memKey.address() != NULL_ADDRESS : "Null key!";
 
         // Check if we need to grow. If so, reallocate new data, fill in the last element
         // and rehash.
@@ -279,7 +279,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 long current = getValue(slot);
                 if (memoryBlockProcessor.isEqual(current, oldValue)) {
                     setValue(slot, newValue.address());
-                    memoryBlockProcessor.dispose(current);
+                    if (current != NULL_ADDRESS) {
+                        memoryBlockProcessor.dispose(current);
+                    }
                     return true;
                 }
                 return false;
@@ -301,7 +303,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long current = getValue(slot);
                 setValue(slot, value.address());
-                return memoryBlockProcessor.read(current);
+                return readV(current);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -373,7 +375,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                     memoryBlockProcessor.disposeData(readData(slotKey));
                 }
                 shiftConflictingKeys(slot);
-                return memoryBlockProcessor.read(v);
+                return readV(v);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -475,7 +477,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             long slotKey = getKey(slot);
             if (NativeMemoryDataUtil.equals(slotKey, key)) {
                 long value = getValue(slot);
-                return memoryBlockProcessor.read(value);
+                return readV(value);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) break;
@@ -577,7 +579,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             shiftConflictingKeys(currentSlot);
 
             memoryBlockProcessor.disposeData(readIntoKeyHolder(key));
-            memoryBlockProcessor.dispose(value);
+            if (value != NULL_ADDRESS) {
+                memoryBlockProcessor.dispose(value);
+            }
 
             // if current slot is assigned after
             // removal and shift
@@ -673,8 +677,15 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         public V next() {
             nextSlot();
             long slotValue = getValue(currentSlot);
-            return memoryBlockProcessor.read(slotValue);
+            return readV(slotValue);
         }
+    }
+
+    private V readV(long slotValue) {
+        if (slotValue == NULL_ADDRESS) {
+            return null;
+        }
+        return memoryBlockProcessor.read(slotValue);
     }
 
     @Override
@@ -753,7 +764,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         @Override
         public V getValue() {
-            return memoryBlockProcessor.read(BinaryElasticHashMap.this.getValue(slot));
+            final long value = BinaryElasticHashMap.this.getValue(slot);
+            return readV(value);
         }
 
         @Override

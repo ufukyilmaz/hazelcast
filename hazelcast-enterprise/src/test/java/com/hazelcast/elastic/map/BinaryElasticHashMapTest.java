@@ -1,5 +1,7 @@
 package com.hazelcast.elastic.map;
 
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -9,9 +11,7 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(HazelcastSerialClassRunner.class)
+@RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
 public class BinaryElasticHashMapTest {
 
@@ -510,7 +510,7 @@ public class BinaryElasticHashMapTest {
     public void testMemoryLeak() {
         int keyRange = 100;
 
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 100000; i++) {
             int k = random.nextInt(8);
             switch (k) {
                 case 0:
@@ -729,6 +729,205 @@ public class BinaryElasticHashMapTest {
         map.destroy();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+    }
+
+    @Test
+    public void test_put_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        assertNull(map.put(key, value));
+    }
+
+    @Test
+    public void test_put_put_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        assertNull(map.put(key, value));
+        assertNull(map.put(key, value));
+    }
+
+    @Test
+    public void test_get_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertNull(map.get(key));
+    }
+
+    @Test
+    public void test_containsKey_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertTrue(map.containsKey(key));
+    }
+
+    @Test
+    public void test_containsValue_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertTrue(map.containsValue(value));
+    }
+
+    @Test
+    public void test_putIfAbsent_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertNull(map.putIfAbsent(key, newValue()));
+    }
+
+    @Test
+    public void test_set_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.set(key, value);
+    }
+
+    @Test
+    public void test_set_set_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        assertTrue(map.set(key, value));
+        assertTrue(map.set(key, value));
+    }
+
+    @Test
+    public void test_remove_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertNull(map.remove(key));
+    }
+
+    @Test
+    public void test_delete_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertFalse(map.delete(key));
+    }
+
+    @Test
+    public void test_removeIfSame_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertTrue(map.remove(key, value));
+    }
+
+    @Test
+    public void test_replace_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertNull(map.replace(key, newValue()));
+    }
+
+    @Test
+    public void test_replaceIfSame_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertTrue(map.replace(key, value, newValue()));
+    }
+
+    @Test
+    public void test_clear_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        map.clear();
+    }
+
+    @Test
+    public void test_isEmpty_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertFalse(map.isEmpty());
+    }
+
+    @Test
+    public void test_size_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        assertEquals(1, map.size());
+    }
+
+    @Test
+    public void test_dispose_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+        map.destroy();
+    }
+
+    @Test
+    public void test_keySet_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Set<Data> keySet = map.keySet();
+        assertEquals(1, keySet.size());
+    }
+
+    @Test
+    public void test_keySetIterator_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Iterator<Data> iter = map.keySet().iterator();
+        assertTrue(iter.hasNext());
+        assertEquals(key, iter.next());
+    }
+
+    @Test
+    public void test_values_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Collection<NativeMemoryData> values = map.values();
+        assertEquals(1, values.size());
+    }
+
+    @Test
+    public void test_valuesIterator_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Iterator<NativeMemoryData> iter = map.values().iterator();
+        assertTrue(iter.hasNext());
+        assertNull(iter.next());
+    }
+
+    @Test
+    public void test_entrySet_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Set<Map.Entry<Data, NativeMemoryData>> entries = map.entrySet();
+        assertEquals(1, entries.size());
+    }
+
+    @Test
+    public void test_entrySetIterator_nullValue() {
+        Data key = newKey();
+        NativeMemoryData value = new NativeMemoryData();
+        map.put(key, value);
+
+        Iterator<Map.Entry<Data, NativeMemoryData>> iter = map.entrySet().iterator();
+        assertTrue(iter.hasNext());
+        Map.Entry<Data, NativeMemoryData> entry = iter.next();
+        assertEquals(key, entry.getKey());
+        assertNull(entry.getValue());
     }
 
     private Data newKey() {

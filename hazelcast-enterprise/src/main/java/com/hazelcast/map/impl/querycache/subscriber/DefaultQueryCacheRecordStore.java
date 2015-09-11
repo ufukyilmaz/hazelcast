@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.cache.impl.eviction.EvictionListener;
+import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.internal.serialization.SerializationService;

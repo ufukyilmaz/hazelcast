@@ -6,8 +6,8 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentage
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheContext;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
-import com.hazelcast.cache.impl.eviction.EvictionListener;
-import com.hazelcast.cache.impl.eviction.ExpirationChecker;
+import com.hazelcast.internal.eviction.EvictionListener;
+import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecord;

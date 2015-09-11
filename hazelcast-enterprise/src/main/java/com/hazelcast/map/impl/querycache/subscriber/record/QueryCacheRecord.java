@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber.record;
 
-import com.hazelcast.cache.impl.eviction.Evictable;
+import com.hazelcast.internal.eviction.Evictable;
 import com.hazelcast.nio.serialization.Data;
 
 /**

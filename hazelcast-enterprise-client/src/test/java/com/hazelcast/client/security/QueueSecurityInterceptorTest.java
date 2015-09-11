@@ -27,90 +27,87 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void addItemListener() {
         final DummyListener itemListener = new DummyListener();
+        interceptor.setExpectation(getObjectType(), objectName, "addItemListener", null, false);
         queue.addItemListener(itemListener, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addItemListener", null, false);
     }
 
     @Test
     public void removeItemListener() {
         final DummyListener itemListener = new DummyListener();
         final String id = queue.addItemListener(itemListener, false);
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", id);
         queue.removeItemListener(id);
-        interceptor.assertMethod(getObjectType(), objectName, "removeItemListener", id);
     }
 
     @Test
     public void test1_offer() {
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "offer", item);
         queue.offer(item);
-        interceptor.assertMethod(getObjectType(), objectName, "offer", item);
     }
 
     @Test
     public void test2_offer() throws InterruptedException {
         final String item = randomString();
         final long timeout = randomLong() + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "offer", item, timeout, TimeUnit.MILLISECONDS);
         queue.offer(item, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "offer", item, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void testOfferWithZeroTimeout() throws InterruptedException {
         final String item = randomString();
         final long timeout = 0;
+        interceptor.setExpectation(getObjectType(), objectName, "offer", item);
         queue.offer(item, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "offer", item);
     }
 
     @Test
     public void put() throws InterruptedException {
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "put", item);
         queue.put(item);
-        interceptor.assertMethod(getObjectType(), objectName, "put", item);
     }
 
     @Test
     public void test1_poll() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "poll");
         queue.poll();
-        interceptor.assertMethod(getObjectType(), objectName, "poll");
     }
 
     @Test
     public void test2_poll() throws InterruptedException {
         queue.offer(randomString());
-        interceptor.reset();
         final long timeout = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "poll", timeout, TimeUnit.MILLISECONDS);
         queue.poll(timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "poll", timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void take() throws InterruptedException {
         queue.offer(randomString());
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "take");
         queue.take();
-        interceptor.assertMethod(getObjectType(), objectName, "take");
     }
 
     @Test
     public void remainingCapacity() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "remainingCapacity");
         queue.remainingCapacity();
-        interceptor.assertMethod(getObjectType(), objectName, "remainingCapacity");
     }
 
     @Test
     public void remove() throws InterruptedException {
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "remove", item);
         queue.remove(item);
-        interceptor.assertMethod(getObjectType(), objectName, "remove", item);
     }
 
     @Test
     public void contains() throws InterruptedException {
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "contains", item);
         queue.contains(item);
-        interceptor.assertMethod(getObjectType(), objectName, "contains", item);
     }
 
     @Test
@@ -119,45 +116,45 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "containsAll", items);
         queue.containsAll(items);
-        interceptor.assertMethod(getObjectType(), objectName, "containsAll", items);
     }
 
     @Test
     public void test1_drainTo() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "drainTo", (String) null);
         queue.drainTo(new HashSet());
-        interceptor.assertMethod(getObjectType(), objectName, "drainTo", (String) null);
     }
 
     @Test
     public void test2_drainTo() throws InterruptedException {
         final int max = randomInt(200) + 1;
+        interceptor.setExpectation(getObjectType(), objectName, "drainTo", null, max);
         queue.drainTo(new HashSet(), max);
-        interceptor.assertMethod(getObjectType(), objectName, "drainTo", null, max);
     }
 
     @Test
     public void peek() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "peek");
         queue.peek();
-        interceptor.assertMethod(getObjectType(), objectName, "peek");
     }
 
     @Test
     public void size() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "size");
         queue.size();
-        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "isEmpty");
         queue.isEmpty();
-        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void iterator() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "iterator");
         queue.iterator();
-        interceptor.assertMethod(getObjectType(), objectName, "iterator");
     }
 
     @Test
@@ -166,8 +163,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "addAll", items);
         queue.addAll(items);
-        interceptor.assertMethod(getObjectType(), objectName, "addAll", items);
     }
 
     @Test
@@ -176,8 +173,8 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "removeAll", items);
         queue.removeAll(items);
-        interceptor.assertMethod(getObjectType(), objectName, "removeAll", items);
     }
 
     @Test
@@ -186,14 +183,14 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "retainAll", items);
         queue.retainAll(items);
-        interceptor.assertMethod(getObjectType(), objectName, "retainAll", items);
     }
 
     @Test
     public void clear() throws InterruptedException {
+        interceptor.setExpectation(getObjectType(), objectName, "clear");
         queue.clear();
-        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Override

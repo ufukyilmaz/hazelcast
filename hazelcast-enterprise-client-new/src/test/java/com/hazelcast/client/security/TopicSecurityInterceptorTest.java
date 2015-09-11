@@ -17,8 +17,8 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
         final String objectName = randomString();
         final String message = randomString();
         final ITopic<Object> topic = client.getTopic(objectName);
+        interceptor.setExpectation(getObjectType(), objectName, "publish", message);
         topic.publish(message);
-        interceptor.assertMethod(getObjectType(), objectName, "publish", message);
     }
 
     @Test
@@ -26,8 +26,8 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
         final DummyMessageListener messageListener = new DummyMessageListener();
         final String objectName = randomString();
         final ITopic<Object> topic = client.getTopic(objectName);
+        interceptor.setExpectation(getObjectType(), objectName, "addMessageListener", (MessageListener) null);
         topic.addMessageListener(messageListener);
-        interceptor.assertMethod(getObjectType(), objectName, "addMessageListener", (MessageListener) null);
     }
 
     @Test
@@ -36,10 +36,8 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
         final String objectName = randomString();
         final ITopic topic = client.getTopic(objectName);
         final String id = topic.addMessageListener(messageListener);
-        interceptor.reset();
-
+        interceptor.setExpectation(getObjectType(), objectName, "removeMessageListener", id);
         topic.removeMessageListener(id);
-        interceptor.assertMethod(getObjectType(), objectName, "removeMessageListener", id);
     }
 
     @Override

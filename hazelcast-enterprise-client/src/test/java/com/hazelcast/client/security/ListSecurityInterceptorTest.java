@@ -17,15 +17,14 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         list.add(randomString());
         list.add(randomString());
         list.add(randomString());
-        interceptor.reset();
 
         final HashSet items = new HashSet();
         items.add(randomString());
         items.add(randomString());
         items.add(randomString());
         final int index = randomInt(3);
+        interceptor.setExpectation(getObjectType(), objectName, "addAll", index, items);
         list.addAll(index, items);
-        interceptor.assertMethod(getObjectType(), objectName, "addAll", index, items);
     }
 
     @Test
@@ -34,11 +33,10 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         list.add(randomString());
         list.add(randomString());
         list.add(randomString());
-        interceptor.reset();
 
         final int index = randomInt(3);
+        interceptor.setExpectation(getObjectType(), objectName, "get", index);
         list.get(index);
-        interceptor.assertMethod(getObjectType(), objectName, "get", index);
     }
 
     @Test
@@ -47,12 +45,11 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         list.add(randomString());
         list.add(randomString());
         list.add(randomString());
-        interceptor.reset();
 
         final int index = randomInt(3);
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "set", index, item);
         list.set(index, item);
-        interceptor.assertMethod(getObjectType(), objectName, "set", index, item);
     }
 
     @Test
@@ -64,8 +61,8 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
 
         final int index = randomInt(3);
         final String item = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "add", index, item);
         list.add(index, item);
-        interceptor.assertMethod(getObjectType(), objectName, "add", index, item);
     }
 
     @Test
@@ -74,31 +71,33 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         list.add(randomString());
         list.add(randomString());
         list.add(randomString());
-        interceptor.reset();
 
         final int index = randomInt(3);
+        interceptor.setExpectation(getObjectType(), objectName, "remove", index);
         list.remove(index);
-        interceptor.assertMethod(getObjectType(), objectName, "remove", index);
     }
 
     @Test
     public void indexOf() {
         final String item = randomString();
-        getCollection().indexOf(item);
-        interceptor.assertMethod(getObjectType(), objectName, "indexOf", item);
+        IList list = getCollection();
+        interceptor.setExpectation(getObjectType(), objectName, "indexOf", item);
+        list.indexOf(item);
     }
 
     @Test
     public void lastIndexOf() {
         final String item = randomString();
-        getCollection().lastIndexOf(item);
-        interceptor.assertMethod(getObjectType(), objectName, "lastIndexOf", item);
+        IList list = getCollection();
+        interceptor.setExpectation(getObjectType(), objectName, "lastIndexOf", item);
+        list.lastIndexOf(item);
     }
 
     @Test
     public void listIterator() {
-        getCollection().listIterator();
-        interceptor.assertMethod(getObjectType(), objectName, "listIterator");
+        IList list = getCollection();
+        interceptor.setExpectation(getObjectType(), objectName, "listIterator");
+        list.listIterator();
     }
 
     @Test
@@ -111,12 +110,11 @@ public class ListSecurityInterceptorTest extends SetSecurityInterceptorTest {
         list.add(randomString());
         list.add(randomString());
         list.add(randomString());
-        interceptor.reset();
 
         final int from = randomInt(3);
         final int to = randomInt(3);
+        interceptor.setExpectation(getObjectType(), objectName, "subList", from, from + to);
         list.subList(from, from + to);
-        interceptor.assertMethod(getObjectType(), objectName, "subList", from, from + to);
     }
 
     @Override

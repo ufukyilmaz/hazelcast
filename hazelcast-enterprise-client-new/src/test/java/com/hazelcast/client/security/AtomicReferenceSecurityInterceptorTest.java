@@ -23,76 +23,76 @@ public class AtomicReferenceSecurityInterceptorTest extends BaseInterceptorTest 
     @Test
     public void apply() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "apply", dummyFunction);
         atomicReference.apply(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "apply", dummyFunction);
     }
 
     @Test
     public void alter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "alter", dummyFunction);
         atomicReference.alter(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "alter", dummyFunction);
     }
 
     @Test
     public void alterAndGet() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "alterAndGet", dummyFunction);
         atomicReference.alterAndGet(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "alterAndGet", dummyFunction);
     }
 
     @Test
     public void getAndAlter() {
         final DummyFunction dummyFunction = new DummyFunction(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "getAndAlter", dummyFunction);
         atomicReference.getAndAlter(dummyFunction);
-        interceptor.assertMethod(getObjectType(), objectName, "getAndAlter", dummyFunction);
     }
 
     @Test
     public void compareAndSet() {
         final String expected = randomString();
         final String update = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "compareAndSet", expected, update);
         atomicReference.compareAndSet(expected, update);
-        interceptor.assertMethod(getObjectType(), objectName, "compareAndSet", expected, update);
     }
 
     @Test
     public void contains() {
         final String value = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "contains", value);
         atomicReference.contains(value);
-        interceptor.assertMethod(getObjectType(), objectName, "contains", value);
     }
 
     @Test
     public void get() {
+        interceptor.setExpectation(getObjectType(), objectName, "get");
         atomicReference.get();
-        interceptor.assertMethod(getObjectType(), objectName, "get");
     }
 
     @Test
     public void set() {
         final String value = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "set", value);
         atomicReference.set(value);
-        interceptor.assertMethod(getObjectType(), objectName, "set", value);
     }
 
     @Test
     public void clear() {
+        interceptor.setExpectation(getObjectType(), objectName, "clear");
         atomicReference.clear();
-        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
     public void getAndSet() {
         final String value = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "getAndSet", value);
         atomicReference.getAndSet(value);
-        interceptor.assertMethod(getObjectType(), objectName, "getAndSet", value);
     }
 
     @Test
     public void isNull() {
+        interceptor.setExpectation(getObjectType(), objectName, "isNull");
         atomicReference.isNull();
-        interceptor.assertMethod(getObjectType(), objectName, "isNull");
     }
 
     @Override

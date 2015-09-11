@@ -22,7 +22,6 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.MapInterceptor;
-import com.hazelcast.map.MapPartitionLostEvent;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.listener.MapPartitionLostListener;
 import org.junit.Before;
@@ -34,6 +33,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 public class MapSecurityInterceptorTest extends BaseInterceptorTest {
@@ -50,30 +51,30 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void containsKey() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "containsKey", key);
         map.containsKey(key);
-        interceptor.assertMethod(getObjectType(), objectName, "containsKey", key);
     }
 
     @Test
     public void containsValue() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "containsValue", key);
         map.containsValue(key);
-        interceptor.assertMethod(getObjectType(), objectName, "containsValue", key);
     }
 
     @Test
     public void get() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "get", key);
         map.get(key);
-        interceptor.assertMethod(getObjectType(), objectName, "get", key);
     }
 
     @Test
     public void test1_put() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
         map.put(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "put", key, val);
     }
 
     @Test
@@ -81,51 +82,51 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
         map.put(key, val, ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_remove() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "remove", key);
         map.remove(key);
-        interceptor.assertMethod(getObjectType(), objectName, "remove", key);
     }
 
     @Test
     public void test2_remove() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "remove", key, val);
         map.remove(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "remove", key, val);
     }
 
     @Test
     public void delete() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "delete", key);
         map.delete(key);
-        interceptor.assertMethod(getObjectType(), objectName, "delete", key);
     }
 
     @Test
     public void flush() {
+        interceptor.setExpectation(getObjectType(), objectName, "flush");
         map.flush();
-        interceptor.assertMethod(getObjectType(), objectName, "flush");
     }
 
     @Test
     public void getAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "getAsync", key);
         map.getAsync(key).get();
-        interceptor.assertMethod(getObjectType(), objectName, "getAsync", key);
     }
 
     @Test
     public void test1_putAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "putAsync", key, val);
         map.putAsync(key, val).get();
-        interceptor.assertMethod(getObjectType(), objectName, "putAsync", key, val);
     }
 
     @Test
@@ -133,24 +134,23 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "putAsync", key, val, ttl, TimeUnit.MILLISECONDS);
         map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS).get();
-        interceptor.assertMethod(getObjectType(), objectName, "putAsync", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void removeAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "removeAsync", key);
         map.removeAsync(key).get();
-
-        interceptor.assertMethod(getObjectType(), objectName, "removeAsync", key);
     }
 
     @Test
     public void tryRemove() {
         final String key = randomString();
         long timeout = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "tryRemove", key, timeout, TimeUnit.MILLISECONDS);
         map.tryRemove(key, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryRemove", key, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -158,8 +158,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long timeout = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "tryPut", key, val, timeout, TimeUnit.MILLISECONDS);
         map.tryPut(key, val, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryPut", key, val, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
@@ -167,16 +167,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "putTransient", key, val, ttl, TimeUnit.MILLISECONDS);
         map.putTransient(key, val, ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "putTransient", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_putIfAbsent() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val);
         map.putIfAbsent(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "putIfAbsent", key, val);
     }
 
     @Test
@@ -184,16 +184,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "putIfAbsent", key, val, ttl, TimeUnit.MILLISECONDS);
         map.putIfAbsent(key, val, ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "putIfAbsent", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_replace() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "replace", key, val);
         map.replace(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "replace", key, val);
     }
 
     @Test
@@ -201,16 +201,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val1 = randomString();
         final String val2 = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "replace", key, val1, val2);
         map.replace(key, val1, val2);
-        interceptor.assertMethod(getObjectType(), objectName, "replace", key, val1, val2);
     }
 
     @Test
     public void test1_set() {
         final String key = randomString();
         final String val = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "set", key, val);
         map.set(key, val);
-        interceptor.assertMethod(getObjectType(), objectName, "set", key, val);
     }
 
     @Test
@@ -218,98 +218,97 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "set", key, val, ttl, TimeUnit.MILLISECONDS);
         map.set(key, val, ttl, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "set", key, val, ttl, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void test1_lock() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "lock", key);
         map.lock(key);
-        interceptor.assertMethod(getObjectType(), objectName, "lock", key);
     }
 
     @Test
     public void test2_lock() {
         final String key = randomString();
         final long lease = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "lock", key, lease, TimeUnit.MILLISECONDS);
         map.lock(key, lease, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "lock", key, lease, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void isLocked() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "isLocked", key);
         map.isLocked(key);
-        interceptor.assertMethod(getObjectType(), objectName, "isLocked", key);
     }
 
     @Test
     public void test1_tryLock() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "tryLock", key);
         map.tryLock(key);
-        interceptor.assertMethod(getObjectType(), objectName, "tryLock", key);
     }
 
     @Test
     public void test2_tryLock() throws InterruptedException {
         final String key = randomString();
         final long timeout = randomLong();
+        interceptor.setExpectation(getObjectType(), objectName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
         map.tryLock(key, timeout, TimeUnit.MILLISECONDS);
-        interceptor.assertMethod(getObjectType(), objectName, "tryLock", key, timeout, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void unlock() {
         final String key = randomString();
         map.lock(key);
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "unlock", key);
         map.unlock(key);
-        interceptor.assertMethod(getObjectType(), objectName, "unlock", key);
     }
 
     @Test
     public void forceUnlock() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "forceUnlock", key);
         map.forceUnlock(key);
-        interceptor.assertMethod(getObjectType(), objectName, "forceUnlock", key);
     }
 
     @Test
     public void addInterceptor() {
         final DummyMapInterceptor mapInterceptor = new DummyMapInterceptor(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "addInterceptor", mapInterceptor);
         map.addInterceptor(mapInterceptor);
-        interceptor.assertMethod(getObjectType(), objectName, "addInterceptor", mapInterceptor);
     }
 
     @Test
     public void removeInterceptor() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "removeInterceptor", key);
         map.removeInterceptor(key);
-        interceptor.assertMethod(getObjectType(), objectName, "removeInterceptor", key);
     }
 
     @Test
     public void test1_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, false);
         map.addEntryListener(entryAdapter, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, false);
     }
 
     @Test
     public void test2_addEntryListener() {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, key, false);
         map.addEntryListener(entryAdapter, key, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, key, false);
     }
 
     @Test
     public void test3_addEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, predicate, false);
         map.addEntryListener(entryAdapter, predicate, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate, false);
     }
 
     @Test
@@ -317,76 +316,75 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final EntryAdapter entryAdapter = new EntryAdapter();
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "addEntryListener", null, predicate, key, false);
         map.addEntryListener(entryAdapter, predicate, key, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addEntryListener", null, predicate, key, false);
     }
 
     @Test
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = map.addEntryListener(entryAdapter, false);
-        interceptor.reset();
+        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", id);
         map.removeEntryListener(id);
-        interceptor.assertMethod(getObjectType(), objectName, "removeEntryListener", id);
     }
 
     @Test
     public void getEntryView() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "getEntryView", key);
         map.getEntryView(key);
-        interceptor.assertMethod(getObjectType(), objectName, "getEntryView", key);
     }
 
     @Test
     public void evict() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "evict", key);
         map.evict(key);
-        interceptor.assertMethod(getObjectType(), objectName, "evict", key);
     }
 
     @Test
     public void evictAll() {
+        interceptor.setExpectation(getObjectType(), objectName, "evictAll");
         map.evictAll();
-        interceptor.assertMethod(getObjectType(), objectName, "evictAll");
     }
 
     @Test
     public void test1_keySet() {
+        interceptor.setExpectation(getObjectType(), objectName, "keySet");
         map.keySet();
-        interceptor.assertMethod(getObjectType(), objectName, "keySet");
     }
 
     @Test
     public void test2_keySet() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "keySet", predicate);
         map.keySet(predicate);
-        interceptor.assertMethod(getObjectType(), objectName, "keySet", predicate);
     }
 
     @Test
     public void test1_values() {
+        interceptor.setExpectation(getObjectType(), objectName, "values");
         map.values();
-        interceptor.assertMethod(getObjectType(), objectName, "values");
     }
 
     @Test
     public void test2_values() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "values", predicate);
         map.values(predicate);
-        interceptor.assertMethod(getObjectType(), objectName, "values", predicate);
     }
 
     @Test
     public void test1_entrySet() {
+        interceptor.setExpectation(getObjectType(), objectName, "entrySet");
         map.entrySet();
-        interceptor.assertMethod(getObjectType(), objectName, "entrySet");
     }
 
     @Test
     public void test2_entrySet() {
         final DummyPredicate predicate = new DummyPredicate(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "entrySet", predicate);
         map.entrySet(predicate);
-        interceptor.assertMethod(getObjectType(), objectName, "entrySet", predicate);
     }
 
     @Test
@@ -395,46 +393,46 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         keys.add(randomString());
         keys.add(randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "getAll", keys);
         map.getAll(keys);
-        interceptor.assertMethod(getObjectType(), objectName, "getAll", keys);
     }
 
     @Test
     public void addIndex() {
         final String key = randomString();
+        interceptor.setExpectation(getObjectType(), objectName, "addIndex", key, false);
         map.addIndex(key, false);
-        interceptor.assertMethod(getObjectType(), objectName, "addIndex", key, false);
     }
 
     @Test
     public void executeOnKey() {
         final String key = randomString();
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "executeOnKey", key, entryProcessor);
         map.executeOnKey(key, entryProcessor);
-        interceptor.assertMethod(getObjectType(), objectName, "executeOnKey", key, entryProcessor);
     }
 
     @Test
     public void submitToKey() throws ExecutionException, InterruptedException {
         final String key = randomString();
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "submitToKey", key, entryProcessor);
         map.submitToKey(key, entryProcessor).get();
-        interceptor.assertMethod(getObjectType(), objectName, "submitToKey", key, entryProcessor);
     }
 
     @Test
     public void test1_executeOnEntries() {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "executeOnEntries", entryProcessor);
         map.executeOnEntries(entryProcessor);
-        interceptor.assertMethod(getObjectType(), objectName, "executeOnEntries", entryProcessor);
     }
 
     @Test
     public void test2_executeOnEntries() {
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
         final DummyPredicate predicate = new DummyPredicate();
+        interceptor.setExpectation(getObjectType(), objectName, "executeOnEntries", entryProcessor, predicate);
         map.executeOnEntries(entryProcessor, predicate);
-        interceptor.assertMethod(getObjectType(), objectName, "executeOnEntries", entryProcessor, predicate);
     }
 
     @Test
@@ -444,26 +442,26 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         keys.add(randomString());
         final DummyEntryProcessor entryProcessor = new DummyEntryProcessor(randomLong());
+        interceptor.setExpectation(getObjectType(), objectName, "executeOnKeys", keys, entryProcessor);
         map.executeOnKeys(keys, entryProcessor);
-        interceptor.assertMethod(getObjectType(), objectName, "executeOnKeys", keys, entryProcessor);
     }
 
     @Test
     public void size() {
+        interceptor.setExpectation(getObjectType(), objectName, "size");
         map.size();
-        interceptor.assertMethod(getObjectType(), objectName, "size");
     }
 
     @Test
     public void isEmpty() {
+        interceptor.setExpectation(getObjectType(), objectName, "isEmpty");
         map.isEmpty();
-        interceptor.assertMethod(getObjectType(), objectName, "isEmpty");
     }
 
     @Test
     public void clear() {
+        interceptor.setExpectation(getObjectType(), objectName, "clear");
         map.clear();
-        interceptor.assertMethod(getObjectType(), objectName, "clear");
     }
 
     @Test
@@ -472,16 +470,16 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         hashMap.put(randomString(), randomString());
         hashMap.put(randomString(), randomString());
         hashMap.put(randomString(), randomString());
+        interceptor.setExpectation(getObjectType(), objectName, "putAll", hashMap);
         map.putAll(hashMap);
-        interceptor.assertMethod(getObjectType(), objectName, "putAll", hashMap);
     }
 
     @Test
     public void test1_loadAll() {
         objectName = "loadAll" + randomString();
         IMap<Object, Object> map = client.getMap(objectName);
+        interceptor.setExpectation(getObjectType(), objectName, "loadAll", true);
         map.loadAll(true);
-        interceptor.assertMethod(getObjectType(), objectName, "loadAll", true);
     }
 
     @Test
@@ -492,8 +490,8 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         keys.add(randomString());
         objectName = "loadAll" + randomString();
         IMap<Object, Object> map = client.getMap(objectName);
+        interceptor.setExpectation(getObjectType(), objectName, "loadAll", keys, true);
         map.loadAll(keys, true);
-        interceptor.assertMethod(getObjectType(), objectName, "loadAll", keys, true);
     }
 
     @Test
@@ -502,25 +500,15 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         hashMap.put(randomString(), randomString());
         hashMap.put(randomString(), randomString());
         hashMap.put(randomString(), randomString());
-        map.addPartitionLostListener(new MapPartitionLostListener() {
-            @Override
-            public void partitionLost(MapPartitionLostEvent event) {
-
-            }
-        });
-        interceptor.assertMethod(getObjectType(), objectName, "addPartitionLostListener", new Object[]{null});
+        interceptor.setExpectation(getObjectType(), objectName, "addPartitionLostListener", new Object[]{null});
+        map.addPartitionLostListener(mock(MapPartitionLostListener.class));
     }
 
     @Test
     public void removePartitionLostListener() {
-        String id = map.addPartitionLostListener(new MapPartitionLostListener() {
-            @Override
-            public void partitionLost(MapPartitionLostEvent event) {
-
-            }
-        });
+        String id = map.addPartitionLostListener(mock(MapPartitionLostListener.class));
+        interceptor.setExpectation(getObjectType(), objectName, "removePartitionLostListener", id);
         map.removePartitionLostListener(id);
-        interceptor.assertMethod(getObjectType(), objectName, "removePartitionLostListener", id);
     }
 
     @Override

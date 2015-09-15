@@ -4,7 +4,7 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.impl.IndexService;
+import com.hazelcast.query.impl.Indexes;
 
 import java.util.Collection;
 import java.util.Map;
@@ -44,7 +44,7 @@ public final class NullQueryCache implements InternalQueryCache {
     }
 
     @Override
-    public IndexService getIndexService() {
+    public Indexes getIndexes() {
         return null;
     }
 

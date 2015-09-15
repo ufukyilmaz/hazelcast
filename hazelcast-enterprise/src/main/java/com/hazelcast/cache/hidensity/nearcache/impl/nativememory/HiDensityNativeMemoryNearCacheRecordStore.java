@@ -413,10 +413,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             nearCacheStats.decrementOwnedEntryCount();
             nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
         }
-
     }
-
-    ;
 
     /**
      * {@link ExpirationChecker} implementation for checking record expiration
@@ -429,7 +426,4 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         }
 
     }
-
-    ;
-
 }

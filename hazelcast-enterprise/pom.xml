@@ -97,6 +97,7 @@
                                 <includes>
                                     <include>com.hazelcast:hazelcast</include>
                                     <include>com.hazelcast:hazelcast-enterprise</include>
+                                    <include>com.hazelcast:hazelcast-enterprise-native-memory</include>
                                     <include>com.hazelcast.marketing:hazelcast-license-extractor</include>
                                 </includes>
                             </artifactSet>
@@ -130,12 +131,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.jnr</groupId>
-            <artifactId>jnr-ffi</artifactId>
-            <version>1.0.10</version>
-            <scope>provided</scope>
-            <optional>true</optional>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-enterprise-native-memory</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
+
         <dependency>
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>

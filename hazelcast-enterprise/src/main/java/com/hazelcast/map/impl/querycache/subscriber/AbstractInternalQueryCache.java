@@ -13,7 +13,7 @@ import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.impl.IndexService;
+import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryEntry;
 
 import java.util.AbstractMap;
@@ -35,7 +35,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     protected final IMap delegate;
     protected final QueryCacheContext context;
     protected final QueryCacheRecordStore recordStore;
-    protected final IndexService indexService;
+    protected final Indexes indexes;
     protected final SerializationService serializationService;
     protected final PartitioningStrategy partitioningStrategy;
 
@@ -45,12 +45,12 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         this.mapName = delegate.getName();
         this.delegate = delegate;
         this.context = context;
-        this.indexService = new IndexService();
+        this.indexes = new Indexes();
         this.serializationService = context.getSerializationService();
         this.includeValue = isIncludeValue();
         this.partitioningStrategy = getPartitioningStrategy();
         this.recordStore = new DefaultQueryCacheRecordStore(serializationService,
-                indexService, getQueryCacheConfig(), getEvictionListener());
+                indexes, getQueryCacheConfig(), getEvictionListener());
 
     }
 
@@ -163,6 +163,6 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
 
     public void clear() {
         recordStore.clear();
-        indexService.clearIndexes();
+        indexes.clearIndexes();
     }
 }

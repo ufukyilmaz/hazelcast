@@ -19,7 +19,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.TruePredicate;
-import com.hazelcast.query.impl.IndexService;
+import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.EventFilter;
@@ -310,7 +310,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
         Set<K> resultingSet = new HashSet<K>();
 
-        Set<QueryableEntry> query = indexService.query(predicate);
+        Set<QueryableEntry> query = indexes.query(predicate);
         if (query != null) {
             for (QueryableEntry entry : query) {
                 K key = (K) entry.getKey();
@@ -329,7 +329,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
         Set<Map.Entry<K, V>> resultingSet = new HashSet<Map.Entry<K, V>>();
 
-        Set<QueryableEntry> query = indexService.query(predicate);
+        Set<QueryableEntry> query = indexes.query(predicate);
         if (query != null) {
             if (query.isEmpty()) {
                 return Collections.emptySet();
@@ -353,7 +353,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
         Set<V> resultingSet = new HashSet<V>();
 
-        Set<QueryableEntry> query = indexService.query(predicate);
+        Set<QueryableEntry> query = indexes.query(predicate);
         if (query != null) {
             for (QueryableEntry entry : query) {
                 resultingSet.add((V) entry.getValue());
@@ -429,7 +429,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
     @Override
     public void addIndex(String attribute, boolean ordered) {
-        getIndexService().addOrGetIndex(attribute, ordered);
+        getIndexes().addOrGetIndex(attribute, ordered);
 
         SerializationService serializationService = context.getSerializationService();
 
@@ -439,7 +439,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
             QueryCacheRecord record = entry.getValue();
             Object value = record.getValue();
             QueryEntry queryable = new QueryEntry(serializationService, keyData, keyData, value);
-            indexService.saveEntryIndex(queryable);
+            indexes.saveEntryIndex(queryable);
         }
     }
 
@@ -455,8 +455,8 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
     }
 
     @Override
-    public IndexService getIndexService() {
-        return indexService;
+    public Indexes getIndexes() {
+        return indexes;
     }
 
     @Override

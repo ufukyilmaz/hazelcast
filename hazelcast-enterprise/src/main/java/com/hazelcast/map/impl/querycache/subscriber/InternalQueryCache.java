@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.querycache.subscriber;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.QueryCache;
-import com.hazelcast.query.impl.IndexService;
+import com.hazelcast.query.impl.Indexes;
 
 /**
  * Internal interface which adds some internally used methods to {@code QueryCache} interface.
@@ -21,7 +21,7 @@ public interface InternalQueryCache<K, V> extends QueryCache<K, V> {
 
     IMap<K, V> getDelegate();
 
-    IndexService getIndexService();
+    Indexes getIndexes();
 
     void clear();
 }

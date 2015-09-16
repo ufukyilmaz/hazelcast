@@ -3,6 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <name>Hazelcast Enterprise Root</name>
     <modules>
+        <module>hazelcast-enterprise-native-memory</module>
         <module>hazelcast-enterprise</module>
         <module>hazelcast-enterprise-client</module>
         <module>hazelcast-enterprise-client-new</module>

@@ -46,7 +46,7 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
         String registrationId = mapServiceContext.addListenerAdapter(adapter, EMPTY_FILTER, name);
-        endpoint.setListenerRegistration(MapService.SERVICE_NAME, name, registrationId);
+        endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, name, registrationId);
         return registrationId;
     }
 

@@ -23,6 +23,7 @@ import sun.misc.Unsafe;
 
 import java.nio.ByteOrder;
 
+import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
@@ -39,6 +40,10 @@ public final class NativeMemoryDataUtil {
     public static boolean equals(long address, Data data) {
         if (data instanceof NativeMemoryData) {
             return equals(address, ((NativeMemoryData) data).address());
+        }
+
+        if (address == NULL_ADDRESS) {
+            return false;
         }
 
         int type = readType(address);
@@ -71,10 +76,10 @@ public final class NativeMemoryDataUtil {
         if (address1 == address2) {
             return true;
         }
-        if (address1 <= 0L) {
+        if (address1 == NULL_ADDRESS) {
             return false;
         }
-        if (address2 <= 0L) {
+        if (address2 == NULL_ADDRESS) {
             return false;
         }
 
@@ -101,10 +106,10 @@ public final class NativeMemoryDataUtil {
         if (address1 == address2) {
             return true;
         }
-        if (address1 <= 0L) {
+        if (address1 == NULL_ADDRESS) {
             return false;
         }
-        if (address2 <= 0L) {
+        if (address2 == NULL_ADDRESS) {
             return false;
         }
 
@@ -130,7 +135,7 @@ public final class NativeMemoryDataUtil {
     }
 
     public static boolean equals(long address, final int bufferSize, byte[] bytes) {
-        if (address <= 0 || bytes == null || bytes.length == 0
+        if (address == NULL_ADDRESS || bytes == null || bytes.length == 0
                 || bufferSize != bytes.length - HeapData.DATA_OFFSET) {
             return false;
         }

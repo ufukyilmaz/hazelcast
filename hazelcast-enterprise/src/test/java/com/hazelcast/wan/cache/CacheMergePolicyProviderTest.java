@@ -1,7 +1,8 @@
 package com.hazelcast.wan.cache;
 
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.merge.CacheMergePolicyProvider;
+import com.hazelcast.cache.CacheMergePolicy;
+import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
+import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -15,7 +16,7 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Tests for {@link com.hazelcast.cache.merge.CacheMergePolicyProvider}
+ * Tests for {@link com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider}
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -30,7 +31,7 @@ public class CacheMergePolicyProviderTest extends HazelcastTestSupport{
         instance = factory.newHazelcastInstance();
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test(expected = InvalidConfigurationException.class)
     public void nullMergePolicyCheck() {
         CacheMergePolicyProvider cacheMergePolicyProvider = new CacheMergePolicyProvider(getNodeEngineImpl(instance));
         cacheMergePolicyProvider.getMergePolicy(null);

@@ -2,9 +2,9 @@ package com.hazelcast.cache.wan;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheSimpleConfig;
@@ -44,11 +44,11 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         Object eventObject = replicationEvent.getEventObject();
 
         if (eventObject instanceof CacheReplicationObject) {
-
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
             CacheConfig cacheConfig = null;
             try {
-                cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(), cacheReplicationObject.getCacheName());
+                cacheConfig = getCacheConfig(cacheReplicationObject.getNameWithPrefix(),
+                                             cacheReplicationObject.getCacheName());
             } catch (Exception e) {
                 ExceptionUtil.rethrow(e);
             }
@@ -100,9 +100,11 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                                    CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
-        Operation operation = operationProvider
-                .createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(), MutableOperation.IGNORE_COMPLETION);
+                                .getCacheOperationProvider(cacheReplicationRemove.getNameWithPrefix(),
+                                                           cacheConfig.getInMemoryFormat());
+        Operation operation =
+                operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
+                                                           MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationRemove.getKey());
         operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
@@ -112,12 +114,13 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                                    CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
-                .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(), cacheConfig.getInMemoryFormat());
+                                .getCacheOperationProvider(cacheReplicationUpdate.getNameWithPrefix(),
+                                                           cacheConfig.getInMemoryFormat());
         CacheMergePolicy mergePolicy = cacheService
                 .getCacheMergePolicyProvider().getMergePolicy(cacheReplicationUpdate.getMergePolicy());
-        Operation operation = operationProvider.createWanMergeOperation(
-                ORIGIN,
-                cacheReplicationUpdate.getEntryView(), mergePolicy, MutableOperation.IGNORE_COMPLETION);
+        Operation operation =
+                operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
+                                                          mergePolicy, MutableOperation.IGNORE_COMPLETION);
         OperationService operationService = nodeEngine.getOperationService();
         int partitionId = getPartitionId(nodeEngine, cacheReplicationUpdate.getKey());
         operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);

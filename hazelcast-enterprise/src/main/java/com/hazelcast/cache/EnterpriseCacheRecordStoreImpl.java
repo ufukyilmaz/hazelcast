@@ -2,10 +2,8 @@ package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.AbstractCacheService;
 import com.hazelcast.cache.impl.CacheRecordStore;
+import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
-import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
@@ -33,7 +31,7 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
 
         boolean merged = false;
         Data key = cacheEntryView.getKey();
-        Object value = cacheEntryView.getValue();
+        Data value = cacheEntryView.getValue();
         long expiryTime = cacheEntryView.getExpirationTime();
         CacheRecord record = records.get(key);
 
@@ -46,8 +44,11 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
                 Object newValue =
                         mergePolicy.merge(name,
                                           cacheEntryView,
-                                          new SimpleCacheEntryView(key, record.getValue(),
-                                                  record.getExpirationTime(), record.getAccessHit()));
+                                          new DefaultCacheEntryView(key,
+                                                                    toData(record.getValue()),
+                                                                    record.getExpirationTime(),
+                                                                    record.getAccessTime(),
+                                                                    record.getAccessHit()));
                 if (record.getValue() != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
                                                     now, true, completionId, caller, origin);

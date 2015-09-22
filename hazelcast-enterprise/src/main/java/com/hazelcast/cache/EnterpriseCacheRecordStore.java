@@ -1,8 +1,6 @@
 package com.hazelcast.cache;
 
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.serialization.Data;
 
 /**

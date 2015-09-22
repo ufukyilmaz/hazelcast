@@ -14,9 +14,9 @@ import java.util.Set;
  */
 public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, DataSerializable {
 
-    String cacheName;
-    String managerPrefix;
-    Set<String> groupNames = new HashSet<String>();
+    private String cacheName;
+    private String managerPrefix;
+    private Set<String> groupNames = new HashSet<String>();
 
     public CacheReplicationObject(String cacheName, String managerPrefix) {
         this.cacheName = cacheName;

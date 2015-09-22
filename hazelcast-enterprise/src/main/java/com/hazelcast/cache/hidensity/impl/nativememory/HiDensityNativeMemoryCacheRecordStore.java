@@ -9,11 +9,11 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSiz
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
-import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.SlottableIterator;
@@ -813,21 +813,24 @@ public class HiDensityNativeMemoryCacheRecordStore
         try {
             if (record == null || isExpired) {
                 merged = createRecordWithExpiry(key, value, expiryTime,
-                        now, true, completionId, origin) != null;
+                                                now, true, completionId, origin) != null;
             } else {
                 Object existingValue = record.getValue();
                 Object newValue =
-                        mergePolicy.merge(name,
-                                cacheEntryView,
-                                new SimpleCacheEntryView(key, existingValue,
-                                        record.getExpirationTime(), record.getAccessHit()));
+                        mergePolicy.merge(name, cacheEntryView,
+                                          new DefaultCacheEntryView(key,
+                                                                    // TODO Should we pass heap data for safety?
+                                                                    toData(existingValue),
+                                                                    record.getExpirationTime(),
+                                                                    record.getAccessTime(),
+                                                                    record.getAccessHit()));
                 if (existingValue != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                            now, true, completionId, caller, origin);
+                                                    now, true, completionId, caller, origin);
                 }
                 publishEvent(createCacheCompleteEvent(cacheEntryView.getKey(),
-                        CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
-                        origin, completionId));
+                                                      CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
+                                                      origin, completionId));
             }
 
             onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);

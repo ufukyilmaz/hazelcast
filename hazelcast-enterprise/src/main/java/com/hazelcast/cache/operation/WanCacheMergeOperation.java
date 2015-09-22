@@ -1,10 +1,10 @@
 package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.EnterpriseCacheRecordStore;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CachePutBackupOperation;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;

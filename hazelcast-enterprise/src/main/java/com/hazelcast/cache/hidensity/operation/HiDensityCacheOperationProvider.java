@@ -1,10 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.CacheClearOperationFactory;
 import com.hazelcast.cache.impl.operation.CacheRemoveAllOperationFactory;
-import com.hazelcast.cache.merge.CacheMergePolicy;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
-import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;

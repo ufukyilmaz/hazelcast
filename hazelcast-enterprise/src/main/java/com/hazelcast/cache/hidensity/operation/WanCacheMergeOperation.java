@@ -1,9 +1,9 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.HazelcastExpiryPolicy;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;

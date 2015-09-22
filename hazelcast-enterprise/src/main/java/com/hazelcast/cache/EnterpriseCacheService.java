@@ -10,14 +10,15 @@ import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
-import com.hazelcast.cache.merge.CacheMergePolicyProvider;
+import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
+import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
-import com.hazelcast.cache.wan.SimpleCacheEntryView;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
@@ -45,7 +46,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The {@link CacheService} implementation specified for enterprise usage.
+ * The {@link ICacheService} implementation specified for enterprise usage.
  * This {@link EnterpriseCacheService} implementation mainly handles
  * <ul>
  * <li>
@@ -61,7 +62,9 @@ import java.util.concurrent.TimeUnit;
  *
  * @author mdogan 05/02/14
  */
-public class EnterpriseCacheService extends CacheService implements ReplicationSupportingService {
+public class EnterpriseCacheService
+        extends CacheService
+        implements ReplicationSupportingService {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
@@ -121,8 +124,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
             return new EnterpriseCacheRecordStoreImpl(name, partitionId, nodeEngine, this);
         }
 
-        throw new IllegalArgumentException("Cannot create record store for the storage type: "
-                + inMemoryFormat);
+        throw new IllegalArgumentException("Cannot create record store for the storage type: " + inMemoryFormat);
     }
 
     /**
@@ -138,8 +140,8 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
             if (segment.hasRecordStore(cacheName)) {
                 CacheDestroyOperation op = new CacheDestroyOperation(cacheName);
                 ops.add(op);
-                op.setPartitionId(segment.getPartitionId())
-                        .setNodeEngine(nodeEngine).setService(this);
+                op.setPartitionId(segment.getPartitionId());
+                op.setNodeEngine(nodeEngine).setService(this);
                 operationService.executeOperation(op);
             }
         }
@@ -180,8 +182,8 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation();
-                op.setPartitionId(segment.getPartitionId())
-                        .setNodeEngine(nodeEngine).setService(this);
+                op.setPartitionId(segment.getPartitionId());
+                op.setNodeEngine(nodeEngine).setService(this);
 
                 if (operationService.isAllowedToRunOnCallingThread(op)) {
                     operationService.runOperationOnCallingThread(op);
@@ -318,7 +320,7 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     }
 
     /**
-     * Gets the {@link EnterpriseSerializationService} used by this {@link CacheService}.
+     * Gets the {@link EnterpriseSerializationService} used by this {@link ICacheService}.
      *
      * @return the used {@link EnterpriseSerializationService}
      */
@@ -348,7 +350,8 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
         WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         if (wanReplicationRef != null) {
             WanReplicationService wanReplicationService = nodeEngine.getWanReplicationService();
-            wanReplicationPublishers.putIfAbsent(config.getNameWithPrefix(),
+            wanReplicationPublishers.putIfAbsent(
+                    config.getNameWithPrefix(),
                     wanReplicationService.getWanReplicationPublisher(wanReplicationRef.getName()));
             cacheMergePolicies.putIfAbsent(config.getNameWithPrefix(), wanReplicationRef.getMergePolicy());
         }
@@ -374,24 +377,28 @@ public class EnterpriseCacheService extends CacheService implements ReplicationS
     public void publishEvent(CacheEventContext cacheEventContext) {
         String cacheName = cacheEventContext.getCacheName();
         CacheEventType eventType = cacheEventContext.getEventType();
-        WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheEventContext.getCacheName());
-
+        WanReplicationPublisher wanReplicationPublisher =
+                wanReplicationPublishers.get(cacheEventContext.getCacheName());
         if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = configs.get(cacheName);
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
                 CacheReplicationUpdate update =
-                        new CacheReplicationUpdate(config.getName(), cacheMergePolicies.get(cacheName),
-                                new SimpleCacheEntryView(cacheEventContext.getDataKey(),
+                        new CacheReplicationUpdate(
+                                config.getName(),
+                                cacheMergePolicies.get(cacheName),
+                                new DefaultCacheEntryView(cacheEventContext.getDataKey(),
                                         cacheEventContext.getDataValue(),
                                         cacheEventContext.getExpirationTime(),
+                                        cacheEventContext.getLastAccessTime(),
                                         cacheEventContext.getAccessHit()),
                                 config.getManagerPrefix());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
-                        Clock.currentTimeMillis(), config.getManagerPrefix());
+                CacheReplicationRemove remove =
+                        new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
+                                Clock.currentTimeMillis(), config.getManagerPrefix());
                 wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
             }
         }

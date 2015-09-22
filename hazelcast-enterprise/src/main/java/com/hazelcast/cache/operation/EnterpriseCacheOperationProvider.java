@@ -1,8 +1,8 @@
 package com.hazelcast.cache.operation;
 
 import com.hazelcast.cache.impl.DefaultOperationProvider;
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 

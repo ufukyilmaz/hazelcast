@@ -1,14 +1,15 @@
 package com.hazelcast.wan.cache;
 
-import com.hazelcast.cache.merge.CacheMergePolicy;
-import com.hazelcast.cache.wan.CacheEntryView;
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 
 import java.io.IOException;
 
 /**
- * Copy of {@link com.hazelcast.cache.merge.PassThroughCacheMergePolicy} to test custom merge policy registration
+ * Copy of {@link com.hazelcast.cache.impl.merge.policy.PassThroughCacheMergePolicy}
+ * to test custom merge policy registration
  */
 public class CustomCacheMergePolicy implements CacheMergePolicy {
 

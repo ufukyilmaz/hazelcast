@@ -11,8 +11,8 @@ import java.io.IOException;
  */
 public class CacheReplicationRemove extends CacheReplicationObject {
 
-    Data key;
-    long removeTime;
+    private Data key;
+    private long removeTime;
 
     public CacheReplicationRemove(String cacheName, Data key, long removeTime, String managerPrefix) {
         super(cacheName, managerPrefix);

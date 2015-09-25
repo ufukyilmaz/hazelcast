@@ -150,7 +150,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine();
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
-        return (QueryResultSet) queryEngine.queryLocalMember(name, info.getPredicate(), iterationType, true);
+        return (QueryResultSet) queryEngine.queryLocalPartitions(name, info.getPredicate(), iterationType, true);
     }
 
     /**

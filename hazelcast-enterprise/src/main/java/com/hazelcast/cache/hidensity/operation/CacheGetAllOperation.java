@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.map.impl.MapEntrySet;
+import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -23,7 +23,7 @@ public class CacheGetAllOperation
         extends AbstractHiDensityCacheOperation
         implements ReadonlyOperation {
 
-    private static final MapEntrySet EMPTY_ENTRY_SET = new MapEntrySet();
+    private static final MapEntries EMPTY_ENTRY_SET = new MapEntries();
 
     private Set<Data> keys = new HashSet<Data>();
     private ExpiryPolicy expiryPolicy;

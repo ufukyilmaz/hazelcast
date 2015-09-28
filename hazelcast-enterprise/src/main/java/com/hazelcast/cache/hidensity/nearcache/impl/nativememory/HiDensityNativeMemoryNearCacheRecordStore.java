@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
+import com.hazelcast.cache.hidensity.impl.nativememory.CacheHiDensityRecordProcessor;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
@@ -15,7 +16,6 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityRecordStore;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
-import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -96,7 +96,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
         if (recordProcessor == null) {
             this.recordProcessor =
-                    new DefaultHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
+                    new CacheHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
                             serializationService, recordAccessor,
                             memoryManager, storageInfo);
         }

@@ -19,14 +19,13 @@ import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
-import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
@@ -123,7 +122,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         if (cacheRecordProcessor == null) {
             cacheRecordProcessor =
-                    new DefaultHiDensityRecordProcessor(
+                    new CacheHiDensityRecordProcessor(
                             serializationService,
                             new HiDensityNativeMemoryCacheRecordAccessor(serializationService, memoryManager),
                             memoryManager, cacheInfo);

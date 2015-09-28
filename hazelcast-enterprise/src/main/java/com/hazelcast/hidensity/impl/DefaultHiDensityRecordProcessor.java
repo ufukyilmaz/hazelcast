@@ -4,31 +4,30 @@ import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 
 /**
- * @author sozal 18/02/15
- *
  * @param <R> the type of the {@link HiDensityRecord} to be processed
+ * @author sozal 18/02/15
  */
 public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         implements HiDensityRecordProcessor<R> {
 
-    private final EnterpriseSerializationService serializationService;
-    private final HiDensityRecordAccessor<R> recordAccessor;
-    private final MemoryManager memoryManager;
-    private final HiDensityStorageInfo storageInfo;
+    protected final EnterpriseSerializationService serializationService;
+    protected final HiDensityRecordAccessor<R> recordAccessor;
+    protected final MemoryManager memoryManager;
+    protected final HiDensityStorageInfo storageInfo;
 
-    private final Queue<MemoryBlock> deferredBlocksQueue = new ArrayDeque<MemoryBlock>(8);
+    protected final Queue<MemoryBlock> deferredBlocksQueue = new ArrayDeque<MemoryBlock>(8);
 
     public DefaultHiDensityRecordProcessor(EnterpriseSerializationService serializationService,
                                            HiDensityRecordAccessor<R> recordAccessor,
@@ -186,9 +185,9 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
             }
 
             if (block instanceof NativeMemoryData) {
-                recordAccessor.disposeData((NativeMemoryData) block);
+                disposeData((NativeMemoryData) block);
             } else if (block instanceof HiDensityRecord) {
-                recordAccessor.dispose((R) block);
+                dispose((R) block);
             } else {
                 memoryManager.free(block.address(), block.size());
             }

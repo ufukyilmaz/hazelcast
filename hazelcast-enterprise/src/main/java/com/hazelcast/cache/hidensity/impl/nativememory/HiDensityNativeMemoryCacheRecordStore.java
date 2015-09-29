@@ -233,7 +233,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             return null;
         }
         CacheRecord cacheRecord = new CacheDataRecord();
-        cacheRecord.setCreationTime(record.getAccessTime());
+        cacheRecord.setCreationTime(record.getCreationTime());
         cacheRecord.setAccessTime(record.getAccessTime());
         cacheRecord.setAccessHit(record.getAccessHit());
         cacheRecord.setExpirationTime(record.getExpirationTime());

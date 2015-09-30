@@ -24,6 +24,7 @@ import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.nio.Address;
@@ -33,7 +34,6 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.QueryResultSet;
 
 import java.security.Permission;
 import java.util.ArrayList;

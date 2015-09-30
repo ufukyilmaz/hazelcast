@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.Member;
+import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -10,7 +11,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.FutureUtil;
-import com.hazelcast.util.QueryResultSet;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;

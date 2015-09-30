@@ -4,6 +4,9 @@ import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.AbstractMapOperation;
 import com.hazelcast.map.impl.query.MapQueryEngine;
+import com.hazelcast.map.impl.query.QueryResultCollection;
+import com.hazelcast.map.impl.query.QueryResultRow;
+import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
@@ -18,8 +21,6 @@ import com.hazelcast.map.impl.querycache.utils.QueryCacheUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.query.impl.QueryResultEntry;
-import com.hazelcast.query.impl.QueryResultEntryImpl;
 import com.hazelcast.spi.ExecutionService;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
@@ -27,8 +28,6 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.FutureUtil;
 import com.hazelcast.util.IterationType;
-import com.hazelcast.util.QueryResultSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -150,7 +149,8 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine();
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
-        return (QueryResultSet) queryEngine.queryLocalPartitions(name, info.getPredicate(), iterationType, true);
+        //return (QueryResultSet) queryEngine.queryLocalPartitions(name, info.getPredicate(), iterationType, true);
+        return null;
     }
 
     /**
@@ -167,7 +167,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
             Object toObject = mapServiceContext.toObject(result);
             List<QueryCacheEventData> eventDataList = (List<QueryCacheEventData>) toObject;
             for (QueryCacheEventData eventData : eventDataList) {
-                QueryResultEntry entry = createQueryResultEntry(eventData);
+                QueryResultRow entry = createQueryResultEntry(eventData);
                 add(queryResultSet, entry);
             }
         }
@@ -194,7 +194,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         return getResult(lsFutures);
     }
 
-    private void add(QueryResultSet queryResultSet, QueryResultEntry entry) {
+    private void add(QueryResultSet queryResultSet, QueryResultRow entry) {
         // entry in the queryResultSet and new entry is compared by the keyData of QueryResultEntryImpl instances.
         // values of the entries may be different if keyData-s are equal
         // so this `if` is checking the existence of keyData in the set. If it is there, just removing it and adding
@@ -205,10 +205,10 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         queryResultSet.add(entry);
     }
 
-    private QueryResultEntry createQueryResultEntry(QueryCacheEventData eventData) {
+    private QueryResultRow createQueryResultEntry(QueryCacheEventData eventData) {
         Data dataKey = eventData.getDataKey();
         Data dataNewValue = eventData.getDataNewValue();
-        return new QueryResultEntryImpl(dataKey, dataKey, dataNewValue);
+        return new QueryResultRow(dataKey, dataNewValue);
     }
 
     private Collection<Integer> getPartitionIdsOfAccumulators() {

@@ -6,6 +6,7 @@ import com.hazelcast.client.impl.client.RetryableRequest;
 import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.nio.Address;
@@ -13,7 +14,6 @@ import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.QueryResultSet;
 
 import java.io.IOException;
 import java.security.Permission;

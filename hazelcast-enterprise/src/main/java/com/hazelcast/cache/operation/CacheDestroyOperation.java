@@ -6,6 +6,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.impl.AllowedDuringShutdown;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class CacheDestroyOperation
         extends AbstractOperation
-        implements PartitionAwareOperation {
+        implements PartitionAwareOperation, AllowedDuringShutdown {
 
     private final CountDownLatch done = new CountDownLatch(1);
     private final String name;

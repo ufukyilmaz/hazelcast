@@ -6,7 +6,7 @@ import com.hazelcast.client.impl.client.RetryableRequest;
 import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.query.QueryResultSet;
+import com.hazelcast.map.impl.query.QueryResult;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.nio.Address;
@@ -44,12 +44,12 @@ public class PublisherCreateRequest extends InvocationClientRequest implements R
         Collection<MemberImpl> members = clusterService.getMemberImpls();
         List<Future> futures = new ArrayList<Future>(members.size());
         createInvocations(members, futures);
-        List<QueryResultSet> results = getQueryResultSets(futures);
+        List<QueryResult> results = getQueryResults(futures);
         getEndpoint().sendResponse(results, getCallId());
     }
 
-    private List<QueryResultSet> getQueryResultSets(List<Future> futures) {
-        List<QueryResultSet> results = new ArrayList<QueryResultSet>(futures.size());
+    private List<QueryResult> getQueryResults(List<Future> futures) {
+        List<QueryResult> results = new ArrayList<QueryResult>(futures.size());
         for (Future future : futures) {
             Object result = null;
             try {
@@ -60,8 +60,8 @@ public class PublisherCreateRequest extends InvocationClientRequest implements R
             if (result == null) {
                 continue;
             }
-            QueryResultSet queryResultSet = (QueryResultSet) result;
-            results.add(queryResultSet);
+            QueryResult queryResultRows = (QueryResult) result;
+            results.add(queryResultRows);
         }
         return results;
     }

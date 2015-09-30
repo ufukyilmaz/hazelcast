@@ -4,8 +4,8 @@ import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.AbstractMapOperation;
 import com.hazelcast.map.impl.query.MapQueryEngine;
+import com.hazelcast.map.impl.query.QueryResult;
 import com.hazelcast.map.impl.query.QueryResultRow;
-import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
@@ -49,7 +49,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
 
     private AccumulatorInfo info;
 
-    private transient QueryResultSet resultSet;
+    private transient QueryResult queryResult;
 
     public PublisherCreateOperation() {
     }
@@ -67,9 +67,9 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         }
         init();
         if (populate) {
-            this.resultSet = createSnapshot();
+            this.queryResult = createSnapshot();
         } else {
-            this.resultSet = null;
+            this.queryResult = null;
         }
     }
 
@@ -87,7 +87,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
 
     @Override
     public Object getResponse() {
-        return resultSet;
+        return queryResult;
     }
 
     private void init() {
@@ -125,7 +125,6 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         PublisherRegistry publisherRegistry = mapPublisherRegistry.getOrCreate(mapName);
         PartitionAccumulatorRegistry partitionAccumulatorRegistry = publisherRegistry.getOrCreate(cacheName);
         partitionAccumulatorRegistry.setUuid(getCallerUuid());
-
     }
 
     private PublisherContext getPublisherContext() {
@@ -138,24 +137,23 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         return mapServiceContext.getQueryCacheContext();
     }
 
-    private QueryResultSet createSnapshot() throws Exception {
-        QueryResultSet queryResultSet = runInitialQuery();
-        replayEventsOnResultSet(queryResultSet);
-        return queryResultSet;
+    private QueryResult createSnapshot() throws Exception {
+        QueryResult queryResult = runInitialQuery();
+        replayEventsOnResultSet(queryResult);
+        return queryResult;
     }
 
-    private QueryResultSet runInitialQuery() {
+    private QueryResult runInitialQuery() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine();
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
-        //return (QueryResultSet) queryEngine.queryLocalPartitions(name, info.getPredicate(), iterationType, true);
-        return null;
+        return queryEngine.invokeQueryLocalPartitions(name, info.getPredicate(), iterationType);
     }
 
     /**
      * Replay the events on returned result-set which are generated during `runInitialQuery` call.
      */
-    private void replayEventsOnResultSet(final QueryResultSet queryResultSet) throws Exception {
+    private void replayEventsOnResultSet(final QueryResult queryResult) throws Exception {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
 
         Collection<Object> resultCollection = readAccumulators();
@@ -167,7 +165,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
             List<QueryCacheEventData> eventDataList = (List<QueryCacheEventData>) toObject;
             for (QueryCacheEventData eventData : eventDataList) {
                 QueryResultRow entry = createQueryResultEntry(eventData);
-                add(queryResultSet, entry);
+                add(queryResult, entry);
             }
         }
     }
@@ -193,15 +191,16 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         return getResult(lsFutures);
     }
 
-    private void add(QueryResultSet queryResultSet, QueryResultRow entry) {
-        // entry in the queryResultSet and new entry is compared by the keyData of QueryResultEntryImpl instances.
+    private void add(QueryResult result, QueryResultRow row) {
+        // row in the queryResultSet and new row is compared by the keyData of QueryResultEntryImpl instances.
         // values of the entries may be different if keyData-s are equal
         // so this `if` is checking the existence of keyData in the set. If it is there, just removing it and adding
-        // `the new entry with the same keyData but possibly with the new value`.
-        if (queryResultSet.contains(entry)) {
-            queryResultSet.remove(entry);
-        }
-        queryResultSet.add(entry);
+        // `the new row with the same keyData but possibly with the new value`.
+    //todo
+//        if (queryResultSet.contains(row)) {
+//            queryResultSet.remove(row);
+//        }
+        result.addRow(row);
     }
 
     private QueryResultRow createQueryResultEntry(QueryCacheEventData eventData) {
@@ -216,7 +215,6 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         QueryCacheContext context = getContext();
         return QueryCacheUtil.getAccumulators(context, mapName, cacheName).keySet();
     }
-
 
     /**
      * Reads the accumulator in a partition.

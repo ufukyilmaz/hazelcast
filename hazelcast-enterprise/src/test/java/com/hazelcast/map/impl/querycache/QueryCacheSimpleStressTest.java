@@ -18,14 +18,12 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class QueryCacheSimpleStressTest extends HazelcastTestSupport {

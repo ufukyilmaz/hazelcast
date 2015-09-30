@@ -15,7 +15,6 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -26,7 +25,6 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSupport {

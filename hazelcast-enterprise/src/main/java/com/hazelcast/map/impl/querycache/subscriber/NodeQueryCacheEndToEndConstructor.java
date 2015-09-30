@@ -2,7 +2,8 @@ package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.Member;
-import com.hazelcast.map.impl.query.QueryResultSet;
+import com.hazelcast.map.impl.query.QueryResult;
+import com.hazelcast.map.impl.query.QueryResultRow;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -12,10 +13,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.FutureUtil;
 
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -34,17 +33,17 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
     @Override
     public void createPublisherAccumulator(AccumulatorInfo info) throws Exception {
         // create publishers and execute initial population query in one go.
-        Collection<QueryResultSet> queryResultSets = createPublishersAndGetQueryResultSets(info);
-        setResults(queryCache, queryResultSets);
+        Collection<QueryResult> results = createPublishersAndGetQueryResults(info);
+        setResults(queryCache, results);
         if (info.isPopulate()) {
             madePublishable(info.getMapName(), info.getCacheName());
         }
     }
 
-    private Collection<QueryResultSet> createPublishersAndGetQueryResultSets(AccumulatorInfo info) {
+    private Collection<QueryResult> createPublishersAndGetQueryResults(AccumulatorInfo info) {
         InvokerWrapper invokerWrapper = context.getInvokerWrapper();
         Collection<Member> members = context.getMemberList();
-        List<Future<QueryResultSet>> futures = new ArrayList<Future<QueryResultSet>>(members.size());
+        List<Future<QueryResult>> futures = new ArrayList<Future<QueryResult>>(members.size());
         for (Member member : members) {
             Address address = member.getAddress();
             Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), address);
@@ -60,28 +59,28 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
         invokerWrapper.invokeOnAllPartitions(operationFactory);
     }
 
-    private void setResults(InternalQueryCache queryCache, Collection<QueryResultSet> resultSets) {
-        if (resultSets == null || resultSets.isEmpty()) {
+    private void setResults(InternalQueryCache queryCache, Collection<QueryResult> results) {
+        if (results == null || results.isEmpty()) {
             return;
         }
+
+        //todo: afaik no switch is needed since queryresults will not contain value if it wasn't requested.
         if (includeValue) {
-            populateWithValues(queryCache, resultSets);
+            populateWithValues(queryCache, results);
         } else {
-            populateWithoutValues(queryCache, resultSets);
+            populateWithoutValues(queryCache, results);
         }
     }
 
-    private void populateWithValues(InternalQueryCache queryCache, Collection<QueryResultSet> resultSets) {
-        for (QueryResultSet queryResultSet : resultSets) {
+    private void populateWithValues(InternalQueryCache queryCache, Collection<QueryResult> resultSets) {
+        for (QueryResult queryResult : resultSets) {
             try {
-                if (queryResultSet == null) {
+                if (queryResult == null) {
                     continue;
                 }
-                Iterator iterator = queryResultSet.iterator();
-                while (iterator.hasNext()) {
-                    AbstractMap.SimpleImmutableEntry entry = (AbstractMap.SimpleImmutableEntry) iterator.next();
-                    Data keyData = (Data) entry.getKey();
-                    Data valueData = (Data) entry.getValue();
+                for (QueryResultRow row : queryResult) {
+                    Data keyData = row.getKey();
+                    Data valueData = row.getValue();
                     queryCache.setInternal(keyData, valueData, false, EntryEventType.ADDED);
                 }
             } catch (Throwable t) {
@@ -91,15 +90,14 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
 
     }
 
-    private void populateWithoutValues(InternalQueryCache queryCache, Collection<QueryResultSet> resultSets) {
-        for (QueryResultSet queryResultSet : resultSets) {
+    private void populateWithoutValues(InternalQueryCache queryCache, Collection<QueryResult> resultSets) {
+        for (QueryResult queryResult : resultSets) {
             try {
-                if (queryResultSet == null) {
+                if (queryResult == null) {
                     continue;
                 }
-                Iterator iterator = queryResultSet.iterator();
-                while (iterator.hasNext()) {
-                    Data dataKey = (Data) iterator.next();
+                for (QueryResultRow row : queryResult) {
+                    Data dataKey = row.getKey();
                     queryCache.setInternal(dataKey, null, false, EntryEventType.ADDED);
                 }
             } catch (Throwable t) {

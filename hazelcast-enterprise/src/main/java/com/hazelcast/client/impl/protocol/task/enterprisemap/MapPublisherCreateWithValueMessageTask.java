@@ -24,7 +24,8 @@ import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.query.QueryResultSet;
+import com.hazelcast.map.impl.query.QueryResult;
+import com.hazelcast.map.impl.query.QueryResultRow;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.nio.Address;
@@ -64,7 +65,7 @@ public class MapPublisherCreateWithValueMessageTask
         List<Future> futures = new ArrayList<Future>(members.size());
         createInvocations(members, futures);
 
-        return getQueryResultSets(futures);
+        return getQueryResults(futures);
     }
 
     private void createInvocations(Collection<MemberImpl> members, List<Future> futures) {
@@ -87,7 +88,7 @@ public class MapPublisherCreateWithValueMessageTask
         }
     }
 
-    private Set<Map.Entry<Data, Data>> getQueryResultSets(List<Future> futures) {
+    private Set<Map.Entry<Data, Data>> getQueryResults(List<Future> futures) {
         HashMap<Data, Data> results = new HashMap<Data, Data>(futures.size());
         for (Future future : futures) {
             Object result = null;
@@ -99,10 +100,8 @@ public class MapPublisherCreateWithValueMessageTask
             if (result == null) {
                 continue;
             }
-            QueryResultSet queryResultSet = (QueryResultSet) result;
-            for (Object o : queryResultSet) {
-                Map.Entry<Data, Data> entry = (Map.Entry<Data, Data>) o;
-                results.put(entry.getKey(), entry.getValue());
+            for (QueryResultRow row : (QueryResult) result) {
+                results.put(row.getKey(), row.getValue());
             }
         }
         return results.entrySet();

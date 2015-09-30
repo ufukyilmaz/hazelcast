@@ -14,7 +14,6 @@ import com.hazelcast.map.listener.EntryEvictedListener;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -23,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class EvictionTest extends HazelcastTestSupport {

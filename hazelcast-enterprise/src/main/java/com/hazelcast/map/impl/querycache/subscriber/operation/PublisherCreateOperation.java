@@ -4,7 +4,6 @@ import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.AbstractMapOperation;
 import com.hazelcast.map.impl.query.MapQueryEngine;
-import com.hazelcast.map.impl.query.QueryResultCollection;
 import com.hazelcast.map.impl.query.QueryResultRow;
 import com.hazelcast.map.impl.query.QueryResultSet;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;

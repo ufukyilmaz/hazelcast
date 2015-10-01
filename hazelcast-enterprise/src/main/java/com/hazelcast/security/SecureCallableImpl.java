@@ -72,6 +72,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.nio.IOUtil.closeResource;
+
 public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSerializable {
 
     private transient Node node;
@@ -381,6 +383,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
             properties.load(stream);
         } catch (IOException e) {
             ExceptionUtil.rethrow(e);
+        } finally {
+            closeResource(stream);
         }
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             final String key = (String) entry.getKey();

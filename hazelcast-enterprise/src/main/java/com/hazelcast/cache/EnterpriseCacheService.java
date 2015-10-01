@@ -5,6 +5,7 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCach
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
+import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
@@ -79,7 +80,15 @@ public class EnterpriseCacheService
             new ConstructorFunction<String, HiDensityStorageInfo>() {
                 @Override
                 public HiDensityStorageInfo createNew(String cacheNameWithPrefix) {
-                    return new HiDensityStorageInfo(cacheNameWithPrefix);
+                    CacheConfig cacheConfig = configs.get(cacheNameWithPrefix);
+                    if (cacheConfig.isStatisticsEnabled()) {
+                        CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
+                        return new HiDensityStorageInfo(
+                                        cacheNameWithPrefix,
+                                        HiDensityStorageInfo.createEntryCountResolver(cacheContext));
+                    } else {
+                        return new HiDensityStorageInfo(cacheNameWithPrefix);
+                    }
                 }
             };
 

@@ -337,7 +337,6 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         map.evictAll();
     }
 
-    @Ignore
     @Test
     public void test1_keySet() {
         interceptor.setExpectation(getObjectType(), objectName, "keySet");
@@ -351,7 +350,6 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         map.keySet(predicate);
     }
 
-    @Ignore
     @Test
     public void test1_values() {
         interceptor.setExpectation(getObjectType(), objectName, "values");
@@ -366,7 +364,6 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    @Ignore
     public void test1_entrySet() {
         interceptor.setExpectation(getObjectType(), objectName, "entrySet");
         map.entrySet();

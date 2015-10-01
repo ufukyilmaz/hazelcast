@@ -101,7 +101,7 @@ public class MapPublisherCreateMessageTask
             }
             QueryResult queryResult = (QueryResult) result;
             for (QueryResultRow row : queryResult) {
-                results.add( row.getKey());
+                results.add(row.getKey());
             }
         }
         return results;

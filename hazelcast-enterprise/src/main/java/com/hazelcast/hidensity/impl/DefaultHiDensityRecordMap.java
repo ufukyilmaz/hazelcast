@@ -61,17 +61,21 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     }
 
     @Override
-    public R replace(Data key, R value) {
-        return super.replace(key, value);
-    }
-
-    @Override
     public boolean delete(Data key) {
         boolean deleted = super.delete(key);
         if (deleted) {
             storageInfo.decreaseEntryCount();
         }
         return deleted;
+    }
+
+    @Override
+    public R remove(Object k) {
+        R removedRecord = super.remove(k);
+        if (removedRecord != null) {
+            storageInfo.decreaseEntryCount();
+        }
+        return removedRecord;
     }
 
     @Override

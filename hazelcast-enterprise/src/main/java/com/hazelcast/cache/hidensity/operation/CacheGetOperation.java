@@ -22,7 +22,7 @@ public class CacheGetOperation
     }
 
     public CacheGetOperation(String name, Data key, ExpiryPolicy expiryPolicy) {
-        super(name, key, true);
+        super(name, key);
         this.expiryPolicy = expiryPolicy;
     }
 

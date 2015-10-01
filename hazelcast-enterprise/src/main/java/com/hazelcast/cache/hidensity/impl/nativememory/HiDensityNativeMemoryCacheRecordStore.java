@@ -880,7 +880,11 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public int forceEvict() {
-        return records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
+        int evictedCount = records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
+        if (isStatisticsEnabled() && evictedCount > 0) {
+            statistics.increaseCacheEvictions(evictedCount);
+        }
+        return evictedCount;
     }
 
     @Override

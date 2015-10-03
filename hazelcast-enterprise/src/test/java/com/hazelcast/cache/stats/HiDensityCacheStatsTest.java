@@ -1,4 +1,4 @@
-package com.hazelcast.cache;
+package com.hazelcast.cache.stats;
 
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -10,29 +10,12 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.QuickTest;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
 public class HiDensityCacheStatsTest extends CacheStatsTest {
-
-    private static String elasticMemoryEnabledPropertyValue;
-
-    @BeforeClass
-    public static void beforeAll() {
-        elasticMemoryEnabledPropertyValue = System.getProperty("hazelcast.elastic.memory.enabled");
-        System.setProperty("hazelcast.elastic.memory.enabled", "false");
-    }
-
-    @AfterClass
-    public static void afterAll() {
-        if (elasticMemoryEnabledPropertyValue != null) {
-            System.setProperty("hazelcast.elastic.memory.enabled", elasticMemoryEnabledPropertyValue);
-        }
-    }
 
     @Override
     protected Config createConfig() {

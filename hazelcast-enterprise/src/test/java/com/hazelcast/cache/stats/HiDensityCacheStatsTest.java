@@ -1,4 +1,4 @@
-package com.hazelcast.cache;
+package com.hazelcast.cache.stats;
 
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;

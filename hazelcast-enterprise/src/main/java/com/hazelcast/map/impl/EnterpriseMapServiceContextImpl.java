@@ -8,7 +8,7 @@ import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.impl.eventservice.impl.EmptyFilter;
+import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 
 /**
  * Contains enterprise specific implementations of {@link MapServiceContext}
@@ -33,9 +33,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     public String addListenerAdapter(String cacheName, ListenerAdapter listenerAdaptor) {
         EventService eventService = getNodeEngine().getEventService();
-        EventFilter filter = new EmptyFilter();
         EventRegistration registration
-                = eventService.registerListener(MapService.SERVICE_NAME, cacheName, filter, listenerAdaptor);
+                = eventService.registerListener(MapService.SERVICE_NAME,
+                cacheName, TrueEventFilter.INSTANCE, listenerAdaptor);
         return registration.getId();
     }
 

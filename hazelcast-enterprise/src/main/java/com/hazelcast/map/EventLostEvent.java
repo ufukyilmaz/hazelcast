@@ -12,7 +12,6 @@ import com.hazelcast.core.Member;
  */
 public class EventLostEvent implements IMapEvent {
 
-    // TODO EntryEvenType extensibility.
     /**
      * Event type id.
      *
@@ -20,6 +19,7 @@ public class EventLostEvent implements IMapEvent {
      */
     public static final int EVENT_TYPE = getNextEntryEventTypeId();
 
+    // TODO EntryEvenType extensibility.
     private final int partitionId;
 
     private final String source;
@@ -34,6 +34,28 @@ public class EventLostEvent implements IMapEvent {
 
     public int getPartitionId() {
         return partitionId;
+    }
+
+    @Override
+    public Member getMember() {
+        return member;
+    }
+
+    /**
+     * Intentionally returns null.
+     * Used in {@link com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter}
+     *
+     * @return null.
+     * @see com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter
+     */
+    @Override
+    public EntryEventType getEventType() {
+        return null;
+    }
+
+    @Override
+    public String getName() {
+        return source;
     }
 
     /**
@@ -57,29 +79,10 @@ public class EventLostEvent implements IMapEvent {
             }
             i++;
         }
-        return ++higherTypeId;
-    }
 
-    @Override
-    public Member getMember() {
-        return member;
-    }
+        int eventFlagPosition = Integer.numberOfTrailingZeros(higherTypeId);
 
-    /**
-     * Intentionally returns null.
-     * Used in {@link com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter}
-     *
-     * @return null.
-     * @see com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter
-     */
-    @Override
-    public EntryEventType getEventType() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        return source;
+        return 1 << ++eventFlagPosition;
     }
 }
 

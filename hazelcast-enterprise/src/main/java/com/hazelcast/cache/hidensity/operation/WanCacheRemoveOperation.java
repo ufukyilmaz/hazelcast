@@ -48,7 +48,7 @@ public class WanCacheRemoveOperation
 
     @Override
     public Operation getBackupOperation() {
-        return new CacheRemoveBackupOperation(name, key);
+        return new CacheRemoveBackupOperation(name, key, true);
     }
 
     @Override

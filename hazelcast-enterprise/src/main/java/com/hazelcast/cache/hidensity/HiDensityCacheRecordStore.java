@@ -137,4 +137,6 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      */
     SlottableIterator<Map.Entry<Data, R>> iterator(int slot);
 
+    Data toEventData(Object obj);
+
 }

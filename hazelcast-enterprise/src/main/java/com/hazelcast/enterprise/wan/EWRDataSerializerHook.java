@@ -1,7 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.enterprise.wan.operation.EWRPutBackupOperation;
-import com.hazelcast.enterprise.wan.operation.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;

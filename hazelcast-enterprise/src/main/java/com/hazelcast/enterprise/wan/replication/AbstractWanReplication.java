@@ -3,9 +3,9 @@ package com.hazelcast.enterprise.wan.replication;
 import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.PublisherQueueContainer;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
-import com.hazelcast.enterprise.wan.WanReplicationEventQueueContainer;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
@@ -27,10 +27,7 @@ import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -62,7 +59,7 @@ public abstract class AbstractWanReplication
 
     int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
 
-    WanReplicationEventQueueContainer eventQueueContainer;
+    PublisherQueueContainer eventQueueContainer;
     BlockingQueue<WanReplicationEvent> stagingQueue;
 
     private Object queueMonitor = new Object();
@@ -94,7 +91,7 @@ public abstract class AbstractWanReplication
         connectionManager = new WanConnectionManager(node);
         connectionManager.init(groupName, password, Arrays.asList(targets));
 
-        eventQueueContainer = new WanReplicationEventQueueContainer(node);
+        eventQueueContainer = new PublisherQueueContainer(node);
         stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
@@ -245,22 +242,19 @@ public abstract class AbstractWanReplication
         }
     }
 
-    @Override
-    public List<WanReplicationEventQueue> getEventQueueList(int partitionId) {
-        List<WanReplicationEventQueue> eventQueues = new ArrayList<WanReplicationEventQueue>();
-        Map<String, WanReplicationEventQueue> eventQueuesMap = eventQueueContainer.getEventQueueMapByPartitionId(partitionId);
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueEntry : eventQueuesMap.entrySet()) {
-            eventQueues.add(eventQueueEntry.getValue());
-        }
-        return eventQueues;
+    public String getTargetGroupName() {
+        return targetGroupName;
     }
 
-    public WanReplicationEventQueueContainer getEventQueueContainer() {
+    @Override
+    public PublisherQueueContainer getPublisherQueueContainer() {
         return eventQueueContainer;
     }
 
-    public String getTargetGroupName() {
-        return targetGroupName;
+    @Override
+    public void addQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
+        eventQueueContainer.getPublisherEventQueueMap().get(partitionId)
+                .getWanEventQueueMap().put(name, eventQueue);
     }
 
     public void shutdown() {

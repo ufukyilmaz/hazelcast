@@ -2,7 +2,6 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
-import com.hazelcast.enterprise.wan.operation.EWRMigrationContainer;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanReplication;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
@@ -69,12 +68,16 @@ public class EnterpriseWanReplicationService
             WanReplicationPublisherDelegate publisherDelegate = entry.getValue();
             for (WanReplicationEndpoint endpoint : publisherDelegate.getEndpoints().values()) {
                 AbstractWanReplication wanReplication = (AbstractWanReplication) endpoint;
-                ConcurrentHashMap<String, EventQueueMap> container = wanReplication.getEventQueueContainer().getContainer();
-                for (Map.Entry<String, EventQueueMap> eventQueueMapEntry : container.entrySet()) {
-                    WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue().get(partitionId);
-                    if (eventQueue != null && !eventQueue.isEmpty()) {
-                        migrationData.add(wanReplicationName, wanReplication.getTargetGroupName(),
-                                eventQueueMapEntry.getKey(), eventQueue);
+                PublisherQueueContainer publisherQueueContainer = endpoint.getPublisherQueueContainer();
+                Map<Integer, PartitionWanEventContainer> eventQueueMap
+                        = publisherQueueContainer.getPublisherEventQueueMap();
+                if (eventQueueMap.get(partitionId) != null) {
+                    PartitionWanEventContainer partitionWanEventContainer
+                            = eventQueueMap.get(partitionId);
+                    PartitionWanEventQueueMap eligibleEventQueues
+                            = partitionWanEventContainer.getEventQueueMapByBackupCount(event.getReplicaIndex());
+                    if (!eligibleEventQueues.isEmpty()) {
+                        migrationData.add(wanReplicationName, wanReplication.getTargetGroupName(), eligibleEventQueues);
                     }
                 }
             }
@@ -83,7 +86,7 @@ public class EnterpriseWanReplicationService
         if (migrationData.getMigrationContainerSize() == 0) {
             return null;
         } else {
-            return new EWRQueueReplicationOperation(migrationData);
+            return new EWRQueueReplicationOperation(migrationData, event.getPartitionId());
         }
     }
 
@@ -118,10 +121,11 @@ public class EnterpriseWanReplicationService
                 if (wanReplicationEndpoints != null) {
                     for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
                         if (wanReplicationEndpoint != null) {
-                            List<WanReplicationEventQueue> eventQueueList = wanReplicationEndpoint.getEventQueueList(partitionId);
-                            for (WanReplicationEventQueue eventQueue : eventQueueList) {
-                                eventQueue.clear();
-                            }
+                            PublisherQueueContainer publisherQueueContainer
+                                    = wanReplicationEndpoint.getPublisherQueueContainer();
+                            PartitionWanEventContainer eventQueueContainer
+                                    = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
+                            eventQueueContainer.getWanEventQueueMap().clear();
                         }
                     }
                 }

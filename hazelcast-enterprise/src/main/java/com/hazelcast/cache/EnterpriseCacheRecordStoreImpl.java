@@ -67,5 +67,4 @@ public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
             throw ExceptionUtil.rethrow(error);
         }
     }
-
 }

@@ -20,8 +20,6 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
-import java.util.List;
-
 /**
  * Implementations of this interface represent a replication endpoint, normally another
  * Hazelcast cluster only reachable over a wide area network.
@@ -49,5 +47,7 @@ public interface WanReplicationEndpoint
 
     void putBackup(WanReplicationEvent wanReplicationEvent);
 
-    List<WanReplicationEventQueue> getEventQueueList(int partitionId);
+    PublisherQueueContainer getPublisherQueueContainer();
+
+    void addQueue(String key, int partitionId, WanReplicationEventQueue value);
 }

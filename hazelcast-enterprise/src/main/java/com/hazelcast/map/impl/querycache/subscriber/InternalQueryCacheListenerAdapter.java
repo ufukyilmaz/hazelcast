@@ -40,7 +40,8 @@ public class InternalQueryCacheListenerAdapter implements ListenerAdapter {
     }
 
     private void callListener(IMapEvent event, int eventType) {
-        ListenerAdapter listenerAdapter = listenerAdapters[eventType - 1];
+        int adapterIndex = Integer.numberOfTrailingZeros(eventType);
+        ListenerAdapter listenerAdapter = listenerAdapters[adapterIndex];
         if (listenerAdapter == null) {
             return;
         }

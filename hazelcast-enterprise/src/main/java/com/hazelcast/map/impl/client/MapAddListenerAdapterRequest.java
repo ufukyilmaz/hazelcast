@@ -14,7 +14,7 @@ import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.MapPermission;
-import com.hazelcast.spi.impl.eventservice.impl.EmptyFilter;
+import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 
 import java.io.IOException;
 import java.security.Permission;
@@ -23,8 +23,6 @@ import java.security.Permission;
  * Adds listener adapter to {@link com.hazelcast.core.IMap IMap}
  */
 public class MapAddListenerAdapterRequest extends CallableClientRequest {
-
-    private static final EmptyFilter EMPTY_FILTER = new EmptyFilter();
 
     protected String name;
 
@@ -47,7 +45,8 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
         MapService mapService = (MapService) getService();
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
-        String registrationId = mapServiceContext.addListenerAdapter(adapter, EMPTY_FILTER, name);
+        String registrationId = mapServiceContext.addListenerAdapter(adapter,
+                TrueEventFilter.INSTANCE, name);
         endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, name, registrationId);
         return registrationId;
     }

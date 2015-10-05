@@ -30,7 +30,7 @@ import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
 import com.hazelcast.nio.Connection;
-import com.hazelcast.spi.impl.eventservice.impl.EmptyFilter;
+import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 
 import java.security.Permission;
 
@@ -41,8 +41,6 @@ import java.security.Permission;
 public class MapAddListenerMessageTask
         extends AbstractCallableMessageTask<EnterpriseMapAddListenerCodec.RequestParameters>
         implements ListenerAdapter {
-
-    private static final EmptyFilter EMPTY_FILTER = new EmptyFilter();
 
     public MapAddListenerMessageTask(ClientMessage clientMessage, Node node, Connection connection) {
         super(clientMessage, node, connection);
@@ -58,7 +56,8 @@ public class MapAddListenerMessageTask
         MapService mapService = getService(MapService.SERVICE_NAME);
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
-        String registrationId = mapServiceContext.addListenerAdapter(adapter, EMPTY_FILTER, parameters.listenerName);
+        String registrationId = mapServiceContext.addListenerAdapter(adapter,
+                TrueEventFilter.INSTANCE, parameters.listenerName);
         endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, parameters.listenerName, registrationId);
         return registrationId;
     }

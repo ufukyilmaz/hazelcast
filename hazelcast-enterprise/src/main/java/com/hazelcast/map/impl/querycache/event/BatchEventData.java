@@ -71,7 +71,7 @@ public class BatchEventData implements Sequenced, EventData {
         }
         Collection<QueryCacheEventData> events = this.events;
         for (int i = 0; i < size; i++) {
-            QueryCacheEventData eventData = newQueryCacheEventDataBuilder().build();
+            QueryCacheEventData eventData = newQueryCacheEventDataBuilder(true).build();
             eventData.readData(in);
 
             events.add(eventData);

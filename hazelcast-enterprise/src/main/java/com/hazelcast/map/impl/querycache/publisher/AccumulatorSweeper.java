@@ -102,7 +102,8 @@ public final class AccumulatorSweeper {
      * corresponding partition.
      */
     private static QueryCacheEventData createEndOfSequenceEvent(int partitionId) {
-        return QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder().withSequence(-1).withPartitionId(partitionId).build();
+        return QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder(false)
+                .withSequence(-1).withPartitionId(partitionId).build();
     }
 
 }

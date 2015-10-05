@@ -21,8 +21,8 @@ import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.impl.eventservice.impl.EmptyFilter;
 import com.hazelcast.spi.impl.eventservice.impl.Registration;
+import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 
 import java.util.Collection;
 
@@ -153,7 +153,7 @@ public class NodeQueryCacheEventService implements QueryCacheEventService<EventD
     }
 
     private boolean canPassFilter(LocalEntryEventData localEntryEventData, EventFilter filter) {
-        if (filter == null || filter instanceof EmptyFilter) {
+        if (filter == null || filter instanceof TrueEventFilter) {
             return true;
         }
 

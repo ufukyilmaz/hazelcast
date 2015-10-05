@@ -15,12 +15,14 @@ public final class QueryCacheEventDataBuilder {
     private int eventType;
     private int partitionId;
     private SerializationService serializationService;
+    private final boolean includeValue;
 
-    private QueryCacheEventDataBuilder() {
+    private QueryCacheEventDataBuilder(boolean includeValue) {
+        this.includeValue = includeValue;
     }
 
-    public static QueryCacheEventDataBuilder newQueryCacheEventDataBuilder() {
-        return new QueryCacheEventDataBuilder();
+    public static QueryCacheEventDataBuilder newQueryCacheEventDataBuilder(boolean includeValue) {
+        return new QueryCacheEventDataBuilder(includeValue);
     }
 
     public QueryCacheEventDataBuilder withDataKey(Data dataKey) {
@@ -29,12 +31,12 @@ public final class QueryCacheEventDataBuilder {
     }
 
     public QueryCacheEventDataBuilder withDataNewValue(Data dataNewValue) {
-        this.dataNewValue = dataNewValue;
+        this.dataNewValue = includeValue ? dataNewValue : null;
         return this;
     }
 
     public QueryCacheEventDataBuilder withDataOldValue(Data dataOldValue) {
-        this.dataOldValue = dataOldValue;
+        this.dataOldValue = includeValue ? dataOldValue : null;
         return this;
     }
 

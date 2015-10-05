@@ -52,7 +52,7 @@ public class EnterpriseMapEventPublisherImpl
     }
 
     @Override
-    void publishEventInternal(Collection<EventRegistration> registrations, Object eventData, int orderKey) {
+    protected void publishEventInternal(Collection<EventRegistration> registrations, Object eventData, int orderKey) {
         super.publishEventInternal(registrations, eventData, orderKey);
         checkInstanceOf(EventData.class, eventData, "eventData");
 
@@ -94,24 +94,18 @@ public class EnterpriseMapEventPublisherImpl
                                                                  int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
         // TODO handle synthetic events when applying filter.
-        Result result = applyEventFilter(eventFilter, false, dataKey, dataOldValue, dataNewValue,
-                EntryEventType.getByType(eventType));
-        boolean includeValue = false;
-        switch (result) {
-            case VALUE_INCLUDED:
-                includeValue = true;
-                break;
-            case NO_VALUE_INCLUDED:
-                break;
-            case NONE:
-                return null;
-            default:
-                throw new IllegalArgumentException("Unknown result type " + result);
+        if (!doFilter(eventFilter, false, dataKey, dataOldValue, dataNewValue,
+                EntryEventType.getByType(eventType))) {
+            return null;
         }
 
-        return newQueryCacheEventDataBuilder().withPartitionId(partitionId).withDataKey(dataKey)
-                                              .withDataNewValue(includeValue ? dataNewValue : null).withEventType(eventType)
-                                              .withDataOldValue(includeValue ? dataOldValue : null).build();
+        boolean includeValue = isIncludeValue(eventFilter);
+        return newQueryCacheEventDataBuilder(includeValue)
+                .withPartitionId(partitionId)
+                .withDataKey(dataKey)
+                .withDataNewValue(dataNewValue)
+                .withEventType(eventType)
+                .withDataOldValue(dataOldValue).build();
 
     }
 
@@ -125,8 +119,8 @@ public class EnterpriseMapEventPublisherImpl
         for (PartitionAccumulatorRegistry accumulatorRegistry : partitionAccumulatorRegistries) {
             Accumulator accumulator = accumulatorRegistry.getOrCreate(partitionId);
 
-            QueryCacheEventData singleEventData = newQueryCacheEventDataBuilder().withPartitionId(partitionId)
-                                                                                 .withEventType(eventType.getType()).build();
+            QueryCacheEventData singleEventData = newQueryCacheEventDataBuilder(false).withPartitionId(partitionId)
+                    .withEventType(eventType.getType()).build();
 
             accumulator.accumulate(singleEventData);
         }

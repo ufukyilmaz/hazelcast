@@ -16,8 +16,6 @@
 
 package com.hazelcast.hidensity;
 
-import com.hazelcast.cache.impl.CacheContext;
-
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -94,10 +92,6 @@ public class HiDensityStorageInfo {
         return new DefaultEntryCountResolver();
     }
 
-    public static EntryCountResolver createEntryCountResolver(CacheContext cacheContext) {
-        return new CacheContextBackedEntryCountResolver(cacheContext);
-    }
-
     /**
      * Contract point for tracking stored entry count.
      */
@@ -140,41 +134,6 @@ public class HiDensityStorageInfo {
         @Override
         public long decreaseEntryCount(long count) {
             return entryCount.addAndGet(-count);
-        }
-
-    }
-
-    private static class CacheContextBackedEntryCountResolver implements EntryCountResolver {
-
-        private final CacheContext cacheContext;
-
-        public CacheContextBackedEntryCountResolver(CacheContext cacheContext) {
-            this.cacheContext = cacheContext;
-        }
-
-        @Override
-        public long getEntryCount() {
-            return cacheContext.getEntryCount();
-        }
-
-        @Override
-        public long increaseEntryCount() {
-            return cacheContext.increaseEntryCount();
-        }
-
-        @Override
-        public long increaseEntryCount(long count) {
-            return cacheContext.increaseEntryCount(count);
-        }
-
-        @Override
-        public long decreaseEntryCount() {
-            return cacheContext.decreaseEntryCount();
-        }
-
-        @Override
-        public long decreaseEntryCount(long count) {
-            return cacheContext.decreaseEntryCount(count);
         }
 
     }

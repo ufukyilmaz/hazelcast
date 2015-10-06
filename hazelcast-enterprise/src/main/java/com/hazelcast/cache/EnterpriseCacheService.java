@@ -1,5 +1,6 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheEntryCountResolver;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
@@ -85,7 +86,7 @@ public class EnterpriseCacheService
                         CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
                         return new HiDensityStorageInfo(
                                         cacheNameWithPrefix,
-                                        HiDensityStorageInfo.createEntryCountResolver(cacheContext));
+                                        new HiDensityCacheEntryCountResolver(cacheContext));
                     } else {
                         return new HiDensityStorageInfo(cacheNameWithPrefix);
                     }

@@ -160,11 +160,10 @@ public class NodeQueryCacheEventService implements QueryCacheEventService<EventD
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         SerializationService serializationService = nodeEngine.getSerializationService();
 
-        Object key = localEntryEventData.getKey();
         Data keyData = localEntryEventData.getKeyData();
         Object value = getValueOrOldValue(localEntryEventData);
 
-        QueryableEntry entry = new QueryEntry(serializationService, keyData, key, value);
+        QueryableEntry entry = new QueryEntry(serializationService, keyData, value);
         return filter.eval(entry);
     }
 

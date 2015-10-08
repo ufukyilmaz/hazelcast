@@ -66,17 +66,18 @@ class DefaultQueryCacheRecordStore implements QueryCacheRecordStore {
         evictionOperator.evictIfRequired();
 
         QueryCacheRecord entry = recordFactory.createEntry(keyData, valueData);
-        saveIndex(keyData, entry);
+        QueryCacheRecord oldEntry = cache.put(keyData, entry);
+        saveIndex(keyData, entry, oldEntry);
 
-        return cache.put(keyData, entry);
+        return oldEntry;
     }
 
-    private void saveIndex(Data keyData, QueryCacheRecord entry) {
+    private void saveIndex(Data keyData, QueryCacheRecord currentRecord, QueryCacheRecord oldRecord) {
         if (indexes.hasIndex()) {
-            Object currentValue = entry.getValue();
-            QueryEntry queryEntry = new QueryEntry(serializationService,
-                    keyData, keyData, currentValue);
-            indexes.saveEntryIndex(queryEntry);
+            Object currentValue = currentRecord.getValue();
+            QueryEntry queryEntry = new QueryEntry(serializationService, keyData, currentValue);
+            Object oldValue = oldRecord == null ? null : oldRecord.getValue();
+            indexes.saveEntryIndex(queryEntry, oldValue);
         }
     }
 
@@ -89,13 +90,15 @@ class DefaultQueryCacheRecordStore implements QueryCacheRecordStore {
     @Override
     public QueryCacheRecord remove(Data keyData) {
         QueryCacheRecord oldRecord = cache.remove(keyData);
-        removeIndex(keyData);
+        if (oldRecord != null) {
+            removeIndex(keyData, oldRecord.getValue());
+        }
         return oldRecord;
     }
 
-    private void removeIndex(Data keyData) {
+    private void removeIndex(Data keyData, Object value) {
         if (indexes.hasIndex()) {
-            indexes.removeEntryIndex(keyData);
+            indexes.removeEntryIndex(keyData, value);
         }
     }
 

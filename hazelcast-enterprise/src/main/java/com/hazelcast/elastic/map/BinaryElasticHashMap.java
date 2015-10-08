@@ -185,7 +185,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         } catch (NativeOutOfMemoryError e) {
             throw onOome(e);
         }
-        UnsafeHelper.UNSAFE.setMemory(address, allocationCapacity, (byte) 0);
 
         allocated = capacity;
         resizeAt = Math.max(2, (int) Math.ceil(capacity * loadFactor)) - 1;
@@ -312,7 +311,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private NativeMemoryData readData(long address) {
-        if (address > 0L) {
+        if (address != NULL_ADDRESS) {
             return new NativeMemoryData().reset(address);
         }
         return null;
@@ -486,7 +485,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     private void ensureMemory() {
-        if (address < 0L) {
+        if (address == NULL_ADDRESS) {
             throw new IllegalStateException("Map is already destroyed!");
         }
     }
@@ -782,7 +781,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     @Override
     public void clear() {
         ensureMemory();
-        if (address > 0L) {
+        if (address != NULL_ADDRESS) {
             KeyIter iter = new KeyIter();
             while (iter.hasNext()) {
                 iter.nextSlot();
@@ -800,11 +799,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         if (assigned > 0) {
             clear();
         }
-        if (address > 0L) {
+        if (address != NULL_ADDRESS) {
             malloc.free(address, allocated * ENTRY_LENGTH);
         }
         allocated = 0;
-        address = -1L;
+        address = NULL_ADDRESS;
         allocated = -1;
         resizeAt = 0;
     }

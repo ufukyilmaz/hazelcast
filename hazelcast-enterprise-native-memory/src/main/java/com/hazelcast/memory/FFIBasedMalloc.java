@@ -17,11 +17,12 @@ abstract class FFIBasedMalloc implements LibMalloc {
 
     @Override
     public final long malloc(long size) {
-        long address = malloc.malloc(size);
-        if (address <= 0L) {
-            throw new NativeOutOfMemoryError();
-        }
-        return address;
+        return malloc.malloc(size);
+    }
+
+    @Override
+    public final long realloc(long address, long size) {
+        return malloc.realloc(address, size);
     }
 
     @Override

@@ -9,7 +9,20 @@ public final class UnsafeMalloc implements LibMalloc {
 
     @Override
     public long malloc(long size) {
-        return UnsafeHelper.UNSAFE.allocateMemory(size);
+        try {
+            return UnsafeHelper.UNSAFE.allocateMemory(size);
+        } catch (OutOfMemoryError e) {
+            return NULL_ADDRESS;
+        }
+    }
+
+    @Override
+    public long realloc(long address, long size) {
+        try {
+            return UnsafeHelper.UNSAFE.reallocateMemory(address, size);
+        } catch (OutOfMemoryError e) {
+            return NULL_ADDRESS;
+        }
     }
 
     @Override

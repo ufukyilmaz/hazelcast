@@ -1,11 +1,13 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.elastic.LongArray;
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.elastic.NativeSort;
 import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.Bits;
+import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
@@ -25,13 +27,15 @@ final class ThreadLocalPoolingMemoryManager
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
     private final String threadName;
-    private final LongSet allocations;
+    private final LongSet pageAllocations;
+    private final LongArray sortedPageAllocations;
     private long lastFullCompaction;
 
     ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
             LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
-        allocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator);
+        pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator, NULL_ADDRESS);
+        sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -47,17 +51,29 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected void onMalloc(long address) {
-        boolean added = allocations.add(address);
-        assert added : "Duplicate malloc() for address: " + address;
+    protected void onMallocPage(long pageAddress) {
+        boolean added = pageAllocations.add(pageAddress);
+        if (added) {
+            try {
+                addSorted(pageAddress);
+            } catch (NativeOutOfMemoryError e) {
+                pageAllocations.remove(pageAddress);
+                freePage(pageAddress);
+                throw e;
+            }
+        }
+        assert added : "Duplicate malloc() for pageAddress: " + pageAddress;
         lastFullCompaction = 0L;
     }
 
-    @Override
-    protected void onFree(long address) {
-        boolean removed = allocations.remove(address);
-        assert removed : "Unknown address is freed: " + address;
-        lastFullCompaction = 0L;
+    private void addSorted(long address) {
+        int len = pageAllocations.size();
+        if (sortedPageAllocations.length() == len) {
+            long newArrayLen = sortedPageAllocations.length() << 1;
+            sortedPageAllocations.expand(newArrayLen);
+        }
+        sortedPageAllocations.set(len - 1, address);
+        NativeSort.quickSortLong(sortedPageAllocations.address(), len);
     }
 
     @Override
@@ -93,7 +109,7 @@ final class ThreadLocalPoolingMemoryManager
         UnsafeHelper.UNSAFE.putByte(address, b);
 
         long base = getPage(address, memSize);
-        if (base < 0) {
+        if (base == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
         }
         int offset = (int) (address - base);
@@ -150,7 +166,7 @@ final class ThreadLocalPoolingMemoryManager
         if (offset < 0 || QuickMath.modPowerOfTwo(offset, memSize) != 0) {
             return false;
         }
-        return allocations.contains(address - offset);
+        return pageAllocations.contains(address - offset);
     }
 
     @Override
@@ -181,17 +197,27 @@ final class ThreadLocalPoolingMemoryManager
         return getPage(address, size);
     }
 
-    private long getPage(long address, int size) {
-        LongIterator iterator = allocations.iterator();
-        long page = -1L;
-        while (iterator.hasNext()) {
-            long a = iterator.next();
-            if (a <= address && (a + pageSize) >= (address + size)) {
-                page = a;
-                break;
+    // binary range search
+    private long getPage(long address, long memSize) {
+        final long blockEnd = address + memSize;
+        int low = 0;
+        int high = pageAllocations.size() - 1;
+
+        while (low <= high) {
+            int middle = (low + high) >>> 1;
+            long pageAddress = sortedPageAllocations.get(middle);
+
+            if (pageAddress <= address && (pageAddress + pageSize) >= blockEnd) {
+                return pageAddress;
+            }
+
+            if (pageAddress <= address - pageSize) {
+                low = middle + 1;
+            } else if (pageAddress > address) {
+                high = middle - 1;
             }
         }
-        return page;
+        return NULL_ADDRESS;
     }
 
     @Override
@@ -208,14 +234,15 @@ final class ThreadLocalPoolingMemoryManager
                 addressQueues[i] = null;
             }
         }
-        if (!allocations.isEmpty()) {
-            LongIterator iterator = allocations.iterator();
+        if (!pageAllocations.isEmpty()) {
+            LongIterator iterator = pageAllocations.iterator();
             while (iterator.hasNext()) {
                 long address = iterator.next();
-                pageAllocator.free(address, pageSize);
+                freePage(address);
             }
         }
-        allocations.destroy();
+        pageAllocations.destroy();
+        sortedPageAllocations.dispose();
     }
 
     @Override

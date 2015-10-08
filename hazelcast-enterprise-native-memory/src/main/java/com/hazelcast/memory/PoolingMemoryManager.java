@@ -87,6 +87,12 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
     }
 
     @Override
+    public long reallocate(long address, long currentSize, long newSize) {
+        MemoryManager manager = getMemoryManager();
+        return manager.reallocate(address, currentSize, newSize);
+    }
+
+    @Override
     public void free(long address, long size) {
         MemoryManager manager = getMemoryManager();
         manager.free(address, size);

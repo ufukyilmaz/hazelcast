@@ -160,8 +160,8 @@ abstract class AbstractHiDensityCacheOperation
 
         try {
             disposeInternal(serializationService);
-        } catch (Throwable ignored) {
-            EmptyStatement.ignore(ignored);
+        } catch (Throwable e) {
+            getLogger().warning("Error while disposing internal...", e);
             // TODO ignored error at the moment
             // a double free() error may be thrown if an operation fails
             // since internally key/value references are freed on oome

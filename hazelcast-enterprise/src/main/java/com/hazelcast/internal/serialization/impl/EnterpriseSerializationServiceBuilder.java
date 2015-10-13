@@ -28,8 +28,13 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
     }
 
     @Override
-    public EnterpriseSerializationServiceBuilder setVersion(int version) {
+    public EnterpriseSerializationServiceBuilder setVersion(byte version) {
         return (EnterpriseSerializationServiceBuilder) super.setVersion(version);
+    }
+
+    @Override
+    public EnterpriseSerializationServiceBuilder setPortableVersion(int portableVersion) {
+        return (EnterpriseSerializationServiceBuilder) super.setPortableVersion(portableVersion);
     }
 
     @Override
@@ -113,11 +118,21 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
     }
 
     @Override
-    protected EnterpriseSerializationServiceImpl createSerializationService(InputOutputFactory inputOutputFactory) {
-        return new EnterpriseSerializationServiceImpl(inputOutputFactory, version,
-                classLoader, dataSerializableFactories,
-                portableFactories, classDefinitions, checkClassDefErrors, managedContext, partitioningStrategy,
-                initialOutputBufferSize, enableCompression, enableSharedObject, bufferPoolFactory, memoryManager);
+    protected EnterpriseSerializationServiceV1 createSerializationService(InputOutputFactory inputOutputFactory) {
+        switch (version) {
+            case 1:
+                EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
+                        version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
+                        partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager);
+                serializationServiceV1.registerJavaTypeSerializers(enableCompression, enableSharedObject);
+                serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
+                return serializationServiceV1;
+
+            //Future version note: add new versions here
+            //adding case's for each version and instantiate it properly
+            default:
+                throw new IllegalArgumentException("Serialization version is not supported!");
+        }
     }
 
     protected InputOutputFactory createInputOutputFactory() {

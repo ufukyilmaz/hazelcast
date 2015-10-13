@@ -17,8 +17,8 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
-import com.hazelcast.nio.UTFEncoderDecoder;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -34,6 +34,7 @@ import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 /**
@@ -51,7 +52,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     private final EnterpriseSerializationService service;
 
-    private byte[] utfBuffer;
+    private char[] charBuffer;
 
     MemoryBlockDataInput(MemoryBlock memoryBlock, int offset, EnterpriseSerializationService serializationService) {
         memory = memoryBlock;
@@ -338,6 +339,9 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public byte[] readByteArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             byte[] b = new byte[len];
             readFully(b);
@@ -347,8 +351,25 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     }
 
     @Override
+    public boolean[] readBooleanArray() throws IOException {
+        int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
+        if (len > 0) {
+            boolean[] values = new boolean[len];
+            memCopy(values, UnsafeHelper.BOOLEAN_ARRAY_BASE_OFFSET, len, UnsafeHelper.BOOLEAN_ARRAY_INDEX_SCALE);
+            return values;
+        }
+        return new boolean[0];
+    }
+
+    @Override
     public char[] readCharArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             char[] values = new char[len];
             memCopy(values, UnsafeHelper.CHAR_ARRAY_BASE_OFFSET, len, UnsafeHelper.CHAR_ARRAY_INDEX_SCALE);
@@ -360,6 +381,9 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public int[] readIntArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             int[] values = new int[len];
             memCopy(values, UnsafeHelper.INT_ARRAY_BASE_OFFSET, len, UnsafeHelper.INT_ARRAY_INDEX_SCALE);
@@ -371,6 +395,9 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public long[] readLongArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             long[] values = new long[len];
             memCopy(values, UnsafeHelper.LONG_ARRAY_BASE_OFFSET, len, UnsafeHelper.LONG_ARRAY_INDEX_SCALE);
@@ -382,6 +409,9 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public double[] readDoubleArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             double[] values = new double[len];
             memCopy(values, UnsafeHelper.DOUBLE_ARRAY_BASE_OFFSET, len, UnsafeHelper.DOUBLE_ARRAY_INDEX_SCALE);
@@ -393,6 +423,9 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public float[] readFloatArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             float[] values = new float[len];
             memCopy(values, UnsafeHelper.FLOAT_ARRAY_BASE_OFFSET, len, UnsafeHelper.FLOAT_ARRAY_INDEX_SCALE);
@@ -404,12 +437,31 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public short[] readShortArray() throws IOException {
         int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
         if (len > 0) {
             short[] values = new short[len];
             memCopy(values, UnsafeHelper.SHORT_ARRAY_BASE_OFFSET, len, UnsafeHelper.SHORT_ARRAY_INDEX_SCALE);
             return values;
         }
         return new short[0];
+    }
+
+    @Override
+    public String[] readUTFArray() throws IOException {
+        int len = readInt();
+        if (len == NULL_ARRAY_LENGTH) {
+            return null;
+        }
+        if (len > 0) {
+            String[] values = new String[len];
+            for (int i = 0; i < len; i++) {
+                values[i] = readUTF();
+            }
+            return values;
+        }
+        return new String[0];
     }
 
     private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale) throws IOException {
@@ -503,11 +555,23 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      */
     @Override
     public String readUTF() throws IOException {
-        if (utfBuffer == null) {
-            utfBuffer = new byte[UTF_BUFFER_SIZE];
+        int charCount = readInt();
+        if (charCount == NULL_ARRAY_LENGTH) {
+            return null;
         }
-        return UTFEncoderDecoder.readUTF(this, utfBuffer);
-    }
+        if (charBuffer == null || charCount > charBuffer.length) {
+            charBuffer = new char[charCount];
+        }
+        byte b;
+        for (int i = 0; i < charCount; i++) {
+            b = readByte();
+            if (b < 0) {
+                charBuffer[i] = Bits.readUtf8Char(this, b);
+            } else {
+                charBuffer[i] = (char) b;
+            }
+        }
+        return new String(charBuffer, 0, charCount);    }
 
     @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
@@ -521,17 +585,19 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public Data readData() throws IOException {
-        return service.readData(this);
+        byte[] bytes = readByteArray();
+        Data data = bytes != null ? new HeapData(bytes) : null;
+        return data;
     }
 
     @Override
     public Data readData(DataType type) throws IOException {
-        return service.readData(this, type);
+        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getMemoryManagerToUse(), false);
     }
 
     @Override
     public Data tryReadData(DataType type) throws IOException {
-        return service.tryReadData(this, type);
+        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getMemoryManagerToUse(), true);
     }
 
     @Override

@@ -107,7 +107,7 @@ public class EnterprisePortableTest {
 
     static EnterpriseSerializationService createSerializationService(int version, ByteOrder order, boolean allowUnsafe) {
         return new EnterpriseSerializationServiceBuilder()
-                .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(order).setVersion(version)
+                .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(order).setPortableVersion(version)
                 .addPortableFactory(FACTORY_ID, new TestPortableFactory()).build();
     }
 

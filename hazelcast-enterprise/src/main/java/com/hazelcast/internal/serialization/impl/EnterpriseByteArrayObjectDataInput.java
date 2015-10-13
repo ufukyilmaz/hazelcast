@@ -11,14 +11,11 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-
-class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput
-        implements EnterpriseBufferObjectDataInput {
+class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput implements EnterpriseBufferObjectDataInput {
 
     private final EnterpriseSerializationService enterpriseSerializationService;
 
-    EnterpriseByteArrayObjectDataInput(byte[] buffer, int offset,
-            EnterpriseSerializationService service, ByteOrder byteOrder) {
+    EnterpriseByteArrayObjectDataInput(byte[] buffer, int offset, EnterpriseSerializationService service, ByteOrder byteOrder) {
         super(buffer, offset, service, byteOrder);
         this.enterpriseSerializationService = service;
     }
@@ -40,12 +37,15 @@ class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput
         return enterpriseSerializationService;
     }
 
+    @Override
     public Data readData(DataType type) throws IOException {
-        return enterpriseSerializationService.readData(this, type);
+        return EnterpriseSerializationUtil
+                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), false);
     }
 
     @Override
     public Data tryReadData(DataType type) throws IOException {
-        return enterpriseSerializationService.tryReadData(this, type);
+        return EnterpriseSerializationUtil
+                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), true);
     }
 }

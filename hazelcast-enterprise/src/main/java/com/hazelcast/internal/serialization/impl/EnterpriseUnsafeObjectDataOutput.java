@@ -19,6 +19,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
     public EnterpriseSerializationService getSerializationService() {
         return (EnterpriseSerializationService) service;
     }
+
     public void copyFromMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {
         ensureAvailable(length);
         if (memory.size() < offset + length) {
@@ -54,4 +56,17 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         memory.copyFrom(offset, buffer, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, length);
     }
 
+    @Override
+    public void writeData(Data data) throws IOException {
+        if (data instanceof NativeMemoryData) {
+            NativeMemoryData nativeMemoryData = (NativeMemoryData) data;
+            int size =  nativeMemoryData.totalSize();
+            writeInt(size);
+            if (size > 0) {
+                copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.TYPE_OFFSET, data.totalSize());
+            }
+        } else {
+            super.writeData(data);
+        }
+    }
 }

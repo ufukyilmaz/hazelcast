@@ -36,13 +36,17 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
      */
     public static final int NATIVE_MEMORY_DATA_OVERHEAD;
 
+    /**
+     * Native memory data over head
+     */
+    public static final int OVERHEAD;
+
     static final int SIZE_OFFSET = 0;
     static final int TYPE_OFFSET = 4;
     // we can store this bit in sign-bit of data-size
     // for the sake of simplicity and make structure same as HeapData
     // we will use a byte to store partition_hash bit
-    static final int PARTITION_HASH_BIT_OFFSET = 8;
-    static final int DATA_OFFSET = 9;
+    static final int DATA_OFFSET = 8;
 
     static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - HeapData.TYPE_OFFSET;
 
@@ -54,6 +58,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         // package protected field "NATIVE_HEADER_OVERHEAD",
         // "NATIVE_MEMORY_DATA_OVERHEAD" static field is initialized here.
         NATIVE_MEMORY_DATA_OVERHEAD = NATIVE_HEADER_OVERHEAD;
+        OVERHEAD = NATIVE_HEADER_OVERHEAD + INT_SIZE_IN_BYTES;
     }
 
     public NativeMemoryData() {
@@ -73,25 +78,30 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public int dataSize() {
-        return Math.max(totalSize() - DATA_OFFSET + NATIVE_HEADER_OVERHEAD, 0);
+        return Math.max(totalSize() - OVERHEAD, 0);
     }
 
     @Override
     public int getPartitionHash() {
-        if (hasPartitionHash()) {
-            int size = totalSize();
-            int hash = readInt(size);
+        int hash = getPartitionHashCode();
+        if (hash != 0) {
             return BIG_ENDIAN ? hash : Integer.reverseBytes(hash);
         }
         return hashCode();
     }
 
+    private int getPartitionHashCode() {
+        if (address == 0L) {
+            return 0;
+        }
+        int size = totalSize();
+        return readInt(size);
+    }
+
     @Override
     public boolean hasPartitionHash() {
-        if (address == 0L) {
-            return false;
-        }
-        return readByte(PARTITION_HASH_BIT_OFFSET) != 0;
+        int hash = getPartitionHashCode();
+        return hash != 0;
     }
 
     @Override
@@ -139,11 +149,17 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
             return false;
         }
 
+        final int totalSize = totalSize();
+        if (totalSize != data.totalSize()) {
+            return false;
+        }
+        if (totalSize == 0) {
+            return true;
+        }
         final int dataSize = dataSize();
         if (dataSize != data.dataSize()) {
             return false;
         }
-
         if (dataSize == 0) {
             return true;
         }
@@ -176,12 +192,8 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         setAddress(address);
         if (address > 0L) {
             // tmp size to read data size;
-            setSize(INT_SIZE_IN_BYTES + DATA_OFFSET);
-            int size = dataSize() + DATA_OFFSET;
-            if (hasPartitionHash()) {
-                size += INT_SIZE_IN_BYTES;
-            }
-            setSize(size);
+            setSize(INT_SIZE_IN_BYTES);
+            setSize(totalSize() + INT_SIZE_IN_BYTES);
         } else {
             setSize(0);
         }

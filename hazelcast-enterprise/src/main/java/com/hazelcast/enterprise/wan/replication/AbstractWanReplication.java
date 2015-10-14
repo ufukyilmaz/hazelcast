@@ -11,6 +11,8 @@ import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.wan.ReplicationEventObject;
+import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Arrays;
@@ -71,5 +73,13 @@ abstract class AbstractWanReplication
         return invocationBuilder.setTryCount(1)
                 .setCallTimeout(operationTimeout)
                 .invoke();
+    }
+
+    @Override
+    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
+    }
+
+    @Override
+    public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
     }
 }

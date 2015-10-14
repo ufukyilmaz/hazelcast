@@ -2,7 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.operation.AbstractMapOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.nio.ObjectDataInput;
@@ -20,7 +20,7 @@ import static com.hazelcast.util.Preconditions.checkPositive;
  *
  * @see Accumulator#setHead
  */
-public class SetReadCursorOperation extends AbstractMapOperation implements PartitionAwareOperation {
+public class SetReadCursorOperation extends MapOperation implements PartitionAwareOperation {
 
     private long sequence;
     private String cacheName;

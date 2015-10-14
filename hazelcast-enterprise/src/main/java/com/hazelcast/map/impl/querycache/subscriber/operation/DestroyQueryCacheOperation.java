@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.operation.AbstractMapOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.map.impl.querycache.publisher.MapListenerRegistry;
@@ -18,7 +18,7 @@ import java.io.IOException;
 /**
  * This operation removes all {@code QueryCache} resources on a node.
  */
-public class DestroyQueryCacheOperation extends AbstractMapOperation {
+public class DestroyQueryCacheOperation extends MapOperation {
 
     private String cacheName;
     private transient boolean result;

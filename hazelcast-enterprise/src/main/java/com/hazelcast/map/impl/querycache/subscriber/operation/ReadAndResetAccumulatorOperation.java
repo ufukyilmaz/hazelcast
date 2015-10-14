@@ -2,7 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.operation.AbstractMapOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
@@ -24,7 +24,7 @@ import static com.hazelcast.map.impl.querycache.utils.QueryCacheUtil.getAccumula
  *
  * @see com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation
  */
-public class ReadAndResetAccumulatorOperation extends AbstractMapOperation implements PartitionAwareOperation {
+public class ReadAndResetAccumulatorOperation extends MapOperation implements PartitionAwareOperation {
 
     private String cacheName;
     private List<Sequenced> eventDataList;

@@ -2,7 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.operation.AbstractMapOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.query.MapQueryEngine;
 import com.hazelcast.map.impl.query.QueryResult;
 import com.hazelcast.map.impl.query.QueryResultRow;
@@ -27,6 +27,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.util.FutureUtil;
 import com.hazelcast.util.IterationType;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +44,7 @@ import static com.hazelcast.util.FutureUtil.returnWithDeadline;
  * An idempotent create operation which creates publisher side functionality.
  * And also responsible for running initial snapshot creation phase.
  */
-public class PublisherCreateOperation extends AbstractMapOperation {
+public class PublisherCreateOperation extends MapOperation {
 
     private static final long ACCUMULATOR_READ_OPERATION_TIMEOUT_MINUTES = 5;
 
@@ -145,7 +146,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
 
     private QueryResult runInitialQuery() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine();
+        MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine(name);
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
         return queryEngine.invokeQueryLocalPartitions(name, info.getPredicate(), iterationType);
     }
@@ -196,7 +197,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         // values of the entries may be different if keyData-s are equal
         // so this `if` is checking the existence of keyData in the set. If it is there, just removing it and adding
         // `the new row with the same keyData but possibly with the new value`.
-    //todo
+        //todo
 //        if (queryResultSet.contains(row)) {
 //            queryResultSet.remove(row);
 //        }
@@ -225,7 +226,7 @@ public class PublisherCreateOperation extends AbstractMapOperation {
         private final String mapName;
         private final String cacheName;
 
-        public PartitionCallable(String mapName, String cacheName, int partitionId) {
+        PartitionCallable(String mapName, String cacheName, int partitionId) {
             this.mapName = mapName;
             this.cacheName = cacheName;
             this.partitionId = partitionId;

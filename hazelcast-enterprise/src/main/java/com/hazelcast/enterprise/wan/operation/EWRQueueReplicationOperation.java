@@ -32,18 +32,8 @@ public class EWRQueueReplicationOperation extends AbstractOperation implements I
 
     @Override
     public void run() throws Exception {
-        Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer = ewrMigrationContainer.getMigrationContainer();
-        for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
-            String wanRepName = wanRepEntry.getKey();
-            for (Map.Entry<String, PartitionWanEventQueueMap> publisherEntry : wanRepEntry.getValue().entrySet()) {
-                String publisherName = publisherEntry.getKey();
-                PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
-                WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
-                for (Map.Entry<String, WanReplicationEventQueue>  entry : eventQueueMap.entrySet()) {
-                    publisher.addQueue(entry.getKey(), getPartitionId(), entry.getValue());
-                }
-            }
-        }
+        handleMapEventQueues();
+        handleCacheEventQueues();
     }
 
     @Override
@@ -68,6 +58,37 @@ public class EWRQueueReplicationOperation extends AbstractOperation implements I
 
     private EnterpriseWanReplicationService getEWRService() {
         return (EnterpriseWanReplicationService) getNodeEngine().getWanReplicationService();
+    }
+
+    private void handleMapEventQueues() {
+        Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer = ewrMigrationContainer.getMapMigrationContainer();
+        for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
+            String wanRepName = wanRepEntry.getKey();
+            for (Map.Entry<String, PartitionWanEventQueueMap> publisherEntry : wanRepEntry.getValue().entrySet()) {
+                String publisherName = publisherEntry.getKey();
+                PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
+                WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
+                for (Map.Entry<String, WanReplicationEventQueue>  entry : eventQueueMap.entrySet()) {
+                    publisher.addMapQueue(entry.getKey(), getPartitionId(), entry.getValue());
+                }
+            }
+        }
+    }
+
+    private void handleCacheEventQueues() {
+        Map<String, Map<String, PartitionWanEventQueueMap>> migrationContainer =
+                ewrMigrationContainer.getCacheMigrationContainer();
+        for (Map.Entry<String, Map<String, PartitionWanEventQueueMap>> wanRepEntry : migrationContainer.entrySet()) {
+            String wanRepName = wanRepEntry.getKey();
+            for (Map.Entry<String, PartitionWanEventQueueMap> publisherEntry : wanRepEntry.getValue().entrySet()) {
+                String publisherName = publisherEntry.getKey();
+                PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
+                WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
+                for (Map.Entry<String, WanReplicationEventQueue>  entry : eventQueueMap.entrySet()) {
+                    publisher.addCacheQueue(entry.getKey(), getPartitionId(), entry.getValue());
+                }
+            }
+        }
     }
 
 }

@@ -49,5 +49,7 @@ public interface WanReplicationEndpoint
 
     PublisherQueueContainer getPublisherQueueContainer();
 
-    void addQueue(String key, int partitionId, WanReplicationEventQueue value);
+    void addMapQueue(String key, int partitionId, WanReplicationEventQueue value);
+
+    void addCacheQueue(String key, int partitionId, WanReplicationEventQueue value);
 }

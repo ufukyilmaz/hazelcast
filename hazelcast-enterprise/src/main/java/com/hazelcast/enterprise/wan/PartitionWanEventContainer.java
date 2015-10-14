@@ -9,37 +9,49 @@ import java.util.Map;
  */
 public class PartitionWanEventContainer {
 
-    private static final String MAP_PREFIX = "M:";
-    private static final String CACHE_PREFIX = "J:";
+    private final PartitionWanEventQueueMap mapWanEventQueueMap = new PartitionWanEventQueueMap();
+    private final PartitionWanEventQueueMap cacheWanEventQueueMap = new PartitionWanEventQueueMap();
 
-    private final PartitionWanEventQueueMap wanEventQueueMap = new PartitionWanEventQueueMap();
+    //Below two fields are for random polling
+    private PartitionWanEventQueueMap current = mapWanEventQueueMap;
+    private PartitionWanEventQueueMap next = cacheWanEventQueueMap;
 
-    public PartitionWanEventQueueMap getWanEventQueueMap() {
-        return wanEventQueueMap;
+    public PartitionWanEventQueueMap getMapWanEventQueueMap() {
+        return mapWanEventQueueMap;
+    }
+
+    public PartitionWanEventQueueMap getCacheWanEventQueueMap() {
+        return cacheWanEventQueueMap;
     }
 
     public boolean publishMapWanEvent(String mapName, WanReplicationEvent wanReplicationEvent) {
-        String mapNameWithPrefix = MAP_PREFIX + mapName;
-        return wanEventQueueMap.offerEvent(wanReplicationEvent, mapNameWithPrefix, getBackupCount(wanReplicationEvent));
-    }
-
-    public boolean publishCacheWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {
-        String cacheNameWithPrefix = CACHE_PREFIX + cacheName;
-        return wanEventQueueMap.offerEvent(wanReplicationEvent, cacheNameWithPrefix, getBackupCount(wanReplicationEvent));
+        return mapWanEventQueueMap.offerEvent(wanReplicationEvent, mapName, getBackupCount(wanReplicationEvent));
     }
 
     public WanReplicationEvent pollMapWanEvent(String mapName) {
-        String mapNameWithPrefix = MAP_PREFIX + mapName;
-        return wanEventQueueMap.pollEvent(mapNameWithPrefix);
+        return mapWanEventQueueMap.pollEvent(mapName);
     }
 
     public WanReplicationEvent pollCacheWanEvent(String cacheName) {
-        String cacheNameWithPrefix = CACHE_PREFIX + cacheName;
-        return wanEventQueueMap.pollEvent(cacheNameWithPrefix);
+        return cacheWanEventQueueMap.pollEvent(cacheName);
     }
 
     public WanReplicationEvent pollRandomWanEvent() {
-        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : wanEventQueueMap.entrySet()) {
+        WanReplicationEvent event = pollRandomWanEvent(current);
+        if (event != null) {
+            PartitionWanEventQueueMap temp = current;
+            current = next;
+            next = temp;
+            return event;
+        }
+        if (event == null) {
+            event = pollRandomWanEvent(next);
+        }
+        return event;
+    }
+
+    private WanReplicationEvent pollRandomWanEvent(PartitionWanEventQueueMap eventQueueMap) {
+        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : eventQueueMap.entrySet()) {
             WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
             if (eventQueue != null) {
                 WanReplicationEvent wanReplicationEvent = eventQueue.poll();
@@ -56,8 +68,17 @@ public class PartitionWanEventContainer {
         return evObj.getBackupCount();
     }
 
-    public PartitionWanEventQueueMap getEventQueueMapByBackupCount(int backupCount) {
-        PartitionWanEventQueueMap wanEventQueueMap = new PartitionWanEventQueueMap();
+    public PartitionWanEventQueueMap getMapEventQueueMapByBackupCount(int backupCount) {
+        return getEventQueueMapByBackupCount(mapWanEventQueueMap, backupCount);
+    }
+
+    public PartitionWanEventQueueMap getCacheEventQueueMapByBackupCount(int backupCount) {
+        return getEventQueueMapByBackupCount(cacheWanEventQueueMap, backupCount);
+    }
+
+    private PartitionWanEventQueueMap getEventQueueMapByBackupCount(PartitionWanEventQueueMap wanEventQueueMap,
+                                                                    int backupCount) {
+        PartitionWanEventQueueMap filteredEventQueueMap = new PartitionWanEventQueueMap();
         for (Map.Entry<String, WanReplicationEventQueue> entry : wanEventQueueMap.entrySet()) {
             String name = entry.getKey();
             WanReplicationEventQueue queue = entry.getValue();
@@ -65,7 +86,15 @@ public class PartitionWanEventContainer {
                 wanEventQueueMap.put(name, queue);
             }
         }
-        return wanEventQueueMap;
+        return filteredEventQueueMap;
     }
 
+    public boolean publishCacheWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {
+        return cacheWanEventQueueMap.offerEvent(wanReplicationEvent, cacheName, getBackupCount(wanReplicationEvent));
+    }
+
+    public void clear() {
+        mapWanEventQueueMap.clear();
+        cacheWanEventQueueMap.clear();
+    }
 }

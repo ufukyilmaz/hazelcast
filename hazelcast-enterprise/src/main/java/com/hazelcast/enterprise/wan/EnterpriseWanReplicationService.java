@@ -74,16 +74,23 @@ public class EnterpriseWanReplicationService
                 if (eventQueueMap.get(partitionId) != null) {
                     PartitionWanEventContainer partitionWanEventContainer
                             = eventQueueMap.get(partitionId);
-                    PartitionWanEventQueueMap eligibleEventQueues
-                            = partitionWanEventContainer.getEventQueueMapByBackupCount(event.getReplicaIndex());
-                    if (!eligibleEventQueues.isEmpty()) {
-                        migrationData.add(wanReplicationName, wanReplication.getTargetGroupName(), eligibleEventQueues);
+                    PartitionWanEventQueueMap eligibleMapEventQueues
+                            = partitionWanEventContainer.getMapEventQueueMapByBackupCount(event.getReplicaIndex());
+                    PartitionWanEventQueueMap eligibleCacheEventQueues
+                            = partitionWanEventContainer.getCacheEventQueueMapByBackupCount(event.getReplicaIndex());
+                    if (!eligibleMapEventQueues.isEmpty()) {
+                        migrationData.addMapEventQueueMap(wanReplicationName,
+                                wanReplication.getTargetGroupName(), eligibleMapEventQueues);
+                    }
+                    if (!eligibleCacheEventQueues.isEmpty()) {
+                        migrationData.addMapEventQueueMap(wanReplicationName,
+                                wanReplication.getTargetGroupName(), eligibleCacheEventQueues);
                     }
                 }
             }
         }
 
-        if (migrationData.getMigrationContainerSize() == 0) {
+        if (migrationData.isEmpty()) {
             return null;
         } else {
             return new EWRQueueReplicationOperation(migrationData, event.getPartitionId());
@@ -125,7 +132,7 @@ public class EnterpriseWanReplicationService
                                     = wanReplicationEndpoint.getPublisherQueueContainer();
                             PartitionWanEventContainer eventQueueContainer
                                     = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
-                            eventQueueContainer.getWanEventQueueMap().clear();
+                            eventQueueContainer.clear();
                         }
                     }
                 }

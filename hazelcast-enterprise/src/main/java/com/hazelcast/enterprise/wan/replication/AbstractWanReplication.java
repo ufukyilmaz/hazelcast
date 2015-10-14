@@ -139,49 +139,59 @@ public abstract class AbstractWanReplication
             WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
             int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
             synchronized (queueMonitor) {
-                boolean dropEvent = false;
-                if (currentElementCount.get() >= queueSize) {
-                    dropEvent = true;
-                    long curTime = System.currentTimeMillis();
-                    if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
-                        lastQueueFullLogTimeMs = curTime;
-                        logger.severe("Wan replication event queue is full. Dropping events.");
-                    } else {
-                        logger.finest("Wan replication event queue is full. An event will be dropped.");
-                    }
-                }
-                boolean eventPublished = false;
-                if (eventObject instanceof CacheReplicationObject) {
-                    CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-                    if (dropEvent) {
-                        WanReplicationEvent droppedEvent = eventQueueContainer.pollCacheWanEvent(
-                                cacheReplicationObject.getNameWithPrefix(), partitionId);
-                        if (droppedEvent != null) {
-                            removeReplicationEvent(droppedEvent);
-                        }
-                    }
-                    eventPublished = eventQueueContainer.publishCacheWanEvent(
-                            cacheReplicationObject.getNameWithPrefix(), partitionId, replicationEvent);
-                } else if (eventObject instanceof EnterpriseMapReplicationObject) {
-                    EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-                    if (dropEvent) {
-                        WanReplicationEvent droppedEvent =
-                                eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
-                        if (droppedEvent != null) {
-                            removeReplicationEvent(droppedEvent);
-                        }
-                    }
-                    eventPublished = eventQueueContainer.publishMapWanEvent(
-                            mapReplicationObject.getMapName(), partitionId, replicationEvent);
-                } else {
-                    logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
-                }
-
+                boolean dropEvent = isEventDroppingNeeded();
+                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
                 if (eventPublished) {
                     currentElementCount.incrementAndGet();
                 }
             }
         }
+    }
+
+    private boolean publishEventInternal(ReplicationEventObject eventObject, WanReplicationEvent replicationEvent,
+                                         int partitionId, boolean dropEvent) {
+        boolean eventPublished = false;
+        if (eventObject instanceof CacheReplicationObject) {
+            CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
+            if (dropEvent) {
+                WanReplicationEvent droppedEvent = eventQueueContainer.pollCacheWanEvent(
+                        cacheReplicationObject.getNameWithPrefix(), partitionId);
+                if (droppedEvent != null) {
+                    removeReplicationEvent(droppedEvent);
+                }
+            }
+            eventPublished = eventQueueContainer.publishCacheWanEvent(
+                    cacheReplicationObject.getNameWithPrefix(), partitionId, replicationEvent);
+        } else if (eventObject instanceof EnterpriseMapReplicationObject) {
+            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
+            if (dropEvent) {
+                WanReplicationEvent droppedEvent =
+                        eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
+                if (droppedEvent != null) {
+                    removeReplicationEvent(droppedEvent);
+                }
+            }
+            eventPublished = eventQueueContainer.publishMapWanEvent(
+                    mapReplicationObject.getMapName(), partitionId, replicationEvent);
+        } else {
+            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        }
+        return eventPublished;
+    }
+
+    private boolean isEventDroppingNeeded() {
+        boolean dropEvent = false;
+        if (currentElementCount.get() >= queueSize) {
+            long curTime = System.currentTimeMillis();
+            if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
+                lastQueueFullLogTimeMs = curTime;
+                logger.severe("Wan replication event queue is full. Dropping events.");
+            } else {
+                logger.finest("Wan replication event queue is full. An event will be dropped.");
+            }
+            dropEvent = true;
+        }
+        return dropEvent;
     }
 
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
@@ -191,7 +201,9 @@ public abstract class AbstractWanReplication
                 node.nodeEngine.getSerializationService().toData(wanReplicationEvent));
         OperationService operationService = node.nodeEngine.getOperationService();
         EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        for (int i = 0; i < evObj.getBackupCount() && i < node.getClusterService().getSize() - 1; i++) {
+        int backupCount = evObj.getBackupCount();
+        int clusterSize = node.getClusterService().getSize();
+        for (int i = 0; i < backupCount && i < clusterSize - 1; i++) {
             try {
                 operationService.createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
                         ewrRemoveOperation,
@@ -252,9 +264,15 @@ public abstract class AbstractWanReplication
     }
 
     @Override
-    public void addQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
+    public void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
         eventQueueContainer.getPublisherEventQueueMap().get(partitionId)
-                .getWanEventQueueMap().put(name, eventQueue);
+                .getMapWanEventQueueMap().put(name, eventQueue);
+    }
+
+    @Override
+    public void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
+        eventQueueContainer.getPublisherEventQueueMap().get(partitionId)
+                .getCacheWanEventQueueMap().put(name, eventQueue);
     }
 
     public void shutdown() {
@@ -274,19 +292,22 @@ public abstract class AbstractWanReplication
                 boolean offered = false;
 
                 for (InternalPartition partition : node.getPartitionService().getPartitions()) {
-                    if (partition.isLocal()) {
-                        WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                        if (event != null) {
-                            offered = false;
-                            while (!offered) {
-                                try {
-                                    stagingQueue.put(event);
-                                    offered = true;
-                                    emptyIterationCount = 0;
-                                } catch (InterruptedException ignored) {
-                                    EmptyStatement.ignore(ignored);
-                                }
-                            }
+                    if (!partition.isLocal()) {
+                        continue;
+                    }
+
+                    WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
+                    if (event == null) {
+                        continue;
+                    }
+                    offered = false;
+                    while (!offered) {
+                        try {
+                            stagingQueue.put(event);
+                            offered = true;
+                            emptyIterationCount = 0;
+                        } catch (InterruptedException ignored) {
+                            EmptyStatement.ignore(ignored);
                         }
                     }
                 }

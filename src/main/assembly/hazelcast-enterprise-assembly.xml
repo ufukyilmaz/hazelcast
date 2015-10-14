@@ -123,6 +123,13 @@
                 <include>hazelcast-cloud-${project.version}.jar</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>${hazelcast.root}/hazelcast-jclouds/target</directory>
+            <outputDirectory>/lib/</outputDirectory>
+            <includes>
+                <include>hazelcast-jclouds-${project.version}.jar</include>
+            </includes>
+        </fileSet>
 
         <fileSet>
             <directory>${hazelcast.root}/hazelcast-client/target</directory>

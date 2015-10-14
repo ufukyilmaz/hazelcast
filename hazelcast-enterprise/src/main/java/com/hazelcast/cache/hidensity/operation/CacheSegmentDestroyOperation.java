@@ -8,7 +8,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.spi.impl.AllowedDuringShutdown;
+import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class CacheSegmentDestroyOperation
         extends AbstractOperation
-        implements PartitionAwareOperation, AllowedDuringShutdown {
+        implements PartitionAwareOperation, AllowedDuringPassiveState {
 
     private final CountDownLatch done = new CountDownLatch(1);
 

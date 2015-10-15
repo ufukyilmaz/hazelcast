@@ -554,8 +554,10 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
 
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
+        // If the record is available and if we return old value, put this to queue for reusing later.
+        // Ww should not enqueue record if we don't return the old value
+        // because in this case we return the created record.
+        if (record != null && getValue) {
             cacheRecordProcessor.enqueueRecord(record);
         }
     }

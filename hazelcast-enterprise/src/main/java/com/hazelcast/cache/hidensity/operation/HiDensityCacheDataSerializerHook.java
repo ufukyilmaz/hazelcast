@@ -110,6 +110,10 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
      * Id of "WAN_REMOVE" operation
      */
     public static final short WAN_REMOVE = 25;
+    /**
+     * Id of "PUT_ALL" operation
+     */
+    public static final short PUT_ALL = 26;
 
     @Override
     public int getFactoryId() {
@@ -210,6 +214,10 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
 
                     case WAN_REMOVE:
                         dataSerializable = new WanCacheRemoveOperation();
+                        break;
+
+                    case PUT_ALL:
+                        dataSerializable = new CachePutAllOperation();
                         break;
 
                     default:

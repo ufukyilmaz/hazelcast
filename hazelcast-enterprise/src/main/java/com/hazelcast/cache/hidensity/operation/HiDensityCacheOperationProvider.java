@@ -12,6 +12,8 @@ import com.hazelcast.spi.OperationFactory;
 
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,6 +30,13 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
         CachePutOperation cachePutOperation = new CachePutOperation(nameWithPrefix, key, value, policy, get);
         cachePutOperation.setCompletionId(completionId);
         return cachePutOperation;
+    }
+
+    @Override
+    public Operation createPutAllOperation(List<Map.Entry<Data, Data>> entries, ExpiryPolicy policy, int completionId) {
+        CachePutAllOperation cachePutAllOperation = new CachePutAllOperation(nameWithPrefix, entries, policy);
+        cachePutAllOperation.setCompletionId(completionId);
+        return cachePutAllOperation;
     }
 
     @Override

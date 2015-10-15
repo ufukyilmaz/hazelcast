@@ -9,8 +9,7 @@ import com.hazelcast.map.wan.filter.MapWanEventFilter;
 public enum  WanFilterEventType {
 
     /**
-     * An event type indicating that the related entry was created or updated, i.e. a previous
-     * mapping existed.
+     * An event type indicating that the related entry was created or updated.
      */
     UPDATED(1),
 
@@ -32,12 +31,4 @@ public enum  WanFilterEventType {
         return type;
     }
 
-    public static WanFilterEventType getByType(final int eventType) {
-        for (WanFilterEventType entryEventType : values()) {
-            if (entryEventType.type == eventType) {
-                return entryEventType;
-            }
-        }
-        return null;
-    }
 }

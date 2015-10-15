@@ -49,10 +49,9 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
                 mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
-        if (!wanFiltersPassed(mapContainer, entryView, WanFilterEventType.UPDATED)) {
-            return;
+        if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.UPDATED)) {
+            publishWanReplicationEventInternal(mapName, replicationEvent);
         }
-        publishWanReplicationEventInternal(mapName, replicationEvent);
     }
 
     @Override
@@ -60,20 +59,18 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
                 = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
-        if (!wanFiltersPassed(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
-            return;
+        if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
+            publishWanReplicationEventInternal(mapName, event);
         }
-        publishWanReplicationEventInternal(mapName, event);
     }
 
     public void publishWanReplicationUpdateBackup(String mapName, EntryView entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
                 mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
-        if (!wanFiltersPassed(mapContainer, entryView, WanFilterEventType.UPDATED)) {
-            return;
+        if (!isEventFiltered(mapContainer, entryView, WanFilterEventType.UPDATED)) {
+            publishWanReplicationEventInternalBackup(mapName, replicationEvent);
         }
-        publishWanReplicationEventInternalBackup(mapName, replicationEvent);
     }
 
     @Override
@@ -81,22 +78,21 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
                 = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
-        if (!wanFiltersPassed(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
-            return;
+        if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
+            publishWanReplicationEventInternalBackup(mapName, event);
         }
-        publishWanReplicationEventInternalBackup(mapName, event);
     }
 
-    private boolean wanFiltersPassed(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
+    private boolean isEventFiltered(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
         List<String> filters = mapContainer.getMapConfig().getWanReplicationRef().getFilters();
         for (String filterName : filters) {
             MapWanEventFilter mapWanEventFilter =
                     getEnterpriseMapServiceContext().getMapFilterProvider().getFilter(filterName);
             if (mapWanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     void publishWanReplicationEventInternalBackup(String mapName, ReplicationEventObject event) {

@@ -408,7 +408,7 @@ public class EnterpriseCacheService
             CacheConfig config = configs.get(cacheName);
             List<String> filters = config.getWanReplicationRef().getFilters();
 
-            if (!filtersPassed(cacheEventContext, filters)) {
+            if (isEventFiltered(cacheEventContext, filters)) {
                 return;
             }
 
@@ -442,7 +442,7 @@ public class EnterpriseCacheService
         }
     }
 
-    private boolean filtersPassed(CacheEventContext eventContext, List<String> filters) {
+    private boolean isEventFiltered(CacheEventContext eventContext, List<String> filters) {
         CacheEntryView entryView = new DefaultCacheEntryView(eventContext.getDataKey(),
                 eventContext.getDataValue(), eventContext.getExpirationTime(), eventContext.getLastAccessTime(),
                 eventContext.getExpirationTime());
@@ -450,10 +450,10 @@ public class EnterpriseCacheService
         for (String filterName : filters) {
             CacheWanEventFilter filter = cacheFilterProvider.getFilter(filterName);
             if (filter.filter(eventContext.getCacheName(), entryView, eventType)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
     private WanFilterEventType convertWanFilterEventType(CacheEventType eventType) {

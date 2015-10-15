@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.replication;
 
+import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.Node;
@@ -20,9 +21,8 @@ public class WanNoDelayReplication extends AbstractWanReplication
     private volatile boolean running = true;
 
     @Override
-    public void init(Node node, String groupName, String password, boolean snapshotEnabled,
-                     String wanReplicationName, String... targets) {
-        super.init(node, groupName, password, snapshotEnabled, wanReplicationName, targets);
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
+        super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
         this.logger = node.getLogger(WanNoDelayReplication.class.getName());
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
@@ -44,7 +44,7 @@ public class WanNoDelayReplication extends AbstractWanReplication
                     boolean eventSuccessfullySent = false;
                     if (conn != null && conn.isAlive()) {
                         try {
-                            invokeOnWanTarget(conn.getEndPoint(), event).get();
+                            invokeOnWanTarget(conn.getEndPoint(), event, acknowledgeType);
                             eventSuccessfullySent = true;
                             removeReplicationEvent(event);
                         } catch (Exception ignored) {

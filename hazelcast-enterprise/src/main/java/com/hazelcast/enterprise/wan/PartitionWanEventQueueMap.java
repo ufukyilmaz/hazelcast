@@ -15,6 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanReplicationEventQueue> implements DataSerializable {
 
+    private static final long serialVersionUID = 1L;
+
     private transient Object mutex = new Object();
 
     public boolean offerEvent(WanReplicationEvent wanReplicationEvent, String dataStructure, int backupCount) {

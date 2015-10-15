@@ -42,9 +42,7 @@ public class PartitionWanEventContainer {
             PartitionWanEventQueueMap temp = current;
             current = next;
             next = temp;
-            return event;
-        }
-        if (event == null) {
+        } else {
             event = pollRandomWanEvent(next);
         }
         return event;

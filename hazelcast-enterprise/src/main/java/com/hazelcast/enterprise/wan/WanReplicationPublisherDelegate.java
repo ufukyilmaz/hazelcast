@@ -20,6 +20,8 @@ import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
+import java.util.Map;
+
 /**
  * Delegating replication publisher implementation
  */
@@ -27,14 +29,14 @@ final class WanReplicationPublisherDelegate
         implements WanReplicationPublisher {
 
     final String name;
-    final WanReplicationEndpoint[] endpoints;
+    final Map<String, WanReplicationEndpoint> endpoints;
 
-    public WanReplicationPublisherDelegate(String name, WanReplicationEndpoint[] endpoints) {
+    public WanReplicationPublisherDelegate(String name, Map<String, WanReplicationEndpoint> endpoints) {
         this.name = name;
         this.endpoints = endpoints;
     }
 
-    public WanReplicationEndpoint[] getEndpoints() {
+    public Map<String, WanReplicationEndpoint> getEndpoints() {
         return endpoints;
     }
 
@@ -43,18 +45,20 @@ final class WanReplicationPublisherDelegate
     }
 
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        for (WanReplicationEndpoint endpoint : endpoints) {
+        for (WanReplicationEndpoint endpoint : endpoints.values()) {
             endpoint.publishReplicationEvent(serviceName, eventObject);
         }
     }
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-
+        publishReplicationEvent(serviceName, eventObject);
     }
 
     @Override
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
-
+        for (WanReplicationEndpoint endpoint : endpoints.values()) {
+            endpoint.publishReplicationEvent(wanReplicationEvent);
+        }
     }
 }

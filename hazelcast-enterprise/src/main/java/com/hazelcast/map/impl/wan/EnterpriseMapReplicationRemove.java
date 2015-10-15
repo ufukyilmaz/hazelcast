@@ -14,8 +14,8 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
     Data key;
     long removeTime;
 
-    public EnterpriseMapReplicationRemove(String mapName, Data key, long removeTime) {
-        super(mapName);
+    public EnterpriseMapReplicationRemove(String mapName, Data key, long removeTime, int backupCount) {
+        super(mapName, backupCount);
         this.key = key;
         this.removeTime = removeTime;
     }

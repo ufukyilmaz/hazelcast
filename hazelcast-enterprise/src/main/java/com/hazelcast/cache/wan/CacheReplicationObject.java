@@ -17,10 +17,12 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     private String cacheName;
     private String managerPrefix;
     private Set<String> groupNames = new HashSet<String>();
+    private int backupCount;
 
-    public CacheReplicationObject(String cacheName, String managerPrefix) {
+    public CacheReplicationObject(String cacheName, String managerPrefix, int backupCount) {
         this.cacheName = cacheName;
         this.managerPrefix = managerPrefix;
+        this.backupCount = backupCount;
     }
 
     public CacheReplicationObject() {
@@ -39,6 +41,11 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     }
 
     @Override
+    public int getBackupCount() {
+        return backupCount;
+    }
+
+    @Override
     public Set<String> getGroupNames() {
         return groupNames;
     }
@@ -47,6 +54,7 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeUTF(cacheName);
         out.writeUTF(managerPrefix);
+        out.writeInt(backupCount);
         out.writeObject(groupNames);
     }
 
@@ -54,6 +62,7 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     public void readData(ObjectDataInput in) throws IOException {
         cacheName = in.readUTF();
         managerPrefix = in.readUTF();
+        backupCount = in.readInt();
         groupNames = in.readObject();
     }
 }

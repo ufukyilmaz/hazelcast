@@ -67,7 +67,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
             WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
             if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
-                cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), cacheReplicationObject);
+                cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), replicationEvent);
             }
 
             if (cacheReplicationObject instanceof CacheReplicationUpdate) {

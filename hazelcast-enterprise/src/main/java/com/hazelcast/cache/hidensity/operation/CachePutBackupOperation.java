@@ -1,6 +1,10 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.impl.CacheEntryViews;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.operation.MutableOperation;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -20,6 +24,7 @@ public class CachePutBackupOperation
 
     private Data value;
     private ExpiryPolicy expiryPolicy;
+    private boolean wanOriginated;
 
     public CachePutBackupOperation() {
     }
@@ -31,10 +36,28 @@ public class CachePutBackupOperation
         this.expiryPolicy = expiryPolicy;
     }
 
+    public CachePutBackupOperation(String name, Data key, Data value,
+                                   ExpiryPolicy expiryPolicy, boolean wanOriginated) {
+        this(name, key, value, expiryPolicy);
+        this.wanOriginated = wanOriginated;
+    }
+
     @Override
     public void runInternal() throws Exception {
         cache.putBackup(key, value, expiryPolicy);
         response = Boolean.TRUE;
+    }
+
+    @Override
+    public void afterRun() throws Exception {
+        if (!wanOriginated && cache.isWanReplicationEnabled()) {
+            CacheRecord cacheRecord = cache.getRecord(key);
+            CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(
+                    cache.toEventData(key), cache.toEventData(cacheRecord.getValue()), cacheRecord);
+            CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
+            publisher.publishWanReplicationUpdateBackup(name, entryView);
+        }
+        super.afterRun();
     }
 
     @Override
@@ -53,6 +76,7 @@ public class CachePutBackupOperation
         super.writeInternal(out);
         out.writeObject(expiryPolicy);
         out.writeData(value);
+        out.writeBoolean(wanOriginated);
     }
 
     @Override
@@ -60,6 +84,7 @@ public class CachePutBackupOperation
         super.readInternal(in);
         expiryPolicy = in.readObject();
         value = readNativeMemoryOperationData(in);
+        wanOriginated = in.readBoolean();
     }
 
     @Override

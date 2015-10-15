@@ -12,8 +12,10 @@ import com.hazelcast.cache.impl.CacheEventType;
 import com.hazelcast.cache.impl.CacheOperationProvider;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.ICacheService;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
+import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.operation.CacheDestroyOperation;
@@ -35,7 +37,6 @@ import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -95,12 +96,14 @@ public class EnterpriseCacheService
 
     private ReplicationSupportingService replicationSupportingService;
     private CacheMergePolicyProvider cacheMergePolicyProvider;
+    private CacheWanEventPublisher cacheWanEventPublisher;
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
         super.postInit(nodeEngine, properties);
         replicationSupportingService = new CacheReplicationSupportingService(this);
         cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
+        cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
     }
 
     /**
@@ -383,8 +386,15 @@ public class EnterpriseCacheService
         replicationSupportingService.onReplicationEvent(wanReplicationEvent);
     }
 
-    @Override
-    public void publishEvent(CacheEventContext cacheEventContext) {
+    public void publishWanEvent(CacheEventContext cacheEventContext) {
+        publishWanEvent(cacheEventContext, false);
+    }
+
+    public void publishWanEventBackup(CacheEventContext cacheEventContext) {
+        publishWanEvent(cacheEventContext, true);
+    }
+
+    private void publishWanEvent(CacheEventContext cacheEventContext, boolean backup) {
         String cacheName = cacheEventContext.getCacheName();
         CacheEventType eventType = cacheEventContext.getEventType();
         WanReplicationPublisher wanReplicationPublisher =
@@ -403,24 +413,40 @@ public class EnterpriseCacheService
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
                                         cacheEventContext.getAccessHit()),
-                                config.getManagerPrefix());
-                wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
+                                config.getManagerPrefix(), config.getTotalBackupCount());
+                if (backup) {
+                    wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, update);
+                } else {
+                    wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, update);
+                }
             } else if (eventType == CacheEventType.REMOVED) {
-                CacheReplicationRemove remove =
-                        new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
-                                Clock.currentTimeMillis(), config.getManagerPrefix());
-                wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
+                CacheReplicationRemove remove = new CacheReplicationRemove(config.getName(), cacheEventContext.getDataKey(),
+                        Clock.currentTimeMillis(), config.getManagerPrefix(), config.getTotalBackupCount());
+                if (backup) {
+                    wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, remove);
+                } else {
+                    wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, remove);
+                }
             }
         }
-
-        super.publishEvent(cacheEventContext);
     }
 
-    public void publishWanEvent(String cacheName, ReplicationEventObject replicationEventObject) {
+    public void publishWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {
         WanReplicationPublisher wanReplicationPublisher = wanReplicationPublishers.get(cacheName);
         if (wanReplicationPublisher != null) {
-            wanReplicationPublisher.publishReplicationEvent(SERVICE_NAME, replicationEventObject);
+            wanReplicationPublisher.publishReplicationEvent(wanReplicationEvent);
         }
+    }
+
+    @Override
+    public boolean isWanReplicationEnabled(String cacheName) {
+        WanReplicationPublisher publisher = wanReplicationPublishers.get(cacheName);
+        return publisher != null;
+    }
+
+    @Override
+    public CacheWanEventPublisher getCacheWanEventPublisher() {
+        return cacheWanEventPublisher;
     }
 
     @Override

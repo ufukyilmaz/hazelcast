@@ -17,6 +17,7 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
+import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 /**
@@ -34,10 +35,21 @@ public interface WanReplicationEndpoint
      * @param password  the group password
      * @param targets   possible target endpoints bundled in this endpoint
      */
-    void init(Node node, String groupName, String password, boolean isSnapshotEnabled, String... targets);
+    void init(Node node, String groupName, String password, boolean isSnapshotEnabled,
+              String wanReplicationName, String... targets);
 
     /**
      * Closes the endpoint and its internal connections and shuts down other internal states
      */
     void shutdown();
+
+    void removeBackup(WanReplicationEvent wanReplicationEvent);
+
+    void putBackup(WanReplicationEvent wanReplicationEvent);
+
+    PublisherQueueContainer getPublisherQueueContainer();
+
+    void addMapQueue(String key, int partitionId, WanReplicationEventQueue value);
+
+    void addCacheQueue(String key, int partitionId, WanReplicationEventQueue value);
 }

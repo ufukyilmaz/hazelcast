@@ -60,7 +60,7 @@ public class WanCacheMergeOperation
             long ttl = expiryTime - System.currentTimeMillis();
             expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
         }
-        return new CachePutBackupOperation(name, key, cacheEntryView.getValue(), expiryPolicy);
+        return new CachePutBackupOperation(name, key, cacheEntryView.getValue(), expiryPolicy, true);
     }
 
     @Override

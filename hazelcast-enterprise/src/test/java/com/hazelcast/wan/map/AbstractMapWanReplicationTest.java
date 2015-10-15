@@ -100,9 +100,12 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     }
 
     private boolean checkDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, HazelcastInstance[] sourceCluster) {
-        HazelcastInstance node = getNode(targetCluster);
-
         String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
+        return checkDataInFrom(targetCluster, mapName, start, end, sourceGroupName);
+    }
+
+    private boolean checkDataInFrom(HazelcastInstance[] targetCluster, String mapName, int start, int end, String sourceGroupName) {
+        HazelcastInstance node = getNode(targetCluster);
 
         IMap m = node.getMap(mapName);
         for (; start < end; start++) {
@@ -142,6 +145,15 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkKeysIn(cluster, mapName, start, end));
+            }
+        }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
+    }
+
+    private void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
+        assertTrueEventually(new AssertTask() {
+            public void run() {
+                sleepSeconds(10);
+                assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceGroupName));
             }
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
@@ -318,12 +330,11 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
         assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 1000, 1000);
+        increaseHitCount(clusterB, "map", 0, 1000, 100);
         createDataIn(clusterB, "map", 0, 1000);
 
         assertDataInFrom(clusterC, "map", 0, 1000, clusterB);
     }
-
 
     //("Issue #1368 multi replicar topology cluster A replicates to B and C")
     @Test
@@ -387,6 +398,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         increaseHitCount(clusterB, "map", 0, 500, 1000);
         createDataIn(clusterB, "map", 0, 500);
         assertDataInFrom(clusterA, "map", 0, 500, clusterB);
+        sleepSeconds(10);
     }
 
     @Test
@@ -410,11 +422,12 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         startClusterA();
         startClusterB();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        removeAndCreateDataIn(clusterA, "map", 0, 1000);
+        createDataIn(clusterA, "map", 0, 10);
+        removeAndCreateDataIn(clusterA, "map", 0, 10);
 
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertDataSizeEventually(clusterB, "map", 1000);
+        assertKeysIn(clusterB, "map", 0, 10);
+        assertDataSizeEventually(clusterB, "map", 10);
+        sleepSeconds(10);
     }
 
     @Test
@@ -479,18 +492,18 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void recoverAfterTargetClusterFailure() {
+
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
 
-        /* Default event queue size is 100000,
-         20000 events should be dropped
-          */
-        createDataIn(clusterA, "map", 0, 120000);
+        createDataIn(clusterA, "map", 0, 10000);
 
-        sleepSeconds(30);
+        sleepSeconds(10);
+
+        clusterA[0].shutdown();
+        sleepSeconds(10);
         startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 20000);
-        assertDataInFrom(clusterB, "map", 20000, 120000, clusterA);
+        assertDataInFrom(clusterB, "map", 0, 10000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
     }
 
     @Test
@@ -502,6 +515,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         startClusterA();
         startClusterB();
         createDataIn(clusterA, "map", 0, 10);
+        sleepSeconds(10);
         assertKeysNotIn(clusterB, "map", 0, 10);
     }
 

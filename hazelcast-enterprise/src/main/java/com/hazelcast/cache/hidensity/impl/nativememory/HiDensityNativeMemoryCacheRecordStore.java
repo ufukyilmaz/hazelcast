@@ -829,7 +829,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
                                                     now, true, completionId, caller, origin);
                 }
-                publishEvent(createCacheCompleteEvent(cacheEntryView.getKey(),
+                publishEvent(createCacheCompleteEvent(toHeapData(cacheEntryView.getKey()),
                                                       CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
                                                       origin, completionId));
             }

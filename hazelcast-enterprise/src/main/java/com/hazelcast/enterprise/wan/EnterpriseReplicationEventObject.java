@@ -13,5 +13,5 @@ public interface EnterpriseReplicationEventObject extends ReplicationEventObject
 
     Set<String> getGroupNames();
     Data getKey();
-
+    int getBackupCount();
 }

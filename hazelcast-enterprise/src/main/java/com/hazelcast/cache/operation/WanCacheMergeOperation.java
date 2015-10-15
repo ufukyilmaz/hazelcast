@@ -54,7 +54,7 @@ public class WanCacheMergeOperation
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutBackupOperation(name, key, backupRecord);
+        return new CachePutBackupOperation(name, key, backupRecord, true);
     }
 
     @Override

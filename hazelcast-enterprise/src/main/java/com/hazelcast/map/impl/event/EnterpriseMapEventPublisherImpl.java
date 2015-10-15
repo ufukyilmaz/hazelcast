@@ -19,10 +19,13 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
+import com.hazelcast.wan.ReplicationEventObject;
+import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Collection;
 import java.util.Collections;
 
+import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
 import static com.hazelcast.util.Preconditions.checkInstanceOf;
@@ -41,14 +44,38 @@ public class EnterpriseMapEventPublisherImpl
     public void publishWanReplicationUpdate(String mapName, EntryView entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
-                mapContainer.getWanMergePolicy(), entryView);
+                mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
         publishWanReplicationEventInternal(mapName, replicationEvent);
     }
 
     @Override
     public void publishWanReplicationRemove(String mapName, Data key, long removeTime) {
-        final EnterpriseMapReplicationRemove event = new EnterpriseMapReplicationRemove(mapName, key, removeTime);
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        final EnterpriseMapReplicationRemove event
+                = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
         publishWanReplicationEventInternal(mapName, event);
+    }
+
+    public void publishWanReplicationUpdateBackup(String mapName, EntryView entryView) {
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
+                mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
+        publishWanReplicationEventInternalBackup(mapName, replicationEvent);
+    }
+
+    @Override
+    public void publishWanReplicationRemoveBackup(String mapName, Data key, long removeTime) {
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        final EnterpriseMapReplicationRemove event
+                = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
+        publishWanReplicationEventInternalBackup(mapName, event);
+    }
+
+    void publishWanReplicationEventInternalBackup(String mapName, ReplicationEventObject event) {
+        final MapServiceContext mapServiceContext = this.mapServiceContext;
+        final MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        final WanReplicationPublisher wanReplicationPublisher = mapContainer.getWanReplicationPublisher();
+        wanReplicationPublisher.publishReplicationEventBackup(SERVICE_NAME, event);
     }
 
     @Override

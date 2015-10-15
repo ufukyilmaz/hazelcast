@@ -2,8 +2,8 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.operation.MergeOperation;
 import com.hazelcast.map.impl.operation.WanOriginatedDeleteOperation;
+import com.hazelcast.map.impl.operation.WanOriginatedMergeOperation;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
@@ -33,7 +33,6 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     @Override
     public void onReplicationEvent(WanReplicationEvent replicationEvent) {
         Object eventObject = replicationEvent.getEventObject();
-
         if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
@@ -43,14 +42,15 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
             if (wanReplicationRef !=  null && wanReplicationRef.isRepublishingEnabled()) {
                 WanReplicationPublisher wanPublisher = mapContainer.getWanReplicationPublisher();
                 if (wanPublisher != null) {
-                    wanPublisher.publishReplicationEvent(MapService.SERVICE_NAME, mapReplicationObject);
+                    wanPublisher.publishReplicationEvent(replicationEvent);
                 }
             }
             if (eventObject instanceof EnterpriseMapReplicationUpdate) {
                 EnterpriseMapReplicationUpdate replicationUpdate = (EnterpriseMapReplicationUpdate) eventObject;
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
                 MapMergePolicy mergePolicy = replicationUpdate.getMergePolicy();
-                MergeOperation operation = new MergeOperation(mapName, mapServiceContext.toData(entryView.getKey(),
+                WanOriginatedMergeOperation operation
+                        = new WanOriginatedMergeOperation(mapName, mapServiceContext.toData(entryView.getKey(),
                         mapContainer.getPartitioningStrategy()), entryView, mergePolicy);
                 invokeOnPartition(entryView.getKey(), operation);
             } else if (eventObject instanceof EnterpriseMapReplicationRemove) {

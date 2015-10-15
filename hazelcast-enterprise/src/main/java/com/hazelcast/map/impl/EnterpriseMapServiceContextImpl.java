@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
@@ -19,15 +20,12 @@ import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext {
 
     private final QueryCacheContext queryCacheContext;
+    private final MapFilterProvider mapFilterProvider;
 
     public EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
         this.queryCacheContext = new NodeQueryCacheContext(this);
-    }
-
-    @Override
-    public QueryCacheContext getQueryCacheContext() {
-        return queryCacheContext;
+        this.mapFilterProvider = new MapFilterProvider(nodeEngine);
     }
 
     @Override
@@ -56,5 +54,15 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     @Override
     MapEventPublisherImpl createMapEventPublisherSupport() {
         return new EnterpriseMapEventPublisherImpl(this);
+    }
+
+    @Override
+    public QueryCacheContext getQueryCacheContext() {
+        return queryCacheContext;
+    }
+
+    @Override
+    public MapFilterProvider getMapFilterProvider() {
+        return mapFilterProvider;
     }
 }

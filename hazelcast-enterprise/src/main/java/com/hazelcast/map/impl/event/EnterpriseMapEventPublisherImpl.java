@@ -2,9 +2,11 @@ package com.hazelcast.map.impl.event;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
+import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.SimpleEntryView;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.event.DefaultQueryCacheEventData;
@@ -15,6 +17,7 @@ import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.map.wan.filter.MapWanEventFilter;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.EventFilter;
@@ -24,6 +27,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
@@ -36,7 +40,7 @@ import static com.hazelcast.util.Preconditions.checkInstanceOf;
 public class EnterpriseMapEventPublisherImpl
         extends MapEventPublisherImpl {
 
-    public EnterpriseMapEventPublisherImpl(MapServiceContext mapServiceContext) {
+    public EnterpriseMapEventPublisherImpl(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 
@@ -45,6 +49,9 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
                 mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
+        if (!wanFiltersPassed(mapContainer, entryView, WanFilterEventType.UPDATED)) {
+            return;
+        }
         publishWanReplicationEventInternal(mapName, replicationEvent);
     }
 
@@ -53,6 +60,9 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
                 = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
+        if (!wanFiltersPassed(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
+            return;
+        }
         publishWanReplicationEventInternal(mapName, event);
     }
 
@@ -60,6 +70,9 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
                 mapContainer.getWanMergePolicy(), entryView, mapContainer.getTotalBackupCount());
+        if (!wanFiltersPassed(mapContainer, entryView, WanFilterEventType.UPDATED)) {
+            return;
+        }
         publishWanReplicationEventInternalBackup(mapName, replicationEvent);
     }
 
@@ -68,7 +81,22 @@ public class EnterpriseMapEventPublisherImpl
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
                 = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
+        if (!wanFiltersPassed(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
+            return;
+        }
         publishWanReplicationEventInternalBackup(mapName, event);
+    }
+
+    private boolean wanFiltersPassed(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
+        List<String> filters = mapContainer.getMapConfig().getWanReplicationRef().getFilters();
+        for (String filterName : filters) {
+            MapWanEventFilter mapWanEventFilter =
+                    getEnterpriseMapServiceContext().getMapFilterProvider().getFilter(filterName);
+            if (mapWanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void publishWanReplicationEventInternalBackup(String mapName, ReplicationEventObject event) {

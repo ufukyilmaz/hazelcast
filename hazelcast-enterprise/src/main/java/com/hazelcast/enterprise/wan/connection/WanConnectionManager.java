@@ -39,6 +39,7 @@ public class WanConnectionManager {
     private String password;
     private final ConcurrentMap<String, Connection> connectionPool = new ConcurrentHashMap<String, Connection>();
     private final List<String> targetAddressList = new CopyOnWriteArrayList<String>();
+
     private final Set<String> failedAddressSet = new ConcurrentSkipListSet<String>();
     private final int defaultPort;
 
@@ -172,6 +173,9 @@ public class WanConnectionManager {
         return connectionManager.getOrConnect(target);
     }
 
+    public Set<String> getFailedAddressSet() {
+        return failedAddressSet;
+    }
     /**
      * Maintains WAN target address set
      */

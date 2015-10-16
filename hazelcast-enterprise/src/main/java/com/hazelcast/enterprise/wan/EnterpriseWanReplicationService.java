@@ -8,7 +8,8 @@ import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.monitor.LocalInstanceStats;
+import com.hazelcast.monitor.LocalWanStats;
+import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.serialization.Data;
@@ -19,6 +20,7 @@ import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.MapUtil;
 import com.hazelcast.util.executor.StripedExecutor;
 import com.hazelcast.util.executor.StripedRunnable;
 import com.hazelcast.util.executor.TimeoutRunnable;
@@ -223,8 +225,20 @@ public class EnterpriseWanReplicationService
     }
 
     @Override
-    public <T extends LocalInstanceStats> Map<String, T> getStats() {
-        return null;
+    public Map<String, LocalWanStats> getStats() {
+        if (wanReplications.isEmpty()) {
+            return null;
+        }
+
+        Map<String, LocalWanStats> wanStatsMap = MapUtil.createHashMap(wanReplications.size());
+        for (Map.Entry<String, WanReplicationPublisherDelegate> delegateEntry : wanReplications.entrySet()) {
+            LocalWanStats localWanStats = new LocalWanStatsImpl();
+            String schemeName = delegateEntry.getKey();
+            WanReplicationPublisherDelegate delegate = delegateEntry.getValue();
+            localWanStats.getLocalWanPublisherStats().putAll(delegate.getStats());
+            wanStatsMap.put(schemeName, localWanStats);
+        }
+        return wanStatsMap;
     }
 
     /**

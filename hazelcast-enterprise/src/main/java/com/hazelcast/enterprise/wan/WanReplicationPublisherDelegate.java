@@ -16,6 +16,8 @@
 
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.util.MapUtil;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
@@ -60,5 +62,15 @@ final class WanReplicationPublisherDelegate
         for (WanReplicationEndpoint endpoint : endpoints.values()) {
             endpoint.publishReplicationEvent(wanReplicationEvent);
         }
+    }
+
+    public Map<String, LocalWanPublisherStats> getStats() {
+        Map<String, LocalWanPublisherStats> statsMap = MapUtil.createHashMap(endpoints.size());
+        for (Map.Entry<String, WanReplicationEndpoint> endpointEntry : endpoints.entrySet()) {
+            String endpointName = endpointEntry.getKey();
+            LocalWanPublisherStats wanPublisherStats = endpointEntry.getValue().getStats();
+            statsMap.put(endpointName, wanPublisherStats);
+        }
+        return statsMap;
     }
 }

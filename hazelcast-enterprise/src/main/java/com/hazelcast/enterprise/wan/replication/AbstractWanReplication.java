@@ -16,6 +16,8 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
@@ -23,6 +25,7 @@ import com.hazelcast.partition.InternalPartition;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.ReplicationEventObject;
@@ -66,6 +69,7 @@ public abstract class AbstractWanReplication
     BlockingQueue<WanReplicationEvent> stagingQueue;
 
     private Object queueMonitor = new Object();
+    private LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private ILogger logger;
 
@@ -205,6 +209,7 @@ public abstract class AbstractWanReplication
 
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         removeLocal();
+        updateStats(wanReplicationEvent);
         Operation ewrRemoveOperation = new EWRRemoveBackupOperation(wanReplicationName,
                 targetGroupName,
                 node.nodeEngine.getSerializationService().toData(wanReplicationEvent));
@@ -224,6 +229,13 @@ public abstract class AbstractWanReplication
                 ExceptionUtil.rethrow(t);
             }
         }
+    }
+
+    private void updateStats(WanReplicationEvent wanReplicationEvent) {
+        EnterpriseReplicationEventObject eventObject
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        long latency = Clock.currentTimeMillis() - eventObject.getCreationTime();
+        localWanPublisherStats.incrementPublishedEventCount(latency);
     }
 
     private void removeLocal() {
@@ -296,6 +308,14 @@ public abstract class AbstractWanReplication
     @Override
     public void resume() {
         paused = false;
+    }
+
+    @Override
+    public LocalWanPublisherStats getStats() {
+        localWanPublisherStats.setPaused(paused);
+        localWanPublisherStats.setConnected(connectionManager.getFailedAddressSet().isEmpty());
+        localWanPublisherStats.setOutboundQueueSize(currentElementCount.get());
+        return localWanPublisherStats;
     }
 
     private class QueuePoller implements Runnable {

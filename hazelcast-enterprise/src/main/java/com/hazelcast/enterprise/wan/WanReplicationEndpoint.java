@@ -51,4 +51,8 @@ public interface WanReplicationEndpoint
     void addMapQueue(String key, int partitionId, WanReplicationEventQueue value);
 
     void addCacheQueue(String key, int partitionId, WanReplicationEventQueue value);
+
+    void pause();
+
+    void resume();
 }

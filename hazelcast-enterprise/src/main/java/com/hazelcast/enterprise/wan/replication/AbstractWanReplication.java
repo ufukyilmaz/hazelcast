@@ -44,6 +44,7 @@ public abstract class AbstractWanReplication
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
     volatile boolean running = true;
+    volatile boolean paused;
 
     String targetGroupName;
     String localGroupName;
@@ -287,6 +288,16 @@ public abstract class AbstractWanReplication
         running = false;
     }
 
+    @Override
+    public void pause() {
+        paused = true;
+    }
+
+    @Override
+    public void resume() {
+        paused = false;
+    }
+
     private class QueuePoller implements Runnable {
 
         private static final int MAX_SLEEP_MS = 2000;
@@ -299,23 +310,25 @@ public abstract class AbstractWanReplication
 
                 boolean offered = false;
 
-                for (InternalPartition partition : node.getPartitionService().getPartitions()) {
-                    if (!partition.isLocal()) {
-                        continue;
-                    }
+                if (!paused) {
+                    for (InternalPartition partition : node.getPartitionService().getPartitions()) {
+                        if (!partition.isLocal()) {
+                            continue;
+                        }
 
-                    WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                    if (event == null) {
-                        continue;
-                    }
-                    offered = false;
-                    while (!offered) {
-                        try {
-                            stagingQueue.put(event);
-                            offered = true;
-                            emptyIterationCount = 0;
-                        } catch (InterruptedException ignored) {
-                            EmptyStatement.ignore(ignored);
+                        WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
+                        if (event == null) {
+                            continue;
+                        }
+                        offered = false;
+                        while (!offered) {
+                            try {
+                                stagingQueue.put(event);
+                                offered = true;
+                                emptyIterationCount = 0;
+                            } catch (InterruptedException ignored) {
+                                EmptyStatement.ignore(ignored);
+                            }
                         }
                     }
                 }

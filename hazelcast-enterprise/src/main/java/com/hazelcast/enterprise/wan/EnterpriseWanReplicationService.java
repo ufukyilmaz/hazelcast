@@ -8,6 +8,7 @@ import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.monitor.LocalInstanceStats;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.serialization.Data;
@@ -221,6 +222,11 @@ public class EnterpriseWanReplicationService
         } while (!taskSubmitted);
     }
 
+    @Override
+    public <T extends LocalInstanceStats> Map<String, T> getStats() {
+        return null;
+    }
+
     /**
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
      * related {@link ReplicationSupportingService}
@@ -297,6 +303,18 @@ public class EnterpriseWanReplicationService
             }
             wanReplications.clear();
         }
+    }
+
+    @Override
+    public void pause(String name, String targetGroupName) {
+        WanReplicationEndpoint endpoint = getEndpoint(name, targetGroupName);
+        endpoint.pause();
+    }
+
+    @Override
+    public void resume(String name, String targetGroupName) {
+        WanReplicationEndpoint endpoint = getEndpoint(name, targetGroupName);
+        endpoint.resume();
     }
 
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWebReplicationPublisherMapping() {

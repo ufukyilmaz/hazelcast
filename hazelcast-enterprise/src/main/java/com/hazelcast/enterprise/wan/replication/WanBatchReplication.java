@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan.replication;
 
+import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
@@ -15,7 +16,6 @@ import com.hazelcast.util.executor.TimeoutRunnable;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,11 +46,10 @@ public class WanBatchReplication extends AbstractWanReplication
     private volatile StripedExecutor executor;
 
     @Override
-    public void init(Node node, String groupName, String password, boolean snapshotEnabled,
-                     String wanReplicationName, String... targets) {
-        super.init(node, groupName, password, snapshotEnabled, wanReplicationName, targets);
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
+        super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
         logger = node.getLogger(WanBatchReplication.class.getName());
-        this.targets.addAll(Arrays.asList(targets));
+        this.targets.addAll(targetClusterConfig.getEndpoints());
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -173,7 +172,7 @@ public class WanBatchReplication extends AbstractWanReplication
                     Connection conn = connectionWrapper.getConnection();
                     if (conn != null && conn.isAlive()) {
                         try {
-                            invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent).get();
+                            invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent, acknowledgeType);
                             for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
                                 removeReplicationEvent(event);
                             }

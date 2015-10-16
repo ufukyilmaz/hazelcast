@@ -18,14 +18,17 @@ import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
+import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
+import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -96,6 +99,7 @@ public class EnterpriseCacheService
 
     private ReplicationSupportingService replicationSupportingService;
     private CacheMergePolicyProvider cacheMergePolicyProvider;
+    private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
 
     @Override
@@ -103,6 +107,7 @@ public class EnterpriseCacheService
         super.postInit(nodeEngine, properties);
         replicationSupportingService = new CacheReplicationSupportingService(this);
         cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
+        cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
     }
 
@@ -401,6 +406,12 @@ public class EnterpriseCacheService
                 wanReplicationPublishers.get(cacheEventContext.getCacheName());
         if (wanReplicationPublisher != null && cacheEventContext.getOrigin() == null) {
             CacheConfig config = configs.get(cacheName);
+            List<String> filters = config.getWanReplicationRef().getFilters();
+
+            if (isEventFiltered(cacheEventContext, filters)) {
+                return;
+            }
+
             if (eventType == CacheEventType.UPDATED
                     || eventType == CacheEventType.CREATED
                     || eventType == CacheEventType.EXPIRATION_TIME_UPDATED) {
@@ -429,6 +440,27 @@ public class EnterpriseCacheService
                 }
             }
         }
+    }
+
+    private boolean isEventFiltered(CacheEventContext eventContext, List<String> filters) {
+        CacheEntryView entryView = new DefaultCacheEntryView(eventContext.getDataKey(),
+                eventContext.getDataValue(), eventContext.getExpirationTime(), eventContext.getLastAccessTime(),
+                eventContext.getExpirationTime());
+        WanFilterEventType eventType = convertWanFilterEventType(eventContext.getEventType());
+        for (String filterName : filters) {
+            CacheWanEventFilter filter = cacheFilterProvider.getFilter(filterName);
+            if (filter.filter(eventContext.getCacheName(), entryView, eventType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private WanFilterEventType convertWanFilterEventType(CacheEventType eventType) {
+        if (eventType == CacheEventType.REMOVED) {
+            return WanFilterEventType.REMOVED;
+        }
+        return WanFilterEventType.UPDATED;
     }
 
     public void publishWanEvent(String cacheName, WanReplicationEvent wanReplicationEvent) {

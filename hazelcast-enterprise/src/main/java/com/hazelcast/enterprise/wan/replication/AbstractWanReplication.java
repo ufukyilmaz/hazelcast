@@ -1,6 +1,8 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.cache.wan.CacheReplicationObject;
+import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
@@ -27,7 +29,6 @@ import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
-import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -51,6 +52,7 @@ public abstract class AbstractWanReplication
     Node node;
     int queueSize;
     WanConnectionManager connectionManager;
+    WanAcknowledgeType acknowledgeType;
 
     int batchSize;
     long batchFrequency;
@@ -73,10 +75,9 @@ public abstract class AbstractWanReplication
         publishReplicationEvent(serviceName, eventObject);
     }
 
-    public void init(Node node, String groupName, String password, boolean snapshotEnabled,
-                     String wanReplicationName, String... targets) {
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
         this.node = node;
-        this.targetGroupName = groupName;
+        this.targetGroupName = targetClusterConfig.getGroupName();
         this.snapshotEnabled = snapshotEnabled;
         this.wanReplicationName = wanReplicationName;
         this.logger = node.getLogger(AbstractWanReplication.class.getName());
@@ -89,7 +90,7 @@ public abstract class AbstractWanReplication
         operationTimeout = node.groupProperties.getMillis(GroupProperty.ENTERPRISE_WAN_REP_OP_TIMEOUT_MILLIS);
 
         connectionManager = new WanConnectionManager(node);
-        connectionManager.init(groupName, password, Arrays.asList(targets));
+        connectionManager.init(targetGroupName, targetClusterConfig.getGroupPassword(), targetClusterConfig.getEndpoints());
 
         eventQueueContainer = new PublisherQueueContainer(node);
         stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
@@ -112,16 +113,23 @@ public abstract class AbstractWanReplication
         }
     }
 
-    protected Future<Boolean> invokeOnWanTarget(Address target, DataSerializable event) {
+    protected void invokeOnWanTarget(Address target, DataSerializable event, WanAcknowledgeType acknowledgeType) {
         Operation wanOperation
                 = new WanOperation(node.nodeEngine.getSerializationService().toData(event));
         OperationService operationService = node.nodeEngine.getOperationService();
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         InvocationBuilder invocationBuilder
                 = operationService.createInvocationBuilder(serviceName, wanOperation, target);
-        return invocationBuilder.setTryCount(1)
+        Future future = invocationBuilder.setTryCount(1)
                 .setCallTimeout(operationTimeout)
                 .invoke();
+        if (acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+            try {
+                future.get();
+            } catch (Exception ex) {
+                ExceptionUtil.rethrow(ex);
+            }
+        }
     }
 
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {

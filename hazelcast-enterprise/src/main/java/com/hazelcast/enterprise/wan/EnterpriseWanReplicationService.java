@@ -171,10 +171,7 @@ public class EnterpriseWanReplicationService
                     target = new WanNoDelayReplication();
                 }
                 String groupName = targetClusterConfig.getGroupName();
-                String password = targetClusterConfig.getGroupPassword();
-                String[] addresses = new String[targetClusterConfig.getEndpoints().size()];
-                targetClusterConfig.getEndpoints().toArray(addresses);
-                target.init(node, groupName, password, wanReplicationConfig.isSnapshotEnabled(), name, addresses);
+                target.init(node, name, targetClusterConfig, wanReplicationConfig.isSnapshotEnabled());
                 targetEndpoints.put(groupName, target);
             }
             wr = new WanReplicationPublisherDelegate(name, targetEndpoints);

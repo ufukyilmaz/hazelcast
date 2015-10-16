@@ -1,6 +1,6 @@
 package com.hazelcast.wan.cache;
 
-import com.hazelcast.cache.impl.merge.policy.PassThroughCacheMergePolicy;
+import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.instance.GroupProperty;

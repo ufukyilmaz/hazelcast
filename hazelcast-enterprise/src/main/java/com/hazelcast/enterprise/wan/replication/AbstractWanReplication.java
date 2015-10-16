@@ -16,6 +16,8 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
@@ -23,6 +25,7 @@ import com.hazelcast.partition.InternalPartition;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.ReplicationEventObject;
@@ -44,6 +47,7 @@ public abstract class AbstractWanReplication
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
     volatile boolean running = true;
+    volatile boolean paused;
 
     String targetGroupName;
     String localGroupName;
@@ -65,6 +69,7 @@ public abstract class AbstractWanReplication
     BlockingQueue<WanReplicationEvent> stagingQueue;
 
     private Object queueMonitor = new Object();
+    private LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private ILogger logger;
 
@@ -204,6 +209,7 @@ public abstract class AbstractWanReplication
 
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         removeLocal();
+        updateStats(wanReplicationEvent);
         Operation ewrRemoveOperation = new EWRRemoveBackupOperation(wanReplicationName,
                 targetGroupName,
                 node.nodeEngine.getSerializationService().toData(wanReplicationEvent));
@@ -223,6 +229,13 @@ public abstract class AbstractWanReplication
                 ExceptionUtil.rethrow(t);
             }
         }
+    }
+
+    private void updateStats(WanReplicationEvent wanReplicationEvent) {
+        EnterpriseReplicationEventObject eventObject
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        long latency = Clock.currentTimeMillis() - eventObject.getCreationTime();
+        localWanPublisherStats.incrementPublishedEventCount(latency);
     }
 
     private void removeLocal() {
@@ -287,6 +300,24 @@ public abstract class AbstractWanReplication
         running = false;
     }
 
+    @Override
+    public void pause() {
+        paused = true;
+    }
+
+    @Override
+    public void resume() {
+        paused = false;
+    }
+
+    @Override
+    public LocalWanPublisherStats getStats() {
+        localWanPublisherStats.setPaused(paused);
+        localWanPublisherStats.setConnected(connectionManager.getFailedAddressSet().isEmpty());
+        localWanPublisherStats.setOutboundQueueSize(currentElementCount.get());
+        return localWanPublisherStats;
+    }
+
     private class QueuePoller implements Runnable {
 
         private static final int MAX_SLEEP_MS = 2000;
@@ -299,23 +330,25 @@ public abstract class AbstractWanReplication
 
                 boolean offered = false;
 
-                for (InternalPartition partition : node.getPartitionService().getPartitions()) {
-                    if (!partition.isLocal()) {
-                        continue;
-                    }
+                if (!paused) {
+                    for (InternalPartition partition : node.getPartitionService().getPartitions()) {
+                        if (!partition.isLocal()) {
+                            continue;
+                        }
 
-                    WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                    if (event == null) {
-                        continue;
-                    }
-                    offered = false;
-                    while (!offered) {
-                        try {
-                            stagingQueue.put(event);
-                            offered = true;
-                            emptyIterationCount = 0;
-                        } catch (InterruptedException ignored) {
-                            EmptyStatement.ignore(ignored);
+                        WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
+                        if (event == null) {
+                            continue;
+                        }
+                        offered = false;
+                        while (!offered) {
+                            try {
+                                stagingQueue.put(event);
+                                offered = true;
+                                emptyIterationCount = 0;
+                            } catch (InterruptedException ignored) {
+                                EmptyStatement.ignore(ignored);
+                            }
                         }
                     }
                 }

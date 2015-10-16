@@ -18,6 +18,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.instance.Node;
+import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
@@ -51,4 +52,31 @@ public interface WanReplicationEndpoint
     void addMapQueue(String key, int partitionId, WanReplicationEventQueue value);
 
     void addCacheQueue(String key, int partitionId, WanReplicationEventQueue value);
+
+    /**
+     * Calls to this method will pause wan event queue polling. Effectively, pauses wan replication for
+     * its {@link WanReplicationEndpoint} instance.
+     *
+     * Wan events will still be offered to wan replication
+     * queues but they won't be polled.
+     *
+     * Calling this method on already paused {@link WanReplicationEndpoint} instances will have no effect.
+     */
+    void pause();
+
+    /**
+     *  This method re-enables wan event queue polling for a paused {@link WanReplicationEndpoint} instance.
+     *
+     *  Calling this method on already running {@link WanReplicationEndpoint} instances will have no effect.
+     *
+     *  @see #pause()
+     */
+    void resume();
+
+    /**
+     * Gathers statistics of related {@link WanReplicationEndpoint} instance.
+     *
+     * @return {@link LocalWanPublisherStats}
+     */
+    LocalWanPublisherStats getStats();
 }

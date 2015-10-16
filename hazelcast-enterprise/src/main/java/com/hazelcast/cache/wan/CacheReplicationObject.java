@@ -4,6 +4,7 @@ import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -18,11 +19,13 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     private String managerPrefix;
     private Set<String> groupNames = new HashSet<String>();
     private int backupCount;
+    private long creationTime;
 
     public CacheReplicationObject(String cacheName, String managerPrefix, int backupCount) {
         this.cacheName = cacheName;
         this.managerPrefix = managerPrefix;
         this.backupCount = backupCount;
+        this.creationTime = Clock.currentTimeMillis();
     }
 
     public CacheReplicationObject() {
@@ -48,6 +51,11 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
     @Override
     public Set<String> getGroupNames() {
         return groupNames;
+    }
+
+    @Override
+    public long getCreationTime() {
+        return creationTime;
     }
 
     @Override

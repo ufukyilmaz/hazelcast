@@ -5,15 +5,17 @@ import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
 import com.hazelcast.client.spi.ClientProxy;
+import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
@@ -22,7 +24,6 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.SocketInterceptor;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 import com.hazelcast.util.ExceptionUtil;
@@ -134,12 +135,20 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     @Override
-    public <T> Class<? extends ClientProxy> getServiceProxy(Class<T> service) {
+    public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            return EnterpriseClientMapProxyImpl.class;
+            return createClientMapProxyFactory();
         }
 
-        throw new IllegalArgumentException("Unknown service for proxy creation: " + service);
+        throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }
 
+    private ClientProxyFactory createClientMapProxyFactory() {
+        return new ClientProxyFactory() {
+            @Override
+            public ClientProxy create(String id) {
+                return new EnterpriseClientMapProxyImpl(MapService.SERVICE_NAME, id);
+            }
+        };
+    }
 }

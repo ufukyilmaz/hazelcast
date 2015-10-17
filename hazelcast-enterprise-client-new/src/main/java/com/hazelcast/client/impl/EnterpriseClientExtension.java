@@ -52,7 +52,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     @Override
-    public SerializationService createSerializationService() {
+    public SerializationService createSerializationService(byte version) {
         SerializationService ss;
         try {
             ClientConfig config = client.getClientConfig();

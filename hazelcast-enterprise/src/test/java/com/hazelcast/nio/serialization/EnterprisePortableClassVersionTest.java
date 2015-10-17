@@ -42,7 +42,7 @@ public class EnterprisePortableClassVersionTest {
 
     @Test
     public void testDifferentClassAndServiceVersions() {
-        SerializationService serializationService = new EnterpriseSerializationServiceBuilder().setVersion(1)
+        SerializationService serializationService = new EnterpriseSerializationServiceBuilder().setPortableVersion(1)
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new NamedPortable();
@@ -50,7 +50,7 @@ public class EnterprisePortableClassVersionTest {
 
                 }).build();
 
-        SerializationService serializationService2 = new EnterpriseSerializationServiceBuilder().setVersion(2)
+        SerializationService serializationService2 = new EnterpriseSerializationServiceBuilder().setPortableVersion(2)
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new NamedPortableV2();
@@ -83,7 +83,7 @@ public class EnterprisePortableClassVersionTest {
 
     @Test
     public void testDifferentClassAndServiceVersionsUsingDataWriteAndRead() throws IOException {
-        SerializationService serializationService = new EnterpriseSerializationServiceBuilder().setVersion(1)
+        SerializationService serializationService = new EnterpriseSerializationServiceBuilder().setPortableVersion(1)
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new NamedPortable();
@@ -91,7 +91,7 @@ public class EnterprisePortableClassVersionTest {
 
                 }).build();
 
-        SerializationService serializationService2 = new EnterpriseSerializationServiceBuilder().setVersion(2)
+        SerializationService serializationService2 = new EnterpriseSerializationServiceBuilder().setPortableVersion(2)
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new NamedPortableV2();

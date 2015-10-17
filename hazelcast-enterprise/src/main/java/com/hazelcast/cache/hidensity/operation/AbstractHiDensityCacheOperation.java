@@ -255,9 +255,4 @@ abstract class AbstractHiDensityCacheOperation
     public static Data readNativeMemoryOperationData(ObjectDataInput in) throws IOException {
         return ((EnterpriseObjectDataInput) in).tryReadData(DataType.NATIVE);
     }
-
-    public static Data readOperationData(ObjectDataInput in) throws IOException {
-        return readNativeMemoryOperationData(in);
-    }
-
 }

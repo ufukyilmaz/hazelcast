@@ -26,8 +26,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import java.io.EOFException;
 import java.io.IOException;
 
-final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput
-        implements EnterpriseBufferObjectDataInput {
+final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput implements EnterpriseBufferObjectDataInput {
 
     private final EnterpriseSerializationService enterpriseSerializationService;
 
@@ -54,11 +53,13 @@ final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput
     }
 
     public Data readData(DataType type) throws IOException {
-        return enterpriseSerializationService.readData(this, type);
+        return EnterpriseSerializationUtil
+                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), false);
     }
 
     @Override
     public Data tryReadData(DataType type) throws IOException {
-        return enterpriseSerializationService.tryReadData(this, type);
+        return EnterpriseSerializationUtil
+                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), true);
     }
 }

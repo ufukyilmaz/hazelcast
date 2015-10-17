@@ -117,7 +117,7 @@ public class CachePutAllBackupOperation
     }
 
     private void writeCacheRecord(ObjectDataOutput out, HiDensityCacheRecord record,
-                                  EnterpriseSerializationService serializationService) throws IOException {
+            EnterpriseSerializationService serializationService) throws IOException {
         if (record == null) {
             out.writeBoolean(false);
             return;
@@ -241,9 +241,9 @@ public class CachePutAllBackupOperation
                     cacheRecord.setExpirationTime(creationTime + ttlMillis);
                 }
                 if (valueNotNull) {
-                   cacheRecord.setValue(valueData);
+                    cacheRecord.setValue(valueData);
                 } else {
-                   cacheRecord.setValue(null);
+                    cacheRecord.setValue(null);
                 }
                 return cacheRecord;
             } else {

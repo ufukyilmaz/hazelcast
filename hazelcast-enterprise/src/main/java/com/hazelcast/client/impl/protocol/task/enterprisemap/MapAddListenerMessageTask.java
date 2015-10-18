@@ -56,8 +56,14 @@ public class MapAddListenerMessageTask
         MapService mapService = getService(MapService.SERVICE_NAME);
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
-        String registrationId = mapServiceContext.addListenerAdapter(adapter,
-                TrueEventFilter.INSTANCE, parameters.listenerName);
+        String registrationId;
+        if (parameters.localOnly) {
+            registrationId = mapServiceContext.addLocalListenerAdapter(adapter, parameters.listenerName);
+        } else {
+            registrationId = mapServiceContext.addListenerAdapter(adapter,
+                    TrueEventFilter.INSTANCE, parameters.listenerName);
+        }
+
         endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, parameters.listenerName, registrationId);
         return registrationId;
     }

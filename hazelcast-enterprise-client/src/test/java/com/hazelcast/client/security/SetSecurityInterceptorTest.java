@@ -126,7 +126,7 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
     public void removeItemListener() {
         ICollection collection = getCollection();
         final String id = collection.addItemListener(mock(ItemListener.class), true);
-        interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", SKIP_COMPARISON_OBJECT);
         collection.removeItemListener(id);
     }
 

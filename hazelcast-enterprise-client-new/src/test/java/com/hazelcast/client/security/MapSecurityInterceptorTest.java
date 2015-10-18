@@ -311,7 +311,7 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = map.addEntryListener(entryAdapter, false);
-        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", SKIP_COMPARISON_OBJECT);
         map.removeEntryListener(id);
     }
 
@@ -494,7 +494,7 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void removePartitionLostListener() {
         String id = map.addPartitionLostListener(mock(MapPartitionLostListener.class));
-        interceptor.setExpectation(getObjectType(), objectName, "removePartitionLostListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
         map.removePartitionLostListener(id);
     }
 

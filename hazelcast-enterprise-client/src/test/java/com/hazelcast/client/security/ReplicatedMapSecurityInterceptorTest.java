@@ -136,7 +136,7 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = replicatedMap.addEntryListener(entryAdapter);
-        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", SKIP_COMPARISON_OBJECT);
         replicatedMap.removeEntryListener(id);
     }
 

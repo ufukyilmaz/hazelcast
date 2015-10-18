@@ -3,7 +3,6 @@ package com.hazelcast.client.security;
 import com.hazelcast.concurrent.semaphore.SemaphoreService;
 import com.hazelcast.core.ISemaphore;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;

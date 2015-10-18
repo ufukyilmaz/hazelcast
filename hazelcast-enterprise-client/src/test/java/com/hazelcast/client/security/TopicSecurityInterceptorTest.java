@@ -38,7 +38,7 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
         final String objectName = randomString();
         final ITopic topic = client.getTopic(objectName);
         final String id = topic.addMessageListener(messageListener);
-        interceptor.setExpectation(getObjectType(), objectName, "removeMessageListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeMessageListener", SKIP_COMPARISON_OBJECT);
         topic.removeMessageListener(id);
     }
 

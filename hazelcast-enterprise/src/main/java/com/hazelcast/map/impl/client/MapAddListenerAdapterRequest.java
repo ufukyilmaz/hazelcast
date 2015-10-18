@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.client;
 
 import com.hazelcast.client.ClientEndpoint;
-import com.hazelcast.client.impl.client.CallableClientRequest;
+import com.hazelcast.client.impl.client.BaseClientAddListenerRequest;
 import com.hazelcast.core.IMapEvent;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.ListenerAdapter;
@@ -22,12 +22,11 @@ import java.security.Permission;
 /**
  * Adds listener adapter to {@link com.hazelcast.core.IMap IMap}
  */
-public class MapAddListenerAdapterRequest extends CallableClientRequest {
+public class MapAddListenerAdapterRequest extends BaseClientAddListenerRequest {
 
     protected String name;
 
     public MapAddListenerAdapterRequest() {
-        super();
     }
 
     public MapAddListenerAdapterRequest(String name) {
@@ -42,11 +41,15 @@ public class MapAddListenerAdapterRequest extends CallableClientRequest {
     }
 
     private String registerListener(ClientEndpoint endpoint, ListenerAdapter adapter) {
-        MapService mapService = (MapService) getService();
+        MapService mapService = getService();
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
-        String registrationId = mapServiceContext.addListenerAdapter(adapter,
-                TrueEventFilter.INSTANCE, name);
+        String registrationId;
+        if (localOnly) {
+            registrationId = mapServiceContext.addLocalListenerAdapter(adapter, name);
+        } else {
+            registrationId = mapServiceContext.addListenerAdapter(adapter, TrueEventFilter.INSTANCE, name);
+        }
         endpoint.addListenerDestroyAction(MapService.SERVICE_NAME, name, registrationId);
         return registrationId;
     }

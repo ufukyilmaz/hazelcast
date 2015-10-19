@@ -5,6 +5,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
+import com.hazelcast.map.impl.nearcache.EnterpriseNearCacheProvider;
+import com.hazelcast.map.impl.nearcache.NearCacheProvider;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
@@ -75,6 +77,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     PartitionContainer[] createPartitionContainers() {
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         return new EnterprisePartitionContainer[partitionCount];
+    }
+
+    @Override
+    NearCacheProvider createNearCacheProvider() {
+        return new EnterpriseNearCacheProvider(this, nodeEngine);
     }
 
     @Override

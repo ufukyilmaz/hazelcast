@@ -14,12 +14,13 @@ import com.hazelcast.util.EmptyStatement;
 
 import java.util.Collection;
 
+import static com.hazelcast.util.Preconditions.checkNotNull;
+
 /**
  * {@link com.hazelcast.cache.impl.nearcache.NearCache} implementation for Hi-Density cache.
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
- *
  * @author sozal 26/10/14
  */
 public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
@@ -39,6 +40,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
         super(name, nearCacheConfig, nearCacheContext, nearCacheRecordStore);
         this.nearCacheManager = nearCacheContext.getNearCacheManager();
     }
+
     @Override
     protected NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                                     NearCacheContext nearCacheContext) {
@@ -59,11 +61,9 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
     @Override
     public void put(K key, V value) {
-        putInternal(key, value);
-    }
+        checkNotNull(key, "key cannot be null on put!");
 
-    private void putInternal(K key, V value) {
-        NativeOutOfMemoryError oomeError = null;
+        NativeOutOfMemoryError oomeError;
         boolean anyAvailableNearCacheToEvict;
 
         do {
@@ -101,7 +101,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
                     anyAvailableNearCacheToEvict = true;
                     break;
                 }
-            }  catch (NativeOutOfMemoryError oome) {
+            } catch (NativeOutOfMemoryError oome) {
                 anyAvailableNearCacheToEvict = true;
                 oomeError = oome;
             }
@@ -111,6 +111,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
         checkAndHandleOOME(key, value, oomeError);
     }
+
 
     private boolean tryToPutByEvictingOnOtherNearCaches(K key, V value) {
         if (nearCacheManager == null) {

@@ -1,9 +1,26 @@
-package com.hazelcast.map.impl;
+/*
+ * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hazelcast.map.impl.proxy;
 
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.QueryCache;
-import com.hazelcast.map.impl.proxy.MapProxyImpl;
+import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.subscriber.InternalQueryCache;
 import com.hazelcast.map.impl.querycache.subscriber.NodeQueryCacheEndToEndConstructor;
@@ -22,15 +39,14 @@ import static com.hazelcast.util.Preconditions.checkNotInstanceOf;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Proxy implementation of {@link com.hazelcast.core.IMap} interface
- * which includes enterprise version specific extensions.
+ * A server-side {@code IEnterpriseMap} implementation which is fronted by a near-cache.
  *
- * @param <K> the key type of map.
- * @param <V> the value type of map.
+ * @param <K> the key type for this {@code IMap} proxy.
+ * @param <V> the value type for this {@code IMap} proxy.
  */
-public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements IEnterpriseMap<K, V> {
+public class EnterpriseNearCachedMapProxyImpl<K, V> extends NearCachedMapProxyImpl<K, V> implements IEnterpriseMap<K, V> {
 
-    public EnterpriseMapProxyImpl(String name, MapService mapService, NodeEngine nodeEngine) {
+    public EnterpriseNearCachedMapProxyImpl(String name, MapService mapService, NodeEngine nodeEngine) {
         super(name, mapService, nodeEngine);
     }
 
@@ -91,5 +107,4 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
         return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
                 request.getUserGivenCacheName(), constructorFunction);
     }
-
 }

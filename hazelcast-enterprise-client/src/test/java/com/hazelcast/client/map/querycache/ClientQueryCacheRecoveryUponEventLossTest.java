@@ -2,7 +2,7 @@ package com.hazelcast.client.map.querycache;
 
 import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.impl.EnterpriseClientMapProxyImpl;
+import com.hazelcast.client.map.impl.proxy.EnterpriseClientMapProxyImpl;
 import com.hazelcast.client.map.querycache.subscriber.TestClientSubscriberContext;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.QueryCacheConfig;

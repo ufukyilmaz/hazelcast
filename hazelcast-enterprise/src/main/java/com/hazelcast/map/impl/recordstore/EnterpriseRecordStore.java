@@ -30,6 +30,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +70,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     protected Collection<Record> getNotLockedRecords() {
-        Set<Data> lockedKeySet = lockStore == null ? null : lockStore.getLockedKeys();
+        Set<Data> lockedKeySet = lockStore == null ? Collections.<Data>emptySet() : lockStore.getLockedKeys();
         int notLockedKeyCount = storage.size() - lockedKeySet.size();
         if (notLockedKeyCount <= 0) {
             return emptyList();

@@ -15,6 +15,7 @@ public interface MemoryManager extends MemoryAllocator {
     /**
      * Allocates memory from an internal memory pool or falls back to OS
      * if not enough memory available in pool.
+     * Content of the memory block will be initialized to zero.
      *
      * <p>
      * Complement of {@link #free(long, long)}.
@@ -23,6 +24,7 @@ public interface MemoryManager extends MemoryAllocator {
      *
      * @param size of requested memory block
      * @return address of memory block
+     * @throws NativeOutOfMemoryError if not enough memory is available
      */
     long allocate(long size);
 

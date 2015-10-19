@@ -58,10 +58,7 @@ public final class StandardMemoryManager implements MemoryManager {
         memoryStats.checkCommittedNative(size);
         long address = malloc.malloc(size);
 
-        if (address == NULL_ADDRESS) {
-            throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
-                    "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
-        }
+        checkNotNull(address, size);
 
         if (DEBUG) {
             traceAllocation(address, size);
@@ -70,6 +67,37 @@ public final class StandardMemoryManager implements MemoryManager {
         UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
         memoryStats.addCommittedNative(size);
         return address;
+    }
+
+    @Override
+    public long reallocate(long address, long currentSize, long newSize) {
+        long diff = newSize - currentSize;
+        if (diff > 0) {
+            memoryStats.checkCommittedNative(diff);
+        }
+
+        long newAddress = malloc.realloc(address, newSize);
+        checkNotNull(newAddress, newSize);
+
+        if (DEBUG) {
+            traceRelease(address, currentSize);
+            traceAllocation(newAddress, newSize);
+        }
+
+        if (diff > 0) {
+            long startAddress = newAddress + currentSize;
+            UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
+        }
+
+        memoryStats.addCommittedNative(diff);
+        return newAddress;
+    }
+
+    protected static void checkNotNull(long address, long size) {
+        if (address == NULL_ADDRESS) {
+            throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
+                    "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+        }
     }
 
     private synchronized void traceAllocation(long address, long size) {

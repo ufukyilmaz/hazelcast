@@ -8,10 +8,8 @@ import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -27,7 +25,8 @@ final class GlobalPoolingMemoryManager
     private static final int INITIAL_CAPACITY = 2048;
 
     private final GarbageCollector gc;
-    private final Set<Long> allocations = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+    private final ConcurrentNavigableMap<Long, Object> pageAllocations
+            = new ConcurrentSkipListMap<Long, Object>();
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
     private volatile long lastFullCompaction;
 
@@ -49,18 +48,10 @@ final class GlobalPoolingMemoryManager
     }
 
     @Override
-    protected void onMalloc(long address) {
-        assertNotNullPtr(address);
-        boolean added = allocations.add(address);
-        assert added : "Duplicate malloc() for address: " + address;
-        lastFullCompaction = 0L;
-    }
-
-    @Override
-    protected void onFree(long address) {
-        assertNotNullPtr(address);
-        boolean removed = allocations.remove(address);
-        assert removed : "Unknown address is freed: " + address;
+    protected void onMallocPage(long pageAddress) {
+        assertNotNullPtr(pageAddress);
+        boolean added = pageAllocations.put(pageAddress, Boolean.TRUE) == null;
+        assert added : "Duplicate malloc() for pageAddress: " + pageAddress;
         lastFullCompaction = 0L;
     }
 
@@ -102,7 +93,7 @@ final class GlobalPoolingMemoryManager
         int header = Bits.setBit(size, AVAILABLE_BIT);
 
         long base = getPage(address, size);
-        if (base < 0) {
+        if (base == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
         }
         int offset = (int) (address - base);
@@ -171,7 +162,7 @@ final class GlobalPoolingMemoryManager
         if (offset < 0 || QuickMath.modPowerOfTwo(offset, size) != 0) {
             return false;
         }
-        return allocations.contains(address - offset);
+        return pageAllocations.containsKey(address - offset);
     }
 
     protected int getSizeInternal(long address) {
@@ -202,16 +193,16 @@ final class GlobalPoolingMemoryManager
     }
 
     private long getPage(long address, int size) {
-        Iterator<Long> iterator = allocations.iterator();
-        long page = -1L;
-        while (iterator.hasNext()) {
-            long a = iterator.next();
-            if (a <= address && (a + pageSize) >= (address + size)) {
-                page = a;
-                break;
-            }
+        Long page = pageAllocations.floorKey(address);
+        if (page == null) {
+            return NULL_ADDRESS;
         }
-        return page;
+
+        if ((page + pageSize) >= (address + size)) {
+            return page;
+        }
+
+        return NULL_ADDRESS;
     }
 
     public final void destroy() {
@@ -225,11 +216,11 @@ final class GlobalPoolingMemoryManager
                 addressQueues[i] = null;
             }
         }
-        if (!allocations.isEmpty()) {
-            for (Long address : allocations) {
-                pageAllocator.free(address, pageSize);
+        if (!pageAllocations.isEmpty()) {
+            for (Long address : pageAllocations.keySet()) {
+                freePage(address);
             }
-            allocations.clear();
+            pageAllocations.clear();
         }
     }
 

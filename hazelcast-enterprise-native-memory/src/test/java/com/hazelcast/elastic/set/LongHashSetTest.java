@@ -32,7 +32,7 @@ public class LongHashSetTest {
     @Before
     public void setUp() throws Exception {
         memoryManager = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        set = new LongHashSet(memoryManager);
+        set = new LongHashSet(memoryManager, 0L);
     }
 
     @After
@@ -50,7 +50,7 @@ public class LongHashSetTest {
 
     @Test
     public void testAddMany() throws Exception {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 1; i <= 1000; i++) {
             assertTrue(set.add(i));
         }
     }
@@ -76,7 +76,7 @@ public class LongHashSetTest {
         assertFalse(set.iterator().hasNext());
 
         Set<Long> expected = new HashSet<Long>();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 1; i <= 1000; i++) {
             set.add(i);
             expected.add((long) i);
         }
@@ -89,12 +89,12 @@ public class LongHashSetTest {
             iterator.remove();
         }
 
-        assertTrue(set.isEmpty());
+        assertTrue("size: " + set.size(), set.isEmpty());
     }
 
     @Test
     public void testClear() throws Exception {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 1; i <= 1000; i++) {
             set.add(i);
         }
 
@@ -108,7 +108,7 @@ public class LongHashSetTest {
         assertEquals(0, set.size());
 
         int expected = 1000;
-        for (int i = 0; i < expected; i++) {
+        for (int i = 1; i <= expected; i++) {
             set.add(i);
         }
 

@@ -36,12 +36,12 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     final PooledNativeMemoryStats memoryStats;
 
     // page allocator, to allocate MAX_SIZE memory block from system
-    final MemoryAllocator pageAllocator;
+    private final MemoryAllocator pageAllocator;
 
     // system memory allocator
     // system allocations are not count in quota
     // but total system allocations cannot exceed a predefined portion of max off-heap memory
-    final MemoryAllocator systemAllocator;
+    final SystemMemoryAllocator systemAllocator;
 
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
             LibMalloc malloc, PooledNativeMemoryStats stats) {
@@ -103,13 +103,10 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             size = queue.getMemorySize();
         } else {
             address = pageAllocator.allocate(size);
-            onMalloc(address);
         }
         memoryStats.addUsedOffHeap(size);
         return address;
     }
-
-    protected abstract void onMalloc(long address);
 
     // TODO: loopify acquireInternal() & splitFromNextQueue() recursion
     protected final long acquireInternal(AddressQueue queue) {
@@ -134,6 +131,21 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     protected abstract void onOome(NativeOutOfMemoryError e);
 
     @Override
+    public long reallocate(long address, long currentSize, long newSize) {
+        long newAddress = allocate(newSize);
+
+        long size = Math.min(currentSize, newSize);
+        UnsafeHelper.UNSAFE.copyMemory(address, newAddress, size);
+
+        if (newSize > currentSize) {
+            long startAddress = newAddress + currentSize;
+            UnsafeHelper.UNSAFE.setMemory(startAddress, (newSize - currentSize), (byte) 0);
+        }
+        free(address, currentSize);
+        return newAddress;
+    }
+
+    @Override
     public final void free(long address, long size) {
         assertNotNullPtr(address);
         final AddressQueue queue = getAddressQueue(size);
@@ -153,7 +165,6 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             size = queue.getMemorySize();
         } else {
             pageAllocator.free(address, size);
-            onFree(address);
         }
         memoryStats.addUsedOffHeap(-size);
     }
@@ -164,8 +175,6 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
         UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
     }
-
-    protected abstract void onFree(long address);
 
     private void releaseInternal(AddressQueue queue, long address) {
         int remaining = queue.remaining();
@@ -260,7 +269,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (memorySize == pageSize) {
             long address = pageAllocator.allocate(pageSize);
             zero(address, pageSize);
-            onMalloc(address);
+            onMallocPage(address);
             initialize(address, pageSize, 0);
             return address;
         } else {
@@ -288,6 +297,12 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             return address;
         }
     }
+
+    protected final void freePage(long pageAddress) {
+        pageAllocator.free(pageAddress, pageSize);
+    }
+
+    protected abstract void onMallocPage(long address);
 
     protected abstract void initialize(long address, int size, int offset);
 
@@ -376,6 +391,15 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
         @Override
         public long allocate(long size) {
+            checkSize(size);
+            long address = malloc.malloc(size);
+            checkAddress(address, size);
+            UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+            memoryStats.addMetadataUsage(size);
+            return address;
+        }
+
+        private void checkSize(long size) {
             long limit = memoryStats.getMaxMetadata();
             long usage = memoryStats.getUsedMetadata();
             if (usage + size > limit) {
@@ -384,15 +408,37 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
                         + ", usage: " + MemorySize.toPrettyString(usage)
                         + ", requested: " + MemorySize.toPrettyString(size));
             }
-            long address = malloc.malloc(size);
-            memoryStats.addMetadataUsage(size);
-            return address;
         }
 
         @Override
         public void free(long address, long size) {
             malloc.free(address);
             memoryStats.addMetadataUsage(-size);
+        }
+
+        @Override
+        public long reallocate(long address, long currentSize, long newSize) {
+            long diff = newSize - currentSize;
+            if (diff > 0) {
+                checkSize(diff);
+            }
+            long newAddress = malloc.realloc(address, newSize);
+            checkAddress(newAddress, newSize);
+
+            if (diff > 0) {
+                long startAddress = newAddress + currentSize;
+                UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
+            }
+
+            memoryStats.addMetadataUsage(diff);
+            return newAddress;
+        }
+
+        private void checkAddress(long address, long size) {
+            if (address == NULL_ADDRESS) {
+                throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
+                        "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+            }
         }
     }
 }

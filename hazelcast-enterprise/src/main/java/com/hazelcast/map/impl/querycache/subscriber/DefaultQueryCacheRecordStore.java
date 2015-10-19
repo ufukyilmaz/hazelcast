@@ -9,6 +9,7 @@ import com.hazelcast.map.impl.querycache.subscriber.record.ObjectQueryCacheRecor
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecordFactory;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.query.impl.Extractors;
 import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.util.Clock;
@@ -75,7 +76,7 @@ class DefaultQueryCacheRecordStore implements QueryCacheRecordStore {
     private void saveIndex(Data keyData, QueryCacheRecord currentRecord, QueryCacheRecord oldRecord) {
         if (indexes.hasIndex()) {
             Object currentValue = currentRecord.getValue();
-            QueryEntry queryEntry = new QueryEntry(serializationService, keyData, currentValue);
+            QueryEntry queryEntry = new QueryEntry(serializationService, keyData, currentValue, Extractors.empty());
             Object oldValue = oldRecord == null ? null : oldRecord.getValue();
             indexes.saveEntryIndex(queryEntry, oldValue);
         }

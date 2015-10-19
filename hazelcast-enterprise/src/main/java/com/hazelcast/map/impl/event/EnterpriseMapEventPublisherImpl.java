@@ -169,7 +169,7 @@ public class EnterpriseMapEventPublisherImpl
         EventFilter eventFilter = registry.getEventFilter();
         // TODO handle synthetic events when applying filter.
         if (!doFilter(eventFilter, false, dataKey, dataOldValue, dataNewValue,
-                EntryEventType.getByType(eventType))) {
+                EntryEventType.getByType(eventType), null)) {
             return null;
         }
 

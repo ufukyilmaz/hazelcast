@@ -8,6 +8,7 @@ import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.SplitBrainHandlerService;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.
@@ -17,7 +18,7 @@ import com.hazelcast.spi.ReplicationSupportingService;
  */
 class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
 
-    public EnterpriseMapServiceFactory(EnterpriseMapServiceContext mapServiceContext) {
+    EnterpriseMapServiceFactory(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 
@@ -61,6 +62,12 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     RemoteService createRemoteService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         return new EnterpriseMapRemoteService(mapServiceContext);
+    }
+
+    @Override
+    SplitBrainHandlerService createSplitBrainHandlerService() {
+        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
+        return new EnterpriseMapSplitBrainHandlerService(mapServiceContext);
     }
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {

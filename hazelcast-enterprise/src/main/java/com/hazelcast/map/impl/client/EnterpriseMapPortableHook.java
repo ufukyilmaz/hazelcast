@@ -11,6 +11,9 @@ import com.hazelcast.util.MutableInteger;
 
 import java.util.Collection;
 
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_MAP_PORTABLE_FACTORY;
+import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_MAP_PORTABLE_FACTORY_ID;
+
 /**
  * Contains enterprise only extensions for client portable serialization.
  */
@@ -19,7 +22,8 @@ public class EnterpriseMapPortableHook implements PortableHook {
     /**
      * Factory id for map portable factory.
      */
-    public static final int F_ID = FactoryIdHelper.getFactoryId(FactoryIdHelper.ENTERPRISE_MAP_PORTABLE_FACTORY, -25);
+    public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_MAP_PORTABLE_FACTORY,
+            ENTERPRISE_MAP_PORTABLE_FACTORY_ID);
 
     /**
      * Array index variable for constructors.

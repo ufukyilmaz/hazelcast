@@ -20,8 +20,11 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.map.wan.filter.MapWanEventFilter;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationPublisher;
 
@@ -42,6 +45,26 @@ public class EnterpriseMapEventPublisherImpl
 
     public EnterpriseMapEventPublisherImpl(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
+    }
+
+    @Override
+    public void publishEvent(Address caller, String mapName, EntryEventType eventType, boolean syntheticEvent,
+                             Data dataKey, Data dataOldValue, Data dataValue, Data dataMergingValue) {
+
+        dataKey = toHeapData(dataKey);
+        dataOldValue = toHeapData(dataOldValue);
+        dataValue = toHeapData(dataValue);
+        dataMergingValue = toHeapData(dataMergingValue);
+
+        super.publishEvent(caller, mapName, eventType, syntheticEvent, dataKey, dataOldValue, dataValue, dataMergingValue);
+    }
+
+    private Data toHeapData(Data dataKey) {
+        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        EnterpriseSerializationService serializationService
+                = (EnterpriseSerializationService) nodeEngine.getSerializationService();
+
+        return serializationService.toData(dataKey, DataType.HEAP);
     }
 
     @Override
@@ -157,7 +180,6 @@ public class EnterpriseMapEventPublisherImpl
                 .withDataNewValue(dataNewValue)
                 .withEventType(eventType)
                 .withDataOldValue(dataOldValue).build();
-
     }
 
     // TODO Problem : Locked keys will also be cleared from the query-cache after calling a map-wide event like clear/evictAll.

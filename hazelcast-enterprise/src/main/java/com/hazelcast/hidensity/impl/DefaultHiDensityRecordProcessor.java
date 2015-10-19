@@ -224,4 +224,11 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         return storageInfo.removeUsedMemory(size);
     }
 
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
+    }
+
+    public EnterpriseSerializationService getSerializationService() {
+        return serializationService;
+    }
 }

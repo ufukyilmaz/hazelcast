@@ -9,6 +9,31 @@
     <!-- Suppress duplicate checking of copyright notice -->
     <suppress checks="StrictDuplicateCode" files=".java" lines="1-15"/>
 
+    <!-- Exclude implementation packages from JavaDoc checks -->
+    <suppress checks="JavadocMethod" files="/impl/"/>
+    <suppress checks="JavadocPackage" files="/impl/"/>
+    <suppress checks="JavadocType" files="/impl/"/>
+    <suppress checks="JavadocVariable" files="/impl/"/>
+
+    <!-- PortableHook -->
+    <suppress checks="MethodLength" files="PortableHook\.java$"/>
+    <suppress checks="MethodCount" files="PortableHook\.java$"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="PortableHook\.java$"/>
+    <suppress checks="ReturnCount" files="PortableHook\.java$"/>
+    <suppress checks="AnonInnerLength" files="PortableHook\.java$"/>
+    <suppress checks="ClassFanOutComplexityCheck" files="PortableHook\.java$"/>
+    <suppress checks="ExecutableStatementCount" files="PortableHook\.java$"/>
+
+    <!-- SerializerHook -->
+    <suppress checks="MethodLength" files="SerializerHook\.java$"/>
+    <suppress checks="MethodCount" files="SerializerHook\.java$"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="SerializerHook\.java$"/>
+    <suppress checks="ReturnCount" files="SerializerHook\.java$"/>
+    <suppress checks="AnonInnerLength" files="SerializerHook\.java$"/>
+    <suppress checks="ClassFanOutComplexityCheck" files="SerializerHook\.java$"/>
+    <suppress checks="CyclomaticComplexityCheck" files="SerializerHook\.java$"/>
+    <suppress checks="IllegalType" files="SerializerHook\.java$"/>
+
     <!-- TODO: these wildcard suppressions need to be fixed -->
     <suppress checks="" files="com/hazelcast/security/"/>
     <suppress checks="" files="com/hazelcast/memory/"/>
@@ -27,9 +52,11 @@
     <suppress checks="JavadocType" files="com/hazelcast/nio/serialization/"/>
     <suppress checks="JavadocMethod" files="com/hazelcast/internal/serialization/"/>
     <suppress checks="JavadocType" files="com/hazelcast/internal/serialization/"/>
-    <suppress checks="ParameterNumber" files="com/hazelcast/internal/serialization/impl/EnterpriseSerializationServiceV1"/>
+    <suppress checks="ParameterNumber"
+              files="com/hazelcast/internal/serialization/impl/EnterpriseSerializationServiceV1"/>
     <suppress checks="MethodCount|MagicNumber" files="com/hazelcast/internal/serialization/impl/MemoryBlockDataInput"/>
-    <suppress checks="IllegalImport|NPathComplexity" files="com/hazelcast/internal/serialization/impl/NativeMemoryDataUtil"/>
+    <suppress checks="IllegalImport|NPathComplexity"
+              files="com/hazelcast/internal/serialization/impl/NativeMemoryDataUtil"/>
     <suppress checks="MagicNumber" files="com/hazelcast/nio/CipherHelper"/>
     <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketReader"/>
     <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketWriter"/>
@@ -74,6 +101,15 @@
     <!-- Query Cache -->
     <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/querycache/subscriber/DefaultQueryCache"/>
     <suppress checks="ParameterNumber" files="com/hazelcast/map/impl/querycache/accumulator/AccumulatorInfo"/>
+
+    <!--HD IMap-->
+    <suppress checks="JavadocMethod" files="com/hazelcast/map/"/>
+    <suppress checks="JavadocType" files="com/hazelcast/map/"/>
+    <suppress checks="JavadocMethod" files="com/hazelcast/map/"/>
+    <suppress checks="JavadocVariable" files="com/hazelcast/map/"/>
+    <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/record/HDRecord"/>
+    <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
+    <suppress checks="ClassDataAbstractionCoupling" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
 
     <!-- Client Protocol -->
     <suppress checks="" files="com/hazelcast/client/impl/protocol/template/"/>

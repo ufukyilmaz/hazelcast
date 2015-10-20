@@ -23,6 +23,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -116,6 +117,16 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         if (memoryManager == null) {
             memoryManager = serializationService.getMemoryManager();
+            if (memoryManager instanceof PoolingMemoryManager) {
+                // `HiDensityNativeMemoryCacheRecordStore` is partition specific and
+                // it is created from its partition specific thread.
+                // Since memory manager is `PoolingMemoryManager`, this means that
+                // this record store will always use its partition specific `ThreadLocalPoolingMemoryManager`.
+                // In this case, no need to find its partition specific `ThreadLocalPoolingMemoryManager` inside
+                // `GlobalPoolingMemoryManager` for every memory allocation/free every time.
+                // So, we explicitly use its partition specific `ThreadLocalPoolingMemoryManager` directly.
+                memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
+            }
         }
         if (memoryManager == null) {
             throw new IllegalStateException("Native memory must be enabled to use Hi-Density storage !");

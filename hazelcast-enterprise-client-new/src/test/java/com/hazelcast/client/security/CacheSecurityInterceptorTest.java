@@ -144,7 +144,7 @@ public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    public void replace_withoutNewValue() {
+    public void replace_WithOutNewValue() {
         final String key = randomString();
         final String value = randomString();
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "replace", key, value);

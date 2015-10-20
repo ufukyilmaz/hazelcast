@@ -4,7 +4,6 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.ReplicatedMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.replicatedmap.impl.ReplicatedMapService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -137,7 +136,7 @@ public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
     public void removeEntryListener() {
         final EntryAdapter entryAdapter = new EntryAdapter();
         final String id = replicatedMap.addEntryListener(entryAdapter);
-        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeEntryListener", SKIP_COMPARISON_OBJECT);
         replicatedMap.removeEntryListener(id);
     }
 

@@ -481,9 +481,4 @@ public class EnterpriseCacheService
         return cacheWanEventPublisher;
     }
 
-    @Override
-    public String toString() {
-        return "EnterpriseCacheService[" + SERVICE_NAME + "]";
-    }
-
 }

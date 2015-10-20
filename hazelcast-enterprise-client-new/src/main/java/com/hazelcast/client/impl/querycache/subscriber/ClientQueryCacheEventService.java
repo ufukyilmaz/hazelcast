@@ -1,12 +1,13 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
-import com.hazelcast.client.impl.ClientMessageDecoder;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.codec.EnterpriseMapAddListenerCodec;
+import com.hazelcast.client.impl.protocol.codec.MapRemoveEntryListenerCodec;
 import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.ClientListenerService;
 import com.hazelcast.client.spi.EventHandler;
-import com.hazelcast.client.spi.impl.ClientListenerServiceImpl;
+import com.hazelcast.client.spi.impl.ListenerMessageCodec;
+import com.hazelcast.client.spi.impl.listener.ClientListenerServiceImpl;
 import com.hazelcast.core.IMapEvent;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.logging.ILogger;
@@ -116,15 +117,34 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
 
     @Override
     public String listenPublisher(String mapName, String cacheName, ListenerAdapter adapter) {
-        String listenerName = generateListenerName(mapName, cacheName);
-        ClientMessage request = EnterpriseMapAddListenerCodec.encodeRequest(listenerName);
+        final String listenerName = generateListenerName(mapName, cacheName);
         EventHandler handler = new QueryCacheHandler(adapter);
-        return listenerService.startListening(request, null, handler, new ClientMessageDecoder() {
+        return listenerService.registerListener(createPublisherListenerCodec(listenerName), handler);
+    }
+
+    private ListenerMessageCodec createPublisherListenerCodec(final String listenerName) {
+        return new ListenerMessageCodec() {
             @Override
-            public <T> T decodeClientMessage(ClientMessage clientMessage) {
-                return (T) EnterpriseMapAddListenerCodec.decodeResponse(clientMessage).response;
+            public ClientMessage encodeAddRequest(boolean localOnly) {
+                return EnterpriseMapAddListenerCodec.encodeRequest(listenerName, localOnly);
             }
-        });
+
+            @Override
+            public String decodeAddResponse(ClientMessage clientMessage) {
+                return EnterpriseMapAddListenerCodec.decodeResponse(clientMessage).response;
+            }
+
+            @Override
+            public ClientMessage encodeRemoveRequest(String realRegistrationId) {
+                return MapRemoveEntryListenerCodec.encodeRequest(listenerName, realRegistrationId);
+            }
+
+            @Override
+            public boolean decodeRemoveResponse(ClientMessage clientMessage) {
+                return MapRemoveEntryListenerCodec.decodeResponse(clientMessage).response;
+            }
+
+        };
     }
 
     @Override

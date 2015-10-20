@@ -11,6 +11,7 @@ import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
+import com.hazelcast.nio.serialization.ObjectCarryingPortable;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.Parameters;
@@ -32,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class BaseInterceptorTest extends HazelcastTestSupport {
 
+    public static Object SKIP_COMPARISON_OBJECT = new Object();
     TestHazelcastFactory factory = new TestHazelcastFactory();
     TestSecurityInterceptor interceptor = new TestSecurityInterceptor();
     HazelcastInstance instance;
@@ -154,6 +156,9 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
                 return true;
             }
             if (expected != null && expected.equals(actual)) {
+                return true;
+            }
+            if(expected == SKIP_COMPARISON_OBJECT){
                 return true;
             }
             return false;

@@ -30,7 +30,7 @@ public class ClientInstanceSecurityInterceptorTest extends BaseInterceptorTest {
     public void removePartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
         String registrationID = partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
-        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "removePartitionLostListener", registrationID);
+        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
         partitionService.removePartitionLostListener(registrationID);
     }
 
@@ -43,7 +43,7 @@ public class ClientInstanceSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void removeDistributedObjectListener() {
         String registrationID = client.addDistributedObjectListener(mock(DistributedObjectListener.class));
-        interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "removeDistributedObjectListener", registrationID);
+        interceptor.setExpectation(ProxyServiceImpl.SERVICE_NAME, null, "removeDistributedObjectListener", SKIP_COMPARISON_OBJECT);
         client.removeDistributedObjectListener(registrationID);
     }
 

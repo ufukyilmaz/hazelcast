@@ -32,6 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class BaseInterceptorTest extends HazelcastTestSupport {
 
+    public static Object SKIP_COMPARISON_OBJECT = new Object();
     TestHazelcastFactory factory = new TestHazelcastFactory();
     TestSecurityInterceptor interceptor = new TestSecurityInterceptor();
     HazelcastInstance instance;
@@ -154,6 +155,9 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
                 return true;
             }
             if (expected != null && expected.equals(actual)) {
+                return true;
+            }
+            if(expected == SKIP_COMPARISON_OBJECT){
                 return true;
             }
             return false;

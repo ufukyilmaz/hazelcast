@@ -38,7 +38,7 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
     public void removeItemListener() {
         final DummyListener itemListener = new DummyListener();
         final String id = queue.addItemListener(itemListener, false);
-        interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", id);
+        interceptor.setExpectation(getObjectType(), objectName, "removeItemListener", SKIP_COMPARISON_OBJECT);
         queue.removeItemListener(id);
     }
 

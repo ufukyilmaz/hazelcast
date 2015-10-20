@@ -45,6 +45,7 @@ import java.util.logging.Level;
 public abstract class HDMapOperation extends MapOperation {
 
     protected static final int FORCED_EVICTION_RETRY_COUNT = 5;
+    protected static final int DEFAULT_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
     protected transient RecordStore recordStore;
 
@@ -162,8 +163,7 @@ public abstract class HDMapOperation extends MapOperation {
         MapContainer mapContainer = recordStore.getMapContainer();
         Evictor evictor = mapContainer.getEvictor();
 
-        int removalSize = evictor.findRemovalSize(recordStore);
-        evictor.removeSize(removalSize, recordStore);
+        evictor.removeSize(DEFAULT_FORCED_EVICTION_ENTRY_REMOVE_COUNT, recordStore);
     }
 
     private void forceEvictOnOthers() {
@@ -174,7 +174,8 @@ public abstract class HDMapOperation extends MapOperation {
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
-                ConcurrentMap<String, RecordStore> maps = mapServiceContext.getPartitionContainer(originalPartitionId).getMaps();
+                ConcurrentMap<String, RecordStore> maps
+                        = mapServiceContext.getPartitionContainer(originalPartitionId).getMaps();
                 for (RecordStore recordstore : maps.values()) {
                     forceEvict(recordstore);
                 }

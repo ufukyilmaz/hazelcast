@@ -266,9 +266,6 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
     @Override
     protected void readInternal(final ObjectDataInput in) throws IOException {
         int size = in.readInt();
-        if (size < 1) {
-            return;
-        }
 
         mapNames = new ArrayList<String>(size);
         data = new ArrayDeque(size);

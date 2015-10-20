@@ -40,7 +40,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "        <name>dev</name>\n"
                 + "        <password>dev-pass</password>\n"
                 + "    </group>\n"
-                + "    <license-key>HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
+                + "    <license-key>HazelcastEnterprise#2Nodes#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
                 + "    <network>\n"
                 + "        <port auto-increment=\"true\">5701</port>\n"
                 + "        <join>\n"
@@ -59,7 +59,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        assertEquals("HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
+        assertEquals("HazelcastEnterprise#2Nodes#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
                 config.getLicenseKey());
     }
 

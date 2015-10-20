@@ -5,12 +5,12 @@ package com.hazelcast.enterprise;
  */
 public interface SampleLicense {
 
-    public static final String EXPIRED_ENTERPRISE_LICENSE = "HazelcastEnterprise-3.6#10Nodes#10Clients#HDMemory:1024GB#OawH1r7BNETIR0kUlFmSJbyfA54200L0W906030s010100X4h102c0000113";
-    public static final String TWO_NODES_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#175Hfk0BjrVSObaKNIlAUFu6m3179L99200220120000c100420M0g091s98";
-    public static final String ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART = "fV3FNuSOwK57T1Ba6I0yrjUbHJ760t2P91809P200942001109000ze020Y9";
-    public static final String UNLIMITED_LICENSE = "HazelcastEnterprise#999Nodes#9999Clients#HDMemory:99999999GB#NuJFVK76klmwyHO1fTRIjUr5Ab19z9n91989i999999h990992199P9x9909";
-    public static final String TWO_GB_NATIVE_MEMORY_LICENSE = "HazelcastEnterprise#10Nodes#10Clients#HDMemory:2GB#UFmk0EjHNuBy1Olfba6A5TKJ3R6419920Y10e0C0Z000Q0s0020099101089";
-    public static final String SECURITY_ONLY_LICENSE = "SecurityOnlyEnterprise#bjB1lHkVKf6wJRFmO0NUy57IrA7920i0C910c9002012089010002t000G99";
-    public static final String LICENSE_WITH_DIFFERENT_VERSION = "HazelcastEnterprise-3.7#10Nodes#10Clients#HDMemory:2GB#IFwyjmSTauKAH1B6lbN0rJ5OkE671vX9001090x1120000Mo00030700d930";
+    public static final String EXPIRED_ENTERPRISE_LICENSE = "HazelcastEnterprise-3.6#2Nodes#HDMemory:1024GB#OYFEaVrkfTbu3B6Uy7IwKc281e640D04212Dg40321014C000qP1X0Gq004M";
+    public static final String TWO_NODES_ENTERPRISE_LICENSE = "HazelcastEnterprise#2Nodes#HDMemory:1024GB#7NTklfabBjcuiYm51O3ErU110L000e2029v0gZ1Lg099p1P0LW1s041P920G";
+    public static final String ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART = "IFEJwam5OUVBk6fyuT0rYi209DC92Dn91419Pxss10s01o0000o0s2x2000Q";
+    public static final String UNLIMITED_LICENSE = "HazelcastEnterprise#9999Nodes#HDMemory:99999999GB#KSiwIuRj6EBfcUF13HkNaJ84tt92999D0o9o1Lt11q2909n9999P99QG9L99";
+    public static final String TWO_GB_NATIVE_MEMORY_LICENSE = "HazelcastEnterprise#10Nodes#HDMemory:2GB#3KEwScFmi0RJI65br7TYfj112e00L119M0901W010L0Q0Xt900q492o0v0nP";
+    public static final String SECURITY_ONLY_LICENSE = "SecurityOnlyEnterprise#wO1FiI6V7RABrJfb03mcTk54xW210000G00hg10Z020Q129090Z4oqG0L994";
+    public static final String LICENSE_WITH_DIFFERENT_VERSION = "HazelcastEnterprise-3.7#10Nodes#HDMemory:1024GB#7myiIwbTkla6HKAB3cUOVj10gZ000t11nXCWn01014910Q3M0og27X0s2900";
     public static final String LICENSE_WITH_SMALLER_VERSION = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
 }

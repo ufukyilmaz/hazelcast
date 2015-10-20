@@ -31,8 +31,10 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
+import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
 
@@ -463,14 +465,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void setRecord(Data key, CacheRecord record) {
-        HiDensityNativeMemoryCacheRecord oldRecord = putRecordInternal(key, record);
-        if (isMemoryBlockValid(oldRecord)) {
-            cacheRecordProcessor.dispose(oldRecord);
-        }
-    }
-
-    @Override
     public CacheRecord removeRecord(Data key) {
         HiDensityNativeMemoryCacheRecord removedRecord = records.remove(key);
         CacheRecord recordToReturn = null;
@@ -647,6 +641,23 @@ public class HiDensityNativeMemoryCacheRecordStore
     public boolean putBackup(Data key, Object value, ExpiryPolicy expiryPolicy) {
         long ttl = expiryPolicyToTTL(expiryPolicy);
         return own(key, value, ttl, false);
+    }
+
+    private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
+        if (expiryPolicy == null) {
+            return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+        }
+        try {
+            Duration expiryDuration = expiryPolicy.getExpiryForCreation();
+            if (expiryDuration == null || expiryDuration.isEternal()) {
+                return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+            }
+            long durationAmount = expiryDuration.getDurationAmount();
+            TimeUnit durationTimeUnit = expiryDuration.getTimeUnit();
+            return TimeUnit.MILLISECONDS.convert(durationAmount, durationTimeUnit);
+        } catch (Exception e) {
+            return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+        }
     }
 
     @Override

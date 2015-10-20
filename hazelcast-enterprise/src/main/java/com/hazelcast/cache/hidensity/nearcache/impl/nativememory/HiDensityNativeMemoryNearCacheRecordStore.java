@@ -29,6 +29,9 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.Clock;
 
+import static com.hazelcast.cache.impl.nearcache.NearCache.NULL_OBJECT;
+
+
 /**
  * @param <K> the type of the key stored in near-cache
  * @param <V> the type of the value stored in near-cache
@@ -251,6 +254,11 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected V recordToValue(HiDensityNativeMemoryNearCacheRecord record) {
+        if (record.getValue() == null) {
+            nearCacheStats.incrementMisses();
+            return (V) NULL_OBJECT;
+        }
+
         if (!isMemoryBlockValid(record)) {
             return null;
         }
@@ -356,7 +364,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
                 // Give priority to Data typed candidate.
-                // So there will be no extra convertion from Object to Data.
+                // So there will be no extra conversion from Object to Data.
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;

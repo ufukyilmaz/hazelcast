@@ -1,4 +1,4 @@
-package com.hazelcast.client.impl;
+package com.hazelcast.client.map.impl.proxy;
 
 import com.hazelcast.client.impl.querycache.ClientQueryCacheContext;
 import com.hazelcast.client.impl.querycache.subscriber.ClientQueryCacheEndToEndConstructor;

@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.config.ClientNetworkConfig;
-import com.hazelcast.client.spi.ClientProxy;
+import com.hazelcast.client.map.impl.proxy.EnterpriseMapClientProxyFactory;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SSLConfig;
@@ -136,19 +136,11 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            return createClientMapProxyFactory();
+            return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
+                    client.getSerializationService(), client.getClientConfig());
         }
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
-    }
-
-    private ClientProxyFactory createClientMapProxyFactory() {
-        return new ClientProxyFactory() {
-            @Override
-            public ClientProxy create(String id) {
-                return new EnterpriseClientMapProxyImpl(MapService.SERVICE_NAME, id);
-            }
-        };
     }
 
 }

@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.PartitionContainer;
-import com.hazelcast.map.impl.eviction.EvictionChecker;
 import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -51,7 +50,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     protected transient NativeOutOfMemoryError oome;
 
-    protected transient boolean createRecordStore = true;
+    protected transient boolean createRecordStoreOnDemand = true;
 
     public HDMapOperation() {
     }
@@ -76,7 +75,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     protected void getOrCreateRecordStore() {
         PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(getPartitionId());
-        if (createRecordStore) {
+        if (createRecordStoreOnDemand) {
             recordStore = partitionContainer.getRecordStore(name);
         } else {
             recordStore = partitionContainer.getExistingRecordStore(name);
@@ -163,13 +162,8 @@ public abstract class HDMapOperation extends MapOperation {
         MapContainer mapContainer = recordStore.getMapContainer();
         Evictor evictor = mapContainer.getEvictor();
 
-        EvictionChecker evictionChecker = evictor.getEvictionChecker();
-        boolean evictionPossible = evictionChecker.checkEvictionPossible(recordStore);
-
-        if (evictionPossible) {
-            int removalSize = evictor.findRemovalSize(recordStore);
-            evictor.removeSize(removalSize, recordStore);
-        }
+        int removalSize = evictor.findRemovalSize(recordStore);
+        evictor.removeSize(removalSize, recordStore);
     }
 
     private void forceEvictOnOthers() {

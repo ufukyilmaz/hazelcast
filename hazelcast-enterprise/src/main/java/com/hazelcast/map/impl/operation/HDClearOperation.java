@@ -40,7 +40,7 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
 
     public HDClearOperation(String name) {
         super(name);
-        this.createRecordStore = false;
+        this.createRecordStoreOnDemand = false;
     }
 
     @Override

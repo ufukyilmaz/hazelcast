@@ -52,7 +52,7 @@ public class CacheReplaceOperation
 
     @Override
     public void afterRun() throws Exception {
-        if (response != null) {
+        if (Boolean.TRUE.equals(response)) {
             if (cache.isWanReplicationEnabled()) {
                 CacheRecord cacheRecord = cache.getRecord(key);
                 CacheEntryView<Data, Data> entryView = CacheEntryViews.createDefaultEntryView(cache.toEventData(key),

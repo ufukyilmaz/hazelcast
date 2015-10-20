@@ -101,6 +101,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
             if (succeed) {
                 addDeferredDispose(oldRecord);
             } else {
+                addDeferredDispose(record);
                 addDeferredDispose(nativeKey);
             }
         }

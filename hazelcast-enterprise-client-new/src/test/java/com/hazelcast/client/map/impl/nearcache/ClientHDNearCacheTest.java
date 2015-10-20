@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.randomMapName;
-import static com.hazelcast.test.HazelcastTestSupport.sleepAtLeastMillis;
 import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -528,13 +527,18 @@ public class ClientHDNearCacheTest {
         }
     }
 
-
     @Test
     public void testServerMapExpiration_doesNotInvalidateClientNearCache() throws Exception {
         final String mapName = randomMapName(NEAR_CACHE_WITH_LONG_MAX_IDLE_TIME);
         final IMap clientMap = client.getMap(mapName);
+        final CountDownLatch addEventsToBeFired = new CountDownLatch(1);
         final CountDownLatch waitEventsToBeFired = new CountDownLatch(1);
         clientMap.addEntryListener(new EntryAdapter() {
+            @Override
+            public void entryAdded(EntryEvent event) {
+                addEventsToBeFired.countDown();
+            }
+
             @Override
             public void entryEvicted(EntryEvent event) {
                 waitEventsToBeFired.countDown();
@@ -542,7 +546,8 @@ public class ClientHDNearCacheTest {
         }, false);
 
         clientMap.put(1, 1, 3, TimeUnit.SECONDS);
-        sleepAtLeastMillis(300);
+
+        assertOpenEventually(addEventsToBeFired);
 
         // get entry in near cache.
         clientMap.get(1);

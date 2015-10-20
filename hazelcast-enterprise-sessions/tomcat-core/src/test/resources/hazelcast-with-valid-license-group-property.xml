@@ -23,7 +23,7 @@
         <password>dev-pass</password>
     </group>
     <properties>
-        <property name="hazelcast.enterprise.license.key">HazelcastEnterprise#9999Nodes#9999Clients#HDMemory:99999999GB#wVm0a1TKjFy7b5HASNf6R3BIlU179990WY9999999G9019199n99923369i9</property>
+        <property name="hazelcast.enterprise.license.key">HazelcastEnterprise#9999Nodes#HDMemory:99999999GB#KSiwIuRj6EBfcUF13HkNaJ84tt92999D0o9o1Lt11q2909n9999P99QG9L99</property>
     </properties>
     <management-center enabled="false">http://localhost:8080/mancenter</management-center>
     <network>
@@ -39,4 +39,5 @@
         </interfaces>
     </network>
 </hazelcast>
+
 

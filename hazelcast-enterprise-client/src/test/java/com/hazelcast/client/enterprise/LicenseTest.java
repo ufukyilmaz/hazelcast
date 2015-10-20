@@ -40,7 +40,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
     @Test
     public void testXmlConfig() throws IOException {
-        String license = "HazelcastEnterprise#2Nodes#2Clients#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
+        String license = "HazelcastEnterprise#2Nodes#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo";
 
         String xml = "<hazelcast-client xsi:schemaLocation=\"http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.5.xsd\"\n"
                 + "           xmlns=\"http://www.hazelcast.com/schema/client-config\"\n"

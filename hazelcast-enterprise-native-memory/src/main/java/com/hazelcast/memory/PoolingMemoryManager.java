@@ -125,7 +125,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         return globalMemoryManager;
     }
 
-    private MemoryManager getMemoryManager() {
+    public MemoryManager getMemoryManager() {
         Thread current = Thread.currentThread();
         MemoryManager pool = threadLocalManagers.get(current);
         if (pool == null) {

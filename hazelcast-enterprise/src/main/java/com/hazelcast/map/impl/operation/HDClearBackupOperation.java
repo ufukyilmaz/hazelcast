@@ -29,7 +29,7 @@ public class HDClearBackupOperation extends HDMapOperation implements BackupOper
 
     public HDClearBackupOperation(String name) {
         super(name);
-        this.createRecordStore = false;
+        this.createRecordStoreOnDemand = false;
     }
 
     @Override

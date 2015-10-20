@@ -40,7 +40,7 @@ public class HDLocalMapStatsOperation extends HDMapOperation implements Partitio
     public HDLocalMapStatsOperation(String mapName) {
         super(mapName);
         checkNotNull(mapName, "mapName cannot be null");
-        this.createRecordStore = false;
+        this.createRecordStoreOnDemand = false;
     }
 
     @Override

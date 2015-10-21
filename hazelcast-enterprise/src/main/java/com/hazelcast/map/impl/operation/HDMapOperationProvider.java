@@ -39,6 +39,11 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
+    public OperationFactory createMapSizeOperationFactory(String name) {
+        return new HDSizeOperationFactory(name);
+    }
+
+    @Override
     public MapOperation createPutOperation(String name, Data key, Data value, long ttl) {
         return new HDPutOperation(name, key, value, ttl);
     }

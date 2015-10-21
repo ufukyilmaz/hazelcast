@@ -99,6 +99,7 @@ public abstract class AbstractWanReplication
 
         eventQueueContainer = new PublisherQueueContainer(node);
         stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
+        acknowledgeType = targetClusterConfig.getAcknowledgeType();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
 

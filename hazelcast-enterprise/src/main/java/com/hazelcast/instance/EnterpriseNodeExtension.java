@@ -18,6 +18,7 @@ import com.hazelcast.elasticmemory.SingletonStorageFactory;
 import com.hazelcast.elasticmemory.StorageFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseType;
@@ -34,7 +35,6 @@ import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.nio.tcp.ReadHandler;
 import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
@@ -44,6 +44,7 @@ import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.nio.tcp.WriteHandler;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
@@ -63,14 +64,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile MemoryManager memoryManager;
 
-    public EnterpriseNodeExtension() {
-        super();
+    public EnterpriseNodeExtension(Node node) {
+        super(node);
     }
 
     @Override
-    public void beforeStart(Node node) {
-        this.node = node;
-        logger = node.getLogger("com.hazelcast.enterprise.initializer");
+    public void beforeStart() {
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
         String licenseKey = node.groupProperties.getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
@@ -81,7 +80,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         license = LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
                 LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
         logger.log(Level.INFO, license.toString());
-        systemLogger = node.getLogger("com.hazelcast.system");
 
         createSecurityContext(node);
         createMemoryManager(node.config);
@@ -139,7 +137,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void printNodeInfo(Node node) {
+    public void printNodeInfo() {
         BuildInfo buildInfo = node.getBuildInfo();
         String build = buildInfo.getBuild();
         String revision = buildInfo.getRevision();
@@ -153,7 +151,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void afterStart(Node node) {
+    public void afterStart() {
         if (license == null) {
             logger.log(Level.SEVERE, "Hazelcast Enterprise license could not be found!");
             node.shutdown(true);
@@ -294,6 +292,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void onThreadStart(Thread thread) {
+        registerThreadToPoolingMemoryManager(thread);
+    }
+
+    private void registerThreadToPoolingMemoryManager(Thread thread) {
+        if (!(thread instanceof PartitionOperationThread)) {
+            return;
+        }
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) node.getSerializationService();
 
@@ -305,8 +310,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void onThreadStop(Thread thread) {
+        deregisterThreadFromPoolingMemoryManager(thread);
+    }
+
+    private void deregisterThreadFromPoolingMemoryManager(Thread thread) {
         EnterpriseSerializationService serializationService
-                = (EnterpriseSerializationService) node.getSerializationService();
+            = (EnterpriseSerializationService) node.getSerializationService();
 
         MemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {

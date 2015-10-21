@@ -30,7 +30,7 @@ abstract class AbstractHiDensityCacheOperation
         implements PartitionAwareOperation, IdentifiedDataSerializable {
 
     protected static final int FORCED_EVICTION_RETRY_COUNT =
-            ICacheRecordStore.ONE_HUNDRED_PERCENT / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
+            ICacheRecordStore.UNIT_PERCENTAGE / HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE;
 
     protected Object response;
     protected int completionId = MutableOperation.IGNORE_COMPLETION;

@@ -5,6 +5,7 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.client.impl.protocol.EnterpriseMessageTaskFactoryImpl;
 import com.hazelcast.client.impl.protocol.MessageTaskFactory;
 import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -49,6 +50,7 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
+import java.util.Map;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
@@ -134,6 +136,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             logger.info("SocketInterceptor is enabled");
             memberSocketInterceptor.init(sic.getProperties());
         }
+    }
+
+    @Override
+    public void beforeJoin() {
+        // will have hot-restart metadata validation here
     }
 
     @Override
@@ -265,9 +272,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public MessageTaskFactory createMessageTaskFactory(Node node) {
+    public MessageTaskFactory createMessageTaskFactory() {
         EnterpriseMessageTaskFactoryImpl enterprise = new EnterpriseMessageTaskFactoryImpl(node);
-        MessageTaskFactoryImpl messageTaskFactory = (MessageTaskFactoryImpl) super.createMessageTaskFactory(node);
+        MessageTaskFactoryImpl messageTaskFactory = (MessageTaskFactoryImpl) super.createMessageTaskFactory();
 
         MessageTaskFactory[] communityTasks = messageTaskFactory.getTasks();
         MessageTaskFactory[] enterpriseTasks = enterprise.getTasks();
@@ -324,8 +331,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public void beforeShutdown() {
+        super.beforeShutdown();
+    }
+
+    @Override
+    public void shutdown() {
+        super.shutdown();
         license = null;
         if (storage != null) {
             logger.log(Level.FINEST, "Destroying node off-heap storage.");
@@ -351,13 +363,19 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public Map<String, Object> createExtensionServices() {
+        // will have hot-restart service here
+        return super.createExtensionServices();
+    }
+
+    @Override
     public MemoryStats getMemoryStats() {
         MemoryManager mm = memoryManager;
         return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 
     @Override
-    public void beforeJoin() {
+    public void validateJoinRequest() {
         NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
         if (!memoryConfig.isEnabled()) {
             return;
@@ -372,5 +390,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
                     + "Please contact sales@hazelcast.com");
         }
+    }
+
+    @Override
+    public void onClusterStateChange(ClusterState newState) {
+        // will have hot-restart metadata validation here
     }
 }

@@ -11,6 +11,7 @@ import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.HDMapOperationProvider;
+import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.query.HDMapQueryEngineImpl;
 import com.hazelcast.map.impl.query.MapQueryEngine;
@@ -27,10 +28,16 @@ import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.query.impl.predicates.QueryOptimizerFactory.newOptimizer;
@@ -42,6 +49,8 @@ import static com.hazelcast.query.impl.predicates.QueryOptimizerFactory.newOptim
  * @see MapServiceContext
  */
 class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext {
+
+    private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
     private final ConstructorFunction<String, MapContainer> mapConstructor = new ConstructorFunction<String, MapContainer>() {
         public MapContainer createNew(String mapName) {
@@ -173,6 +182,40 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         }
     }
 
+    @Override
+    public void clearPartitions() {
+        OperationService operationService = nodeEngine.getOperationService();
+
+        List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();
+        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
+        for (int i = 0; i < partitionCount; i++) {
+            PartitionContainer partitionContainer = getPartitionContainer(i);
+            ConcurrentMap<String, RecordStore> maps = partitionContainer.getMaps();
+            if (maps.isEmpty()) {
+                continue;
+            }
+
+            EnterpriseMapPartitionClearOperation operation = new EnterpriseMapPartitionClearOperation();
+            operation.setPartitionId(i)
+                    .setNodeEngine(nodeEngine)
+                    .setService(getService());
+
+            if (operationService.isAllowedToRunOnCallingThread(operation)) {
+                operationService.runOperationOnCallingThread(operation);
+            } else {
+                operationService.executeOperation(operation);
+                operations.add(operation);
+            }
+        }
+
+        for (EnterpriseMapPartitionClearOperation operation : operations) {
+            try {
+                operation.awaitCompletion(MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                nodeEngine.getLogger(getClass()).warning(e);
+            }
+        }
+    }
 
     @Override
     public void incrementOperationStats(long startTime, LocalMapStatsImpl localMapStats, String mapName, Operation operation) {

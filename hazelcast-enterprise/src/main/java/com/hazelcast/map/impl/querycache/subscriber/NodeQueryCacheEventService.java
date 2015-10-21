@@ -15,6 +15,7 @@ import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.query.impl.Extractors;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.EventFilter;
@@ -163,7 +164,7 @@ public class NodeQueryCacheEventService implements QueryCacheEventService<EventD
         Data keyData = localEntryEventData.getKeyData();
         Object value = getValueOrOldValue(localEntryEventData);
 
-        QueryableEntry entry = new QueryEntry(serializationService, keyData, value);
+        QueryableEntry entry = new QueryEntry(serializationService, keyData, value, Extractors.empty());
         return filter.eval(entry);
     }
 

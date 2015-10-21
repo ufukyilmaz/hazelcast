@@ -1,8 +1,8 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
-import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.map.impl.client.DestroyQueryCacheRequest;
-import com.hazelcast.map.impl.client.SetReadCursorRequest;
+import com.hazelcast.client.impl.protocol.ClientMessage;
+import com.hazelcast.client.impl.protocol.codec.EnterpriseMapDestroyCacheCodec;
+import com.hazelcast.client.impl.protocol.codec.EnterpriseMapSetReadCursorCodec;
 import com.hazelcast.map.impl.querycache.subscriber.SubscriberContextSupport;
 
 /**
@@ -12,24 +12,21 @@ import com.hazelcast.map.impl.querycache.subscriber.SubscriberContextSupport;
  */
 public class ClientSubscriberContextSupport implements SubscriberContextSupport {
 
-    private final SerializationService serializationService;
-
-    public ClientSubscriberContextSupport(SerializationService serializationService) {
-        this.serializationService = serializationService;
+    public ClientSubscriberContextSupport() {
     }
 
     @Override
     public Object createRecoveryOperation(String mapName, String cacheName, long sequence, int partitionId) {
-        return new SetReadCursorRequest(mapName, cacheName, sequence, partitionId);
+        return EnterpriseMapSetReadCursorCodec.encodeRequest(mapName, cacheName, sequence);
     }
 
     @Override
-    public Boolean resolveResponseForRecoveryOperation(Object response) {
-        return (Boolean) serializationService.toObject(response);
+    public Boolean resolveResponseForRecoveryOperation(Object object) {
+        return EnterpriseMapSetReadCursorCodec.decodeResponse((ClientMessage) object).response;
     }
 
     @Override
     public Object createDestroyQueryCacheOperation(String mapName, String cacheName) {
-        return new DestroyQueryCacheRequest(mapName, cacheName);
+        return EnterpriseMapDestroyCacheCodec.encodeRequest(mapName, cacheName);
     }
 }

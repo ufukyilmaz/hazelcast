@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>Hazelcast Enterprise Client</name>
-    <artifactId>hazelcast-enterprise-client</artifactId>
+    <name>Hazelcast Enterprise Legacy Client</name>
+    <artifactId>hazelcast-enterprise-client-legacy</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -120,14 +120,14 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <shadedArtifactId>hazelcast-enterprise-client</shadedArtifactId>
+                            <shadedArtifactId>hazelcast-enterprise-client-legacy</shadedArtifactId>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-client</include>
-                                    <include>com.hazelcast:hazelcast-enterprise-client</include>
+                                    <include>com.hazelcast:hazelcast-client-legacy</include>
+                                    <include>com.hazelcast:hazelcast-enterprise-client-legacy</include>
                                 </includes>
                             </artifactSet>
                             <filters>
@@ -151,7 +151,7 @@
 
         <dependency>
             <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-client</artifactId>
+            <artifactId>hazelcast-client-legacy</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
@@ -159,7 +159,7 @@
 
         <dependency>
             <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast-client</artifactId>
+            <artifactId>hazelcast-client-legacy</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
             <classifier>tests</classifier>

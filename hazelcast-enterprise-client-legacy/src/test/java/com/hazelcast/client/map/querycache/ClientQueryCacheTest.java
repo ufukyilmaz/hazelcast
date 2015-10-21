@@ -200,7 +200,6 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertQueryCacheSizeEventually(0, clear, queryCache);
     }
 
-
     @Test
     public void testDestroy_emptiesQueryCache() throws Exception {
         int entryCount = 1000;
@@ -225,7 +224,6 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
 
         assertEquals(0, queryCache.size());
     }
-
 
     private void testWithInitialPopulation(boolean enableInitialPopulation,
                                            int expectedSize, int numberOfElementsToPut) {

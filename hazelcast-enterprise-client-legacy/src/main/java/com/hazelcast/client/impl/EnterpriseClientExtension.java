@@ -45,14 +45,13 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
         }
-
         final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
         LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
                 LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
     }
 
     @Override
-    public SerializationService createSerializationService(byte version) {
+    public SerializationService createSerializationService() {
         SerializationService ss;
         try {
             ClientConfig config = client.getClientConfig();

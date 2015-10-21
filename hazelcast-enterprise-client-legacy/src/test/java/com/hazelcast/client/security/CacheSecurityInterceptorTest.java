@@ -172,7 +172,6 @@ public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
         cache.replace(key, value, expiryPolicy);
     }
 
-
     @Test
     public void removeAll() {
         final HashSet keys = new HashSet();
@@ -192,11 +191,13 @@ public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "clear");
         cache.clear();
     }
+
     @Ignore
     @Test
     public void getConfiguration() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void invoke() {
@@ -220,27 +221,32 @@ public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "invokeAll", keys, null, null);
         cache.invokeAll(keys, entryProcessor, null);
     }
+
     @Ignore
     @Test
     public void getName() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void getCacheManager() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void close() {
         // it does not make a remote call, no need for security check
 
     }
+
     @Ignore
     @Test
     public void isClosed() {
         // it does not make a remote call, no need for security check
     }
+
     @Ignore
     @Test
     public void unwrap() {
@@ -264,7 +270,6 @@ public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
         CacheEntryListenerConfiguration<String, String> config =
                 new MutableCacheEntryListenerConfiguration<String, String>(
                         FactoryBuilder.factoryOf(new CacheContextTest.TestListener()), null, true, true);
-
 
         cache.registerCacheEntryListener(config);
         interceptor.setExpectation(getObjectType(), getNameWithPrefix(), "deregisterCacheEntryListener", null);

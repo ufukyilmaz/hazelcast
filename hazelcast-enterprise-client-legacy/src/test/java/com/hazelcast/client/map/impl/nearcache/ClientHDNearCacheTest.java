@@ -527,6 +527,7 @@ public class ClientHDNearCacheTest {
         }
     }
 
+
     @Test
     public void testServerMapExpiration_doesNotInvalidateClientNearCache() throws Exception {
         final String mapName = randomMapName(NEAR_CACHE_WITH_LONG_MAX_IDLE_TIME);
@@ -627,8 +628,7 @@ public class ClientHDNearCacheTest {
         });
     }
 
-    @Test
-    @Ignore
+    @Test @Ignore
     public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() throws Exception {
         final String mapName = randomMapName(NEAR_CACHE_RANDOM_WITH_MAX_SIZE);
         final IMap map = client.getMap(mapName);
@@ -648,8 +648,7 @@ public class ClientHDNearCacheTest {
         });
     }
 
-    @Test
-    @Ignore
+    @Test @Ignore
     public void testNearCacheInvalidation_WithNone_whenMaxSizeExceeded() throws Exception {
         final String mapName = randomMapName(NEAR_CACHE_NONE_WITH_MAX_SIZE);
         final IMap map = client.getMap(mapName);

@@ -52,5 +52,5 @@ public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
             return new EnterpriseClientMapProxyImpl(SERVICE_NAME, id);
         }
     }
-}
 
+}

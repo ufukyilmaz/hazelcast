@@ -1,12 +1,8 @@
 package com.hazelcast.client.impl.querycache.subscriber;
 
-import com.hazelcast.client.impl.protocol.ClientMessage;
-import com.hazelcast.client.impl.protocol.codec.EnterpriseMapAddListenerCodec;
-import com.hazelcast.client.impl.protocol.codec.MapRemoveEntryListenerCodec;
 import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.ClientListenerService;
 import com.hazelcast.client.spi.EventHandler;
-import com.hazelcast.client.spi.impl.ListenerMessageCodec;
 import com.hazelcast.client.spi.impl.listener.ClientListenerServiceImpl;
 import com.hazelcast.core.IMapEvent;
 import com.hazelcast.internal.serialization.SerializationService;
@@ -14,6 +10,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.ListenerAdapter;
+import com.hazelcast.map.impl.client.MapAddListenerAdapterRequest;
 import com.hazelcast.map.impl.event.EventData;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
@@ -33,7 +30,6 @@ import com.hazelcast.util.executor.TimeoutRunnable;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.RejectedExecutionException;
@@ -117,34 +113,10 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
 
     @Override
     public String listenPublisher(String mapName, String cacheName, ListenerAdapter adapter) {
-        final String listenerName = generateListenerName(mapName, cacheName);
-        EventHandler handler = new QueryCacheHandler(adapter);
-        return listenerService.registerListener(createPublisherListenerCodec(listenerName), handler);
-    }
-
-    private ListenerMessageCodec createPublisherListenerCodec(final String listenerName) {
-        return new ListenerMessageCodec() {
-            @Override
-            public ClientMessage encodeAddRequest(boolean localOnly) {
-                return EnterpriseMapAddListenerCodec.encodeRequest(listenerName, localOnly);
-            }
-
-            @Override
-            public String decodeAddResponse(ClientMessage clientMessage) {
-                return EnterpriseMapAddListenerCodec.decodeResponse(clientMessage).response;
-            }
-
-            @Override
-            public ClientMessage encodeRemoveRequest(String realRegistrationId) {
-                return MapRemoveEntryListenerCodec.encodeRequest(listenerName, realRegistrationId);
-            }
-
-            @Override
-            public boolean decodeRemoveResponse(ClientMessage clientMessage) {
-                return MapRemoveEntryListenerCodec.decodeResponse(clientMessage).response;
-            }
-
-        };
+        String listenerName = generateListenerName(mapName, cacheName);
+        MapAddListenerAdapterRequest request = new MapAddListenerAdapterRequest(listenerName);
+        EventHandler<EventData> handler = createHandler(adapter);
+        return listenerService.registerListener(request, handler);
     }
 
     @Override
@@ -173,36 +145,32 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
         return queryCacheToListenerMapper.removeListener(cacheName, id);
     }
 
-    /**
-     * Query cache event handler
-     */
-    private final class QueryCacheHandler extends EnterpriseMapAddListenerCodec.AbstractEventHandler
-            implements EventHandler<ClientMessage> {
-        private final ListenerAdapter adapter;
+    private EventHandler<EventData> createHandler(final ListenerAdapter adapter) {
+        return new EventHandler<EventData>() {
 
-        private QueryCacheHandler(ListenerAdapter adapter) {
-            this.adapter = adapter;
-        }
+            @Override
+            public void handle(EventData eventData) {
 
-        @Override
-        public void beforeListenerRegister() {
-            // NOP
-        }
+                IMapEvent iMapEvent = null;
+                if (eventData instanceof QueryCacheEventData) {
+                    iMapEvent = new SingleIMapEvent((QueryCacheEventData) eventData);
+                } else if (eventData instanceof BatchEventData) {
+                    iMapEvent = new BatchIMapEvent((BatchEventData) eventData);
+                }
 
-        @Override
-        public void onListenerRegister() {
-            // NOP
-        }
+                adapter.onEvent(iMapEvent);
+            }
 
-        @Override
-        public void handle(QueryCacheEventData data) {
-            adapter.onEvent(new SingleIMapEvent(data));
-        }
+            @Override
+            public void beforeListenerRegister() {
+                // NOP
+            }
 
-        @Override
-        public void handle(List<QueryCacheEventData> events, String source, int partitionId) {
-            adapter.onEvent(new BatchIMapEvent(new BatchEventData(events, source, partitionId)));
-        }
+            @Override
+            public void onListenerRegister() {
+                // NOP
+            }
+        };
     }
 
     private Collection<ListenerInfo> getListeners(String mapName, String cacheName) {

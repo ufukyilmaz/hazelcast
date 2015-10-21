@@ -74,7 +74,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseValidWhenLicenseSetViaClientConfig() {
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
-
+        
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertSizeEventually(2, h2.getCluster().getMembers());
@@ -95,7 +95,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertSizeEventually(2, h1.getCluster().getMembers());
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         factory.newHazelcastClient(clientConfig);
     }
 

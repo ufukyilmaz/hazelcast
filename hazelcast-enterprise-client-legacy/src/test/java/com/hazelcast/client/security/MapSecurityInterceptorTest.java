@@ -10,6 +10,7 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.listener.MapPartitionLostListener;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
 
     @Before
     public void setup() {
+        setLoggingLog4j();
         objectName = randomString();
         map = client.getMap(objectName);
     }

@@ -22,7 +22,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class ClientSocketInterceptorTest {
 

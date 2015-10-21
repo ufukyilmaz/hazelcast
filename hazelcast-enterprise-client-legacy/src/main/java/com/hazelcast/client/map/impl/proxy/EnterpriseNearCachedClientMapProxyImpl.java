@@ -41,6 +41,7 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         extends NearCachedClientMapProxy<K, V> implements IEnterpriseMap<K, V> {
 
     private final Registry<String, NearCache> hdNearCacheRegistry;
+
     /**
      * Holds {@link QueryCacheContext} for this proxy.
      * There should be only one {@link QueryCacheContext} instance exist.
@@ -60,6 +61,7 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
                                                   Registry<String, NearCache> hdNearCacheRegistry) {
         super(serviceName, name);
         this.hdNearCacheRegistry = hdNearCacheRegistry;
+
     }
 
     @Override

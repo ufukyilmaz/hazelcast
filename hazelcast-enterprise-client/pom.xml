@@ -9,8 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>Hazelcast Enterprise Client New</name>
-    <artifactId>hazelcast-enterprise-client-new</artifactId>
+    <name>Hazelcast Enterprise Client</name>
+    <artifactId>hazelcast-enterprise-client</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -120,14 +120,14 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <shadedArtifactId>hazelcast-enterprise-client-new</shadedArtifactId>
+                            <shadedArtifactId>hazelcast-enterprise-client</shadedArtifactId>
                             <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
-                                    <include>com.hazelcast:hazelcast-client-new</include>
-                                    <include>com.hazelcast:hazelcast-enterprise-client-new</include>
+                                    <include>com.hazelcast:hazelcast-client</include>
+                                    <include>com.hazelcast:hazelcast-enterprise-client</include>
                                 </includes>
                             </artifactSet>
                             <filters>

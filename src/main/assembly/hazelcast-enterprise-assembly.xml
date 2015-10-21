@@ -68,10 +68,10 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>hazelcast-enterprise-client-new/target/</directory>
+            <directory>hazelcast-enterprise-client-legacy/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>
-                <include>hazelcast-enterprise-client-new-${project.version}.jar</include>
+                <include>hazelcast-enterprise-client-legacy-${project.version}.jar</include>
             </includes>
         </fileSet>
         <fileSet>

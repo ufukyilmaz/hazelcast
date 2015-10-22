@@ -38,7 +38,6 @@ public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
         Config config = new Config();
-        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
         config.setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);

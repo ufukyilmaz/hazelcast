@@ -14,13 +14,9 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.elasticmemory.InstanceStorageFactory;
-import com.hazelcast.elasticmemory.SingletonStorageFactory;
-import com.hazelcast.elasticmemory.StorageFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.storage.Storage;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.exception.InvalidLicenseException;
@@ -60,7 +56,6 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
  */
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
-    private volatile Storage storage;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
@@ -85,7 +80,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
         createSecurityContext(node);
         createMemoryManager(node.config);
-        createStorage(node);
         createSocketInterceptor(node.config.getNetworkConfig());
     }
 
@@ -93,21 +87,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         boolean securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
         if (securityEnabled) {
             securityContext = new SecurityContextImpl(node);
-        }
-    }
-
-    private void createStorage(Node node) {
-        if (node.groupProperties.getBoolean(GroupProperty.ELASTIC_MEMORY_ENABLED)) {
-            StorageFactory storageFactory;
-            if (node.groupProperties.getBoolean(GroupProperty.ELASTIC_MEMORY_SHARED_STORAGE)) {
-                logger.log(Level.WARNING, "Using SingletonStorageFactory for Hazelcast Elastic Memory...");
-                storageFactory = new SingletonStorageFactory();
-            } else {
-                storageFactory = new InstanceStorageFactory(node);
-            }
-
-            logger.log(Level.INFO, "Initializing node off-heap storage.");
-            storage = storageFactory.createStorage();
         }
     }
 
@@ -289,15 +268,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public Storage getNativeDataStorage() {
-        if (storage == null) {
-            throw new IllegalStateException(
-                    "Offheap storage is not enabled! " + "Please set 'hazelcast.elastic.memory.enabled' to true");
-        }
-        return storage;
-    }
-
-    @Override
     public void onThreadStart(Thread thread) {
         registerThreadToPoolingMemoryManager(thread);
     }
@@ -339,11 +309,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public void shutdown() {
         super.shutdown();
         license = null;
-        if (storage != null) {
-            logger.log(Level.FINEST, "Destroying node off-heap storage.");
-            storage.destroy();
-            storage = null;
-        }
     }
 
     @Override

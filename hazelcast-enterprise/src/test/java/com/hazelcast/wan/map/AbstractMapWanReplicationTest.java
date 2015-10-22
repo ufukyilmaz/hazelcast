@@ -5,7 +5,6 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -41,8 +40,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         configC.getGroupConfig().setName("C");
         configC.setInstanceName("confC");
         configC.getNetworkConfig().setPort(5901);
-
-        disableElasticMemory();
     }
 
     private void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
@@ -518,15 +515,4 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         sleepSeconds(10);
         assertKeysNotIn(clusterB, "map", 0, 10);
     }
-
-    private void disableElasticMemory() {
-        disableElasticMemory(configA);
-        disableElasticMemory(configB);
-        disableElasticMemory(configC);
-    }
-
-    private void disableElasticMemory(Config config) {
-        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
-    }
-
 }

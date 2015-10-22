@@ -4,7 +4,6 @@ import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.mapreduce.helpers.Employee;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -22,7 +21,6 @@ public abstract class AbstractQueryCacheTestSupport extends HazelcastTestSupport
     @Before
     public void setUp() throws Exception {
         prepare();
-        config.setProperty(GroupProperty.ELASTIC_MEMORY_ENABLED, "false");
         map = getMap();
     }
 

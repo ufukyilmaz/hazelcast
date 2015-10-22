@@ -49,7 +49,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
      * Forcefully evict records as given <code>evictionPercentage</code>.
      *
      * @param evictionPercentage    Percentage to determine how many records will be evicted
-     * @param evictionListener      {@link com.hazelcast.cache.impl.eviction.EvictionListener} to be notified
+     * @param evictionListener      {@link EvictionListener} to be notified
      *                              about evicted key and value
      * @return evicted entry count
      */
@@ -87,7 +87,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                 keyHolder.reset(getKey(slot));
                 R value = recordProcessor.read(getValue(slot));
                 evictionListener.onEvict(keyHolder, value);
-                recordProcessor.enqueueRecord(value);
             }
 
             iter.remove();

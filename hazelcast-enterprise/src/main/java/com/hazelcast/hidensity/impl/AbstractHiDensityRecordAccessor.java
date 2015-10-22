@@ -7,9 +7,6 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
-
 /**
  * @author sozal 18/02/15
  *
@@ -20,8 +17,6 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     protected final EnterpriseSerializationService ss;
     protected final MemoryManager memoryManager;
-    protected final Queue<R> recordQ = new ArrayDeque<R>(1024);
-    protected final Queue<NativeMemoryData> dataQ = new ArrayDeque<NativeMemoryData>(1024);
 
     public AbstractHiDensityRecordAccessor(EnterpriseSerializationService ss,
                                            MemoryManager memoryManager) {
@@ -39,11 +34,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public R newRecord() {
-        R record = recordQ.poll();
-        if (record == null) {
-            record = createRecord();
-        }
-        return record;
+        return createRecord();
     }
 
     @Override
@@ -67,7 +58,6 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         size += getSize(record);
         memoryManager.free(record.address(), record.size());
         record.reset(MemoryManager.NULL_ADDRESS);
-        recordQ.offer(record);
         return size;
     }
 
@@ -81,23 +71,13 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         if (valueAddress == MemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + valueAddress);
         }
-        NativeMemoryData value = dataQ.poll();
-        if (value == null) {
-            value = new NativeMemoryData();
-        }
-        return value.reset(valueAddress);
+        return new NativeMemoryData().reset(valueAddress);
     }
 
     @Override
-    public Object readValue(R record, boolean enqueueDataOnFinish) {
+    public Object readValue(R record) {
         NativeMemoryData nativeMemoryData = readData(record.getValueAddress());
-        try {
-            return ss.toObject(nativeMemoryData, memoryManager);
-        } finally {
-            if (enqueueDataOnFinish) {
-                enqueueData(nativeMemoryData);
-            }
-        }
+        return ss.toObject(nativeMemoryData, memoryManager);
     }
 
     @Override
@@ -118,25 +98,12 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         }
         long size = getSize(value);
         ss.disposeData(value, memoryManager);
-        dataQ.offer(value);
         return size;
     }
 
     @Override
     public long disposeData(long address) {
         return disposeData(readData(address));
-    }
-
-    @Override
-    public void enqueueRecord(R record) {
-        record.reset(MemoryManager.NULL_ADDRESS);
-        recordQ.offer(record);
-    }
-
-    @Override
-    public void enqueueData(NativeMemoryData data) {
-        data.reset(MemoryManager.NULL_ADDRESS);
-        dataQ.offer(data);
     }
 
     @Override

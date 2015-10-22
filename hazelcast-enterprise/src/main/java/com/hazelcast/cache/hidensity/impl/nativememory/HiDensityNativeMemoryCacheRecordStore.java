@@ -346,7 +346,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 // So just dispose record which is allocated here.
                 cacheRecordProcessor.free(record.address(), record.size());
                 record.reset(NULL_PTR);
-                cacheRecordProcessor.enqueueRecord(record);
             } else {
                 cacheRecordProcessor.dispose(record);
             }
@@ -476,24 +475,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         return recordToReturn;
     }
 
-    @Override
-    protected void onGet(Data key, ExpiryPolicy expiryPolicy, Object value,
-                         HiDensityNativeMemoryCacheRecord record) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
-    }
-
-    @Override
-    protected void onGetError(Data key, ExpiryPolicy expiryPolicy, Object value,
-                              HiDensityNativeMemoryCacheRecord record, Throwable error) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
-    }
-
     private void onAccess(long now, HiDensityNativeMemoryCacheRecord record, long creationTime) {
         if (isEvictionEnabled()) {
             if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LRU) {
@@ -558,26 +539,8 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
             }
         }
-
-        // If the record is available and if we return old value, put this to queue for reusing later.
-        // Ww should not enqueue record if we don't return the old value
-        // because in this case we return the created record.
-        if (record != null && getValue) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
     }
     //CHECKSTYLE:ON
-
-    //CHECKSTYLE:OFF
-    @Override
-    protected void onPutError(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
-                              boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
-                              Object oldValue, boolean wouldBeNewPut, Throwable error) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
-    }
 
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
                          NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
@@ -614,9 +577,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             long size = cacheRecordProcessor.getSize((NativeMemoryData) value);
             cacheRecordProcessor.increaseUsedMemory(size);
         }
-
-        // Put this record to queue for reusing later
-        cacheRecordProcessor.enqueueRecord(record);
     }
 
     protected void onOwnError(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
@@ -630,7 +590,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 // So just dispose record which is allocated here.
                 cacheRecordProcessor.free(record.address(), record.size());
                 record.reset(NULL_PTR);
-                cacheRecordProcessor.enqueueRecord(record);
             } else {
                 cacheRecordProcessor.dispose(record);
             }
@@ -724,20 +683,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 cacheRecordProcessor.increaseUsedMemory(size);
             }
         }
-
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
-    }
-
-    @Override
-    protected void onPutIfAbsentError(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
-                                      boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record, Throwable error) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
     }
 
     @Override
@@ -761,23 +706,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 cacheRecordProcessor.increaseUsedMemory(size);
             }
         }
-
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
-    }
-    //CHECKSTYLE:ON
-
-    //CHECKSTYLE:OFF
-    @Override
-    protected void onReplaceError(Data key, Object oldValue, Object newValue, ExpiryPolicy expiryPolicy,
-                                  String caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
-                                  boolean isExpired, boolean replaced, Throwable error) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
     }
     //CHECKSTYLE:ON
 
@@ -800,10 +728,6 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected void onRemove(Data key, Object value, String caller, boolean getValue,
                             HiDensityNativeMemoryCacheRecord record, boolean removed) {
         onEntryInvalidated(key, caller);
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
-        }
     }
 
     @Override
@@ -813,10 +737,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (removed && isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
             return;
-        }
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            cacheRecordProcessor.enqueueRecord(record);
         }
     }
 

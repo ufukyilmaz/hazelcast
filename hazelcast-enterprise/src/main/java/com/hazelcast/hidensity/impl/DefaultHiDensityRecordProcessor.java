@@ -79,8 +79,8 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     }
 
     @Override
-    public Object readValue(R record, boolean enqueueDataOnFinish) {
-        return recordAccessor.readValue(record, enqueueDataOnFinish);
+    public Object readValue(R record) {
+        return recordAccessor.readValue(record);
     }
 
     @Override
@@ -102,16 +102,6 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         long size = recordAccessor.disposeData(address);
         storageInfo.removeUsedMemory(size);
         return size;
-    }
-
-    @Override
-    public void enqueueRecord(R record) {
-        recordAccessor.enqueueRecord(record);
-    }
-
-    @Override
-    public void enqueueData(NativeMemoryData data) {
-        recordAccessor.enqueueData(data);
     }
 
     @Override

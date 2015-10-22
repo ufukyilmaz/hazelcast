@@ -20,6 +20,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.AbstractWanReplicationTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.cache.CacheManager;
@@ -204,7 +205,7 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
     }
 
     protected boolean checkCacheDataInFrom(HazelcastInstance[] targetCluster, ClassLoader classLoader,
-                                         String cacheManager, final String cacheName, final int start, final int end, HazelcastInstance[] sourceCluster) {
+                                         String cacheManager, final String cacheName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
 
         final CacheManager manager = getCacheManager(targetCluster, cacheManager, classLoader);
         final String sourceGroupName = getNode(sourceCluster).getConfig().getGroupConfig().getName();
@@ -219,7 +220,7 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
             @Override
             public void run() throws Exception {
                 for (int i = start; i < end; i++)
-                    assertEquals(cache.get(i), sourceGroupName + i);
+                    assertEquals(sourceGroupName + i, cache.get(i));
             }
         });
 
@@ -414,6 +415,7 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
     }
 
     @Test
+    @Ignore //Useless, cache wan events are now seperate from internal cache events.
     public void updateExpiredEntry() {
         initConfigA();
         initConfigB();

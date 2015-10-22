@@ -65,10 +65,9 @@ public interface HiDensityRecordAccessor<R extends HiDensityRecord>
      * Reads the value of specified {@link HiDensityRecord}.
      *
      * @param record The {@link HiDensityRecord} whose value will be read
-     * @param enqueueDataOnFinish condition about data is enqueued or not for future uses
      * @return the value of specified {@link HiDensityRecord}
      */
-    Object readValue(R record, boolean enqueueDataOnFinish);
+    Object readValue(R record);
 
     /**
      * Disposes (frees) the value of the specified {@link HiDensityRecord}.
@@ -77,20 +76,6 @@ public interface HiDensityRecordAccessor<R extends HiDensityRecord>
      * @return size of disposed {@link HiDensityRecord}
      */
     long disposeValue(R record);
-
-    /**
-     * Enqueues (caches) the specified {@link HiDensityRecord} for later usages.
-     *
-     * @param record The {@link HiDensityRecord} that will be enqueued
-     */
-    void enqueueRecord(R record);
-
-    /**
-     * Enqueues (caches) the specified {@link NativeMemoryData} for later usages.
-     *
-     * @param data The {@link NativeMemoryData} that will be enqueued
-     */
-    void enqueueData(NativeMemoryData data);
 
     /**
      * Gets the size of given <code>memoryBlock</code>.

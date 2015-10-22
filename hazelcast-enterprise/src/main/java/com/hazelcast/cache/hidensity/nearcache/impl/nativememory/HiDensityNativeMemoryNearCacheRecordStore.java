@@ -262,7 +262,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         if (!isMemoryBlockValid(record)) {
             return null;
         }
-        return (V) recordProcessor.readValue(record, true);
+        return (V) recordProcessor.readValue(record);
     }
 
     @Override
@@ -298,31 +298,11 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected void onGet(K key, V value, HiDensityNativeMemoryNearCacheRecord record) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            recordProcessor.enqueueRecord(record);
-        }
-    }
-
-    @Override
-    protected void onGetError(K key, V value, HiDensityNativeMemoryNearCacheRecord record, Throwable error) {
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            recordProcessor.enqueueRecord(record);
-        }
-    }
-
-    @Override
     protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                          HiDensityNativeMemoryNearCacheRecord oldRecord) {
         // If old record is available, dispose it since it is replaced
         if (isMemoryBlockValid(oldRecord)) {
             recordProcessor.dispose(oldRecord);
-        }
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            recordProcessor.enqueueRecord(record);
         }
     }
 
@@ -340,7 +320,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         // If the record is available, dispose its data and put this to queue for reusing later
         if (record != null) {
             recordProcessor.dispose(record);
-            recordProcessor.enqueueRecord(record);
         }
     }
 
@@ -351,10 +330,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
             return;
-        }
-        // If the record is available, put this to queue for reusing later
-        if (record != null) {
-            recordProcessor.enqueueRecord(record);
         }
     }
 

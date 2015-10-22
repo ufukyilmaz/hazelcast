@@ -3,12 +3,11 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.test.annotation.NightlyTest;
+import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-@Category(NightlyTest.class)
+@Category(SlowTest.class)
 public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
 
     @Test

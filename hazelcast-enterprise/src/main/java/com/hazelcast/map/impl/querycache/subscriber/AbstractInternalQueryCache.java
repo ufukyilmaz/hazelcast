@@ -14,6 +14,7 @@ import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.impl.CachedQueryEntry;
+import com.hazelcast.query.impl.Extractors;
 import com.hazelcast.query.impl.Indexes;
 
 import java.util.AbstractMap;
@@ -46,7 +47,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         this.delegate = delegate;
         this.context = context;
         this.serializationService = context.getSerializationService();
-        this.indexes = new Indexes(serializationService);
+        this.indexes = new Indexes(serializationService, Extractors.empty());
         this.includeValue = isIncludeValue();
         this.partitioningStrategy = getPartitioningStrategy();
         this.recordStore = new DefaultQueryCacheRecordStore(serializationService,
@@ -91,7 +92,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
             QueryCacheRecord record = entry.getValue();
             Object value = record.getValue();
 
-            queryEntry.init(serializationService, keyData, value);
+            queryEntry.init(serializationService, keyData, value, Extractors.empty());
 
             boolean valid = predicate.apply(queryEntry);
             if (valid) {
@@ -109,7 +110,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
             Data keyData = entry.getKey();
             QueryCacheRecord record = entry.getValue();
             Object value = record.getValue();
-            queryEntry.init(serializationService, keyData, value);
+            queryEntry.init(serializationService, keyData, value, Extractors.empty());
 
             boolean valid = predicate.apply(queryEntry);
             if (valid) {
@@ -131,7 +132,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
             QueryCacheRecord record = entry.getValue();
             Object value = record.getValue();
 
-            queryEntry.init(serializationService, keyData, value);
+            queryEntry.init(serializationService, keyData, value, Extractors.empty());
 
             boolean valid = predicate.apply(queryEntry);
             if (valid) {

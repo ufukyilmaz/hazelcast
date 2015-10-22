@@ -167,15 +167,14 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     private void forceEvictOnOthers() {
-        int originalPartitionId = getPartitionId();
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
-        int mod = originalPartitionId % threadCount;
+        int mod = getPartitionId() % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
                 ConcurrentMap<String, RecordStore> maps
-                        = mapServiceContext.getPartitionContainer(originalPartitionId).getMaps();
+                        = mapServiceContext.getPartitionContainer(partitionId).getMaps();
                 for (RecordStore recordstore : maps.values()) {
                     forceEvict(recordstore);
                 }

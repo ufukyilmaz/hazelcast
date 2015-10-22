@@ -73,4 +73,11 @@ public class EnterprisePartitionContainer extends PartitionContainer {
     public RecordStore getRecordStore(String name) {
         return ConcurrencyUtil.getOrPutSynchronized(maps, name, this, recordStoreConstructor);
     }
+
+
+
+    @Override
+    public void clear() {
+        super.clear();
+    }
 }

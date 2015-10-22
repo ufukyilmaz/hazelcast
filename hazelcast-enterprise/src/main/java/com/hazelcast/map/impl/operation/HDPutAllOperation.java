@@ -40,6 +40,7 @@ import com.hazelcast.util.Clock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,8 +78,11 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         RecordStore recordStore = this.recordStore;
         InternalPartitionService partitionService = getNodeEngine().getPartitionService();
         Set<Data> keysToInvalidate = new HashSet<Data>();
-        for (Map.Entry<Data, Data> entry : mapEntries) {
+        Iterator<Map.Entry<Data, Data>> iterator = mapEntries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Data, Data> entry = iterator.next();
             put(partitionId, mapServiceContext, recordStore, partitionService, keysToInvalidate, entry);
+            iterator.remove();
         }
         invalidateNearCaches(keysToInvalidate);
     }

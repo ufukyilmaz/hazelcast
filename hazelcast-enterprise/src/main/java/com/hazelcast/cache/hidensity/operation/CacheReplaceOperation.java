@@ -31,7 +31,7 @@ public class CacheReplaceOperation
 
     public CacheReplaceOperation(String name, Data key, Data oldValue,
                                  Data newValue, ExpiryPolicy expiryPolicy) {
-        super(name, key, true);
+        super(name, key);
         this.value = newValue;
         this.currentValue = oldValue;
         this.expiryPolicy = expiryPolicy;
@@ -39,14 +39,10 @@ public class CacheReplaceOperation
 
     @Override
     protected void runInternal() throws Exception {
-        if (cache != null) {
-            if (currentValue == null) {
-                response = cache.replace(key, value, getCallerUuid(), completionId);
-            } else {
-                response = cache.replace(key, currentValue, value, getCallerUuid(), completionId);
-            }
+        if (currentValue == null) {
+            response = cache.replace(key, value, getCallerUuid(), completionId);
         } else {
-            response = Boolean.FALSE;
+            response = cache.replace(key, currentValue, value, getCallerUuid(), completionId);
         }
     }
 

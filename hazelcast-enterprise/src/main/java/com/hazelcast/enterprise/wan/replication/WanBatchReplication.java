@@ -172,9 +172,12 @@ public class WanBatchReplication extends AbstractWanReplication
                     Connection conn = connectionWrapper.getConnection();
                     if (conn != null && conn.isAlive()) {
                         try {
-                            invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent, acknowledgeType);
-                            for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
-                                removeReplicationEvent(event);
+                            boolean isTargetInvocationSuccesfull
+                                    = invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent);
+                            if (isTargetInvocationSuccesfull) {
+                                for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
+                                    removeReplicationEvent(event);
+                                }
                             }
                             transmitSucceed = true;
                         } catch (Exception ignored) {

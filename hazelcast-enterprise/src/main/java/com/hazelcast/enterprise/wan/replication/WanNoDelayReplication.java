@@ -36,27 +36,14 @@ public class WanNoDelayReplication extends AbstractWanReplication
             WanConnectionWrapper connectionWrapper = null;
             try {
                 WanReplicationEvent event = (failureQ.size() > 0) ? failureQ.removeFirst() : stagingQueue.take();
+
                 if (event != null) {
                     EnterpriseReplicationEventObject replicationEventObject
                             = (EnterpriseReplicationEventObject) event.getEventObject();
                     connectionWrapper = connectionManager.getConnection(getPartitionId(replicationEventObject.getKey()));
                     Connection conn = connectionWrapper.getConnection();
-                    boolean eventSuccessfullySent = false;
-                    if (conn != null && conn.isAlive()) {
-                        try {
-                            invokeOnWanTarget(conn.getEndPoint(), event, acknowledgeType);
-                            eventSuccessfullySent = true;
-                            removeReplicationEvent(event);
-                        } catch (Exception ignored) {
-                            logger.warning(ignored);
-                        }
-                    }
-                    if (!eventSuccessfullySent) {
-                        failureQ.add(event);
-                    }
-
+                    handleEvent(event, conn);
                 }
-
             } catch (InterruptedException e) {
                 running = false;
             } catch (Throwable e) {
@@ -67,6 +54,24 @@ public class WanNoDelayReplication extends AbstractWanReplication
                     connectionManager.reportFailedConnection(connectionWrapper.getTargetAddress());
                 }
             }
+        }
+    }
+
+    private void handleEvent(WanReplicationEvent event, Connection conn) {
+        boolean eventSuccessfullySent = false;
+        if (conn != null && conn.isAlive()) {
+            try {
+                boolean isTargetInvocationSuccessfull = invokeOnWanTarget(conn.getEndPoint(), event);
+                if (isTargetInvocationSuccessfull) {
+                    removeReplicationEvent(event);
+                }
+                eventSuccessfullySent = isTargetInvocationSuccessfull;
+            } catch (Exception ignored) {
+                logger.warning(ignored);
+            }
+        }
+        if (!eventSuccessfullySent) {
+            failureQ.add(event);
         }
     }
 }

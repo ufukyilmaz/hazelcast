@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.operation.WanOriginatedDeleteOperation;
@@ -9,6 +10,7 @@ import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ReplicationSupportingService;
@@ -45,6 +47,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                     wanPublisher.publishReplicationEvent(replicationEvent);
                 }
             }
+            InternalCompletableFuture completableFuture = null;
             if (eventObject instanceof EnterpriseMapReplicationUpdate) {
                 EnterpriseMapReplicationUpdate replicationUpdate = (EnterpriseMapReplicationUpdate) eventObject;
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
@@ -52,21 +55,26 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 WanOriginatedMergeOperation operation
                         = new WanOriginatedMergeOperation(mapName, mapServiceContext.toData(entryView.getKey(),
                         mapContainer.getPartitioningStrategy()), entryView, mergePolicy);
-                invokeOnPartition(entryView.getKey(), operation);
+                completableFuture = invokeOnPartition(entryView.getKey(), operation);
             } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
                 WanOriginatedDeleteOperation operation = new WanOriginatedDeleteOperation(mapName,
                         replicationRemove.getKey());
-                invokeOnPartition(replicationRemove.getKey(), operation);
+                completableFuture = invokeOnPartition(replicationRemove.getKey(), operation);
+            }
+
+            if (completableFuture != null
+                    && replicationEvent.getAcknowledgeType() == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+                completableFuture.getSafely();
             }
         }
     }
 
-    private void invokeOnPartition(Data key, Operation operation) {
+    private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {
         try {
             int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
-            nodeEngine.getOperationService()
-                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId).get();
+            return nodeEngine.getOperationService()
+                    .invokeOnPartition(MapService.SERVICE_NAME, operation, partitionId);
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }

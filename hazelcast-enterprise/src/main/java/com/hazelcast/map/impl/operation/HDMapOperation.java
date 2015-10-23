@@ -44,8 +44,10 @@ import java.util.logging.Level;
  */
 public abstract class HDMapOperation extends MapOperation {
 
+    protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int FORCED_EVICTION_RETRY_COUNT = 5;
-    protected static final int DEFAULT_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
+    protected static final int FORCED_EVICTION_PERCENTAGE = 20;
+    protected static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
     protected transient RecordStore recordStore;
 
@@ -163,7 +165,14 @@ public abstract class HDMapOperation extends MapOperation {
         MapContainer mapContainer = recordStore.getMapContainer();
         Evictor evictor = mapContainer.getEvictor();
 
-        evictor.removeSize(DEFAULT_FORCED_EVICTION_ENTRY_REMOVE_COUNT, recordStore);
+        int removalSize = calculateRemovalSize(recordStore);
+        evictor.removeSize(removalSize, recordStore);
+    }
+
+    private int calculateRemovalSize(RecordStore recordStore) {
+        int size = recordStore.size();
+        int removalSize = (int) (size * (long) FORCED_EVICTION_PERCENTAGE / ONE_HUNDRED_PERCENT);
+        return Math.max(removalSize, MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT);
     }
 
     private void forceEvictOnOthers() {

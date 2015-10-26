@@ -37,10 +37,9 @@ public class WanCacheMergeOperation
     @Override
     public void run()
             throws Exception {
-
-        response =
-                ((EnterpriseCacheRecordStore) cache)
-                    .merge(cacheEntryView, mergePolicy, getCallerUuid(), completionId, wanGroupName);
+        response = ((EnterpriseCacheRecordStore) cache)
+                        .merge(cacheEntryView, mergePolicy, getCallerUuid(),
+                               completionId, wanGroupName);
 
         if (Boolean.TRUE.equals(response)) {
             backupRecord = cache.getRecord(key);

@@ -1,6 +1,5 @@
 package com.hazelcast.cache.operation;
 
-import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.operation.AbstractMutatingCacheOperation;
 import com.hazelcast.cache.impl.operation.CacheRemoveBackupOperation;
 import com.hazelcast.nio.ObjectDataInput;
@@ -28,10 +27,8 @@ public class WanCacheRemoveOperation
     }
 
     @Override
-    public void run()
-            throws Exception {
-            response = ((EnterpriseCacheRecordStore) cache)
-                    .remove(key, getCallerUuid(), completionId, wanGroupName);
+    public void run() throws Exception {
+        response = cache.remove(key, getCallerUuid(), completionId, wanGroupName);
     }
 
     @Override

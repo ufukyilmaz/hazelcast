@@ -18,12 +18,12 @@ public class CacheGetAndRemoveOperation
     }
 
     public CacheGetAndRemoveOperation(String name, Data key) {
-        super(name, key, true);
+        super(name, key);
     }
 
     @Override
     protected void runInternal() throws Exception {
-        response = cache != null ? cache.getAndRemove(key, getCallerUuid(), completionId) : null;
+        response = cache.getAndRemove(key, getCallerUuid(), completionId);
     }
 
     @Override

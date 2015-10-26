@@ -30,14 +30,14 @@ public class CacheGetAndReplaceOperation
 
     public CacheGetAndReplaceOperation(String name, Data key, Data value,
                                        ExpiryPolicy expiryPolicy) {
-        super(name, key, true);
+        super(name, key);
         this.value = value;
         this.expiryPolicy = expiryPolicy;
     }
 
     @Override
     protected void runInternal() throws Exception {
-        response = cache != null ? cache.getAndReplace(key, value, expiryPolicy, getCallerUuid(), completionId) : null;
+        response = cache.getAndReplace(key, value, expiryPolicy, getCallerUuid(), completionId);
     }
 
     @Override

@@ -24,20 +24,16 @@ public class CacheRemoveOperation
     }
 
     public CacheRemoveOperation(String name, Data key, Data currentValue) {
-        super(name, key, true);
+        super(name, key);
         this.currentValue = currentValue;
     }
 
     @Override
     protected void runInternal() throws Exception {
-        if (cache != null) {
-            if (currentValue == null) {
-                response = cache.remove(key, getCallerUuid(), completionId);
-            } else {
-                response = cache.remove(key, currentValue, getCallerUuid(), completionId);
-            }
+        if (currentValue == null) {
+            response = cache.remove(key, getCallerUuid(), completionId);
         } else {
-            response = Boolean.FALSE;
+            response = cache.remove(key, currentValue, getCallerUuid(), completionId);
         }
     }
 

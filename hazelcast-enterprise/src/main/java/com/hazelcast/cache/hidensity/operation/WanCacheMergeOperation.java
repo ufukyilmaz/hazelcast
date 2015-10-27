@@ -7,7 +7,6 @@ import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -18,7 +17,7 @@ import java.io.IOException;
  * This operation is used by WAN replication services
  */
 public class WanCacheMergeOperation
-        extends BackupAwareKeyBasedHiDensityCacheOperation
+        extends BackupAwareHiDensityCacheOperation
         implements MutableOperation {
 
     private CacheEntryView<Data, Data> cacheEntryView;
@@ -31,7 +30,7 @@ public class WanCacheMergeOperation
     public WanCacheMergeOperation(String name, String wanGroupName,
                                   CacheMergePolicy mergePolicy,
                                   CacheEntryView<Data, Data> cacheEntryView, int completionId) {
-        super(name, cacheEntryView.getKey(), completionId);
+        super(name, completionId);
         this.cacheEntryView = cacheEntryView;
         this.mergePolicy = mergePolicy;
         this.wanGroupName = wanGroupName;
@@ -40,11 +39,6 @@ public class WanCacheMergeOperation
     @Override
     public void runInternal() throws Exception {
         response = cache.merge(cacheEntryView, mergePolicy, getCallerUuid(), completionId, wanGroupName);
-    }
-
-    @Override
-    protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        serializationService.disposeData(cacheEntryView.getValue());
     }
 
     @Override
@@ -60,7 +54,7 @@ public class WanCacheMergeOperation
             long ttl = expiryTime - System.currentTimeMillis();
             expiryPolicy = new HazelcastExpiryPolicy(ttl, 0L, 0L);
         }
-        return new CachePutBackupOperation(name, key, cacheEntryView.getValue(), expiryPolicy, true);
+        return new CachePutBackupOperation(name, cacheEntryView.getKey(), cacheEntryView.getValue(), expiryPolicy, true);
     }
 
     @Override

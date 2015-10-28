@@ -140,7 +140,7 @@ public abstract class AbstractWanReplication
 
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EWRPutOperation ewrPutOperation = new EWRPutOperation(wanReplicationName,
-                targetGroupName, node.nodeEngine.toData(wanReplicationEvent), wanReplicationEvent.getBackupCount());
+                targetGroupName, node.nodeEngine.toData(wanReplicationEvent), 1);
         invokeOnPartition(wanReplicationEvent.getServiceName(),
                 ((EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject()).getKey(), ewrPutOperation);
     }

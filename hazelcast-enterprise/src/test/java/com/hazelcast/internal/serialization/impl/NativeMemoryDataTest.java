@@ -22,6 +22,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -86,6 +87,20 @@ public class NativeMemoryDataTest {
 
         assertEquals(nativeMemoryData.size(), nmd.size());
         assertEquals(nativeMemoryData.address(), nmd.address());
+        assertEquals(nativeMemoryData, nmd);
+    }
+
+    @Test
+    public void testNativeHeapEqual() {
+        HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+
+        byte[] bytes = heapData.toByteArray();
+        byte[] bytesWithoutLastByte = Arrays.copyOfRange(bytes, 0, bytes.length - 1);
+        HeapData modifiedData = new HeapData(bytesWithoutLastByte);
+
+        assertEquals(nativeMemoryData, heapData);
+        assertNotEquals(nativeMemoryData, modifiedData);
     }
 
     @Test
@@ -93,7 +108,9 @@ public class NativeMemoryDataTest {
         HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
         NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
-        assertArrayEquals(heapData.toByteArray(), nativeMemoryData.toByteArray());
+        byte[] expectedByteArray = heapData.toByteArray();
+        byte[] actualByteArray = nativeMemoryData.toByteArray();
+        assertArrayEquals(expectedByteArray, actualByteArray);
     }
 
 }

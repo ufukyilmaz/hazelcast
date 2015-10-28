@@ -107,11 +107,12 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         EnterpriseBufferObjectDataOutput out = (EnterpriseBufferObjectDataOutput) pool.takeOutputBuffer();
         try {
             SerializerAdapter serializer = serializerFor(obj);
-            out.writeInt(serializer.getTypeId(), ByteOrder.BIG_ENDIAN);
-            serializer.write(out, obj);
 
             int partitionHash = calculatePartitionHash(obj, strategy);
             out.writeInt(partitionHash, ByteOrder.BIG_ENDIAN);
+
+            out.writeInt(serializer.getTypeId(), ByteOrder.BIG_ENDIAN);
+            serializer.write(out, obj);
 
             int size = out.position();
             int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
@@ -120,7 +121,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
-            out.copyToMemoryBlock(data, NativeMemoryData.TYPE_OFFSET, size);
+            out.copyToMemoryBlock(data, NativeMemoryData.COPY_OFFSET, size);
             return data;
         } catch (Throwable e) {
             throw handleException(e);
@@ -156,7 +157,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
                     long address = memoryManager.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
                     nativeData.writeInt(NativeMemoryData.SIZE_OFFSET, size);
-                    nativeData.copyFrom(NativeMemoryData.TYPE_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
+                    nativeData.copyFrom(NativeMemoryData.COPY_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
 
                     return nativeData;
                 }

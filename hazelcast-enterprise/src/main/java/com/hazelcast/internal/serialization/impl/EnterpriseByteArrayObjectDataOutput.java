@@ -47,7 +47,7 @@ class EnterpriseByteArrayObjectDataOutput extends ByteArrayObjectDataOutput impl
             int size =  nativeMemoryData.totalSize();
             writeInt(size);
             if (size > 0) {
-                copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.TYPE_OFFSET, data.totalSize());
+                copyFromMemoryBlock(nativeMemoryData, NativeMemoryData.COPY_OFFSET, data.totalSize());
             }
         } else {
             super.writeData(data);

@@ -16,7 +16,6 @@
 
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.HashUtil;
@@ -63,13 +62,24 @@ public final class NativeMemoryDataUtil {
         return equals(address, bufferSize, data.toByteArray());
     }
 
-    private static int readType(long address) {
+    static int readType(long address) {
+        if (address == 0L) {
+            return SerializationConstants.CONSTANT_TYPE_NULL;
+        }
         int type = UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.TYPE_OFFSET);
         return BIG_ENDIAN ? type : Integer.reverseBytes(type);
     }
 
-    private static int readDataSize(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET) - NativeMemoryData.NATIVE_DATA_OVERHEAD;
+    static int readDataSize(long address) {
+        return Math.max(readTotalSize(address) - (NativeMemoryData.NATIVE_DATA_OVERHEAD
+                - NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD), 0);
+    }
+
+    static int readTotalSize(long address) {
+        if (address == 0L) {
+            return 0;
+        }
+        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET);
     }
 
     public static boolean equals(long address1, long address2) {

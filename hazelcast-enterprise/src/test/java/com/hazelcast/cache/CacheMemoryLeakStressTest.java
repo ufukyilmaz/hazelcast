@@ -380,9 +380,6 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static void verifyValue(int key, byte[] value) {
         if (value != null) {
-            if(key != Bits.readIntB(value, 0)) {
-                System.out.println("NOOOOO");
-            }
             assertEquals(key, Bits.readIntB(value, 0));
             assertEquals(key, Bits.readIntB(value, value.length - 4));
         }

@@ -23,6 +23,9 @@ import com.hazelcast.util.HashUtil;
 
 import java.nio.ByteOrder;
 
+import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readDataSize;
+import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readTotalSize;
+import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readType;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
@@ -68,15 +71,12 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public int totalSize() {
-        if (address == 0L) {
-            return 0;
-        }
-        return readInt(SIZE_OFFSET);
+        return readTotalSize(address());
     }
 
     @Override
     public int dataSize() {
-        return Math.max(totalSize() - (NATIVE_DATA_OVERHEAD - NATIVE_MEMORY_DATA_OVERHEAD), 0);
+        return readDataSize(address());
     }
 
     @Override
@@ -111,11 +111,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public int getType() {
-        if (address == 0L) {
-            return SerializationConstants.CONSTANT_TYPE_NULL;
-        }
-        int type = readInt(TYPE_OFFSET);
-        return BIG_ENDIAN ? type : Integer.reverseBytes(type);
+        return readType(address());
     }
 
     @Override

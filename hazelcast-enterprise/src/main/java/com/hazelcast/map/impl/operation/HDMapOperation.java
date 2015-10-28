@@ -19,7 +19,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.PartitionContainer;
-import com.hazelcast.map.impl.eviction.Evictor;
+import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.BackupOperation;
@@ -44,10 +44,7 @@ import java.util.logging.Level;
  */
 public abstract class HDMapOperation extends MapOperation {
 
-    protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int FORCED_EVICTION_RETRY_COUNT = 5;
-    protected static final int FORCED_EVICTION_PERCENTAGE = 20;
-    protected static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
     protected transient RecordStore recordStore;
 
@@ -159,21 +156,11 @@ public abstract class HDMapOperation extends MapOperation {
 
 
     protected final void forceEvict(RecordStore recordStore) {
-        if (!recordStore.isEvictionEnabled()) {
-            return;
-        }
         MapContainer mapContainer = recordStore.getMapContainer();
-        Evictor evictor = mapContainer.getEvictor();
-
-        int removalSize = calculateRemovalSize(recordStore);
-        evictor.removeSize(removalSize, recordStore);
+        HDEvictorImpl evictor = ((HDEvictorImpl) mapContainer.getEvictor());
+        evictor.forceEvict(recordStore);
     }
 
-    private int calculateRemovalSize(RecordStore recordStore) {
-        int size = recordStore.size();
-        int removalSize = (int) (size * (long) FORCED_EVICTION_PERCENTAGE / ONE_HUNDRED_PERCENT);
-        return Math.max(removalSize, MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT);
-    }
 
     private void forceEvictOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();

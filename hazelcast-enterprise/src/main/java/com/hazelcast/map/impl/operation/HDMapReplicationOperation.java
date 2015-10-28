@@ -163,6 +163,7 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 }
 
                 recordStore.putRecord(key, record);
+                evict(recordStore);
             }
         }
 
@@ -196,6 +197,12 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
             String mapName = mapNames.get(i);
             dispose(mapName);
         }
+    }
+
+    private void evict(RecordStore recordStore) {
+        final long now = Clock.currentTimeMillis();
+        recordStore.evictEntries(now);
+        recordStore.dispose();
     }
 
     @Override

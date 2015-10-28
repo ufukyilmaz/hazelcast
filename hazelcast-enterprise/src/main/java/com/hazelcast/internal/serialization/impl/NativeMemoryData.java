@@ -17,6 +17,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.HashUtil;
 
@@ -27,39 +28,36 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
 /**
+ *
+ * NativeMemoryData is in the form of
+ * <pre>
+ *|SIZE|PARTITION HASH CODE|TYPE-ID|SERIALIZER DATA|
+ * </pre>
+ *
  * @author mdogan 12/10/13
  */
 public final class NativeMemoryData extends MemoryBlock implements Data {
 
+    public static final int SIZE_OFFSET = 0;
+    public static final int PARTITION_HASH_OFFSET = 4;
+    public static final int TYPE_OFFSET = 8;
+    public static final int DATA_OFFSET = 12;
+
+    public static final int COPY_OFFSET = PARTITION_HASH_OFFSET;
+
     /**
      * Native memory data size overhead relative to wrapped data
      */
-    public static final int NATIVE_MEMORY_DATA_OVERHEAD;
+    public static final int NATIVE_MEMORY_DATA_OVERHEAD = Bits.INT_SIZE_IN_BYTES;
 
     /**
      * Native memory data over head
      */
-    public static final int OVERHEAD;
+    public static final int NATIVE_DATA_OVERHEAD = DATA_OFFSET;
 
-    static final int SIZE_OFFSET = 0;
-    static final int TYPE_OFFSET = 4;
-    // we can store this bit in sign-bit of data-size
-    // for the sake of simplicity and make structure same as HeapData
-    // we will use a byte to store partition_hash bit
-    static final int DATA_OFFSET = 8;
-
-    static final int NATIVE_HEADER_OVERHEAD = TYPE_OFFSET - HeapData.TYPE_OFFSET;
+    static final int NATIVE_HEADER_OVERHEAD = PARTITION_HASH_OFFSET - HeapData.PARTITION_HASH_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
-
-    static {
-        // Because of checkstyle rule (public fields must be declared before private + package protected fields)
-        // and since public field "NATIVE_MEMORY_DATA_OVERHEAD" is dependent to
-        // package protected field "NATIVE_HEADER_OVERHEAD",
-        // "NATIVE_MEMORY_DATA_OVERHEAD" static field is initialized here.
-        NATIVE_MEMORY_DATA_OVERHEAD = NATIVE_HEADER_OVERHEAD;
-        OVERHEAD = NATIVE_HEADER_OVERHEAD + INT_SIZE_IN_BYTES;
-    }
 
     public NativeMemoryData() {
     }
@@ -78,7 +76,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
 
     @Override
     public int dataSize() {
-        return Math.max(totalSize() - OVERHEAD, 0);
+        return Math.max(totalSize() - (NATIVE_DATA_OVERHEAD - NATIVE_MEMORY_DATA_OVERHEAD), 0);
     }
 
     @Override
@@ -94,8 +92,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
         if (address == 0L) {
             return 0;
         }
-        int size = totalSize();
-        return readInt(size);
+        return readInt(PARTITION_HASH_OFFSET);
     }
 
     @Override
@@ -108,7 +105,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     public byte[] toByteArray() {
         int len = totalSize();
         byte[] buffer = new byte[len];
-        copyTo(TYPE_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET, len);
+        copyTo(COPY_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET, len);
         return buffer;
     }
 
@@ -149,13 +146,6 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
             return false;
         }
 
-        final int totalSize = totalSize();
-        if (totalSize != data.totalSize()) {
-            return false;
-        }
-        if (totalSize == 0) {
-            return true;
-        }
         final int dataSize = dataSize();
         if (dataSize != data.dataSize()) {
             return false;

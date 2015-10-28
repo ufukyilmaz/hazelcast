@@ -56,11 +56,11 @@ public final class EnterpriseSerializationUtil {
 
             if (in instanceof EnterpriseBufferObjectDataInput) {
                 EnterpriseBufferObjectDataInput bufferIn = (EnterpriseBufferObjectDataInput) in;
-                bufferIn.copyToMemoryBlock(data, NativeMemoryData.TYPE_OFFSET, size);
+                bufferIn.copyToMemoryBlock(data, NativeMemoryData.COPY_OFFSET, size);
             } else {
                 byte[] bytes = new byte[size];
                 in.readFully(bytes);
-                data.copyFrom(NativeMemoryData.TYPE_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
+                data.copyFrom(NativeMemoryData.COPY_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
             }
             return data;
 

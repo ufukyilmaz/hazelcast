@@ -62,7 +62,7 @@ public class EnterpriseByteArrayObjectDataOutputTest {
     public void testCopyFromMemoryBlock() throws IOException {
         Data nativeData = ss.toData("TEST DATA", DataType.NATIVE);
 
-        dataOutput.copyFromMemoryBlock((MemoryBlock) nativeData, NativeMemoryData.TYPE_OFFSET, nativeData.totalSize());
+        dataOutput.copyFromMemoryBlock((MemoryBlock) nativeData, NativeMemoryData.PARTITION_HASH_OFFSET, nativeData.totalSize());
 
         byte[] bytes = dataOutput.toByteArray();
 

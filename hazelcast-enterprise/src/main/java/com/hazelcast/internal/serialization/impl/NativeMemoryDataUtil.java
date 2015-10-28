@@ -69,7 +69,7 @@ public final class NativeMemoryDataUtil {
     }
 
     private static int readDataSize(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET) - NativeMemoryData.OVERHEAD;
+        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET) - NativeMemoryData.NATIVE_DATA_OVERHEAD;
     }
 
     public static boolean equals(long address1, long address2) {
@@ -136,7 +136,7 @@ public final class NativeMemoryDataUtil {
 
     public static boolean equals(long address, final int bufferSize, byte[] bytes) {
         if (address == NULL_ADDRESS || bytes == null || bytes.length == 0
-                || bufferSize != bytes.length - HeapData.DATA_OFFSET - Bits.INT_SIZE_IN_BYTES) {
+                || bufferSize != bytes.length - HeapData.HEAP_DATA_OVERHEAD) {
             return false;
         }
         int bufferOffset = NativeMemoryData.DATA_OFFSET;

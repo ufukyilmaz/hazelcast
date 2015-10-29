@@ -758,12 +758,12 @@ public class HiDensityNativeMemoryCacheRecordStore
                 merged = createRecordWithExpiry(key, value, expiryTime,
                                                 now, true, completionId, origin) != null;
             } else {
-                Object existingValue = record.getValue();
+                NativeMemoryData existingValue = record.getValue();
                 Object newValue =
-                        mergePolicy.merge(name, cacheEntryView,
+                        mergePolicy.merge(name, 
+                                          cacheEntryView,
                                           new DefaultCacheEntryView(key,
-                                                                    // TODO Should we pass heap data for safety?
-                                                                    toData(existingValue),
+                                                                    existingValue,
                                                                     record.getExpirationTime(),
                                                                     record.getAccessTime(),
                                                                     record.getAccessHit()));
@@ -771,7 +771,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
                                                     now, true, completionId, caller, origin);
                 }
-                publishEvent(createCacheCompleteEvent(toHeapData(cacheEntryView.getKey()),
+                publishEvent(createCacheCompleteEvent(toHeapData(key),
                                                       CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
                                                       origin, completionId));
             }

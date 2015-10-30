@@ -77,7 +77,7 @@ public final class ConcurrentLinkedElasticQueue<E> extends AbstractQueue<E> impl
 
     @Override
     public void destroy() {
-        queue.destroy();
+        queue.dispose();
     }
 
     @Override

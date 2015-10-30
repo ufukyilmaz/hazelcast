@@ -347,7 +347,7 @@ public class LongHashSet implements LongSet {
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         assigned = 0;
         if (address != NULL_ADDRESS) {
             malloc.free(address, allocated * ENTRY_LENGTH);

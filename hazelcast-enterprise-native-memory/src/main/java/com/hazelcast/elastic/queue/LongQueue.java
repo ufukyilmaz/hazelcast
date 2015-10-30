@@ -1,11 +1,12 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.nio.Disposable;
 
 /**
  * @author mdogan 21/01/14
  */
-public interface LongQueue {
+public interface LongQueue extends Disposable {
 
     boolean offer(long value);
 
@@ -22,8 +23,6 @@ public interface LongQueue {
     int remainingCapacity();
 
     void clear();
-
-    void destroy();
 
     long nullItem();
 

@@ -143,7 +143,7 @@ public final class LongLinkedQueue implements LongQueue {
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         if (head != NULL_PTR) {
             clear();
             long ptr = head;

@@ -107,7 +107,7 @@ abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements Elast
 
     @Override
     public final void destroy() {
-        queue.destroy();
+        queue.dispose();
         localBinaryQ.clear();
     }
 

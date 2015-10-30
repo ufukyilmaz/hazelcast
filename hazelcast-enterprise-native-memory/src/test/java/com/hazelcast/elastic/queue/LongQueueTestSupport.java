@@ -34,7 +34,7 @@ public abstract class LongQueueTestSupport {
 
     @After
     public void tearDown() throws Exception {
-        queue.destroy();
+        queue.dispose();
         memoryManager.destroy();
     }
 
@@ -168,25 +168,25 @@ public abstract class LongQueueTestSupport {
 
     @Test(expected = IllegalStateException.class)
     public void testOffer_after_destroy() throws Exception {
-        queue.destroy();
+        queue.dispose();
         queue.offer(newItem());
     }
 
     @Test(expected = IllegalStateException.class)
     public void testPeek_after_destroy() throws Exception {
-        queue.destroy();
+        queue.dispose();
         queue.peek();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testPoll_after_destroy() throws Exception {
-        queue.destroy();
+        queue.dispose();
         queue.poll();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testIterator_after_destroy() throws Exception {
-        queue.destroy();
+        queue.dispose();
         queue.iterator();
     }
 
@@ -194,7 +194,7 @@ public abstract class LongQueueTestSupport {
     public void testIterator_next_after_destroy() throws Exception {
         queue.offer(newItem());
         LongIterator iterator = queue.iterator();
-        queue.destroy();
+        queue.dispose();
         iterator.next();
     }
 

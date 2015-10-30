@@ -37,7 +37,7 @@ public class LongHashSetTest {
 
     @After
     public void tearDown() throws Exception {
-        set.destroy();
+        set.dispose();
         memoryManager.destroy();
     }
 
@@ -126,25 +126,25 @@ public class LongHashSetTest {
 
     @Test(expected = IllegalStateException.class)
     public void testAdd_after_destroy() throws Exception {
-        set.destroy();
+        set.dispose();
         set.add(1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testRemove_after_destroy() throws Exception {
-        set.destroy();
+        set.dispose();
         set.remove(1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testContains_after_destroy() throws Exception {
-        set.destroy();
+        set.dispose();
         set.contains(1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testIterator_after_destroy() throws Exception {
-        set.destroy();
+        set.dispose();
         set.iterator();
     }
 
@@ -152,7 +152,7 @@ public class LongHashSetTest {
     public void testIterator_after_destroy2() throws Exception {
         set.add(1);
         LongIterator iterator = set.iterator();
-        set.destroy();
+        set.dispose();
         iterator.next();
     }
 }

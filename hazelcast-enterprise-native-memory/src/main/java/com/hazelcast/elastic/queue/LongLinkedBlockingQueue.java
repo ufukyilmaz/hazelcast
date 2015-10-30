@@ -353,7 +353,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public void destroy() {
+    public void dispose() {
         fullLock();
         try {
             if (head != NULL_PTR) {

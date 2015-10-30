@@ -760,7 +760,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             } else {
                 NativeMemoryData existingValue = record.getValue();
                 Object newValue =
-                        mergePolicy.merge(name, 
+                        mergePolicy.merge(name,
                                           cacheEntryView,
                                           new DefaultCacheEntryView(key,
                                                                     existingValue,

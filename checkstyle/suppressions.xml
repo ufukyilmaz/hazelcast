@@ -92,7 +92,7 @@
               files="com/hazelcast/cache/EnterpriseCacheService"/>
 
     <!-- Hot Restart module -->
-    <suppress checks="InnerAssignment|VisibilityModifier" files="com/hazelcast/spi/hotrestart/impl/gc/"/>
+    <suppress checks="InnerAssignment|VisibilityModifier" files="com/hazelcast/spi/hotrestart/impl/"/>
     <suppress checks="VisibilityModifier|MagicNumber" files="com/hazelcast/spi/hotrestart/impl/HeavyKey"/>
     <suppress checks="ClassData" files="com/hazelcast/spi/hotrestart/impl/HotRestartStoreImpl"/>
     <suppress checks="MagicNumber|Complexity" files="com/hazelcast/spi/hotrestart/impl/lz4"/>

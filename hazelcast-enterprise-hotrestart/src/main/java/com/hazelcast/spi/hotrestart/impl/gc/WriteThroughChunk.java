@@ -1,101 +1,75 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 
+import java.io.Closeable;
+import java.io.DataOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.HashMap;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.ioDisabled;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream;
 
 /**
  * A growing chunk which immediately writes added entries to the backing file.
  * <p>
  * Not thread-safe.
  */
-public class WriteThroughChunk extends GrowingChunk {
-    private static final ByteBuffer HEADER_BUF = ByteBuffer.allocate(Record.HEADER_SIZE);
-    private FileChannel out;
-    private final HashMap<KeyHandle, Long> garbageKeyCounts = new HashMap<KeyHandle, Long>();
+public final class WriteThroughChunk extends GrowingChunk implements Closeable {
+    private final FileOutputStream fileOut;
+    private final DataOutputStream dataOut;
+    private final GcHelper gcHelper;
     private long youngestSeq;
 
-    WriteThroughChunk(long seq, FileChannel out) {
-        super(seq);
-        this.out = out;
+    WriteThroughChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+        super(seq, records);
+        this.fileOut = out;
+        this.gcHelper = gcHelper;
+        this.dataOut = new DataOutputStream(bufferedOutputStream(out));
     }
 
     /**
-     * Writes the record to the backing file, then calls
-     * {@link GrowingChunk#addStep1(Record)}.
-     * Called only by the mutator thread.
+     * Writes a new record to the chunk file and updates the chunk's size.
+     * Called by the mutator thread.
      *
-     * @param r {@inheritDoc}
-     * @return {@inheritDoc}
-     * @throws HotRestartException {@inheritDoc}
+     * @return true if the chunk is now full.
      */
-    public final boolean add(Record r, byte[] keyBytes, byte[] valueBytes) {
-        final boolean ret = addStep1(r);
-        youngestSeq = r.seq;
-        flush(r.toByteBuffers(HEADER_BUF, keyBytes, valueBytes));
-        return ret;
-    }
-
-    public final void close() {
-        if (out == null) {
-            return;
+    public boolean addStep1(long keyPrefix, long recordSeq, boolean isTombstone, byte[] keyBytes, byte[] valueBytes) {
+        if (full()) {
+            throw new HotRestartException(String.format("Attempted to write to a full file #%03x", seq));
         }
         try {
-            out.close();
+            dataOut.writeLong(recordSeq);
+            dataOut.writeLong(keyPrefix);
+            dataOut.writeInt(keyBytes.length);
+            dataOut.writeInt(isTombstone ? -1 : valueBytes.length);
+            dataOut.write(keyBytes);
+            dataOut.write(valueBytes);
+            size += Record.HEADER_SIZE + keyBytes.length + valueBytes.length;
+            youngestSeq = recordSeq;
+            return full();
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
     }
 
-    public final void fsync() {
-        fsync(out);
-    }
-
-    private void flush(ByteBuffer[] batch) {
-        if (ioDisabled()) {
+    @Override public void close() {
+        if (dataOut == null) {
             return;
         }
         try {
-            do {
-                out.write(batch);
-            } while (hasRemaining(batch));
+            fsync();
+            dataOut.close();
+            gcHelper.changeSuffix(seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, Chunk.FNAME_SUFFIX);
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
     }
 
-    private static boolean hasRemaining(ByteBuffer[] batch) {
-        for (ByteBuffer buf : batch) {
-            if (buf.hasRemaining()) {
-                return true;
-            }
-        }
-        return false;
+    public void fsync() {
+        fsync(fileOut);
     }
 
-    final StableChunk toStableChunk() {
-        return new StableChunk(seq, records, youngestSeq, size(), garbage, garbageKeyCounts, false);
+    StableChunk toStableChunk() {
+        return new StableChunk(this, youngestSeq, false);
     }
 }

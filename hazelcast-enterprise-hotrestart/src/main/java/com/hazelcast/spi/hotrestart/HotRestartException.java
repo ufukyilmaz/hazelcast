@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart;
 import com.hazelcast.core.HazelcastException;
 
 /**
- * @author mdogan 06/01/15
+ * Exception type exposed to the client of the Hot Restart SPI.
  */
 public class HotRestartException extends HazelcastException {
 

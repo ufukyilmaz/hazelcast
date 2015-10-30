@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.RecordDataSink;
@@ -25,22 +9,28 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 /**
  * Implementation of {@link RecordDataSink}.
  */
-class RecordDataHolder implements RecordDataSink {
+public final class RecordDataHolder implements RecordDataSink {
+    /** Initial size of the key/value byte buffers */
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int INITIAL_BUFSIZE = 1 << 6;
 
-    long keyPrefix;
     ByteBuffer keyBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
     ByteBuffer valueBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
 
-    @Override public void setKeyPrefix(long prefix) {
-        keyPrefix = prefix;
-    }
     @Override public ByteBuffer getKeyBuffer(int keySize) {
         return keyBuffer = (ByteBuffer) ensureBufferCapacity(keyBuffer, keySize).clear();
     }
     @Override public ByteBuffer getValueBuffer(int valueSize) {
         return valueBuffer = (ByteBuffer) ensureBufferCapacity(valueBuffer, valueSize).clear();
+    }
+
+    boolean payloadSizeValid(Record r) {
+        assert keyBuffer.remaining() + valueBuffer.remaining() == r.payloadSize() : String.format(
+                "Expected record size %,d doesn't match key %,d + value %,d = %,d",
+                r.payloadSize(), keyBuffer.remaining(), valueBuffer.remaining(),
+                keyBuffer.remaining() + valueBuffer.remaining()
+            );
+        return true;
     }
 
     private static ByteBuffer ensureBufferCapacity(ByteBuffer buf, int capacity) {

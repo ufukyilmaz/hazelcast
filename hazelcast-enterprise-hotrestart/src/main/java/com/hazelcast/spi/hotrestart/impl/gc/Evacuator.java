@@ -1,117 +1,162 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Map;
+
+import static java.lang.Math.min;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Evacuates source chunks into destination chunks by moving all live records.
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class Evacuator {
-    private static final Comparator<Record> BY_RECORD_SEQ = new Comparator<Record>() {
-        @Override public int compare(Record left, Record right) {
-            final long leftSeq = left.seq;
-            final long rightSeq = right.seq;
-            return leftSeq == rightSeq ? 0 : leftSeq < rightSeq ? -1 : 1;
-        }
-    };
-    private final List<StableChunk> srcChunks;
-    private final GcHelper chunkFactory;
+    private final ChunkSelection selected;
+    private final GcLogger logger;
+    private final Map<Long, Chunk> destChunkMap;
+    private final TrackerMap recordTrackers;
+    private final GcHelper gcHelper;
+    private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
+    private final long start;
 
-    private Evacuator(List<StableChunk> srcChunks, GcHelper chunkFactory, MutatorCatchup mc) {
-        this.srcChunks = srcChunks;
-        this.chunkFactory = chunkFactory;
+    Evacuator(ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
+        this.selected = selected;
+        this.logger = logger;
+        this.destChunkMap = chunkMgr.destChunkMap = new HashMap<Long, Chunk>();
+        this.gcHelper = chunkMgr.gcHelper;
+        this.pfixTombstoMgr = chunkMgr.pfixTombstoMgr;
+        this.recordTrackers = chunkMgr.trackers;
         this.mc = mc;
+        this.start = start;
     }
 
     static List<StableChunk> copyLiveRecords(
-            List<StableChunk> srcChunks, GcHelper chunkFactory, MutatorCatchup mc)
-    {
-        return new Evacuator(srcChunks, chunkFactory, mc).collect();
+            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
+        return new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
     }
 
-    private List<StableChunk> collect() {
-        final SortedSet<Record> liveRecords = sortedLiveRecords();
+    private List<StableChunk> evacuate() {
+        final List<GcRecord> liveRecords = sortedLiveRecords();
+        // Sweep the source chunks just before dest chunks are created.
+        // This is the last moment where needsDismissing won't need
+        // manual propagation to dest chunks.
+        for (Chunk c : selected.srcChunks) {
+            if (pfixTombstoMgr.dismissGarbage(c)) {
+                mc.catchupNow();
+            }
+        }
         final List<GrowingDestChunk> preparedDestChunks = transferToDest(liveRecords);
+        // At this point any further prefix tombstone events will properly
+        // raise the needsDismissing flag in all dest chunks, but before it
+        // they were not safely propagated. Therefore propagate any needsDismissing
+        // flag that a source chunk got to all dest chunks, and dismiss everything
+        // that needs to be dismissed.
+        propagateDismissing(preparedDestChunks);
+        logger.fine("GC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
         final List<StableChunk> destChunks = persistDestChunks(preparedDestChunks);
         dismissEvacuatedFiles();
         deleteEmptyDestFiles(destChunks);
         return destChunks;
     }
 
-    private SortedSet<Record> sortedLiveRecords() {
-        final SortedSet<Record> liveRecords = new TreeSet<Record>(BY_RECORD_SEQ);
-        for (StableChunk c : srcChunks) {
-            final ArrayList<Record> records = new ArrayList<Record>(c.records.values());
-            mc.catchupNow();
-            for (Record r : records) {
-                mc.catchupAsNeeded();
-                // Whenever r.chunk == null, a garbage record is collected
-                // because we leave it out from the live record set
-                if (r.chunk != null) {
-                    liveRecords.add(r);
-                }
-            }
+    private void propagateDismissing(List<GrowingDestChunk> destChunks) {
+        if (!propagationNeeded()) {
+            return;
         }
-        return liveRecords;
+        for (Chunk c : destChunks) {
+            c.needsDismissing = true;
+            pfixTombstoMgr.dismissGarbage(c);
+            mc.catchupNow();
+        }
     }
 
-    private List<GrowingDestChunk> transferToDest(SortedSet<Record> liveRecords) {
+    private boolean propagationNeeded() {
+        for (Chunk c : selected.srcChunks) {
+            if (c.needsDismissing) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private List<GcRecord> sortedLiveRecords() {
+        final ArrayList<GcRecord> liveGcRecs = new ArrayList<GcRecord>(selected.liveRecordCount);
+        for (StableChunk chunk : selected.srcChunks) {
+            for (Cursor cur = chunk.records.cursor(); cur.advance();) {
+                if (cur.asRecord().isAlive()) {
+                    // Here copies of records are made. The copies will not reflect
+                    // new retirements until they are added to the dest chunk in transferToDest.
+                    liveGcRecs.add(cur.toGcRecord(chunk.seq));
+                }
+            }
+            mc.catchupNow();
+        }
+        return sorted(liveGcRecs);
+    }
+
+    private List<GrowingDestChunk> transferToDest(List<GcRecord> sortedGcRecords) {
         final List<GrowingDestChunk> destChunks = new ArrayList<GrowingDestChunk>();
         GrowingDestChunk dest = null;
-        for (Record r : liveRecords) {
+        for (GcRecord gcr : sortedGcRecords) {
             if (dest == null) {
-                dest = chunkFactory.newDestChunk();
-                destChunks.add(dest);
+                dest = newDestChunk(destChunks);
             }
             mc.catchupAsNeeded();
-            // Whenever r.chunk == null, a garbage record is collected
-            // because we don't transfer it to the dest chunk.
-            // With dest.add(r) the record is transferred and if it is retired after that,
-            // it will count towards the garbage count of the dest chunk.
-            if (r.chunk != null && dest.add(r)) {
-                dest = null;
+            final Tracker tr = recordTrackers.get(gcr.toKeyHandle());
+            // This check failing means that the record is now stale. Don't copy it to dest.
+            // We cannot use gcr.isAlive as explained in sortedLiveRecords().
+            // We might use chunks.get(tr.chunkSeq()).get(gcr.keyHandle).isAlive(),
+            // but that would just be needlessly expensive
+            if (tr != null && gcr.chunkSeq == tr.chunkSeq()) {
+                // With moveToChunk() the keyHandle's ownership is transferred to dest.
+                // With dest.add() the GcRecord is added to dest. Now its garbage count
+                // will be incremented if the keyHandle receives an update and its isAlive()
+                // method will correctly report the status of the record within the dest chunk.
+                tr.moveToChunk(dest.seq);
+                if (dest.add(gcr)) {
+                    dest = null;
+                }
             }
         }
         return destChunks;
     }
 
-    private List<StableChunk> persistDestChunks(List<GrowingDestChunk> destChunks) {
+    private GrowingDestChunk newDestChunk(List<GrowingDestChunk> destChunks) {
+        final GrowingDestChunk dest = gcHelper.newDestChunk(pfixTombstoMgr);
+        destChunks.add(dest);
+        // make the dest chunk available to chunkMgr.chunk()
+        destChunkMap.put(dest.seq, dest);
+        return dest;
+    }
+
+    private List<StableChunk> persistDestChunks(List<GrowingDestChunk> preparedDestChunks) {
         final List<StableChunk> compactedChunks = new ArrayList<StableChunk>();
-        for (GrowingDestChunk destChunk : destChunks) {
-            compactedChunks.add(destChunk.flushAndClose(chunkFactory.inMemoryStoreRegistry, mc));
+        for (GrowingDestChunk destChunk : preparedDestChunks) {
+            final StableChunk stableChunk = destChunk.flushAndClose(mc, logger);
+            compactedChunks.add(stableChunk);
+            // This call transfers ownership of records from destChunk to stableChunk.
+            // After this point retirements will be addressed at stableChunk.
+            destChunkMap.put(stableChunk.seq, stableChunk);
+            mc.catchupNow();
         }
+        preparedDestChunks.clear();
         return compactedChunks;
     }
 
     private void dismissEvacuatedFiles() {
-        for (StableChunk evacuated : srcChunks) {
-            chunkFactory.deleteFile(evacuated);
+        for (StableChunk evacuated : selected.srcChunks) {
+            gcHelper.deleteChunkFile(evacuated);
             // All garbage records collected from the source chunk in
-            // sortedLiveRecords() and transferToDest() are summarily dismissed by this call:
+            // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
             mc.dismissGarbage(evacuated);
             mc.catchupNow();
         }
@@ -120,15 +165,40 @@ final class Evacuator {
     private void deleteEmptyDestFiles(List<StableChunk> destChunks) {
         for (Iterator<StableChunk> iterator = destChunks.iterator(); iterator.hasNext();) {
             final StableChunk c = iterator.next();
-            if (c.size() - c.garbage == 0) {
-                if (!c.garbageKeyCounts.isEmpty()) {
-                    System.err.println("Empty dest file with non-empty garbage key counts: " + c.garbageKeyCounts);
-                    mc.dismissGarbage(c);
-                }
-                chunkFactory.deleteFile(c);
+            if (c.size() == c.garbage) {
+                mc.dismissGarbage(c);
+                gcHelper.deleteChunkFile(c);
                 iterator.remove();
                 mc.catchupNow();
             }
+        }
+    }
+
+    // gcrs will be random-accessed so insisting on ArrayList
+    @SuppressWarnings("checkstyle:illegaltype")
+    List<GcRecord> sorted(ArrayList<GcRecord> gcrs) {
+        final int size = gcrs.size();
+        List<GcRecord> from = gcrs;
+        List<GcRecord> to = asList(new GcRecord[size]);
+        for (int width = 1; width < size; width *= 2) {
+            for (int i = 0; i < size; i += 2 * width) {
+                bottomUpMerge(from, i, min(i + width, size), min(i + 2 * width, size), to);
+            }
+            final List<GcRecord> fromBackup = from;
+            from = to;
+            to = fromBackup;
+        }
+        return from;
+    }
+
+    private void bottomUpMerge(List<GcRecord> from, int leftStart, int rightStart, int rightEnd, List<GcRecord> to) {
+        int currLeft = leftStart;
+        int currRight = rightStart;
+        for (int j = leftStart; j < rightEnd; j++) {
+            final boolean takeLeft = currLeft < rightStart
+                    && (currRight >= rightEnd || from.get(currLeft).liveSeq() <= from.get(currRight).liveSeq());
+            to.set(j, from.get(takeLeft ? currLeft++ : currRight++));
+            mc.catchupAsNeeded();
         }
     }
 }

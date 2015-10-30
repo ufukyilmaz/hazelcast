@@ -1,31 +1,16 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
+import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.HotRestartKey;
+import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
-import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.ChunkManager.GcParams;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.compression;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -34,7 +19,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Top-level control code of the GC thread. Only thread mechanics are here;
  * actual GC logic is in {@link ChunkManager}.
  */
-public class GcExecutor {
+public final class GcExecutor {
     /** Capacity of the work queue which is used by the mutator thread to submit
      * tasks to the G thread. */
     @SuppressWarnings("checkstyle:magicnumber")
@@ -52,25 +37,37 @@ public class GcExecutor {
      * before deciding to catch up. */
     public static final int DEFAULT_CATCHUP_INTERVAL_LOG2 = 10;
 
-    /** The chunk manager. Referenced from {@link HotRestartStoreImpl#hotRestart()}. */
+    /** The chunk manager. Referenced from {@code HotRestartStoreBase#hotRestart()}. */
     public final ChunkManager chunkMgr;
-    private final Task shutdown = new Task() {
-        @Override public void perform() {
+    private final PrefixTombstoneManager pfixTombstoMgr;
+    private final Runnable shutdown = new Runnable() {
+        @Override public void run() {
             keepGoing = false;
         }
     };
-    private final OneToOneConcurrentArrayQueue<Task> workQueue =
-            new OneToOneConcurrentArrayQueue<Task>(WORK_QUEUE_CAPACITY);
-    private final ArrayList<Task> workDrain = new ArrayList<Task>(WORK_QUEUE_CAPACITY);
-    private volatile boolean backpressure;
-    private volatile Throwable gcThreadFailureCause;
-    private final Thread gcThread = new Thread(new MainLoop(), "FastRestart GC");
+    private final OneToOneConcurrentArrayQueue<Runnable> workQueue =
+            new OneToOneConcurrentArrayQueue<Runnable>(WORK_QUEUE_CAPACITY);
+    private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(WORK_QUEUE_CAPACITY);
+    private final Thread gcThread;
     private final MutatorCatchup mc = new MutatorCatchup();
     private final IdleStrategy mutatorIdler = idler();
+    private final GcLogger logger;
+    private final GcHelper gcHelper;
+    private volatile boolean backpressure;
+    private volatile Throwable gcThreadFailureCause;
     private boolean keepGoing;
 
-    public GcExecutor(ChunkManager chunkMgr) {
-        this.chunkMgr = chunkMgr;
+    public GcExecutor(GcHelper gcHelper, String name) {
+        this.gcHelper = gcHelper;
+        this.logger = gcHelper.logger;
+        this.gcThread = new Thread(new MainLoop(), "GC thread for " + name);
+        this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
+        this.chunkMgr = new ChunkManager(gcHelper, pfixTombstoMgr);
+        pfixTombstoMgr.setChunkManager(chunkMgr);
+    }
+
+    public void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
+        pfixTombstoMgr.setPrefixTombstones(prefixTombstones);
     }
 
     private class MainLoop implements Runnable {
@@ -81,71 +78,102 @@ public class GcExecutor {
                 int parkCount = 0;
                 boolean didWork = false;
                 while (keepGoing && !interrupted()) {
-                    final int workCount = mc.catchupNow();
-                    final GcParams gcp = (workCount != 0 || didWork) ? chunkMgr.gParams() : GcParams.ZERO;
+                    final int workCount = Math.max(0, mc.catchupNow());
+                    final GcParams gcp = (workCount != 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
                     if (gcp.forceGc) {
-                        backpressure = true;
-                        didWork = chunkMgr.gc(gcp, mc);
-                        backpressure = false;
+                        didWork = runForcedGC(gcp);
                     } else {
                         didWork = chunkMgr.gc(gcp, mc);
                     }
+                    didWork |= pfixTombstoMgr.sweepAsNeeded();
                     if (idler.idle(workCount + (didWork ? 1 : 0))) {
                         parkCount++;
                     } else {
                         parkCount = 0;
                     }
-                    if (compression && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
+                    if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
                         didWork = chunkMgr.compressSomeChunk(mc);
                         parkCount = 0;
                     }
                 }
-                if (compression) {
+                // This should be optional, configurable behavior.
+                // Compression is performed while the rest of the system
+                // is already down, thus contributing to downtime.
+                if (gcHelper.compressionEnabled()) {
                     chunkMgr.compressAllChunks(mc);
                 }
-                System.err.println("GC thread done. ");
+                logger.info("GC thread done. ");
             } catch (Throwable t) {
-                System.err.println("GC thread terminated by exception");
-                t.printStackTrace();
+                logger.severe("GC thread terminated by exception", t);
                 gcThreadFailureCause = t;
+                keepGoing = false;
+            } finally {
+                chunkMgr.close();
             }
+        }
+    }
+
+    boolean runForcedGC(GcParams gcp) {
+        backpressure = true;
+        final boolean savedFsyncOften = mc.fsyncOften;
+        mc.fsyncOften = false;
+        try {
+            return chunkMgr.gc(gcp, mc);
+        } finally {
+            mc.fsyncOften = savedFsyncOften;
+            backpressure = false;
         }
     }
 
     public void start() {
         keepGoing = true;
+        chunkMgr.gcHelper.prepareGcThread(gcThread);
         gcThread.start();
     }
 
     public void shutdown() {
+        if (!gcThread.isAlive()) {
+            return;
+        }
         try {
             submit(shutdown);
             while (gcThread.isAlive()) {
                 LockSupport.unpark(gcThread);
                 Thread.sleep(1);
             }
+            chunkMgr.gcHelper.dispose();
         } catch (InterruptedException e) {
             currentThread().interrupt();
         }
     }
 
-    public void submitReplaceRecord(final Record stale, final Record fresh) {
-        submit(chunkMgr.new ReplaceRecord(stale, fresh));
+    public void submitRecord(HotRestartKey key, long freshSeq, int freshSize, boolean freshIsTombstone) {
+        submit(chunkMgr.new AddRecord(key, freshSeq, freshSize, freshIsTombstone));
     }
 
     public void submitReplaceActiveChunk(final WriteThroughChunk closed, final WriteThroughChunk fresh) {
         submit(chunkMgr.new ReplaceActiveChunk(fresh, closed));
     }
 
-    private void submit(Task task) {
-        boolean reportedQueueFull = false;
-        while (backpressure || !workQueue.offer(task)) {
-            if (!reportedQueueFull) {
-                System.out.println("Blocking to submit");
-                reportedQueueFull = true;
-            }
-            if (mutatorIdler.idle(0) && !gcThread.isAlive()) {
-                throw new HotRestartException("GC thread has died", gcThreadFailureCause);
+    public void addPrefixTombstones(long[] prefixes) {
+        pfixTombstoMgr.addPrefixTombstones(prefixes);
+    }
+
+    void submit(Runnable task) {
+        if (!keepGoing) {
+            throw new HotRestartException("keepGoing == false", gcThreadFailureCause);
+        }
+        boolean submitted = false;
+//        boolean reportedBlocking = false;
+        while (!(submitted || (submitted = workQueue.offer(task))) || backpressure) {
+            if (mutatorIdler.idle(0)) {
+//                if (!reportedBlocking) {
+//                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
+//                    reportedBlocking = true;
+//                }
+                if (!gcThread.isAlive()) {
+                    throw new HotRestartException("GC thread has died", gcThreadFailureCause);
+                }
             }
         }
         // work has been done (task submitted), so reset idler state
@@ -162,7 +190,7 @@ public class GcExecutor {
      */
     class MutatorCatchup {
         // Consulted by output streams to decide whether to fsync after each buffer flush.
-        // Never set programmatically at the moment; perhaps expose as configuration param.
+        // Perhaps expose this as configuration param (currently it's hardcoded).
         boolean fsyncOften;
         // counts the number of calls to catchupAsNeeded since last catch up
         private long i;
@@ -182,12 +210,12 @@ public class GcExecutor {
 
         @SuppressWarnings("checkstyle:innerassignment")
         private int catchUpWithMutator() {
-            int workCount;
-            if (backpressure || (workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY)) == 0) {
+            final int workCount;
+            if ((workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY)) == 0) {
                 return 0;
             }
-            for (Task op : workDrain) {
-                op.perform();
+            for (Runnable op : workDrain) {
+                op.run();
             }
             workDrain.clear();
             return workCount;
@@ -197,13 +225,12 @@ public class GcExecutor {
             chunkMgr.dismissGarbage(c);
         }
 
-        void dismissGarbageRecord(Chunk c, Record r) {
-            chunkMgr.dismissGarbageRecord(c, r);
+        void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
+            chunkMgr.dismissGarbageRecord(c, kh, r);
         }
-    }
 
-    /** A task submitted to the GC thread's work queue. */
-    interface Task {
-        void perform();
+        boolean shutdownRequested() {
+            return !keepGoing;
+        }
     }
 }

@@ -121,7 +121,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         RecordInfo replicationInfo = Records.buildRecordInfo(recordStore.getRecord(dataKey));
         backupRecordInfos.add(replicationInfo);
         evict();
-        dispose();
     }
 
     protected final void invalidateNearCaches(Set<Data> keys) {
@@ -131,9 +130,10 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         }
     }
 
-    protected void evict() {
+    protected final void evict() {
         final long now = Clock.currentTimeMillis();
         recordStore.evictEntries(now);
+        dispose();
     }
 
     @Override

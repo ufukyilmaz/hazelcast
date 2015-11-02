@@ -16,7 +16,7 @@
 
 package com.hazelcast.map.impl.recordstore;
 
-import com.hazelcast.elastic.map.BinaryElasticHashMap;
+import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -50,7 +50,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
      */
     private static final float DEFAULT_LOAD_FACTOR = 0.91f;
 
-    private final BinaryElasticHashMap<HDRecord> map;
+    private final SampleableElasticHashMap<HDRecord> map;
     private final HiDensityRecordProcessor recordProcessor;
     private final SizeEstimator sizeEstimator;
 
@@ -61,7 +61,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     HDStorageImpl(int initialCapacity, float loadFactor, HiDensityRecordProcessor<HDRecord> recordProcessor) {
         this.recordProcessor = recordProcessor;
         this.sizeEstimator = createMapSizeEstimator(NATIVE);
-        this.map = new BinaryElasticHashMap<HDRecord>(initialCapacity, loadFactor, recordProcessor);
+        this.map = new SampleableElasticHashMap<HDRecord>(initialCapacity, loadFactor, recordProcessor);
     }
 
     public HiDensityRecordProcessor getRecordProcessor() {
@@ -203,4 +203,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         return recordProcessor.toData(value, DataType.NATIVE);
     }
 
+    public Iterable getRandomSamples(int sampleCount) {
+        return map.getRandomSamples(sampleCount);
+    }
 }

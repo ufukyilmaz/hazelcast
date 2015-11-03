@@ -3,9 +3,12 @@ package com.hazelcast.wan;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.Node;
+import com.hazelcast.instance.TestUtil;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.After;
@@ -123,6 +126,20 @@ public abstract class AbstractWanReplicationTest extends HazelcastTestSupport {
         System.out.println("==configC==");
         printReplicaConfig(configC);
         System.out.println();
+    }
+
+    protected void pauseWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+        for (HazelcastInstance instance : cluster) {
+            Node node = TestUtil.getNode(instance);
+            node.getNodeEngine().getWanReplicationService().pause(wanRepName, targetGroupName);
+        }
+    }
+
+    protected void resumeWanReplication(HazelcastInstance[] cluster, String wanRepName, String targetGroupName) {
+        for (HazelcastInstance instance : cluster) {
+            Node node = TestUtil.getNode(instance);
+            node.getNodeEngine().getWanReplicationService().resume(wanRepName, targetGroupName);
+        }
     }
 
     public abstract class GatedThread extends Thread {

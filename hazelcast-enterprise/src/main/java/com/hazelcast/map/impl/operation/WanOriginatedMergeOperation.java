@@ -9,12 +9,12 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 
 /**
- * Created by emrah on 18/09/15.
+ * Incoming {@link com.hazelcast.map.impl.wan.MapReplicationUpdate} events are merged using this operation.
+ * This operation is needed to prevent wan event generation of backup operations of {@link MergeOperation}
  */
 public class WanOriginatedMergeOperation extends MergeOperation {
 
     public WanOriginatedMergeOperation() {
-
     }
 
     public WanOriginatedMergeOperation(String mapName, Data data, EntryView<Data, Data> entryView, MapMergePolicy mergePolicy) {
@@ -27,9 +27,8 @@ public class WanOriginatedMergeOperation extends MergeOperation {
             return new RemoveBackupOperation(name, dataKey, false, true);
         } else {
             final Record record = recordStore.getRecord(dataKey);
-            final RecordInfo replicationInfo = record != null ? Records.buildRecordInfo(record) : null;
+            final RecordInfo replicationInfo = Records.buildRecordInfo(record);
             return new PutBackupOperation(name, dataKey, dataValue, replicationInfo, false, false, true);
         }
     }
-
 }

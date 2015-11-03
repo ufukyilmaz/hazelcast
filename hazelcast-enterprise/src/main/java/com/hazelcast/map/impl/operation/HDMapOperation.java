@@ -16,6 +16,7 @@
 
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.PartitionContainer;
@@ -28,6 +29,8 @@ import com.hazelcast.util.ExceptionUtil;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
+
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 /**
  * Includes retry logic when a map operation fails to put an entry into {@code IMap} due to a
@@ -88,7 +91,7 @@ public abstract class HDMapOperation extends MapOperation {
         try {
             runInternal();
         } catch (NativeOutOfMemoryError e) {
-            forceEvictAndRunInternal();
+            forceEvictionAndRunInternal();
         }
     }
 
@@ -123,10 +126,10 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
 
-    private void forceEvictAndRunInternal() throws Exception {
+    private void forceEvictionAndRunInternal() throws Exception {
         for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
             try {
-                forceEvict(recordStore);
+                forceEviction(recordStore);
                 runInternal();
                 oome = null;
                 break;
@@ -138,7 +141,7 @@ public abstract class HDMapOperation extends MapOperation {
         if (oome != null) {
             for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
                 try {
-                    forceEvictOnOthers();
+                    forceEvictionOnOthers();
                     runInternal();
                     oome = null;
                     break;
@@ -155,14 +158,23 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
 
-    protected final void forceEvict(RecordStore recordStore) {
+    /**
+     * Force eviction on this particular record-store.
+     */
+    protected final void forceEviction(RecordStore recordStore) {
         MapContainer mapContainer = recordStore.getMapContainer();
-        HDEvictorImpl evictor = ((HDEvictorImpl) mapContainer.getEvictor());
-        evictor.forceEvict(recordStore);
+        InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
+        if (NATIVE == inMemoryFormat) {
+            HDEvictorImpl evictor = ((HDEvictorImpl) mapContainer.getEvictor());
+            evictor.forceEvict(recordStore);
+        }
     }
 
 
-    private void forceEvictOnOthers() {
+    /**
+     * Force eviction on other NATIVE in-memory-formatted record-stores of this partition thread.
+     */
+    private void forceEvictionOnOthers() {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
@@ -172,7 +184,7 @@ public abstract class HDMapOperation extends MapOperation {
                 ConcurrentMap<String, RecordStore> maps
                         = mapServiceContext.getPartitionContainer(partitionId).getMaps();
                 for (RecordStore recordstore : maps.values()) {
-                    forceEvict(recordstore);
+                    forceEviction(recordstore);
                 }
             }
         }

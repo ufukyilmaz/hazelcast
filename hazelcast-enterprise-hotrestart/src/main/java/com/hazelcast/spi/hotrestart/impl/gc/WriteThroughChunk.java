@@ -66,6 +66,11 @@ public final class WriteThroughChunk extends GrowingChunk implements Closeable {
     }
 
     public void fsync() {
+        try {
+            dataOut.flush();
+        } catch (IOException e) {
+            throw new HotRestartException(e);
+        }
         fsync(fileOut);
     }
 

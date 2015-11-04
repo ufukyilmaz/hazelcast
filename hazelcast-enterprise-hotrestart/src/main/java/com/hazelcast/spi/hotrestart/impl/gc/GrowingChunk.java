@@ -53,17 +53,10 @@ abstract class GrowingChunk extends Chunk {
     }
 
     public static void fsync(FileOutputStream out) {
-        if (out != null) {
-            fsync(out.getChannel());
-        }
-    }
-
-    public static void fsync(FileChannel out) {
-        if (out == null) {
-            return;
-        }
         try {
-            out.force(true);
+            if (out != null) {
+                out.getFD().sync();
+            }
         } catch (IOException e) {
             throw new HotRestartException(e);
         }

@@ -65,10 +65,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>javax.cache</groupId>
-            <artifactId>cache-api</artifactId>
-            <version>${jsr107.api.version}</version>
-            <scope>provided</scope>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-enterprise-native-memory</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>net.jpountz.lz4</groupId>

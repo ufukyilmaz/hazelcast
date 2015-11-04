@@ -195,7 +195,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return nullItem;
     }
 
-    public void destroy() {
+    public void dispose() {
         if (!isDestroyed()) {
             clear();
             long ptr = head.getAndSet(NULL_PTR);
@@ -264,7 +264,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
                         malloc.free(l, NODE_SIZE);
                     }
                 }
-                queue.destroy();
+                queue.dispose();
             }
         }
     }

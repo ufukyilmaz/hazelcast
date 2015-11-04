@@ -31,6 +31,6 @@ public interface LongBlockingQueue extends LongQueue {
 
     void clear();
 
-    void destroy();
+    void dispose();
 
 }

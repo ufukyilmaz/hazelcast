@@ -1,32 +1,19 @@
 /*
- * Derived from Apache Lucene's PriorityQueue
- *
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Original work Copyright 2014 The Apache Software Foundation
+ * Modified work Copyright (c) 2015 Hazelcast, Inc. All rights reserved.
  */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** A PriorityQueue maintains a partial ordering of its elements such that the
- * worst element can always be found in constant time.  Put()'s and pop()'s
- * require log(size) time.
+/** Maintains a partial ordering of chunks such that the
+ * worst one (with the lowest cost-benefit score) can be
+ * looked up in constant time. Insertion and removal operations
+ * have O(log size) time complexity.
  */
-class ChunkPriorityQueue {
+final class ChunkPriorityQueue {
     private int size;
     private final int maxSize;
     private final StableChunk[] heap;
@@ -41,16 +28,16 @@ class ChunkPriorityQueue {
     }
 
     /**
-     * Adds an Object to a PriorityQueue in log(size) time.
-     * It returns the object (if any) that was
+     * Adds a chunk in O(log size) time.
+     * Returns the chunk (if any) that was
      * dropped off the heap because it was full. This can be
-     * the given parameter (in case it isn't better than the
+     * the supplied chunk (in case it isn't better than the
      * full heap's minimum, and couldn't be added), or another
-     * object that was previously the worst value in the
+     * chunk that was previously the worst value in the
      * heap and now has been replaced by a better one, or null
      * if the queue wasn't yet full with maxSize elements.
      */
-    public StableChunk consider(StableChunk element) {
+    public StableChunk offer(StableChunk element) {
         if (size < maxSize) {
             size++;
             heap[size] = element;
@@ -70,8 +57,7 @@ class ChunkPriorityQueue {
         return size > 0 ? heap[1] : null;
     }
 
-    /** Removes and returns the least element of the PriorityQueue in log(size)
-     time. */
+    /** Removes and returns the least chunk in O(log size) time. */
     public StableChunk pop() {
         if (size > 0) {
             StableChunk result = heap[1];

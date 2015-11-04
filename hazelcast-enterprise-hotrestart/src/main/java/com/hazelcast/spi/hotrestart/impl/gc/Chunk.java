@@ -1,37 +1,25 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.util.collection.Long2ObjectHashMap;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Represents a chunk file.
  */
-public abstract class Chunk {
+public abstract class Chunk implements Disposable {
     /** Chunk filename suffix. */
     public static final String FNAME_SUFFIX = ".chunk";
+
+    /** Suffix added to the chunk file while it is active. On restart this file
+     * is the only one whose last entry may be incomplete. If the system failed while
+     * it was being written out, the caller did not receive a successful response,
+     * therefore that entry doesn't actually exist. */
+    public static final String ACTIVE_CHUNK_SUFFIX = ".active";
+
+    /** Suffix added to a chunk file while it is being written to during a GC cycle.
+     * If system fails during GC, such file should not be considered during restart. */
+    public static final String DEST_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".dest";
+
     /** Chunk file size limit. */
     @SuppressWarnings("checkstyle:magicnumber")
     public static final long SIZE_LIMIT = 8 << 20;
@@ -39,64 +27,57 @@ public abstract class Chunk {
     /** Unique sequence number of this chunk. */
     public final long seq;
 
-    final Long2ObjectHashMap<Record> records;
-    final HashMap<KeyHandle, Long> garbageKeyCounts;
+    final RecordMap records;
     long garbage;
+    int liveRecordCount;
+    /** Will be true when a new prefix tombstone arrives and this chunk
+     * may contain records interred by it. */
+    boolean needsDismissing;
 
-    Chunk(long seq) {
+    Chunk(long seq, RecordMap records) {
         this.seq = seq;
-        this.records = new Long2ObjectHashMap<Record>();
-        this.garbageKeyCounts = new HashMap<KeyHandle, Long>();
+        this.records = records;
     }
 
-    Chunk(long seq, Long2ObjectHashMap<Record> records, long garbage, HashMap<KeyHandle, Long> garbageKeyCounts) {
+    Chunk(WriteThroughChunk from) {
+        this.seq = from.seq;
+        this.records = from.records;
+        this.liveRecordCount = from.liveRecordCount;
+        this.garbage = from.garbage;
+        this.needsDismissing = from.needsDismissing;
+    }
+
+    Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {
         this.seq = seq;
-        this.garbage = garbage;
         this.records = records;
-        this.garbageKeyCounts = garbageKeyCounts;
+        this.liveRecordCount = liveRecordCount;
+        this.garbage = garbage;
     }
 
     abstract long size();
 
-    void retire(Record r) {
-        if (records.remove(r.seq) == null) {
-            final List<Long> seqs = new ArrayList<Long>(records.keySet());
-            Collections.sort(seqs);
-            throw new HotRestartException(String.format(
-                    "Chunk %d couldn't find the record to retire: %d. Chunk has these (%,d): %s",
-                    this.seq, r.seq, records.size(), seqs));
-        }
+    void retire(KeyHandle kh, Record r, boolean incrementGarbageCount) {
+        assert records.get(kh).liveSeq() == r.liveSeq()
+                : String.format("%s.retire(%s, %s) but have %s", this, kh, r, records.get(kh));
         garbage += r.size();
-        incrementGarbageCount(garbageKeyCounts, r);
-        r.chunk = null;
+        r.retire(incrementGarbageCount);
+        liveRecordCount--;
+    }
+
+    void retire(KeyHandle kh, Record r) {
+        retire(kh, r, true);
     }
 
     String fnameSuffix() {
         return FNAME_SUFFIX;
     }
 
-    static void incrementGarbageCount(Map<KeyHandle, Long> counts, Record r) {
-        if (r.isTombstone()) {
-            return;
-        }
-        final KeyHandle key = r.keyHandle;
-        final Long count = counts.get(key);
-        counts.put(key, count == null ? 1L : count + 1);
+    public void dispose() {
+        records.dispose();
     }
 
-    static boolean decrementGarbageCount(Map<KeyHandle, Long> counts, Record r) {
-        if (r.isTombstone()) {
-            return false;
-        }
-        final KeyHandle key = r.keyHandle;
-        final Long current = counts.get(key);
-        final long newCount = current == null ? 0 : current - 1;
-        if (newCount == 0) {
-            counts.remove(key);
-            return true;
-        } else {
-            counts.put(key, newCount);
-            return false;
-        }
+    @Override public String toString() {
+        return String.format("%s(%03x,%,d,%,d)",
+                getClass().getSimpleName(), seq, liveRecordCount, garbage);
     }
 }

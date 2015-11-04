@@ -1,23 +1,9 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,15 +13,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkManager.GcParams.SRC_CHUNKS_GOAL;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.RECORD_COUNT_LIMIT;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.SRC_CHUNKS_GOAL;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 /**
  * Chooses which chunks to evacuate.
  */
-class ChunkSelector {
+final class ChunkSelector {
     @SuppressWarnings("MagicNumber")
-    private static final int INITIAL_TOP_CHUNKS = 32 * ChunkManager.GcParams.COST_GOAL_CHUNKS;
+    private static final int INITIAL_TOP_CHUNKS = 32 * GcParams.COST_GOAL_CHUNKS;
     private static final Comparator<StableChunk> BY_COST_BENEFIT = new Comparator<StableChunk>() {
         @Override public int compare(StableChunk left, StableChunk right) {
             final double leftCb = left.cachedCostBenefit();
@@ -43,71 +31,90 @@ class ChunkSelector {
             return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
         }
     };
-    private final Set<StableChunk> allChunks;
-    private final ChunkManager.GcParams gcp;
+    private final Collection<StableChunk> allChunks;
+    private final GcParams gcp;
+    private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
+    private final GcLogger logger;
 
-    ChunkSelector(Set<StableChunk> allChunks, ChunkManager.GcParams gcp, MutatorCatchup mc) {
+    private ChunkSelector(Collection<StableChunk> allChunks, GcParams gcp, PrefixTombstoneManager pfixTombstoMgr,
+                          MutatorCatchup mc, GcLogger logger) {
         this.allChunks = allChunks;
         this.gcp = gcp;
+        this.pfixTombstoMgr = pfixTombstoMgr;
         this.mc = mc;
+        this.logger = logger;
     }
 
-    static List<StableChunk>
-    selectChunksToCollect(Set<StableChunk> allChunks, ChunkManager.GcParams gcp, MutatorCatchup mc) {
-        return new ChunkSelector(allChunks, gcp, mc).select();
+    /** Aggregates data returned to the caller of selectChunksToCollect() */
+    static class ChunkSelection {
+        final List<StableChunk> srcChunks = new ArrayList<StableChunk>();
+        int liveRecordCount;
+    }
+
+    static ChunkSelection
+    selectChunksToCollect(Collection<StableChunk> allChunks, GcParams gcp,
+                          PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger) {
+        return new ChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
     }
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
-    List<StableChunk> select() {
+    private ChunkSelection select() {
+        final ChunkSelection cs = new ChunkSelection();
         final Set<StableChunk> candidates = candidateChunks();
-        final List<StableChunk> srcChunks = new ArrayList<StableChunk>();
         if (candidates.isEmpty()) {
-            return srcChunks;
+            return cs;
         }
-        int cost = 0;
+        long cost = 0;
         long garbage = 0;
         final int initialChunksToFind = gcp.limitSrcChunks ? INITIAL_TOP_CHUNKS : candidates.size();
         int chunksToFind = initialChunksToFind;
+        final String status;
         done: while (true) {
             for (StableChunk c : topChunks(candidates, chunksToFind)) {
                 mc.catchupAsNeeded();
+                pfixTombstoMgr.dismissGarbage(c);
                 cost += c.cost();
+                cs.liveRecordCount += c.liveRecordCount;
                 garbage += c.garbage;
-                srcChunks.add(c);
+                cs.srcChunks.add(c);
                 candidates.remove(c);
-                if (cost >= gcp.costGoal && garbage >= gcp.reclamationGoal && srcChunks.size() >= SRC_CHUNKS_GOAL) {
-                    System.err.print("GC: reached all goals");
+                if (cs.liveRecordCount > RECORD_COUNT_LIMIT) {
+                    status = format("record count limit exceeded: will copy %,d records", cs.liveRecordCount);
+                    break done;
+                }
+                if (cost >= gcp.costGoal && garbage >= gcp.reclamationGoal && cs.srcChunks.size() >= SRC_CHUNKS_GOAL) {
+                    status = "reached all goals";
                     break done;
                 }
             }
             if (candidates.isEmpty()) {
-                if (cost < gcp.costGoal && !gcp.forceGc) {
-                    srcChunks.clear();
-                    return srcChunks;
+                if (cost > 0 && cost < gcp.costGoal && !gcp.forceGc) {
+                    cs.srcChunks.clear();
+                    return cs;
                 }
-                System.err.print("GC: all candidates chosen, some goals not reached");
+                status = "all candidates chosen, " + (cost == 0 ? "zero cost" : "some goals not reached");
                 break;
             }
-            if (srcChunks.size() == initialChunksToFind) {
+            if (cs.srcChunks.size() == initialChunksToFind) {
                 if (cost == 0) {
-                    System.err.print("GC: max candidates chosen, zero cost");
+                    status = "max candidates chosen, zero cost";
                     break;
                 }
                 if (!gcp.forceGc) {
-                    System.err.print("GC: max candidates chosen, some goals not reached");
+                    status = "max candidates chosen, some goals not reached";
                     break;
                 }
             }
             if (chunksToFind < Integer.MAX_VALUE >> 1) {
                 chunksToFind <<= 1;
             }
-            System.err.println("Finding " + chunksToFind + " more top chunks");
+            logger.finest("Finding " + chunksToFind + " more top chunks");
         }
-        System.err.printf("; about to reclaim %,d B at cost %,d B from %d chunks out of %d%n",
-                garbage, cost, srcChunks.size(), allChunks.size());
-//        diagnoseChunks(allChunks, gcp.currChunkSeq);
-        return srcChunks;
+        diagnoseChunks(allChunks, gcp.currChunkSeq);
+        logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
+                status, garbage, cost, cs.srcChunks.size(), allChunks.size());
+        return cs;
     }
 
     private Set<StableChunk> candidateChunks() {
@@ -131,7 +138,7 @@ class ChunkSelector {
             final ChunkPriorityQueue topChunks = new ChunkPriorityQueue(limit);
             for (StableChunk c : candidates) {
                 mc.catchupAsNeeded();
-                topChunks.consider(c);
+                topChunks.offer(c);
             }
             final StableChunk[] result = new StableChunk[topChunks.size()];
             for (int i = result.length - 1; i >= 0; i--) {
@@ -142,24 +149,21 @@ class ChunkSelector {
         }
     }
 
-    private static void printSrcChunks(List<StableChunk> srcChunks) {
-        System.err.print("From chunks: ");
-        for (StableChunk chosen : srcChunks) {
-            System.err.print(chosen.seq + " ");
+    private void diagnoseChunks(Collection<StableChunk> chunks, long currSeq) {
+        if (!logger.isFinestEnabled()) {
+            return;
         }
-        System.err.println();
-    }
-
-    static void diagnoseChunks(Collection<StableChunk> chunks, long currSeq) {
         final StableChunk[] sorted = chunks.toArray(new StableChunk[chunks.size()]);
         for (StableChunk c : chunks) {
             c.updateCostBenefit(currSeq);
         }
         Arrays.sort(sorted, BY_COST_BENEFIT);
-        System.err.println("seq   garbage      cost   count  youngestSeq     costBenefit");
+        final PrintWriter o = new PrintWriter(new StringWriter(512));
+        o.println("seq    garbage       cost   count  youngestSeq     costBenefit");
         for (StableChunk c : sorted) {
-            System.err.printf("%3d %,9d %,9d %,7d %,12d %,15.2f%n",
+            o.format("%3x %,10d %,10d %,7d %,12d %,15.2f",
                     c.seq, c.garbage, c.cost(), c.records.size(), c.youngestRecordSeq, c.cachedCostBenefit());
         }
+        logger.finest(o.toString());
     }
 }

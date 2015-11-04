@@ -1,8 +1,9 @@
 package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.nio.Disposable;
 
-public interface LongSet {
+public interface LongSet extends Disposable {
 
     boolean add(long value);
 
@@ -15,8 +16,6 @@ public interface LongSet {
     boolean isEmpty();
 
     void clear();
-
-    void destroy();
 
     LongIterator iterator();
 

@@ -1,19 +1,7 @@
 /*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Original work Copyright (c) 2015 Adrien Grand
+ * Modified work Copyright (c) 2015 Hazelcast, Inc.
  */
-
 package com.hazelcast.spi.hotrestart.impl.lz4;
 
 import net.jpountz.lz4.LZ4Compressor;
@@ -25,9 +13,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-
-import static com.hazelcast.spi.hotrestart.impl.gc.Compression.destroyDirectBuffer;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * LZ4 output stream using native LZ4 compressor and a direct byte buffer.
@@ -72,21 +57,13 @@ public final class NativeLZ4BlockOutputStream extends OutputStream {
      * @param blockSize   the maximum number of bytes to try to compress at once,
      *                    must be >= 64 and <= 32 M
      */
-    public NativeLZ4BlockOutputStream(FileChannel out, int blockSize) {
+    public NativeLZ4BlockOutputStream(FileChannel out, int blockSize,
+                                      ByteBuffer decompressedBuffer, ByteBuffer compressedBuffer) {
         this.out = out;
         this.compressor = LZ4Factory.nativeInstance().fastCompressor();
         this.compressionLevel = compressionLevel(blockSize);
-        this.buffer = ByteBuffer.allocateDirect(blockSize).order(LITTLE_ENDIAN);
-        final int compressedBlockSize = HEADER_LENGTH + compressor.maxCompressedLength(blockSize);
-        this.compressedBuffer = ByteBuffer.allocateDirect(compressedBlockSize).order(LITTLE_ENDIAN);
-        compressedBuffer.put(MAGIC);
-    }
-
-    /**
-     * Create a new instance which compresses into blocks of 64 KB.
-     */
-    public NativeLZ4BlockOutputStream(FileChannel out) {
-        this(out, 1 << 16);
+        this.buffer = decompressedBuffer;
+        this.compressedBuffer = compressedBuffer.put(MAGIC);
     }
 
     private void ensureNotFinished() {
@@ -131,8 +108,6 @@ public final class NativeLZ4BlockOutputStream extends OutputStream {
             out.close();
             out = null;
         }
-        destroyDirectBuffer(buffer);
-        destroyDirectBuffer(compressedBuffer);
     }
 
     private void flushBufferedData() throws IOException {

@@ -308,7 +308,7 @@ final class GlobalPoolingMemoryManager
                 gc.deregisterGarbageCollectable((GarbageCollectable) queue);
             }
             gc.deregisterGarbageCollectable(this);
-            queue.destroy();
+            queue.dispose();
         }
 
         @Override

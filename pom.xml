@@ -171,14 +171,14 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
-                        ${extraVmArgs}
-                        -Xms128m -Xmx512m -XX:MaxPermSize=1024M
+                        -Xms128m -Xmx1g -XX:MaxPermSize=1024M
                         -Dhazelcast.version.check.enabled=false
                         -Dhazelcast.mancenter.enabled=false
                         -Dhazelcast.elastic.memory.enabled=true
                         -Dhazelcast.elastic.memory.total.size=128m
                         -Dhazelcast.elastic.memory.chunk.size=1k
                         -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
+                        ${extraVmArgs}
                     </argLine>
                     <excludedGroups>com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest
                     </excludedGroups>
@@ -354,8 +354,6 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
             <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>

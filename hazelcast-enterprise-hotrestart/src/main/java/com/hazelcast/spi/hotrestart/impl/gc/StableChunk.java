@@ -1,27 +1,6 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.util.collection.Long2ObjectHashMap;
-
-import java.util.HashMap;
-
-import static com.hazelcast.spi.hotrestart.impl.gc.Compression.COMPRESSED_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
 
 /**
  * Represents a chunk whose on-disk contents are stable (immutable).
@@ -32,15 +11,21 @@ class StableChunk extends Chunk {
     private final long size;
     private double costBenefit;
 
-    StableChunk(long seq, Long2ObjectHashMap<Record> records, long youngestRecordSeq, long size, long garbage,
-                HashMap<KeyHandle, Long> garbageKeyCounts, boolean compressed) {
-        super(seq, records, garbage, garbageKeyCounts);
+    StableChunk(WriteThroughChunk from, long youngestRecordSeq, boolean compressed) {
+        super(from);
+        this.size = from.size();
+        this.youngestRecordSeq = youngestRecordSeq;
+        this.compressed = compressed;
+        this.needsDismissing = from.needsDismissing;
+    }
+
+    StableChunk(long seq, RecordMap records, int liveRecordCount, long youngestRecordSeq,
+                long size, long garbage, boolean needsDismissing, boolean compressed) {
+        super(seq, records, liveRecordCount, garbage);
         this.size = size;
         this.youngestRecordSeq = youngestRecordSeq;
         this.compressed = compressed;
-        for (Record r : records.values()) {
-            r.chunk = this;
-        }
+        this.needsDismissing = needsDismissing;
     }
 
     @Override final long size() {

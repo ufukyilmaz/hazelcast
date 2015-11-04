@@ -115,7 +115,7 @@ abstract class AbstractBlockingElasticQueue<E> extends AbstractQueue<E> implemen
 
     @Override
     public final void destroy() {
-        queue.destroy();
+        queue.dispose();
     }
 
     @Override

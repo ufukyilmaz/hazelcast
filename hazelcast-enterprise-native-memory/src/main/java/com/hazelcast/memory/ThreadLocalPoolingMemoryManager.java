@@ -241,7 +241,7 @@ final class ThreadLocalPoolingMemoryManager
                 freePage(address);
             }
         }
-        pageAllocations.destroy();
+        pageAllocations.dispose();
         sortedPageAllocations.dispose();
     }
 
@@ -325,7 +325,7 @@ final class ThreadLocalPoolingMemoryManager
             try {
                 if (current != null) {
                     queue = new LongArrayQueue(systemAllocator, newCap, current);
-                    current.destroy();
+                    current.dispose();
                 } else {
                     queue = new LongArrayQueue(systemAllocator, newCap, INVALID_ADDRESS);
                 }
@@ -372,7 +372,7 @@ final class ThreadLocalPoolingMemoryManager
             if (queue == null) {
                 return;
             }
-            queue.destroy();
+            queue.dispose();
             queue = null;
         }
 

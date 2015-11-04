@@ -55,6 +55,24 @@ public class CapacityUtil {
         return current;
     }
 
+    /**
+     * Return the next possible capacity, counting from the current buffers'
+     * size.
+     */
+    public static long nextCapacity(long current) {
+        assert current > 0 && Long.bitCount(current) == 1 : "Capacity must be a power of two.";
+
+        if (current < MIN_CAPACITY / 2) {
+            current = MIN_CAPACITY / 2;
+        }
+
+        current <<= 1;
+        if (current < 0) {
+            throw new RuntimeException("Maximum capacity exceeded.");
+        }
+        return current;
+    }
+
     private CapacityUtil() {
     }
 }

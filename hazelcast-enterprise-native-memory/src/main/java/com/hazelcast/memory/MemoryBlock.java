@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2013, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.memory;
 
 import com.hazelcast.nio.UnsafeHelper;
@@ -152,6 +136,28 @@ public class MemoryBlock {
         UnsafeHelper.UNSAFE.putShort(address + offset, value);
     }
 
+    /**
+     * Copies bytes from source byte-array to this MemoryBlock.
+     *
+     * @param destinationOffset offset in this MemoryBlock
+     * @param source source byte-array to copy from
+     * @param offset offset in source byte-array
+     * @param length number of bytes to copy
+     * @throws IndexOutOfBoundsException
+     */
+    public final void copyFromByteArray(long destinationOffset, byte[] source, int offset, int length) {
+        copyFrom(destinationOffset, source, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, length);
+    }
+
+    /**
+     * Copies bytes from source object to this MemoryBlock.
+     *
+     * @param destinationOffset offset in this MemoryBlock
+     * @param source source object to copy from
+     * @param offset offset in source object
+     * @param length number of bytes to copy
+     * @throws IndexOutOfBoundsException
+     */
     public final void copyFrom(long destinationOffset, Object source, long offset, int length) {
         if ((destinationOffset + length) > size || destinationOffset < 0 || offset < 0) {
             throw new IndexOutOfBoundsException("Destination offset: " + destinationOffset
@@ -168,6 +174,28 @@ public class MemoryBlock {
         }
     }
 
+    /**
+     * Copies bytes from this MemoryBlock to given byte-array.
+     *
+     * @param sourceOffset offset in this MemoryBlock
+     * @param destination destination byte-array to copy to
+     * @param offset offset in destination byte-array
+     * @param length number of bytes to copy
+     * @throws IndexOutOfBoundsException
+     */
+    public final void copyToByteArray(long sourceOffset, byte[] destination, int offset, int length) {
+        copyTo(sourceOffset, destination, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, length);
+    }
+
+    /**
+     * Copies bytes from this MemoryBlock to given destination object.
+     *
+     * @param sourceOffset offset in this MemoryBlock
+     * @param destination destination object to copy to
+     * @param offset offset in destination object
+     * @param length number of bytes to copy
+     * @throws IndexOutOfBoundsException
+     */
     public final void copyTo(long sourceOffset, Object destination, long offset, int length) {
         if ((sourceOffset + length) > size || sourceOffset < 0  || offset < 0) {
             throw new IndexOutOfBoundsException("Source offset: " + sourceOffset

@@ -1,12 +1,18 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.nio.Bits;
+import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import java.nio.ByteOrder;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 public class MemoryBlockTest {
 
     private static final LibMalloc MALLOC = new UnsafeMalloc();
+    private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 
     private MemoryBlock block;
 
@@ -62,6 +69,78 @@ public class MemoryBlockTest {
             assertEquals(i, block.readChar(offset + 26));
             assertEquals(i, block.readByte(offset + 28));
             offset += chunk;
+        }
+    }
+
+    @Test
+    public void testCopyTo() {
+        Random rand = new Random();
+        byte[] reference = new byte[block.size()];
+        boolean bigEndian = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
+
+        int count = 100;
+        for (int i = 0; i < count; i++) {
+            int offset = i * 8;
+            long value = rand.nextLong();
+
+            block.writeLong(offset, value);
+            Bits.writeLong(reference, offset, value, bigEndian);
+        }
+
+        byte[] buffer = new byte[block.size()];
+        block.copyTo(0, buffer, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, count * 8);
+
+        Assert.assertArrayEquals(reference, buffer);
+    }
+
+    @Test
+    public void testCopyToByteArray() {
+        Random rand = new Random();
+
+        byte[] reference = new byte[block.size()];
+
+        int count = 100;
+        for (int i = 0; i < count; i++) {
+            int offset = i * 8;
+            long value = rand.nextLong();
+
+            block.writeLong(offset, value);
+            Bits.writeLong(reference, offset, value, BIG_ENDIAN);
+        }
+
+        byte[] buffer = new byte[block.size()];
+        block.copyToByteArray(0, buffer, 0, count * 8);
+
+        Assert.assertArrayEquals(reference, buffer);
+    }
+
+    @Test
+    public void testCopyFrom() {
+        Random rand = new Random();
+        byte[] reference = new byte[block.size()];
+        rand.nextBytes(reference);
+
+        block.copyFrom(0, reference, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, reference.length);
+
+        int count = block.size() / 8;
+        for (int i = 0; i < count; i++) {
+            int offset = i * 8;
+            assertEquals(Bits.readLong(reference, offset, BIG_ENDIAN), block.readLong(offset));
+        }
+    }
+
+    @Test
+    public void testCopyFromByteArray() {
+        Random rand = new Random();
+        byte[] reference = new byte[block.size()];
+        rand.nextBytes(reference);
+
+        block.copyFromByteArray(0, reference, 0, reference.length);
+
+        int count = block.size() / 8;
+        for (int i = 0; i < count; i++) {
+            int offset = i * 8;
+            assertEquals(Bits.readLong(reference, offset, BIG_ENDIAN), block.readLong(offset));
         }
     }
 

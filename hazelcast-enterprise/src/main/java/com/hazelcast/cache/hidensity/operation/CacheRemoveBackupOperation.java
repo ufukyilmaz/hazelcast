@@ -43,7 +43,7 @@ public class CacheRemoveBackupOperation
 
     @Override
     public void afterRun() throws Exception {
-        if (Boolean.TRUE.equals(response) && !wanOriginated) {
+        if (!Boolean.FALSE.equals(response) && !wanOriginated) {
             if (cache.isWanReplicationEnabled()) {
                 CacheWanEventPublisher publisher = cacheService.getCacheWanEventPublisher();
                 publisher.publishWanReplicationRemoveBackup(name, cache.toEventData(key));

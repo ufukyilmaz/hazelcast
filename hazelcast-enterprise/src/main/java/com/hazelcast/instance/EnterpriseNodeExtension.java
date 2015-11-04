@@ -41,11 +41,13 @@ import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.nio.tcp.WriteHandler;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -54,6 +56,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
+@SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private volatile License license;
@@ -61,8 +64,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile MemoryManager memoryManager;
 
+    private final HotRestartService hotRestartService;
+
     public EnterpriseNodeExtension(Node node) {
         super(node);
+        hotRestartService = new HotRestartService(node);
     }
 
     @Override
@@ -119,7 +125,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void beforeJoin() {
-        // will have hot-restart metadata validation here
+        hotRestartService.prepare();
     }
 
     @Override
@@ -148,6 +154,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             logger.log(Level.SEVERE,
                     "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
                             + license.getAllowedNumberOfNodes() + ", Current: " + count);
+            node.shutdown(true);
+        }
+
+        try {
+            hotRestartService.start();
+        } catch (Throwable e) {
+            logger.severe("Hot-restart failed!", e);
             node.shutdown(true);
         }
     }
@@ -270,6 +283,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void onThreadStart(Thread thread) {
         registerThreadToPoolingMemoryManager(thread);
+        registerThreadToHotRestart(thread);
+    }
+
+    private void registerThreadToHotRestart(Thread thread) {
+        if (!(thread instanceof PartitionOperationThread)) {
+            return;
+        }
+        hotRestartService.registerThread(thread, memoryManager);
     }
 
     private void registerThreadToPoolingMemoryManager(Thread thread) {
@@ -300,9 +321,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
+    public HotRestartService getHotRestartService() {
+        return hotRestartService;
+    }
+
     @Override
     public void beforeShutdown() {
         super.beforeShutdown();
+        hotRestartService.shutdown();
     }
 
     @Override
@@ -329,8 +355,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public Map<String, Object> createExtensionServices() {
-        // will have hot-restart service here
-        return super.createExtensionServices();
+        Map<String, Object> services = super.createExtensionServices();
+        if (services.isEmpty()) {
+            services = Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
+        } else {
+            services.put(HotRestartService.SERVICE_NAME, hotRestartService);
+        }
+        return services;
     }
 
     @Override
@@ -359,6 +390,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void onClusterStateChange(ClusterState newState) {
-        // will have hot-restart metadata validation here
+        hotRestartService.getClusterMetadataManager().onClusterStateChange(newState);
     }
 }

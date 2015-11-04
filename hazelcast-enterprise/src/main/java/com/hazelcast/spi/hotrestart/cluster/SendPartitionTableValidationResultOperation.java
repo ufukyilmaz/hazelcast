@@ -14,14 +14,15 @@ import java.io.IOException;
  * Operation, which is used to send cluster-wide validation result (success or failure)
  * by master member to all cluster after cluster-wide validation phase completes.
  */
-public class SendClusterValidationResultOperation extends AbstractOperation implements JoinOperation {
+public class SendPartitionTableValidationResultOperation
+        extends AbstractOperation implements JoinOperation {
 
-    private int result;
+    private HotRestartClusterInitializationStatus result;
 
-    public SendClusterValidationResultOperation() {
+    public SendPartitionTableValidationResultOperation() {
     }
 
-    public SendClusterValidationResultOperation(int result) {
+    public SendPartitionTableValidationResultOperation(HotRestartClusterInitializationStatus result) {
         this.result = result;
     }
 
@@ -36,7 +37,7 @@ public class SendClusterValidationResultOperation extends AbstractOperation impl
 
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveClusterWideValidationResultFromMaster(result);
+        clusterMetadataManager.receiveHotRestartStatusFromMasterAfterPartitionTableVerification(result);
     }
 
     @Override
@@ -52,12 +53,12 @@ public class SendClusterValidationResultOperation extends AbstractOperation impl
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
-        out.writeInt(result);
+        out.writeUTF(result.toString());
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
-        result = in.readInt();
+        result = HotRestartClusterInitializationStatus.valueOf(in.readUTF());
     }
 }

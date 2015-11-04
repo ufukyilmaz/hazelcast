@@ -6,6 +6,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
@@ -16,19 +17,22 @@ import static com.hazelcast.partition.InternalPartition.MAX_REPLICA_COUNT;
  * during cluster-wide validation phase.
  */
 public class SendPartitionTableForValidationOperation
-        extends AbstractOperation implements JoinOperation {
+        extends AbstractOperation
+        implements JoinOperation {
 
     private Address[][] partitionTable;
 
     public SendPartitionTableForValidationOperation() {
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public SendPartitionTableForValidationOperation(Address[][] partitionTable) {
         this.partitionTable = partitionTable;
     }
 
     @Override
-    public void run() throws Exception {
+    public void run()
+            throws Exception {
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.receivePartitionTableFromMember(getCallerAddress(), partitionTable);
@@ -45,18 +49,19 @@ public class SendPartitionTableForValidationOperation
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
+    protected void writeInternal(ObjectDataOutput out)
+            throws IOException {
         super.writeInternal(out);
 
-        int len = partitionTable.length;
+        int len = partitionTable != null ? partitionTable.length : 0;
         out.writeInt(len);
         for (int i = 0; i < len; i++) {
             Address[] replicas = partitionTable[i];
             for (int j = 0; j < MAX_REPLICA_COUNT; j++) {
                 Address replica = replicas[j];
-                boolean exists = replica != null;
-                out.writeBoolean(exists);
-                if (exists) {
+                boolean replicaExists = replica != null;
+                out.writeBoolean(replicaExists);
+                if (replicaExists) {
                     replica.writeData(out);
                 }
             }
@@ -64,7 +69,8 @@ public class SendPartitionTableForValidationOperation
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
+    protected void readInternal(ObjectDataInput in)
+            throws IOException {
         super.readInternal(in);
 
         int len = in.readInt();

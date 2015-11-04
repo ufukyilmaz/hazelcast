@@ -7,12 +7,14 @@ import com.hazelcast.client.impl.protocol.MessageTaskFactory;
 import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.serialization.SerializationService;
@@ -41,7 +43,9 @@ import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.nio.tcp.WriteHandler;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
@@ -68,7 +72,12 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
-        hotRestartService = new HotRestartService(node);
+        hotRestartService = createHotRestartService(node);
+    }
+
+    private HotRestartService createHotRestartService(Node node) {
+        HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
+        return hotRestartConfig.isEnabled() ? new HotRestartService(node) : null;
     }
 
     @Override
@@ -125,7 +134,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void beforeJoin() {
-        hotRestartService.prepare();
+        if (hotRestartService != null) {
+            hotRestartService.prepare();
+        }
     }
 
     @Override
@@ -157,11 +168,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             node.shutdown(true);
         }
 
-        try {
-            hotRestartService.start();
-        } catch (Throwable e) {
-            logger.severe("Hot-restart failed!", e);
-            node.shutdown(true);
+        if (hotRestartService != null) {
+            try {
+                hotRestartService.start();
+            } catch (Throwable e) {
+                logger.severe("Hot-restart failed!", e);
+                node.shutdown(true);
+            }
         }
     }
 
@@ -290,7 +303,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!(thread instanceof PartitionOperationThread)) {
             return;
         }
-        hotRestartService.registerThread(thread, memoryManager);
+
+        if (hotRestartService != null) {
+            hotRestartService.registerThread(thread, memoryManager);
+        }
     }
 
     private void registerThreadToPoolingMemoryManager(Thread thread) {
@@ -322,13 +338,18 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     public HotRestartService getHotRestartService() {
+        if (hotRestartService == null) {
+            throw new HotRestartException("HotRestart is not enabled!");
+        }
         return hotRestartService;
     }
 
     @Override
     public void beforeShutdown() {
         super.beforeShutdown();
-        hotRestartService.shutdown();
+        if (hotRestartService != null) {
+            hotRestartService.shutdown();
+        }
     }
 
     @Override
@@ -356,6 +377,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public Map<String, Object> createExtensionServices() {
         Map<String, Object> services = super.createExtensionServices();
+        if (hotRestartService == null) {
+            return services;
+        }
+
         if (services.isEmpty()) {
             services = Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
         } else {
@@ -390,6 +415,24 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void onClusterStateChange(ClusterState newState) {
-        hotRestartService.getClusterMetadataManager().onClusterStateChange(newState);
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onClusterStateChange(newState);
+        }
+    }
+
+    @Override
+    public boolean registerListener(Object listener) {
+        if (listener instanceof ClusterHotRestartEventListener) {
+            if (listener instanceof HazelcastInstanceAware) {
+                ((HazelcastInstanceAware) listener).setHazelcastInstance(node.hazelcastInstance);
+            }
+
+            if (hotRestartService == null) {
+                throw new HotRestartException("HotRestart is not enabled!");
+            }
+            hotRestartService.addClusterHotRestartEventListener((ClusterHotRestartEventListener) listener);
+            return true;
+        }
+        return false;
     }
 }

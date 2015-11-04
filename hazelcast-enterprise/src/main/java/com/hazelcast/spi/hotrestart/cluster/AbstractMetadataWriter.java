@@ -16,6 +16,8 @@ import static com.hazelcast.util.Preconditions.checkPositive;
 /**
  * Abstract class for writing a single metadata to a specific file
  * by overwriting existing file if exists.
+ *
+ * @param <T> parameter type to be written
  */
 abstract class AbstractMetadataWriter<T> {
 
@@ -71,7 +73,7 @@ abstract class AbstractMetadataWriter<T> {
         }
     }
 
-    synchronized final void writeAddress(Address address) throws IOException {
+    final synchronized void writeAddress(Address address) throws IOException {
         if (!writeAddressToBuffer(address, buffer)) {
             writeBufferToFile();
 

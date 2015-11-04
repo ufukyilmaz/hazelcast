@@ -33,6 +33,10 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHot
 
 /**
  * Provides common services needed for Hot Restart.
+ * HotRestartService is main integration point between HotRestart infrastructure
+ * and Hazelcast services. It manages RamStoreRegistry(s), is access point for
+ * per thread on-heap and off-heap HotRestart stores. Also, it's listener for
+ * membership and cluster state events.
  */
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
@@ -59,8 +63,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private final ILogger logger;
 
-    private final HotRestartConfig hotRestartConfig;
-
     private final PersistentCacheDescriptors persistentCacheDescriptors;
 
     private final ClusterMetadataManager clusterMetadataManager;
@@ -69,9 +71,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         this.node = node;
         this.logger = node.getLogger(getClass());
         final Address adr = node.getThisAddress();
-        hotRestartConfig = node.getConfig().getHotRestartConfig();
+        HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
         hotRestartHome = new File(hotRestartConfig.getHomeDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
-        clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome);
+        clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hotRestartConfig);
         persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
     }
 
@@ -129,7 +131,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         cfg.setRamStoreRegistry(this).setLoggingService(node.loggingService);
         final HotRestartStore onHeapStore =
                 newOnHeapHotRestartStore(cfg.setHomeDir(new File(hotRestartHome, segment + ONHEAP_SUFFIX)));
-        //TODO: Replace auto-fsync with a good fsync policy
+        //todo: Replace auto-fsync with a good fsync policy
         onHeapStore.setAutoFsync(true);
         onHeapStoreHolder.set(onHeapStore);
 
@@ -137,7 +139,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             final HotRestartStore offHeapStore =
                     newOffHeapHotRestartStore(cfg.setHomeDir(new File(hotRestartHome, segment + OFFHEAP_SUFFIX))
                                                  .setMalloc(memoryManager.unwrapMemoryAllocator()));
-            //TODO: Replace auto-fsync with a good fsync policy
+            //todo: Replace auto-fsync with a good fsync policy
             offHeapStore.setAutoFsync(true);
             offHeapStoreHolder.set(offHeapStore);
         }

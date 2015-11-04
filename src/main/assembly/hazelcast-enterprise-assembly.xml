@@ -225,6 +225,7 @@
             <fileMode>0755</fileMode>
             <includes>
                 <include>server.**</include>
+                <include>stop.**</include>
             </includes>
         </fileSet>
     </fileSets>

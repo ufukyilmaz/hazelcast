@@ -1,25 +1,25 @@
 package com.hazelcast.cache.wan;
 
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CacheService;
-import com.hazelcast.cache.CacheMergePolicy;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheSimpleConfig;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import javax.cache.CacheException;
-
-import static com.hazelcast.cache.impl.CacheProxyUtil.getPartitionId;
 
 /**
  * This class handles incoming WAN replication events
@@ -70,10 +70,16 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 cacheService.publishWanEvent(cacheConfig.getNameWithPrefix(), replicationEvent);
             }
 
+            InternalCompletableFuture completableFuture = null;
             if (cacheReplicationObject instanceof CacheReplicationUpdate) {
-                handleCacheUpdate(replicationEvent, (CacheReplicationUpdate) cacheReplicationObject, cacheConfig);
+                completableFuture = handleCacheUpdate((CacheReplicationUpdate) cacheReplicationObject, cacheConfig);
             } else if (cacheReplicationObject instanceof CacheReplicationRemove) {
-                handleCacheRemove(replicationEvent, (CacheReplicationRemove) cacheReplicationObject, cacheConfig);
+                completableFuture = handleCacheRemove((CacheReplicationRemove) cacheReplicationObject, cacheConfig);
+            }
+
+            if (completableFuture != null
+                    && replicationEvent.getAcknowledgeType() == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
+                completableFuture.getSafely();
             }
         }
     }
@@ -96,7 +102,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         return cacheConfig;
     }
 
-    private void handleCacheRemove(WanReplicationEvent replicationEvent, CacheReplicationRemove cacheReplicationRemove,
+    private InternalCompletableFuture handleCacheRemove(CacheReplicationRemove cacheReplicationRemove,
                                    CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
@@ -105,12 +111,10 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         Operation operation =
                 operationProvider.createWanRemoveOperation(ORIGIN, cacheReplicationRemove.getKey(),
                                                            MutableOperation.IGNORE_COMPLETION);
-        OperationService operationService = nodeEngine.getOperationService();
-        int partitionId = getPartitionId(nodeEngine, cacheReplicationRemove.getKey());
-        operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
+        return invokeOnPartition(cacheReplicationRemove.getKey(), operation);
     }
 
-    private void handleCacheUpdate(WanReplicationEvent replicationEvent, CacheReplicationUpdate cacheReplicationUpdate,
+    private InternalCompletableFuture handleCacheUpdate(CacheReplicationUpdate cacheReplicationUpdate,
                                    CacheConfig cacheConfig) {
         EnterpriseCacheOperationProvider operationProvider;
         operationProvider = (EnterpriseCacheOperationProvider) cacheService
@@ -121,8 +125,16 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
         Operation operation =
                 operationProvider.createWanMergeOperation(ORIGIN, cacheReplicationUpdate.getEntryView(),
                                                           mergePolicy, MutableOperation.IGNORE_COMPLETION);
-        OperationService operationService = nodeEngine.getOperationService();
-        int partitionId = getPartitionId(nodeEngine, cacheReplicationUpdate.getKey());
-        operationService.invokeOnPartition(replicationEvent.getServiceName(), operation, partitionId);
+        return invokeOnPartition(cacheReplicationUpdate.getKey(), operation);
+    }
+
+    private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {
+        try {
+            int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
+            return nodeEngine.getOperationService()
+                    .invokeOnPartition(ICacheService.SERVICE_NAME, operation, partitionId);
+        } catch (Throwable t) {
+            throw ExceptionUtil.rethrow(t);
+        }
     }
 }

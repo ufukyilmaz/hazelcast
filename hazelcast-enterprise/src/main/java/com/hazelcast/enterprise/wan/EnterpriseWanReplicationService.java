@@ -3,6 +3,7 @@ package com.hazelcast.enterprise.wan;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
+import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanReplication;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.instance.HazelcastThreadGroup;
@@ -47,6 +48,7 @@ public class EnterpriseWanReplicationService
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
+    private static final int DEFAULT_KEY_FOR_STRIPED_EXECUTORS = -1;
 
     private final Node node;
     private final ILogger logger;
@@ -195,33 +197,43 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void handle(final Packet packet) {
-        handleEvent(packet);
+        handleEvent(packet, null);
     }
 
-    public void handleEvent(final Data data) {
+    public void handleEvent(final Data data, WanOperation wanOperation) {
         Object event = node.nodeEngine.toObject(data);
         if (event instanceof BatchWanReplicationEvent) {
-            BatchWanReplicationEvent batchWanEvent = (BatchWanReplicationEvent) event;
-            for (WanReplicationEvent wanReplicationEvent : batchWanEvent.getEventList()) {
-                handleRepEvent(wanReplicationEvent);
-            }
+            handleRepEvent((BatchWanReplicationEvent) event, wanOperation);
         } else {
-            handleRepEvent((WanReplicationEvent) event);
+            handleRepEvent((WanReplicationEvent) event, wanOperation);
         }
     }
 
-    private void handleRepEvent(final WanReplicationEvent replicationEvent) {
+    private void handleRepEvent(final BatchWanReplicationEvent batchWanReplicationEvent, WanOperation op) {
         StripedExecutor ex = getExecutor();
-        boolean taskSubmitted = false;
-        WanEventStripedRunnable wanEventStripedRunnable = new WanEventStripedRunnable(replicationEvent);
-        do {
-            try {
-                ex.execute(wanEventStripedRunnable);
-                taskSubmitted = true;
-            } catch (RejectedExecutionException ree) {
-                logger.info("Can not handle incoming wan replication event. Retrying.");
-            }
-        } while (!taskSubmitted);
+        int partitionId = getPartitionId(batchWanReplicationEvent);
+        BatchWanEventRunnable wanEventStripedRunnable
+                = new BatchWanEventRunnable(batchWanReplicationEvent, op, partitionId);
+        try {
+            ex.execute(wanEventStripedRunnable);
+        } catch (RejectedExecutionException ree) {
+            logger.info("Can not handle incoming wan replication event. Retrying.");
+            op.sendResponse(false);
+        }
+    }
+
+    private void handleRepEvent(final WanReplicationEvent replicationEvent, WanOperation op) {
+        StripedExecutor ex = getExecutor();
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) replicationEvent.getEventObject();
+        int partitionId = getPartitionId(eventObject.getKey());
+        WanEventRunnable wanEventStripedRunnable = new WanEventRunnable(replicationEvent, op, partitionId);
+        try {
+            ex.execute(wanEventStripedRunnable);
+        } catch (RejectedExecutionException ree) {
+            logger.info("Can not handle incoming wan replication event.");
+            op.sendResponse(false);
+        }
+
     }
 
     @Override
@@ -245,18 +257,76 @@ public class EnterpriseWanReplicationService
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
      * related {@link ReplicationSupportingService}
      */
-    private class WanEventStripedRunnable implements StripedRunnable, TimeoutRunnable {
+    private class WanEventRunnable extends AbstractWanEventRunnable {
 
-        WanReplicationEvent wanReplicationEvent;
+        WanReplicationEvent event;
 
-        public WanEventStripedRunnable(WanReplicationEvent wanReplicationEvent) {
-            this.wanReplicationEvent = wanReplicationEvent;
+        public WanEventRunnable(WanReplicationEvent event,
+                                       WanOperation operation,
+                                       int partitionId) {
+            super(operation, partitionId);
+            this.event = event;
+        }
+
+        @Override
+        public void run() {
+            try {
+                String serviceName = event.getServiceName();
+                ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
+                event.setAcknowledgeType(operation.getAcknowledgeType());
+                service.onReplicationEvent(event);
+                operation.sendResponse(true);
+            } catch (Exception e) {
+                operation.sendResponse(false);
+                logger.severe(e);
+            }
+        }
+    }
+
+    /**
+     * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
+     * related {@link ReplicationSupportingService}
+     */
+    private class BatchWanEventRunnable extends AbstractWanEventRunnable {
+
+        BatchWanReplicationEvent batchEvent;
+
+        public BatchWanEventRunnable(BatchWanReplicationEvent batchEvent,
+                                       WanOperation operation, int partitionId) {
+            super(operation, partitionId);
+            this.batchEvent = batchEvent;
+        }
+
+        @Override
+        public void run() {
+            try {
+                for (WanReplicationEvent wanReplicationEvent : batchEvent.getEventList()) {
+                    String serviceName = wanReplicationEvent.getServiceName();
+                    ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
+                    wanReplicationEvent.setAcknowledgeType(operation.getAcknowledgeType());
+                    service.onReplicationEvent(wanReplicationEvent);
+                }
+                operation.sendResponse(true);
+            } catch (Exception e) {
+                operation.sendResponse(false);
+                logger.severe(e);
+            }
+        }
+    }
+
+    private abstract class AbstractWanEventRunnable implements StripedRunnable, TimeoutRunnable {
+
+        WanOperation operation;
+        int partitionId;
+
+        public AbstractWanEventRunnable(WanOperation operation, int partitionId) {
+            this.operation = operation;
+            this.partitionId = partitionId;
         }
 
         @Override
         public int getKey() {
-            return node.nodeEngine.getPartitionService().getPartitionId(
-                    ((EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject()).getKey());
+            return partitionId;
         }
 
         @Override
@@ -268,17 +338,19 @@ public class EnterpriseWanReplicationService
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
+    }
 
-        @Override
-        public void run() {
-            try {
-                String serviceName = wanReplicationEvent.getServiceName();
-                ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
-                service.onReplicationEvent(wanReplicationEvent);
-            } catch (Exception e) {
-                logger.severe(e);
-            }
+    private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
+        List<WanReplicationEvent> eventList = batchWanReplicationEvent.getEventList();
+        if (eventList.isEmpty()) {
+            return DEFAULT_KEY_FOR_STRIPED_EXECUTORS;
         }
+        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) eventList.get(0).getEventObject();
+        return getPartitionId(eventObject.getKey());
+    }
+
+    private int getPartitionId(Object key) {
+        return  node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 
     private StripedExecutor getExecutor() {

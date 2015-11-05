@@ -119,30 +119,30 @@ public abstract class AbstractWanReplication
         }
     }
 
-    protected void invokeOnWanTarget(Address target, DataSerializable event, WanAcknowledgeType acknowledgeType) {
+    protected boolean invokeOnWanTarget(Address target, DataSerializable event) {
         Operation wanOperation
-                = new WanOperation(node.nodeEngine.getSerializationService().toData(event));
+                = new WanOperation(node.nodeEngine.getSerializationService().toData(event), acknowledgeType);
         OperationService operationService = node.nodeEngine.getOperationService();
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         InvocationBuilder invocationBuilder
                 = operationService.createInvocationBuilder(serviceName, wanOperation, target);
-        Future future = invocationBuilder.setTryCount(1)
+        Future<Boolean> future = invocationBuilder.setTryCount(1)
                 .setCallTimeout(operationTimeout)
                 .invoke();
-        if (acknowledgeType == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-            try {
-                future.get();
-            } catch (Exception ex) {
-                ExceptionUtil.rethrow(ex);
-            }
+        try {
+            return future.get();
+        } catch (Exception ex) {
+            ExceptionUtil.rethrow(ex);
         }
+        return false;
     }
 
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+        EnterpriseReplicationEventObject replicationEventObject
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         EWRPutOperation ewrPutOperation = new EWRPutOperation(wanReplicationName,
-                targetGroupName, node.nodeEngine.toData(wanReplicationEvent), 1);
-        invokeOnPartition(wanReplicationEvent.getServiceName(),
-                ((EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject()).getKey(), ewrPutOperation);
+                targetGroupName, node.nodeEngine.toData(wanReplicationEvent), replicationEventObject.getBackupCount());
+        invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), ewrPutOperation);
     }
 
     @Override

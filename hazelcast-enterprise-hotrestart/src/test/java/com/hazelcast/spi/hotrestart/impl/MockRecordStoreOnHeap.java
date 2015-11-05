@@ -61,11 +61,11 @@ class MockRecordStoreOnHeap implements MockRecordStore {
             if (keyBytes.length + valueBytes.length != expectedSize) {
                 return false;
             }
-            bufs.getValueBuffer(valueBytes.length).put(valueBytes).flip();
+            bufs.getValueBuffer(valueBytes.length).put(valueBytes);
         } else if (keyBytes.length != expectedSize) {
             return false;
         }
-        bufs.getKeyBuffer(keyBytes.length).put(keyBytes).flip();
+        bufs.getKeyBuffer(keyBytes.length).put(keyBytes);
         return true;
     }
 

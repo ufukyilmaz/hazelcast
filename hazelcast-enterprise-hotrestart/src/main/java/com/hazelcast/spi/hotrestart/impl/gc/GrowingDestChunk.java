@@ -68,9 +68,11 @@ public final class GrowingDestChunk extends GrowingChunk {
                 final KeyHandle kh = r.toKeyHandle();
                 final long prefix = r.keyPrefix(kh);
                 if (r.isAlive()) {
+                    holder.clear();
                     final RamStore ramStore;
                     if ((ramStore = gch.ramStoreRegistry.ramStoreForPrefix(prefix)) != null
                             && ramStore.copyEntry(kh, r.payloadSize(), holder)) {
+                        holder.flip();
                         assert holder.payloadSizeValid(r);
                         youngestRecordSeq = r.liveSeq();
                         // catches up for each bufferful

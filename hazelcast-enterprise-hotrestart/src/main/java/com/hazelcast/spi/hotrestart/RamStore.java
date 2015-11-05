@@ -13,12 +13,16 @@ public interface RamStore {
      * by the supplied {@link RecordDataSink}. Before copying checks that the actual
      * size of the record matches the value of the {@code expectedSize} parameter.
      * If it doesn't match, the method returns {@code false}.
-     * <p>If the requested record is a tombstone, only the key bytes will be written.
-     * <p>If this method returns true, then the data stored between
-     * <code>position</code> and <code>limit</code> of the
-     * key and value buffers represents the key and value data of the record.
-     * <p>If this method returns false, the state of the byte buffers is
-     * unspecified.
+     * <p>
+     * If the requested record is a tombstone, only the key bytes will be written.
+     * <p>
+     * If this method returns true, then the data stored from 0 to <code>position</code>
+     * of the key and value buffers represents the key and value data of the record.
+     * <p>
+     * If this method returns false, the state of the byte buffers is unspecified.
+     * <p>
+     * The caller must ensure that the buffers returned from {@code RecordDataSink}
+     * initially have {@code position == 0}.
      * @param expectedSize the expected size of the record (key + value).
      * @throws HotRestartException if a record identified by the supplied key handle was not found
      */

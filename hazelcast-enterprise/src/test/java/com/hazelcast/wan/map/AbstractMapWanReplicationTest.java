@@ -489,7 +489,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
     @Test
     public void recoverAfterTargetClusterFailure() {
-
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
 
@@ -514,5 +513,16 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         createDataIn(clusterA, "map", 0, 10);
         sleepSeconds(10);
         assertKeysNotIn(clusterB, "map", 0, 10);
+    }
+
+    @Test
+    public void checkErasingMapMergePolicy() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", DeleteMapMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterB, "map", 0, 100);
+        createDataIn(clusterA, "map", 0, 100);
+        assertKeysNotIn(clusterB, "map", 0, 100);
     }
 }

@@ -34,7 +34,6 @@ public class EWRPutOperation extends EWRBackupAwareOperation
     @Override
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getEWRService();
-        assert wanReplicationService.getWanReplicationPublisher(wanReplicationName) != null;
         WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint(wanReplicationName, targetName);
         WanReplicationEvent wanReplicationEvent = getNodeEngine().toObject(event);
         endpoint.publishReplicationEvent(wanReplicationEvent.getServiceName(),

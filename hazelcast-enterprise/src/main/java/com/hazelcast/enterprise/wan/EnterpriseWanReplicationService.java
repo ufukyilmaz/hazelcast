@@ -186,13 +186,10 @@ public class EnterpriseWanReplicationService
     }
 
     public WanReplicationEndpoint getEndpoint(String wanReplicationName, String target) {
-        if (wanReplications != null) {
-            WanReplicationPublisherDelegate publisherDelegate = wanReplications.get(wanReplicationName);
-            if (publisherDelegate != null) {
-                return publisherDelegate.getEndpoints().get(target);
-            }
-        }
-        return null;
+        WanReplicationPublisherDelegate publisherDelegate
+                = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
+        Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
+        return endpoints.get(target);
     }
 
     @Override

@@ -13,7 +13,7 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 /**
  * Off-heap implementation of record tracker map.
  */
-final class TrackerMapOffHeap implements TrackerMap {
+final class TrackerMapOffHeap extends TrackerMapBase {
     private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
@@ -29,8 +29,9 @@ final class TrackerMapOffHeap implements TrackerMap {
         final long addr = trackers.put(ohk.address(), ohk.sequenceId());
         if (addr > 0) {
             tr.address = addr;
-            tr.setState(chunkSeq, isTombstone);
+            tr.setLiveState(chunkSeq, isTombstone);
             tr.resetGarbageCount();
+            added(isTombstone);
             return null;
         } else {
             tr.address = -addr;
@@ -48,7 +49,7 @@ final class TrackerMapOffHeap implements TrackerMap {
         return tr;
     }
 
-    @Override public void remove(KeyHandle kh) {
+    @Override final void doRemove(KeyHandle kh) {
         final KeyHandleOffHeap handle = (KeyHandleOffHeap) kh;
         trackers.remove(handle.address(), handle.sequenceId());
     }
@@ -63,14 +64,6 @@ final class TrackerMapOffHeap implements TrackerMap {
 
     @Override public void dispose() {
         trackers.dispose();
-    }
-
-    @Override public String toString() {
-        final StringBuilder b = new StringBuilder(1024);
-        for (CursorOffHeap c = new CursorOffHeap(); c.advance();) {
-            b.append(c.address()).append(',').append(c.sequenceId()).append("->").append(c.asTracker()).append(' ');
-        }
-        return b.toString();
     }
 
     private class CursorOffHeap implements Cursor, KeyHandleOffHeap {

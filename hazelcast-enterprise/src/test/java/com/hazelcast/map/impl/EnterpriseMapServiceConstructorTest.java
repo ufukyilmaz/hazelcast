@@ -1,7 +1,6 @@
-package com.hazelcast.map.imp;
+package com.hazelcast.map.impl;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.map.impl.EnterpriseMapServiceConstructor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;

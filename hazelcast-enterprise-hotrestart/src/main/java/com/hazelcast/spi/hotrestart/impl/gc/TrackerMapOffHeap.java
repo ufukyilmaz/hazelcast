@@ -49,7 +49,7 @@ final class TrackerMapOffHeap extends TrackerMapBase {
         return tr;
     }
 
-    @Override final void doRemove(KeyHandle kh) {
+    @Override void doRemove(KeyHandle kh) {
         final KeyHandleOffHeap handle = (KeyHandleOffHeap) kh;
         trackers.remove(handle.address(), handle.sequenceId());
     }

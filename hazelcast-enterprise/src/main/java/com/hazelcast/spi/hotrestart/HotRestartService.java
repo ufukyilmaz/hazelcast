@@ -129,7 +129,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         String segment = SEGMENT_PREFIX + ((OperationThread) thread).getThreadId();
 
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
-        cfg.setRamStoreRegistry(this).setLoggingService(node.loggingService);
+        cfg.setRamStoreRegistry(this)
+           .setLoggingService(node.loggingService)
+           .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
         final HotRestartStore onHeapStore =
                 newOnHeapHotRestartStore(cfg.setHomeDir(new File(hotRestartHome, segment + ONHEAP_SUFFIX)));
         //todo: Replace auto-fsync with a good fsync policy

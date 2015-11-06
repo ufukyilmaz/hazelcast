@@ -10,9 +10,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.WriteThroughChunk;
 import com.hazelcast.util.Preconditions;
 
-import java.io.File;
-import java.io.IOException;
-
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.TOMBSTONE_VALUE;
 
 /**
@@ -30,11 +27,11 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     private HotRestartKey preparedTombstoneKey;
     private long preparedTombstoneSeq;
 
-    private HotRestartStoreImpl(String name, ILogger logger, GcHelper gcHelper) {
+    private HotRestartStoreImpl(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
-        this.name = name;
-        this.logger = logger;
-        this.gcExec = new GcExecutor(gcHelper, name);
+        this.name = cfg.storeName();
+        this.logger = cfg.logger();
+        this.gcExec = new GcExecutor(cfg, gcHelper);
     }
 
     public static HotRestartStore newOnHeapHotRestartStore(HotRestartStoreConfig cfg) {
@@ -49,27 +46,10 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     private static HotRestartStore create(HotRestartStoreConfig cfg) {
         Preconditions.checkNotNull(cfg.homeDir(), "homeDir is null");
         Preconditions.checkNotNull(cfg.ramStoreRegistry(), "ramStoreRegistry is null");
-        final File canonicalHome = canonicalizeAndValidate(cfg.homeDir());
+        cfg.validateAndCreateHomeDir();
         return new HotRestartStoreImpl(
-                canonicalHome.getAbsoluteFile().getName(),
-                cfg.logger(), cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));
+                cfg, cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));
     }
-
-    private static File canonicalizeAndValidate(File homeDir) {
-        try {
-            final File canonicalHome = homeDir.getCanonicalFile();
-            if (canonicalHome.exists() && !canonicalHome.isDirectory()) {
-                throw new HotRestartException("Path refers to a non-directory: " + canonicalHome);
-            }
-            if (!canonicalHome.exists() && !canonicalHome.mkdirs()) {
-                throw new HotRestartException("Could not create the base directory " + canonicalHome);
-            }
-            return canonicalHome;
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
-    }
-
 
     @Override public void put(HotRestartKey kh, byte[] value) {
         validateStatus();

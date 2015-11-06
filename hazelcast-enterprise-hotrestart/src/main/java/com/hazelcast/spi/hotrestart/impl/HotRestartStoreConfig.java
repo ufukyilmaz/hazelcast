@@ -1,11 +1,14 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 
 import java.io.File;
+import java.io.IOException;
 
 import static com.hazelcast.spi.hotrestart.HotRestartStore.LOG_CATEGORY;
 
@@ -16,6 +19,7 @@ public class HotRestartStoreConfig {
     private File homeDir;
     private RamStoreRegistry ramStoreRegistry;
     private ILogger logger;
+    private MetricsRegistry metricsRegistry;
     private MemoryAllocator malloc;
     private boolean ioDisabled;
     private boolean compression;
@@ -27,6 +31,11 @@ public class HotRestartStoreConfig {
 
     public HotRestartStoreConfig setRamStoreRegistry(RamStoreRegistry storeRegistry) {
         this.ramStoreRegistry = storeRegistry;
+        return this;
+    }
+
+    public HotRestartStoreConfig setMetricsRegistry(MetricsRegistry metricsRegistry) {
+        this.metricsRegistry = metricsRegistry;
         return this;
     }
 
@@ -48,6 +57,25 @@ public class HotRestartStoreConfig {
     public HotRestartStoreConfig setCompression(boolean compression) {
         this.compression = compression;
         return this;
+    }
+
+    public HotRestartStoreConfig validateAndCreateHomeDir() {
+        try {
+            final File canonicalHome = homeDir.getCanonicalFile();
+            if (canonicalHome.exists() && !canonicalHome.isDirectory()) {
+                throw new HotRestartException("Path refers to a non-directory: " + canonicalHome);
+            }
+            if (!canonicalHome.exists() && !canonicalHome.mkdirs()) {
+                throw new HotRestartException("Could not create the base directory " + canonicalHome);
+            }
+        } catch (IOException e) {
+            throw new HotRestartException(e);
+        }
+        return this;
+    }
+
+    public String storeName() {
+        return homeDir.getName();
     }
 
     public boolean compression() {
@@ -73,4 +101,9 @@ public class HotRestartStoreConfig {
     public RamStoreRegistry ramStoreRegistry() {
         return ramStoreRegistry;
     }
+
+    public MetricsRegistry metricsRegistry() {
+        return metricsRegistry;
+    }
+
 }

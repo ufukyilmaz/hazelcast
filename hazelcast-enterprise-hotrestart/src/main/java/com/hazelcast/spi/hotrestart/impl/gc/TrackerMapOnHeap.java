@@ -27,7 +27,7 @@ final class TrackerMapOnHeap extends TrackerMapBase {
         return trackers.get(kh);
     }
 
-    @Override final void doRemove(KeyHandle kh) {
+    @Override void doRemove(KeyHandle kh) {
         trackers.remove(kh);
     }
 

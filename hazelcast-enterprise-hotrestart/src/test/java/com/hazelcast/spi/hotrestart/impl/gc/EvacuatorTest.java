@@ -16,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.createLoggingService;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.mockMetricsRegistry;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.randomHotRestartHome;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -28,9 +30,12 @@ public class EvacuatorTest {
 
     @Before public void setup() {
         final MutatorCatchup mc = mock(MutatorCatchup.class);
-        final HotRestartStoreConfig hrConfig = new HotRestartStoreConfig().setLoggingService(createLoggingService());
+        final HotRestartStoreConfig hrConfig = new HotRestartStoreConfig()
+                .setHomeDir(randomHotRestartHome())
+                .setLoggingService(createLoggingService())
+                .setMetricsRegistry(mockMetricsRegistry());
         final GcHelper.OnHeap gcHelper = new GcHelper.OnHeap(hrConfig);
-        final ChunkManager chunkMgr = new ChunkManager(gcHelper, null);
+        final ChunkManager chunkMgr = new ChunkManager(hrConfig, gcHelper, null);
         ev = new Evacuator(null, chunkMgr, mc, null, 0);
     }
 

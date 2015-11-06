@@ -1,11 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStore.TombstoneId;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
@@ -43,11 +45,15 @@ public final class ChunkManager {
     WriteThroughChunk activeChunk;
     private final GcLogger logger;
 
-    public ChunkManager(GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr) {
+    public ChunkManager(HotRestartStoreConfig cfg, GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr) {
         this.gcHelper = gcHelper;
         this.logger = gcHelper.logger;
         this.pfixTombstoMgr = pfixTombstoMgr;
         this.trackers = gcHelper.newTrackerMap();
+        final MetricsRegistry metrics = cfg.metricsRegistry();
+        final String metricsPrefix = "hot-restart." + cfg.storeName();
+        metrics.scanAndRegister(this, metricsPrefix);
+        metrics.scanAndRegister(trackers, metricsPrefix);
     }
 
     public long trackedKeyCount() {
@@ -251,8 +257,8 @@ public final class ChunkManager {
                 chunks.values(), gcp, pfixTombstoMgr, mc, logger)).srcChunks.isEmpty()) {
             return false;
         }
-        final long garbageBeforeGc = this.garbage.get();
-        final long liveBeforeGc = this.occupancy.get() - garbageBeforeGc;
+        final long garbageBeforeGc = garbage.get();
+        final long liveBeforeGc = occupancy.get() - garbageBeforeGc;
         logger.fine("Start GC: garbage %,d; live %,d; costGoal %,d; reclamationGoal %,d; minCostBenefit %,.2f",
                 garbageBeforeGc, liveBeforeGc, gcp.costGoal, gcp.reclamationGoal, gcp.minCostBenefit);
         if (gcp.forceGc) {

@@ -5,7 +5,6 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 
 /**
  * Represents a chunk file which is still growing.

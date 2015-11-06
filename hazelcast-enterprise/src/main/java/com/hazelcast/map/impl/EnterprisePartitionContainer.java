@@ -59,6 +59,7 @@ public class EnterprisePartitionContainer extends PartitionContainer {
 
             ILogger logger = nodeEngine.getLogger(EnterpriseRecordStore.class);
             DefaultRecordStore recordStore = new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger);
+            recordStore.init();
             recordStore.startLoading();
 
             return recordStore;

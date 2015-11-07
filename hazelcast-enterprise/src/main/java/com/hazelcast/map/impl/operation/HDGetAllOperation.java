@@ -24,7 +24,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.ReadonlyOperation;
-import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,16 +63,6 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
     public void afterRun() throws Exception {
         super.afterRun();
         evict();
-
-        dispose();
-    }
-
-    protected void evict() {
-        if (recordStore == null) {
-            return;
-        }
-        long now = Clock.currentTimeMillis();
-        recordStore.evictEntries(now);
     }
 
     @Override

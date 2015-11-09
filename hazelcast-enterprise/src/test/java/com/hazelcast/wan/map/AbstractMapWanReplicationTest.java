@@ -10,6 +10,7 @@ import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.annotation.Repeat;
 import com.hazelcast.wan.AbstractWanReplicationTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -272,21 +273,21 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
         startAllClusters();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterB, "map", 1000, 2000);
+        createDataIn(clusterA, "map", 0, 100);
+        createDataIn(clusterB, "map", 100, 200);
 
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterC, "map", 1000, 2000, clusterB);
+        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
+        assertDataInFrom(clusterC, "map", 100, 200, clusterB);
 
-        createDataIn(clusterB, "map", 0, 1000);
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
+        createDataIn(clusterB, "map", 0, 100);
+        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
 
-        assertDataSizeEventually(clusterC, "map", 2000);
+        assertDataSizeEventually(clusterC, "map", 200);
 
-        removeDataIn(clusterA, "map", 0, 1000);
-        removeDataIn(clusterB, "map", 1000, 2000);
-
-        assertKeysNotIn(clusterC, "map", 0, 2000);
+        removeDataIn(clusterA, "map", 0, 100);
+        assertKeysNotIn(clusterC, "map", 0, 100);
+        removeDataIn(clusterB, "map", 100, 200);
+        assertKeysNotIn(clusterC, "map", 100, 200);
         assertDataSizeEventually(clusterC, "map", 0);
     }
 

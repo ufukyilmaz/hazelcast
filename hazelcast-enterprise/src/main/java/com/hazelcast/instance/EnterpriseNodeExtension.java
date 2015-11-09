@@ -7,12 +7,14 @@ import com.hazelcast.client.impl.protocol.MessageTaskFactory;
 import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.serialization.SerializationService;
@@ -41,11 +43,15 @@ import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.nio.tcp.WriteHandler;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -54,6 +60,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
+@SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private volatile License license;
@@ -61,8 +68,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile MemoryManager memoryManager;
 
+    private final HotRestartService hotRestartService;
+
     public EnterpriseNodeExtension(Node node) {
         super(node);
+        hotRestartService = createHotRestartService(node);
+    }
+
+    private HotRestartService createHotRestartService(Node node) {
+        HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
+        return hotRestartConfig.isEnabled() ? new HotRestartService(node) : null;
     }
 
     @Override
@@ -119,7 +134,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void beforeJoin() {
-        // will have hot-restart metadata validation here
+        if (hotRestartService != null) {
+            hotRestartService.prepare();
+        }
     }
 
     @Override
@@ -149,6 +166,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
                             + license.getAllowedNumberOfNodes() + ", Current: " + count);
             node.shutdown(true);
+        }
+
+        if (hotRestartService != null) {
+            try {
+                hotRestartService.start();
+            } catch (Throwable e) {
+                logger.severe("Hot-restart failed!", e);
+                node.shutdown(true);
+            }
         }
     }
 
@@ -270,6 +296,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void onThreadStart(Thread thread) {
         registerThreadToPoolingMemoryManager(thread);
+        registerThreadToHotRestart(thread);
+    }
+
+    private void registerThreadToHotRestart(Thread thread) {
+        if (!(thread instanceof PartitionOperationThread)) {
+            return;
+        }
+
+        if (hotRestartService != null) {
+            hotRestartService.registerThread(thread, memoryManager);
+        }
     }
 
     private void registerThreadToPoolingMemoryManager(Thread thread) {
@@ -300,9 +337,19 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
+    public HotRestartService getHotRestartService() {
+        if (hotRestartService == null) {
+            throw new HotRestartException("HotRestart is not enabled!");
+        }
+        return hotRestartService;
+    }
+
     @Override
     public void beforeShutdown() {
         super.beforeShutdown();
+        if (hotRestartService != null) {
+            hotRestartService.shutdown();
+        }
     }
 
     @Override
@@ -329,8 +376,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public Map<String, Object> createExtensionServices() {
-        // will have hot-restart service here
-        return super.createExtensionServices();
+        Map<String, Object> services = super.createExtensionServices();
+        if (hotRestartService == null) {
+            return services;
+        }
+
+        if (services.isEmpty()) {
+            services = Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
+        } else {
+            services.put(HotRestartService.SERVICE_NAME, hotRestartService);
+        }
+        return services;
     }
 
     @Override
@@ -359,6 +415,24 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public void onClusterStateChange(ClusterState newState) {
-        // will have hot-restart metadata validation here
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onClusterStateChange(newState);
+        }
+    }
+
+    @Override
+    public boolean registerListener(Object listener) {
+        if (listener instanceof ClusterHotRestartEventListener) {
+            if (listener instanceof HazelcastInstanceAware) {
+                ((HazelcastInstanceAware) listener).setHazelcastInstance(node.hazelcastInstance);
+            }
+
+            if (hotRestartService == null) {
+                throw new HotRestartException("HotRestart is not enabled!");
+            }
+            hotRestartService.addClusterHotRestartEventListener((ClusterHotRestartEventListener) listener);
+            return true;
+        }
+        return false;
     }
 }

@@ -294,9 +294,4 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         return partitionService.getPartitionId(key) != getPartitionId();
     }
 
-    protected final void evict() {
-        long now = Clock.currentTimeMillis();
-        recordStore.evictEntries(now);
-    }
-
 }

@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.map.impl.record.Records;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -38,7 +37,6 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
 
     private List<Map.Entry<Data, Data>> entries;
     private List<RecordInfo> recordInfos;
-    private RecordStore recordStore;
 
     public HDPutAllBackupOperation(String name, List<Map.Entry<Data, Data>> entries, List<RecordInfo> recordInfos) {
         super(name);
@@ -51,13 +49,12 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
 
     @Override
     protected void runInternal() {
-        int partitionId = getPartitionId();
-        recordStore = mapServiceContext.getRecordStore(partitionId, name);
         for (int i = 0; i < entries.size(); i++) {
             RecordInfo recordInfo = recordInfos.get(i);
             Map.Entry<Data, Data> entry = entries.get(i);
             Record record = recordStore.putBackup(entry.getKey(), entry.getValue());
             Records.applyRecordInfo(record, recordInfo);
+            evict();
         }
     }
 

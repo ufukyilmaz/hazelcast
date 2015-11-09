@@ -23,7 +23,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.NamedOperation;
 import com.hazelcast.spi.PartitionAwareOperation;
-import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
@@ -107,11 +106,6 @@ public abstract class HDKeyBasedMapOperation extends HDMapOperation implements P
             NearCacheProvider nearCacheProvider = mapService.getMapServiceContext().getNearCacheProvider();
             nearCacheProvider.invalidateAllNearCaches(name, dataKey);
         }
-    }
-
-    protected final void evict() {
-        long now = Clock.currentTimeMillis();
-        recordStore.evictEntries(now);
     }
 
     @Override

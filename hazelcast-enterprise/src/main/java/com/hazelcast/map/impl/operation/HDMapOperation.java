@@ -25,6 +25,7 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.util.concurrent.ConcurrentMap;
@@ -208,6 +209,13 @@ public abstract class HDMapOperation extends MapOperation {
             mapServiceContext = mapService.getMapServiceContext();
             mapContainer = mapServiceContext.getMapContainer(name);
 
+        }
+    }
+
+    protected final void evict() {
+        if (recordStore != null) {
+            recordStore.evictEntries(Clock.currentTimeMillis());
+            dispose();
         }
     }
 

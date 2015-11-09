@@ -179,7 +179,7 @@ public class WanBatchReplication extends AbstractWanReplication
                                     removeReplicationEvent(event);
                                 }
                             }
-                            transmitSucceed = true;
+                            transmitSucceed = isTargetInvocationSuccesfull;
                         } catch (Exception ignored) {
                             logger.warning(ignored);
                         }

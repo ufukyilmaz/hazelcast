@@ -10,7 +10,6 @@ import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.Repeat;
 import com.hazelcast.wan.AbstractWanReplicationTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +42,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         configC.getNetworkConfig().setPort(5901);
     }
 
-    private void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
         if (wanConfig == null) {
             wanConfig = new WanReplicationConfig();
@@ -60,7 +59,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
     }
 
-    private void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+    protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         HazelcastInstance node = getNode(cluster);
         IMap m = node.getMap(mapName);
         for (; start < end; start++) {
@@ -147,7 +146,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    private void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
+    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 sleepSeconds(10);
@@ -283,12 +282,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         assertDataInFrom(clusterC, "map", 0, 100, clusterA);
 
         assertDataSizeEventually(clusterC, "map", 200);
-
-        removeDataIn(clusterA, "map", 0, 100);
-        assertKeysNotIn(clusterC, "map", 0, 100);
-        removeDataIn(clusterB, "map", 100, 200);
-        assertKeysNotIn(clusterC, "map", 100, 200);
-        assertDataSizeEventually(clusterC, "map", 0);
     }
 
 
@@ -486,21 +479,6 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
 
         assertDataSizeEventually(clusterA, "map", 0);
         assertDataSizeEventually(clusterB, "map", 0);
-    }
-
-    @Test
-    public void recoverAfterTargetClusterFailure() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-
-        createDataIn(clusterA, "map", 0, 10000);
-
-        sleepSeconds(10);
-
-        clusterA[0].shutdown();
-        sleepSeconds(10);
-        startClusterB();
-        assertDataInFrom(clusterB, "map", 0, 10000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
     }
 
     @Test

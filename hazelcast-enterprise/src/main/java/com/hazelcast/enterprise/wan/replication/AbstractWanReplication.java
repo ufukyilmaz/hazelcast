@@ -22,6 +22,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -126,15 +127,10 @@ public abstract class AbstractWanReplication
         String serviceName = EnterpriseWanReplicationService.SERVICE_NAME;
         InvocationBuilder invocationBuilder
                 = operationService.createInvocationBuilder(serviceName, wanOperation, target);
-        Future<Boolean> future = invocationBuilder.setTryCount(1)
+        InternalCompletableFuture<Boolean> future = invocationBuilder.setTryCount(1)
                 .setCallTimeout(operationTimeout)
                 .invoke();
-        try {
-            return future.get();
-        } catch (Exception ex) {
-            ExceptionUtil.rethrow(ex);
-        }
-        return false;
+        return future.getSafely();
     }
 
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {

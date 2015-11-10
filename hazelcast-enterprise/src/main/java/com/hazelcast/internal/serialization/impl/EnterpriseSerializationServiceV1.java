@@ -38,6 +38,7 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.handle
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
+    private final boolean allowSerializeOffHeap;
 
     private final MemoryManager memoryManager;
     private final ThreadLocal<MemoryManager> memoryManagerThreadLocal = new ThreadLocal<MemoryManager>();
@@ -46,13 +47,13 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             ClassLoader classLoader, Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
             Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
             PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-            MemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject) {
-
+            MemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject, boolean allowSerializeOffHeap) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
                 enableSharedObject);
 
         this.memoryManager = memoryManager;
+        this.allowSerializeOffHeap = allowSerializeOffHeap;
     }
 
     @Override
@@ -225,4 +226,21 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         }
     }
 
+    @Override
+    public OffHeapDataInput createOffHeapObjectDataInput(long dataAddress, long dataSize) {
+        if (!this.allowSerializeOffHeap) {
+            throw new UnsupportedOperationException("Unsupported for heap de-serializer");
+        }
+
+        return ((OffHeapInputFactory) inputOutputFactory).createInput(dataAddress, dataSize, this);
+    }
+
+    @Override
+    public OffHeapDataOutput createOffHeapObjectDataOutput(long bufferSize) {
+        if (!this.allowSerializeOffHeap) {
+            throw new UnsupportedOperationException("Unsupported for heap serializer");
+        }
+
+        return ((OffHeapOutputFactory) inputOutputFactory).createOutput(bufferSize, this);
+    }
 }

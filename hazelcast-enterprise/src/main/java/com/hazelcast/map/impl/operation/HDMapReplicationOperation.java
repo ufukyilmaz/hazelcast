@@ -63,8 +63,8 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
     }
 
     public HDMapReplicationOperation(int partitionId, int replicaIndex, MapServiceContext mapServiceContext) {
-        this.setPartitionId(partitionId);
-        this.setReplicaIndex(replicaIndex);
+        setPartitionId(partitionId);
+        setReplicaIndex(replicaIndex);
         this.serializationService = mapServiceContext.getNodeEngine().getSerializationService();
 
         PartitionContainer container = mapServiceContext.getPartitionContainer(partitionId);

@@ -5,13 +5,13 @@ import com.hazelcast.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.partition.impl.PartitionListener;
 import com.hazelcast.partition.impl.PartitionReplicaChangeEvent;
+import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
@@ -554,11 +554,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         return startWithHotRestart;
     }
 
-    public void memberAdded(MemberImpl member) {
-        writeMembers();
-    }
-
-    public void memberRemoved(MemberImpl member) {
+    public void onMembershipChange(MembershipServiceEvent event) {
         writeMembers();
     }
 
@@ -603,6 +599,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         } catch (IOException e) {
             logger.severe("While persisting cluster state: " + newState, e);
         }
+    }
+
+    public HotRestartClusterInitializationStatus getHotRestartStatus() {
+        return hotRestartStatus.get();
     }
 
     private interface TimeoutableRunnable

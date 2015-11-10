@@ -60,7 +60,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
-@SuppressWarnings("checkstyle:classdataabstractioncoupling")
+@SuppressWarnings({ "checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private volatile License license;
@@ -176,6 +176,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 node.shutdown(true);
             }
         }
+    }
+
+    @Override
+    public boolean isStartCompleted() {
+        if (hotRestartService != null) {
+            return hotRestartService.isStartCompleted();
+        }
+        return super.isStartCompleted();
     }
 
     public License getLicense() {

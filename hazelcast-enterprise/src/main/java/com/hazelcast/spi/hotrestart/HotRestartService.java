@@ -10,6 +10,7 @@ import com.hazelcast.spi.MembershipAwareService;
 import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
+import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
@@ -253,6 +254,11 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         });
     }
 
+    public boolean isStartCompleted() {
+        final HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
+        return status == HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
+    }
+
     private static class RamStoreDescriptor {
         final RamStoreRegistry registry;
         final String name;
@@ -267,12 +273,12 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     @Override
     public void memberAdded(MembershipServiceEvent event) {
-        clusterMetadataManager.memberAdded(event.getMember());
+        clusterMetadataManager.onMembershipChange(event);
     }
 
     @Override
     public void memberRemoved(MembershipServiceEvent event) {
-        clusterMetadataManager.memberRemoved(event.getMember());
+        clusterMetadataManager.onMembershipChange(event);
     }
 
     @Override

@@ -16,6 +16,8 @@
 
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.core.EntryView;
+import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.map.impl.record.Records;
@@ -49,18 +51,19 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
 
     @Override
     protected void runInternal() {
+        boolean wanEnabled = mapContainer.isWanReplicationEnabled();
         for (int i = 0; i < entries.size(); i++) {
             RecordInfo recordInfo = recordInfos.get(i);
             Map.Entry<Data, Data> entry = entries.get(i);
             Record record = recordStore.putBackup(entry.getKey(), entry.getValue());
             Records.applyRecordInfo(record, recordInfo);
+            if (wanEnabled) {
+                final Data dataValueAsData = mapServiceContext.toData(entry.getValue());
+                final EntryView entryView = EntryViews.createSimpleEntryView(entry.getKey(), dataValueAsData, record);
+                mapServiceContext.getMapEventPublisher().publishWanReplicationUpdateBackup(name, entryView);
+            }
             evict();
         }
-    }
-
-    @Override
-    public void afterRun() throws Exception {
-        dispose();
     }
 
     @Override
@@ -97,5 +100,4 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
             recordInfos.add(recordInfo);
         }
     }
-
 }

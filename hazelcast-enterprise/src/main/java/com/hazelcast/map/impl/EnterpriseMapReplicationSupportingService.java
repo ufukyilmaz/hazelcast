@@ -3,8 +3,8 @@ package com.hazelcast.map.impl;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.operation.WanOriginatedDeleteOperation;
-import com.hazelcast.map.impl.operation.WanOriginatedMergeOperation;
+import com.hazelcast.map.impl.operation.MapOperation;
+import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
@@ -27,7 +27,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private final MapServiceContext mapServiceContext;
     private final NodeEngine nodeEngine;
 
-    public EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
+    EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
     }
@@ -41,25 +41,27 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
             MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
             WanReplicationRef wanReplicationRef = mapContainer.getMapConfig().getWanReplicationRef();
 
-            if (wanReplicationRef !=  null && wanReplicationRef.isRepublishingEnabled()) {
+            if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {
                 WanReplicationPublisher wanPublisher = mapContainer.getWanReplicationPublisher();
                 if (wanPublisher != null) {
                     wanPublisher.publishReplicationEvent(replicationEvent);
                 }
             }
             InternalCompletableFuture completableFuture = null;
+            MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
+
             if (eventObject instanceof EnterpriseMapReplicationUpdate) {
                 EnterpriseMapReplicationUpdate replicationUpdate = (EnterpriseMapReplicationUpdate) eventObject;
                 EntryView<Data, Data> entryView = replicationUpdate.getEntryView();
                 MapMergePolicy mergePolicy = replicationUpdate.getMergePolicy();
-                WanOriginatedMergeOperation operation
-                        = new WanOriginatedMergeOperation(mapName, mapServiceContext.toData(entryView.getKey(),
-                        mapContainer.getPartitioningStrategy()), entryView, mergePolicy);
+
+                Data dataKey = mapServiceContext.toData(entryView.getKey(), mapContainer.getPartitioningStrategy());
+                MapOperation operation = operationProvider.createMergeOperation(mapName, dataKey, entryView, mergePolicy, true);
                 completableFuture = invokeOnPartition(entryView.getKey(), operation);
             } else if (eventObject instanceof EnterpriseMapReplicationRemove) {
                 EnterpriseMapReplicationRemove replicationRemove = (EnterpriseMapReplicationRemove) eventObject;
-                WanOriginatedDeleteOperation operation = new WanOriginatedDeleteOperation(mapName,
-                        replicationRemove.getKey());
+                MapOperation operation = operationProvider.createRemoveOperation(replicationRemove.getMapName(),
+                        replicationRemove.getKey(), true);
                 completableFuture = invokeOnPartition(replicationRemove.getKey(), operation);
             }
 

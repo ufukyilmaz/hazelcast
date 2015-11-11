@@ -110,6 +110,7 @@
     <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/record/HDRecord"/>
     <suppress checks="MethodCountCheck" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
     <suppress checks="ClassDataAbstractionCoupling" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
+    <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
 
     <!-- Client Protocol -->
     <suppress checks="" files="com/hazelcast/client/impl/protocol/template/"/>

@@ -16,11 +16,13 @@
 
 package com.hazelcast.map.impl.operation;
 
+import com.hazelcast.core.EntryView;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.tx.HDTxnDeleteOperation;
 import com.hazelcast.map.impl.tx.HDTxnLockAndGetOperation;
 import com.hazelcast.map.impl.tx.HDTxnSetOperation;
+import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.OperationFactory;
@@ -74,13 +76,13 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createTryRemoveOperation(String name, Data dataKey, long timeout) {
-        return new HDTryRemoveOperation(name, dataKey, timeout);
+    public MapOperation createRemoveOperation(String name, Data key, boolean disableWanReplicationEvent) {
+        return new HDRemoveOperation(name, key, disableWanReplicationEvent);
     }
 
     @Override
-    public MapOperation createWanOriginatedDeleteOperation(String name, Data key) {
-        return new HDWanOriginatedDeleteOperation(name, key);
+    public MapOperation createTryRemoveOperation(String name, Data dataKey, long timeout) {
+        return new HDTryRemoveOperation(name, dataKey, timeout);
     }
 
     @Override
@@ -166,6 +168,12 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public MapOperation createTxnSetOperation(String name, Data dataKey, Data value, long version, long ttl) {
         return new HDTxnSetOperation(name, dataKey, value, version, ttl);
+    }
+
+    @Override
+    public MapOperation createMergeOperation(String name, Data dataKey, EntryView<Data, Data> entryView,
+                                             MapMergePolicy policy, boolean disableWanReplicationEvent) {
+        return new HDMergeOperation(name, dataKey, entryView, policy, disableWanReplicationEvent);
     }
 
     @Override

@@ -28,8 +28,19 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
 
     protected transient Data dataOldValue;
 
-    public HDBaseRemoveOperation(String name, Data dataKey) {
+    /**
+     * Used by wan-replication-service to disable wan-replication event publishing
+     * otherwise in active-active scenarios infinite loop of event forwarding can be seen.
+     */
+    protected transient boolean disableWanReplicationEvent;
+
+    public HDBaseRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
         super(name, dataKey);
+        this.disableWanReplicationEvent = disableWanReplicationEvent;
+    }
+
+    public HDBaseRemoveOperation(String name, Data dataKey) {
+        this(name, dataKey, false);
     }
 
     public HDBaseRemoveOperation() {
@@ -41,12 +52,11 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
         MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.publishEvent(getCallerAddress(), name, EntryEventType.REMOVED, dataKey, dataOldValue, null);
         invalidateNearCaches();
-
-        if (mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null) {
+        if (mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent) {
             // todo should evict operation replicated??
             mapEventPublisher.publishWanReplicationRemove(name, dataKey, Clock.currentTimeMillis());
         }
-        dispose();
+        evict();
     }
 
     @Override
@@ -56,7 +66,7 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
 
     @Override
     public Operation getBackupOperation() {
-        return new HDRemoveBackupOperation(name, dataKey);
+        return new HDRemoveBackupOperation(name, dataKey, false, disableWanReplicationEvent);
     }
 
     @Override

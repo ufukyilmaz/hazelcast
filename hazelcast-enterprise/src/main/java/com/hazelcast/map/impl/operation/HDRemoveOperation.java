@@ -16,7 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 
@@ -31,9 +30,12 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
         super(name, dataKey);
     }
 
+    public HDRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
+        super(name, dataKey, disableWanReplicationEvent);
+    }
+
     @Override
     protected void runInternal() {
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         dataOldValue = mapServiceContext.toData(recordStore.remove(dataKey));
         successful = dataOldValue != null;
     }
@@ -43,8 +45,6 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
         if (successful) {
             super.afterRun();
         }
-
-        dispose();
     }
 
     @Override

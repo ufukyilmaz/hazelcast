@@ -25,13 +25,15 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
+import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
 public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements BackupOperation, MutatingOperation,
         IdentifiedDataSerializable {
 
-    boolean unlockKey;
+    protected boolean unlockKey;
+    protected boolean disableWanReplicationEvent;
 
     public HDRemoveBackupOperation() {
     }
@@ -43,6 +45,12 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
     public HDRemoveBackupOperation(String name, Data dataKey, boolean unlockKey) {
         super(name, dataKey);
         this.unlockKey = unlockKey;
+    }
+
+    public HDRemoveBackupOperation(String name, Data dataKey, boolean unlockKey, boolean disableWanReplicationEvent) {
+        super(name, dataKey);
+        this.unlockKey = unlockKey;
+        this.disableWanReplicationEvent = disableWanReplicationEvent;
     }
 
     @Override
@@ -59,7 +67,12 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
 
     @Override
     public void afterRun() throws Exception {
-        dispose();
+        if (!disableWanReplicationEvent
+                && mapContainer.isWanReplicationEnabled()) {
+            mapService.getMapServiceContext()
+                    .getMapEventPublisher().publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
+        }
+        evict();
     }
 
     @Override
@@ -81,11 +94,14 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeBoolean(unlockKey);
+        out.writeBoolean(disableWanReplicationEvent);
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         unlockKey = in.readBoolean();
+        disableWanReplicationEvent = in.readBoolean();
     }
+
 }

@@ -202,16 +202,21 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         return UnsafeHelper.UNSAFE.getLong(address + CREATION_TIME_OFFSET);
     }
 
-    public static int getAccessTimeDiff(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + ACCESS_TIME_OFFSET);
+    @Override
+    public boolean isTombstone() {
+        return false;
     }
 
-    public static int getAccessHit(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + ACCESS_HIT_OFFSET);
+    @Override
+    public long getTombstoneSequence() {
+        // will be implemented later by hot-restart PR
+        return 0;
     }
 
-    public static int getTtlMillis(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + TTL_OFFSET);
+    @Override
+    public void setTombstoneSequence(long seq) {
+        // will be implemented later by hot-restart PR
+        throw new UnsupportedOperationException();
     }
 
     @Override

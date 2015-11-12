@@ -214,16 +214,19 @@ public abstract class AbstractWanReplication
         int backupCount = evObj.getBackupCount();
         int clusterSize = node.getClusterService().getSize();
         for (int i = 0; i < backupCount && i < clusterSize - 1; i++) {
-            try {
-                operationService.createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
-                        ewrRemoveOperation,
-                        getPartitionId(evObj.getKey()))
-                        .setResultDeserialized(false)
-                        .setReplicaIndex(i + 1)
-                        .invoke();
-            } catch (Throwable t) {
-                ExceptionUtil.rethrow(t);
-            }
+            boolean trasmitSuccess = false;
+            do {
+                try {
+                    operationService.createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
+                            ewrRemoveOperation,
+                            getPartitionId(evObj.getKey()))
+                            .setResultDeserialized(false)
+                            .setReplicaIndex(i + 1)
+                            .invoke().get();
+                } catch (Exception t) {
+                    logger.warning("Exception while removing wan backup", t);
+                }
+            } while (running && !trasmitSuccess);
         }
     }
 

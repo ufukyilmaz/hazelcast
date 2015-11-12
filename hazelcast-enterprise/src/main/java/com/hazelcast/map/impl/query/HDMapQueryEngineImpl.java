@@ -1,7 +1,12 @@
 package com.hazelcast.map.impl.query;
 
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.PartitionContainer;
+import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.record.Records;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.impl.QueryableEntry;
@@ -12,6 +17,8 @@ import com.hazelcast.util.IterationType;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -21,6 +28,7 @@ import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.query.PagingPredicateAccessor.getNearestAnchorEntry;
 import static com.hazelcast.util.FutureUtil.RETHROW_EVERYTHING;
 import static com.hazelcast.util.FutureUtil.returnWithDeadline;
+import static com.hazelcast.util.SortingUtil.compareAnchor;
 import static com.hazelcast.util.SortingUtil.getSortedSubList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -32,6 +40,31 @@ public class HDMapQueryEngineImpl extends MapQueryEngineImpl {
 
     public HDMapQueryEngineImpl(MapServiceContext mapServiceContext, QueryOptimizer optimizer) {
         super(mapServiceContext, optimizer);
+    }
+
+    @Override
+    protected Collection<QueryableEntry> queryTheLocalPartition(String mapName, Predicate predicate, int partitionId) {
+        PagingPredicate pagingPredicate = predicate instanceof PagingPredicate ? (PagingPredicate) predicate : null;
+        List<QueryableEntry> resultList = new LinkedList<QueryableEntry>();
+
+        PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        Iterator<Record> iterator = partitionContainer.getRecordStore(mapName).loadAwareIterator(getNow(), false);
+        Map.Entry<Integer, Map.Entry> nearestAnchorEntry = getNearestAnchorEntry(pagingPredicate);
+        while (iterator.hasNext()) {
+            Record record = iterator.next();
+            Data key = (Data) toHeapData(record.getKey());
+            Object value = toHeapData(Records.getValueOrCachedValue(record, serializationService));
+            if (value == null) {
+                continue;
+            }
+            QueryableEntry queryEntry = mapContainer.newQueryEntry(key, value);
+
+            if (predicate.apply(queryEntry) && compareAnchor(pagingPredicate, queryEntry, nearestAnchorEntry)) {
+                resultList.add(queryEntry);
+            }
+        }
+        return getSortedSubList(resultList, pagingPredicate, nearestAnchorEntry);
     }
 
     @Override
@@ -102,5 +135,12 @@ public class HDMapQueryEngineImpl extends MapQueryEngineImpl {
 
     private static <R> Collection<R> getQueryResult(List<Future<R>> lsFutures) {
         return returnWithDeadline(lsFutures, QUERY_EXECUTION_TIMEOUT_MINUTES, MINUTES, RETHROW_EVERYTHING);
+    }
+
+    private Object toHeapData(Object object) {
+        if (!(object instanceof NativeMemoryData)) {
+            return object;
+        }
+        return mapServiceContext.toData(object);
     }
 }

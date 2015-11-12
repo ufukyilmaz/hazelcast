@@ -101,7 +101,12 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,
-                                    String setupName, String policy, String cacheName) {
+                                      String setupName, String policy, String cacheName) {
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, cacheName, null);
+    }
+
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,
+                                    String setupName, String policy, String cacheName, String filter) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
         if (wanConfig == null) {
             wanConfig = new WanReplicationConfig();
@@ -112,6 +117,9 @@ public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplica
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
         wanRef.setMergePolicy(policy);
+        if (filter != null) {
+            wanRef.addFilter(filter);
+        }
 
         fromConfig.addWanReplicationConfig(wanConfig);
         fromConfig.getCacheConfig(cacheName).setWanReplicationRef(wanRef);

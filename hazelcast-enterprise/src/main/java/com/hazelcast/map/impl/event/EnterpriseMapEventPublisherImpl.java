@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.SimpleEntryView;
@@ -108,11 +109,14 @@ public class EnterpriseMapEventPublisherImpl
 
     private boolean isEventFiltered(MapContainer mapContainer, EntryView entryView, WanFilterEventType eventType) {
         List<String> filters = mapContainer.getMapConfig().getWanReplicationRef().getFilters();
-        for (String filterName : filters) {
-            MapWanEventFilter mapWanEventFilter =
-                    getEnterpriseMapServiceContext().getMapFilterProvider().getFilter(filterName);
-            if (mapWanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
-                return true;
+        if (!filters.isEmpty()) {
+            entryView = EntryViews.convertToLazyEntryView(entryView, serializationService, null);
+            for (String filterName : filters) {
+                MapWanEventFilter mapWanEventFilter =
+                        getEnterpriseMapServiceContext().getMapFilterProvider().getFilter(filterName);
+                if (mapWanEventFilter.filter(mapContainer.getName(), entryView, eventType)) {
+                    return true;
+                }
             }
         }
         return false;

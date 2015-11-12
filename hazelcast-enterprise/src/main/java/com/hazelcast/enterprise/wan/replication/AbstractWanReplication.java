@@ -163,22 +163,15 @@ public abstract class AbstractWanReplication
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
             if (dropEvent) {
-                WanReplicationEvent droppedEvent = eventQueueContainer.pollCacheWanEvent(
+                eventQueueContainer.pollCacheWanEvent(
                         cacheReplicationObject.getNameWithPrefix(), partitionId);
-                if (droppedEvent != null) {
-                    removeReplicationEvent(droppedEvent);
-                }
             }
             eventPublished = eventQueueContainer.publishCacheWanEvent(
                     cacheReplicationObject.getNameWithPrefix(), partitionId, replicationEvent);
         } else if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             if (dropEvent) {
-                WanReplicationEvent droppedEvent =
-                        eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
-                if (droppedEvent != null) {
-                    removeReplicationEvent(droppedEvent);
-                }
+                eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
             }
             eventPublished = eventQueueContainer.publishMapWanEvent(
                     mapReplicationObject.getMapName(), partitionId, replicationEvent);

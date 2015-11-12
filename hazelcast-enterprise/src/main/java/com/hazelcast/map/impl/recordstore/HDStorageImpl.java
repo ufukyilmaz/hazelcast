@@ -69,9 +69,9 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     }
 
     @Override
-    public Object removeRecord(HDRecord record) {
+    public void removeRecord(HDRecord record) {
         if (record == null) {
-            return null;
+            return;
         }
 
         Data key = record.getKey();
@@ -79,7 +79,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
 
         addDeferredDispose(key);
         addDeferredDispose(oldRecord);
-        return oldRecord == null ? null : oldRecord.getValue();
     }
 
     @Override

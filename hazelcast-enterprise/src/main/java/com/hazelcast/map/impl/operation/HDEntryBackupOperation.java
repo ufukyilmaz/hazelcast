@@ -53,8 +53,7 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     @Override
     protected void runInternal() {
-        final long now = getNow();
-        oldValue = getValueFor(dataKey, now);
+        oldValue = recordStore.get(dataKey, true);
 
         Map.Entry entry = createMapEntry(dataKey, oldValue);
 
@@ -117,11 +116,6 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     private Map.Entry createMapEntry(Data key, Object value) {
         return new LazyMapEntry(key, value, getNodeEngine().getSerializationService());
-    }
-
-    private Object getValueFor(Data dataKey, long now) {
-        Map.Entry<Data, Object> mapEntry = recordStore.getMapEntry(dataKey, now);
-        return mapEntry.getValue();
     }
 
     private long getNow() {

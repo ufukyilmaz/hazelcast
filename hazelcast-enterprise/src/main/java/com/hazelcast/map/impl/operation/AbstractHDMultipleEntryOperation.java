@@ -284,11 +284,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         backupProcessor.processBackup(entry);
     }
 
-    protected Object getValueFor(Data dataKey, long now) {
-        final Map.Entry<Data, Object> mapEntry = recordStore.getMapEntry(dataKey, now);
-        return mapEntry.getValue();
-    }
-
     protected boolean keyNotOwnedByThisPartition(Data key) {
         final InternalPartitionService partitionService = getNodeEngine().getPartitionService();
         return partitionService.getPartitionId(key) != getPartitionId();

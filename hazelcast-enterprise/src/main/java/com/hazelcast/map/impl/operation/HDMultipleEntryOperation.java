@@ -60,23 +60,23 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
             if (keyNotOwnedByThisPartition(dataKey)) {
                 continue;
             }
-            final Object oldValue = getValueFor(dataKey, now);
+            final Object value = recordStore.get(dataKey, false);
 
-            final Map.Entry entry = createMapEntry(dataKey, oldValue);
+            final Map.Entry entry = createMapEntry(dataKey, value);
 
             final Data response = process(entry);
 
             addToResponses(dataKey, response);
 
             // first call noOp, other if checks below depends on it.
-            if (noOp(entry, oldValue)) {
+            if (noOp(entry, value)) {
                 continue;
             }
-            if (entryRemoved(entry, dataKey, oldValue, now)) {
+            if (entryRemoved(entry, dataKey, value, now)) {
                 continue;
             }
 
-            entryAddedOrUpdated(entry, dataKey, oldValue, now);
+            entryAddedOrUpdated(entry, dataKey, value, now);
 
             evict();
         }

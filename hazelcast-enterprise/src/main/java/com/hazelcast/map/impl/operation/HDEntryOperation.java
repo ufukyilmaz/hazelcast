@@ -52,7 +52,7 @@ import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
  */
 public class HDEntryOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
 
-    protected Object oldValue;
+    protected Object value;
     private EntryProcessor entryProcessor;
     private EntryEventType eventType;
     private Object response;
@@ -77,21 +77,18 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     @Override
     protected void runInternal() {
-        long now = getNow();
-        oldValue = getValueFor(dataKey, now);
-
-        Map.Entry entry = createMapEntry(dataKey, oldValue);
-
+        value = recordStore.get(dataKey, false);
+        Map.Entry entry = createMapEntry(dataKey, value);
         response = process(entry);
 
         // first call noOp, other if checks below depends on it.
         if (noOp(entry)) {
             return;
         }
-        if (entryRemoved(entry, now)) {
+        if (entryRemoved(entry, getNow())) {
             return;
         }
-        entryAddedOrUpdated(entry, now);
+        entryAddedOrUpdated(entry, getNow());
     }
 
     @Override
@@ -159,7 +156,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
      */
     private boolean noOp(Map.Entry entry) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
-        return !mapEntrySimple.isModified() || (oldValue == null && entry.getValue() == null);
+        return !mapEntrySimple.isModified() || (value == null && entry.getValue() == null);
     }
 
     private boolean entryRemoved(Map.Entry entry, long now) {
@@ -193,7 +190,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
             return EntryEventType.REMOVED;
         } else {
             dataValue = value;
-            if (oldValue == null) {
+            if (this.value == null) {
                 return EntryEventType.ADDED;
             }
             final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
@@ -207,12 +204,6 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     private void put(Object value) {
         recordStore.put(dataKey, value, DEFAULT_TTL);
-    }
-
-
-    private Object getValueFor(Data dataKey, long now) {
-        final Map.Entry<Data, Object> mapEntry = recordStore.getMapEntry(dataKey, now);
-        return mapEntry.getValue();
     }
 
     private Data process(Map.Entry entry) {
@@ -244,7 +235,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         final MapConfig mapConfig = mapContainer.getMapConfig();
         final InMemoryFormat format = mapConfig.getInMemoryFormat();
         if (format == InMemoryFormat.OBJECT && eventType != EntryEventType.REMOVED) {
-            oldValue = null;
+            value = null;
         }
     }
 
@@ -254,7 +245,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
             final MapEventPublisher mapEventPublisher = getMapEventPublisher();
             dataValue = toData(dataValue);
             mapEventPublisher.
-                    publishEvent(getCallerAddress(), name, eventType, dataKey, toData(oldValue), (Data) dataValue);
+                    publishEvent(getCallerAddress(), name, eventType, dataKey, toData(value), (Data) dataValue);
         }
     }
 

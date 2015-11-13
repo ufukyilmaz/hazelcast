@@ -5,7 +5,6 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 
 /**
  * Represents a chunk file which is still growing.
@@ -53,17 +52,10 @@ abstract class GrowingChunk extends Chunk {
     }
 
     public static void fsync(FileOutputStream out) {
-        if (out != null) {
-            fsync(out.getChannel());
-        }
-    }
-
-    public static void fsync(FileChannel out) {
-        if (out == null) {
-            return;
-        }
         try {
-            out.force(true);
+            if (out != null) {
+                out.getFD().sync();
+            }
         } catch (IOException e) {
             throw new HotRestartException(e);
         }

@@ -20,6 +20,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * is created in {@link #flushAndClose(MutatorCatchup, GcLogger)}).
  */
 public final class GrowingDestChunk extends GrowingChunk {
+    private static final int STUCK_DETECTION_THRESHOLD = 1000 * 1000;
     private final GcHelper gch;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private List<GcRecord> sortedGcRecords = new ArrayList<GcRecord>();
@@ -83,9 +84,12 @@ public final class GrowingDestChunk extends GrowingChunk {
                         // was already updated and a retirement event is on its way. We did not copy
                         // the record to the file, so to bring our bookkeeping back in sync we must
                         // keep catching up until we observe the event.
-                        do {
-                            catchUpSafely(mc, r);
-                        } while (r.isAlive());
+                        if (!catchUpUntilRetired(r, mc)) {
+                            throw new HotRestartException(String.format(
+                                "Stuck while waiting for a record to be retired. Chunk #%02x, record #%02x,"
+                                + "isTombstone? %b, size %d, RAM store found? %b",
+                                    seq, r.liveSeq(), r.isTombstone(), r.size(), ramStore != null));
+                        }
                     }
                 }
                 // Invariant at this point: r.isAlive() == false and record was not written to file.
@@ -135,17 +139,27 @@ public final class GrowingDestChunk extends GrowingChunk {
         return recs;
     }
 
-    private void catchUpSafely(MutatorCatchup mc, GcRecord r) {
-        mc.catchupNow();
+    @SuppressWarnings("checkstyle:emptyblock")
+    private boolean catchUpUntilRetired(GcRecord r, MutatorCatchup mc) {
+        for (int eventCount = 0;
+             eventCount <= STUCK_DETECTION_THRESHOLD && r.isAlive();
+             eventCount += catchUpSafely(mc, r)) {
+        }
+        return !r.isAlive();
+    }
+
+    private int catchUpSafely(MutatorCatchup mc, GcRecord r) {
+        int eventCount = mc.catchupNow();
         pfixTombstoMgr.dismissGarbage(this);
         if (mc.shutdownRequested()) {
-            mc.catchupNow();
+            eventCount += mc.catchupNow();
             pfixTombstoMgr.dismissGarbage(this);
             if (r.isAlive()) {
                 throw new HotRestartException(
                         "Record not available, retirement event not received, shutdown requested");
             }
         }
+        return eventCount;
     }
 
     private DataOutputStream dataOutputStream(FileOutputStream fileOut) {

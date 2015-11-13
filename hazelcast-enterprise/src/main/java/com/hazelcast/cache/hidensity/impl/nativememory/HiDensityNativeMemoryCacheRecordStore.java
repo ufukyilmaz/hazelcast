@@ -15,7 +15,6 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
@@ -30,6 +29,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.counters.Counter;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -48,26 +48,27 @@ public class HiDensityNativeMemoryCacheRecordStore
     // DEFAULT_INITIAL_CAPACITY;
     private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 256;
 
-    private HiDensityStorageInfo cacheInfo;
-    private EnterpriseSerializationService serializationService;
+    protected EnterpriseSerializationService serializationService;
+    protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
+    protected HiDensityStorageInfo cacheInfo;
     private MemoryManager memoryManager;
-    private HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
+    private Counter recordSequence;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
                                                  EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
         super(name, partitionId, nodeEngine, cacheService);
+        recordSequence = cacheService.getGlobalRecordSequence();
         ensureInitialized();
     }
 
-    private boolean isInvalidMaxSizePolicyExceptionDisabled() {
-        // By default this property is not exist.
+    private static boolean isInvalidMaxSizePolicyExceptionDisabled() {
+        // By default this property does not exist.
         // This property can be set to "true" for such as TCK tests.
         // Because there is no max-size policy.
         // For example: -DdisableInvalidMaxSizePolicyException=true
         return Boolean.getBoolean(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION);
     }
 
-    //CHECKSTYLE:OFF
     @Override
     protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
@@ -106,7 +107,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 }
         }
     }
-    //CHECKSTYLE:ON
 
     @SuppressWarnings("unchecked")
     private void ensureInitialized() {
@@ -128,6 +128,9 @@ public class HiDensityNativeMemoryCacheRecordStore
                 // `GlobalPoolingMemoryManager` for every memory allocation/free every time.
                 // So, we explicitly use its partition specific `ThreadLocalPoolingMemoryManager` directly.
                 memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
+
+                // Sequence can be thread-local because ThreadLocalPoolingMemoryManager has its own private address pool.
+                recordSequence = new LocalCounter();
             }
         }
         if (memoryManager == null) {
@@ -155,7 +158,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
         do {
             try {
-                cacheRecordMap = new HiDensityNativeMemoryCacheRecordMap(capacity, cacheRecordProcessor, cacheInfo);
+                cacheRecordMap = createMapInternal(capacity);
                 break;
             } catch (NativeOutOfMemoryError e) {
                 oome = e;
@@ -163,10 +166,14 @@ public class HiDensityNativeMemoryCacheRecordStore
             capacity = capacity >> 1;
         } while (capacity > 0);
 
-        if (cacheRecordMap == null && oome != null) {
+        if (cacheRecordMap == null /* && oome != null */) {
             throw oome;
         }
         return cacheRecordMap;
+    }
+
+    protected HiDensityNativeMemoryCacheRecordMap createMapInternal(int capacity) {
+        return new HiDensityNativeMemoryCacheRecordMap(capacity, cacheRecordProcessor, cacheInfo);
     }
 
     @Override
@@ -176,7 +183,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         return new HiDensityNativeMemoryCacheEntryProcessorEntry(key, record, this, now, completionId);
     }
 
-    private boolean isMemoryBlockValid(MemoryBlock memoryBlock) {
+    boolean isMemoryBlockValid(MemoryBlock memoryBlock) {
         return memoryBlock != null && memoryBlock.address() != NULL_PTR;
     }
 
@@ -241,7 +248,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    private CacheRecord toHeapCacheRecord(HiDensityNativeMemoryCacheRecord record) {
+    protected final CacheRecord toHeapCacheRecord(HiDensityNativeMemoryCacheRecord record) {
         if (!isMemoryBlockValid(record)) {
             return null;
         }
@@ -294,10 +301,13 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected HiDensityNativeMemoryCacheRecord createRecord(Object value, long creationTime, long expiryTime) {
-        return createRecordInternal(value, creationTime, expiryTime);
+        evictIfRequired();
+        return createRecordInternal(value, creationTime, expiryTime, incrementSequence());
     }
 
-    private HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime, long expiryTime) {
+    final HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime,
+            long expiryTime, long recordSequence) {
+
         NativeMemoryData data = null;
         HiDensityNativeMemoryCacheRecord record;
         long recordAddress = NULL_PTR;
@@ -306,6 +316,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             recordAddress = cacheRecordProcessor.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
             record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
+            record.setSequence(recordSequence);
 
             if (creationTime >= 0) {
                 record.setCreationTime(creationTime);
@@ -335,8 +346,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     @Override
-    //CHECKSTYLE:OFF
     protected void onCreateRecordWithExpiryError(Data key, Object value, long expiryTime, long now,
                                                  boolean disableWriteThrough, int completionId, String origin,
                                                  HiDensityNativeMemoryCacheRecord record, Throwable error) {
@@ -351,7 +362,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
-    //CHECKSTYLE:ON
 
     @Override
     protected void onProcessExpiredEntry(Data key, HiDensityNativeMemoryCacheRecord record, long expiryTime,
@@ -359,6 +369,10 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
         }
+    }
+
+    long incrementSequence() {
+        return recordSequence.inc();
     }
 
     @Override
@@ -414,7 +428,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
 
         HiDensityNativeMemoryCacheRecord newRecord = toNativeMemoryCacheRecord(record);
-        HiDensityNativeMemoryCacheRecord oldRecord = null;
+        HiDensityNativeMemoryCacheRecord oldRecord;
         try {
             oldRecord = doPutRecord(key, newRecord);
         } catch (Throwable t) {
@@ -477,17 +491,12 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private void onAccess(long now, HiDensityNativeMemoryCacheRecord record, long creationTime) {
         if (isEvictionEnabled()) {
-            if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LRU) {
-                long longDiff = now - creationTime;
-                int diff = longDiff < Integer.MAX_VALUE ? (int) longDiff : Integer.MAX_VALUE;
-                record.setAccessTimeDiff(diff);
-            } else if (evictionConfig.getEvictionPolicy() == EvictionPolicy.LFU) {
-                record.incrementAccessHit();
-            }
+            record.setAccessTime(now);
+            record.incrementAccessHit();
         }
     }
 
-    //CHECKSTYLE:OFF
+    @SuppressWarnings("checkstyle:parameternumber")
     @Override
     protected void onPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                          boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
@@ -511,14 +520,12 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
 
         if (isSaveSucceed) {
-            if (!isNewPut) {
-                if (key instanceof NativeMemoryData) {
-                    // If save is successful as new put, this means that key is not stored.
-                    // So add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
-                    NativeMemoryData nativeKey = (NativeMemoryData) key;
-                    if (isMemoryBlockValid(nativeKey)) {
-                        cacheRecordProcessor.addDeferredDispose(nativeKey);
-                    }
+            if (!isNewPut && key instanceof NativeMemoryData) {
+                // If save is successful as new put, this means that key is not stored.
+                // So add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+                NativeMemoryData nativeKey = (NativeMemoryData) key;
+                if (isMemoryBlockValid(nativeKey)) {
+                    cacheRecordProcessor.addDeferredDispose(nativeKey);
                 }
             }
         } else {
@@ -540,7 +547,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
-    //CHECKSTYLE:ON
 
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
                          NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
@@ -645,7 +651,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             } else {
                 oldValueData = record.getValue();
                 creationTime = record.getCreationTime();
-                record.setValue(toNativeMemoryData(value));
+                updateRecordValue(record, toNativeMemoryData(value));
             }
 
             onAccess(now, record, creationTime);
@@ -662,7 +668,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             throw ExceptionUtil.rethrow(error);
         }
     }
-    //CHECKSTYLE:ON
 
     @Override
     protected void onPutIfAbsent(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
@@ -690,7 +695,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         return putIfAbsent(key, value, defaultExpiryPolicy, caller, completionId);
     }
 
-    //CHECKSTYLE:OFF
+    @SuppressWarnings("checkstyle:parameternumber")
     @Override
     protected void onReplace(Data key, Object oldValue, Object newValue, ExpiryPolicy expiryPolicy,
                              String caller, boolean getValue, HiDensityNativeMemoryCacheRecord record,
@@ -707,7 +712,6 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
     }
-    //CHECKSTYLE:ON
 
     @Override
     public boolean replace(Data key, Object value, String caller, int completionId) {
@@ -805,7 +809,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public int forceEvict() {
-        int evictedCount = records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE);
+        int evictedCount = records.forceEvict(HiDensityCacheRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE, this);
         if (isStatisticsEnabled() && evictedCount > 0) {
             statistics.increaseCacheEvictions(evictedCount);
         }
@@ -823,8 +827,14 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    public void close() {
+        super.close();
+        records.dispose();
+    }
+
+    @Override
     protected void onDestroy() {
-        records.destroy();
+        records.dispose();
     }
 
     @Override
@@ -837,4 +847,23 @@ public class HiDensityNativeMemoryCacheRecordStore
         super.destroy();
     }
 
+    private static class LocalCounter implements Counter {
+        private long value;
+
+        @Override
+        public long get() {
+            return value;
+        }
+
+        @Override
+        public long inc() {
+            return ++value;
+        }
+
+        @Override
+        public long inc(long amount) {
+            value += amount;
+            return value;
+        }
+    }
 }

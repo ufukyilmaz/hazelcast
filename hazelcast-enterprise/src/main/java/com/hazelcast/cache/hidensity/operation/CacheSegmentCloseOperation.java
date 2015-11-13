@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 20/03/14
  */
-public final class CacheSegmentDestroyOperation
+public final class CacheSegmentCloseOperation
         extends AbstractOperation
         implements PartitionAwareOperation, AllowedDuringPassiveState {
 
@@ -36,7 +36,7 @@ public final class CacheSegmentDestroyOperation
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
             CachePartitionSegment segment = service.getSegment(partitionId);
-            segment.destroy();
+            segment.close();
         } finally {
             done.countDown();
         }

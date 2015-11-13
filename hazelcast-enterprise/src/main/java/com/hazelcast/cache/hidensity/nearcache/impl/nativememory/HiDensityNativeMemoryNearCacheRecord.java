@@ -212,16 +212,14 @@ public class HiDensityNativeMemoryNearCacheRecord
         return UnsafeHelper.UNSAFE.getLong(address + CREATION_TIME_OFFSET);
     }
 
-    public static int getAccessTimeDiff(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + ACCESS_TIME_OFFSET);
+    @Override
+    public boolean isTombstone() {
+        return false;
     }
 
-    public static int getAccessHit(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + ACCESS_HIT_OFFSET);
-    }
-
-    public static int getTtlMillis(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address + TTL_OFFSET);
+    @Override
+    public long getSequence() {
+        return 0;
     }
 
     @Override

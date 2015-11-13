@@ -3,9 +3,12 @@ package com.hazelcast.cache;
 import com.hazelcast.cache.hidensity.HiDensityCacheEntryCountResolver;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
+import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentDestroyOperation;
+import com.hazelcast.cache.hidensity.operation.CacheSegmentCloseOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
+import com.hazelcast.cache.hotrestart.HotRestartCachePartitionSegment;
+import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
@@ -29,8 +32,11 @@ import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.Node;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
@@ -38,9 +44,16 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
+import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.RamStore;
+import com.hazelcast.spi.hotrestart.RamStoreRegistry;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.counters.Counter;
+import com.hazelcast.util.counters.MwCounter;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -52,26 +65,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.spi.hotrestart.CacheDescriptor.isProvisionalName;
+import static com.hazelcast.spi.hotrestart.CacheDescriptor.toProvisionalName;
+import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
+
 /**
  * The {@link ICacheService} implementation specified for enterprise usage.
  * This {@link EnterpriseCacheService} implementation mainly handles
- * <ul>
- * <li>
+ * <ul> <li>
  * {@link ICacheRecordStore} creation of caches with specified partition id
- * </li>
- * <li>
+ * </li> <li>
  * Destroying segments and caches
- * </li>
- * <li>
+ * </li> <li>
  * Mediating for cache events and listeners
- * </li>
- * </ul>
+ * </li> </ul>
  *
  * @author mdogan 05/02/14
  */
+@SuppressWarnings("checkstyle:methodcount")
 public class EnterpriseCacheService
         extends CacheService
-        implements ReplicationSupportingService {
+        implements ReplicationSupportingService, RamStoreRegistry {
 
     private static final int CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS = 30;
 
@@ -79,14 +93,13 @@ public class EnterpriseCacheService
             new ConcurrentHashMap<String, WanReplicationPublisher>();
     protected final ConcurrentMap<String, String> cacheMergePolicies =
             new ConcurrentHashMap<String, String>();
-
     private final ConcurrentMap<String, HiDensityStorageInfo> hiDensityCacheInfoMap =
             new ConcurrentHashMap<String, HiDensityStorageInfo>();
     private final ConstructorFunction<String, HiDensityStorageInfo> hiDensityCacheInfoConstructorFunction =
             new ConstructorFunction<String, HiDensityStorageInfo>() {
                 @Override
                 public HiDensityStorageInfo createNew(String cacheNameWithPrefix) {
-                    CacheConfig cacheConfig = configs.get(cacheNameWithPrefix);
+                    CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
                     if (cacheConfig.isStatisticsEnabled()) {
                         CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
                         return new HiDensityStorageInfo(
@@ -98,10 +111,13 @@ public class EnterpriseCacheService
                 }
             };
 
+    private final Counter globalRecordSequence = MwCounter.newMwCounter();
+
     private ReplicationSupportingService replicationSupportingService;
     private CacheMergePolicyProvider cacheMergePolicyProvider;
     private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
+    private HotRestartService hotRestartService;
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
@@ -110,12 +126,40 @@ public class EnterpriseCacheService
         cacheMergePolicyProvider = new CacheMergePolicyProvider(nodeEngine);
         cacheFilterProvider = new CacheFilterProvider(nodeEngine);
         cacheWanEventPublisher = new CacheWanEventPublisherImpl(this);
+
+        hotRestartService = getHotRestartService();
+        if (hotRestartService != null) {
+            hotRestartService.registerRamStoreRegistry(SERVICE_NAME, this);
+        }
+    }
+
+    @Override protected CachePartitionSegment newPartitionSegment(int partitionId) {
+        return new HotRestartCachePartitionSegment(this, partitionId);
+    }
+
+    @Override
+    public RamStore ramStoreForPrefix(long prefix) {
+        String name = hotRestartService.getCacheName(prefix);
+        return (RamStore) getRecordStore(name, toPartitionId(prefix));
+    }
+
+    @Override public RamStore restartingRamStoreForPrefix(long prefix) {
+        String name = hotRestartService.getProvisionalCacheName(prefix);
+        return (RamStore) getOrCreateRecordStore(name, toPartitionId(prefix));
+    }
+
+    public HotRestartStore onHeapHotRestartStoreForCurrentThread() {
+        return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
+    }
+
+    public HotRestartStore offHeapHotRestartStoreForCurrentThread() {
+        return hotRestartService.getOffHeapHotRestartStoreForCurrentThread();
     }
 
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
      *
-     * @param name        the name of the cache with prefix
+     * @param name        the name of the cache, including prefix
      * @param partitionId the partition id which cache record store is created on
      * @return the created {@link ICacheRecordStore}
      *
@@ -124,26 +168,81 @@ public class EnterpriseCacheService
      */
     @Override
     protected ICacheRecordStore createNewRecordStore(String name, int partitionId) {
-        CacheConfig cacheConfig = configs.get(name);
+        CacheConfig cacheConfig = getCacheConfig(name);
         if (cacheConfig == null) {
             throw new CacheNotExistsException("Cache is already destroyed or not created yet, on "
                     + nodeEngine.getLocalMember());
         }
         InMemoryFormat inMemoryFormat = cacheConfig.getInMemoryFormat();
-        if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
-            try {
-                return new HiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
-            } catch (NativeOutOfMemoryError e) {
-                throw new NativeOutOfMemoryError("Cannot create internal cache map, "
-                        + "not enough contiguous memory available! -> " + e.getMessage(), e);
-            }
-        } else if (inMemoryFormat == null
-                || InMemoryFormat.BINARY.equals(inMemoryFormat)
-                || InMemoryFormat.OBJECT.equals(inMemoryFormat)) {
-            return new EnterpriseCacheRecordStoreImpl(name, partitionId, nodeEngine, this);
+        boolean isNative;
+        switch (inMemoryFormat) {
+            case NATIVE:
+                isNative = true;
+                break;
+            case BINARY:
+            case OBJECT:
+                isNative = false;
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        "Cannot create record store for the storage type: " + inMemoryFormat);
         }
 
-        throw new IllegalArgumentException("Cannot create record store for the storage type: " + inMemoryFormat);
+        long prefix = 0L;
+        if (cacheConfig.isHotRestartEnabled()) {
+            if (hotRestartService == null) {
+                throw new HazelcastException("HotRestart is not enabled!");
+            }
+
+            if (isProvisionalName(name)) {
+                prefix = hotRestartService.getPrefix(SERVICE_NAME, name, partitionId);
+            } else {
+                hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
+                prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
+            }
+        }
+        return isNative
+                ? newNativeRecordStore(name, partitionId, cacheConfig.isHotRestartEnabled(), prefix)
+                : newHeapRecordStore(name, partitionId, cacheConfig.isHotRestartEnabled(), prefix);
+    }
+
+    private HotRestartService getHotRestartService() {
+        NodeEngineImpl nodeEngineImpl = (NodeEngineImpl) nodeEngine;
+        Node node = nodeEngineImpl.getNode();
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
+        return nodeExtension.isHotRestartEnabled() ? nodeExtension.getHotRestartService() : null;
+    }
+
+    private ICacheRecordStore newHeapRecordStore(String name, int partitionId, boolean hotRestart, long prefix) {
+        return hotRestart
+                ? new HotRestartEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this, prefix)
+                : new DefaultEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this);
+    }
+
+    private ICacheRecordStore newNativeRecordStore(String name, int partitionId, boolean hotRestart, long prefix) {
+        try {
+            return hotRestart
+                    ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine, prefix)
+                    : new HiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
+        } catch (NativeOutOfMemoryError e) {
+            throw new NativeOutOfMemoryError("Cannot create internal cache map, "
+                    + "not enough contiguous memory available! -> " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public CacheConfig getCacheConfig(String name) {
+        CacheConfig cacheConfig;
+        if (isProvisionalName(name)) {
+            cacheConfig = hotRestartService.getProvisionalConfiguration(SERVICE_NAME, name);
+        } else {
+            cacheConfig = configs.get(name);
+            if (cacheConfig == null && hotRestartService != null) {
+                String provisionalName = toProvisionalName(name);
+                cacheConfig = hotRestartService.getProvisionalConfiguration(SERVICE_NAME, provisionalName);
+            }
+        }
+        return cacheConfig;
     }
 
     /**
@@ -197,10 +296,10 @@ public class EnterpriseCacheService
     @Override
     public void shutdown(boolean terminate) {
         OperationService operationService = nodeEngine.getOperationService();
-        List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
+        List<CacheSegmentCloseOperation> ops = new ArrayList<CacheSegmentCloseOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
-                CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation();
+                CacheSegmentCloseOperation op = new CacheSegmentCloseOperation();
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
 
@@ -212,7 +311,7 @@ public class EnterpriseCacheService
                 }
             }
         }
-        for (CacheSegmentDestroyOperation op : ops) {
+        for (CacheSegmentCloseOperation op : ops) {
             try {
                 op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
@@ -324,7 +423,7 @@ public class EnterpriseCacheService
      * Creates a {@link CacheOperationProvider} as specified {@link InMemoryFormat}
      * for specified <code>cacheNameWithPrefix</code>
      *
-     * @param cacheNameWithPrefix the name of the cache with prefix that operation works on
+     * @param cacheNameWithPrefix the name of the cache (including prefix) that operation works on
      * @param inMemoryFormat      the format of memory such as <code>BINARY</code>, <code>OBJECT</code>
      *                            or <code>NATIVE</code>
      * @return
@@ -351,7 +450,7 @@ public class EnterpriseCacheService
      * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityStorageInfo} instance
      * which holds live information about cache.
      *
-     * @param cacheNameWithPrefix Name (with prefix) of the cache whose live information is requested
+     * @param cacheNameWithPrefix Name (including prefix) of the cache whose live information is requested
      *
      * @return the {@link HiDensityStorageInfo} instance which holds live information about Hi-Density cache
      */
@@ -484,4 +583,7 @@ public class EnterpriseCacheService
         return cacheWanEventPublisher;
     }
 
+    public Counter getGlobalRecordSequence() {
+        return globalRecordSequence;
+    }
 }

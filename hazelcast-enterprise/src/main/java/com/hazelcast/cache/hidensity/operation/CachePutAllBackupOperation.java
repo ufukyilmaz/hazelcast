@@ -126,9 +126,9 @@ public class CachePutAllBackupOperation
         out.writeBoolean(true);
 
         out.writeLong(record.getCreationTime());
-        out.writeInt(record.getAccessTimeDiff());
+        out.writeLong(record.getAccessTime());
         out.writeInt(record.getAccessHit());
-        out.writeInt(record.getTtlMillis());
+        out.writeLong(record.getTtlMillis());
 
         Data valueData = record.getValue();
         if (valueData == null) {
@@ -192,9 +192,9 @@ public class CachePutAllBackupOperation
 
         final boolean recordNotNull = in.readBoolean();
         final long creationTime = in.readLong();
-        final int accessTimeDiff = in.readInt();
+        final long accessTime = in.readLong();
         final int accessHit = in.readInt();
-        final int ttlMillis = in.readInt();
+        final long ttlMillis = in.readLong();
         final boolean valueNotNull = in.readBoolean();
         Data valueData = valueNotNull ? AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in) : null;
         if (valueData instanceof NativeMemoryData) {
@@ -205,7 +205,7 @@ public class CachePutAllBackupOperation
                 recordAddress = memoryManager.allocate(recordSize);
                 HiDensityCacheRecord cacheRecord = new HiDensityNativeMemoryCacheRecord(recordAddress);
                 cacheRecord.setCreationTime(creationTime);
-                cacheRecord.setAccessTimeDiff(accessTimeDiff);
+                cacheRecord.setAccessTime(accessTime);
                 cacheRecord.setAccessHit(accessHit);
                 cacheRecord.setTtlMillis(ttlMillis);
                 if (valueNotNull) {
@@ -236,7 +236,7 @@ public class CachePutAllBackupOperation
                 CacheDataRecord cacheRecord = new CacheDataRecord();
                 cacheRecord.setCreationTime(creationTime);
                 cacheRecord.setAccessHit(accessHit);
-                cacheRecord.setAccessTime(creationTime + accessTimeDiff);
+                cacheRecord.setAccessTime(creationTime + accessTime);
                 if (ttlMillis >= 0) {
                     cacheRecord.setExpirationTime(creationTime + ttlMillis);
                 }

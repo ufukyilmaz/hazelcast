@@ -182,7 +182,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     int ix = segmentStart + randomIndex;
 
                     // Find an allocated index to be sampled from current random index
-                    while (ix < segmentEnd && !isAssigned(ix)) {
+                    while (ix < segmentEnd && !isValidForSampling(ix)) {
                         ix++; // Move to right in right-half of bucket
                     }
                     if (ix < segmentEnd) {
@@ -209,7 +209,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                     int ix = segmentStart + randomIndex - 1;
 
                     // Find an allocated index to be sampled from current random index
-                    while (ix >= segmentStart && !isAssigned(ix)) {
+                    while (ix >= segmentStart && !isValidForSampling(ix)) {
                         ix--; // Move to left in left-half of bucket
                     }
                     if (ix >= segmentStart) {
@@ -247,6 +247,10 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             throw new UnsupportedOperationException("Removing is not supported");
         }
 
+    }
+
+    protected boolean isValidForSampling(int slot) {
+        return isAssigned(slot);
     }
 
 }

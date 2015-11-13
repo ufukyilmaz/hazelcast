@@ -209,7 +209,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         final int memberListSize = memberListRef.get().size();
         if (memberListSize <= 1) {
             logger.info("No need to start validation since member list size is " + memberListSize);
-            hotRestartStatus.set(VERIFICATION_AND_LOAD_SUCCEEDED);
+            hotRestartStatus.set(PARTITION_TABLE_VERIFIED);
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                 listener.onSingleMemberCluster();
             }
@@ -462,7 +462,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
 
         if (!success) {
-            if (hotRestartStatus.get() == VERIFICATION_AND_LOAD_SUCCEEDED) {
+            if (!node.getThisAddress().equals(sender) && hotRestartStatus.get() == VERIFICATION_AND_LOAD_SUCCEEDED) {
                 logger.warning("Failed load status received from " + sender + " after load successfully completed cluster-wide");
                 operationService.send(new SendLoadCompletionStatusOperation(VERIFICATION_FAILED, ClusterState.PASSIVE), sender);
                 return;

@@ -1,5 +1,6 @@
 package com.hazelcast.elastic.map;
 
+import com.hazelcast.elastic.CapacityUtil;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryManager;
@@ -27,8 +28,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +61,7 @@ public class BinaryElasticHashMapTest {
 
     @After
     public void tearDown() throws Exception {
-        map.destroy();
+        map.dispose();
         serializationService.destroy();
         memoryManager.destroy();
     }
@@ -252,6 +255,27 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
+    public void testPut_withTheSameValue() {
+        Data key = newKey();
+        NativeMemoryData value = newValue();
+        map.put(key, value);
+
+        NativeMemoryData oldValue = map.put(key, value);
+        assertEquals(value, oldValue);
+    }
+
+    @Test
+    public void testSet_withTheSameValue() {
+        Data key = newKey();
+        NativeMemoryData value = newValue();
+        NativeMemoryData expected = new NativeMemoryData(value.address(), value.size());
+        map.set(key, value);
+
+        map.set(key, value);
+        assertEquals(expected, value);
+    }
+
+    @Test
     public void testKeySet() throws Exception {
         Set<Data> keys = map.keySet();
         assertTrue(keys.isEmpty());
@@ -429,80 +453,80 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testGet_after_destroy() throws Exception {
-        map.destroy();
+    public void testGet_after_dispose() throws Exception {
+        map.dispose();
         map.get(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testPut_after_destroy() throws Exception {
-        map.destroy();
+    public void testPut_after_dispose() throws Exception {
+        map.dispose();
         map.put(newKey(), newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testRemove_after_destroy() throws Exception {
-        map.destroy();
+    public void testRemove_after_dispose() throws Exception {
+        map.dispose();
         map.remove(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testReplace_after_destroy() throws Exception {
-        map.destroy();
+    public void testReplace_after_dispose() throws Exception {
+        map.dispose();
         map.replace(newKey(), newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testContainsKey_after_destroy() throws Exception {
-        map.destroy();
+    public void testContainsKey_after_dispose() throws Exception {
+        map.dispose();
         map.containsKey(newKey());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testContainsValue_after_destroy() throws Exception {
-        map.destroy();
+    public void testContainsValue_after_dispose() throws Exception {
+        map.dispose();
         map.containsValue(newValue());
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testKeySet_after_destroy() throws Exception {
-        map.destroy();
+    public void testKeySet_after_dispose() throws Exception {
+        map.dispose();
         map.keySet();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testEntrySet_after_destroy() throws Exception {
-        map.destroy();
+    public void testEntrySet_after_dispose() throws Exception {
+        map.dispose();
         map.entrySet();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testValues_after_destroy() throws Exception {
-        map.destroy();
+    public void testValues_after_dispose() throws Exception {
+        map.dispose();
         map.values();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testKeySet_iterator_after_destroy() throws Exception {
+    public void testKeySet_iterator_after_dispose() throws Exception {
         map.set(newKey(), newValue());
         Iterator<Data> iterator = map.keySet().iterator();
-        map.destroy();
+        map.dispose();
         iterator.next();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testEntrySet_iterator_after_destroy() throws Exception {
+    public void testEntrySet_iterator_after_dispose() throws Exception {
         map.set(newKey(), newValue());
         Iterator<Map.Entry<Data, NativeMemoryData>> iterator = map.entrySet().iterator();
-        map.destroy();
+        map.dispose();
         iterator.next();
     }
 
     @Test(expected = java.lang.IllegalStateException.class)
-    public void testValues_iterator_after_destroy() throws Exception {
+    public void testValues_iterator_after_dispose() throws Exception {
         map.set(newKey(), newValue());
         Iterator<NativeMemoryData> iterator = map.values().iterator();
-        map.destroy();
+        map.dispose();
         iterator.next();
     }
 
@@ -546,7 +570,7 @@ public class BinaryElasticHashMapTest {
             }
         }
 
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -650,7 +674,7 @@ public class BinaryElasticHashMapTest {
         }
 
         map.clear();
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -668,7 +692,7 @@ public class BinaryElasticHashMapTest {
         }
         assertEquals(0, map.size());
 
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -686,7 +710,7 @@ public class BinaryElasticHashMapTest {
         }
         assertEquals(0, map.size());
 
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -704,7 +728,7 @@ public class BinaryElasticHashMapTest {
         }
         assertEquals(0, map.size());
 
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -726,7 +750,7 @@ public class BinaryElasticHashMapTest {
             }
         }
 
-        map.destroy();
+        map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
@@ -862,7 +886,7 @@ public class BinaryElasticHashMapTest {
         Data key = newKey();
         NativeMemoryData value = new NativeMemoryData();
         map.put(key, value);
-        map.destroy();
+        map.dispose();
     }
 
     @Test
@@ -928,6 +952,36 @@ public class BinaryElasticHashMapTest {
         Map.Entry<Data, NativeMemoryData> entry = iter.next();
         assertEquals(key, entry.getKey());
         assertNull(entry.getValue());
+    }
+
+    @Test
+    public void test_getNativeKeyAddress() {
+        Data key = newKey();
+        map.put(key, newValue());
+
+        long nativeKeyAddress = map.getNativeKeyAddress(key);
+        assertNotEquals(NULL_ADDRESS, nativeKeyAddress);
+
+        NativeMemoryData nativeKey = new NativeMemoryData().reset(nativeKeyAddress);
+        assertEquals(key, nativeKey);
+    }
+
+    @Test
+    public void test_null_getNativeKeyAddress() {
+        Data key = newKey();
+        long nativeKeyAddress = map.getNativeKeyAddress(key);
+        assertEquals(NULL_ADDRESS, nativeKeyAddress);
+    }
+
+    @Test
+    public void test_capacity() {
+        assertEquals(CapacityUtil.DEFAULT_CAPACITY, map.capacity());
+    }
+
+    @Test
+    public void test_capacity_after_dispose() {
+        map.dispose();
+        assertEquals(0, map.capacity());
     }
 
     private Data newKey() {

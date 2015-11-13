@@ -42,9 +42,6 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  * always allocated to the nearest higher size that is a power of two. When
  * the capacity exceeds the given load factor, the buffer size is doubled.
  * </p>
- *
- * @author This code is inspired by the collaboration and implementation in the
- *         <a href="http://fastutil.dsi.unimi.it/">fastutil</a> project.
  */
 public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<Data, V> {
 
@@ -241,7 +238,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     @Override
     public boolean set(Data key, V value) {
         V old = put(key, value);
-        if (old != null) {
+        if (old != null && old.address() != value.address()) {
             memoryBlockProcessor.dispose(old);
         }
         return old == null;
@@ -420,7 +417,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 return false;
             }
             slot = (slot + 1) & mask;
-            if (slot == wrappedAround) break;
+            if (slot == wrappedAround) {
+                break;
+            }
         }
 
         return false;
@@ -430,7 +429,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
      */
     private void shiftConflictingKeys(int slotCurr) {
-        // Copied nearly verbatim from fastutil's impl.
         final int mask = allocated - 1;
         int slotPrev, slotOther;
         while (true) {
@@ -441,12 +439,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
                 if (slotPrev <= slotCurr) {
                     // we're on the right of the original slot.
-                    if (slotPrev >= slotOther || slotOther > slotCurr)
+                    if (slotPrev >= slotOther || slotOther > slotCurr) {
                         break;
+                    }
                 } else {
                     // we've wrapped around.
-                    if (slotPrev >= slotOther && slotOther > slotCurr)
+                    if (slotPrev >= slotOther && slotOther > slotCurr) {
                         break;
+                    }
                 }
                 slotCurr = (slotCurr + 1) & mask;
             }
@@ -479,9 +479,30 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 return readV(value);
             }
             slot = (slot + 1) & mask;
-            if (slot == wrappedAround) break;
+            if (slot == wrappedAround) {
+                break;
+            }
         }
         return null;
+    }
+
+    public long getNativeKeyAddress(Data key) {
+        ensureMemory();
+
+        final int mask = allocated - 1;
+        int slot = rehash(key, perturbation) & mask;
+        final int wrappedAround = slot;
+        while (isAssigned(slot)) {
+            long slotKey = getKey(slot);
+            if (NativeMemoryDataUtil.equals(slotKey, key)) {
+                return slotKey;
+            }
+            slot = (slot + 1) & mask;
+            if (slot == wrappedAround) {
+                break;
+            }
+        }
+        return NULL_ADDRESS;
     }
 
     private void ensureMemory() {
@@ -566,6 +587,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         @Override
         public final void remove() {
+            removeInternal(true);
+        }
+
+        protected void removeInternal(boolean disposeKey) {
             ensureMemory();
             if (currentSlot < 0) {
                 throw new NoSuchElementException();
@@ -577,7 +602,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             assigned--;
             shiftConflictingKeys(currentSlot);
 
-            memoryBlockProcessor.disposeData(readIntoKeyHolder(key));
+            if (disposeKey) {
+                memoryBlockProcessor.disposeData(readIntoKeyHolder(key));
+            }
+
             if (value != NULL_ADDRESS) {
                 memoryBlockProcessor.dispose(value);
             }
@@ -647,6 +675,11 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             nextSlot();
             long slotKey = getKey(currentSlot);
             return readData(slotKey);
+        }
+
+        @Override
+        public void removeInternal(boolean disposeKey) {
+            super.removeInternal(disposeKey);
         }
     }
 
@@ -795,7 +828,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         if (assigned > 0) {
             clear();
         }
@@ -804,7 +837,6 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
         allocated = 0;
         address = NULL_ADDRESS;
-        allocated = -1;
         resizeAt = 0;
     }
 

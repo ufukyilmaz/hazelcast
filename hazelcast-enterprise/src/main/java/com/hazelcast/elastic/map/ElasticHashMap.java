@@ -176,8 +176,8 @@ public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {
         map.clear();
     }
 
-    public void destroy() {
-        map.destroy();
+    public void dispose() {
+        map.dispose();
     }
 
     public int size() {

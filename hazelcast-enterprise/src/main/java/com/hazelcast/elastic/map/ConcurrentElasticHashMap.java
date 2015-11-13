@@ -312,7 +312,7 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
         public void destroy() {
             lock.lock();
             try {
-                map.destroy();
+                map.dispose();
             } finally {
                 lock.unlock();
             }
@@ -515,7 +515,7 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         for (int i = 0; i < segments.length; i++) {
             segments[i].destroy();
             segments[i] = null;

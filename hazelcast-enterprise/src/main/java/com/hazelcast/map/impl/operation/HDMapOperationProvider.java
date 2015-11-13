@@ -121,6 +121,11 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
+    public MapOperation createEvictAllOperation(String name) {
+        return new HDEvictAllOperation(name);
+    }
+
+    @Override
     public MapOperation createContainsKeyOperation(String name, Data dataKey) {
         return new HDContainsKeyOperation(name, dataKey);
     }

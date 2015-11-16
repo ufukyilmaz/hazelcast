@@ -81,14 +81,23 @@ public class LocalEntryEventData<K, V> implements EventData {
     }
 
     public Data getKeyData() {
+        if (keyData == null && serializationService != null) {
+            keyData = serializationService.toData(key);
+        }
         return keyData;
     }
 
     public Data getValueData() {
+        if (valueData == null && serializationService != null) {
+            valueData = serializationService.toData(value);
+        }
         return valueData;
     }
 
     public Data getOldValueData() {
+        if (oldValueData == null && serializationService != null) {
+            oldValueData = serializationService.toData(oldValue);
+        }
         return oldValueData;
     }
 
@@ -134,7 +143,7 @@ public class LocalEntryEventData<K, V> implements EventData {
     public String toString() {
         return "LocalEntryEventData{"
                 + "eventType=" + eventType
-                + ", key=" + key
+                + ", key=" + getKey()
                 + ", source='" + source + '\''
                 + '}';
     }

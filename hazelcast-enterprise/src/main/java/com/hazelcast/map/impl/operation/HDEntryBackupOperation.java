@@ -44,7 +44,8 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
     }
 
     @Override
-    public void innerBeforeRun() {
+    public void innerBeforeRun() throws Exception {
+        super.innerBeforeRun();
         if (entryProcessor instanceof HazelcastInstanceAware) {
             HazelcastInstance hazelcastInstance = getNodeEngine().getHazelcastInstance();
             ((HazelcastInstanceAware) entryProcessor).setHazelcastInstance(hazelcastInstance);

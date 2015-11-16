@@ -272,7 +272,8 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         if (responses == null) {
             responses = new MapEntries();
         }
-        responses.add(new AbstractMap.SimpleImmutableEntry<Data, Data>(key, response));
+        // copy key from HD memory to heap memory.
+        responses.add(new AbstractMap.SimpleImmutableEntry<Data, Data>(toData(key), response));
     }
 
     protected Data process(Map.Entry entry) {

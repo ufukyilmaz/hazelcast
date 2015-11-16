@@ -149,9 +149,11 @@ public abstract class AbstractWanReplication
             int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
             synchronized (queueMonitor) {
                 boolean dropEvent = isEventDroppingNeeded();
-                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
-                if (eventPublished) {
-                    currentElementCount.incrementAndGet();
+                if (!dropEvent) {
+                    boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
+                    if (eventPublished) {
+                        currentElementCount.incrementAndGet();
+                    }
                 }
             }
         }
@@ -279,14 +281,20 @@ public abstract class AbstractWanReplication
 
     @Override
     public void addMapQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        eventQueueContainer.getPublisherEventQueueMap().get(partitionId)
-                .getMapWanEventQueueMap().put(name, eventQueue);
+        WanReplicationEvent event = eventQueue.poll();
+        while (event != null) {
+            publishReplicationEvent(event.getServiceName(), (ReplicationEventObject) event.getEventObject());
+            event = eventQueue.poll();
+        }
     }
 
     @Override
     public void addCacheQueue(String name, int partitionId, WanReplicationEventQueue eventQueue) {
-        eventQueueContainer.getPublisherEventQueueMap().get(partitionId)
-                .getCacheWanEventQueueMap().put(name, eventQueue);
+        WanReplicationEvent event = eventQueue.poll();
+        while (event != null) {
+            publishReplicationEvent(event.getServiceName(), (ReplicationEventObject) event.getEventObject());
+            event = eventQueue.poll();
+        }
     }
 
     public void shutdown() {

@@ -43,6 +43,10 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy);
+    }
+
+    protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String filter) {
         WanReplicationConfig wanConfig = fromConfig.getWanReplicationConfig(setupName);
         if (wanConfig == null) {
             wanConfig = new WanReplicationConfig();
@@ -54,6 +58,9 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);
         wanRef.setMergePolicy(policy);
+        if (filter != null) {
+            wanRef.addFilter(filter);
+        }
 
         fromConfig.addWanReplicationConfig(wanConfig);
         fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
@@ -138,7 +145,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     }
 
 
-    private void assertKeysIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
+    protected void assertKeysIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkKeysIn(cluster, mapName, start, end));
@@ -172,7 +179,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    private void assertKeysNotIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
+    protected void assertKeysNotIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkKeysNotIn(cluster, mapName, start, end));

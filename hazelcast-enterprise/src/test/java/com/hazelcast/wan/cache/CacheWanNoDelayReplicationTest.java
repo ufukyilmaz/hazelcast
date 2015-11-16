@@ -4,6 +4,7 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -23,6 +24,19 @@ public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationT
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 200, singleNodeA);
         //One event comes from failure queue, others (between 1-100) should be dropped
         checkCacheDataSize(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 200);
+    }
+
+    @Test
+    public void testCacheWanFilter() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                "default", DummyCacheWanFilter.class.getName());
+        startClusterA();
+        startClusterB();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 1, 10, false);
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 1, 2, clusterA);
+        checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 2, 10);
     }
 
     @Override

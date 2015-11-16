@@ -17,6 +17,7 @@ import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisher;
 import com.hazelcast.cache.impl.event.CacheWanEventPublisherImpl;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
+import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.operation.CacheDestroyOperation;
@@ -443,14 +444,16 @@ public class EnterpriseCacheService
     }
 
     private boolean isEventFiltered(CacheEventContext eventContext, List<String> filters) {
-        CacheEntryView entryView = new DefaultCacheEntryView(eventContext.getDataKey(),
-                eventContext.getDataValue(), eventContext.getExpirationTime(), eventContext.getLastAccessTime(),
-                eventContext.getExpirationTime());
-        WanFilterEventType eventType = convertWanFilterEventType(eventContext.getEventType());
-        for (String filterName : filters) {
-            CacheWanEventFilter filter = cacheFilterProvider.getFilter(filterName);
-            if (filter.filter(eventContext.getCacheName(), entryView, eventType)) {
-                return true;
+        if (!filters.isEmpty()) {
+            CacheEntryView entryView = new LazyCacheEntryView(eventContext.getDataKey(),
+                    eventContext.getDataValue(), eventContext.getExpirationTime(), eventContext.getLastAccessTime(),
+                    eventContext.getAccessHit(), getSerializationService());
+            WanFilterEventType eventType = convertWanFilterEventType(eventContext.getEventType());
+            for (String filterName : filters) {
+                CacheWanEventFilter filter = cacheFilterProvider.getFilter(filterName);
+                if (filter.filter(eventContext.getCacheName(), entryView, eventType)) {
+                    return true;
+                }
             }
         }
         return false;

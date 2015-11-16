@@ -68,7 +68,6 @@ public abstract class AbstractWanReplication
     PublisherQueueContainer eventQueueContainer;
     BlockingQueue<WanReplicationEvent> stagingQueue;
 
-    private Object queueMonitor = new Object();
     private LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private ILogger logger;
@@ -147,13 +146,11 @@ public abstract class AbstractWanReplication
             replicationEventObject.getGroupNames().add(localGroupName);
             WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
             int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
-            synchronized (queueMonitor) {
-                boolean dropEvent = isEventDroppingNeeded();
-                if (!dropEvent) {
-                    boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
-                    if (eventPublished) {
-                        currentElementCount.incrementAndGet();
-                    }
+            boolean dropEvent = isEventDroppingNeeded();
+            if (!dropEvent) {
+                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
+                if (eventPublished) {
+                    currentElementCount.incrementAndGet();
                 }
             }
         }
@@ -189,7 +186,8 @@ public abstract class AbstractWanReplication
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
                 lastQueueFullLogTimeMs = curTime;
-                logger.severe("Wan replication event queue is full. Dropping events.");
+                logger.severe("Wan replication event queue is full. Dropping events. Queue size : "
+                        + currentElementCount.get());
             } else {
                 logger.finest("Wan replication event queue is full. An event will be dropped.");
             }
@@ -234,9 +232,7 @@ public abstract class AbstractWanReplication
     }
 
     private void removeLocal() {
-        synchronized (queueMonitor) {
-            currentElementCount.decrementAndGet();
-        }
+        currentElementCount.decrementAndGet();
     }
 
     @Override

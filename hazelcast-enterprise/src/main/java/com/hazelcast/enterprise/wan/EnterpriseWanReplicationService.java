@@ -65,6 +65,7 @@ public class EnterpriseWanReplicationService
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
+        logger.warning("Preparing EWR replication.");
         int partitionId = event.getPartitionId();
         EWRMigrationContainer migrationData = new EWRMigrationContainer();
         Set<Map.Entry<String, WanReplicationPublisherDelegate>> entrySet = wanReplications.entrySet();
@@ -96,8 +97,10 @@ public class EnterpriseWanReplicationService
         }
 
         if (migrationData.isEmpty()) {
+            logger.warning("Migration data is empty");
             return null;
         } else {
+            logger.warning("Migration data filled.");
             return new EWRQueueReplicationOperation(migrationData, event.getPartitionId());
         }
     }
@@ -127,6 +130,7 @@ public class EnterpriseWanReplicationService
     }
 
     private void clearMigrationData(int partitionId) {
+        logger.warning("Starting clearing migration data for partitionId " + partitionId);
         synchronized (publisherMutex) {
             for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
                 Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
@@ -138,11 +142,13 @@ public class EnterpriseWanReplicationService
                             PartitionWanEventContainer eventQueueContainer
                                     = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
                             eventQueueContainer.clear();
+                            logger.warning("Cleared event queue container");
                         }
                     }
                 }
             }
         }
+        logger.warning("End of clearing migration data");
     }
 
     @Override

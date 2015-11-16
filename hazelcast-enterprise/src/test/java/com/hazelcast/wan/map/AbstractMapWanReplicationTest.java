@@ -43,7 +43,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy) {
-        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy);
+        setupReplicateFrom(fromConfig, toConfig, clusterSz, setupName, policy, null);
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz, String setupName, String policy, String filter) {

@@ -8,7 +8,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.UUID;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_CLEAR_INTERVAL_SECONDS;
@@ -16,10 +15,10 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_DI
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_HOTSET_FRACTION;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_ITERATIONS_K;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_JUST_START;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_KEY_COUNT_K;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_ITERS_HOTSET_CHANGE;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_MIN_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_SIZE_STEP;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_KEY_COUNT_K;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_OFFHEAP_MB;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_PREFIX_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_SIZE_INCREASE_STEPS;

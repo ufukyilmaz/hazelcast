@@ -117,7 +117,7 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
         String listenerName = generateListenerName(mapName, cacheName);
         MapAddListenerAdapterRequest request = new MapAddListenerAdapterRequest(listenerName);
         EventHandler<EventData> handler = createHandler(adapter);
-        return listenerService.registerListener(request, handler);
+        return listenerService.registerListener(request, null, handler);
     }
 
     @Override

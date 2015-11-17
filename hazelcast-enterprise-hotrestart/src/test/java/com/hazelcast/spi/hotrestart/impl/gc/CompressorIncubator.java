@@ -78,14 +78,14 @@ public final class CompressorIncubator implements Disposable {
                 didCatchUp |= mc.catchupNow() > 0;
             }
             out.flush();
-            fileOut.getChannel().force(true);
+            fileOut.getFD().sync();
             out.close();
             chunk.compressed = true;
             if (!inFile.delete()) {
                 throw new IOException("failed to delete " + inFile);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.severe(String.format("Compression of chunk #%02x failed", chunk.seq), e);
             closeIgnoringFailure(out);
             if (!outFile.delete()) {
                 logger.severe("failed to delete " + outFile);

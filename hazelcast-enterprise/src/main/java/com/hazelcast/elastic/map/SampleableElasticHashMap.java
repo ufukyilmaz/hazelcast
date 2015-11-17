@@ -5,12 +5,14 @@ import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.memory.MemoryBlockProcessor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.util.QuickMath;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Random;
+
+import static com.hazelcast.util.QuickMath.isPowerOfTwo;
+import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 
 public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElasticHashMap<V> {
 
@@ -117,7 +119,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             throw new IllegalArgumentException("Sample count cannot be a negative value.");
         }
         if (sampleCount == 0 || size() == 0) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
         return new LazySamplingEntryIterableIterator(sampleCount);
@@ -132,9 +134,8 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     private final class LazySamplingEntryIterableIterator<E extends SamplingEntry>
             implements Iterable<E>, Iterator<E> {
 
-        private final int maxEntryCount;
+        private final int maxSampleCount;
         private final int end;
-        private final int mask;
         private final int segmentCount;
         private final int segmentSize;
         private final int randomSegment;
@@ -146,12 +147,12 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
         private boolean reachedToEnd;
         private E currentSample;
 
-        private LazySamplingEntryIterableIterator(int maxEntryCount) {
-            this.maxEntryCount = maxEntryCount;
+        private LazySamplingEntryIterableIterator(int maxSampleCount) {
+            this.maxSampleCount = maxSampleCount;
             this.end = capacity();
-            this.mask = end - 1;
-            this.segmentCount = QuickMath.nextPowerOfTwo(maxEntryCount * 2);
-            this.segmentSize = Math.max(capacity() / segmentCount, 1);
+            assert isPowerOfTwo(end);
+            this.segmentCount = Math.min(nextPowerOfTwo(maxSampleCount * 2), end);
+            this.segmentSize = end / segmentCount;
             final Random random = THREAD_LOCAL_RANDOM.get();
             this.randomSegment = random.nextInt(segmentCount);
             this.randomIndex = random.nextInt(segmentSize);
@@ -166,7 +167,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
         }
 
         private void iterate() {
-            if (returnedEntryCount >= maxEntryCount || reachedToEnd) {
+            if (returnedEntryCount >= maxSampleCount || reachedToEnd) {
                 currentSample = null;
                 return;
             }
@@ -176,15 +177,12 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 for (; passedSegmentCount < segmentCount;
                      passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
                     int segmentStart = currentSegmentNo * segmentSize;
-                    int segmentEnd = Math.min(segmentStart + segmentSize, end);
+                    int segmentEnd = segmentStart + segmentSize;
                     int ix = segmentStart + randomIndex;
-                    // If randomly selected index points to outside of allocated storage, start from head of segment
-                    if (ix >= segmentEnd) {
-                        ix = segmentStart;
-                    }
+
                     // Find an allocated index to be sampled from current random index
                     while (ix < segmentEnd && !isAssigned(ix)) {
-                        ix = (ix + 1) & mask; // Move to right in right-half of bucket
+                        ix++; // Move to right in right-half of bucket
                     }
                     if (ix < segmentEnd) {
                         currentSample = createSamplingEntry(ix);
@@ -206,15 +204,12 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 for (; passedSegmentCount < segmentCount;
                      passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
                     int segmentStart = currentSegmentNo * segmentSize;
-                    int segmentEnd = Math.min(segmentStart + segmentSize, end);
-                    int ix = Math.max(segmentStart, segmentStart + randomIndex - 1);
-                    // If randomly selected index points to outside of allocated storage, start from tail of segment
-                    if (ix >= segmentEnd) {
-                        ix = segmentEnd - 1;
-                    }
+                    int segmentEnd = segmentStart + segmentSize;
+                    int ix = segmentStart + randomIndex - 1;
+
                     // Find an allocated index to be sampled from current random index
                     while (ix >= segmentStart && !isAssigned(ix)) {
-                        ix = (ix - 1) & mask; // Move to left in left-half of bucket
+                        ix--; // Move to left in left-half of bucket
                     }
                     if (ix >= segmentStart) {
                         currentSample = createSamplingEntry(ix);

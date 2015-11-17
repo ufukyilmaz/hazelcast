@@ -45,10 +45,11 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             ClassLoader classLoader, Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
             Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
             PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-            MemoryManager memoryManager) {
+            MemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject) {
 
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
-                managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory);
+                managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
+                enableSharedObject);
 
         this.memoryManager = memoryManager;
     }

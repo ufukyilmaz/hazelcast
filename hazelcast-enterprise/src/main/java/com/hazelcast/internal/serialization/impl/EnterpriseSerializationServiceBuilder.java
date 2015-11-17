@@ -123,8 +123,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
             case 1:
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
-                        partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager);
-                serializationServiceV1.registerJavaTypeSerializers(enableCompression, enableSharedObject);
+                        partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
+                        enableSharedObject);
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 

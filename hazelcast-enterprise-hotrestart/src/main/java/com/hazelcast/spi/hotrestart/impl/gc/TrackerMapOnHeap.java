@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 /**
  * On-heap implementation of record tracker map.
  */
-final class TrackerMapOnHeap implements TrackerMap {
+final class TrackerMapOnHeap extends TrackerMapBase {
     private final Map<KeyHandle, Tracker> trackers = new HashMap<KeyHandle, Tracker>();
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
@@ -19,6 +19,7 @@ final class TrackerMapOnHeap implements TrackerMap {
             return tr;
         }
         trackers.put(kh, new TrackerOnHeap(chunkSeq, isTombstone));
+        added(isTombstone);
         return null;
     }
 
@@ -26,7 +27,7 @@ final class TrackerMapOnHeap implements TrackerMap {
         return trackers.get(kh);
     }
 
-    @Override public void remove(KeyHandle kh) {
+    @Override void doRemove(KeyHandle kh) {
         trackers.remove(kh);
     }
 
@@ -39,14 +40,6 @@ final class TrackerMapOnHeap implements TrackerMap {
     }
 
     @Override public void dispose() { }
-
-    @Override public String toString() {
-        final StringBuilder b = new StringBuilder(1024);
-        for (Cursor c = cursor(); c.advance();) {
-            b.append(c.asKeyHandle()).append("->").append(c.asTracker()).append(' ');
-        }
-        return b.toString();
-    }
 
     private class HeapCursor implements Cursor {
         private final Iterator<Entry<KeyHandle, Tracker>> iter = trackers.entrySet().iterator();

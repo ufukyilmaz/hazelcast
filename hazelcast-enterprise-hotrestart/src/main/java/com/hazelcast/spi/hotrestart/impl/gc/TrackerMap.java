@@ -24,7 +24,19 @@ interface TrackerMap extends Disposable {
      */
     Tracker get(KeyHandle kh);
 
-    void remove(KeyHandle kh);
+    /**
+     * Removes the entry for {@code kh} assuming that it maps to
+     * a tracker representing a live tombstone. This assumption is
+     * not verified.
+     */
+    void removeLiveTombstone(KeyHandle kh);
+
+    /**
+     * Removes the entry for {@code tr} if {@code tr} represents a
+     * dead record. {@code tr} must be the tracker mapped under {@code kh}, but
+     * this is not verified.
+     */
+    void removeIfDead(KeyHandle kh, Tracker tr);
 
     long size();
 

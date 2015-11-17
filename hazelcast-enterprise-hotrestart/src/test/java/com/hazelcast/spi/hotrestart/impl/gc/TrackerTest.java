@@ -22,20 +22,12 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
     private final int chunkSeq = 3;
     private final int tombstoneChunkSeq = 13;
 
-    private Tracker tracker;
-    private Tracker tombstoneTracker;
-
-    private TrackerMapOffHeap containerMap;
+    private TrackerMapBase containerMap;
 
     @Before public void setup() {
-        if (offHeap) {
-            containerMap = new TrackerMapOffHeap(malloc);
-            containerMap.putIfAbsent(keyHandle, chunkSeq, false);
-            containerMap.putIfAbsent(tombstoneKeyHandle, tombstoneChunkSeq, true);
-        } else {
-            tracker = new TrackerOnHeap(chunkSeq, false);
-            tombstoneTracker = new TrackerOnHeap(tombstoneChunkSeq, true);
-        }
+        containerMap = offHeap ? new TrackerMapOffHeap(malloc) : new TrackerMapOnHeap();
+        containerMap.putIfAbsent(keyHandle, chunkSeq, false);
+        containerMap.putIfAbsent(tombstoneKeyHandle, tombstoneChunkSeq, true);
     }
 
     @After public void destroy() {
@@ -58,7 +50,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void isAlive_reportsTrue_andAfterRetire_reportsFalse() {
         assertTrue(tracker().isAlive());
-        tracker().retire();
+        tracker().retire(containerMap);
         assertFalse(tracker().isAlive());
     }
 
@@ -85,7 +77,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void newLiveTombstone_onLiveTracker_incrementsGarbageCount_andSetsNewState() {
         final int newChunkSeq = 1001;
-        tracker().newLiveRecord(newChunkSeq, true);
+        tracker().newLiveRecord(newChunkSeq, true, containerMap);
         assertEquals(1, tracker().garbageCount());
         assertEquals(newChunkSeq, tracker().chunkSeq());
         assertTrue(tracker().isTombstone());
@@ -93,7 +85,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void newLiveRecord_onLiveTombstoneTracker_leavesGarbageCount_andSetsNewState() {
         final int newChunkSeq = 1001;
-        tombstoneTracker().newLiveRecord(newChunkSeq, false);
+        tombstoneTracker().newLiveRecord(newChunkSeq, false, containerMap);
         assertEquals(0, tombstoneTracker().garbageCount());
         assertEquals(newChunkSeq, tombstoneTracker().chunkSeq());
         assertFalse(tombstoneTracker().isTombstone());
@@ -115,16 +107,16 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void setState_setsTheState() {
         final int newChunkSeq = 1001;
-        tracker().setState(newChunkSeq, true);
+        tracker().setLiveState(newChunkSeq, true);
         assertEquals(newChunkSeq, tracker().chunkSeq());
         assertTrue(tracker().isTombstone());
     }
 
     private Tracker tracker() {
-        return offHeap ? containerMap.get(keyHandle) : tracker;
+        return containerMap.get(keyHandle);
     }
 
     private Tracker tombstoneTracker() {
-        return offHeap ? containerMap.get(tombstoneKeyHandle) : tombstoneTracker;
+        return containerMap.get(tombstoneKeyHandle);
     }
 }

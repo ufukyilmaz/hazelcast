@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class TrackerMapTest extends OnHeapOffHeapTestBase {
 
-    private TrackerMap m;
+    private TrackerMapBase m;
 
     @Before public void setup() {
         m = offHeap ? new TrackerMapOffHeap(malloc) : new TrackerMapOnHeap();
@@ -43,6 +43,39 @@ public class TrackerMapTest extends OnHeapOffHeapTestBase {
         assertEquals(2, tr.chunkSeq());
         assertTrue(tr.isTombstone());
         assertEquals(0, tr.garbageCount());
+    }
+
+    @Test public void whenPutAbsentValue_thenValueCountIncremented() {
+        assertNull(m.putIfAbsent(keyHandle, 2, false));
+        assertEquals(1, m.liveValues.get());
+        assertEquals(0, m.liveTombstones.get());
+    }
+
+    @Test public void whenPutAbsentTombstone_thenTombstoneCountIncremented() {
+        assertNull(m.putIfAbsent(keyHandle, 2, true));
+        assertEquals(0, m.liveValues.get());
+        assertEquals(1, m.liveTombstones.get());
+    }
+
+    @Test public void whenRemoveLiveTombstone_thenTombstoneCountDecremented() {
+        assertNull(m.putIfAbsent(keyHandle, 2, true));
+        assertEquals(1, m.liveTombstones.get());
+        m.removeLiveTombstone(keyHandle);
+        assertEquals(0, m.liveTombstones.get());
+    }
+
+    @Test public void whenRetireValue_thenValueCountDecremented() {
+        assertNull(m.putIfAbsent(keyHandle, 2, false));
+        assertEquals(1, m.liveValues.get());
+        m.get(keyHandle).retire(m);
+        assertEquals(0, m.liveValues.get());
+    }
+
+    @Test public void whenRetireTombstone_thenTombstoneCountDecremented() {
+        assertNull(m.putIfAbsent(keyHandle, 2, true));
+        assertEquals(1, m.liveTombstones.get());
+        m.get(keyHandle).retire(m);
+        assertEquals(0, m.liveTombstones.get());
     }
 
     @Test public void whenPutExistingKey_thenExistingTrackerReturned() {

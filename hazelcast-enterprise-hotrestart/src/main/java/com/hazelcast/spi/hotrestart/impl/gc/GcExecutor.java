@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -57,12 +58,12 @@ public final class GcExecutor {
     private volatile Throwable gcThreadFailureCause;
     private boolean keepGoing;
 
-    public GcExecutor(GcHelper gcHelper, String name) {
+    public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
         this.logger = gcHelper.logger;
-        this.gcThread = new Thread(new MainLoop(), "GC thread for " + name);
+        this.gcThread = new Thread(new MainLoop(), "GC thread for " + cfg.storeName());
         this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
-        this.chunkMgr = new ChunkManager(gcHelper, pfixTombstoMgr);
+        this.chunkMgr = new ChunkManager(cfg, gcHelper, pfixTombstoMgr);
         pfixTombstoMgr.setChunkManager(chunkMgr);
     }
 

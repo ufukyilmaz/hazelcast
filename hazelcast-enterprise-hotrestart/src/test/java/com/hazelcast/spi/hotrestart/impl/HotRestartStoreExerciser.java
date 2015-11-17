@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.BuildInfo;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
 import com.hazelcast.memory.MemorySize;
@@ -25,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
@@ -37,6 +39,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class HotRestartStoreExerciser {
     static final String PROP_TEST_CYCLE_COUNT = "testCycleCount";
@@ -87,6 +90,7 @@ public class HotRestartStoreExerciser {
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
                 .setHomeDir(new File(testingHome, "hr-store"))
                 .setLoggingService(createLoggingService())
+                .setMetricsRegistry(mockMetricsRegistry())
                 .setIoDisabled(parseBoolean(testProps.getProperty(PROP_DISABLE_IO)));
         final int offHeapMb = parseInt(testProps.getProperty(PROP_OFFHEAP_MB));
         if (offHeapMb > 0) {
@@ -95,6 +99,10 @@ public class HotRestartStoreExerciser {
         this.cfg = cfg;
         this.testProps = testProps;
         this.profile = new TestProfile(testProps);
+    }
+
+    public static File randomHotRestartHome() {
+        return new File("hotrestart-test-" + UUID.randomUUID());
     }
 
     void proceed() throws Exception {
@@ -170,7 +178,7 @@ public class HotRestartStoreExerciser {
                 final byte[] value = profile.randomValuePowerLaw();
                 final long iterStart = System.nanoTime();
                 final int r = rnd.nextInt(100);
-                if (r > 80) {
+                if (r < 80) {
                     reg.put(profile.randomPrefix(), key, value);
                 } else {
                     reg.remove(profile.randomPrefix(), key);
@@ -299,6 +307,10 @@ public class HotRestartStoreExerciser {
 
     public static LoggingService createLoggingService() {
         return new LoggingServiceImpl("group", "log4j", new BuildInfo("0", "0", "0", 0, true, (byte)0));
+    }
+
+    public static MetricsRegistry mockMetricsRegistry() {
+        return mock(MetricsRegistry.class);
     }
 
     static Properties toProps(String... kvs) {

@@ -24,6 +24,7 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_OF
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_PREFIX_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_SIZE_INCREASE_STEPS;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_TEST_CYCLE_COUNT;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.randomHotRestartHome;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.toProps;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -40,7 +41,7 @@ public class HotRestartStoreQuickTest {
     }
 
     private static void quickTest(boolean offHeap) throws Exception {
-        final File testingHome = new File("quicktest-" + UUID.randomUUID());
+        final File testingHome = randomHotRestartHome();
         try {
             new HotRestartStoreExerciser(testingHome,
                     toProps(PROP_TEST_CYCLE_COUNT, "2",

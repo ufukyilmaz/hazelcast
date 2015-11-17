@@ -1,7 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.HotRestartException;
-
 /**
  * Tracks the GC state for a single key in the Hot Restart store: where
  * the live record is, whether it's a tombstone, and the number of
@@ -22,20 +20,30 @@ abstract class Tracker {
     }
 
     final void moveToChunk(long destChunkSeq) {
-        if (destChunkSeq == 0) {
-            throw new HotRestartException("Attempt to move a record to chunk zero");
-        }
-        setState(destChunkSeq, isTombstone());
+        setLiveState(destChunkSeq, isTombstone());
     }
 
-    final void newLiveRecord(long chunkSeq, boolean isTombstone) {
-        if (isAlive() && !isTombstone()) {
-            incrementGarbageCount();
+    final void newLiveRecord(long chunkSeq, boolean freshIsTombstone, TrackerMap owner) {
+        final TrackerMapBase ownr = (TrackerMapBase) owner;
+        if (isAlive()) {
+            final boolean staleIsTombstone = isTombstone();
+            assert !(staleIsTombstone && freshIsTombstone) : "Attempted to replace a tombstone with another tombstone";
+            if (staleIsTombstone) {
+                ownr.replacedTombstoneWithValue();
+            } else {
+                incrementGarbageCount();
+                if (freshIsTombstone) {
+                    ownr.replacedValueWithTombstone();
+                }
+            }
+        } else {
+            ownr.added(freshIsTombstone);
         }
-        setState(chunkSeq, isTombstone);
+        setLiveState(chunkSeq, freshIsTombstone);
     }
 
-    final void retire() {
+    final void retire(TrackerMap owner) {
+        ((TrackerMapBase) owner).retired(isTombstone());
         setRawChunkSeq(0);
     }
 
@@ -54,7 +62,8 @@ abstract class Tracker {
         setGarbageCount(0);
     }
 
-    void setState(long chunkSeq, boolean isTombstone) {
+    final void setLiveState(long chunkSeq, boolean isTombstone) {
+        assert chunkSeq != 0 : "Attempt to move a record to chunk zero";
         setRawChunkSeq(isTombstone ? -chunkSeq : chunkSeq);
     }
 

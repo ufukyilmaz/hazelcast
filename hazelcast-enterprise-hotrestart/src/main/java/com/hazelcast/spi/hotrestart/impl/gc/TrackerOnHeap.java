@@ -8,7 +8,7 @@ final class TrackerOnHeap extends Tracker {
     private long garbageCount;
 
     TrackerOnHeap(long chunkSeq, boolean isTombstone) {
-        setState(chunkSeq, isTombstone);
+        setLiveState(chunkSeq, isTombstone);
     }
 
     @Override long garbageCount() {

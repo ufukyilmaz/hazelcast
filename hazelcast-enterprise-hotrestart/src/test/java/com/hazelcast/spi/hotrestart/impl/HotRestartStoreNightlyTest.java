@@ -8,7 +8,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.UUID;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_CLEAR_INTERVAL_SECONDS;
@@ -24,6 +23,7 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_OF
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_PREFIX_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_SIZE_INCREASE_STEPS;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_TEST_CYCLE_COUNT;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.randomHotRestartHome;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.toProps;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -40,7 +40,7 @@ public class HotRestartStoreNightlyTest {
     }
 
     private static void longTest(boolean offHeap) throws Exception {
-        final File testingHome = new File("nightlytest-" + UUID.randomUUID());
+        final File testingHome = randomHotRestartHome();
         try {
             new HotRestartStoreExerciser(testingHome,
                     toProps(PROP_TEST_CYCLE_COUNT, "10",
@@ -61,4 +61,5 @@ public class HotRestartStoreNightlyTest {
             delete(testingHome);
         }
     }
+
 }

@@ -47,7 +47,7 @@ public final class Rebuilder {
      */
     @SuppressWarnings("checkstyle:nestedifdepth")
     public boolean accept(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
-        cm.occupancy += size;
+        cm.occupancy.inc(size);
         if (seq > maxSeq) {
             maxSeq = seq;
         }
@@ -66,16 +66,16 @@ public final class Rebuilder {
             final Record stale = chunkWithStale.records.get(kh);
             if (seq >= stale.liveSeq()) {
                 // We are accepting a record which replaces an existing, now stale record
-                cm.garbage += stale.size();
+                cm.garbage.inc(stale.size());
                 chunkWithStale.retire(kh, stale);
                 chunk.add(prefix, kh, seq, size, isTombstone);
-                tr.newLiveRecord(chunk.seq, isTombstone);
+                tr.newLiveRecord(chunk.seq, isTombstone, cm.trackers);
                 return true;
             } else {
                 // We are accepting a stale record
                 chunk.size += size;
                 chunk.garbage += size;
-                cm.garbage += size;
+                cm.garbage.inc(size);
                 if (!isTombstone) {
                     final Record sameKeyRecord = chunk.records.putIfAbsent(prefix, kh, 0, 0, false, 1);
                     if (sameKeyRecord != null) {
@@ -96,7 +96,7 @@ public final class Rebuilder {
     public void acceptCleared(int size) {
         chunk.size += size;
         chunk.garbage += size;
-        cm.garbage += size;
+        cm.garbage.inc(size);
     }
 
     private Chunk chunk(long chunkSeq) {
@@ -127,7 +127,7 @@ public final class Rebuilder {
             final Record r = chunk.records.get(kh);
             final long seq = r.liveSeq();
             final long keyPrefix = r.keyPrefix(kh);
-            cm.garbage += r.size();
+            cm.garbage.inc(r.size());
             chunk.retire(kh, r);
             cursor.remove();
             cm.submitForRelease(keyPrefix, kh, seq);

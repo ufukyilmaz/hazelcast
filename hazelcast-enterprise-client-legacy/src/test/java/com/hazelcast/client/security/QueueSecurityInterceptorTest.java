@@ -7,6 +7,7 @@ import com.hazelcast.core.ItemListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -35,6 +36,7 @@ public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
+    @Ignore
     public void removeItemListener() {
         final DummyListener itemListener = new DummyListener();
         final String id = queue.addItemListener(itemListener, false);

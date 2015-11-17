@@ -11,6 +11,7 @@ import com.hazelcast.logging.Logger;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.client.MapAddListenerAdapterRequest;
+import com.hazelcast.map.impl.client.MapRemoveEntryListenerRequest;
 import com.hazelcast.map.impl.event.EventData;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
@@ -115,9 +116,10 @@ public class ClientQueryCacheEventService implements QueryCacheEventService {
     @Override
     public String listenPublisher(String mapName, String cacheName, ListenerAdapter adapter) {
         String listenerName = generateListenerName(mapName, cacheName);
-        MapAddListenerAdapterRequest request = new MapAddListenerAdapterRequest(listenerName);
+        MapAddListenerAdapterRequest addRequest = new MapAddListenerAdapterRequest(listenerName);
         EventHandler<EventData> handler = createHandler(adapter);
-        return listenerService.registerListener(request, null, handler);
+        MapRemoveEntryListenerRequest removeRequest = new MapRemoveEntryListenerRequest(listenerName);
+        return listenerService.registerListener(addRequest, removeRequest, handler);
     }
 
     @Override

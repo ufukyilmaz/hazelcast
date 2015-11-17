@@ -118,6 +118,7 @@ class MockRecordStoreOffHeap implements MockRecordStore {
     }
 
     @Override public void accept(KeyHandle kh, byte[] value) {
+        assert value != null : "Tried to accept a record with null value";
         dataStore.put(handle2key.get(kh), value);
     }
 

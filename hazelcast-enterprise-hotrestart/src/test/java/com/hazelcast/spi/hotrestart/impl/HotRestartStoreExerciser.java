@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
 import com.hazelcast.memory.MemorySize;
@@ -29,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.MockRecordStoreOffHeap.isTombstone;
@@ -39,7 +41,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 public class HotRestartStoreExerciser {
     static final String PROP_TEST_CYCLE_COUNT = "testCycleCount";
@@ -87,10 +88,11 @@ public class HotRestartStoreExerciser {
 
     HotRestartStoreExerciser(File testingHome, Properties testProps) {
         validateProps(testProps, SAMPLE);
+        final LoggingService loggingService = createLoggingService();
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
                 .setHomeDir(new File(testingHome, "hr-store"))
-                .setLoggingService(createLoggingService())
-                .setMetricsRegistry(mockMetricsRegistry())
+                .setLoggingService(loggingService)
+                .setMetricsRegistry(metricsRegistry(loggingService))
                 .setIoDisabled(parseBoolean(testProps.getProperty(PROP_DISABLE_IO)));
         final int offHeapMb = parseInt(testProps.getProperty(PROP_OFFHEAP_MB));
         if (offHeapMb > 0) {
@@ -309,8 +311,8 @@ public class HotRestartStoreExerciser {
         return new LoggingServiceImpl("group", "log4j", new BuildInfo("0", "0", "0", 0, true, (byte)0));
     }
 
-    public static MetricsRegistry mockMetricsRegistry() {
-        return mock(MetricsRegistry.class);
+    public static MetricsRegistry metricsRegistry(LoggingService loggingService) {
+        return new MetricsRegistryImpl(loggingService.getLogger("metrics"), MANDATORY);
     }
 
     static Properties toProps(String... kvs) {

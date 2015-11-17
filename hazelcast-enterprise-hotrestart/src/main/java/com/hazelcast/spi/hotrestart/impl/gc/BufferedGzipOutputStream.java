@@ -65,7 +65,7 @@ final class BufferedGzipOutputStream extends GZIPOutputStream {
         super.flush();
         mc.catchupNow();
         if (mc.fsyncOften) {
-            ((FileOutputStream) out).getChannel().force(true);
+            ((FileOutputStream) out).getFD().sync();
         }
     }
 }

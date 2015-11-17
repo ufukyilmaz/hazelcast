@@ -187,7 +187,7 @@ class PrefixTombstoneManager {
                 out.writeLong(c.value());
             }
             out.flush();
-            fileOut.getChannel().force(true);
+            fileOut.getFD().sync();
             out.close();
             fileOut = null;
             if (!newFile.renameTo(new File(homeDir, PREFIX_TOMBSTONES_FILENAME))) {

@@ -166,7 +166,8 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createTxnLockAndGetOperation(String name, Data dataKey, long timeout, long ttl, String ownerUuid) {
+    public MapOperation createTxnLockAndGetOperation(
+            String name, Data dataKey, long timeout, long ttl, String ownerUuid, boolean shouldLoad) {
         return new HDTxnLockAndGetOperation(name, dataKey, timeout, ttl, ownerUuid);
     }
 

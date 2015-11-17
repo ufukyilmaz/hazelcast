@@ -6,6 +6,7 @@ import com.hazelcast.core.MessageListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.topic.impl.TopicService;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -33,6 +34,7 @@ public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
+    @Ignore
     public void removeMessageListener() {
         final DummyMessageListener messageListener = new DummyMessageListener();
         final String objectName = randomString();

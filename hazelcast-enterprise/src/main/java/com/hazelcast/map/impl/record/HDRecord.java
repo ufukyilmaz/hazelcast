@@ -220,5 +220,14 @@ public abstract class HDRecord extends HiDensityRecord implements Record<Data> {
         zero();
     }
 
+    @Override
+    public boolean isTombstone() {
+        return false;
+    }
+
+    @Override
+    public long getSequence() {
+        return 0;
+    }
 }
 

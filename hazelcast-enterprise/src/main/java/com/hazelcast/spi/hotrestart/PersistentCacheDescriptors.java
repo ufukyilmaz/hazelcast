@@ -43,10 +43,11 @@ public class PersistentCacheDescriptors {
         }
     }
 
-    public long getPrefix(String name, int partitionId) {
-        final CacheDescriptor desc = nameToDesc.get(toNonProvisionalName(name));
+    public long getPrefix(String serviceName, String name, int partitionId) {
+        final String key = toCacheKey(serviceName, toNonProvisionalName(name));
+        final CacheDescriptor desc = nameToDesc.get(key);
         if (desc == null) {
-            throw new IllegalArgumentException("Unknown name! " + name);
+            throw new IllegalArgumentException("Unknown name! " + key);
         }
         return combineToLong(desc.getId(), partitionId);
     }
@@ -56,11 +57,12 @@ public class PersistentCacheDescriptors {
     }
 
     public void ensureHas(SerializationService serializationService, String serviceName, String name, Object config) {
-        if (nameToDesc.get(name) != null) {
+        String cacheKey = toCacheKey(serviceName, name);
+        if (nameToDesc.get(cacheKey) != null) {
             return;
         }
         synchronized (nameToDesc) {
-            if (nameToDesc.get(name) != null) {
+            if (nameToDesc.get(cacheKey) != null) {
                 return;
             }
             final int id = ++cacheIdSeq;
@@ -78,7 +80,7 @@ public class PersistentCacheDescriptors {
                 out.writeUTF(name);
                 out.writeObject(config);
                 idToDesc.put(id, desc);
-                nameToDesc.put(name, desc);
+                nameToDesc.put(cacheKey, desc);
 
             } catch (IOException e) {
                 throw ExceptionUtil.rethrow(e);
@@ -128,19 +130,21 @@ public class PersistentCacheDescriptors {
                     IOUtil.closeResource(in);
                 }
                 maxId = max(maxId, desc.getId());
-                nameToDesc.put(desc.getName(), desc);
+
+                String key = toCacheKey(desc.getServiceName(), desc.getName());
+                nameToDesc.put(key, desc);
                 idToDesc.put(desc.getId(), desc);
                 if (config != null) {
-                    final String key = toProvisionalConfigKey(desc.getServiceName(), desc.getProvisionalName());
-                    provisionalConfigurations.put(key, config);
+                    String provisionalKey = toCacheKey(desc.getServiceName(), desc.getProvisionalName());
+                    provisionalConfigurations.put(provisionalKey, config);
                 }
             }
             cacheIdSeq = maxId;
         }
     }
 
-    private static String toProvisionalConfigKey(String serviceName, String provisionalName) {
-        return serviceName + "::" + provisionalName;
+    private static String toCacheKey(String serviceName, String name) {
+        return serviceName + "::" + name;
     }
 
     void clearProvisionalConfigs() {
@@ -148,7 +152,7 @@ public class PersistentCacheDescriptors {
     }
 
     public Object getProvisionalConfig(String serviceName, String name) {
-        return provisionalConfigurations.get(toProvisionalConfigKey(serviceName, name));
+        return provisionalConfigurations.get(toCacheKey(serviceName, name));
     }
 
     public static int toPartitionId(long prefix) {

@@ -8,13 +8,14 @@ import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.util.Clock;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,8 +26,7 @@ import java.util.Map;
 /**
  * @author mdogan 05/02/14
  */
-@edu.umd.cs.findbugs.annotations.SuppressWarnings(
-        value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",
+@SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",
         justification = "Class names shouldn't shadow simple name of superclass")
 public final class CacheReplicationOperation
         extends com.hazelcast.cache.impl.operation.CacheReplicationOperation {
@@ -104,6 +104,9 @@ public final class CacheReplicationOperation
             dispose();
             if (e instanceof NativeOutOfMemoryError) {
                 oome = (NativeOutOfMemoryError) e;
+            } else {
+                getLogger().severe("While replicating cache! partition: " + getPartitionId()
+                        + ", replica: " + getReplicaIndex(), e);
             }
         }
         offHeapDestination.clear();
@@ -143,20 +146,28 @@ public final class CacheReplicationOperation
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         int count = offHeapSource.size();
         out.writeInt(count);
-        NativeMemoryData data = new NativeMemoryData();
+
+        NativeMemoryData valueData = new NativeMemoryData();
         long now = Clock.currentTimeMillis();
         for (Map.Entry<String, Map<Data, HiDensityCacheRecord>> entry : offHeapSource.entrySet()) {
             Map<Data, HiDensityCacheRecord> value = entry.getValue();
             int subCount = value.size();
             out.writeInt(subCount);
             out.writeUTF(entry.getKey());
+
             for (Map.Entry<Data, HiDensityCacheRecord> e : value.entrySet()) {
                 HiDensityCacheRecord record = e.getValue();
-                int remainingTtl = getRemainingTtl(record, now);
-                out.writeInt(remainingTtl);
-                out.writeData(e.getKey());
-                data.reset(record.getValueAddress());
-                out.writeData(data);
+
+                if (record.isTombstone()) {
+                    out.writeData(null);
+                } else {
+                    valueData.reset(record.getValueAddress());
+                    out.writeData(e.getKey());
+                    out.writeData(valueData);
+
+                    long remainingTtl = getRemainingTtl(record, now);
+                    out.writeLong(remainingTtl);
+                }
                 subCount--;
             }
             if (subCount != 0) {
@@ -166,15 +177,15 @@ public final class CacheReplicationOperation
         super.writeInternal(out);
     }
 
-    private int getRemainingTtl(HiDensityCacheRecord record, long now) {
+    private long getRemainingTtl(HiDensityCacheRecord record, long now) {
         long creationTime = record.getCreationTime();
-        int ttlMillis = record.getTtlMillis();
-        int remainingTtl;
+        long ttlMillis = record.getTtlMillis();
+        long remainingTtl;
         if (ttlMillis > 0) {
-            remainingTtl = (int) (creationTime + ttlMillis - now);
+            remainingTtl = creationTime + ttlMillis - now;
             return remainingTtl > 0 ? remainingTtl : 1;
         }
-        return -1;
+        return -1L;
     }
 
     @Override
@@ -187,10 +198,10 @@ public final class CacheReplicationOperation
             offHeapDestination.put(name, m);
 
             for (int j = 0; j < subCount; j++) {
-                int ttlMillis = in.readInt();
                 Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 if (key != null) {
                     Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+                    long ttlMillis = in.readLong();
                     m.put(key, new CacheRecordHolder(value, ttlMillis));
                 }
             }
@@ -208,9 +219,9 @@ public final class CacheReplicationOperation
      */
     private static final class CacheRecordHolder {
         final Data value;
-        final int ttl;
+        final long ttl;
 
-        private CacheRecordHolder(Data value, int ttl) {
+        private CacheRecordHolder(Data value, long ttl) {
             this.ttl = ttl;
             this.value = value;
         }

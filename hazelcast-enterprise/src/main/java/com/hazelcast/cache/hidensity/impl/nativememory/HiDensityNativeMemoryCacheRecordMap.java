@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * @author sozal 11/02/14
  */
-public final class HiDensityNativeMemoryCacheRecordMap
+public class HiDensityNativeMemoryCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryCacheRecord>
         implements SampleableHiDensityCacheRecordMap<HiDensityNativeMemoryCacheRecord> {
 
@@ -37,10 +37,10 @@ public final class HiDensityNativeMemoryCacheRecordMap
             Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
             Data key = entry.getKey();
             HiDensityNativeMemoryCacheRecord record = entry.getValue();
-            final boolean isExpired = record.isExpiredAt(now);
-            if (!isExpired) {
-                keys.add(recordProcessor.convertData(key, DataType.HEAP));
+            if (record.isExpiredAt(now) || record.isTombstone()) {
+                continue;
             }
+            keys.add(recordProcessor.convertData(key, DataType.HEAP));
         }
 
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());

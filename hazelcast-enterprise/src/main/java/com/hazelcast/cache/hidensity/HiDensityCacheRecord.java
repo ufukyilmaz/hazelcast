@@ -26,33 +26,17 @@ public abstract class HiDensityCacheRecord
     }
 
     /**
-     * Gets the access time difference which represents the passed time since previous access
-     * of this {@link HiDensityCacheRecord} in milliseconds.
-     *
-     * @return the access time difference of this {@link HiDensityCacheRecord} in milliseconds
-     */
-    public abstract int getAccessTimeDiff();
-
-    /**
-     * Sets the access time difference which represents the passed time since previous access
-     * of this {@link HiDensityCacheRecord} in milliseconds.
-     *
-     * @param time the access time difference of this {@link HiDensityCacheRecord} in milliseconds
-     */
-    public abstract void setAccessTimeDiff(int time);
-
-    /**
      * Gets the TTL value of this {@link HiDensityCacheRecord} in milliseconds.
      *
      * @return the TTL value of this {@link HiDensityCacheRecord} in milliseconds.
      */
-    public abstract int getTtlMillis();
+    public abstract long getTtlMillis();
 
     /**
      * Sets the TTL value of this {@link HiDensityCacheRecord} in milliseconds.
      *
      * @param ttl the TTL value for this {@link HiDensityCacheRecord} in milliseconds.
      */
-    public abstract void setTtlMillis(int ttl);
+    public abstract void setTtlMillis(long ttl);
 
 }

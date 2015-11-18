@@ -15,11 +15,11 @@ import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheComplete
  * The {@link com.hazelcast.cache.EnterpriseCacheRecordStore} implementation that provides
  * merge function implementation
  */
-public class EnterpriseCacheRecordStoreImpl extends CacheRecordStore
+public class DefaultEnterpriseCacheRecordStore extends CacheRecordStore
         implements EnterpriseCacheRecordStore {
 
-    public EnterpriseCacheRecordStoreImpl(String name, int partitionId, NodeEngine nodeEngine,
-                                          AbstractCacheService cacheService) {
+    public DefaultEnterpriseCacheRecordStore(String name, int partitionId, NodeEngine nodeEngine,
+            AbstractCacheService cacheService) {
         super(name, partitionId, nodeEngine, cacheService);
     }
 

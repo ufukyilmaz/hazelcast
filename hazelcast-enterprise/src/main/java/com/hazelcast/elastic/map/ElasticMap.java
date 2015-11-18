@@ -1,5 +1,7 @@
 package com.hazelcast.elastic.map;
 
+import com.hazelcast.nio.Disposable;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -7,7 +9,7 @@ import java.util.Set;
 /**
  * @author mdogan 07/01/14
  */
-public interface ElasticMap<K, V> extends Map<K, V> {
+public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
 
     V put(K key, V value);
 
@@ -47,6 +49,4 @@ public interface ElasticMap<K, V> extends Map<K, V> {
     boolean isEmpty();
 
     void clear();
-
-    void destroy();
 }

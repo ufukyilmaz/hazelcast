@@ -352,6 +352,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return hotRestartService;
     }
 
+    public boolean isHotRestartEnabled() {
+        return hotRestartService != null;
+    }
+
     @Override
     public void beforeShutdown() {
         super.beforeShutdown();

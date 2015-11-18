@@ -1,16 +1,16 @@
 package com.hazelcast.hidensity.impl;
 
+import com.hazelcast.hidensity.HiDensityRecord;
+import com.hazelcast.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.eviction.Evictable;
 import com.hazelcast.internal.eviction.EvictableStore;
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.Expirable;
 import com.hazelcast.internal.eviction.ExpirationChecker;
-import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
@@ -27,22 +27,12 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     protected static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
     // for reuse every time a key is read from a reference
-    private final NativeMemoryData keyHolder = new NativeMemoryData();
+    protected final NativeMemoryData keyHolder = new NativeMemoryData();
 
     public EvictableHiDensityRecordMap(int initialCapacity,
                                        HiDensityRecordProcessor<R> recordProcessor,
                                        HiDensityStorageInfo storageInfo) {
         super(initialCapacity, recordProcessor, storageInfo);
-    }
-
-    /**
-     * Forcefully evict records as given <code>evictionPercentage</code>.
-     *
-     * @param evictionPercentage Percentage to determine how many records will be evicted
-     * @return evicted entry count
-     */
-    public int forceEvict(int evictionPercentage) {
-        return doForceEvict(evictionPercentage, null);
     }
 
     /**
@@ -71,26 +61,30 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             return size;
         }
 
-        int len = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
-        len = Math.max(len, MIN_EVICTION_ELEMENT_COUNT);
+        int evictCount = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
+        evictCount = Math.max(evictCount, MIN_EVICTION_ELEMENT_COUNT);
 
-        int evictedEntryCount = 0;
 
         int startSlot = (int) (Math.random() * capacity());
         KeyIter iter = new KeyIter(startSlot);
 
-        while (iter.hasNext()) {
-            iter.nextSlot();
+        return forceEvict(iter, evictionListener, evictCount);
+    }
+
+    protected int forceEvict(KeyIter iterator, EvictionListener<Data, R> evictionListener, int evictCount) {
+        int evictedEntryCount = 0;
+        while (iterator.hasNext()) {
+            iterator.nextSlot();
 
             if (evictionListener != null) {
-                int slot = iter.getCurrentSlot();
+                int slot = iterator.getCurrentSlot();
                 keyHolder.reset(getKey(slot));
                 R value = recordProcessor.read(getValue(slot));
                 evictionListener.onEvict(keyHolder, value);
             }
 
-            iter.remove();
-            if (++evictedEntryCount >= len) {
+            iterator.remove();
+            if (++evictedEntryCount >= evictCount) {
                 break;
             }
         }

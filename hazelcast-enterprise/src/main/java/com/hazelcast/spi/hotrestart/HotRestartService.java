@@ -164,8 +164,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return offHeapStoreHolder.get();
     }
 
-    public long registerRamStore(RamStoreRegistry ramStoreRegistry, String name, int partitionId) {
-        long prefix = persistentCacheDescriptors.getPrefix(name, partitionId);
+    public long registerRamStore(RamStoreRegistry ramStoreRegistry, String serviceName, String name, int partitionId) {
+        long prefix = persistentCacheDescriptors.getPrefix(serviceName, name, partitionId);
         ramStoreDescriptors.put(prefix, new RamStoreDescriptor(ramStoreRegistry, name, partitionId));
         return prefix;
     }
@@ -178,8 +178,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         persistentCacheDescriptors.ensureHas(node.getSerializationService(), serviceName, name, config);
     }
 
-    public Object getProvisionalConfiguration(String serviceName, String name) {
-        return persistentCacheDescriptors.getProvisionalConfig(serviceName, name);
+    public <C> C getProvisionalConfiguration(String serviceName, String name) {
+        return (C) persistentCacheDescriptors.getProvisionalConfig(serviceName, name);
     }
 
     public String getCacheName(long prefix) {
@@ -196,6 +196,10 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
         }
         return descriptor.getProvisionalName();
+    }
+
+    public long getPrefix(String serviceName, String name, int partitionId) {
+        return persistentCacheDescriptors.getPrefix(serviceName, name, partitionId);
     }
 
     public void prepare() {

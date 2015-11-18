@@ -165,7 +165,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
             return;
         }
         dispose();
-        map.destroy();
+        map.dispose();
     }
 
     @Override

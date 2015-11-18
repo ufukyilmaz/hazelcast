@@ -2,54 +2,81 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+
+import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
  * @author sozal 14/10/14
  */
 public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord {
 
-    /**
-     * Header size of native memory based cache record
+    /*
+     * Structure:
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Creation Time      |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Access Time        |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Time-to-Live       |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Record Sequence    |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Tombstone Seq      |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Value Address      |   8 bytes (long) |
+     * +--------------------+------------------+
+     * | Hit Count          |   4 bytes (int)  |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * Total size = 52 bytes
+     * All fields are aligned.
+     *
+     * PS: In current buddy memory allocator design,
+     * this is going to use 64 bytes memory block.
      */
-    public static final int HEADER_SIZE = 8;
+
     /**
-     * Value offset of native memory based cache record
-     */
-    public static final int VALUE_OFFSET;
-    /**
-     * Size of native memory based cache record
+     * Size of record in bytes
      */
     public static final int SIZE;
 
-    static final int CREATION_TIME_OFFSET = 0;
-    static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
-    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET + Bits.INT_SIZE_IN_BYTES;
-    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+    /**
+     * Offset of value address in the record
+     */
+    static final int VALUE_OFFSET;
+
+    private static final int CREATION_TIME_OFFSET = 0;
+    private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
+    private static final int TTL_OFFSET = ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int SEQUENCE_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int TOMBSTONE_SEQUENCE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int ACCESS_HIT_OFFSET;
 
     static {
-        VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;
-        SIZE = VALUE_OFFSET + HEADER_SIZE;
+        VALUE_OFFSET = TOMBSTONE_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+        ACCESS_HIT_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+        SIZE = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
     }
 
-    private HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor;
+    private final HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor;
 
     public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor) {
-        this.cacheRecordAccessor = cacheRecordAccessor;
+            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor, long address) {
+        super(address, SIZE);
+        this.recordAccessor = recordAccessor;
+    }
+
+    public HiDensityNativeMemoryCacheRecord(
+            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> recordAccessor) {
+        this.recordAccessor = recordAccessor;
     }
 
     public HiDensityNativeMemoryCacheRecord(long address) {
         super(address, SIZE);
-    }
-
-    public HiDensityNativeMemoryCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> cacheRecordAccessor,
-            long address) {
-        super(address, SIZE);
-        this.cacheRecordAccessor = cacheRecordAccessor;
+        recordAccessor = null;
     }
 
     @Override
@@ -64,31 +91,12 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public long getAccessTime() {
-        int accessTimeDiff = getAccessTimeDiff();
-        // Not accessed yet
-        if (accessTimeDiff <= 0) {
-            return -1;
-        }
-        return getCreationTime() + accessTimeDiff;
+        return readLong(ACCESS_TIME_OFFSET);
     }
 
     @Override
     public void setAccessTime(long time) {
-        long accessTimeDiff = time - getCreationTime();
-        if (accessTimeDiff > Integer.MAX_VALUE) {
-            accessTimeDiff = Integer.MAX_VALUE;
-        }
-        setAccessTimeDiff((int) accessTimeDiff);
-    }
-
-    @Override
-    public int getAccessTimeDiff() {
-        return readInt(ACCESS_TIME_OFFSET);
-    }
-
-    @Override
-    public void setAccessTimeDiff(int time) {
-        writeInt(ACCESS_TIME_OFFSET, time);
+        writeLong(ACCESS_TIME_OFFSET, time);
     }
 
     @Override
@@ -109,17 +117,17 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public void resetAccessHit() {
-        writeInt(ACCESS_HIT_OFFSET, 0);
+        setAccessHit(0);
     }
 
     @Override
-    public int getTtlMillis() {
-        return readInt(TTL_OFFSET);
+    public long getTtlMillis() {
+        return readLong(TTL_OFFSET);
     }
 
     @Override
-    public void setTtlMillis(int ttl) {
-        writeInt(TTL_OFFSET, ttl);
+    public void setTtlMillis(long ttl) {
+        writeLong(TTL_OFFSET, ttl);
     }
 
     @Override
@@ -129,6 +137,9 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public void setValueAddress(long valueAddress) {
+        if (valueAddress != NULL_PTR) {
+            setTombstoneSequence(0L);
+        }
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
@@ -146,15 +157,15 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public NativeMemoryData getValue() {
-        if (address == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address == NULL_PTR) {
             return null;
         } else {
             long valueAddress = getValueAddress();
-            if (valueAddress == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+            if (valueAddress == NULL_PTR) {
                 return null;
             }
-            if (cacheRecordAccessor != null) {
-                return cacheRecordAccessor.readData(valueAddress);
+            if (recordAccessor != null) {
+                return recordAccessor.readData(valueAddress);
             } else {
                 NativeMemoryData nativeMemoryData = new NativeMemoryData();
                 nativeMemoryData.reset(valueAddress);
@@ -168,55 +179,60 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+            setValueAddress(NULL_PTR);
         }
     }
 
     @Override
     public long getExpirationTime() {
-        int ttlMillis = getTtlMillis();
-        if (ttlMillis < 0) {
+        long ttlMillis = getTtlMillis();
+        if (ttlMillis < 0L) {
             return Long.MAX_VALUE;
         }
-        return getCreationTime() + ttlMillis;
+
+        long creationTime = getCreationTime();
+        long expirationTime = creationTime + ttlMillis;
+        if (expirationTime < creationTime) {
+            return Long.MAX_VALUE;
+        }
+        return expirationTime;
     }
 
     @Override
     public void setExpirationTime(long expirationTime) {
         long creationTime = getCreationTime();
         long timeDiff = expirationTime - creationTime;
-        int newTtl =
-                expirationTime >= creationTime
-                        ? (timeDiff > Integer.MAX_VALUE ? -1 : (int) timeDiff)
-                        : -1;
+        long newTtl = timeDiff >= 0 ? timeDiff : -1L;
         setTtlMillis(newTtl);
+    }
+
+    public long getSequence() {
+        return readLong(SEQUENCE_OFFSET);
+    }
+
+    public void setSequence(long seq) {
+        writeLong(SEQUENCE_OFFSET, seq);
+    }
+
+    @Override
+    public boolean isTombstone() {
+        return getValueAddress() == NULL_PTR;
+    }
+
+    @Override
+    public long getTombstoneSequence() {
+        return readLong(TOMBSTONE_SEQUENCE_OFFSET);
+    }
+
+    @Override
+    public void setTombstoneSequence(long seq) {
+        writeLong(TOMBSTONE_SEQUENCE_OFFSET, seq);
     }
 
     @Override
     public boolean isExpiredAt(long now) {
         long expirationTime = getExpirationTime();
         return expirationTime > -1 && expirationTime <= now;
-    }
-
-    public static long getCreationTime(long address) {
-        return UnsafeHelper.UNSAFE.getLong(address + CREATION_TIME_OFFSET);
-    }
-
-    @Override
-    public boolean isTombstone() {
-        return false;
-    }
-
-    @Override
-    public long getTombstoneSequence() {
-        // will be implemented later by hot-restart PR
-        return 0;
-    }
-
-    @Override
-    public void setTombstoneSequence(long seq) {
-        // will be implemented later by hot-restart PR
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -249,10 +265,12 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public String toString() {
-        if (address() > HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() > NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
-                    + ", lastAccessTime: " + getAccessTimeDiff()
+                    + ", lastAccessTime: " + getAccessTime()
+                    + ", hits: " + getAccessHit()
                     + ", ttl: " + getTtlMillis()
+                    + ", sequence: " + getSequence()
                     + ", valueAddress: " + getValueAddress()
                     + " }";
         } else {

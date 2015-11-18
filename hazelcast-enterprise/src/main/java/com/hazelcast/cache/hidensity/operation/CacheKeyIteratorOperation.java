@@ -45,12 +45,13 @@ public class CacheKeyIteratorOperation
                 Map.Entry<Data, HiDensityCacheRecord> entry = iter.next();
                 Data key = entry.getKey();
                 HiDensityCacheRecord record = entry.getValue();
-                final boolean isExpired = record.isExpiredAt(now);
-                if (!isExpired) {
-                    keys.add(serializationService.convertData(key, DataType.HEAP));
-                    if (++count == batch) {
-                        break;
-                    }
+                if (record.isExpiredAt(now) || record.isTombstone()) {
+                    continue;
+                }
+
+                keys.add(serializationService.convertData(key, DataType.HEAP));
+                if (++count == batch) {
+                    break;
                 }
             }
             int newSlot = iter.getNextSlot();

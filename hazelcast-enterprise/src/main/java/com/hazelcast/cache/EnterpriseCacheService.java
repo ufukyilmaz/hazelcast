@@ -100,6 +100,10 @@ public class EnterpriseCacheService
                 @Override
                 public HiDensityStorageInfo createNew(String cacheNameWithPrefix) {
                     CacheConfig cacheConfig = getCacheConfig(cacheNameWithPrefix);
+                    if (cacheConfig == null) {
+                        throw new CacheNotExistsException("Cache " + cacheNameWithPrefix
+                                + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
+                    }
                     if (cacheConfig.isStatisticsEnabled()) {
                         CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
                         return new HiDensityStorageInfo(

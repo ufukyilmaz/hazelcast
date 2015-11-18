@@ -5,7 +5,6 @@ import com.hazelcast.core.ICollection;
 import com.hazelcast.core.ItemListener;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -124,7 +123,6 @@ public class SetSecurityInterceptorTest extends BaseInterceptorTest {
     }
 
     @Test
-    @Ignore
     public void removeItemListener() {
         ICollection collection = getCollection();
         final String id = collection.addItemListener(mock(ItemListener.class), true);

@@ -46,6 +46,7 @@ abstract class AbstractMetadataWriter<T> {
 
             writeBufferToFile();
 
+            out.getFD().sync();
             closeResource(out);
 
             if (!file.renameTo(new File(homeDir, getFileName()))) {

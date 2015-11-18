@@ -63,14 +63,14 @@ public class RingBufferSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void add() {
         String item = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "add", item);
+        interceptor.setExpectation(getObjectType(), objectName, "add", item, OverflowPolicy.OVERWRITE);
         ringBuffer.add(item);
     }
 
     @Test
     public void addAsync() throws ExecutionException, InterruptedException {
         String item = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "addAsync", item, OverflowPolicy.OVERWRITE);
+        interceptor.setExpectation(getObjectType(), objectName, "add", item, OverflowPolicy.OVERWRITE);
         ringBuffer.addAsync(item, OverflowPolicy.OVERWRITE);
     }
 
@@ -86,7 +86,7 @@ public class RingBufferSecurityInterceptorTest extends BaseInterceptorTest {
     public void addAllAsync() throws ExecutionException, InterruptedException {
         final HashSet item = new HashSet();
         item.add(randomString());
-        interceptor.setExpectation(getObjectType(), objectName, "addAllAsync", item, OverflowPolicy.OVERWRITE);
+        interceptor.setExpectation(getObjectType(), objectName, "addAll", item, OverflowPolicy.OVERWRITE);
         ringBuffer.addAllAsync(item, OverflowPolicy.OVERWRITE);
     }
 
@@ -96,7 +96,7 @@ public class RingBufferSecurityInterceptorTest extends BaseInterceptorTest {
         int minCount = 1;
         int maxCount = randomInt(200);
 
-        interceptor.setExpectation(getObjectType(), objectName, "readManyAsync", startSequence, minCount, maxCount, null);
+        interceptor.setExpectation(getObjectType(), objectName, "readMany", startSequence, minCount, maxCount, null);
         ringBuffer.readManyAsync(startSequence, minCount, maxCount, null);
     }
 }

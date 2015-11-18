@@ -104,7 +104,7 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     @Test
     public void getAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "getAsync", key);
+        interceptor.setExpectation(getObjectType(), objectName, "get", key);
         map.getAsync(key).get();
     }
 
@@ -112,7 +112,7 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
     public void test1_putAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
         final String val = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "putAsync", key, val);
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val);
         map.putAsync(key, val).get();
     }
 
@@ -121,14 +121,14 @@ public class MapSecurityInterceptorTest extends BaseInterceptorTest {
         final String key = randomString();
         final String val = randomString();
         final long ttl = randomLong();
-        interceptor.setExpectation(getObjectType(), objectName, "putAsync", key, val, ttl, TimeUnit.MILLISECONDS);
+        interceptor.setExpectation(getObjectType(), objectName, "put", key, val, ttl, TimeUnit.MILLISECONDS);
         map.putAsync(key, val, ttl, TimeUnit.MILLISECONDS).get();
     }
 
     @Test
     public void removeAsync() throws ExecutionException, InterruptedException {
         final String key = randomString();
-        interceptor.setExpectation(getObjectType(), objectName, "removeAsync", key);
+        interceptor.setExpectation(getObjectType(), objectName, "remove", key);
         map.removeAsync(key).get();
     }
 

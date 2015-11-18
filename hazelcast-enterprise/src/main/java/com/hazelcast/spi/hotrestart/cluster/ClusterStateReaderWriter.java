@@ -32,6 +32,8 @@ class ClusterStateReaderWriter {
             fileOut = new FileOutputStream(file);
             DataOutputStream out = new DataOutputStream(fileOut);
             out.writeUTF(state.toString());
+            out.flush();
+            fileOut.getFD().sync();
             closeResource(out);
         } finally {
             closeResource(fileOut);

@@ -9,7 +9,7 @@ import com.hazelcast.map.impl.querycache.subscriber.record.ObjectQueryCacheRecor
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.query.impl.Extractors;
+import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.util.Clock;

@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.instance.Node;
+import com.hazelcast.instance.NodeState;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.Address;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
@@ -68,6 +70,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private final ClusterMetadataManager clusterMetadataManager;
 
+    private final long dataLoadTimeoutMillis;
+
     public HotRestartService(Node node) {
         this.node = node;
         this.logger = node.getLogger(getClass());
@@ -76,6 +80,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         hotRestartHome = new File(hotRestartConfig.getHomeDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
         clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hotRestartConfig);
         persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
+        dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hotRestartConfig.getDataLoadTimeoutSeconds());
     }
 
     public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
@@ -220,10 +225,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         opExec.runOnAllPartitionThreads(new PartitionedLoader(exceptions, doneLatch));
 
         try {
-            doneLatch.await();
+            Throwable failure = await(doneLatch);
             persistentCacheDescriptors.clearProvisionalConfigs();
-            Throwable failure = null;
-            if (!exceptions.isEmpty()) {
+            if (failure != null && !exceptions.isEmpty()) {
                 failure = exceptions.get(0);
             }
             clusterMetadataManager.loadCompletedLocal(failure);
@@ -234,6 +238,24 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
     }
 
+    private Throwable await(CountDownLatch doneLatch) throws InterruptedException {
+        // Waiting in steps to check node state.
+        // It can be that, node is already shutdown
+        // and tasks scheduled in partition threads are discarded.
+        // If that happens, latch never be count-down.
+        final long awaitStep = 1000;
+        long timeout = dataLoadTimeoutMillis;
+        boolean done = false;
+        while (timeout > 0 && !done) {
+            done = doneLatch.await(awaitStep, TimeUnit.MILLISECONDS);
+            if (node.getState() == NodeState.SHUT_DOWN) {
+                return new HotRestartException("Node is already shutdown!");
+            }
+            timeout -= awaitStep;
+        }
+        return done ? null : new HotRestartException("Hot-restart data load timed-out!");
+    }
+
     private OperationExecutor getOperationExecutor() {
         NodeEngineImpl nodeEngine = node.getNodeEngine();
         OperationServiceImpl operationService = (OperationServiceImpl) nodeEngine.getOperationService();
@@ -242,22 +264,33 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     public void shutdown() {
         OperationExecutor operationExecutor = getOperationExecutor();
+        final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
         operationExecutor.runOnAllPartitionThreads(new Runnable() {
             @Override
             public void run() {
-                HotRestartStore hotRestartStore = onHeapStoreHolder.get();
-                onHeapStoreHolder.remove();
-                if (hotRestartStore != null) {
-                    closeStore(hotRestartStore);
-                }
+                try {
+                    HotRestartStore hotRestartStore = onHeapStoreHolder.get();
+                    onHeapStoreHolder.remove();
+                    if (hotRestartStore != null) {
+                        closeStore(hotRestartStore);
+                    }
 
-                hotRestartStore = offHeapStoreHolder.get();
-                offHeapStoreHolder.remove();
-                if (hotRestartStore != null) {
-                    closeStore(hotRestartStore);
+                    hotRestartStore = offHeapStoreHolder.get();
+                    offHeapStoreHolder.remove();
+                    if (hotRestartStore != null) {
+                        closeStore(hotRestartStore);
+                    }
+                } finally {
+                    latch.countDown();
                 }
             }
         });
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw ExceptionUtil.rethrow(e);
+        }
     }
 
     public boolean isStartCompleted() {

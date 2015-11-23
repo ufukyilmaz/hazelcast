@@ -4,7 +4,6 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
@@ -14,12 +13,11 @@ import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatu
 import com.hazelcast.spi.hotrestart.cluster.SendPartitionTableForValidationOperation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,12 +37,12 @@ import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@Category(QuickTest.class)
 public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterStartTest {
 
     @Test
     public void testClusterHotRestartEventListenerRegistration() throws InterruptedException {
-        final List<Integer> ports = Collections.singletonList(5701);
+        final List<Integer> ports = Collections.singletonList(acquirePort());
         startAndCrashInstances(ports);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -56,17 +54,15 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             }
         };
 
-        final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
-        listeners.put(ports.get(0), listener);
-
-        startInstances(ports, ports, listeners);
+        Map<Integer, ClusterHotRestartEventListener> listeners = Collections.singletonMap(ports.get(0), listener);
+        startInstances(ports, listeners);
 
         assertOpenEventually(latch);
     }
 
     @Test
     public void testMasterRestartAfterNodesJoin() throws InterruptedException {
-        final List<Integer> ports = Arrays.asList(5701, 5702, 5703, 5704);
+        final List<Integer> ports = acquirePorts(4);
         startAndCrashInstances(ports);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -75,14 +71,14 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             listeners.put(port, new CrashMemberOnAllMembersJoin(port, ports, true, crash));
         }
 
-        startInstances(ports, ports, listeners);
+        startInstances(ports, listeners);
 
-        assertInstancesJoined(ports, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoined(ports.size(), NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
     @Test
     public void testMemberRestartAfterNodesJoin() throws InterruptedException {
-        final List<Integer> ports = Arrays.asList(5701, 5702, 5703, 5704);
+        final List<Integer> ports = acquirePorts(4);
         startAndCrashInstances(ports);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -91,31 +87,31 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             listeners.put(port, new CrashMemberOnAllMembersJoin(port, ports, false, crash));
         }
 
-        startInstances(ports, ports, listeners);
+        startInstances(ports, listeners);
 
-        assertInstancesJoined(ports, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoined(ports.size(), NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
     @Test
     public void testMasterRestartAfterPartitionTablesValidated() throws InterruptedException {
-        final List<Integer> ports = Arrays.asList(5701, 5702, 5703, 5704);
+        final List<Integer> ports = acquirePorts(4);
         startAndCrashInstances(ports);
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMasterOnPartitionTableValidationComplete(port, ports, firstCrash));
+            listeners.put(port, new CrashMasterOnPartitionTableValidationComplete(port, firstCrash));
         }
 
-        startInstances(ports, ports, listeners);
+        startInstances(ports, listeners);
 
-        assertInstancesJoined(ports, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoined(ports.size(), NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
     @Test
     public void testByzantineFailPartitionTableAfterPartitionTablesValidated()
             throws InterruptedException {
-        final List<Integer> ports = Arrays.asList(5701, 5702, 5703, 5704);
+        final List<Integer> ports = acquirePorts(4);
         startAndCrashInstances(ports);
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
@@ -124,38 +120,37 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             listeners.put(port, new ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(firstCrash));
         }
 
-        final HazelcastInstance[] instances = startInstances(ports, ports, listeners);
+        final HazelcastInstance[] instances = startInstances(ports, listeners);
         assertEquals(0, instances.length);
     }
 
     @Test
     public void testMemberRestartAfterReceivesLoadSuccessfulFromMaster() throws InterruptedException {
-        final List<Integer> ports = Arrays.asList(5701, 5702, 5703, 5704);
-        HazelcastInstance[] instances = startInstances(ports, ports);
+        final List<Integer> ports = acquirePorts(4);
+        HazelcastInstance[] instances = startInstances(ports);
 
-        assertInstancesJoined(ports, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoined(ports.size(), instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
         warmUpPartitions(instances);
         changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
-        HazelcastInstanceFactory.terminateAll();
+        terminateInstances();
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashAfterLoadCompletedStatusReceivedFromMaster(firstCrash, ports));
+            listeners.put(port, new CrashAfterLoadCompletedStatusReceivedFromMaster(firstCrash));
         }
 
-        startInstances(ports, ports, listeners);
+        startInstances(ports, listeners);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
-                assertInstancesJoined(ports, NodeState.PASSIVE, ClusterState.PASSIVE);
+            public void run() throws Exception {
+                assertInstancesJoined(ports.size(), NodeState.PASSIVE, ClusterState.PASSIVE);
             }
         });
     }
 
-    private static class CrashMemberOnAllMembersJoin
+    private class CrashMemberOnAllMembersJoin
             extends ClusterHotRestartEventListener
             implements HazelcastInstanceAware {
 
@@ -185,28 +180,25 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         @Override
         public void onAllMembersJoin(Collection<Address> members) {
             final Node node = getNode(instance);
-            if ((!crashMaster || node.isMaster()) && crash.compareAndSet(false, true)) {
-                startNodeAfterTermination(node, portToStart, portsToDiscover);
+            boolean shouldCrash = crashMaster && node.isMaster() || !crashMaster && !node.isMaster();
+            if (shouldCrash && crash.compareAndSet(false, true)) {
+                startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }
         }
     }
 
-    private static class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener
+    private class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener
             implements HazelcastInstanceAware {
 
         private final int portToStart;
-
-        private final List<Integer> portsToDiscover;
 
         private final AtomicBoolean firstCrash;
 
         private HazelcastInstance instance;
 
-        public CrashMasterOnPartitionTableValidationComplete(final int portToStart, final List<Integer> portsToDiscover,
-                                                             final AtomicBoolean firstCrash) {
+        public CrashMasterOnPartitionTableValidationComplete(int portToStart, AtomicBoolean firstCrash) {
             this.portToStart = portToStart;
-            this.portsToDiscover = portsToDiscover;
             this.firstCrash = firstCrash;
         }
 
@@ -220,7 +212,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             final Node node = getNode(instance);
             if (result == PARTITION_TABLE_VERIFIED && node.isMaster() && firstCrash
                     .compareAndSet(false, true)) {
-                startNodeAfterTermination(node, portToStart, portsToDiscover);
+                startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }
         }
@@ -257,17 +249,14 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     }
 
-    private static class CrashAfterLoadCompletedStatusReceivedFromMaster extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+    private class CrashAfterLoadCompletedStatusReceivedFromMaster extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final AtomicBoolean firstCrash;
 
-        private final List<Integer> portsToDiscover;
-
         private HazelcastInstance instance;
 
-        public CrashAfterLoadCompletedStatusReceivedFromMaster(AtomicBoolean firstCrash, List<Integer> portsToDiscover) {
+        public CrashAfterLoadCompletedStatusReceivedFromMaster(AtomicBoolean firstCrash) {
             this.firstCrash = firstCrash;
-            this.portsToDiscover = portsToDiscover;
         }
 
         @Override
@@ -281,21 +270,21 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             final int portToStart = node.getThisAddress().getPort();
             if (result == VERIFICATION_AND_LOAD_SUCCEEDED && !node.isMaster()
                     && firstCrash.compareAndSet(false, true)) {
-                startNodeAfterTermination(node, portToStart, portsToDiscover);
+                startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }
         }
 
     }
 
-    private static void startNodeAfterTermination(final Node node, final int portToStart, final List<Integer> portsToDiscover) {
+    private void startNodeAfterTermination(final Node node, final int portToStart) {
         spawn(new Runnable() {
             @Override
             public void run() {
                 try {
                     assertNodeStateEventually(node, NodeState.SHUT_DOWN);
                     System.out.println(">>> Starting " + portToStart + " again!");
-                    startInstances(Collections.singletonList(portToStart), portsToDiscover);
+                    startInstance(portToStart);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

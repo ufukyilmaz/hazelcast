@@ -50,8 +50,7 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
     protected void runInternal() {
 
         // TODO this also clears locked keys from near cache which should be preserved.
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        mapServiceContext.getNearCacheProvider().clearNearCache(name);
+        clearNearCache(true);
 
         final RecordStore recordStore = mapServiceContext.getExistingRecordStore(getPartitionId(), name);
         if (recordStore == null) {
@@ -98,7 +97,7 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
 
     @Override
     public Operation getBackupOperation() {
-        return new EvictAllBackupOperation(name);
+        return new HDEvictAllBackupOperation(name);
     }
 
     @Override

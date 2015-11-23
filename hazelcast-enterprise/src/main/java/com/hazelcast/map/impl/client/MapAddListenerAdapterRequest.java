@@ -55,7 +55,7 @@ public class MapAddListenerAdapterRequest extends BaseClientAddListenerRequest {
     }
 
     private ListenerAdapter createListenerAdapter(final ClientEndpoint endpoint) {
-        return new ListenerAdapter() {
+        return new ListenerAdapter<IMapEvent>() {
             @Override
             public void onEvent(IMapEvent iMapEvent) {
                 if (!endpoint.isAlive()) {

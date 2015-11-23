@@ -54,7 +54,7 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
         EntryEventType eventType = EntryEventType.EVICTED;
         mapServiceContext.getMapEventPublisher()
                 .publishEvent(getCallerAddress(), name, eventType, dataKey, dataValue, null);
-        invalidateNearCaches();
+        invalidateNearCache(dataKey);
 
         dispose();
     }

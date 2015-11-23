@@ -22,7 +22,6 @@ import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
-import com.hazelcast.map.impl.nearcache.NearCacheProvider;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
@@ -89,8 +88,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
                 final Data key = keyValueSequence.get(i);
                 dataKeys.add(key);
             }
-            NearCacheProvider nearCacheProvider = mapService.getMapServiceContext().getNearCacheProvider();
-            nearCacheProvider.invalidateNearCache(name, dataKeys);
+            invalidateNearCache(dataKeys);
         }
 
         dispose();

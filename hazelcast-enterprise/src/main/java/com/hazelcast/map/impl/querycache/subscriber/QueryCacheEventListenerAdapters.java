@@ -25,7 +25,7 @@ public final class QueryCacheEventListenerAdapters {
                         return null;
                     }
                     final EventLostListener listener = (EventLostListener) mapListener;
-                    return new ListenerAdapter() {
+                    return new ListenerAdapter<IMapEvent>() {
                         @Override
                         public void onEvent(IMapEvent iMapEvent) {
                             listener.eventLost((EventLostEvent) iMapEvent);

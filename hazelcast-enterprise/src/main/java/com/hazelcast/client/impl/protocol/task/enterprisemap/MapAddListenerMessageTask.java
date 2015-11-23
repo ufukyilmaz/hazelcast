@@ -40,7 +40,7 @@ import java.security.Permission;
  */
 public class MapAddListenerMessageTask
         extends AbstractCallableMessageTask<EnterpriseMapAddListenerCodec.RequestParameters>
-        implements ListenerAdapter {
+        implements ListenerAdapter<IMapEvent> {
 
     public MapAddListenerMessageTask(ClientMessage clientMessage, Node node, Connection connection) {
         super(clientMessage, node, connection);

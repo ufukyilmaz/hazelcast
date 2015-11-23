@@ -81,7 +81,8 @@ public class EnterprisePostJoinMapOperation extends PostJoinMapOperation {
 
             PublisherRegistry publisherRegistry = mapPublisherRegistry.getOrCreate(info.getMapName());
             publisherRegistry.getOrCreate(info.getCacheName());
-            String eventListener = enterpriseMapServiceContext.addLocalListenerAdapter(new ListenerAdapter() {
+            // marker listener.
+            enterpriseMapServiceContext.addLocalListenerAdapter(new ListenerAdapter<IMapEvent>() {
                 @Override
                 public void onEvent(IMapEvent event) {
 

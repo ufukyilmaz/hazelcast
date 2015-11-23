@@ -15,9 +15,9 @@ import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.query.impl.QueryEntry;
 import com.hazelcast.query.impl.QueryableEntry;
+import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
@@ -216,11 +216,11 @@ public class NodeQueryCacheEventService implements QueryCacheEventService<EventD
      *
      * @see com.hazelcast.core.IEnterpriseMap#getQueryCache(String, MapListener, com.hazelcast.query.Predicate, boolean)
      */
-    private static class SimpleQueryCacheListenerAdapter implements QueryCacheListenerAdapter {
+    private static class SimpleQueryCacheListenerAdapter implements QueryCacheListenerAdapter<IMapEvent> {
 
         private final ListenerAdapter listenerAdapter;
 
-        public SimpleQueryCacheListenerAdapter(ListenerAdapter listenerAdapter) {
+        SimpleQueryCacheListenerAdapter(ListenerAdapter listenerAdapter) {
             this.listenerAdapter = listenerAdapter;
         }
 

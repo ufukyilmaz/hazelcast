@@ -71,13 +71,13 @@ public class CachePutAllBackupOperation
                 serializationService.disposeData(key);
                 if (record instanceof HiDensityCacheRecord) {
                     HiDensityCacheRecord hdRecord = (HiDensityCacheRecord) record;
-                    NativeMemoryData hdRecordValue = ((HiDensityCacheRecord) record).getValue();
+                    NativeMemoryData hdCacheRecordValue = ((HiDensityCacheRecord) record).getValue();
                     long recordAddress = hdRecord.address();
                     if (recordAddress != MemoryManager.NULL_ADDRESS) {
                         memoryManager.free(recordAddress, hdRecord.size());
                     }
-                    if (hdRecordValue != null && hdRecordValue.address() != MemoryManager.NULL_ADDRESS) {
-                        serializationService.disposeData(hdRecordValue);
+                    if (hdCacheRecordValue != null && hdCacheRecordValue.address() != MemoryManager.NULL_ADDRESS) {
+                        serializationService.disposeData(hdCacheRecordValue);
                     }
                 }
                 iter.remove();
@@ -100,14 +100,10 @@ public class CachePutAllBackupOperation
             for (Map.Entry<Data, CacheRecord> entry : cacheRecords.entrySet()) {
                 Data key = entry.getKey();
                 CacheRecord record = entry.getValue();
-                if (key instanceof NativeMemoryData) {
-                    out.writeData(serializationService.convertData(key, DataType.HEAP));
-                } else {
-                    out.writeData(key);
-                }
+                out.writeData(key);
                 if (record instanceof HiDensityCacheRecord) {
                     out.writeBoolean(true);
-                    writeCacheRecord(out, (HiDensityCacheRecord) record, serializationService);
+                    writeHiDensityCacheRecord(out, (HiDensityCacheRecord) record);
                 } else {
                     out.writeBoolean(false);
                     out.writeObject(record);
@@ -116,8 +112,7 @@ public class CachePutAllBackupOperation
         }
     }
 
-    private void writeCacheRecord(ObjectDataOutput out, HiDensityCacheRecord record,
-            EnterpriseSerializationService serializationService) throws IOException {
+    private void writeHiDensityCacheRecord(ObjectDataOutput out, HiDensityCacheRecord record) throws IOException {
         if (record == null) {
             out.writeBoolean(false);
             return;
@@ -140,7 +135,7 @@ public class CachePutAllBackupOperation
                     out.writeBoolean(false);
                 } else {
                     out.writeBoolean(true);
-                    out.writeData(serializationService.convertData(nativeMemoryData, DataType.HEAP));
+                    out.writeData(nativeMemoryData);
                 }
             } else {
                 out.writeBoolean(true);

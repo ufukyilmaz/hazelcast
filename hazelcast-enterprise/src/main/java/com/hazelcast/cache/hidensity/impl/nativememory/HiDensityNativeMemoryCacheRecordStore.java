@@ -248,7 +248,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    protected final CacheRecord toHeapCacheRecord(HiDensityNativeMemoryCacheRecord record) {
+    @Override
+    public final CacheRecord toHeapCacheRecord(HiDensityNativeMemoryCacheRecord record) {
         if (!isMemoryBlockValid(record)) {
             return null;
         }

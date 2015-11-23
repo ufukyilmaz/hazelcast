@@ -16,11 +16,13 @@
 
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
@@ -59,14 +61,34 @@ public class CachePutAllOperation
     @Override
     protected void runInternal() throws Exception {
         String callerUuid = getCallerUuid();
-        backupRecords = new HashMap<Data, CacheRecord>(entries.size());
+
+        int backups = getSyncBackupCount() + getAsyncBackupCount();
+        if (backups > 0) {
+            backupRecords = new HashMap<Data, CacheRecord>(entries.size());
+        }
+
         Iterator<Map.Entry<Data, Data>> iter = entries.iterator();
         while (iter.hasNext()) {
             Map.Entry<Data, Data> entry = iter.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
             CacheRecord backupRecord = cache.put(key, value, expiryPolicy, callerUuid, completionId);
-            backupRecords.put(key, backupRecord);
+
+            if (backupRecords != null) {
+                /*
+                 * We should be sure that backup records are heap based.
+                 * Because keys/values, have been already put to record store,
+                 * might be evicted inside the loop while trying to put others.
+                 * So in this case, internal backupRecords map contains invalid (disposed) keys and records and
+                 * this is passed to CachePutAllBackupOperation.
+                 * Then possibly there will be JVM crash or serialization exception.
+                 */
+                if (backupRecord instanceof HiDensityCacheRecord) {
+                    backupRecord = cache.toHeapCacheRecord((HiDensityCacheRecord) backupRecord);
+                }
+                backupRecords.put(serializationService.convertData(key, DataType.HEAP), backupRecord);
+            }
+
             iter.remove();
         }
     }
@@ -86,7 +108,7 @@ public class CachePutAllOperation
 
     @Override
     public boolean shouldBackup() {
-        return !backupRecords.isEmpty();
+        return backupRecords != null && !backupRecords.isEmpty();
     }
 
     @Override

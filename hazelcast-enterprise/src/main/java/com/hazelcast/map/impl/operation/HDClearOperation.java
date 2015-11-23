@@ -26,7 +26,6 @@ import com.hazelcast.spi.impl.MutatingOperation;
 
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 
-// TODO do not create unnecessary record-store instances.
 public class HDClearOperation extends HDMapOperation implements BackupAwareOperation,
         PartitionAwareOperation, MutatingOperation {
 
@@ -45,7 +44,8 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
 
     @Override
     protected void runInternal() {
-        mapServiceContext.getNearCacheProvider().clearNearCache(name);
+        clearNearCache(true);
+
         if (recordStore != null) {
             numberOfClearedEntries = recordStore.clear();
         }

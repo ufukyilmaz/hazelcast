@@ -7,11 +7,11 @@ import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.nearcache.EnterpriseNearCacheProvider;
 import com.hazelcast.map.impl.nearcache.NearCacheProvider;
+import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.HDMapOperationProvider;
-import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.query.HDMapQueryEngineImpl;
 import com.hazelcast.map.impl.query.MapQueryEngine;
@@ -90,7 +90,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
 
     @Override
     NearCacheProvider createNearCacheProvider() {
-        return new EnterpriseNearCacheProvider(this, nodeEngine);
+        return new EnterpriseNearCacheProvider(this);
     }
 
     @Override

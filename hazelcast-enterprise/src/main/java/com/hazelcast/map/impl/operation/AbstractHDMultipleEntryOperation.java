@@ -29,7 +29,6 @@ import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
-import com.hazelcast.map.impl.nearcache.NearCacheProvider;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
@@ -172,7 +171,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         }
 
         Object newValue = entry.getValue();
-        invalidateNearCaches(key);
+        invalidateNearCache(key);
         // assign it again since we don't want to serialize newValue every time.
         newValue = publishEntryEvent(key, newValue, oldValue, eventType);
         publishWanReplicationEvent(key, newValue, eventType);
@@ -213,15 +212,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
 
     protected long getNow() {
         return Clock.currentTimeMillis();
-    }
-
-    protected void invalidateNearCaches(Data key) {
-        final String mapName = name;
-        final MapServiceContext mapServiceContext = getMapServiceContext();
-        final NearCacheProvider nearCacheProvider = mapServiceContext.getNearCacheProvider();
-        if (nearCacheProvider.isNearCacheAndInvalidationEnabled(mapName)) {
-            nearCacheProvider.invalidateAllNearCaches(mapName, key);
-        }
     }
 
     protected Object publishEntryEvent(Data key, Object value, Object oldValue, EntryEventType eventType) {

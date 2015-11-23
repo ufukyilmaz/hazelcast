@@ -97,7 +97,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         if (eventType == null) {
             return;
         }
-        invalidateNearCaches();
+        invalidateNearCache(dataKey);
         publishEntryEvent();
         publishWanReplicationEvent();
         evict();

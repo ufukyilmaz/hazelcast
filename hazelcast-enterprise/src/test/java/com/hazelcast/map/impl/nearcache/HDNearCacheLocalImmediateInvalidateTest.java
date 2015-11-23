@@ -1,4 +1,4 @@
-package com.hazelcast.map.nearcache;
+package com.hazelcast.map.impl.nearcache;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -7,6 +7,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.HDTestSupport;
+import com.hazelcast.map.nearcache.NearCacheLocalImmediateInvalidateTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

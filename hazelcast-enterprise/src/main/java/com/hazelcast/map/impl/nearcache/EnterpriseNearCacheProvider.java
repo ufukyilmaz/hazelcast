@@ -27,7 +27,6 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.spi.NodeEngine;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -44,8 +43,8 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
     private final NearCacheManager nearCacheManager;
     private final NearCacheContext nearCacheContext;
 
-    public EnterpriseNearCacheProvider(final MapServiceContext mapServiceContext, NodeEngine nodeEngine) {
-        super(mapServiceContext, nodeEngine);
+    public EnterpriseNearCacheProvider(final MapServiceContext mapServiceContext) {
+        super(mapServiceContext);
         this.serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         this.executor = new NearCacheExecutor() {
 
@@ -60,18 +59,33 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
         this.nearCacheContext = new NearCacheContext(nearCacheManager, serializationService, executor);
     }
 
+    @Override
+    public NearCache getOrNullNearCache(String mapName) {
+        NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName);
+        InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
+        if (NATIVE == inMemoryFormat) {
+            return nearCacheManager.getNearCache(mapName);
+        } else {
+            return nearCacheMap.get(mapName);
+        }
+    }
+
 
     @Override
     public NearCache getOrCreateNearCache(String mapName) {
-        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
-        MapConfig mapConfig = mapContainer.getMapConfig();
-        NearCacheConfig nearCacheConfig = mapConfig.getNearCacheConfig();
+        NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName);
         InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE == inMemoryFormat) {
             return nearCacheManager.getOrCreateNearCache(mapName, nearCacheConfig, nearCacheContext);
         } else {
             return super.getOrCreateNearCache(mapName);
         }
+    }
+
+    protected NearCacheConfig getNearCacheConfig(String mapName) {
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        MapConfig mapConfig = mapContainer.getMapConfig();
+        return mapConfig.getNearCacheConfig();
     }
 
     @Override

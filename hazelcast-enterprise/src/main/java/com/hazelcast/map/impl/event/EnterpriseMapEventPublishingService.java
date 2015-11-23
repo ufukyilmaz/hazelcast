@@ -31,7 +31,7 @@ public class EnterpriseMapEventPublishingService extends MapEventPublishingServi
     }
 
     @Override
-    public void dispatchEvent(EventData eventData, ListenerAdapter listener) {
+    public void dispatchEvent(Object eventData, ListenerAdapter listener) {
         if (eventData instanceof QueryCacheEventData) {
             dispatchQueryCacheEventData((QueryCacheEventData) eventData, listener);
             return;
@@ -43,12 +43,12 @@ public class EnterpriseMapEventPublishingService extends MapEventPublishingServi
         }
 
         if (eventData instanceof LocalEntryEventData) {
-            dispatchLocalEventData(eventData, listener);
+            dispatchLocalEventData(((LocalEntryEventData) eventData), listener);
             return;
         }
 
         if (eventData instanceof LocalCacheWideEventData) {
-            dispatchLocalEventData(eventData, listener);
+            dispatchLocalEventData(((LocalCacheWideEventData) eventData), listener);
             return;
         }
 

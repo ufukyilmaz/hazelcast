@@ -87,7 +87,7 @@ public class HDMergeOperation extends HDBasePutOperation {
             mapServiceContext.interceptAfterPut(name, dataValue);
             mapEventPublisher.publishEvent(getCallerAddress(), name, EntryEventType.MERGED, false, dataKey, dataOldValue,
                     dataValue, mergingValue);
-            invalidateNearCaches();
+            invalidateNearCache(dataKey);
             evict();
         }
     }

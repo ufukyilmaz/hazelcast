@@ -16,7 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
@@ -32,13 +31,11 @@ public class HDClearBackupOperation extends HDMapOperation implements BackupOper
         this.createRecordStoreOnDemand = false;
     }
 
-    @Override
-    public String getServiceName() {
-        return MapService.SERVICE_NAME;
-    }
 
     @Override
     protected void runInternal() {
+        clearNearCache(false);
+
         if (recordStore != null) {
             recordStore.clear();
         }

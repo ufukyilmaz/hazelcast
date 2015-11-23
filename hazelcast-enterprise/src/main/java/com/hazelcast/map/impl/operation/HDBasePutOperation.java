@@ -54,7 +54,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         mapServiceContext.interceptAfterPut(name, dataValue);
         eventType = getEventType();
         mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataOldValue, dataValue);
-        invalidateNearCaches();
+        invalidateNearCache(dataKey);
         publishWANReplicationEvent(mapServiceContext, mapEventPublisher);
         evict();
 

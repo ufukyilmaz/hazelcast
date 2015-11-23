@@ -65,7 +65,7 @@ public class EnterpriseWanReplicationService
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        logger.warning("Preparing EWR replication.");
+        logger.finest("Preparing EWR replication.");
         int partitionId = event.getPartitionId();
         EWRMigrationContainer migrationData = new EWRMigrationContainer();
         Set<Map.Entry<String, WanReplicationPublisherDelegate>> entrySet = wanReplications.entrySet();
@@ -97,10 +97,10 @@ public class EnterpriseWanReplicationService
         }
 
         if (migrationData.isEmpty()) {
-            logger.warning("Migration data is empty");
+            logger.finest("Migration data is empty");
             return null;
         } else {
-            logger.warning("Migration data filled.");
+            logger.finest("Migration data filled.");
             return new EWRQueueReplicationOperation(migrationData, event.getPartitionId());
         }
     }
@@ -130,25 +130,23 @@ public class EnterpriseWanReplicationService
     }
 
     private void clearMigrationData(int partitionId) {
-        logger.warning("Starting clearing migration data for partitionId " + partitionId);
-        synchronized (publisherMutex) {
-            for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
-                Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
-                if (wanReplicationEndpoints != null) {
-                    for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
-                        if (wanReplicationEndpoint != null) {
-                            PublisherQueueContainer publisherQueueContainer
-                                    = wanReplicationEndpoint.getPublisherQueueContainer();
-                            PartitionWanEventContainer eventQueueContainer
-                                    = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
-                            eventQueueContainer.clear();
-                            logger.warning("Cleared event queue container");
-                        }
+        logger.finest("Starting clearing migration data for partitionId " + partitionId);
+        for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
+            Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
+            if (wanReplicationEndpoints != null) {
+                for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
+                    if (wanReplicationEndpoint != null) {
+                        PublisherQueueContainer publisherQueueContainer
+                                = wanReplicationEndpoint.getPublisherQueueContainer();
+                        PartitionWanEventContainer eventQueueContainer
+                                = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
+                        eventQueueContainer.clear();
+                        logger.finest("Cleared event queue container");
                     }
                 }
             }
         }
-        logger.warning("End of clearing migration data");
+        logger.finest("End of clearing migration data");
     }
 
     @Override
@@ -375,23 +373,21 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void shutdown() {
-        synchronized (publisherMutex) {
-            for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
-                Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
-                if (wanReplicationEndpoints != null) {
-                    for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
-                        if (wanReplicationEndpoint != null) {
-                            wanReplicationEndpoint.shutdown();
-                        }
+        for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
+            Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
+            if (wanReplicationEndpoints != null) {
+                for (WanReplicationEndpoint wanReplicationEndpoint : wanReplicationEndpoints.values()) {
+                    if (wanReplicationEndpoint != null) {
+                        wanReplicationEndpoint.shutdown();
                     }
                 }
             }
-            StripedExecutor ex = executor;
-            if (ex != null) {
-                ex.shutdown();
-            }
-            wanReplications.clear();
         }
+        StripedExecutor ex = executor;
+        if (ex != null) {
+            ex.shutdown();
+        }
+        wanReplications.clear();
     }
 
     @Override

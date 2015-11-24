@@ -23,6 +23,7 @@ import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.map.impl.record.RecordStatistics.EMPTY_STATS;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.util.Preconditions.checkInstanceOf;
 
@@ -42,8 +43,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     protected static final int EVICTION_CRITERIA_NUMBER_OFFSET = VERSION_OFFSET + LONG_SIZE_IN_BYTES;
     protected static final int TTL_OFFSET = EVICTION_CRITERIA_NUMBER_OFFSET + LONG_SIZE_IN_BYTES;
     protected static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
-    protected static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
-    protected static final int CREATION_TIME_OFFSET = LAST_UPDATE_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    protected static final int CREATION_TIME_OFFSET = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
 
     static {
         BASE_SIZE = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
@@ -173,22 +174,28 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public long getLastAccessTime() {
-        return readLong(LAST_ACCESS_TIME_OFFSET);
+        return readInt(LAST_ACCESS_TIME_OFFSET) + getCreationTime();
     }
 
     @Override
     public void setLastAccessTime(long lastAccessTime) {
-        writeLong(LAST_ACCESS_TIME_OFFSET, lastAccessTime);
+        int diff = (int) (lastAccessTime - getCreationTime());
+        // handles overflow
+        diff = diff < 0 ? Integer.MAX_VALUE : diff;
+        writeInt(LAST_ACCESS_TIME_OFFSET, diff);
     }
 
     @Override
     public long getLastUpdateTime() {
-        return readLong(LAST_UPDATE_TIME_OFFSET);
+        return readInt(LAST_UPDATE_TIME_OFFSET) + getCreationTime();
     }
 
     @Override
     public void setLastUpdateTime(long lastUpdatedTime) {
-        writeLong(LAST_UPDATE_TIME_OFFSET, lastUpdatedTime);
+        int diff = (int) (lastUpdatedTime - getCreationTime());
+        // handles overflow
+        diff = diff < 0 ? Integer.MAX_VALUE : diff;
+        writeInt(LAST_UPDATE_TIME_OFFSET, diff);
     }
 
     @Override
@@ -241,15 +248,18 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
         return 0;
     }
 
-    @Override public final void setSequence(long sequence) {
+    @Override
+    public final void setSequence(long sequence) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    @Override public final long getTombstoneSequence() {
+    @Override
+    public final long getTombstoneSequence() {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    @Override public final void setTombstoneSequence(long tombstoneSequence) {
+    @Override
+    public final void setTombstoneSequence(long tombstoneSequence) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 }

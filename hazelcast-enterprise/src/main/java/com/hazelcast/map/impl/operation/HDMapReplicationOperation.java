@@ -233,6 +233,10 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 Data key = (Data) entries.get(j);
                 Record record = (Record) entries.get(j + 1);
 
+                if (record.isTombstone()) {
+                    out.writeData(null);
+                    continue;
+                }
                 out.writeData(key);
                 out.writeData(serializationService.toData(record.getValue()));
                 out.writeLong(record.getCreationTime());
@@ -285,35 +289,25 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
             List list = new ArrayList(recordStoreSize);
             for (int j = 0; j < recordStoreSize; j += 2) {
                 Data key = in.readData();
-                Data value = in.readData();
-                long creationTime = in.readLong();
-                long lastAccessTime = in.readLong();
-                long lastUpdateTime = in.readLong();
-                long evictionCriteriaNumber = in.readLong();
-                long ttl = in.readLong();
-                long version = in.readLong();
-
+                if (key == null) {
+                    continue;
+                }
                 HDRecordHolder recordHolder = new HDRecordHolder();
-                recordHolder.value = value;
-                recordHolder.creationTime = creationTime;
-                recordHolder.lastAccessTime = lastAccessTime;
-                recordHolder.lastUpdateTime = lastUpdateTime;
-                recordHolder.evictionCriteriaNumber = evictionCriteriaNumber;
-                recordHolder.ttl = ttl;
-                recordHolder.version = version;
+                recordHolder.value = in.readData();
+                recordHolder.creationTime = in.readLong();
+                recordHolder.lastAccessTime = in.readLong();
+                recordHolder.lastUpdateTime = in.readLong();
+                recordHolder.evictionCriteriaNumber = in.readLong();
+                recordHolder.ttl = in.readLong();
+                recordHolder.version = in.readLong();
 
                 boolean statsEnabled = in.readBoolean();
                 if (statsEnabled) {
-                    long lastStoredTime = in.readLong();
-                    long expirationTime = in.readLong();
-                    int hits = in.readInt();
+                    recordHolder.lastStoredTime = in.readLong();
+                    recordHolder.expirationTime = in.readLong();
+                    recordHolder.hits = in.readInt();
 
-                    recordHolder.lastStoredTime = lastStoredTime;
-                    recordHolder.expirationTime = expirationTime;
-                    recordHolder.hits = hits;
                 }
-
-
                 list.add(key);
                 list.add(recordHolder);
             }

@@ -28,7 +28,7 @@ import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRI
 
 
 /**
- * TODO add a proper JavaDoc
+ * {@link DataSerializerHook} implementation for Enterprise Map operations
  */
 public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
 

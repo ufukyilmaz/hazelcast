@@ -23,11 +23,13 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.HDStorageImpl;
+import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
+import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 
 /**
  * {@link Evictor} for maps which has {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
@@ -56,8 +58,7 @@ public class HDEvictorImpl extends EvictorImpl {
         MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
         EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
 
-        Iterable<SampleableElasticHashMap.SamplingEntry> samples
-                = ((HDStorageImpl) recordStore.getStorage()).getRandomSamples(SAMPLE_COUNT);
+        Iterable<SampleableElasticHashMap.SamplingEntry> samples = getSamples(recordStore);
 
         long prevCriteriaValue = -1;
         SampleableElasticHashMap.SamplingEntry entry = null;
@@ -87,11 +88,9 @@ public class HDEvictorImpl extends EvictorImpl {
         }
     }
 
-    protected static void fireEvent(Record record, RecordStore recordStore, boolean backup, long now) {
-        if (!backup) {
-            boolean expired = recordStore.isExpired(record, now, false);
-            recordStore.doPostEvictionOperations(record.getKey(), record.getValue(), expired);
-        }
+    @Override
+    public int findRemovalSize(RecordStore recordStore) {
+        return MAX_EVICTED_ENTRY_COUNT_IN_ONE_ROUND;
     }
 
     public void forceEvict(RecordStore recordStore) {
@@ -104,19 +103,37 @@ public class HDEvictorImpl extends EvictorImpl {
 
         int removalSize = calculateRemovalSize(recordStore);
         int removedEntryCount = 0;
-        Iterator<Record> iterator = recordStore.getStorage().values().iterator();
-        while (iterator.hasNext()) {
-            Record record = iterator.next();
+        Storage<Data, Record> storage = recordStore.getStorage();
+        ArrayList<Record> recordsToEvict = new ArrayList<Record>(removalSize);
+        for (Record record : storage.values()) {
             Data key = record.getKey();
-            if (!recordStore.isLocked(key)) {
-                fireEvent(record, recordStore, backup, now);
-                iterator.remove();
+            if (!recordStore.isLocked(key) && !record.isTombstone()) {
+                recordsToEvict.add(record);
                 removedEntryCount++;
             }
 
             if (removedEntryCount >= removalSize) {
                 break;
             }
+        }
+        for (Record record : recordsToEvict) {
+            fireEvent(record, recordStore, backup, now);
+            storage.removeRecord(record);
+        }
+    }
+
+    private static Iterable<SampleableElasticHashMap.SamplingEntry> getSamples(RecordStore recordStore) {
+        Storage storage = recordStore.getStorage();
+        if (storage instanceof HotRestartHDStorageImpl) {
+            return ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
+        }
+        return ((HDStorageImpl) storage).getRandomSamples(SAMPLE_COUNT);
+    }
+
+    private static void fireEvent(Record record, RecordStore recordStore, boolean backup, long now) {
+        if (!backup) {
+            boolean expired = recordStore.isExpired(record, now, false);
+            recordStore.doPostEvictionOperations(record.getKey(), record.getValue(), expired);
         }
     }
 
@@ -132,10 +149,5 @@ public class HDEvictorImpl extends EvictorImpl {
 
     private static long getNow() {
         return Clock.currentTimeMillis();
-    }
-
-    @Override
-    public int findRemovalSize(RecordStore recordStore) {
-        return MAX_EVICTED_ENTRY_COUNT_IN_ONE_ROUND;
     }
 }

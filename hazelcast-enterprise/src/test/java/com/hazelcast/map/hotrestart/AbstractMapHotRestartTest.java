@@ -1,14 +1,13 @@
-package com.hazelcast.cache.hotrestart;
+package com.hazelcast.map.hotrestart;
 
-import com.hazelcast.cache.ICache;
-import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
@@ -23,43 +22,37 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runners.Parameterized;
 
-import javax.cache.Cache;
-import javax.cache.CacheManager;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
-import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_PARTITION;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;
 
-public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
+public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
     private static InetAddress localAddress;
+    @Rule
+    public TestName testName = new TestName();
+    @Parameterized.Parameter(0)
+    public InMemoryFormat memoryFormat;
+    @Parameterized.Parameter(1)
+    public int keyRange;
+    @Parameterized.Parameter(2)
+    public boolean evictionEnabled;
+    String mapName;
+    private File folder;
+    private TestHazelcastInstanceFactory factory;
 
     @BeforeClass
     public static void setupClass() throws UnknownHostException {
         localAddress = InetAddress.getLocalHost();
     }
-
-    @Rule
-    public TestName testName = new TestName();
-
-    private File folder;
-    private TestHazelcastInstanceFactory factory;
-    String cacheName;
-
-    @Parameterized.Parameter(0)
-    public InMemoryFormat memoryFormat;
-
-    @Parameterized.Parameter(1)
-    public int keyRange;
-
-    @Parameterized.Parameter(2)
-    public boolean evictionEnabled;
 
     @Before
     public final void setup() throws UnknownHostException {
@@ -69,7 +62,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
             throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
         }
 
-        cacheName = randomName();
+        mapName = randomString();
 
         factory = createFactory();
 
@@ -82,7 +75,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return new TestHazelcastInstanceFactory(5000, addresses);
     }
 
-    void setupInternal() {}
+    void setupInternal() {
+    }
 
     @After
     public final void tearDown() {
@@ -97,7 +91,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         }
     }
 
-    void tearDownInternal() {}
+    void tearDownInternal() {
+    }
 
     HazelcastInstance newHazelcastInstance() {
         return factory.newHazelcastInstance(makeConfig());
@@ -108,14 +103,13 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     void restartInstances(int clusterSize) {
-        if (factory != null) {
-            factory.terminateAll();
-        }
+        final Config config = makeConfig();
+        factory.terminateAll();
 
         factory = createFactory();
 
         final CountDownLatch latch = new CountDownLatch(clusterSize);
-        final Config config = makeConfig();
+
 
         for (int i = 0; i < clusterSize; i++) {
             final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
@@ -132,13 +126,19 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {
+        Config config = hz.getConfig();
         Address address = getNode(hz).getThisAddress();
         hz.shutdown();
-        hz = factory.newHazelcastInstance(address, makeConfig());
+        hz = factory.newHazelcastInstance(address, config);
         return hz;
     }
 
     Config makeConfig() {
+        Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        if (!instances.isEmpty()) {
+            HazelcastInstance instance = instances.iterator().next();
+            return instance.getConfig();
+        }
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
@@ -150,6 +150,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(getNativeMemorySize())
                 .setMetadataSpacePercentage(50);
+
         return config;
     }
 
@@ -157,37 +158,36 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return new MemorySize(128, MemoryUnit.MEGABYTES);
     }
 
-    <V> ICache<Integer, V> createCache() {
+    <V> IMap<Integer, V> createMap() {
         HazelcastInstance hz = factory.getAllHazelcastInstances().iterator().next();
         assertNotNull(hz);
-        return createCache(hz, 1);
+
+        return createMap(hz, 1);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz) {
-        return createCache(hz, 1);
+    <V> IMap<Integer, V> createMap(HazelcastInstance hz) {
+        return createMap(hz, 1);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount) {
-        CacheConfig<Integer, V> cacheConfig = new CacheConfig<Integer, V>();
-        cacheConfig.setHotRestartEnabled(true);
-        cacheConfig.setBackupCount(backupCount);
-        cacheConfig.setStatisticsEnabled(true);
-
-        EvictionConfig evictionConfig;
-
-        if (memoryFormat == InMemoryFormat.NATIVE) {
-            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-            int size = evictionEnabled ? 90 : 100;
-            evictionConfig = new EvictionConfig(size, MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE, EvictionPolicy.LRU);
-        } else {
-            int size = evictionEnabled ? keyRange / 2 : Integer.MAX_VALUE;
-            evictionConfig = new EvictionConfig(size, MaxSizePolicy.ENTRY_COUNT, EvictionPolicy.LRU);
+    <V> IMap<Integer, V> createMap(HazelcastInstance hz, int backupCount) {
+        for (HazelcastInstance instance : factory.getAllHazelcastInstances()) {
+            Config config = instance.getConfig();
+            MapConfig mapConfig = new MapConfig(mapName);
+            mapConfig.setHotRestartEnabled(true);
+            mapConfig.setInMemoryFormat(memoryFormat);
+            mapConfig.setBackupCount(backupCount);
+            setEvictionConfig(mapConfig);
+            config.addMapConfig(mapConfig);
         }
+        return hz.getMap(mapName);
+    }
 
-        cacheConfig.setEvictionConfig(evictionConfig);
-
-        CacheManager cacheManager = createCachingProvider(hz).getCacheManager();
-        Cache<Integer, V> cache = cacheManager.createCache(cacheName, cacheConfig);
-        return cache.unwrap(ICache.class);
+    private void setEvictionConfig(MapConfig mapConfig) {
+        if (!evictionEnabled) {
+            return;
+        }
+        mapConfig.setEvictionPolicy(EvictionPolicy.LFU);
+        mapConfig.setMinEvictionCheckMillis(0);
+        mapConfig.setMaxSizeConfig(new MaxSizeConfig().setMaxSizePolicy(PER_PARTITION).setSize(50));
     }
 }

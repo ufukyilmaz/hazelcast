@@ -3,6 +3,9 @@ package com.hazelcast.map.impl;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.Node;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.nearcache.EnterpriseNearCacheProvider;
@@ -17,6 +20,8 @@ import com.hazelcast.map.impl.query.HDMapQueryEngineImpl;
 import com.hazelcast.map.impl.query.MapQueryEngine;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
+import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
+import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
@@ -29,10 +34,18 @@ import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
+import com.hazelcast.spi.hotrestart.RamStore;
+import com.hazelcast.spi.hotrestart.RamStoreRegistry;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.counters.Counter;
+import com.hazelcast.util.counters.MwCounter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +61,8 @@ import static com.hazelcast.query.impl.predicates.QueryOptimizerFactory.newOptim
  *
  * @see MapServiceContext
  */
-class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements EnterpriseMapServiceContext {
+class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
+        implements EnterpriseMapServiceContext, RamStoreRegistry {
 
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
@@ -68,6 +82,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     private final MapOperationProvider hdMapOperationProvider;
     private final MapFilterProvider mapFilterProvider;
 
+    private HotRestartService hotRestartService;
+
+    private final Counter sequenceCounter = MwCounter.newMwCounter();
+
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
         this.queryCacheContext = new NodeQueryCacheContext(this);
@@ -75,17 +93,37 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
                 newOptimizer(nodeEngine.getGroupProperties()));
         this.hdMapOperationProvider = new HDMapOperationProvider();
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
+        Node node = ((NodeEngineImpl) nodeEngine).getNode();
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
+        if (nodeExtension.isHotRestartEnabled()) {
+            hotRestartService = nodeExtension.getHotRestartService();
+            hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
+        }
+    }
+
+    public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
+        return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
+    }
+
+    public HotRestartStore getOffHeapHotRestartStoreForCurrentThread() {
+        return hotRestartService.getOffHeapHotRestartStoreForCurrentThread();
     }
 
     @Override
-    LocalMapStatsProvider createLocalMapStatsProvider() {
-        return new EnterpriseLocalMapStatsProvider(this);
+    public RamStore ramStoreForPrefix(long prefix) {
+        int partitionId = PersistentCacheDescriptors.toPartitionId(prefix);
+        String name = hotRestartService.getCacheName(prefix);
+        EnterpriseRecordStore recordStore = (EnterpriseRecordStore) getRecordStore(partitionId, name);
+        return recordStore.getRamStore();
     }
 
     @Override
-    PartitionContainer[] createPartitionContainers() {
-        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        return new EnterprisePartitionContainer[partitionCount];
+    public RamStore restartingRamStoreForPrefix(long prefix) {
+        int partitionId = PersistentCacheDescriptors.toPartitionId(prefix);
+        String name = hotRestartService.getCacheName(prefix);
+        PartitionContainer partitionContainer = getPartitionContainer(partitionId);
+        EnterpriseRecordStore recordStore = (EnterpriseRecordStore) partitionContainer.getRecordStoreForHotRestart(name);
+        return recordStore.getRamStore();
     }
 
     @Override
@@ -94,12 +132,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
     }
 
     @Override
-    public void initPartitionsContainers() {
-        final int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        final PartitionContainer[] partitionContainers = this.partitionContainers;
-        for (int i = 0; i < partitionCount; i++) {
-            partitionContainers[i] = new EnterprisePartitionContainer(getService(), i);
-        }
+    LocalMapStatsProvider createLocalMapStatsProvider() {
+        return new EnterpriseLocalMapStatsProvider(this);
     }
 
     @Override
@@ -245,5 +279,25 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl implements E
         MapContainer container = getMapContainer(mapName);
         MapConfig mapConfig = container.getMapConfig();
         return mapConfig.getInMemoryFormat();
+    }
+
+    @Override
+    public RecordStore createRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader) {
+        ILogger logger = nodeEngine.getLogger(DefaultRecordStore.class);
+        long prefix = -1;
+        if (mapContainer.getMapConfig().isHotRestartEnabled()) {
+            if (hotRestartService == null) {
+                throw new IllegalStateException("HotRestart is not enabled");
+            }
+            String name = mapContainer.getName();
+            hotRestartService.ensureHasConfiguration(MapService.SERVICE_NAME, name, null);
+            prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
+        }
+        return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, prefix);
+    }
+
+    @Override
+    public long incrementSequence() {
+        return sequenceCounter.inc();
     }
 }

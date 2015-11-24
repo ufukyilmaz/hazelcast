@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.EnterprisePartitionContainer;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.PartitionContainer;
@@ -40,7 +39,7 @@ public final class EnterpriseMapPartitionClearOperation
             MapService mapService = getService();
             MapServiceContext mapServiceContext = mapService.getMapServiceContext();
             PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
-            ((EnterprisePartitionContainer) partitionContainer).clear();
+            partitionContainer.clear();
         } finally {
             done.countDown();
         }

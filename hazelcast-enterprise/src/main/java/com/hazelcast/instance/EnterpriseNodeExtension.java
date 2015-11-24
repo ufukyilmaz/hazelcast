@@ -60,15 +60,14 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
-@SuppressWarnings({ "checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
+    private final HotRestartService hotRestartService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile MemoryManager memoryManager;
-
-    private final HotRestartService hotRestartService;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -149,7 +148,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()
-                        + " (" + build + ") starting at " + node.getThisAddress());
+                + " (" + build + ") starting at " + node.getThisAddress());
         systemLogger.info("Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.");
     }
 
@@ -337,7 +336,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     private void deregisterThreadFromPoolingMemoryManager(Thread thread) {
         EnterpriseSerializationService serializationService
-            = (EnterpriseSerializationService) node.getSerializationService();
+                = (EnterpriseSerializationService) node.getSerializationService();
 
         MemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {

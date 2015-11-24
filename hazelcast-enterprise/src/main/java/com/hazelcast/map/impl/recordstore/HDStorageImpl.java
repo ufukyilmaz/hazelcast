@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
@@ -43,12 +27,12 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     /**
      * Default capacity for a hash container.
      */
-    private static final int DEFAULT_CAPACITY = 1000;
+    public static final int DEFAULT_CAPACITY = 1000;
 
     /**
      * Default load factor.
      */
-    private static final float DEFAULT_LOAD_FACTOR = 0.91f;
+    public static final float DEFAULT_LOAD_FACTOR = 0.6f;
 
     private final SampleableElasticHashMap<HDRecord> map;
     private final HiDensityRecordProcessor recordProcessor;
@@ -61,7 +45,13 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     HDStorageImpl(int initialCapacity, float loadFactor, HiDensityRecordProcessor<HDRecord> recordProcessor) {
         this.recordProcessor = recordProcessor;
         this.sizeEstimator = createMapSizeEstimator(NATIVE);
-        this.map = new SampleableElasticHashMap<HDRecord>(initialCapacity, loadFactor, recordProcessor);
+        this.map = new SampleableElasticHashMap(initialCapacity, loadFactor, recordProcessor);
+    }
+
+    HDStorageImpl(SampleableElasticHashMap<HDRecord> map, HiDensityRecordProcessor<HDRecord> recordProcessor) {
+        this.recordProcessor = recordProcessor;
+        this.sizeEstimator = createMapSizeEstimator(NATIVE);
+        this.map = map;
     }
 
     public HiDensityRecordProcessor getRecordProcessor() {
@@ -89,11 +79,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     @Override
     public void put(Data key, HDRecord record) {
         HDRecord oldRecord = null;
-        Data nativeKey = null;
+        NativeMemoryData nativeKey = null;
         boolean succeed = false;
         try {
             nativeKey = toNative(key);
-            record.setKeyAddress(((NativeMemoryData) nativeKey).address());
+            record.setKeyAddress(nativeKey.address());
             oldRecord = map.put(nativeKey, record);
             succeed = true;
         } finally {
@@ -115,7 +105,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         try {
             oldValue = record.getValue();
             newValue = toNative(value);
-            record.setValueAddress(((NativeMemoryData) newValue).address());
+            long address = value == null ? NULL_ADDRESS : ((NativeMemoryData) newValue).address();
+            record.setValueAddress(address);
             succeed = true;
         } finally {
             if (succeed) {
@@ -183,7 +174,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         recordProcessor.disposeDeferredBlocks();
     }
 
-    private void addDeferredDispose(Object memoryBlock) {
+    protected void addDeferredDispose(Object memoryBlock) {
         if (memoryBlock == null
                 || ((MemoryBlock) memoryBlock).address() == NULL_ADDRESS
                 || memoryBlock instanceof HeapData
@@ -194,8 +185,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         recordProcessor.addDeferredDispose(((MemoryBlock) memoryBlock));
     }
 
-    private Data toNative(Data key) {
-        return recordProcessor.convertData(key, DataType.NATIVE);
+    protected NativeMemoryData toNative(Data key) {
+        return (NativeMemoryData) recordProcessor.convertData(key, DataType.NATIVE);
     }
 
     private Data toNative(Object value) {
@@ -204,5 +195,9 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
 
     public Iterable getRandomSamples(int sampleCount) {
         return map.getRandomSamples(sampleCount);
+    }
+
+    public long getNativeKeyAddress(Data key) {
+        return map.getNativeKeyAddress(key);
     }
 }

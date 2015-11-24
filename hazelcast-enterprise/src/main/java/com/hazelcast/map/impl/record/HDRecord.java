@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.hidensity.HiDensityRecord;
@@ -32,6 +16,34 @@ import static com.hazelcast.util.Preconditions.checkInstanceOf;
  */
 public class HDRecord extends HiDensityRecord implements Record<Data> {
 
+    /*
+     * Structure:
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Key Address          |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Value Address        |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Version              |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Eviction Criteria    |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Time To live         |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Last Access Time     |   4 bytes (int)  |
+     * +----------------------+------------------+
+     * | Last Update Time     |   4 bytes (int)  |
+     * +----------------------+------------------+
+     * | Tombstone Sequence   |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Record Sequence      |   8 bytes (long) |
+     * +----------------------+------------------+
+     * | Creation Time        |   8 bytes (long) |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * Total size = 72 bytes
+     */
+
+
     /**
      * Gives the minimum size of an {@link HDRecord}
      */
@@ -44,7 +56,9 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     protected static final int TTL_OFFSET = EVICTION_CRITERIA_NUMBER_OFFSET + LONG_SIZE_IN_BYTES;
     protected static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
     protected static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + INT_SIZE_IN_BYTES;
-    protected static final int CREATION_TIME_OFFSET = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    protected static final int TOMBSTONE_SEQUENCE_OFFSET = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    protected static final int SEQUENCE_OFFSET = TOMBSTONE_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int CREATION_TIME_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
 
     static {
         BASE_SIZE = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
@@ -69,21 +83,29 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     public Data getValue() {
         if (address == NULL_PTR) {
             return null;
-        } else {
-            return recordAccessor.readData(getValueAddress());
         }
+        long valueAddress = getValueAddress();
+        if (valueAddress == NULL_PTR) {
+            return null;
+        }
+        return recordAccessor.readData(valueAddress);
     }
 
     @Override
     public void setValue(Data value) {
+        if (value == null) {
+            setValueAddress(NULL_PTR);
+            return;
+        }
         checkInstanceOf(NativeMemoryData.class, value,
                 "Parameter `value` should be a type of [" + NativeMemoryData.class + "], but found [" + value + "]");
 
-        if (value != null) {
-            setValueAddress(((NativeMemoryData) value).address());
-        } else {
-            setValueAddress(NULL_PTR);
-        }
+        setValueAddress(((NativeMemoryData) value).address());
+    }
+
+    public boolean isTombstone() {
+        long valueAddress = getValueAddress();
+        return valueAddress == NULL_PTR;
     }
 
     @Override
@@ -143,13 +165,30 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     @Override
-    public void setEvictionCriteriaNumber(long evictionCriteriaNumber) {
-        writeLong(EVICTION_CRITERIA_NUMBER_OFFSET, evictionCriteriaNumber);
+    public long getSequence() {
+        return readLong(SEQUENCE_OFFSET);
+    }
+
+    public void setSequence(long sequence) {
+        writeLong(SEQUENCE_OFFSET, sequence);
+    }
+
+    public long getTombstoneSequence() {
+        return readLong(TOMBSTONE_SEQUENCE_OFFSET);
+    }
+
+    public void setTombstoneSequence(long tombstoneSequence) {
+        writeLong(TOMBSTONE_SEQUENCE_OFFSET, tombstoneSequence);
     }
 
     @Override
     public long getEvictionCriteriaNumber() {
         return readLong(EVICTION_CRITERIA_NUMBER_OFFSET);
+    }
+
+    @Override
+    public void setEvictionCriteriaNumber(long evictionCriteriaNumber) {
+        writeLong(EVICTION_CRITERIA_NUMBER_OFFSET, evictionCriteriaNumber);
     }
 
     @Override
@@ -236,31 +275,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     @Override
     public void clear() {
         zero();
-    }
-
-    @Override
-    public boolean isTombstone() {
-        return false;
-    }
-
-    @Override
-    public long getSequence() {
-        return 0;
-    }
-
-    @Override
-    public final void setSequence(long sequence) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public final long getTombstoneSequence() {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public final void setTombstoneSequence(long tombstoneSequence) {
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 }
 

@@ -28,9 +28,8 @@ public class HDRecordAccessor
         if (optimizeQuery) {
             return statisticEnabled ? new CachedHDRecordWithStats(this)
                     : new HDRecordWithCachedValue(this);
-        } else {
-            return statisticEnabled ? new HDRecordWithStats(this) : new HDRecord(this);
         }
+        return statisticEnabled ? new HDRecordWithStats(this) : new HDRecord(this);
     }
 
     @Override

@@ -229,5 +229,17 @@ public abstract class HDRecord extends HiDensityRecord implements Record<Data> {
     public long getSequence() {
         return 0;
     }
+
+    @Override public final void setSequence(long sequence) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override public final long getTombstoneSequence() {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override public final void setTombstoneSequence(long tombstoneSequence) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }
 

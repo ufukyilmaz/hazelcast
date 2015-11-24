@@ -30,6 +30,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * {@link Evictor} for maps which has {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
@@ -104,7 +105,7 @@ public class HDEvictorImpl extends EvictorImpl {
         int removalSize = calculateRemovalSize(recordStore);
         int removedEntryCount = 0;
         Storage<Data, Record> storage = recordStore.getStorage();
-        ArrayList<Record> recordsToEvict = new ArrayList<Record>(removalSize);
+        List<Record> recordsToEvict = new ArrayList<Record>(removalSize);
         for (Record record : storage.values()) {
             Data key = record.getKey();
             if (!recordStore.isLocked(key) && !record.isTombstone()) {
@@ -120,6 +121,8 @@ public class HDEvictorImpl extends EvictorImpl {
             fireEvent(record, recordStore, backup, now);
             storage.removeRecord(record);
         }
+
+        recordStore.dispose();
     }
 
     private static Iterable<SampleableElasticHashMap.SamplingEntry> getSamples(RecordStore recordStore) {

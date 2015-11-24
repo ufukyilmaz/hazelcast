@@ -1,9 +1,10 @@
 package com.hazelcast.cache.wan;
 
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.DataSerializable;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
@@ -13,7 +14,7 @@ import java.util.Set;
 /**
  * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects
  */
-public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, DataSerializable {
+public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
 
     private String cacheName;
     private String managerPrefix;
@@ -72,5 +73,10 @@ public abstract class CacheReplicationObject implements EnterpriseReplicationEve
         managerPrefix = in.readUTF();
         backupCount = in.readInt();
         groupNames = in.readObject();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EWRDataSerializerHook.F_ID;
     }
 }

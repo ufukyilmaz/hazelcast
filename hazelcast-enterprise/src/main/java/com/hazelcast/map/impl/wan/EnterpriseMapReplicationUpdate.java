@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.wan;
 
 import com.hazelcast.core.EntryView;
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -51,5 +52,10 @@ public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObje
         super.readData(in);
         mergePolicy = in.readObject();
         entryView = in.readObject();
+    }
+
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.MAP_REPLICATION_UPDATE;
     }
 }

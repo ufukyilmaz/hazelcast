@@ -1,5 +1,6 @@
 package com.hazelcast.cache.wan;
 
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -43,5 +44,10 @@ public class CacheReplicationRemove extends CacheReplicationObject {
         super.readData(in);
         removeTime = in.readLong();
         key = in.readData();
+    }
+
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.CACHE_REPLICATION_REMOVE;
     }
 }

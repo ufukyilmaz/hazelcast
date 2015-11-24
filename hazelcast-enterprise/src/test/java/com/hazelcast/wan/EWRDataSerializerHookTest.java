@@ -1,8 +1,13 @@
 package com.hazelcast.wan;
 
+import com.hazelcast.cache.wan.CacheReplicationRemove;
+import com.hazelcast.cache.wan.CacheReplicationUpdate;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
+import com.hazelcast.map.impl.wan.MapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -23,6 +28,18 @@ public class EWRDataSerializerHookTest {
         EWRDataSerializerHook hook = new EWRDataSerializerHook();
         IdentifiedDataSerializable batchWanRep = hook.createFactory().create(EWRDataSerializerHook.BATCH_WAN_REP_EVENT);
         assertTrue(batchWanRep instanceof BatchWanReplicationEvent);
+
+        IdentifiedDataSerializable cacheUpdate = hook.createFactory().create(EWRDataSerializerHook.CACHE_REPLICATION_UPDATE);
+        assertTrue(cacheUpdate instanceof CacheReplicationUpdate);
+
+        IdentifiedDataSerializable cacheRemove = hook.createFactory().create(EWRDataSerializerHook.CACHE_REPLICATION_REMOVE);
+        assertTrue(cacheRemove instanceof CacheReplicationRemove);
+
+        IdentifiedDataSerializable mapUpdate = hook.createFactory().create(EWRDataSerializerHook.MAP_REPLICATION_UPDATE);
+        assertTrue(mapUpdate instanceof EnterpriseMapReplicationUpdate);
+
+        IdentifiedDataSerializable mapRemove = hook.createFactory().create(EWRDataSerializerHook.MAP_REPLICATION_REMOVE);
+        assertTrue(mapRemove instanceof EnterpriseMapReplicationRemove);
     }
 
     @Test(expected = IllegalArgumentException.class)

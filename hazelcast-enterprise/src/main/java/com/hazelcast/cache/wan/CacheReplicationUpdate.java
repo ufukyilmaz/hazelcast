@@ -1,6 +1,7 @@
 package com.hazelcast.cache.wan;
 
 import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -51,5 +52,10 @@ public class CacheReplicationUpdate extends CacheReplicationObject {
         super.readData(in);
         mergePolicy = in.readUTF();
         entryView = in.readObject();
+    }
+
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.CACHE_REPLICATION_UPDATE;
     }
 }

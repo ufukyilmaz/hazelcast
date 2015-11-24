@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.wan;
 
+import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -46,4 +47,8 @@ public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObje
         key = in.readData();
     }
 
+    @Override
+    public int getId() {
+        return EWRDataSerializerHook.MAP_REPLICATION_REMOVE;
+    }
 }

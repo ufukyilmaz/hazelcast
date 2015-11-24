@@ -37,7 +37,6 @@ import com.hazelcast.util.EmptyStatement;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import com.hazelcast.util.function.LongLongConsumer;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -72,7 +71,6 @@ import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-//@Ignore
 public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static final int KEY_RANGE = 10000000;

@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity;
 
 import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
+import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityRecordStore;
@@ -137,6 +138,20 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
      */
     SlottableIterator<Map.Entry<Data, R>> iterator(int slot);
 
+    /**
+     * Converts given object to data to be sent inside event
+     *
+     * @param obj the object to be converted to data to be sent inside event
+     * @return the data to be sent
+     */
     Data toEventData(Object obj);
+
+    /**
+     * Converts given {@link HiDensityCacheRecord} to heap based {@link CacheRecord}
+     *
+     * @param record the {@link HiDensityCacheRecord} to be converted to heap based {@link CacheRecord}
+     * @return the heap based {@link CacheRecord} converted from the given {@link HiDensityCacheRecord}
+     */
+    CacheRecord toHeapCacheRecord(R record);
 
 }

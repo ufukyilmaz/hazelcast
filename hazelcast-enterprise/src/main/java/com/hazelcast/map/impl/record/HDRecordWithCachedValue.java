@@ -17,39 +17,42 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.nio.Bits;
+import com.hazelcast.nio.serialization.Data;
 
-public class SimpleHDRecord extends HDRecord {
+/**
+ * Value of this {@link Record} can be cached as de-serialized form.
+ *
+ * @see HDRecord
+ */
+public class HDRecordWithCachedValue extends HDRecord {
 
-    /**
-     * Size of this {@link HDRecord}
-     */
-    public static final int SIZE;
+    private transient volatile Object cachedValue;
 
-    /**
-     * Value offset in this {@link HDRecord}
-     */
-    public static final int VALUE_OFFSET;
-
-
-    static {
-        VALUE_OFFSET = CREATION_TIME_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-        SIZE = VALUE_OFFSET + HEADER_SIZE;
-    }
-
-    public SimpleHDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
+    public HDRecordWithCachedValue(HiDensityRecordAccessor<HDRecord> recordAccessor) {
         super(recordAccessor);
-        setSize(SIZE);
-    }
-
-    public SimpleHDRecord(long address) {
-        reset(address);
-        setSize(SIZE);
     }
 
     @Override
-    int getValueOffset() {
-        return VALUE_OFFSET;
+    public void setValue(Data o) {
+        cachedValue = null;
+        super.setValue(o);
     }
+
+    @Override
+    public Object getCachedValue() {
+        return cachedValue;
+    }
+
+    @Override
+    public void setCachedValue(Object cachedValue) {
+        this.cachedValue = cachedValue;
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        cachedValue = null;
+    }
+
 
 }

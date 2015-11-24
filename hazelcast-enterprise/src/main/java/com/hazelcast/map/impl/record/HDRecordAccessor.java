@@ -26,16 +26,16 @@ public class HDRecordAccessor
     @Override
     protected HDRecord createRecord() {
         if (optimizeQuery) {
-            return statisticEnabled ? new StatsAwareHDRecordWithCachedValue(this)
-                    : new SimpleHDRecordWithCachedValue(this);
+            return statisticEnabled ? new CachedHDRecordWithStats(this)
+                    : new HDRecordWithCachedValue(this);
         } else {
-            return statisticEnabled ? new StatsAwareHDRecord(this) : new SimpleHDRecord(this);
+            return statisticEnabled ? new HDRecordWithStats(this) : new HDRecord(this);
         }
     }
 
     @Override
     public boolean isEqual(long address1, long address2) {
-        int valueOffset = statisticEnabled ? StatsAwareHDRecord.VALUE_OFFSET : SimpleHDRecord.VALUE_OFFSET;
+        int valueOffset = statisticEnabled ? HDRecordWithStats.VALUE_OFFSET : HDRecord.VALUE_OFFSET;
 
         long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + valueOffset);
         long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + valueOffset);

@@ -17,50 +17,39 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+
 /**
  * HiDensity backed {@link Record} with statistics.
  */
-public class StatsAwareHDRecord extends HDRecord implements RecordStatistics {
+public class HDRecordWithStats extends HDRecord implements RecordStatistics {
 
     /**
      * Size of this {@link HDRecord}
      */
     public static final int SIZE;
 
-    /**
-     * Value offset in this {@link HDRecord}
-     */
-    public static final int VALUE_OFFSET;
-
-    static final int LAST_STORED_TIME = CREATION_TIME_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    static final int EXPIRATION_TIME = LAST_STORED_TIME + Bits.LONG_SIZE_IN_BYTES;
-    static final int HITS = EXPIRATION_TIME + Bits.LONG_SIZE_IN_BYTES;
+    private static final int LAST_STORED_TIME = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int EXPIRATION_TIME = LAST_STORED_TIME + LONG_SIZE_IN_BYTES;
+    private static final int HITS = EXPIRATION_TIME + LONG_SIZE_IN_BYTES;
 
     static {
-        VALUE_OFFSET = HITS + Bits.LONG_SIZE_IN_BYTES;
-        SIZE = VALUE_OFFSET + HEADER_SIZE;
+        SIZE = BASE_SIZE + HITS + LONG_SIZE_IN_BYTES;
     }
 
-    public StatsAwareHDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
+    public HDRecordWithStats(HiDensityRecordAccessor<HDRecord> recordAccessor) {
         super(recordAccessor);
-        setSize(SIZE);
-    }
-
-    public StatsAwareHDRecord(long address) {
-        reset(address);
-        setSize(SIZE);
     }
 
     @Override
-    int getValueOffset() {
-        return VALUE_OFFSET;
+    protected int getSize() {
+        return SIZE;
     }
 
     @Override

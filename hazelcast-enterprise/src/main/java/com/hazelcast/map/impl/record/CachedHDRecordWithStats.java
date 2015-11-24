@@ -22,18 +22,14 @@ import com.hazelcast.nio.serialization.Data;
 /**
  * Value of this {@link Record} can be cached as de-serialized form.
  *
- * @see SimpleHDRecord
+ * @see HDRecordWithStats
  */
-public class SimpleHDRecordWithCachedValue extends SimpleHDRecord {
+public class CachedHDRecordWithStats extends HDRecordWithStats {
 
     private transient volatile Object cachedValue;
 
-    public SimpleHDRecordWithCachedValue(HiDensityRecordAccessor<HDRecord> recordAccessor) {
+    public CachedHDRecordWithStats(HiDensityRecordAccessor<HDRecord> recordAccessor) {
         super(recordAccessor);
-    }
-
-    public SimpleHDRecordWithCachedValue(long address) {
-        super(address);
     }
 
     @Override
@@ -57,6 +53,4 @@ public class SimpleHDRecordWithCachedValue extends SimpleHDRecord {
         super.invalidate();
         cachedValue = null;
     }
-
-
 }

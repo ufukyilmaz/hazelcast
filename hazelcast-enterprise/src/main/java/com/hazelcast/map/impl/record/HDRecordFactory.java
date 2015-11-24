@@ -50,7 +50,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
     @Override
     public Record<Data> newRecord(Object value) {
-        int size = statisticsEnabled ? StatsAwareHDRecord.SIZE : SimpleHDRecord.SIZE;
+        int size = statisticsEnabled ? HDRecordWithStats.SIZE : HDRecord.BASE_SIZE;
 
         long address = NULL_PTR;
         Data dataValue = null;

@@ -19,40 +19,50 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.hidensity.HiDensityRecord;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.map.impl.record.RecordStatistics.EMPTY_STATS;
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.util.Preconditions.checkInstanceOf;
 
 /**
- * Contains shared parts of a HiDensity backed {@link Record} for {@link com.hazelcast.core.IMap IMap}.
+ * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
  */
-public abstract class HDRecord extends HiDensityRecord implements Record<Data> {
+public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     /**
-     * Header size of native memory based cache record
+     * Gives the minimum size of an {@link HDRecord}
      */
-    protected static final int HEADER_SIZE = 8;
-    protected static final int VERSION_OFFSET = 0;
-    protected static final int KEY_ADDRESS_OFFSET = VERSION_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    protected static final int EVICTION_CRITERIA_NUMBER_OFFSET = KEY_ADDRESS_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    protected static final int TTL_OFFSET = EVICTION_CRITERIA_NUMBER_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    protected static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    protected static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + Bits.LONG_SIZE_IN_BYTES;
-    protected static final int CREATION_TIME_OFFSET = LAST_UPDATE_TIME_OFFSET + Bits.LONG_SIZE_IN_BYTES;
+    public static final int BASE_SIZE;
+
+    protected static final int KEY_OFFSET = 0;
+    protected static final int VALUE_OFFSET = KEY_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int VERSION_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int EVICTION_CRITERIA_NUMBER_OFFSET = VERSION_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int TTL_OFFSET = EVICTION_CRITERIA_NUMBER_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int LAST_ACCESS_TIME_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int LAST_UPDATE_TIME_OFFSET = LAST_ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    protected static final int CREATION_TIME_OFFSET = LAST_UPDATE_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+
+    static {
+        BASE_SIZE = CREATION_TIME_OFFSET + LONG_SIZE_IN_BYTES;
+    }
 
     protected HiDensityRecordAccessor<HDRecord> recordAccessor;
 
     public HDRecord() {
+        this(null);
     }
 
     public HDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
         this.recordAccessor = recordAccessor;
+        setSize(getSize());
     }
 
-    abstract int getValueOffset();
+    protected int getSize() {
+        return BASE_SIZE;
+    }
 
     @Override
     public Data getValue() {
@@ -65,7 +75,8 @@ public abstract class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public void setValue(Data value) {
-        checkInstanceOf(NativeMemoryData.class, value, "Parameter `value` should be a type of " + NativeMemoryData.class);
+        checkInstanceOf(NativeMemoryData.class, value,
+                "Parameter `value` should be a type of [" + NativeMemoryData.class + "], but found [" + value + "]");
 
         if (value != null) {
             setValueAddress(((NativeMemoryData) value).address());
@@ -191,21 +202,21 @@ public abstract class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     public long getKeyAddress() {
-        return readLong(KEY_ADDRESS_OFFSET);
+        return readLong(KEY_OFFSET);
     }
 
     public void setKeyAddress(long address) {
-        writeLong(KEY_ADDRESS_OFFSET, address);
+        writeLong(KEY_OFFSET, address);
     }
 
     @Override
     public long getValueAddress() {
-        return readLong(getValueOffset());
+        return readLong(VALUE_OFFSET);
     }
 
     @Override
     public void setValueAddress(long valueAddress) {
-        writeLong(getValueOffset(), valueAddress);
+        writeLong(VALUE_OFFSET, valueAddress);
     }
 
     @Override

@@ -123,6 +123,14 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.shutdown();
     }
 
+    /**
+     * Runs the supplied task while GC activity is paused. This method is provided
+     * strictly to facilitate testing.
+     */
+    public void runWhileGcPaused(Runnable task) {
+        gcExec.runWhileGcPaused(task);
+    }
+
     private long put0(HotRestartKey key, byte[] value, long seq, int size, boolean isTombstone) {
         gcExec.submitRecord(key, seq, size, isTombstone);
         final boolean chunkFull = activeChunk.addStep1(key.prefix(), seq, isTombstone, key.bytes(), value);

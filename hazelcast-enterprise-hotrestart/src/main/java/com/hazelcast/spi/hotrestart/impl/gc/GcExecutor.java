@@ -57,6 +57,8 @@ public final class GcExecutor {
     private volatile boolean backpressure;
     private volatile Throwable gcThreadFailureCause;
     private boolean keepGoing;
+    /** This lock exists only to serve the needs of {@link #runWhileGcPaused(Runnable)}. */
+    private final Object gcMutex = new Object();
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
@@ -81,12 +83,15 @@ public final class GcExecutor {
                 while (keepGoing && !interrupted()) {
                     final int workCount = Math.max(0, mc.catchupNow());
                     final GcParams gcp = (workCount != 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
-                    if (gcp.forceGc) {
-                        didWork = runForcedGC(gcp);
-                    } else {
-                        didWork = chunkMgr.gc(gcp, mc);
+                    synchronized (gcMutex) {
+                        if (gcp.forceGc) {
+                            didWork = runForcedGC(gcp);
+                        } else {
+                            didWork = chunkMgr.gc(gcp, mc);
+                        }
+                        didWork |= pfixTombstoMgr.sweepAsNeeded();
                     }
-                    didWork |= pfixTombstoMgr.sweepAsNeeded();
+                    Thread.yield();
                     if (idler.idle(workCount + (didWork ? 1 : 0))) {
                         parkCount++;
                     } else {
@@ -179,6 +184,16 @@ public final class GcExecutor {
         }
         // work has been done (task submitted), so reset idler state
         mutatorIdler.idle(1);
+    }
+
+    /**
+     * Runs the task while holding a mutex lock which is also held during GC activity.
+     * This method is provided only to facilitate testing.
+     */
+    public void runWhileGcPaused(Runnable task) {
+        synchronized (gcMutex) {
+            task.run();
+        }
     }
 
     private static BackoffIdleStrategy idler() {

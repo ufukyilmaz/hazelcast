@@ -171,7 +171,7 @@
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
-                        -Xms2g -Xmx2g -XX:MaxPermSize=1024M
+                        -Xms1g -Xmx1g -XX:MaxPermSize=1024M
                         -Dhazelcast.phone.home.enabled=false
                         -Dhazelcast.mancenter.enabled=false
                         -Dhazelcast.elastic.memory.enabled=true
@@ -291,7 +291,7 @@
             <properties>
                 <argLine>
                     ${extraVmArgs}
-                    -Xms2g -Xmx2g -XX:MaxPermSize=1024M
+                    -Xms1g -Xmx1g -XX:MaxPermSize=1024M
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none

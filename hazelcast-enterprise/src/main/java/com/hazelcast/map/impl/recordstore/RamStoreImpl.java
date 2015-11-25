@@ -31,7 +31,7 @@ public class RamStoreImpl extends AbstractRamStoreImpl {
         Data key = new HeapData(((KeyOnHeap) keyHandle).bytes());
         Record record = storage.getRecord(key);
         if (record == null) {
-            throw new HotRestartException("Record not found! Handle: " + keyHandle);
+            return false;
         }
         Data value = record.isTombstone() ? null : toData(record.getValue());
         return RamStoreHelper.copyEntry((KeyOnHeap) keyHandle, value, expectedSize, sink);

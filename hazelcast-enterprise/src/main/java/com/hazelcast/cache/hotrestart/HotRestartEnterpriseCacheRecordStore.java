@@ -1,14 +1,13 @@
 package com.hazelcast.cache.hotrestart;
 
-import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.DefaultEnterpriseCacheRecordStore;
+import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.cache.impl.record.CacheRecordHashMap;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
@@ -89,7 +88,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         Data key = new HeapData(keyBytes);
         final CacheRecord record = records.get(key);
         if (record == null) {
-            throw new HotRestartException("Record not found! Handle: " + keyHandle);
+            return false;
         }
         Data value = record.isTombstone() ? null : toData(record.getValue());
         return RamStoreHelper.copyEntry(keyHandle, value, expectedSize, sink);
@@ -161,14 +160,13 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     }
 
     private void clearInternal(boolean clearHotRestartStore) {
-        super.clear();
-
-        cacheContext.increaseEntryCount(tombstoneCount);
-        tombstoneCount = 0;
-
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
         }
+
+        super.clear();
+        cacheContext.increaseEntryCount(tombstoneCount);
+        tombstoneCount = 0;
     }
 
     @Override

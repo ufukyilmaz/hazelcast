@@ -9,6 +9,7 @@ import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 
 /**
  * Record map backed by off-heap storage.
@@ -50,7 +51,7 @@ final class RecordMapOffHeap implements RecordMap {
         if (addr > 0) {
             rec.address = addr;
             rec.setKeyPrefix(prefix);
-            rec.setRawSeqSize(seq, Record.toRawSizeValue(size, isTombstone));
+            rec.setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
             rec.setGarbageCount(garbageCount);
             return null;
         } else {

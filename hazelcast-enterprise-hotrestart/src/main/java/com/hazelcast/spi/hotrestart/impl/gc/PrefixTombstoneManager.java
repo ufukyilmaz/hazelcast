@@ -133,7 +133,8 @@ class PrefixTombstoneManager {
      * @return whether the chunk needed dismissing garbage.
      */
     boolean dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
-        if (prefixesToDismiss.length == 0 && !chunk.needsDismissing) {
+        final boolean mustDismissSomePrefixes = prefixesToDismiss.length != 0;
+        if (!(mustDismissSomePrefixes || chunk.needsDismissing)) {
             return false;
         }
         logger.fine("Dismiss garbage in #%03x", chunk.seq);
@@ -142,7 +143,8 @@ class PrefixTombstoneManager {
             final Record r = cursor.asRecord();
             final KeyHandle kh = cursor.toKeyHandle();
             final long prefix = r.keyPrefix(kh);
-            if ((prefixSetToDismiss.contains(prefix) || dismissedActiveChunks.get(prefix) != chunk.seq)
+            final boolean mustDismiss = mustDismissSomePrefixes && prefixSetToDismiss.contains(prefix);
+            if ((mustDismiss || dismissedActiveChunks.get(prefix) != chunk.seq)
                     && r.deadOrAliveSeq() <= collectorPrefixTombstones.get(prefix)
             ) {
                 chunkMgr.dismissPrefixGarbage(chunk, kh, r);

@@ -12,11 +12,13 @@ final class GcParams {
     public static final double FORCED_MIN_CB = 1e-2;
     public static final long MIN_GARBAGE_TO_FORCE_GC = 10 * Chunk.SIZE_LIMIT;
     public static final int COST_GOAL_CHUNKS = 2;
+    public static final int MAX_COST_CHUNKS = 8;
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final int RECORD_COUNT_LIMIT = 1 << 20;
+    public static final int MAX_RECORD_COUNT = 1 << 20;
     static final int SRC_CHUNKS_GOAL = 3;
     static final GcParams ZERO = new GcParams(0, 0, 0.0, 0, false);
     final long costGoal;
+    final long maxCost;
     final long currChunkSeq;
 
     final long reclamationGoal;
@@ -33,12 +35,14 @@ final class GcParams {
         if (forceGc) {
             this.minCostBenefit = FORCED_MIN_CB;
             this.reclamationGoal = garbageExceedingThreshold(FORCE_COLLECTING_THRESHOLD, garbage, liveData);
+            this.maxCost = Long.MAX_VALUE;
         } else {
             final double excessRatio = (ratio - START_COLLECTING_THRESHOLD)
                     / (FORCE_COLLECTING_THRESHOLD - START_COLLECTING_THRESHOLD);
             this.minCostBenefit = Math.max(FORCED_MIN_CB,
                     NORMAL_MIN_CB - (NORMAL_MIN_CB - FORCED_MIN_CB) * excessRatio);
             this.reclamationGoal = garbageExceedingThreshold(START_COLLECTING_THRESHOLD, garbage, liveData);
+            this.maxCost = MAX_COST_CHUNKS * Chunk.SIZE_LIMIT;
         }
     }
     static GcParams gcParams(long garbage, long occupancy, long currChunkSeq) {

@@ -1,13 +1,12 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.util.HashUtil;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
 /**
@@ -17,9 +16,9 @@ import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
  */
 public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
 
-    private final static int KEY_1_OFFSET = 0;
-    private final static int KEY_2_OFFSET = 8;
-    private final static int VALUE_OFFSET = 16;
+    private static final int KEY_1_OFFSET = 0;
+    private static final int KEY_2_OFFSET = 8;
+    private static final int VALUE_OFFSET = 16;
 
     /**
      * Length of value in bytes
@@ -102,7 +101,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     private void allocate(long capacity) {
         long allocationCapacity = capacity * entryLength;
         baseAddress = malloc.allocate(allocationCapacity);
-        UnsafeHelper.UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
+        UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
 
         allocated = capacity;
         mask = capacity - 1;
@@ -124,14 +123,14 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
             long slotKey2 = getKey2(slot);
 
             if (slotKey1 == key1 && slotKey2 == key2) {
-                return -toValueAddress(slot);
+                return -getValueAddress(slot);
             }
             slot = (slot + 1) & mask;
         }
 
         assigned++;
         putKey(slot, key1, key2);
-        return toValueAddress(slot);
+        return getValueAddress(slot);
     }
 
     /**
@@ -149,18 +148,18 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
 
         // Rehash all stored keys into the new buffers.
         for (long slot = oldAllocated; --slot >= 0; ) {
-            if (isAssigned(oldAddress, slot, entryLength)) {
-                long keyAddress = getKey1(oldAddress, slot, entryLength);
-                long keySequence = getKey2(oldAddress, slot, entryLength);
-                long valueAddress = toValueAddress(oldAddress, slot, entryLength);
+            if (isAssigned(oldAddress, slot)) {
+                long key1 = getKey1(oldAddress, slot);
+                long key2 = getKey2(oldAddress, slot);
+                long valueAddress = getValueAddress(oldAddress, slot);
 
-                long newSlot = hash(keyAddress, keySequence);
+                long newSlot = hash(key1, key2);
                 while (isAssigned(newSlot)) {
                     newSlot = (newSlot + 1) & mask;
                 }
 
-                putKey(newSlot, keyAddress, keySequence);
-                UnsafeHelper.UNSAFE.copyMemory(valueAddress, toValueAddress(newSlot), valueLength);
+                putKey(newSlot, key1, key2);
+                UNSAFE.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
             }
         }
         malloc.free(oldAddress, oldAllocated * entryLength);
@@ -178,7 +177,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
             long slotSequence = getKey2(slot);
 
             if (slotAddress == key1 && slotSequence == key2) {
-                return toValueAddress(slot);
+                return getValueAddress(slot);
             }
             slot = (slot + 1) & mask;
             if (slot == wrappedAround) {
@@ -241,15 +240,15 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
 
             // Shift key/value pair.
             putKey(slotPrev, getKey1(slotCurr), getKey2(slotCurr));
-            UnsafeHelper.UNSAFE.copyMemory(toValueAddress(slotCurr), toValueAddress(slotPrev), valueLength);
+            UNSAFE.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
         }
 
         putKey(slotPrev, 0L, 0L);
-        UnsafeHelper.UNSAFE.setMemory(toValueAddress(slotPrev), valueLength, (byte) 0);
+        UNSAFE.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
     }
 
-    private long hash(long key1, long key2) {
-        return MurmurHash3_fmix(key1 ^ key2) & mask;
+    protected long hash(long key1, long key2) {
+        return MurmurHash3_fmix(MurmurHash3_fmix(key1) + key2) & mask;
     }
 
     @Override
@@ -260,7 +259,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     @Override
     public void clear() {
         ensureLive();
-        UnsafeHelper.UNSAFE.setMemory(baseAddress, allocated * entryLength, (byte) 0);
+        UNSAFE.setMemory(baseAddress, allocated * entryLength, (byte) 0);
         assigned = 0;
     }
 
@@ -292,51 +291,45 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     }
 
     private boolean isAssigned(long slot) {
-        return isAssigned(baseAddress, slot, entryLength);
-    }
-
-    private static boolean isAssigned(long baseAddr, long slot, int entryLength) {
-        long offset = slot * entryLength + KEY_1_OFFSET;
-        return UnsafeHelper.UNSAFE.getLong(baseAddr + offset) != 0L;
+        return isAssigned(baseAddress, slot);
     }
 
     private long getKey1(long slot) {
-        return getKey1(baseAddress, slot, entryLength);
-    }
-
-    private static long getKey1(long baseAddr, long slot, int entryLength) {
-        long offset = slot * entryLength + KEY_1_OFFSET;
-        return UnsafeHelper.UNSAFE.getLong(baseAddr + offset);
+        return getKey1(baseAddress, slot);
     }
 
     private long getKey2(long slot) {
-        return getKey2(baseAddress, slot, entryLength);
+        return getKey2(baseAddress, slot);
     }
 
-    private static long getKey2(long baseAddr, long slot, int entryLength) {
-        long offset = slot * entryLength + KEY_2_OFFSET;
-        return UnsafeHelper.UNSAFE.getLong(baseAddr + offset);
+    private long getValueAddress(long slot) {
+        return getValueAddress(baseAddress, slot);
     }
 
     private void putKey(long slot, long key1, long key2) {
-        putKey(baseAddress, slot, entryLength, key1, key2);
+        final long slotBase = slotBase(baseAddress, slot);
+        UNSAFE.putLong(slotBase + KEY_1_OFFSET, key1);
+        UNSAFE.putLong(slotBase + KEY_2_OFFSET, key2);
     }
 
-    private static void putKey(long baseAddr, long slot, int entryLength, long key1, long key2) {
-        long offset = slot * entryLength + KEY_1_OFFSET;
-        UnsafeHelper.UNSAFE.putLong(baseAddr + offset, key1);
-
-        offset += KEY_2_OFFSET;
-        UnsafeHelper.UNSAFE.putLong(baseAddr + offset, key2);
+    private boolean isAssigned(long baseAddr, long slot) {
+        return getKey1(baseAddr, slot) != NULL_ADDRESS;
     }
 
-    private long toValueAddress(long slot) {
-        return toValueAddress(baseAddress, slot, entryLength);
+    private long getKey1(long baseAddr, long slot) {
+        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_1_OFFSET);
     }
 
-    private static long toValueAddress(long baseAddr, long slot, int entryLength) {
-        long offset = slot * entryLength + VALUE_OFFSET;
-        return baseAddr + offset;
+    private long getKey2(long baseAddr, long slot) {
+        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_2_OFFSET);
+    }
+
+    private long getValueAddress(long baseAddr, long slot) {
+        return slotBase(baseAddr, slot) + VALUE_OFFSET;
+    }
+
+    private long slotBase(long baseAddr, long slot) {
+        return baseAddr + entryLength * slot;
     }
 
     private void ensureLive() {
@@ -385,7 +378,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
 
         @Override public long valueAddress() {
             ensureValid();
-            return toValueAddress(currentSlot);
+            return getValueAddress(currentSlot);
         }
 
         @Override public void remove() {

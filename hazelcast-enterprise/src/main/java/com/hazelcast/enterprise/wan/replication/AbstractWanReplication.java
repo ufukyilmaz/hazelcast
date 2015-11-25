@@ -253,7 +253,8 @@ public abstract class AbstractWanReplication
     @Override
     public void putBackup(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        int partitionId = getPartitionId(eventObject.getKey());
+        publishReplicationEvent(wanReplicationEvent.getServiceName(), eventObject);
+        /*int partitionId = getPartitionId(eventObject.getKey());
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
             eventQueueContainer.publishCacheWanEvent(cacheReplicationObject.getNameWithPrefix(),
@@ -263,7 +264,7 @@ public abstract class AbstractWanReplication
             eventQueueContainer.publishMapWanEvent(mapReplicationObject.getMapName(), partitionId, wanReplicationEvent);
         } else {
             logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
-        }
+        }*/
     }
 
     public String getTargetGroupName() {

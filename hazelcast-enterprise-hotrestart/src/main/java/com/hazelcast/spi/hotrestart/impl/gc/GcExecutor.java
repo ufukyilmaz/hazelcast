@@ -110,9 +110,9 @@ public final class GcExecutor {
                 }
                 logger.info("GC thread done. ");
             } catch (Throwable t) {
+                keepGoing = false;
                 logger.severe("GC thread terminated by exception", t);
                 gcThreadFailureCause = t;
-                keepGoing = false;
             } finally {
                 chunkMgr.close();
             }
@@ -133,16 +133,14 @@ public final class GcExecutor {
 
     public void start() {
         keepGoing = true;
-        chunkMgr.gcHelper.prepareGcThread(gcThread);
         gcThread.start();
     }
 
     public void shutdown() {
-        if (!gcThread.isAlive()) {
-            return;
+        if (keepGoing && gcThread.isAlive()) {
+            submit(shutdown);
         }
         try {
-            submit(shutdown);
             while (gcThread.isAlive()) {
                 LockSupport.unpark(gcThread);
                 Thread.sleep(1);
@@ -178,7 +176,11 @@ public final class GcExecutor {
 //                    reportedBlocking = true;
 //                }
                 if (!gcThread.isAlive()) {
-                    throw new HotRestartException("GC thread has died", gcThreadFailureCause);
+                    if (task == shutdown) {
+                        return;
+                    }
+                    throw new HotRestartException(
+                            "GC thread died before task could be submitted", gcThreadFailureCause);
                 }
             }
         }

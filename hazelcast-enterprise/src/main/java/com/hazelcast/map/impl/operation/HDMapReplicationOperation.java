@@ -152,8 +152,8 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 Record record = recordStore.createRecord(recordHolder.value, recordHolder.ttl, now);
                 record.setVersion(recordHolder.version);
                 record.setEvictionCriteriaNumber(recordHolder.evictionCriteriaNumber);
-                record.setLastUpdateTime(recordHolder.lastUpdateTime);
                 record.setCreationTime(recordHolder.creationTime);
+                record.setLastUpdateTime(recordHolder.lastUpdateTime);
                 record.setLastAccessTime(recordHolder.lastAccessTime);
 
                 if (record instanceof RecordStatistics) {

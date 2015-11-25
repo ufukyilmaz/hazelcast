@@ -49,12 +49,12 @@ import static org.junit.Assert.assertNull;
 @Category(NightlyTest.class)
 public class MapHotRestartStressTest extends HazelcastTestSupport {
 
+    @Rule
+    public TestName testName = new TestName();
+
     static final int instance_count = 4;
 
     static final int threadCount = 4;
-
-    @Rule
-    TestName testName = new TestName();
 
     @Parameterized.Parameter(0)
     InMemoryFormat memoryFormat;

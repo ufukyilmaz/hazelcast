@@ -20,14 +20,14 @@ public class MapWanNoDelayReplicationTest extends AbstractMapWanReplicationTest 
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
 
-        createDataIn(clusterA, "map", 0, 10000);
+        createDataIn(clusterA, "map", 0, 1000);
 
         sleepSeconds(10);
 
         clusterA[0].shutdown();
         sleepSeconds(10);
         startClusterB();
-        assertDataInFrom(clusterB, "map", 0, 10000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
+        assertDataInFrom(clusterB, "map", 0, 1000, getNode(clusterA[1]).getConfig().getGroupConfig().getName());
     }
 
     @Test

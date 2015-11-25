@@ -1,0 +1,109 @@
+package com.hazelcast.spi.hotrestart.impl.testsupport;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
+
+public class TestProfile {
+
+    public long exerciseTimeSeconds = 20;
+    public int testCycleCount = 2;
+    public int prefixCount = 10;
+    public int keysetSize = 1024;
+    public int hotSetFraction = 4;
+    public int logItersHotSetChange = 10;
+    public int logMinSize = 7;
+    public int sizeIncreaseSteps = 5;
+    public int logStepSize = 3;
+    public boolean powerLawSizeDistribution = true;
+    public int clearIntervalSeconds = 6;
+    public int offHeapMb = 1024;
+    public float offHeapMetadataPercentage = DEFAULT_METADATA_SPACE_PERCENTAGE;
+    public int restartCount;
+    public boolean disableIo;
+
+    public int[] hotKeys;
+    public byte[] valueData;
+
+    private long hotSetChangeMask;
+    private final Random rnd = new Random();
+
+    public void build() {
+        this.hotSetChangeMask = (1L << logItersHotSetChange) - 1;
+        this.valueData = generateValueData(powerLawSizeDistribution
+                ? (1 << logMinSize) << (logStepSize * sizeIncreaseSteps)
+                : (1 << logMinSize) + (1 << logStepSize) * sizeIncreaseSteps
+        );
+        this.hotKeys = initialHotKeys();
+    }
+
+    public int randomPrefix() {
+        return rnd.nextInt(prefixCount) + 1;
+    }
+
+    public int randomKey(long iteration) {
+        if ((iteration & hotSetChangeMask) == 0) {
+            hotKeys[rnd.nextInt(hotKeys.length)] = rnd.nextInt(keysetSize) + 1;
+        }
+        return hotKeys[rnd.nextInt(hotKeys.length)];
+    }
+
+    public byte[] randomValue() {
+        return powerLawSizeDistribution ? randomValuePowerLaw() : randomValueUniform();
+    }
+
+    private byte[] randomValuePowerLaw() {
+        int size = 1 << logMinSize;
+        for (int i = 0; i < sizeIncreaseSteps && rnd.nextInt(1 << logStepSize) == 0; i++) {
+            size <<= logStepSize;
+        }
+        return buildValue(size - 1);
+    }
+
+    private byte[] randomValueUniform() {
+        return buildValue((1 << logMinSize) + (1 << logStepSize) * (rnd.nextInt(1 + sizeIncreaseSteps)));
+    }
+
+    private int[] initialHotKeys() {
+        final int[] hotKeys = new int[Math.max(1, keysetSize / hotSetFraction)];
+        for (int i = 0; i < hotKeys.length; i++) {
+            hotKeys[i] = rnd.nextInt(keysetSize) + 1;
+        }
+        return hotKeys;
+    }
+
+    private static byte[] generateValueData(int maxSize) {
+        final byte[] valueData = new byte[maxSize << 1];
+        for (int i = 0; i < valueData.length; i++) {
+            valueData[i] = (byte) ('A' + (i % 64));
+        }
+        return valueData;
+    }
+
+    private byte[] buildValue(int size) {
+        assert size >= 1 : "size must be at least 1";
+        final byte[] value = new byte[size];
+        final int dataOff = rnd.nextInt(valueData.length - size);
+        System.arraycopy(valueData, dataOff, value, 0, value.length);
+        return value;
+    }
+
+    private void diagnoseSizeDistribution() {
+        final Map<Integer, Integer> freqs = new HashMap<Integer, Integer>();
+        for (int i = 0; i < 100*1000; i++) {
+            final int size = randomValue().length;
+            final Integer cur = freqs.get(size);
+            freqs.put(size, cur == null ? 1 : cur + 1);
+        }
+        final List<Integer> sizes = new ArrayList<Integer>(freqs.keySet());
+        Collections.sort(sizes);
+        for (int key : sizes) {
+            System.out.format("%,9d x %,9d = %,9d%n", key, freqs.get(key), key * freqs.get(key));
+        }
+    }
+}

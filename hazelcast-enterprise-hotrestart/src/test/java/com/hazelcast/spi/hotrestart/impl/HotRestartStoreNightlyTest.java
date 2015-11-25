@@ -1,62 +1,53 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ParallelTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_CLEAR_INTERVAL_SECONDS;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_DISABLE_IO;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_HOTSET_FRACTION;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_ITERATIONS_K;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_JUST_START;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_ITERS_HOTSET_CHANGE;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_MIN_SIZE;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_LOG_SIZE_STEP;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_KEY_COUNT_K;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_OFFHEAP_MB;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_PREFIX_COUNT;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_SIZE_INCREASE_STEPS;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.PROP_TEST_CYCLE_COUNT;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.randomHotRestartHome;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.toProps;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({NightlyTest.class, ParallelTest.class})
 public class HotRestartStoreNightlyTest {
-    @Test
-    public void onHeapTest() throws Exception {
+
+    @Rule public final TestName testName = new TestName();
+
+    @Test public void onHeapTest() throws Exception {
         longTest(false);
     }
 
-    @Test
-    public void offHeapTest() throws Exception {
+    @Test public void offHeapTest() throws Exception {
         longTest(true);
     }
 
-    private static void longTest(boolean offHeap) throws Exception {
-        final File testingHome = randomHotRestartHome();
+    private void longTest(boolean offHeap) throws Exception {
+        final File testingHome = hotRestartHome(getClass(), testName);
+        final TestProfile p = new TestProfile();
+        p.testCycleCount = 20;
+        p.exerciseTimeSeconds = 30;
+        p.prefixCount = 10;
+        p.keysetSize = (offHeap ? 40 : 30) * 1000;
+        p.hotSetFraction = 1;
+        p.logItersHotSetChange = 31;
+        p.logMinSize = 7;
+        p.sizeIncreaseSteps = 15;
+        p.logStepSize = 1;
+        p.clearIntervalSeconds = 7;
+        p.offHeapMb = offHeap ? 1024 : 0;
+        p.offHeapMetadataPercentage = 15f;
+        p.restartCount = 0;
+        p.disableIo = false;
         try {
-            new HotRestartStoreExerciser(testingHome,
-                    toProps(PROP_TEST_CYCLE_COUNT, "10",
-                            PROP_PREFIX_COUNT, "14",
-                            PROP_KEY_COUNT_K, "50",
-                            PROP_HOTSET_FRACTION, "1",
-                            PROP_LOG_ITERS_HOTSET_CHANGE, "31",
-                            PROP_LOG_MIN_SIZE, "7",
-                            PROP_SIZE_INCREASE_STEPS, "5",
-                            PROP_LOG_SIZE_STEP, "3",
-                            PROP_ITERATIONS_K, "50000",
-                            PROP_CLEAR_INTERVAL_SECONDS, "7",
-                            PROP_OFFHEAP_MB, offHeap ? "512" : "0",
-                            PROP_JUST_START, "0",
-                            PROP_DISABLE_IO, "false"))
-                    .proceed();
+            new HotRestartStoreExerciser(testingHome, p).proceed();
         } finally {
             delete(testingHome);
         }

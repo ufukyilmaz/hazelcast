@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -181,8 +180,6 @@ public abstract class GcHelper implements Disposable {
         return new File(bucketDir, chunkFilename);
     }
 
-    void prepareGcThread(Thread gcThread) { }
-
     @Override public void dispose() {
         if (compressor != null) {
             compressor.dispose();
@@ -237,13 +234,6 @@ public abstract class GcHelper implements Disposable {
         @Override public TrackerMap newTrackerMap() {
             return new TrackerMapOffHeap(malloc);
         }
-
-        @Override void prepareGcThread(Thread gcThread) {
-            if (malloc instanceof PoolingMemoryManager) {
-                ((PoolingMemoryManager) malloc).registerThread(gcThread);
-            }
-        }
-
     }
 
     FileChannel createFileChannel(File f) {

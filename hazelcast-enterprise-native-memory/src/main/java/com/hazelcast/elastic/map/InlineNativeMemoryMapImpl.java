@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.util.HashUtil;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
@@ -8,6 +9,7 @@ import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
+import static com.hazelcast.util.HashUtil.fastLongMix;
 
 /**
  * Implementation of {@code RawMap} using a native memory block as backing array.
@@ -248,7 +250,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     }
 
     protected long hash(long key1, long key2) {
-        return MurmurHash3_fmix(MurmurHash3_fmix(key1) + key2) & mask;
+        return fastLongMix(fastLongMix(key1) + key2) & mask;
     }
 
     @Override

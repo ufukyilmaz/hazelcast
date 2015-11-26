@@ -77,7 +77,7 @@ public final class Rebuilder {
                 chunk.garbage += size;
                 cm.garbage.inc(size);
                 if (!isTombstone) {
-                    final Record sameKeyRecord = chunk.records.putIfAbsent(prefix, kh, 0, 0, false, 1);
+                    final Record sameKeyRecord = chunk.records.putIfAbsent(prefix, kh, -seq, size, false, 1);
                     if (sameKeyRecord != null) {
                         sameKeyRecord.incrementGarbageCount();
                     }
@@ -133,7 +133,8 @@ public final class Rebuilder {
             cm.submitForRelease(keyPrefix, kh, seq);
         }
         cm.releaseTombstones();
-        logger.fine("Retired " + retiredCount + " tombstones. There are " + tombstoneCount + " left");
+        logger.fine("Retired %,d tombstones. There are %,d left. Record seq is %x",
+                retiredCount, tombstoneCount, maxSeq);
         cm.gcHelper.initRecordSeq(maxSeq);
     }
 

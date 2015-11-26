@@ -94,7 +94,7 @@ class HotRestarter {
 
     public void restart(boolean failIfAnyData) {
         final Long2LongHashMap prefixTombstones = restorePrefixTombstones(gcHelper.homeDir);
-        logger.finest("Prefix tomstones: ", prefixTombstones);
+        logger.finest("Reloaded prefix tombstones %s", prefixTombstones);
         this.rebuilder = new Rebuilder(gcExec.chunkMgr, gcHelper.logger, prefixTombstones);
         gcExec.setPrefixTombstones(prefixTombstones);
         final RamStoreRegistry reg = gcHelper.ramStoreRegistry;
@@ -129,7 +129,7 @@ class HotRestarter {
             throw new HotRestartException("Not a regular, readable file: " + f.getAbsolutePath());
         }
         final Long2LongHashMap prefixTombstones = new Long2LongHashMap(
-                (int) f.length() / PREFIX_TOMBSTONE_ENTRY_SIZE, DEFAULT_LOAD_FACTOR, 0L);
+                (int) (f.length() / PREFIX_TOMBSTONE_ENTRY_SIZE), DEFAULT_LOAD_FACTOR, 0L);
         InputStream in = null;
         try {
             in = new BufferingInputStream(new FileInputStream(f));

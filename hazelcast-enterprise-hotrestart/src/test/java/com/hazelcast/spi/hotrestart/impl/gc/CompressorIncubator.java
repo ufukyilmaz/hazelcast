@@ -1,11 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.nio.Disposable;
-import com.hazelcast.spi.hotrestart.impl.gc.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
-import com.hazelcast.spi.hotrestart.impl.gc.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.lz4.NativeLZ4BlockInputStream;
 import com.hazelcast.spi.hotrestart.impl.lz4.NativeLZ4BlockOutputStream;
 import net.jpountz.lz4.LZ4Factory;

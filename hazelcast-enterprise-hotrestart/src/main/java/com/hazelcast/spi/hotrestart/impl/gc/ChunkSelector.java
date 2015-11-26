@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.RECORD_COUNT_LIMIT;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.SRC_CHUNKS_GOAL;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -32,6 +32,7 @@ final class ChunkSelector {
         }
     };
     private final Collection<StableChunk> allChunks;
+    private final ChunkSelection cs = new ChunkSelection();
     private final GcParams gcp;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
@@ -60,13 +61,12 @@ final class ChunkSelector {
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
     private ChunkSelection select() {
-        final ChunkSelection cs = new ChunkSelection();
         final Set<StableChunk> candidates = candidateChunks();
         if (candidates.isEmpty()) {
             return cs;
         }
-        long cost = 0;
         long garbage = 0;
+        long cost = 0;
         final int initialChunksToFind = gcp.limitSrcChunks ? INITIAL_TOP_CHUNKS : candidates.size();
         int chunksToFind = initialChunksToFind;
         final String status;
@@ -79,12 +79,9 @@ final class ChunkSelector {
                 garbage += c.garbage;
                 cs.srcChunks.add(c);
                 candidates.remove(c);
-                if (cs.liveRecordCount > RECORD_COUNT_LIMIT) {
-                    status = format("record count limit exceeded: will copy %,d records", cs.liveRecordCount);
-                    break done;
-                }
-                if (cost >= gcp.costGoal && garbage >= gcp.reclamationGoal && cs.srcChunks.size() >= SRC_CHUNKS_GOAL) {
-                    status = "reached all goals";
+                final String statusIfAny = status(garbage, cost);
+                if (statusIfAny != null) {
+                    status = statusIfAny;
                     break done;
                 }
             }
@@ -149,6 +146,16 @@ final class ChunkSelector {
         }
     }
 
+    private String status(long garbage, long cost) {
+        return cost > gcp.maxCost
+                ? format("max cost exceeded: will output %,d bytes", cost)
+                : cs.liveRecordCount > MAX_RECORD_COUNT
+                ? format("max record count exceeded: will copy %,d records", cs.liveRecordCount)
+                : cost >= gcp.costGoal && garbage >= gcp.reclamationGoal && cs.srcChunks.size() >= SRC_CHUNKS_GOAL
+                ? "reached all goals"
+                : null;
+    }
+
     private void diagnoseChunks(Collection<StableChunk> chunks, long currSeq) {
         if (!logger.isFinestEnabled()) {
             return;
@@ -158,12 +165,13 @@ final class ChunkSelector {
             c.updateCostBenefit(currSeq);
         }
         Arrays.sort(sorted, BY_COST_BENEFIT);
-        final PrintWriter o = new PrintWriter(new StringWriter(512));
-        o.println("seq    garbage       cost   count  youngestSeq     costBenefit");
+        final StringWriter sw = new StringWriter(512);
+        final PrintWriter o = new PrintWriter(sw);
+        o.println("\nseq    garbage       cost   count  youngestSeq     costBenefit");
         for (StableChunk c : sorted) {
-            o.format("%3x %,10d %,10d %,7d %,12d %,15.2f",
+            o.format("%3x %,10d %,10d %,7d %,12d %,15.2f%n",
                     c.seq, c.garbage, c.cost(), c.records.size(), c.youngestRecordSeq, c.cachedCostBenefit());
         }
-        logger.finest(o.toString());
+        logger.finest(sw.toString());
     }
 }

@@ -1,1 +1,2 @@
-hotrestart-test-*
+/HotRestartStore*Test*
+hs_err_pid*.log

@@ -26,7 +26,9 @@ public abstract class Record {
     public static final byte[] TOMBSTONE_VALUE = new byte[0];
 
     final long deadOrAliveSeq() {
-        return Math.abs(rawSeqValue());
+        final long seq = rawSeqValue();
+        assert seq != 0 : "Record seq is zero";
+        return Math.abs(seq);
     }
 
     final long liveSeq() {

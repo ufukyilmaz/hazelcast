@@ -18,10 +18,10 @@ public final class RecordDataHolder implements RecordDataSink {
     ByteBuffer valueBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
 
     @Override public ByteBuffer getKeyBuffer(int keySize) {
-        return keyBuffer = (ByteBuffer) ensureBufferCapacity(keyBuffer, keySize);
+        return keyBuffer = ensureBufferCapacity(keyBuffer, keySize);
     }
     @Override public ByteBuffer getValueBuffer(int valueSize) {
-        return valueBuffer = (ByteBuffer) ensureBufferCapacity(valueBuffer, valueSize);
+        return valueBuffer = ensureBufferCapacity(valueBuffer, valueSize);
     }
 
     void clear() {

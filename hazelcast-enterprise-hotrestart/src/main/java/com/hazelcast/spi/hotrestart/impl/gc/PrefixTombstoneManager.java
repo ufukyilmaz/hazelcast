@@ -133,7 +133,8 @@ class PrefixTombstoneManager {
      * @return whether the chunk needed dismissing garbage.
      */
     boolean dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
-        if (prefixesToDismiss.length == 0 && !chunk.needsDismissing) {
+        final boolean mustDismissSomePrefixes = prefixesToDismiss.length != 0;
+        if (!(mustDismissSomePrefixes || chunk.needsDismissing)) {
             return false;
         }
         logger.fine("Dismiss garbage in #%03x", chunk.seq);
@@ -142,8 +143,10 @@ class PrefixTombstoneManager {
             final Record r = cursor.asRecord();
             final KeyHandle kh = cursor.toKeyHandle();
             final long prefix = r.keyPrefix(kh);
-            if ((prefixSetToDismiss.contains(prefix) || dismissedActiveChunks.get(prefix) != chunk.seq)
-                    && r.deadOrAliveSeq() <= collectorPrefixTombstones.get(prefix)) {
+            final boolean mustDismiss = mustDismissSomePrefixes && prefixSetToDismiss.contains(prefix);
+            if ((mustDismiss || dismissedActiveChunks.get(prefix) != chunk.seq)
+                    && r.deadOrAliveSeq() <= collectorPrefixTombstones.get(prefix)
+            ) {
                 chunkMgr.dismissPrefixGarbage(chunk, kh, r);
             }
         }
@@ -161,7 +164,7 @@ class PrefixTombstoneManager {
             }
         }
         if (collectedSome) {
-            logger.finest("Collected some garbage tombstones");
+            logger.info("Collected some garbage tombstones");
         }
         synchronized (this) {
             for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
@@ -194,6 +197,7 @@ class PrefixTombstoneManager {
                 throw new HotRestartException("Failed to rename the prefix tombstones file "
                         + newFile.getAbsolutePath());
             }
+            logger.finest("Persisted prefix tombstones %s", tombstoneSnapshot);
         } catch (IOException e) {
             closeIgnoringFailure(fileOut);
             if (!newFile.delete()) {
@@ -255,8 +259,8 @@ class PrefixTombstoneManager {
 
         private Chunk nextChunkToSweep() {
             final Map<Long, StableChunk> chunkMap = chunkMgr.chunks;
-            for (; chunkSeq > 0; chunkSeq--) {
-                final Chunk c = chunkMap.get(chunkSeq);
+            while (chunkSeq > 0) {
+                final Chunk c = chunkMap.get(chunkSeq--);
                 if (c != null) {
                     return c;
                 }

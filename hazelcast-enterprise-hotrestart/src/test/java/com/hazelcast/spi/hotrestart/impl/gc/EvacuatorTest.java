@@ -9,31 +9,35 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.createLoggingService;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.metricsRegistry;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreExerciser.randomHotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class EvacuatorTest {
-    private final byte[] mockValue = new byte[1];
 
+    @Rule public final TestName testName = new TestName();
+
+    private final byte[] mockValue = new byte[1];
     private Evacuator ev;
 
     @Before public void setup() {
         final MutatorCatchup mc = mock(MutatorCatchup.class);
         final LoggingService loggingService = createLoggingService();
         final HotRestartStoreConfig hrConfig = new HotRestartStoreConfig()
-                .setHomeDir(randomHotRestartHome())
+                .setHomeDir(hotRestartHome(getClass(), testName))
                 .setLoggingService(loggingService)
                 .setMetricsRegistry(metricsRegistry(loggingService));
         final GcHelper.OnHeap gcHelper = new GcHelper.OnHeap(hrConfig);

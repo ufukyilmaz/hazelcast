@@ -87,7 +87,7 @@ public final class GrowingDestChunk extends GrowingChunk {
                         if (!catchUpUntilRetired(r, mc)) {
                             throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired. Chunk #%02x, record #%02x,"
-                                + "isTombstone? %b, size %d, RAM store found? %b",
+                                + " isTombstone? %b, size %d, RAM store found? %b",
                                     seq, r.liveSeq(), r.isTombstone(), r.size(), ramStore != null));
                         }
                     }

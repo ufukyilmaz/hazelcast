@@ -72,13 +72,16 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
         }
         InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
         if (NATIVE.equals(inMemoryFormat)) {
-            return createHDLocalMapStats(mapName, mapContainer.getTotalBackupCount());
+            return createHDLocalMapStats(mapContainer);
         } else {
             return super.createLocalMapStats(mapName);
         }
     }
 
-    private LocalMapStatsImpl createHDLocalMapStats(String mapName, int backupCount) {
+    private LocalMapStatsImpl createHDLocalMapStats(MapContainer mapContainer) {
+        String mapName = mapContainer.getName();
+        int totalBackupCount = mapContainer.getTotalBackupCount();
+
         List<Future> futures = new LinkedList<Future>();
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
@@ -97,7 +100,7 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
         try {
             LocalMapStatsImpl permanentStats = getLocalMapStatsImpl(mapName);
             LocalMapOnDemandCalculatedStats onDemandStats = new LocalMapOnDemandCalculatedStats();
-            onDemandStats.setBackupCount(backupCount);
+            onDemandStats.setBackupCount(totalBackupCount);
 
             for (Future future : futures) {
                 Object response = future.get(STATS_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -125,6 +128,8 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
             }
 
             onDemandStats.copyValuesTo(permanentStats);
+
+            addNearCacheStats(permanentStats, onDemandStats, mapContainer);
             return permanentStats;
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);

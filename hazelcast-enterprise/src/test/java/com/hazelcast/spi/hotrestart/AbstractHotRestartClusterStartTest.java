@@ -227,7 +227,8 @@ public abstract class AbstractHotRestartClusterStartTest {
                                                 ClusterState clusterState) {
         assertEquals(numberOfInstances, instances.length);
         for (HazelcastInstance instance : instances) {
-            final Node node = getNode(instance);
+            Node node = getNode(instance);
+            assertNotNull(node);
             assertTrue(node.joined());
             assertEquals(node.getState(), nodeState);
             assertEquals(instance.getCluster().getClusterState(), clusterState);

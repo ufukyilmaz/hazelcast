@@ -12,7 +12,6 @@ import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
-import com.hazelcast.util.collection.LongHashSet;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
 

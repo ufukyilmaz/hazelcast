@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 

@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.util.collection.LongHashSet;
 
 import java.util.Set;
 

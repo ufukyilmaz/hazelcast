@@ -1,8 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.TrackerMap.Cursor;
 import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;

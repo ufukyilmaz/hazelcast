@@ -8,7 +8,6 @@ import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.RunParallel;
-import com.hazelcast.util.collection.LongHashSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

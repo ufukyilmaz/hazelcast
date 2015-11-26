@@ -4,12 +4,7 @@ import com.hazelcast.elastic.map.InlineNativeMemoryMap;
 import com.hazelcast.elastic.map.InlineNativeMemoryMapImpl;
 import com.hazelcast.elastic.map.InmmCursor;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.util.collection.LongHashSet;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;

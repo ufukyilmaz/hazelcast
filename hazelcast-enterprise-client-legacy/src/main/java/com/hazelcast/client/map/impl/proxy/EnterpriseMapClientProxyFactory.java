@@ -22,16 +22,29 @@ import com.hazelcast.client.map.impl.nearcache.ClientHDNearCacheRegistry;
 import com.hazelcast.client.spi.ClientExecutionService;
 import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.utils.Registry;
 
+import java.util.EnumSet;
+
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
+import static java.util.EnumSet.complementOf;
 
 /**
  * Creates proxy instances for client according to given configuration.
  */
 public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
+
+    private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES
+            = EnumSet.of(EvictionPolicy.NONE, EvictionPolicy.RANDOM);
+
+    private static final EnumSet<EvictionConfig.MaxSizePolicy> UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES
+            = EnumSet.of(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
 
     private final Registry<String, NearCache> hdNearCacheRegistry;
     private final ClientConfig clientConfig;
@@ -47,9 +60,38 @@ public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
     public ClientProxy create(String id) {
         NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(id);
         if (nearCacheConfig != null) {
+            checkPreconditions(nearCacheConfig);
             return new EnterpriseNearCachedClientMapProxyImpl(SERVICE_NAME, id, hdNearCacheRegistry);
         } else {
             return new EnterpriseClientMapProxyImpl(SERVICE_NAME, id);
+        }
+    }
+
+    /**
+     * Checks preconditions to create a near-cached map proxy.
+     *
+     * @param nearCacheConfig the nearCacheConfig
+     */
+    protected void checkPreconditions(NearCacheConfig nearCacheConfig) {
+        InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
+        if (NATIVE != inMemoryFormat) {
+            return;
+        }
+
+        EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
+
+        EvictionPolicy evictionPolicy = evictionConfig.getEvictionPolicy();
+        if (UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES.contains(evictionPolicy)) {
+            throw new IllegalArgumentException("Near-cache eviction policy " + evictionPolicy
+                    + " cannot be used with NATIVE in memory format."
+                    + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES));
+        }
+
+        EvictionConfig.MaxSizePolicy maximumSizePolicy = evictionConfig.getMaximumSizePolicy();
+        if (UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES.contains(maximumSizePolicy)) {
+            throw new IllegalArgumentException("Near-cache maximum size policy " + maximumSizePolicy
+                    + " cannot be used with NATIVE in memory format."
+                    + " Supported maximum size policies are : " + complementOf(UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES));
         }
     }
 

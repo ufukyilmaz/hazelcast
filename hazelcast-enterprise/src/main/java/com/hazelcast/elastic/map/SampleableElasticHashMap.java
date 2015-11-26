@@ -250,7 +250,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     protected boolean isValidForSampling(int slot) {
-        return isAssigned(slot);
+        return accessor.isAssigned(slot);
     }
 
 }

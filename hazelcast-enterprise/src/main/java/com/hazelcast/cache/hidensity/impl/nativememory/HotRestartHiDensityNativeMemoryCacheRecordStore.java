@@ -6,7 +6,6 @@ import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.cache.impl.maxsize.impl.CompositeMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -24,6 +23,8 @@ import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.util.Clock;
+
+import java.util.Iterator;
 
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
@@ -322,7 +323,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     private void scanEmptyRecords() {
-        BinaryElasticHashMap<HiDensityNativeMemoryCacheRecord>.ValueIter iter = records.new ValueIter();
+        Iterator<HiDensityNativeMemoryCacheRecord> iter = records.valueIter();
         while (iter.hasNext()) {
             HiDensityNativeMemoryCacheRecord record = iter.next();
             assert record != null;

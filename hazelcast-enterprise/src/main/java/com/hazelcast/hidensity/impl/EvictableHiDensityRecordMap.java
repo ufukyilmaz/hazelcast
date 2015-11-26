@@ -55,7 +55,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
 
         int startSlot = (int) (Math.random() * capacity());
-        KeyIter iter = new KeyIter(startSlot);
+        KeyIter iter = keyIter(startSlot);
 
         return forceEvict(iter, evictionListener, evictCount);
     }
@@ -66,8 +66,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             iterator.nextSlot();
 
             int slot = iterator.getCurrentSlot();
-            keyHolder.reset(getKey(slot));
-            R value = recordProcessor.read(getValue(slot));
+            keyHolder.reset(accessor.getKey(slot));
+            R value = recordProcessor.read(accessor.getValue(slot));
             onEvict(keyHolder, value);
 
             if (evictionListener != null) {
@@ -117,8 +117,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
 
         while (true) {
             shifted = false;
-            if (isAssigned(ix)) {
-                long key = getKey(ix);
+            if (accessor.isAssigned(ix)) {
+                long key = accessor.getKey(ix);
                 NativeMemoryData keyData = recordProcessor.readData(key);
                 R value = get(keyData);
                 boolean evict;
@@ -136,7 +136,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     recordProcessor.disposeData(keyData);
                     evictedEntryCount++;
                     // If disposed index is still allocated, this means next keys are shifted
-                    shifted = isAssigned(ix);
+                    shifted = accessor.isAssigned(ix);
                 }
             }
             if (!shifted) {

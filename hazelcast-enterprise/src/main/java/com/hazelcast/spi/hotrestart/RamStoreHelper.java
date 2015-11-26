@@ -44,9 +44,6 @@ public final class RamStoreHelper {
     public static boolean copyEntry(KeyHandleOffHeap keyHandleOffHeap, NativeMemoryData key, HiDensityRecord record,
             int expectedSize, RecordDataSink sink) {
 
-        if (record == null) {
-            throw new HotRestartException("Record not found! Handle: " + keyHandleOffHeap);
-        }
         if (keyHandleOffHeap.sequenceId() != record.getSequence()) {
             return false;
         }

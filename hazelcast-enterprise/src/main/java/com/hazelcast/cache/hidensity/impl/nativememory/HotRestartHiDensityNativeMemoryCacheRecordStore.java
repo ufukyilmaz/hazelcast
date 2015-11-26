@@ -195,6 +195,9 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         synchronized (recordMapMutex) {
             NativeMemoryData key = new NativeMemoryData().reset(kh.address());
             HiDensityNativeMemoryCacheRecord record = records.get(key);
+            if (record == null) {
+                return false;
+            }
             return RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }
@@ -319,14 +322,13 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     private void clearInternal(boolean clearHotRestartStore) {
-        super.clear();
-
-        cacheInfo.addEntryCount(tombstoneCount);
-        tombstoneCount = 0;
-
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
         }
+
+        super.clear();
+        cacheInfo.addEntryCount(tombstoneCount);
+        tombstoneCount = 0;
     }
 
     @Override
@@ -357,7 +359,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
                     final KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) toRelease.keyHandle();
                     key.reset(keyHandle.address());
                     final HiDensityNativeMemoryCacheRecord record = recordMap.get(key);
-                    if (record.getSequence() != keyHandle.sequenceId()) {
+                    if (record == null || record.getSequence() != keyHandle.sequenceId()) {
                         continue;
                     }
                     if (record.getTombstoneSequence() != toRelease.tombstoneSeq()) {

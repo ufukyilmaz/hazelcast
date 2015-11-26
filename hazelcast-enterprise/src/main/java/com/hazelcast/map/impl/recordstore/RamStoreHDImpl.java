@@ -36,6 +36,9 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
         synchronized (mutex) {
             NativeMemoryData key = new NativeMemoryData().reset(kh.address());
             HDRecord record = storage.getRecord(key);
+            if (record == null) {
+                return false;
+            }
             return RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }

@@ -8,78 +8,131 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractHotRestartClusterStartTest {
 
-    static final String HOT_RESTART_DIRECTORY = "hot-restart-cluster-test";
+    private static final boolean USE_NETWORK = false;
+    private static final AtomicInteger portCounter = new AtomicInteger(5701);
+    private static InetAddress localAddress;
+
+    @BeforeClass
+    public static void setupClass() throws UnknownHostException {
+        localAddress = InetAddress.getLocalHost();
+    }
+
+    protected static List<Integer> acquirePorts(int numberOfPorts) {
+        final int start = portCounter.getAndAdd(numberOfPorts);
+        List<Integer> ports = new ArrayList<Integer>(numberOfPorts);
+        for (int i = 0; i < numberOfPorts; i++) {
+            ports.add(start + i);
+        }
+        return ports;
+    }
+
+    protected static int acquirePort() {
+        return portCounter.getAndIncrement();
+    }
+
+    @Rule
+    public TestName testName = new TestName();
+
+    protected File hotRestartDir;
+    private TestHazelcastInstanceFactory factory;
 
     @Before
     public void before() throws IOException {
-        HazelcastInstanceFactory.terminateAll();
-        clearHotRestartFolder();
+        hotRestartDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        IOUtil.delete(hotRestartDir);
 
-        File hotRestartFolder = new File(HOT_RESTART_DIRECTORY);
-        if (!hotRestartFolder.mkdir()) {
+        if (!hotRestartDir.mkdir()) {
             throw new IllegalStateException("Failed to create hot-restart directory!");
+        }
+        if (USE_NETWORK) {
+            HazelcastInstanceFactory.terminateAll();
         }
     }
 
     @After
     public void after() throws IOException {
-        HazelcastInstanceFactory.terminateAll();
-        clearHotRestartFolder();
+        if (factory != null) {
+            factory.terminateAll();
+        }
+        if (USE_NETWORK) {
+            HazelcastInstanceFactory.terminateAll();
+        }
+        IOUtil.delete(hotRestartDir);
     }
 
-    protected void clearHotRestartFolder() throws IOException {
-        IOUtil.delete(new File(HOT_RESTART_DIRECTORY));
-    }
-
-    protected static HazelcastInstance[] startInstances(final List<Integer> portsToStart, List<Integer> portsToDiscover)
+    protected HazelcastInstance[] startInstances(List<Integer> ports)
             throws InterruptedException {
-        return startInstances(portsToStart, portsToDiscover, Collections.<Integer, ClusterHotRestartEventListener>emptyMap());
+        return startInstances(ports, Collections.<Integer, ClusterHotRestartEventListener>emptyMap());
     }
 
-    protected static HazelcastInstance[] startInstances(final List<Integer> portsToStart, List<Integer> portsToDiscover,
-                                                        Map<Integer, ClusterHotRestartEventListener> listeners)
+    protected HazelcastInstance[] startInstances(List<Integer> ports,
+                                                        final Map<Integer, ClusterHotRestartEventListener> listeners)
             throws InterruptedException {
+
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
-        final CountDownLatch latch = new CountDownLatch(portsToStart.size());
+        final CountDownLatch latch = new CountDownLatch(ports.size());
 
-        for (final int port : portsToStart) {
-            final Config config = newConfig(port, portsToDiscover, listeners.get(port));
+        if (factory == null) {
+            initializeFactory(ports);
+        }
+
+        Collection<Address> addresses = new ArrayList<Address>(ports.size());
+        Collection<Address> knownAddresses = factory.getKnownAddresses();
+        for (Integer port : ports) {
+            Address address = newAddress(port);
+            assertTrue(knownAddresses.contains(address));
+            addresses.add(address);
+        }
+
+        for (final Address address : addresses) {
+            final ClusterHotRestartEventListener listener = listeners.get(address.getPort());
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        final HazelcastInstance instance = Hazelcast.newHazelcastInstance(config);
+                        HazelcastInstance instance = newHazelcastInstance(address, listener);
                         instancesList.add(instance);
                     } catch (Exception e) {
-                        System.err.println("Node failed to start: " + port + "-> " + e);
+                        System.err.println("Node failed to start: " + address + "-> " + e);
                     } finally {
                         latch.countDown();
                     }
@@ -93,34 +146,75 @@ public abstract class AbstractHotRestartClusterStartTest {
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 
-    protected void startAndCrashInstances(final List<Integer> ports)
-            throws InterruptedException {
-        HazelcastInstance[] instances = startInstances(ports, ports);
+    protected HazelcastInstance startInstance(int port) {
+        assertNotNull(factory);
 
-        assertInstancesJoined(ports, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+        Address address = newAddress(port);
+        assertTrue(factory.getKnownAddresses().contains(address));
 
-        warmUpPartitions(instances);
-        HazelcastInstanceFactory.terminateAll();
+        return newHazelcastInstance(address, null);
     }
 
-    protected static Config newConfig(int nodePort, List<Integer> ports, ClusterHotRestartEventListener listener) {
+    private HazelcastInstance newHazelcastInstance(Address address, ClusterHotRestartEventListener listener) {
+
+        Config config = newConfig(listener);
+        if (USE_NETWORK) {
+            NetworkConfig networkConfig = config.getNetworkConfig();
+            networkConfig.setPort(address.getPort());
+            networkConfig.setPortAutoIncrement(false);
+
+            JoinConfig join = networkConfig.getJoin();
+            join.getMulticastConfig().setEnabled(false);
+            TcpIpConfig tcpIpConfig = join.getTcpIpConfig();
+            tcpIpConfig.setEnabled(true).clear();
+
+            Collection<Address> addresses = factory.getKnownAddresses();
+            for (Address addr : addresses) {
+                tcpIpConfig.addMember("127.0.0.1:" + addr.getPort());
+            }
+            return Hazelcast.newHazelcastInstance(config);
+        }
+        return factory.newHazelcastInstance(address, config);
+    }
+
+    protected void initializeFactory(List<Integer> portsToDiscover) {
+        assertNull(factory);
+
+        Collection<Address> addresses = new ArrayList<Address>(portsToDiscover.size());
+        for (Integer port : portsToDiscover) {
+            addresses.add(newAddress(port));
+        }
+        factory = new TestHazelcastInstanceFactory(addresses);
+    }
+
+    private Address newAddress(int port) {
+        return new Address("127.0.0.1", localAddress, port);
+    }
+
+    protected void startAndCrashInstances(final List<Integer> ports)
+            throws InterruptedException {
+
+        HazelcastInstance[] instances = startInstances(ports);
+        assertInstancesJoined(ports.size(), instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        warmUpPartitions(instances);
+        terminateInstances();
+    }
+
+    protected void terminateInstances() {
+        factory.terminateAll();
+        factory = null;
+        if (USE_NETWORK) {
+            HazelcastInstanceFactory.terminateAll();
+        }
+    }
+
+    private Config newConfig(ClusterHotRestartEventListener listener) {
         Config config = new Config();
-        config.setProperty(GroupProperty.WAIT_SECONDS_BEFORE_JOIN, "0");
 
         config.getHotRestartConfig().setEnabled(true)
-                .setHomeDir(new File(HOT_RESTART_DIRECTORY))
+                .setHomeDir(hotRestartDir)
                 .setValidationTimeoutSeconds(10).setDataLoadTimeoutSeconds(10);
-
-        final NetworkConfig networkConfig = config.getNetworkConfig();
-        networkConfig.setPort(nodePort);
-        networkConfig.setPortAutoIncrement(false);
-        final JoinConfig join = networkConfig.getJoin();
-        join.getMulticastConfig().setEnabled(false);
-
-        final TcpIpConfig tcpIpConfig = join.getTcpIpConfig().clear().setEnabled(true);
-        for (int port : ports) {
-            tcpIpConfig.addMember("127.0.0.1:" + port);
-        }
 
         if (listener != null) {
             config.addListenerConfig(new ListenerConfig(listener));
@@ -128,9 +222,10 @@ public abstract class AbstractHotRestartClusterStartTest {
 
         return config;
     }
-    protected static void assertInstancesJoined(List<Integer> ports, HazelcastInstance[] instances, NodeState nodeState,
+
+    protected static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances, NodeState nodeState,
                                                 ClusterState clusterState) {
-        assertEquals(ports.size(), instances.length);
+        assertEquals(numberOfInstances, instances.length);
         for (HazelcastInstance instance : instances) {
             final Node node = getNode(instance);
             assertTrue(node.joined());
@@ -139,9 +234,12 @@ public abstract class AbstractHotRestartClusterStartTest {
         }
     }
 
-    protected static void assertInstancesJoined(List<Integer> ports, NodeState nodeState, ClusterState clusterState) {
-        HazelcastInstance[] instances = Hazelcast.getAllHazelcastInstances().toArray(new HazelcastInstance[]{});
-        assertInstancesJoined(ports, instances, nodeState, clusterState);
+    protected void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
+        Collection<HazelcastInstance> allHazelcastInstances = USE_NETWORK
+                ? HazelcastInstanceFactory.getAllHazelcastInstances()
+                : factory.getAllHazelcastInstances();
+        HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
+        assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
     }
 
     protected static void assertNodeStateEventually(final Node node, final NodeState expected) {

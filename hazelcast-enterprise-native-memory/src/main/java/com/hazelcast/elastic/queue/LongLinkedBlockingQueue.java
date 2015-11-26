@@ -2,20 +2,19 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
-import sun.misc.Unsafe;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+
+/** Implementation of {@link LongBlockingQueue} with a linked list. */
 public final class LongLinkedBlockingQueue implements LongBlockingQueue {
 
     private static final long NULL_PTR = 0L;
-
     private static final int NODE_SIZE = 16;
-
     private static final int NEXT_OFFSET = 8;
 
     private final MemoryAllocator malloc;
@@ -49,32 +48,34 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         this.capacity = capacity;
         this.hasCapacity =  capacity < Integer.MAX_VALUE;
         nullItem = nullValue;
-        tail = head = newNode(nullItem);
+        head = newNode(nullItem);
+        tail = head;
     }
 
     private long newNode(final long e) {
-        Unsafe unsafe = UnsafeHelper.UNSAFE;
         long address = malloc.allocate(NODE_SIZE);
-        unsafe.putLong(null, address, e);
-        unsafe.putLong(null, address + NEXT_OFFSET, NULL_PTR);
+        UNSAFE.putLong(null, address, e);
+        UNSAFE.putLong(null, address + NEXT_OFFSET, NULL_PTR);
         return address;
     }
 
-    private long getItem(long node) {
+    private static long getItem(long node) {
         assert node != NULL_PTR;
-        return UnsafeHelper.UNSAFE.getLong(node);
+        return UNSAFE.getLong(node);
     }
 
-    private long getNextNode(long node) {
+    private static long getNextNode(long node) {
         assert node != NULL_PTR;
-        return UnsafeHelper.UNSAFE.getLong(node + NEXT_OFFSET);
+        return UNSAFE.getLong(node + NEXT_OFFSET);
     }
 
-    private void setNextNode(long node, long value) {
+    private static void setNextNode(long node, long value) {
         assert node != NULL_PTR;
-        UnsafeHelper.UNSAFE.putLong(node + NEXT_OFFSET, value);
+        UNSAFE.putLong(node + NEXT_OFFSET, value);
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public boolean offer(long value) {
         if (value == nullItem) {
             throw new IllegalArgumentException();
@@ -88,7 +89,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         tailLock.lock();
         try {
             if (tail == NULL_PTR) {
-                throw new IllegalStateException("Queue is already destroyed! " + toString());
+                throw new IllegalStateException("Queue is already disposed! " + toString());
             }
             if (!hasCapacity || size.get() < capacity) {
                 long node = newNode(value);
@@ -109,6 +110,8 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         return c >= 0;
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
@@ -147,6 +150,8 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         return c >= 0;
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public void put(long value) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
@@ -180,6 +185,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         }
     }
 
+    @Override
     public long poll() {
 //        if (size.get() == 0) {
 //            return nullItem;
@@ -215,6 +221,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         return item;
     }
 
+    @Override
     public long poll(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         long item;
@@ -250,6 +257,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         return item;
     }
 
+    @Override
     public long take() throws InterruptedException {
         long item;
         long node;
@@ -281,6 +289,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         return item;
     }
 
+    @Override
     public void consume(final LongConsumer consumer) {
         final ReentrantLock lock = this.headLock;
         lock.lock();
@@ -307,6 +316,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         signalNotFull();
     }
 
+    @Override
     public long peek() {
         if (size.get() == 0) {
             return nullItem;
@@ -327,43 +337,51 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         }
     }
 
+    @Override
     public int size() {
         long c = size.get();
         return c < Integer.MAX_VALUE ? (int) c : Integer.MAX_VALUE;
     }
 
+    @Override
     public boolean isEmpty() {
         return size.get() == 0;
     }
 
+    @Override
     public int capacity() {
         return capacity;
     }
 
+    @Override
     public int remainingCapacity() {
-        return hasCapacity ? capacity - size() : Integer.MAX_VALUE ;
+        return hasCapacity ? capacity - size() : Integer.MAX_VALUE;
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:emptyblock")
     public void clear() {
         fullLock();
         try {
-            while (poll() != nullItem);
+            while (poll() != nullItem) { }
         } finally {
             fullUnlock();
         }
     }
 
+    @Override
     public void dispose() {
         fullLock();
         try {
             if (head != NULL_PTR) {
                 clear();
-                long ptr = head;
-                long ptr2 = tail;
-                head = tail = NULL_PTR;
-                assert ptr == ptr2;
-                if (ptr != NULL_PTR) {
-                    malloc.free(ptr, NODE_SIZE);
+                long headPtr = head;
+                long tailPtr = tail;
+                head = NULL_PTR;
+                tail = NULL_PTR;
+                assert headPtr == tailPtr;
+                if (headPtr != NULL_PTR) {
+                    malloc.free(headPtr, NODE_SIZE);
                 }
             }
         } finally {
@@ -371,6 +389,7 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
         }
     }
 
+    @Override
     public long nullItem() {
         return nullItem;
     }
@@ -409,10 +428,6 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("LongLinkedBlockingQueue{");
-        sb.append("capacity=").append(capacity);
-        sb.append(", size=").append(size.get());
-        sb.append('}');
-        return sb.toString();
+        return "LongLinkedBlockingQueue{capacity=" + capacity + ", size=" + size.get() + '}';
     }
 }

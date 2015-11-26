@@ -3,15 +3,16 @@ package com.hazelcast.elastic.queue;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.GarbageCollectable;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import sun.misc.Unsafe;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * See http://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf
@@ -20,10 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollectable {
 
     private static final long NULL_PTR = 0L;
-
     private static final int NODE_SIZE = 16;
-
     private static final int NEXT_OFFSET = 8;
+    private static final int DEFAULT_THREAD_LOCAL_ADDRESS_CAPACITY = 1024;
 
     private final MemoryAllocator malloc;
 
@@ -41,7 +41,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
             = new ConcurrentHashMap<Thread, LocalAddressQueue>();
 
     public LongConcurrentLinkedQueue(MemoryAllocator malloc, long nullValue) {
-        this(malloc, nullValue, 1024);
+        this(malloc, nullValue, DEFAULT_THREAD_LOCAL_ADDRESS_CAPACITY);
     }
 
     public LongConcurrentLinkedQueue(MemoryAllocator malloc, long nullValue, int threadLocalAddressCapacity) {
@@ -63,41 +63,35 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return address;
     }
 
-    private void setNode(long address, long e) {
-        Unsafe unsafe = UnsafeHelper.UNSAFE;
-        unsafe.putLongVolatile(null, address, e);
-        unsafe.putLongVolatile(null, address + NEXT_OFFSET, NULL_PTR);
+    private static void setNode(long address, long e) {
+        UNSAFE.putLongVolatile(null, address, e);
+        UNSAFE.putLongVolatile(null, address + NEXT_OFFSET, NULL_PTR);
     }
 
-    private long getItem(long node) {
-        if (node == NULL_PTR) {
-            throw new NullPointerException("Node is null! " + node);
-        }
-        return UnsafeHelper.UNSAFE.getLongVolatile(null, node);
+    private static long getItem(long node) {
+        checkNotNull("Node is null!");
+        return UNSAFE.getLongVolatile(null, node);
     }
 
-    private long getNextNode(long node) {
-        if (node == NULL_PTR) {
-            throw new NullPointerException("Node is null! " + node);
-        }
-        return UnsafeHelper.UNSAFE.getLongVolatile(null, node + NEXT_OFFSET);
+    private static long getNextNode(long node) {
+        checkNotNull("Node is null!");
+        return UNSAFE.getLongVolatile(null, node + NEXT_OFFSET);
     }
 
-    private boolean casNextNode(long node, long current, long value) {
-        if (node == NULL_PTR) {
-            throw new NullPointerException("Node is null! " + node);
-        }
-        return UnsafeHelper.UNSAFE.compareAndSwapLong(null, node + NEXT_OFFSET, current, value);
+    private static boolean casNextNode(long node, long current, long value) {
+        checkNotNull("Node is null!");
+        return UNSAFE.compareAndSwapLong(null, node + NEXT_OFFSET, current, value);
     }
 
+    @Override
     public boolean offer(long value) {
         if (value == nullItem) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("attempt to offer the 'value missing' sentinel");
         }
 
         long node = newNode(value);
         long t;
-        for (; ; ) {
+        for (;;) {
             t = tail.get();
             if (t == NULL_PTR) {
                 // queue is destroyed
@@ -106,7 +100,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
             long next = getNextNode(t);
             if (t == tail.get()) {
                 if (next == NULL_PTR) {
-                    if (casNextNode(t, next, node)) {
+                    if (casNextNode(t, NULL_PTR, node)) {
                         break;
                     }
                 } else {
@@ -119,13 +113,13 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return true;
     }
 
+    @Override
     public long poll() {
         long item;
         long h;
-        for (; ; ) {
+        for (;;) {
             h = head.get();
             if (h == NULL_PTR) {
-                // queue is destroyed
                 throw new IllegalStateException("Queue is already destroyed! " + toString());
             }
             long t = tail.get();
@@ -152,9 +146,9 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return item;
     }
 
-    // key of localAddressQueues is already current thread
-    // so no other thread will use the same key
-    @SuppressFBWarnings("AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION")
+
+    @SuppressFBWarnings(value = "AT_OPERATION_SEQUENCE_ON_CONCURRENT_ABSTRACTION", justification =
+            "since the map key is the current thread, concurrent access is impossible at the same key")
     private LocalAddressQueue getLocalAddressQueue() {
         Thread t = Thread.currentThread();
         LocalAddressQueue queue = localAddressQueues.get(t);
@@ -165,29 +159,36 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return queue;
     }
 
+    @Override
     public long peek() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public int size() {
         long c = size.get();
         return c < Integer.MAX_VALUE ? (int) c : Integer.MAX_VALUE;
     }
 
+    @Override
     public boolean isEmpty() {
         return size.get() == 0;
     }
 
+    @Override
     public int capacity() {
         return Integer.MAX_VALUE;
     }
 
+    @Override
     public int remainingCapacity() {
         return Integer.MAX_VALUE;
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:emptyblock")
     public void clear() {
-        while (poll() != nullItem);
+        while (poll() != nullItem) { }
     }
 
     @Override
@@ -195,6 +196,7 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return nullItem;
     }
 
+    @Override
     public void dispose() {
         if (!isDestroyed()) {
             clear();
@@ -219,7 +221,8 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         return head.get() == NULL_PTR;
     }
 
-    public final void gc() {
+    @Override
+    public void gc() {
         if (!localAddressQueues.isEmpty()) {
             Iterator<Map.Entry<Thread, LocalAddressQueue>> iter = localAddressQueues.entrySet().iterator();
             while (iter.hasNext()) {
@@ -249,11 +252,9 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         }
 
         long allocate() {
-            long ptr = queue.size() > threadLocalAddressCapacity / 4 ? queue.poll() : NULL_PTR;
-            if (ptr == NULL_PTR) {
-                ptr = malloc.allocate(NODE_SIZE);
-            }
-            return ptr;
+            final long thresholdRatio = 4;
+            final long ptr = queue.size() > threadLocalAddressCapacity / thresholdRatio ? queue.poll() : NULL_PTR;
+            return ptr == NULL_PTR ? malloc.allocate(NODE_SIZE) : ptr;
         }
 
         void destroy() {
@@ -269,17 +270,13 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
         }
     }
 
+    @Override
     public LongIterator iterator() {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("LongConcurrentLinkedQueue{");
-        sb.append("head=").append(head);
-        sb.append(", tail=").append(tail);
-        sb.append(", size=").append(size);
-        sb.append('}');
-        return sb.toString();
+        return "LongConcurrentLinkedQueue{head=" + head + ", tail=" + tail + ", size=" + size + '}';
     }
 }

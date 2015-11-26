@@ -1,22 +1,29 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.HashUtil.fastLongMix;
+import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 
 /**
  * Implementation of {@link HashSlotArray} using a native memory block.
  */
 public class HashSlotArrayImpl implements HashSlotArray {
 
+    /** Default initial capacity of the map */
+    public static final int DEFAULT_INITIAL_CAPACITY = 16;
+    /** Default load factor of the map */
+    public static final float DEFAULT_LOAD_FACTOR = 0.6f;
+
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
+    private static final int KEY_LENGTH = 16;
     private static final int VALUE_OFFSET = 16;
+    private static final int VALUE_LENGTH_GRANULARITY = 8;
 
     /**
      * Length of value in bytes
@@ -72,7 +79,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
      * @param valueLength Length of value in bytes
      */
     public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength) {
-        this(malloc, valueLength, 16, 0.6f);
+        this(malloc, valueLength, DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
     }
 
     /**
@@ -85,7 +92,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
      * @param loadFactor Load factor
      */
     public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength, int initialCapacity, float loadFactor) {
-        if (QuickMath.modPowerOfTwo(valueLength, 8) != 0) {
+        if (modPowerOfTwo(valueLength, VALUE_LENGTH_GRANULARITY) != 0) {
             throw new IllegalArgumentException("Value length should be factor of 8!");
         }
         this.valueLength = valueLength;
@@ -145,7 +152,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         allocate(nextCapacity(allocated));
 
         // Rehash all stored keys into the new buffers.
-        for (long slot = oldAllocated; --slot >= 0; ) {
+        for (long slot = oldAllocated; --slot >= 0;) {
             if (isAssigned(oldAddress, slot)) {
                 long key1 = getKey1(oldAddress, slot);
                 long key2 = getKey2(oldAddress, slot);
@@ -211,12 +218,13 @@ public class HashSlotArrayImpl implements HashSlotArray {
      * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
      */
     private void shiftConflictingKeys(long slotCurr) {
-        long slotPrev, slotOther;
+        long slotPrev;
         while (true) {
-            slotCurr = ((slotPrev = slotCurr) + 1) & mask;
+            slotPrev = slotCurr;
+            slotCurr = (slotCurr + 1) & mask;
 
             while (isAssigned(slotCurr)) {
-                slotOther = hash(getKey1(slotCurr), getKey2(slotCurr));
+                long slotOther = hash(getKey1(slotCurr), getKey2(slotCurr));
 
                 if (slotPrev <= slotCurr) {
                     // we're on the right of the original slot.
@@ -276,7 +284,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
 
     @Override
     public int keyLength() {
-        return 16;
+        return KEY_LENGTH;
     }
 
     @Override

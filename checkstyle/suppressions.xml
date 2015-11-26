@@ -37,7 +37,10 @@
     <!-- TODO: these wildcard suppressions need to be fixed -->
     <suppress checks="" files="com/hazelcast/security/"/>
     <suppress checks="" files="com/hazelcast/memory/"/>
-    <suppress checks="" files="com/hazelcast/elastic/"/>
+    <!--suppress checks="" files="com/hazelcast/elastic/"/-->
+
+    <!-- com.hazelcast.elastic -->
+    <suppress checks="IllegalImport" files="com/hazelcast/elastic/"/>
 
     <!-- Elastic Memory -->
     <suppress checks="JavadocMethod" files="com/hazelcast/elasticmemory/"/>

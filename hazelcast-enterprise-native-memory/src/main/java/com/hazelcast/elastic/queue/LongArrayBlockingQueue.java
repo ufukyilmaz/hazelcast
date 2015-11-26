@@ -2,14 +2,18 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+
+/** Implementation of {@link LongBlockingQueue} with an off-heap array. */
 public final class LongArrayBlockingQueue implements LongBlockingQueue {
+    private static final long ENTRY_SIZE = 8L;
+
     private final MemoryAllocator malloc;
     private final int capacity;
     private final long address;
@@ -26,7 +30,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         this.malloc = memoryAllocator;
         this.capacity = capacity;
         this.nullItem = nullItem;
-        long realCap = capacity * 8L;
+        long realCap = capacity * ENTRY_SIZE;
         this.address = malloc.allocate(realCap);
         clear();
     }
@@ -35,17 +39,17 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        return UnsafeHelper.UNSAFE.getLong(address + (index * 8L));
+        return UNSAFE.getLong(address + (index * ENTRY_SIZE));
     }
 
     private void set(int index, long value) {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        UnsafeHelper.UNSAFE.putLong(address + (index * 8L), value);
+        UNSAFE.putLong(address + (index * ENTRY_SIZE), value);
     }
 
-    public boolean offer(long value) {
+    @Override public boolean offer(long value) {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -53,16 +57,13 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            if (size == capacity) {
-                return false;
-            }
-            return insert(value);
+            return size != capacity && insert(value);
         } finally {
             lock.unlock();
         }
     }
 
-    public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
+    @Override public boolean offer(long value, long timeout, TimeUnit unit) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -75,8 +76,9 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
                 if (size < capacity) {
                     return insert(value);
                 }
-                if (nanos <= 0)
+                if (nanos <= 0) {
                     return false;
+                }
                 try {
                     nanos = notFull.awaitNanos(nanos);
                 } catch (InterruptedException ie) {
@@ -89,7 +91,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public void put(long value) throws InterruptedException {
+    @Override public void put(long value) throws InterruptedException {
         if (value == nullItem) {
             throw new IllegalArgumentException();
         }
@@ -123,7 +125,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         return true;
     }
 
-    public long peek() {
+    @Override public long peek() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -137,7 +139,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public long poll() {
+    @Override public long poll() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -150,7 +152,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public long poll(long timeout, TimeUnit unit) throws InterruptedException {
+    @Override public long poll(long timeout, TimeUnit unit) throws InterruptedException {
         long nanos = unit.toNanos(timeout);
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
@@ -159,8 +161,9 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
                 if (size != 0) {
                     return extract();
                 }
-                if (nanos <= 0)
+                if (nanos <= 0) {
                     return nullItem;
+                }
                 try {
                     nanos = notEmpty.awaitNanos(nanos);
                 } catch (InterruptedException ie) {
@@ -173,7 +176,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public long take() throws InterruptedException {
+    @Override public long take() throws InterruptedException {
         final ReentrantLock lock = this.lock;
         lock.lockInterruptibly();
         try {
@@ -210,7 +213,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public void consume(final LongConsumer consumer) {
+    @Override public void consume(final LongConsumer consumer) {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -231,7 +234,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public int size() {
+    @Override public int size() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -241,15 +244,15 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public boolean isEmpty() {
+    @Override public boolean isEmpty() {
         return size() == 0;
     }
 
-    public int capacity() {
+    @Override public int capacity() {
         return capacity;
     }
 
-    public int remainingCapacity() {
+    @Override public int remainingCapacity() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
@@ -259,11 +262,11 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public void clear() {
+    @Override public void clear() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            UnsafeHelper.UNSAFE.setMemory(address, capacity * 8L, (byte) 0);
+            UNSAFE.setMemory(address, capacity * ENTRY_SIZE, (byte) 0);
             add = 0;
             remove = 0;
             size = 0;
@@ -272,12 +275,12 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public void dispose() {
+    @Override public void dispose() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
             if (size > -1) {
-                malloc.free(address, capacity * 8L);
+                malloc.free(address, capacity * ENTRY_SIZE);
                 add = 0;
                 remove = 0;
                 size = -1;
@@ -287,11 +290,11 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    public long nullItem() {
+    @Override public long nullItem() {
         return nullItem;
     }
 
-    public LongIterator iterator() {
+    @Override public LongIterator iterator() {
         lock.lock();
         try {
             ensureMemory();
@@ -301,7 +304,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
     }
 
-    // TODO: broken, currently does not reflect external changes!
+    // TODO broken, currently does not reflect external changes!
     private class Iter implements LongIterator {
         // hold nextItem to return if hasNext() returns true
         private int remaining;
@@ -328,7 +331,11 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
                 ensureMemory();
                 long item = nextItem;
                 while (--remaining > 0) {
-                    if ((nextItem = get(nextIndex = inc(nextIndex))) != nullItem) break;
+                    nextIndex = inc(nextIndex);
+                    nextItem = get(nextIndex);
+                    if (nextItem != nullItem) {
+                        break;
+                    }
                 }
                 return item;
             } finally {
@@ -337,26 +344,24 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         }
 
         private int inc(int i) {
-            return (++i == capacity)? 0 : i;
+            int next = i + 1;
+            return (next == capacity) ? 0 : next;
         }
 
         public void remove() {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public void reset() {
-            if ((remaining = size) > 0) nextItem = get(nextIndex = remove);
+        @Override public void reset() {
+            remaining = size;
+            if (remaining > 0) {
+                nextIndex = remove;
+                nextItem = get(nextIndex);
+            }
         }
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("LongArrayBlockingQueue{");
-        sb.append("capacity=").append(capacity);
-        sb.append(", address=").append(address);
-        sb.append(", size=").append(size());
-        sb.append('}');
-        return sb.toString();
+    @Override public String toString() {
+        return "LongArrayBlockingQueue{capacity=" + capacity + ", address=" + address + ", size=" + size() + '}';
     }
 }

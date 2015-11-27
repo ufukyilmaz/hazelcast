@@ -8,7 +8,6 @@ import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
-import com.hazelcast.nio.EnterpriseObjectDataOutput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -87,11 +86,6 @@ public class CachePutAllBackupOperation
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
-        assert (out instanceof EnterpriseObjectDataOutput)
-                : "\"ObjectDataOutput\" must be an \"EnterpriseObjectDataOutput\"";
-        final EnterpriseSerializationService serializationService =
-                ((EnterpriseObjectDataOutput) out).getSerializationService();
-
         super.writeInternal(out);
 
         out.writeBoolean(cacheRecords != null);

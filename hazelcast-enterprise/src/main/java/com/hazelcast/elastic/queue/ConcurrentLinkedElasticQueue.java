@@ -9,6 +9,7 @@ import java.util.AbstractQueue;
 import java.util.Iterator;
 
 /**
+ * @param <E> entry type
  * @author mdogan 22/01/14
  */
 public final class ConcurrentLinkedElasticQueue<E> extends AbstractQueue<E> implements ElasticQueue<E> {

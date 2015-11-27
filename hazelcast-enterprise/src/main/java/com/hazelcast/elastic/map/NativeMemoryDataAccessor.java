@@ -13,7 +13,9 @@ class NativeMemoryDataAccessor
 
     private final SerializationService serializationService;
 
-    public NativeMemoryDataAccessor(SerializationService serializationService) {this.serializationService = serializationService;}
+    public NativeMemoryDataAccessor(SerializationService serializationService) {
+        this.serializationService = serializationService;
+    }
 
     @Override
     public boolean isEqual(long address, NativeMemoryData value) {

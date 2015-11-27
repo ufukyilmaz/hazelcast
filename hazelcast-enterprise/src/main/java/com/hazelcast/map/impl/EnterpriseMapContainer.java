@@ -31,7 +31,9 @@ import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConstructorFunction;
 
@@ -90,6 +92,19 @@ public class EnterpriseMapContainer extends MapContainer {
 
     public HiDensityStorageInfo getStorageInfo() {
         return storageInfo;
+    }
+
+    @Override
+    public QueryableEntry newQueryEntry(Data key, Object value) {
+        // When NATIVE in memory format is used, we are copying key and value
+        // to heap before adding it to index.
+        key = mapServiceContext.toData(key);
+
+        if (value instanceof Data) {
+            value = mapServiceContext.toData(value);
+        }
+
+        return super.newQueryEntry(key, value);
     }
 }
 

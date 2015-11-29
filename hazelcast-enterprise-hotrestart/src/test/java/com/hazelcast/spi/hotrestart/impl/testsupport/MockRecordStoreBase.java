@@ -46,7 +46,6 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
     }
 
     @Override public final void clear() {
-        hrStore.clear(prefix);
         synchronized (ramStore) {
             ramStore.clear();
         }

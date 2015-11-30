@@ -31,7 +31,7 @@ public class HotRestartStoreQuickTest {
 
     private void quickTest(boolean offHeap) throws Exception {
         final File testingHome = hotRestartHome(getClass(), testName);
-        final TestProfile p = new TestProfile();
+        final TestProfile p = new TestProfile.Default();
         p.testCycleCount = 2;
         p.exerciseTimeSeconds = 10;
         p.clearIntervalSeconds = 4;

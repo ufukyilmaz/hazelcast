@@ -20,10 +20,10 @@ import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -71,30 +71,20 @@ public class HotRestartTestUtil {
     {
         final Histogram hist = new Histogram(3);
         try {
-            final Random rnd = new Random();
             logger.info("Updating db");
-            final long clearIntervalNanos = SECONDS.toNanos(profile.clearIntervalSeconds);
             final long testStart = System.nanoTime();
 //            final long outlierThresholdNanos = MILLISECONDS.toNanos(20);
             long lastFsynced = testStart;
             long lastCleared = testStart;
             long iterCount = 0;
             final long deadline = testStart + SECONDS.toNanos(profile.exerciseTimeSeconds);
-            for (long iterStart = 0; iterStart < deadline; iterCount++) {
-                final int key = profile.randomKey(iterCount);
-                final byte[] value = profile.randomValue();
-                final int r = rnd.nextInt(100);
-                iterStart = System.nanoTime();
-                if (r < 80) {
-                    reg.put(profile.randomPrefix(), key, value);
-                } else {
-                    reg.remove(profile.randomPrefix(), key);
-                }
+            for (long iterStart; (iterStart = System.nanoTime()) < deadline; iterCount++) {
+                profile.performOp(reg);
                 reg.releaseTombstonesAsNeeded();
-                if (iterStart - lastCleared > clearIntervalNanos) {
-                    final long prefix = rnd.nextInt(profile.prefixCount) + 1;
-                    logger.info(String.format("%n%nCLEAR %d%n", prefix));
-                    reg.clear(prefix);
+                final long[] prefixesToClear = profile.prefixesToClear(lastCleared);
+                if (prefixesToClear.length > 0) {
+                    logger.info(String.format("%n%nCLEAR %s%n", Arrays.toString(prefixesToClear)));
+                    reg.clear(prefixesToClear);
                     lastCleared = iterStart;
                 }
                 if (!reg.hrStore.isAutoFsync() && iterStart - lastFsynced > MILLISECONDS.toNanos(10)) {
@@ -111,6 +101,7 @@ public class HotRestartTestUtil {
             if (runtimeSeconds > 1) {
                 logger.info(String.format("Throughput was %,.0f ops/second%n", iterCount / runtimeSeconds));
             }
+            profile.testCycleDone();
         } catch (Exception e) {
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
@@ -122,6 +113,7 @@ public class HotRestartTestUtil {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg)
             throws InterruptedException
     {

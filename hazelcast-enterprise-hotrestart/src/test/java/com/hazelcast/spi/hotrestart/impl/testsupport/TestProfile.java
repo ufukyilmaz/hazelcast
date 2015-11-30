@@ -6,10 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 
-public class TestProfile {
+public abstract class TestProfile {
+
+    protected static final long[] EMPTY_PREFIXES = {};
 
     public long exerciseTimeSeconds = 20;
     public int testCycleCount = 2;
@@ -31,7 +34,8 @@ public class TestProfile {
     public byte[] valueData;
 
     private long hotSetChangeMask;
-    private final Random rnd = new Random();
+    private long opCount;
+    protected final Random rnd = new Random();
 
     public void build() {
         this.hotSetChangeMask = (1L << logItersHotSetChange) - 1;
@@ -56,6 +60,18 @@ public class TestProfile {
     public byte[] randomValue() {
         return powerLawSizeDistribution ? randomValuePowerLaw() : randomValueUniform();
     }
+
+    public void testCycleDone() {
+
+    }
+
+    public void performOp(MockStoreRegistry reg) {
+        performOp(reg, ++opCount);
+    }
+
+    protected abstract void performOp(MockStoreRegistry reg, long opCount);
+
+    public abstract long[] prefixesToClear(long lastCleared);
 
     private byte[] randomValuePowerLaw() {
         int size = 1 << logMinSize;
@@ -104,6 +120,38 @@ public class TestProfile {
         Collections.sort(sizes);
         for (int key : sizes) {
             System.out.format("%,9d x %,9d = %,9d%n", key, freqs.get(key), key * freqs.get(key));
+        }
+    }
+
+    public static class Default extends TestProfile {
+        private final List<Long> prefixes = new ArrayList<Long>(prefixCount);
+
+        public Default() {
+            for (long i = 0; i < prefixCount; i++) {
+                prefixes.add(i + 1);
+            }
+        }
+
+        @Override protected void performOp(MockStoreRegistry reg, long opCount) {
+            final int key = randomKey(opCount);
+            final int prefix = randomPrefix();
+            if (rnd.nextInt(100) < 80) {
+                reg.put(prefix, key, randomValue());
+            } else {
+                reg.remove(prefix, key);
+            }
+        }
+
+        @Override public long[] prefixesToClear(long lastCleared) {
+            if (System.nanoTime() - lastCleared <= TimeUnit.SECONDS.toNanos(clearIntervalSeconds)) {
+                return EMPTY_PREFIXES;
+            }
+            Collections.shuffle(prefixes);
+            final long[] toClear = new long[2];
+            for (int i = 0; i < toClear.length; i++) {
+                toClear[i] = prefixes.get(i);
+            }
+            return toClear;
         }
     }
 }

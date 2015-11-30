@@ -31,7 +31,7 @@ public class HotRestartStoreNightlyTest {
 
     private void longTest(boolean offHeap) throws Exception {
         final File testingHome = hotRestartHome(getClass(), testName);
-        final TestProfile p = new TestProfile();
+        final TestProfile p = new TestProfile.Default();
         p.testCycleCount = 20;
         p.exerciseTimeSeconds = 30;
         p.prefixCount = 10;

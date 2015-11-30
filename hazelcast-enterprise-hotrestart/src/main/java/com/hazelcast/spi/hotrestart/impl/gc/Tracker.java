@@ -27,9 +27,10 @@ abstract class Tracker {
         final TrackerMapBase ownr = (TrackerMapBase) owner;
         if (isAlive()) {
             final boolean staleIsTombstone = isTombstone();
-            assert !(staleIsTombstone && freshIsTombstone) : "Attempted to replace a tombstone with another tombstone";
             if (staleIsTombstone) {
-                ownr.replacedTombstoneWithValue();
+                if (!freshIsTombstone) {
+                    ownr.replacedTombstoneWithValue();
+                }
             } else {
                 incrementGarbageCount();
                 if (freshIsTombstone) {

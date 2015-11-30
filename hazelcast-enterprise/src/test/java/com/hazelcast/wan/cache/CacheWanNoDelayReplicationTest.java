@@ -3,6 +3,7 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
+import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
 import org.junit.Test;
@@ -37,6 +38,21 @@ public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationT
         createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 1, 10, false);
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 1, 2, clusterA);
         checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 2, 10);
+    }
+
+    @Test
+    public void testMigration() throws InterruptedException {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), "default");
+
+        initCluster(singleNodeA, configA);
+        createCacheDataIn(singleNodeA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 200, false);
+        initCluster(singleNodeC, configA);
+
+        initCluster(clusterB, configB);
+
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 200, singleNodeA);
     }
 
     @Override

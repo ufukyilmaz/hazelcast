@@ -30,11 +30,10 @@ public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicati
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(backupCount);
-        out.writeInt(size());
-        WanReplicationEvent event = poll();
-        while (event != null) {
-            event.writeData(out);
-            event = poll();
+        WanReplicationEvent[] event = toArray(new WanReplicationEvent[0]);
+        out.writeInt(event.length);
+        for (int i = 0; i < event.length; i++) {
+            event[i].writeData(out);
         }
     }
 

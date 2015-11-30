@@ -65,7 +65,7 @@ public class EnterpriseWanReplicationService
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        logger.finest("Preparing EWR replication.");
+        logger.finest("Preparing EWR replication for partition : " + event.getPartitionId());
         int partitionId = event.getPartitionId();
         EWRMigrationContainer migrationData = new EWRMigrationContainer();
         Set<Map.Entry<String, WanReplicationPublisherDelegate>> entrySet = wanReplications.entrySet();
@@ -100,8 +100,8 @@ public class EnterpriseWanReplicationService
             logger.finest("Migration data is empty");
             return null;
         } else {
-            logger.finest("Migration data filled.");
-            return new EWRQueueReplicationOperation(migrationData, event.getPartitionId());
+            logger.finest("Migration data filled. PartitionID : " + event.getPartitionId());
+            return new EWRQueueReplicationOperation(migrationData, event.getPartitionId(), event.getReplicaIndex());
         }
     }
 

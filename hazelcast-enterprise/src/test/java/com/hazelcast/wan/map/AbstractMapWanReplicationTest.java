@@ -3,8 +3,11 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.instance.HazelcastProperties;
+import com.hazelcast.instance.HazelcastProperty;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -162,7 +165,7 @@ public abstract class AbstractMapWanReplicationTest extends AbstractWanReplicati
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    private void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
+    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final HazelcastInstance[] sourceCluster) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 sleepSeconds(10);

@@ -45,7 +45,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * validating these metadata cluster-wide before restoring actual data
  * and storing these metadata when they change during runtime.
  */
-@SuppressWarnings("checkstyle:classdataabstractioncoupling")
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
 public final class ClusterMetadataManager implements PartitionListener {
 
     private static final String DIR_NAME = "cluster";
@@ -162,6 +162,13 @@ public final class ClusterMetadataManager implements PartitionListener {
         validate();
         node.partitionService.addPartitionListener(this);
         loadStartTime = Clock.currentTimeMillis();
+    }
+
+    public void shutdown() {
+        if (node.getClusterService().getClusterState() == ClusterState.ACTIVE) {
+            writeMembers();
+            writePartitions();
+        }
     }
 
     // main thread
@@ -555,7 +562,9 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     public void onMembershipChange(MembershipServiceEvent event) {
-        writeMembers();
+        if (node.getClusterService().getClusterState() == ClusterState.ACTIVE) {
+            writeMembers();
+        }
     }
 
     private void writeMembers() {

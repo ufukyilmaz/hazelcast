@@ -276,5 +276,15 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     public void clear() {
         zero();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
 

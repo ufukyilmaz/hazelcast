@@ -6,6 +6,8 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
+import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;
+
 /**
  * Cache record accessor for {@link HiDensityNativeMemoryCacheRecord}
  * to create, read, dispose record or its data.
@@ -34,10 +36,8 @@ public class HDRecordAccessor
 
     @Override
     public boolean isEqual(long address1, long address2) {
-        int valueOffset = statisticEnabled ? HDRecordWithStats.VALUE_OFFSET : HDRecord.VALUE_OFFSET;
-
-        long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + valueOffset);
-        long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + valueOffset);
+        long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + VALUE_OFFSET);
+        long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 

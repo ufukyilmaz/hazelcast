@@ -21,6 +21,7 @@ import com.hazelcast.util.UnmodifiableIterator;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Provides tombstone awareness and unmodifiable behavior to the wrapped collection
@@ -92,6 +93,9 @@ public class UnmodifiableTombstoneAwareCollection<R extends Record> implements C
 
             @Override
             public R next() {
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 try {
                     return next;
                 } finally {

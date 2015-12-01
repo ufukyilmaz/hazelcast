@@ -32,7 +32,7 @@ public class CacheGetAllOperation
     }
 
     public CacheGetAllOperation(String name, Set<Data> keys, ExpiryPolicy expiryPolicy) {
-        super(name, true);
+        super(name);
         this.keys = keys;
         this.expiryPolicy = expiryPolicy;
     }

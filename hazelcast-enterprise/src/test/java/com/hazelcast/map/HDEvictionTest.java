@@ -17,15 +17,12 @@
 package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,8 +30,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.hazelcast.config.EvictionPolicy.LFU;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_NODE;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -56,56 +54,43 @@ public class HDEvictionTest extends EvictionTest {
     }
 
 
+    @Override
+    public void testEvictionLFU() {
+        testEvictionLFUInternal(false);
+    }
+
     @Test
     public void testEvictionLFU_statisticsDisabled() {
         testEvictionLFUInternal(true);
     }
 
+    /**
+     * This test is only testing occurrence of LFU eviction.
+     */
     protected void testEvictionLFUInternal(boolean disableStats) {
+        int mapMaxSize = 10000;
         String mapName = randomMapName();
-        final int size = 10000;
-
-        Config cfg = getConfig();
-        cfg.setProperty(GroupProperty.PARTITION_COUNT, "1");
-
-        MapConfig mc = cfg.getMapConfig(mapName);
-        mc.setStatisticsEnabled(disableStats);
-        mc.setEvictionPolicy(EvictionPolicy.LFU);
-        mc.setEvictionPercentage(20);
-        mc.setMinEvictionCheckMillis(0);
 
         MaxSizeConfig msc = new MaxSizeConfig();
-        msc.setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.PER_NODE);
-        msc.setSize(size);
-        mc.setMaxSizeConfig(msc);
+        msc.setMaxSizePolicy(PER_NODE);
+        msc.setSize(mapMaxSize);
 
-        HazelcastInstance node = createHazelcastInstance();
-        final IMap<Object, Object> map = node.getMap(mapName);
-        // these are frequently used entries.
-        for (int i = 0; i < size / 2; i++) {
+        Config config = getConfig();
+        MapConfig mapConfig = config.getMapConfig(mapName);
+        mapConfig.setStatisticsEnabled(disableStats);
+        mapConfig.setEvictionPolicy(LFU);
+        mapConfig.setMinEvictionCheckMillis(0);
+        mapConfig.setMaxSizeConfig(msc);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap<Object, Object> map = node.getMap(mapName);
+
+        for (int i = 0; i < 2 * mapMaxSize; i++) {
             map.put(i, i);
-            map.get(i);
-        }
-        // expecting these entries to be evicted.
-        for (int i = size / 2; i < size + 1; i++) {
-            map.put(i, i);
         }
 
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertFalse("No eviction!?!?!?", map.size() < size);
-            }
-        });
-
-        // these entries should exist in map after evicting LFU.
-        for (int i = 0; i < size / 2; i++) {
-            assertNotNull(map.get(i));
-        }
-    }
-
-    @Override
-    public void testEvictionLFU() {
-        testEvictionLFUInternal(false);
+        int mapSize = map.size();
+        assertTrue("Eviction did not work, map size " + mapSize + " should be smaller than allowed max size = " + mapMaxSize,
+                mapSize < mapMaxSize);
     }
 }

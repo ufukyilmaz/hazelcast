@@ -4,13 +4,15 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.CredentialsFactoryConfig;
 import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.SecurityConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
+import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.*;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -19,41 +21,20 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
-public class MemberSecurityTest {
-
-    @BeforeClass
-    @AfterClass
-    public static void cleanupClass() {
-        Hazelcast.shutdownAll();
-    }
-
-    @Before
-    @After
-    public void cleanup() {
-        Hazelcast.shutdownAll();
-    }
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
+public class MemberSecurityTest extends HazelcastTestSupport {
 
     @Test
-    public void testAcceptMemberMulticast() {
+    public void testAcceptMember() {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
 
-        Hazelcast.newHazelcastInstance(config); // master
-        HazelcastInstance member = Hazelcast.newHazelcastInstance(config);
-        assertEquals(2, member.getCluster().getMembers().size());
-    }
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
-    @Test
-    public void testAcceptMemberTcpIp() {
-        final Config config = createTcpIpConfig();
-        final SecurityConfig secCfg = config.getSecurityConfig();
-        secCfg.setEnabled(true);
-
-        Hazelcast.newHazelcastInstance(config); // master
-        HazelcastInstance member = Hazelcast.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config); // master
+        HazelcastInstance member = factory.newHazelcastInstance(config);
         assertEquals(2, member.getCluster().getMembers().size());
     }
 
@@ -76,8 +57,9 @@ public class MemberSecurityTest {
         });
         secCfg.setMemberCredentialsConfig(credentialsFactoryConfig);
 
-        Hazelcast.newHazelcastInstance(config); // master
-        Hazelcast.newHazelcastInstance(config);
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // master
+        factory.newHazelcastInstance(config);
     }
 
     public static class InValidCredentials extends AbstractCredentials {
@@ -105,31 +87,13 @@ public class MemberSecurityTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testDenyMemberMulticast() {
+    public void testDenyMember() {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
 
-        Hazelcast.newHazelcastInstance(config); // master
-        Hazelcast.newHazelcastInstance(new Config());
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testDenyMemberTcpIp() {
-        final Config config = createTcpIpConfig();
-        final SecurityConfig secCfg = config.getSecurityConfig();
-        secCfg.setEnabled(true);
-
-        Hazelcast.newHazelcastInstance(config); // master
-        Hazelcast.newHazelcastInstance(createTcpIpConfig());
-    }
-
-    private Config createTcpIpConfig() {
-        final Config config = new Config();
-        config.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-        config.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true)
-                .clear().addMember("127.0.0.1");
-        config.getNetworkConfig().getInterfaces().clear().addInterface("127.0.0.1");
-        return config;
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // master
+        factory.newHazelcastInstance(new Config());
     }
 }

@@ -69,7 +69,7 @@ public class HDEvictionTest extends EvictionTest {
         cfg.setProperty(GroupProperty.PARTITION_COUNT, "1");
 
         MapConfig mc = cfg.getMapConfig(mapName);
-        mc.setStatisticsEnabled(false);
+        mc.setStatisticsEnabled(disableStats);
         mc.setEvictionPolicy(EvictionPolicy.LFU);
         mc.setEvictionPercentage(20);
         mc.setMinEvictionCheckMillis(0);

@@ -192,12 +192,12 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     @Override
-    public Object getCachedValue() {
+    public Object getCachedValueUnsafe() {
         return Record.NOT_CACHED;
     }
 
     @Override
-    public void setCachedValue(Object cachedValue) {
+    public boolean casCachedValue(Object expectedValue, Object newValue) {
         throw new UnsupportedOperationException();
     }
 

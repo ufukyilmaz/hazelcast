@@ -3,12 +3,16 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.serialization.Data;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
 /**
  * Value of this {@link Record} can be cached as de-serialized form.
  *
  * @see HDRecord
  */
 public class HDRecordWithCachedValue extends HDRecord {
+    private static final AtomicReferenceFieldUpdater<HDRecordWithCachedValue, Object> CACHED_VALUE =
+            AtomicReferenceFieldUpdater.newUpdater(HDRecordWithCachedValue.class, Object.class, "cachedValue");
 
     private transient volatile Object cachedValue;
 
@@ -18,18 +22,18 @@ public class HDRecordWithCachedValue extends HDRecord {
 
     @Override
     public void setValue(Data o) {
-        cachedValue = null;
         super.setValue(o);
+        cachedValue = null;
     }
 
     @Override
-    public Object getCachedValue() {
+    public Object getCachedValueUnsafe() {
         return cachedValue;
     }
 
     @Override
-    public void setCachedValue(Object cachedValue) {
-        this.cachedValue = cachedValue;
+    public boolean casCachedValue(Object expectedValue, Object newValue) {
+        return CACHED_VALUE.compareAndSet(this, expectedValue, newValue);
     }
 
     @Override

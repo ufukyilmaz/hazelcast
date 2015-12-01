@@ -101,7 +101,6 @@ public class HotRestartTestUtil {
             if (runtimeSeconds > 1) {
                 logger.info(String.format("Throughput was %,.0f ops/second%n", iterCount / runtimeSeconds));
             }
-            profile.testCycleDone();
         } catch (Exception e) {
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
@@ -114,9 +113,7 @@ public class HotRestartTestUtil {
     }
 
     @SuppressWarnings("unchecked")
-    public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg)
-            throws InterruptedException
-    {
+    public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg) {
         logger.info("Waiting to start summarizing record stores");
         final Map<Long, Long2LongHashMap>[] summary = new Map[1];
         ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new Runnable() {
@@ -154,10 +151,10 @@ public class HotRestartTestUtil {
     }
 
     static void verify0(Map<Long, Long2LongHashMap> summaries, Map<Long, MockRecordStore> recordStores) {
-        boolean hadIssues = false;
         final StringWriter sw = new StringWriter();
         final PrintWriter problems = new PrintWriter(sw);
         assertEquals("Reloaded store's prefix set doesn't match", recordStores.keySet(), summaries.keySet());
+        boolean hadIssues = false;
         for (Entry<Long, MockRecordStore> storeEntry : recordStores.entrySet()) {
             final long prefix = storeEntry.getKey();
             problems.format("Prefix %d:%n", prefix);

@@ -263,6 +263,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     public void shutdown() {
+        clusterMetadataManager.shutdown();
         OperationExecutor operationExecutor = getOperationExecutor();
         final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
         operationExecutor.runOnAllPartitionThreads(new Runnable() {

@@ -16,14 +16,6 @@ public class PartitionWanEventContainer {
     private PartitionWanEventQueueMap current = mapWanEventQueueMap;
     private PartitionWanEventQueueMap next = cacheWanEventQueueMap;
 
-    public PartitionWanEventQueueMap getMapWanEventQueueMap() {
-        return mapWanEventQueueMap;
-    }
-
-    public PartitionWanEventQueueMap getCacheWanEventQueueMap() {
-        return cacheWanEventQueueMap;
-    }
-
     public boolean publishMapWanEvent(String mapName, WanReplicationEvent wanReplicationEvent) {
         return mapWanEventQueueMap.offerEvent(wanReplicationEvent, mapName, getBackupCount(wanReplicationEvent));
     }
@@ -81,7 +73,7 @@ public class PartitionWanEventContainer {
             String name = entry.getKey();
             WanReplicationEventQueue queue = entry.getValue();
             if (queue.getBackupCount() >= backupCount) {
-                wanEventQueueMap.put(name, queue);
+                filteredEventQueueMap.put(name, queue);
             }
         }
         return filteredEventQueueMap;

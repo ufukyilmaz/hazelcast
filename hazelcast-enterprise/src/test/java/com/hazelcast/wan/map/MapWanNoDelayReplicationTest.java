@@ -41,4 +41,18 @@ public class MapWanNoDelayReplicationTest extends AbstractMapWanReplicationTest 
         assertKeysNotIn(clusterB, "map", 2, 10);
 
     }
+
+    @Test
+    public void testMigration() throws InterruptedException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+
+        initCluster(singleNodeA, configA);
+        createDataIn(singleNodeA, "map", 0, 1000);
+        initCluster(singleNodeC, configA);
+
+        initCluster(clusterB, configB);
+
+        assertDataInFrom(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
+    }
+
 }

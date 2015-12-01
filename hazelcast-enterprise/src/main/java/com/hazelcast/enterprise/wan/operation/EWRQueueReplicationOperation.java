@@ -25,9 +25,9 @@ public class EWRQueueReplicationOperation extends AbstractOperation implements I
 
     }
 
-    public EWRQueueReplicationOperation(EWRMigrationContainer ewrMigrationContainer, int partitionId) {
+    public EWRQueueReplicationOperation(EWRMigrationContainer ewrMigrationContainer, int partitionId, int replicaIndex) {
         this.ewrMigrationContainer = ewrMigrationContainer;
-        setPartitionId(partitionId);
+        setPartitionId(partitionId).setReplicaIndex(replicaIndex);
     }
 
     @Override

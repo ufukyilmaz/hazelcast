@@ -2,7 +2,6 @@ package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.DefaultEnterpriseCacheRecordStore;
 import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.cache.impl.record.CacheRecordHashMap;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -34,6 +33,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         super(name, partitionId, nodeEngine, cacheService);
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.onHeapHotRestartStoreForCurrentThread();
+        assert hotRestartStore != null;
     }
 
     @Override
@@ -201,14 +201,6 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
                     tombstoneCount--;
                 }
             }
-        }
-    }
-
-    @Override
-    public void transferRecordsFrom(ICacheRecordStore src) {
-        super.transferRecordsFrom(src);
-        if (src instanceof HotRestartEnterpriseCacheRecordStore) {
-            this.tombstoneCount = ((HotRestartEnterpriseCacheRecordStore) src).tombstoneCount;
         }
     }
 }

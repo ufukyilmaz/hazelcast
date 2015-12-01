@@ -17,23 +17,25 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.IOUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public abstract class AbstractReaderWriterTest {
 
-    private static final String NAME_PREFIX = "hotrestart_cluster_metadata_test";
-    private static final AtomicInteger SUFFIX = new AtomicInteger();
+    @Rule
+    public TestName testName = new TestName();
 
     protected InetAddress localAddress;
     protected File folder;
@@ -42,7 +44,8 @@ public abstract class AbstractReaderWriterTest {
     public final void setup() throws UnknownHostException {
         localAddress = InetAddress.getLocalHost();
 
-        folder = new File(NAME_PREFIX + SUFFIX.incrementAndGet());
+        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        delete(folder);
         if (!folder.mkdir() && !folder.exists()) {
             throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
         }
@@ -56,7 +59,7 @@ public abstract class AbstractReaderWriterTest {
     public final void tearDown() {
         tearDownInternal();
         if (folder != null) {
-            IOUtil.delete(folder);
+            delete(folder);
         }
     }
 

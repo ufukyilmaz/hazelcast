@@ -35,7 +35,7 @@ public class HotRestartStoreNightlyTest {
         p.testCycleCount = 20;
         p.exerciseTimeSeconds = 30;
         p.prefixCount = 10;
-        p.keysetSize = (offHeap ? 40 : 30) * 1000;
+        p.keysetSize = 30 * 1000;
         p.hotSetFraction = 1;
         p.logItersHotSetChange = 31;
         p.logMinSize = 7;

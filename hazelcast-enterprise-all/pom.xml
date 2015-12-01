@@ -28,9 +28,7 @@
                         </goals>
                         <configuration>
                             <shadedArtifactId>hazelcast-enterprise-all</shadedArtifactId>
-                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
                                     <include>com.hazelcast:hazelcast-all</include>

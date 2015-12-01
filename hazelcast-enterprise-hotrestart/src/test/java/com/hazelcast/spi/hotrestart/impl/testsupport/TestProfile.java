@@ -35,7 +35,7 @@ public abstract class TestProfile {
 
     private long hotSetChangeMask;
     private long opCount;
-    protected final Random rnd = new Random();
+    protected Random rnd = new Random();
 
     public void build() {
         this.hotSetChangeMask = (1L << logItersHotSetChange) - 1;

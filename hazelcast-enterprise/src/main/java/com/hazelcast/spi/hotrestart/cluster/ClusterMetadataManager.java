@@ -8,6 +8,8 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
+import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.partition.impl.PartitionListener;
 import com.hazelcast.partition.impl.PartitionReplicaChangeEvent;
@@ -72,8 +74,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private final Set<Address> notLoadedAddresses = Collections.newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
 
-    private final AtomicReference<Address[][]> partitionTableRef = new AtomicReference<Address[][]>();
     private final AtomicReference<Collection<Address>> memberListRef = new AtomicReference<Collection<Address>>();
+    private final AtomicReference<Address[][]> partitionTableRef = new AtomicReference<Address[][]>();
+    private int partitionTableVersion;
 
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
@@ -126,6 +129,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         partitionTableReader.read();
         Address[][] table = partitionTableReader.getTable();
         partitionTableRef.set(table);
+        partitionTableVersion = partitionTableReader.getPartitionVersion();
         return table;
     }
 
@@ -193,9 +197,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         notValidatedAddresses.remove(node.getThisAddress());
 
-        EnumSet<HotRestartClusterInitializationStatus> statusses = EnumSet
+        EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
                 .of(VERIFICATION_FAILED, PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED);
-        waitForFailureOrExpectedStatus(statusses, new ValidationTask(), validationStartTime + validationTimeout);
+        waitForFailureOrExpectedStatus(statuses, new ValidationTask(), validationStartTime + validationTimeout);
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -207,8 +211,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
 
         InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) node.getPartitionService();
-        partitionService.setInitialState(partitionTableRef.get(), -1);
-
+        partitionService.setInitialState(partitionTableRef.get(), partitionTableVersion);
         logger.info("Cluster member-list & partition table validation completed.");
     }
 
@@ -305,7 +308,18 @@ public final class ClusterMetadataManager implements PartitionListener {
             return;
         }
 
+        validatePartitionTable(sender, remoteTable);
+    }
+
+    // operation thread
+    private void validatePartitionTable(Address sender, Address[][] remoteTable) {
         Address[][] localTable = partitionTableRef.get();
+        if (localTable == null) {
+            // this node is already running
+            // sender node is doing a rolling-restart
+            // gather local table from partition service
+            localTable = createTableFromPartitionService();
+        }
         boolean validated = Arrays.deepEquals(localTable, remoteTable);
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onPartitionTableValidationResult(sender, validated);
@@ -316,6 +330,18 @@ public final class ClusterMetadataManager implements PartitionListener {
         } else {
             processFailedPartitionTableValidation(sender);
         }
+    }
+
+    private Address[][] createTableFromPartitionService() {
+        InternalPartitionServiceImpl partitionService = node.partitionService;
+        Address[][] table = new Address[partitionService.getPartitionCount()][InternalPartition.MAX_REPLICA_COUNT];
+        for (InternalPartition partition : partitionService.getPartitions()) {
+            int partitionId = partition.getPartitionId();
+            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
+                table[partitionId][replica] = partition.getReplicaAddress(replica);
+            }
+        }
+        return table;
     }
 
     private void processSuccessfulPartitionTableValidation(Address sender) {
@@ -402,9 +428,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
 
-        EnumSet<HotRestartClusterInitializationStatus> statusses = EnumSet
+        EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
                 .of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED);
-        waitForFailureOrExpectedStatus(statusses, new LoadTask(success), loadStartTime + dataLoadTimeout);
+        waitForFailureOrExpectedStatus(statuses, new LoadTask(success), loadStartTime + dataLoadTimeout);
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -421,6 +447,8 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         writeMembers();
         writePartitions();
+        memberListRef.set(null);
+        partitionTableRef.set(null);
     }
 
     // main thread
@@ -592,7 +620,9 @@ public final class ClusterMetadataManager implements PartitionListener {
             logger.finest("Persisting partition table...");
         }
         try {
-            partitionTableWriter.write(node.getPartitionService().getPartitions());
+            InternalPartitionService partitionService = node.getPartitionService();
+            partitionTableWriter.setPartitionVersion(partitionService.getPartitionStateVersion());
+            partitionTableWriter.write(partitionService.getPartitions());
         } catch (IOException e) {
             logger.severe("While persisting partition table", e);
         }
@@ -614,13 +644,11 @@ public final class ClusterMetadataManager implements PartitionListener {
         return hotRestartStatus.get();
     }
 
-    private interface TimeoutableRunnable
-            extends Runnable {
+    private interface TimeoutableRunnable extends Runnable {
         void onTimeout();
     }
 
-    private class ValidationTask
-            implements TimeoutableRunnable {
+    private class ValidationTask implements TimeoutableRunnable {
         @Override
         public void run() {
             if (!node.isMaster()) {
@@ -638,8 +666,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
     }
 
-    private class LoadTask
-            implements TimeoutableRunnable {
+    private class LoadTask implements TimeoutableRunnable {
         private final boolean success;
 
         public LoadTask(boolean success) {

@@ -32,6 +32,7 @@ public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
     public void test_readEmptyFolder() throws IOException {
         PartitionTableReader reader = new PartitionTableReader(folder, 100);
         reader.read();
+        assertEquals(0, reader.getPartitionVersion());
         assertPartitionTableEmpty(reader.getTable());
     }
 
@@ -72,11 +73,13 @@ public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
         InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
 
         PartitionTableWriter writer = new PartitionTableWriter(folder);
+        writer.setPartitionVersion(memberCount);
         writer.write(partitions);
 
         PartitionTableReader reader = new PartitionTableReader(folder, partitionCount);
         reader.read();
 
+        assertEquals(memberCount, reader.getPartitionVersion());
         Address[][] partitionTable = reader.getTable();
         assertPartitionTableEquals(partitions, partitionTable);
     }

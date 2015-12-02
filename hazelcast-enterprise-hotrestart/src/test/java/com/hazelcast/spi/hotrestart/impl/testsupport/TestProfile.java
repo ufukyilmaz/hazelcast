@@ -61,10 +61,6 @@ public abstract class TestProfile {
         return powerLawSizeDistribution ? randomValuePowerLaw() : randomValueUniform();
     }
 
-    public void testCycleDone() {
-
-    }
-
     public void performOp(MockStoreRegistry reg) {
         performOp(reg, ++opCount);
     }

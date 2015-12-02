@@ -31,6 +31,7 @@ public interface Long2bytesMap extends Disposable {
 
     Set<Long> keySet();
 
+    /** @return -1 for a missing key */
     int valueSize(long key);
 
     interface L2bCursor {

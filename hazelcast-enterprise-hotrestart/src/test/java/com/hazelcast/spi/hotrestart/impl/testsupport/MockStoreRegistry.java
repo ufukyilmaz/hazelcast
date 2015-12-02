@@ -38,7 +38,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
         getOrCreateRecordStoreForPrefix(prefix).remove(key);
     }
 
-    public void clear(long[] prefixes) {
+    public void clear(long... prefixes) {
         hrStore.clear(prefixes);
         for (long prefix : prefixes) {
             getOrCreateRecordStoreForPrefix(prefix).clear();

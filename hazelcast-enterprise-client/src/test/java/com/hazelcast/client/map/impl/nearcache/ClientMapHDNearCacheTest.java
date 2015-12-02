@@ -7,7 +7,6 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -20,7 +19,7 @@ import java.util.Map;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass

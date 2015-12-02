@@ -28,7 +28,6 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.HDTestSupport;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -36,7 +35,7 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class ClientHDNearCacheBatchInvalidationTest extends ClientNearCacheBatchInvalidationTest {
 
     @Override

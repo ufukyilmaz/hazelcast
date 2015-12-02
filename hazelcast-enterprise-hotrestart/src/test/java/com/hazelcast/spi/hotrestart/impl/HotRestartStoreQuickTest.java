@@ -36,7 +36,7 @@ public class HotRestartStoreQuickTest {
         p.exerciseTimeSeconds = 10;
         p.clearIntervalSeconds = 4;
         p.prefixCount = 10;
-        p.keysetSize = (offHeap ? 40 : 30) * 1000;
+        p.keysetSize = 30 * 1000;
         p.hotSetFraction = 1;
         p.logItersHotSetChange = 31;
         p.logMinSize = 7;

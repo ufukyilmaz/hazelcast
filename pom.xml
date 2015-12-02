@@ -172,11 +172,9 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>
                         -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                        -Dhazelcast.hidensity.check.freememory=false
                         -Dhazelcast.phone.home.enabled=false
                         -Dhazelcast.mancenter.enabled=false
-                        -Dhazelcast.elastic.memory.enabled=true
-                        -Dhazelcast.elastic.memory.total.size=128m
-                        -Dhazelcast.elastic.memory.chunk.size=1k
                         -Dhazelcast.tomcat.shutdown_hazelcast_instance=false
                         ${extraVmArgs}
                     </argLine>
@@ -260,6 +258,7 @@
                 <argLine>
                     ${extraVmArgs}
                     -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                    -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none
@@ -309,6 +308,8 @@
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
                                         -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                                        -Dhazelcast.operation.thread.count=16
+                                        -Dhazelcast.hidensity.check.freememory=false
                                         -Dhazelcast.phone.home.enabled=false
                                         -Dhazelcast.mancenter.enabled=false
                                         -Dhazelcast.logging.type=none
@@ -343,6 +344,8 @@
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
                                         -Xms128m -Xmx1G -XX:MaxPermSize=128M
+                                        -Dhazelcast.operation.thread.count=16
+                                        -Dhazelcast.hidensity.check.freememory=false
                                         -Dhazelcast.phone.home.enabled=false
                                         -Dhazelcast.mancenter.enabled=false
                                         -Dhazelcast.logging.type=none
@@ -372,6 +375,7 @@
                 <argLine>
                     ${extraVmArgs}
                     -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                    -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
                     -Dhazelcast.logging.type=none
@@ -410,6 +414,7 @@
                             <argLine>
                                 ${extraVmArgs}
                                 -Xms1g -Xmx1g
+                                -Dhazelcast.hidensity.check.freememory=false
                                 -Dhazelcast.phone.home.enabled=false
                                 -Dhazelcast.mancenter.enabled=false
                                 -Dhazelcast.test.use.network=false

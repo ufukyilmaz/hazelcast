@@ -1,7 +1,6 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
@@ -50,6 +49,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.offHeapHotRestartStoreForCurrentThread();
         recordMapMutex = ((HotRestartHiDensityNativeMemoryCacheRecordMap) records).getMutex();
+        assert hotRestartStore != null;
     }
 
     @Override
@@ -379,14 +379,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         @Override
         public int getPartitionId() {
             return partitionId;
-        }
-    }
-
-    @Override
-    public void transferRecordsFrom(ICacheRecordStore src) {
-        super.transferRecordsFrom(src);
-        if (src instanceof HotRestartHiDensityNativeMemoryCacheRecordStore) {
-            this.tombstoneCount = ((HotRestartHiDensityNativeMemoryCacheRecordStore) src).tombstoneCount;
         }
     }
 }

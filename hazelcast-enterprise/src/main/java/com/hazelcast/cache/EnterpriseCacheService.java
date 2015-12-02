@@ -7,7 +7,6 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNative
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentCloseOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
-import com.hazelcast.cache.hotrestart.HotRestartCachePartitionSegment;
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
@@ -65,8 +64,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.spi.hotrestart.CacheDescriptor.isProvisionalName;
-import static com.hazelcast.spi.hotrestart.CacheDescriptor.toProvisionalName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 
 /**
@@ -137,18 +134,15 @@ public class EnterpriseCacheService
         }
     }
 
-    @Override protected CachePartitionSegment newPartitionSegment(int partitionId) {
-        return new HotRestartCachePartitionSegment(this, partitionId);
-    }
-
     @Override
     public RamStore ramStoreForPrefix(long prefix) {
         String name = hotRestartService.getCacheName(prefix);
         return (RamStore) getRecordStore(name, toPartitionId(prefix));
     }
 
-    @Override public RamStore restartingRamStoreForPrefix(long prefix) {
-        String name = hotRestartService.getProvisionalCacheName(prefix);
+    @Override
+    public RamStore restartingRamStoreForPrefix(long prefix) {
+        String name = hotRestartService.getCacheName(prefix);
         return (RamStore) getOrCreateRecordStore(name, toPartitionId(prefix));
     }
 
@@ -198,12 +192,8 @@ public class EnterpriseCacheService
                 throw new HazelcastException("HotRestart is not enabled!");
             }
 
-            if (isProvisionalName(name)) {
-                prefix = hotRestartService.getPrefix(SERVICE_NAME, name, partitionId);
-            } else {
-                hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
-                prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
-            }
+            hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
+            prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
         }
         return isNative
                 ? newNativeRecordStore(name, partitionId, cacheConfig.isHotRestartEnabled(), prefix)
@@ -236,15 +226,9 @@ public class EnterpriseCacheService
 
     @Override
     public CacheConfig getCacheConfig(String name) {
-        CacheConfig cacheConfig;
-        if (isProvisionalName(name)) {
+        CacheConfig cacheConfig = configs.get(name);
+        if (cacheConfig == null && hotRestartService != null) {
             cacheConfig = hotRestartService.getProvisionalConfiguration(SERVICE_NAME, name);
-        } else {
-            cacheConfig = configs.get(name);
-            if (cacheConfig == null && hotRestartService != null) {
-                String provisionalName = toProvisionalName(name);
-                cacheConfig = hotRestartService.getProvisionalConfiguration(SERVICE_NAME, provisionalName);
-            }
         }
         return cacheConfig;
     }

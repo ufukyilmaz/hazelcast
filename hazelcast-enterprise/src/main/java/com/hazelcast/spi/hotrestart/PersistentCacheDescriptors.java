@@ -18,7 +18,7 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.create
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.createObjectDataOutputStream;
 import static com.hazelcast.nio.Bits.combineToLong;
 import static com.hazelcast.nio.Bits.extractInt;
-import static com.hazelcast.spi.hotrestart.CacheDescriptor.toNonProvisionalName;
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static java.lang.Math.max;
 
 /**
@@ -44,7 +44,7 @@ public class PersistentCacheDescriptors {
     }
 
     public long getPrefix(String serviceName, String name, int partitionId) {
-        final String key = toCacheKey(serviceName, toNonProvisionalName(name));
+        final String key = toCacheKey(serviceName, name);
         final CacheDescriptor desc = nameToDesc.get(key);
         if (desc == null) {
             throw new IllegalArgumentException("Unknown name! " + key);
@@ -94,10 +94,6 @@ public class PersistentCacheDescriptors {
         return toFileName(serviceName) + '-' + toFileName(name) + CONFIG_SUFFIX;
     }
 
-    static String toFileName(String name) {
-        return name.replaceAll("[:\\\\/*\"?|<>']", "_");
-    }
-
     void restore(SerializationService serializationService) {
         if (cacheIdSeq != 0) {
             return;
@@ -135,8 +131,7 @@ public class PersistentCacheDescriptors {
                 nameToDesc.put(key, desc);
                 idToDesc.put(desc.getId(), desc);
                 if (config != null) {
-                    String provisionalKey = toCacheKey(desc.getServiceName(), desc.getProvisionalName());
-                    provisionalConfigurations.put(provisionalKey, config);
+                    provisionalConfigurations.put(key, config);
                 }
             }
             cacheIdSeq = maxId;

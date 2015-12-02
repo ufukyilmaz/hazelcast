@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toFileName;
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHotRestartStore;
@@ -193,18 +193,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
         }
         return descriptor.getName();
-    }
-
-    public String getProvisionalCacheName(long prefix) {
-        final CacheDescriptor descriptor = persistentCacheDescriptors.getDescriptor(prefix);
-        if (descriptor == null) {
-            throw new IllegalArgumentException("No descriptor found for prefix: " + prefix);
-        }
-        return descriptor.getProvisionalName();
-    }
-
-    public long getPrefix(String serviceName, String name, int partitionId) {
-        return persistentCacheDescriptors.getPrefix(serviceName, name, partitionId);
     }
 
     public void prepare() {

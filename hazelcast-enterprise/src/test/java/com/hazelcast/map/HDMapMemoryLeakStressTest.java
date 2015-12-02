@@ -47,7 +47,7 @@ import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static org.junit.Assert.assertEquals;
 
 /**
- * This test is an adapted version of {@link com.hazelcast.cache.CacheMemoryLeakStressTest}.
+ * This test is an adapted version of {@link com.hazelcast.cache.CacheNativeMemoryLeakStressTest}.
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)

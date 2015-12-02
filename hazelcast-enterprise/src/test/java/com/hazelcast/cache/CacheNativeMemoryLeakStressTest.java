@@ -41,18 +41,22 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriter;
+import javax.cache.integration.CacheWriterException;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -68,10 +72,11 @@ import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
-public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
+public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static final int KEY_RANGE = 10000000;
     private static final int MAX_VALUE_SIZE = 1 << 12; // Up to 4K
@@ -204,7 +209,9 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                                         .setSize(95)
                                         .setEvictionPolicy(EvictionPolicy.LRU)
                                         .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE))
-                        .setCacheLoaderFactory(new CacheLoaderFactory());
+                        .setCacheLoaderFactory(new CacheLoaderFactory())
+                        .setWriteThrough(true)
+                        .setCacheWriterFactory(new CacheWriterFactory());
         if (expiryPolicyFactory != null) {
             cacheConfig.setExpiryPolicyFactory(expiryPolicyFactory);
         }
@@ -234,6 +241,13 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                     EmptyStatement.ignore(e);
                 } catch (InterruptedException e) {
                     EmptyStatement.ignore(e);
+                } catch (CacheWriterException e) {
+                    EmptyStatement.ignore(e);
+                } catch (EntryProcessorException e) {
+                    EmptyStatement.ignore(e);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    fail("Should not get this exception!");
                 }
 
                 if (++counter % 5000 == 0 && (start + TIMEOUT) < System.currentTimeMillis()) {
@@ -371,7 +385,7 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
         }
 
         private byte[] newValue(int k) {
-            return CacheMemoryLeakStressTest.newValue(rand, k);
+            return CacheNativeMemoryLeakStressTest.newValue(rand, k);
         }
 
     }
@@ -428,6 +442,7 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
                 }
             };
         }
+
     }
 
     private static class CacheLoaderCompletionListener implements CompletionListener {
@@ -445,6 +460,47 @@ public class CacheMemoryLeakStressTest extends HazelcastTestSupport {
             e.printStackTrace();
             error.set(e);
             done.countDown();
+        }
+
+    }
+
+    private static class CacheWriterFactory implements Factory<CacheWriter<Integer, byte[]>> {
+
+        @Override
+        public CacheWriter<Integer, byte[]> create() {
+            return new CacheWriter<Integer, byte[]>() {
+                @Override
+                public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry)
+                        throws CacheWriterException {
+                    Integer keyValue = entry.getKey().intValue();
+                    if (keyValue % 10 == 0) {
+                        throw new CacheWriterException("Key value is invalid: " + keyValue);
+                    }
+                }
+
+                @Override
+                public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends byte[]>> entries)
+                        throws CacheWriterException {
+                    for (Cache.Entry<? extends Integer, ? extends byte[]> entry : entries) {
+                        write(entry);
+                    }
+                }
+
+                @Override
+                public void delete(Object key) throws CacheWriterException {
+                    Integer keyValue = (Integer) key;
+                    if (keyValue % 10 == 0) {
+                        throw new CacheWriterException("Key value is invalid: " + keyValue);
+                    }
+                }
+
+                @Override
+                public void deleteAll(Collection<?> keys) throws CacheWriterException {
+                    for (Object key : keys) {
+                        delete(key);
+                    }
+                }
+            };
         }
 
     }

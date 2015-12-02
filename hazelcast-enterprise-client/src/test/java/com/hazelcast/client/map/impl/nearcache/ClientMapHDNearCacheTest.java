@@ -4,7 +4,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.QuickTest;
@@ -18,7 +18,7 @@ import java.util.Map;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 

@@ -6,7 +6,6 @@ import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
 import java.io.Closeable;
 import java.io.File;
@@ -263,13 +262,13 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
-    static OutputStream gzipOutputStream(FileOutputStream out, MutatorCatchup mc) {
-        try {
-            return out == null ? nullOutputStream() : new BufferedGzipOutputStream(out, mc);
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
-    }
+//    static OutputStream gzipOutputStream(FileOutputStream out, MutatorCatchup mc) {
+//        try {
+//            return out == null ? nullOutputStream() : new BufferedGzipOutputStream(out, mc);
+//        } catch (IOException e) {
+//            throw new HotRestartException(e);
+//        }
+//    }
 
     static OutputStream bufferedOutputStream(FileOutputStream out) {
         return out == null ? nullOutputStream() : new BufferedOutputStream(out);

@@ -20,7 +20,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * is created in {@link #flushAndClose(MutatorCatchup, GcLogger)}).
  */
 public final class GrowingDestChunk extends GrowingChunk {
-    private static final int STUCK_DETECTION_THRESHOLD = 1000 * 1000;
+    private final int stuckDetectionThreshold =
+            Integer.getInteger("com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold", 1000 * 1000);
     private final GcHelper gch;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private List<GcRecord> sortedGcRecords = new ArrayList<GcRecord>();
@@ -142,7 +143,7 @@ public final class GrowingDestChunk extends GrowingChunk {
     @SuppressWarnings("checkstyle:emptyblock")
     private boolean catchUpUntilRetired(GcRecord r, MutatorCatchup mc) {
         for (int eventCount = 0;
-             eventCount <= STUCK_DETECTION_THRESHOLD && r.isAlive();
+             eventCount <= stuckDetectionThreshold && r.isAlive();
              eventCount += catchUpSafely(mc, r)) {
         }
         return !r.isAlive();

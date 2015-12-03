@@ -44,22 +44,32 @@ public class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats
         return free > 0 ? free : 0L;
     }
 
-    void checkCommittedNative(long size) {
+    void checkAndAddCommittedNative(long size) {
         if (size > 0) {
-            long currentAllocated = committedNative.get();
-            if (maxNative < (currentAllocated + size)) {
-                throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
-                        " Cannot allocate " + MemorySize.toPrettyString(size) + "!" +
-                        " Max Native Memory: " + MemorySize.toPrettyString(maxNative) +
-                        ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated) +
-                        ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
-                );
+            for(;;) {
+                long currentAllocated = committedNative.get();
+                long memoryAfterAllocation = currentAllocated + size;
+                if (maxNative < memoryAfterAllocation) {
+                    throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
+                            " Cannot allocate " + MemorySize.toPrettyString(size) + "!" +
+                            " Max Native Memory: " + MemorySize.toPrettyString(maxNative) +
+                            ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated) +
+                            ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
+                    );
+                }
+                if (committedNative.compareAndSet(currentAllocated, memoryAfterAllocation)) {
+                    break;
+                }
             }
         }
     }
 
     final void addCommittedNative(long size) {
         committedNative.addAndGet(size);
+    }
+
+    final void removeCommittedNative(long size) {
+        committedNative.addAndGet(-size);
     }
 
     final void addInternalFragmentation(long size) {

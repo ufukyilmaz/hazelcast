@@ -16,6 +16,7 @@ import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createStoreRegistry;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.exercise;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.fillStore;
@@ -34,7 +35,7 @@ public class HotRestartStoreExerciser {
 
     HotRestartStoreExerciser(File testingHome, TestProfile profile) {
         this.profile = profile;
-        final LoggingService loggingService = HotRestartTestUtil.createLoggingService();
+        final LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger("hotrestart-test");
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
                 .setHomeDir(new File(testingHome, "hr-store"))

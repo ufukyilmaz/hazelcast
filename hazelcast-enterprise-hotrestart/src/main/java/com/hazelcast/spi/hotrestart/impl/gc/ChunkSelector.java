@@ -23,7 +23,7 @@ import static java.util.Arrays.asList;
  */
 final class ChunkSelector {
     @SuppressWarnings("MagicNumber")
-    private static final int INITIAL_TOP_CHUNKS = 32 * GcParams.COST_GOAL_CHUNKS;
+    static final int INITIAL_TOP_CHUNKS = 32 * GcParams.COST_GOAL_CHUNKS;
     private static final Comparator<StableChunk> BY_COST_BENEFIT = new Comparator<StableChunk>() {
         @Override public int compare(StableChunk left, StableChunk right) {
             final double leftCb = left.cachedCostBenefit();
@@ -108,7 +108,7 @@ final class ChunkSelector {
             }
             logger.finest("Finding " + chunksToFind + " more top chunks");
         }
-        diagnoseChunks(allChunks, gcp.currChunkSeq);
+        diagnoseChunks(allChunks, gcp.currRecordSeq);
         logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
                 status, garbage, cost, cs.srcChunks.size(), allChunks.size());
         return cs;
@@ -117,7 +117,7 @@ final class ChunkSelector {
     private Set<StableChunk> candidateChunks() {
         final Set<StableChunk> candidates = new HashSet<StableChunk>();
         for (StableChunk c : allChunks) {
-            if (c.size() > 0 && c.garbage == 0 || c.updateCostBenefit(gcp.currChunkSeq) < gcp.minCostBenefit) {
+            if (c.size() > 0 && c.garbage == 0 || c.updateCostBenefit(gcp.currRecordSeq) < gcp.minCostBenefit) {
                 continue;
             }
             candidates.add(c);

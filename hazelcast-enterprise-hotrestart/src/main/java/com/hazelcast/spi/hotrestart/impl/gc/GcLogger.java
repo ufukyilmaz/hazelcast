@@ -15,7 +15,7 @@ public class GcLogger {
     }
 
     public void finest(String template, Object arg) {
-        if (logger.isFinestEnabled()) {
+        if (isFinestEnabled()) {
             finest(String.format(template, arg));
         }
     }

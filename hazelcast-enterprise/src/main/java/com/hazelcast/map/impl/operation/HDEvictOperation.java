@@ -17,6 +17,7 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.EntryEventType;
+import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -52,8 +53,8 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
         }
         mapServiceContext.interceptAfterRemove(name, dataValue);
         EntryEventType eventType = EntryEventType.EVICTED;
-        mapServiceContext.getMapEventPublisher()
-                .publishEvent(getCallerAddress(), name, eventType, dataKey, dataValue, null);
+        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
+        mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataValue, null);
         invalidateNearCache(dataKey);
 
         dispose();

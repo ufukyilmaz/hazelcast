@@ -243,9 +243,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         if (hasRegisteredListenerForThisMap()) {
             nullifyOldValueIfNecessary();
             final MapEventPublisher mapEventPublisher = getMapEventPublisher();
-            dataValue = toData(dataValue);
-            mapEventPublisher.
-                    publishEvent(getCallerAddress(), name, eventType, dataKey, toData(value), (Data) dataValue);
+            mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, value, dataValue);
         }
     }
 

@@ -207,7 +207,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
 
         InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) node.getPartitionService();
-        partitionService.setInitialState(partitionTableRef.get());
+        partitionService.setInitialState(partitionTableRef.get(), -1);
 
         logger.info("Cluster member-list & partition table validation completed.");
     }

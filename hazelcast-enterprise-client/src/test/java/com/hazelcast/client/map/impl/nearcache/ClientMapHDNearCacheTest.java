@@ -9,6 +9,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,24 +21,25 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
+@Ignore
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass
     public static void setup() throws Exception {
         MAX_CACHE_SIZE = 50000;
 
-        ClientMapNearCacheTest.setup();
-
-        Map<String, NearCacheConfig> nearCacheConfigs = clientConfig.getNearCacheConfigMap();
-        Collection<NearCacheConfig> values = nearCacheConfigs.values();
-        for (NearCacheConfig nearCacheConfig : values) {
-            nativize(nearCacheConfig);
-        }
-
-        NativeMemoryConfig memoryConfig = newNativeMemoryConfig();
-
-        clientConfig.setNativeMemoryConfig(memoryConfig);
-        client = hazelcastFactory.newHazelcastClient(clientConfig);
+//        ClientMapNearCacheTest.setup();
+//
+//        Map<String, NearCacheConfig> nearCacheConfigs = clientConfig.getNearCacheConfigMap();
+//        Collection<NearCacheConfig> values = nearCacheConfigs.values();
+//        for (NearCacheConfig nearCacheConfig : values) {
+//            nativize(nearCacheConfig);
+//        }
+//
+//        NativeMemoryConfig memoryConfig = newNativeMemoryConfig();
+//
+//        clientConfig.setNativeMemoryConfig(memoryConfig);
+//        client = hazelcastFactory.newHazelcastClient(clientConfig);
     }
 
     protected static NativeMemoryConfig newNativeMemoryConfig() {

@@ -17,6 +17,7 @@
 package com.hazelcast.util.concurrent;
 
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.function.Consumer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Collection;
@@ -100,6 +101,10 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
         mask = capacity - 1;
         buffer = (E[]) new Object[capacity];
     }
+
+    public abstract int drainTo(final Collection<? super E> target, final int limit);
+
+    public abstract int drain(final Consumer<E> elementHandler);
 
     public long addedCount() {
         return tail;

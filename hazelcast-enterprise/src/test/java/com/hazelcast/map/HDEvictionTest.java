@@ -26,6 +26,7 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -62,6 +63,13 @@ public class HDEvictionTest extends EvictionTest {
     @Test
     public void testEvictionLFU_statisticsDisabled() {
         testEvictionLFUInternal(true);
+    }
+
+
+    @Test
+    @Ignore
+    public void testEvictionLRU_sweepsLeastRecentlyUseds() {
+        // This test is not applicable do to the sampling based eviction for HD IMap.
     }
 
     /**

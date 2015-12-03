@@ -15,11 +15,14 @@ class PartitionTableWriter extends AbstractMetadataWriter<InternalPartition[]> {
     static final String FILE_NAME = "partition.data";
     private static final String FILE_NAME_TMP = FILE_NAME + ".tmp";
 
+    private int partitionVersion;
+
     PartitionTableWriter(File homeDir) {
         super(homeDir);
     }
 
     void doWrite(InternalPartition[] partitions) throws IOException {
+        writeInt(partitionVersion);
         for (InternalPartition partition : partitions) {
             for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
                 Address address = partition.getReplicaAddress(replica);
@@ -41,5 +44,9 @@ class PartitionTableWriter extends AbstractMetadataWriter<InternalPartition[]> {
     @Override
     String getNewFileName() {
         return FILE_NAME_TMP;
+    }
+
+    void setPartitionVersion(int partitionVersion) {
+        this.partitionVersion = partitionVersion;
     }
 }

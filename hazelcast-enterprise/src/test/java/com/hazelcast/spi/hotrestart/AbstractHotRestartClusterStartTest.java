@@ -8,6 +8,7 @@ import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
@@ -211,6 +212,7 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     private Config newConfig(ClusterHotRestartEventListener listener) {
         Config config = new Config();
+        config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
         config.getHotRestartConfig().setEnabled(true)
                 .setHomeDir(hotRestartDir)

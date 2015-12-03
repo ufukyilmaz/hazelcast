@@ -14,6 +14,7 @@ class PartitionTableReader extends AbstractMetadataReader {
     private static final String FILE_NAME = PartitionTableWriter.FILE_NAME;
 
     private final Address[][] table;
+    private int partitionVersion;
 
     PartitionTableReader(File homeDir, int partitionCount) {
         super(homeDir);
@@ -22,6 +23,7 @@ class PartitionTableReader extends AbstractMetadataReader {
 
     @Override
     protected void doRead(DataInputStream in) throws IOException {
+        partitionVersion = in.readInt();
         for (int partition = 0; partition < table.length; partition++) {
             for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
                 Address address = null;
@@ -37,6 +39,10 @@ class PartitionTableReader extends AbstractMetadataReader {
     @Override
     protected String getFileName() {
         return FILE_NAME;
+    }
+
+    int getPartitionVersion() {
+        return partitionVersion;
     }
 
     Address[][] getTable() {

@@ -208,7 +208,12 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         final CountDownLatch doneLatch = new CountDownLatch(opExec.getPartitionOperationThreadCount());
         final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
-        logger.info("Starting hot-restart data load process.");
+        boolean allowData = clusterMetadataManager.isStartWithHotRestart();
+        if (allowData) {
+            logger.info("Starting hot-restart data load process.");
+        } else {
+            logger.info("Initializing hot-restart stores, not expecting to load any data.");
+        }
 
         opExec.runOnAllPartitionThreads(new PartitionedLoader(exceptions, doneLatch));
 

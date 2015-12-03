@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * @see HDRecord
  */
 public class HDRecordWithCachedValue extends HDRecord {
+
     private static final AtomicReferenceFieldUpdater<HDRecordWithCachedValue, Object> CACHED_VALUE =
             AtomicReferenceFieldUpdater.newUpdater(HDRecordWithCachedValue.class, Object.class, "cachedValue");
 

@@ -25,6 +25,7 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.util.Clock;
 
 import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 
@@ -34,33 +35,48 @@ import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
  */
 public class HDRecordFactory implements RecordFactory<Data> {
 
+    /**
+     * Not available indicator. For example, used to indicate unset lastAccessTime.
+     */
+    public static final int NOT_AVAILABLE = -1;
+
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
     private final EnterpriseSerializationService serializationService;
-    private final boolean statisticsEnabled;
     private final MemoryManager memoryManager;
+    private final boolean hotRestartEnabled;
 
     public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
-                           SerializationService serializationService,
-                           boolean statisticsEnabled) {
+                           SerializationService serializationService, boolean hotRestartEnabled) {
         this.recordProcessor = recordProcessor;
         this.serializationService = ((EnterpriseSerializationService) serializationService);
-        this.statisticsEnabled = statisticsEnabled;
         this.memoryManager = this.serializationService.getMemoryManager();
+        this.hotRestartEnabled = hotRestartEnabled;
+    }
+
+    private static boolean isNull(Object object) {
+        if (object == null) {
+            return false;
+        }
+
+        NativeMemoryData memoryBlock = (NativeMemoryData) object;
+        return memoryBlock.address() == NULL_PTR;
     }
 
     @Override
     public Record<Data> newRecord(Object value) {
-        int size = statisticsEnabled ? HDRecordWithStats.SIZE : HDRecord.BASE_SIZE;
-
         long address = NULL_PTR;
         Data dataValue = null;
         try {
-            address = recordProcessor.allocate(size);
+            address = recordProcessor.allocate(hotRestartEnabled ? HotRestartHDRecord.SIZE : HDRecord.BASE_SIZE);
             HDRecord record = recordProcessor.newRecord();
             record.reset(address);
 
             dataValue = recordProcessor.toData(value, DataType.NATIVE);
             record.setValue(dataValue);
+            record.setCreationTime(Clock.currentTimeMillis());
+            record.setLastAccessTime(NOT_AVAILABLE);
+            record.setLastUpdateTime(NOT_AVAILABLE);
+
             return record;
 
         } catch (NativeOutOfMemoryError error) {
@@ -74,16 +90,6 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
             throw error;
         }
-    }
-
-
-    private static boolean isNull(Object object) {
-        if (object == null) {
-            return false;
-        }
-
-        NativeMemoryData memoryBlock = (NativeMemoryData) object;
-        return memoryBlock.address() == NULL_PTR;
     }
 
     @Override

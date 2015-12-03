@@ -15,23 +15,23 @@ import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;
 public class HDRecordAccessor
         extends AbstractHiDensityRecordAccessor<HDRecord> {
 
-    private final boolean statisticEnabled;
     private final boolean optimizeQuery;
 
-    public HDRecordAccessor(boolean statisticEnabled, boolean optimizeQuery,
-                            EnterpriseSerializationService serializationService) {
+    private final boolean hotRestartEnabled;
+
+    public HDRecordAccessor(EnterpriseSerializationService serializationService,
+                            boolean optimizeQuery, boolean hotRestartEnabled) {
         super(serializationService, serializationService.getMemoryManager());
-        this.statisticEnabled = statisticEnabled;
         this.optimizeQuery = optimizeQuery;
+        this.hotRestartEnabled = hotRestartEnabled;
     }
 
     @Override
     protected HDRecord createRecord() {
-        if (optimizeQuery) {
-            return statisticEnabled ? new CachedHDRecordWithStats(this)
-                    : new HDRecordWithCachedValue(this);
+        if (hotRestartEnabled) {
+            return optimizeQuery ? new HotRestartHDRecordWithCachedValue(this) : new HotRestartHDRecord(this);
         }
-        return statisticEnabled ? new HDRecordWithStats(this) : new HDRecord(this);
+        return optimizeQuery ? new HDRecordWithCachedValue(this) : new HDRecord(this);
     }
 
     @Override

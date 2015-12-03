@@ -125,6 +125,18 @@ public class HDEvictorImpl extends EvictorImpl {
         recordStore.dispose();
     }
 
+    @Override
+    protected long getEvictionCriteriaValue(Record record, EvictionPolicy evictionPolicy) {
+        switch (evictionPolicy) {
+            case LRU:
+                return record.getLastAccessTime();
+            case LFU:
+                return ((HDRecord) record).getHits();
+            default:
+                throw new IllegalArgumentException("Not an appropriate eviction policy [" + evictionPolicy + ']');
+        }
+    }
+
     private static Iterable<SampleableElasticHashMap.SamplingEntry> getSamples(RecordStore recordStore) {
         Storage storage = recordStore.getStorage();
         if (storage instanceof HotRestartHDStorageImpl) {

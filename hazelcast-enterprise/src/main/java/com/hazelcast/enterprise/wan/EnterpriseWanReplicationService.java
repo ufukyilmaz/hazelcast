@@ -89,7 +89,7 @@ public class EnterpriseWanReplicationService
                                 wanReplication.getTargetGroupName(), eligibleMapEventQueues);
                     }
                     if (!eligibleCacheEventQueues.isEmpty()) {
-                        migrationData.addMapEventQueueMap(wanReplicationName,
+                        migrationData.addCacheEventQueueMap(wanReplicationName,
                                 wanReplication.getTargetGroupName(), eligibleCacheEventQueues);
                     }
                 }

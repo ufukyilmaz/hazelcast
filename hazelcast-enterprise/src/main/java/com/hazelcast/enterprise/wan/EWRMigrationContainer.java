@@ -34,7 +34,7 @@ public class EWRMigrationContainer implements IdentifiedDataSerializable {
         Map<String, PartitionWanEventQueueMap> wanRepContainer = cacheMigrationContainer.get(wanRepName);
         if (wanRepContainer == null) {
             wanRepContainer = MapUtil.createHashMap(DEFAULT_DATA_STRUCTURE_COUNT);
-            mapMigrationContainer.put(wanRepName, wanRepContainer);
+            cacheMigrationContainer.put(wanRepName, wanRepContainer);
         }
         wanRepContainer.put(target, eventQueueMap);
     }
@@ -48,7 +48,7 @@ public class EWRMigrationContainer implements IdentifiedDataSerializable {
     }
 
     public Map<String, Map<String, PartitionWanEventQueueMap>> getCacheMigrationContainer() {
-        return mapMigrationContainer;
+        return cacheMigrationContainer;
     }
 
     @Override

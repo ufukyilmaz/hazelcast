@@ -1,5 +1,7 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -10,6 +12,14 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
+
+    @Override
+    protected Config getConfig() {
+        Config config = super.getConfig();
+        MapConfig mapConfig = config.getMapConfig("default");
+        mapConfig.setInMemoryFormat(getMemoryFormat());
+        return config;
+    }
 
     // V topo config 1 passive replicar, 2 producers
     @Test

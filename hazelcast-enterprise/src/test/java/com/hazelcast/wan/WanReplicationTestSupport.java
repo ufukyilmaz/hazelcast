@@ -1,13 +1,17 @@
 package com.hazelcast.wan;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.After;
 import org.junit.runner.RunWith;
@@ -43,6 +47,8 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     public abstract String getReplicationImpl();
 
+    public abstract InMemoryFormat getMemoryFormat();
+
     protected boolean isSnapshotEnabled() {
         return false;
     }
@@ -53,6 +59,9 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         joinConfig.getMulticastConfig().setEnabled(false);
         joinConfig.getTcpIpConfig().setEnabled(true);
         joinConfig.getTcpIpConfig().addMember("127.0.0.1");
+        if(isNativeMemoryEnabled()) {
+            config.setNativeMemoryConfig(getMemoryConfig());
+        }
         return config;
     }
 
@@ -137,6 +146,18 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             Node node = TestUtil.getNode(instance);
             node.getNodeEngine().getWanReplicationService().resume(wanRepName, targetGroupName);
         }
+    }
+
+    protected boolean isNativeMemoryEnabled() {
+        return getMemoryFormat() == InMemoryFormat.NATIVE;
+    }
+
+    private NativeMemoryConfig getMemoryConfig() {
+        MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
+        return
+                new NativeMemoryConfig()
+                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                        .setSize(memorySize).setEnabled(true);
     }
 
     public abstract class GatedThread extends Thread {

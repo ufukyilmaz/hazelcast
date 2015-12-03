@@ -1,5 +1,6 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
@@ -14,6 +15,11 @@ public class MapWanNoDelayReplicationTest extends AbstractMapWanReplicationTest 
     @Override
     public String getReplicationImpl() {
         return WanNoDelayReplication.class.getName();
+    }
+
+    @Override
+    public InMemoryFormat getMemoryFormat() {
+        return InMemoryFormat.BINARY;
     }
 
     @Test

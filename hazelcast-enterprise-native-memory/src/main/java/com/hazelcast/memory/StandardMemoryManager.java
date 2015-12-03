@@ -1,6 +1,7 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
 
@@ -55,42 +56,57 @@ public final class StandardMemoryManager implements MemoryManager {
     @Override
     public final long allocate(long size) {
         assert size > 0 : "Size must be positive: " + size;
-        memoryStats.checkCommittedNative(size);
-        long address = malloc.malloc(size);
 
-        checkNotNull(address, size);
+        memoryStats.checkAndAddCommittedNative(size);
 
-        if (DEBUG) {
-            traceAllocation(address, size);
+        try {
+            long address = malloc.malloc(size);
+            checkNotNull(address, size);
+
+            if (DEBUG) {
+                traceAllocation(address, size);
+            }
+
+            UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+
+            return address;
+        } catch (Throwable t) {
+            memoryStats.removeCommittedNative(size);
+            throw ExceptionUtil.rethrow(t);
         }
-
-        UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
-        memoryStats.addCommittedNative(size);
-        return address;
     }
 
     @Override
     public long reallocate(long address, long currentSize, long newSize) {
+        assert currentSize > 0 : "Current size must be positive: " + currentSize;
+        assert newSize > 0 : "New size must be positive: " + newSize;
+
         long diff = newSize - currentSize;
         if (diff > 0) {
-            memoryStats.checkCommittedNative(diff);
+            memoryStats.checkAndAddCommittedNative(diff);
         }
 
-        long newAddress = malloc.realloc(address, newSize);
-        checkNotNull(newAddress, newSize);
+        try {
+            long newAddress = malloc.realloc(address, newSize);
+            checkNotNull(newAddress, newSize);
 
-        if (DEBUG) {
-            traceRelease(address, currentSize);
-            traceAllocation(newAddress, newSize);
+            if (DEBUG) {
+                traceRelease(address, currentSize);
+                traceAllocation(newAddress, newSize);
+            }
+
+            if (diff > 0) {
+                long startAddress = newAddress + currentSize;
+                UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
+            }
+
+            return newAddress;
+        } catch (Throwable t) {
+            if (diff > 0) {
+                memoryStats.removeCommittedNative(diff);
+            }
+            throw ExceptionUtil.rethrow(t);
         }
-
-        if (diff > 0) {
-            long startAddress = newAddress + currentSize;
-            UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
-        }
-
-        memoryStats.addCommittedNative(diff);
-        return newAddress;
     }
 
     protected static void checkNotNull(long address, long size) {
@@ -112,13 +128,12 @@ public final class StandardMemoryManager implements MemoryManager {
         assert address != NULL_ADDRESS : "Invalid address: " + address + ", size: " + size;
         assert size > 0 : "Invalid memory size: " + size + ", address: " + address;
 
-
         if (DEBUG) {
             traceRelease(address, size);
         }
 
         malloc.free(address);
-        memoryStats.addCommittedNative(-size);
+        memoryStats.removeCommittedNative(size);
     }
 
     private synchronized void traceRelease(long address, long size) {

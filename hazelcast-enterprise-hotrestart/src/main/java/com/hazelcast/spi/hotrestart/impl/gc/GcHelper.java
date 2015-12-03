@@ -83,12 +83,12 @@ public abstract class GcHelper implements Disposable {
         this.ioDisabled = cfg.ioDisabled();
     }
 
+    @SuppressWarnings("checkstyle:emptyblock")
     public static void closeIgnoringFailure(Closeable toClose) {
         if (toClose != null) {
             try {
                 toClose.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ignored) {
             }
         }
     }

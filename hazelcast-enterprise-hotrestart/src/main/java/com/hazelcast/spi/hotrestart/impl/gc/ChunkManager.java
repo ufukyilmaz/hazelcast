@@ -237,14 +237,6 @@ public final class ChunkManager {
         }
     }
 
-    private static int garbageCount(Chunk c, KeyHandle kh) {
-        if (c == null) {
-            return 0;
-        }
-        final Record r = c.records.get(kh);
-        return r != null ? r.garbageCount() : 0;
-    }
-
     GcParams gcParams() {
         return GcParams.gcParams(garbage.get(), occupancy.get(), gcHelper.recordSeq());
     }
@@ -356,6 +348,14 @@ public final class ChunkManager {
             }
         }
         return garbageCount + garbageCount(activeChunk, kh);
+    }
+
+    private static int garbageCount(Chunk c, KeyHandle kh) {
+        if (c == null) {
+            return 0;
+        }
+        final Record r = c.records.get(kh);
+        return r != null ? r.garbageCount() : 0;
     }
 
     private static class TombstoneIdImpl implements TombstoneId {

@@ -36,17 +36,17 @@ class StableChunk extends Chunk {
         return size() - garbage;
     }
 
-    final double updateCostBenefit(long currSeq) {
-        return costBenefit = costBenefit(currSeq);
+    final double updateCostBenefit(long currRecordSeq) {
+        return costBenefit = costBenefit(currRecordSeq);
     }
 
-    final double costBenefit(long currSeq) {
+    final double costBenefit(long currRecordSeq) {
         final double benefit = this.garbage;
         final double cost = cost();
         if (cost == 0) {
             return Double.POSITIVE_INFINITY;
         }
-        final double age = currSeq - youngestRecordSeq;
+        final double age = currRecordSeq - youngestRecordSeq;
         return age * benefit / cost;
     }
 

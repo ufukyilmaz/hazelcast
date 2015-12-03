@@ -26,6 +26,7 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -92,5 +93,15 @@ public class HDEvictionTest extends EvictionTest {
         int mapSize = map.size();
         assertTrue("Eviction did not work, map size " + mapSize + " should be smaller than allowed max size = " + mapMaxSize,
                 mapSize < mapMaxSize);
+    }
+
+    /**
+     * This test is not applicable for the sampling based eviction algorithm
+     */
+    @Test
+    @Override
+    @Ignore
+    public void testEvictionLRU_sweepsLeastRecentlyUseds() {
+        super.testEvictionLRU_sweepsLeastRecentlyUseds();
     }
 }

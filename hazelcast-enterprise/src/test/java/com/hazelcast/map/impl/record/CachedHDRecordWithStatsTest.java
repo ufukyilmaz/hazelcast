@@ -18,7 +18,7 @@ public class CachedHDRecordWithStatsTest {
     public void givenCachedValueIsNull_whenCASExpectNull_thenNewValueIsSet() {
         //given
         HiDensityRecordAccessor<HDRecord> recordAccessor = mock(HiDensityRecordAccessor.class);
-        CachedHDRecordWithStats record = new CachedHDRecordWithStats(recordAccessor);
+        HDRecordWithCachedValue record = new HDRecordWithCachedValue(recordAccessor);
 
         //when
         Object expectedValue = new Object();
@@ -33,7 +33,7 @@ public class CachedHDRecordWithStatsTest {
     public void givenCachedValueIsNotNull_whenCASExpectNull_thenNewValueIsNotSet() {
         //given
         HiDensityRecordAccessor<HDRecord> recordAccessor = mock(HiDensityRecordAccessor.class);
-        CachedHDRecordWithStats record = new CachedHDRecordWithStats(recordAccessor);
+        HDRecordWithCachedValue record = new HDRecordWithCachedValue(recordAccessor);
         Object originalValue = new Object();
         record.casCachedValue(null, originalValue);
 

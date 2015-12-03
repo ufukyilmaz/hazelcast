@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.event;
 
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
@@ -33,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
@@ -50,22 +52,25 @@ public class EnterpriseMapEventPublisherImpl
 
     @Override
     public void publishEvent(Address caller, String mapName, EntryEventType eventType, boolean syntheticEvent,
-                             Data dataKey, Data dataOldValue, Data dataValue, Data dataMergingValue) {
+                             Data dataKey, Object oldvalue, Object value, Object mergingValue) {
 
-        dataKey = toHeapData(dataKey);
-        dataOldValue = toHeapData(dataOldValue);
-        dataValue = toHeapData(dataValue);
-        dataMergingValue = toHeapData(dataMergingValue);
-
-        super.publishEvent(caller, mapName, eventType, syntheticEvent, dataKey, dataOldValue, dataValue, dataMergingValue);
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
+        if (inMemoryFormat == NATIVE) {
+            dataKey = toHeapData(dataKey);
+            oldvalue = toHeapData(oldvalue);
+            value = toHeapData(value);
+            mergingValue = toHeapData(mergingValue);
+        }
+        super.publishEvent(caller, mapName, eventType, syntheticEvent, dataKey, oldvalue, value, mergingValue);
     }
 
-    private Data toHeapData(Data dataKey) {
+    private Data toHeapData(Object object) {
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
 
-        return serializationService.toData(dataKey, DataType.HEAP);
+        return serializationService.toData(object, DataType.HEAP);
     }
 
     @Override

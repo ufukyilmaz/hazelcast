@@ -172,9 +172,11 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
 
         Object newValue = entry.getValue();
         invalidateNearCache(key);
-        // assign it again since we don't want to serialize newValue every time.
-        newValue = publishEntryEvent(key, newValue, oldValue, eventType);
-        publishWanReplicationEvent(key, newValue, eventType);
+        if (mapContainer.isWanReplicationEnabled()) {
+            newValue = toData(newValue);
+            publishWanReplicationEvent(key, (Data) newValue, eventType);
+        }
+        publishEntryEvent(key, newValue, oldValue, eventType);
     }
 
     protected boolean entryRemovedBackup(Map.Entry entry, Data key) {
@@ -214,18 +216,15 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         return Clock.currentTimeMillis();
     }
 
-    protected Object publishEntryEvent(Data key, Object value, Object oldValue, EntryEventType eventType) {
+    protected void publishEntryEvent(Data key, Object value, Object oldValue, EntryEventType eventType) {
         if (hasRegisteredListenerForThisMap()) {
             oldValue = nullifyOldValueIfNecessary(oldValue, eventType);
             final MapEventPublisher mapEventPublisher = getMapEventPublisher();
-            value = toData(value);
-            mapEventPublisher.
-                    publishEvent(getCallerAddress(), name, eventType, key, toData(oldValue), (Data) value);
+            mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, key, oldValue, value);
         }
-        return value;
     }
 
-    protected void publishWanReplicationEvent(Data key, Object value, EntryEventType eventType) {
+    protected void publishWanReplicationEvent(Data key, Data dataValue, EntryEventType eventType) {
         final MapContainer mapContainer = this.mapContainer;
         if (mapContainer.getWanReplicationPublisher() == null
                 && mapContainer.getWanMergePolicy() == null) {
@@ -237,8 +236,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         } else {
             final Record record = recordStore.getRecord(key);
             if (record != null) {
-                final Data dataValueAsData = toData(value);
-                final EntryView entryView = createSimpleEntryView(key, dataValueAsData, record);
+                final EntryView entryView = createSimpleEntryView(key, dataValue, record);
                 mapEventPublisher.publishWanReplicationUpdate(name, entryView);
             }
         }

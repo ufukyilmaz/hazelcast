@@ -65,13 +65,6 @@ public class HDEvictionTest extends EvictionTest {
         testEvictionLFUInternal(true);
     }
 
-
-    @Test
-    @Ignore
-    public void testEvictionLRU_sweepsLeastRecentlyUseds() {
-        // This test is not applicable do to the sampling based eviction for HD IMap.
-    }
-
     /**
      * This test is only testing occurrence of LFU eviction.
      */

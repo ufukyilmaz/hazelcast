@@ -3,6 +3,7 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
+import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -79,9 +80,9 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
     }
 
     @Override
-    public HDRecord createRecord(KeyHandle kh, Data value) {
+    public Record createRecord(KeyHandle kh, Data value) {
         KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) kh;
-        return recordStore.createHDRecord(value, keyHandle.sequenceId());
+        return recordStore.createRecord(value, keyHandle.sequenceId());
     }
 
     private KeyHandleOffHeap readKeyHandle(long nativeKeyAddress) {

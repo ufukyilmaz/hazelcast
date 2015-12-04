@@ -21,7 +21,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-public abstract class AbstractWanReplicationTest extends HazelcastTestSupport {
+public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     protected HazelcastInstance[] clusterA = new HazelcastInstance[2];
     protected HazelcastInstance[] clusterB = new HazelcastInstance[2];

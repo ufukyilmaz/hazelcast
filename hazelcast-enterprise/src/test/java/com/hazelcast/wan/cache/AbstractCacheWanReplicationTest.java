@@ -15,15 +15,10 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.instance.HazelcastInstanceImpl;
-import com.hazelcast.instance.HazelcastInstanceProxy;
-import com.hazelcast.instance.Node;
-import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.wan.AbstractWanReplicationTest;
+import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -41,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
-public abstract class AbstractCacheWanReplicationTest extends AbstractWanReplicationTest {
+public abstract class AbstractCacheWanReplicationTest extends WanReplicationTestSupport {
 
     protected static final String DEFAULT_CACHE_MANAGER = "my-cache-manager";
     protected static final String DEFAULT_CACHE_NAME = "default";

@@ -25,7 +25,6 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.util.Clock;
 
 import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 
@@ -73,9 +72,6 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
             dataValue = recordProcessor.toData(value, DataType.NATIVE);
             record.setValue(dataValue);
-            record.setCreationTime(Clock.currentTimeMillis());
-            record.setLastAccessTime(NOT_AVAILABLE);
-            record.setLastUpdateTime(NOT_AVAILABLE);
 
             return record;
 

@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static java.util.Collections.emptyList;
 
 /**
@@ -80,8 +81,14 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     public HDRecord createHDRecord(Object value, long sequence) {
-        HDRecord record = (HDRecord) super.createRecord(value, -1, Clock.currentTimeMillis());
+        long now = Clock.currentTimeMillis();
+
+        HDRecord record = (HDRecord) super.createRecord(value, DEFAULT_TTL, now);
         record.setSequence(sequence);
+        // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
+        // `lastAccessTime` should be zero instead of `now`.
+        record.setLastAccessTime(NOT_AVAILABLE);
+
         return record;
     }
 
@@ -149,7 +156,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     private class ReadBackupDataTask extends FutureTask<Data> implements PartitionSpecificRunnable {
 
-        public ReadBackupDataTask(Data key) {
+        ReadBackupDataTask(Data key) {
             super(new InnerCallable(key));
         }
 
@@ -164,7 +171,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
         private final Data key;
 
-        public InnerCallable(Data key) {
+        InnerCallable(Data key) {
             this.key = key;
         }
 

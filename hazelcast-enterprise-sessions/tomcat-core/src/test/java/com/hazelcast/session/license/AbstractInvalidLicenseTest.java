@@ -38,7 +38,6 @@ public abstract class AbstractInvalidLicenseTest extends AbstractHazelcastSessio
         instance1.port(SERVER_PORT_1).sticky(false).clientOnly(false).sessionTimeout(10).start();
     }
 
-
     protected Matcher<? extends Throwable> getCause() {
         return new BaseMatcher<Throwable>() {
             @Override
@@ -56,5 +55,4 @@ public abstract class AbstractInvalidLicenseTest extends AbstractHazelcastSessio
     protected Class<? extends Throwable> getException() {
         return InvalidLicenseException.class;
     }
-
 }

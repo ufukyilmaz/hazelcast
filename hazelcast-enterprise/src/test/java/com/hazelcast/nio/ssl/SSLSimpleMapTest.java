@@ -11,6 +11,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.core.Partition;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.logging.ILogger;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -27,6 +28,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 /**
  * A simple test of a map with ssl connections.
  */
+@Ignore("Not a JUnit test")
 public final class SSLSimpleMapTest {
 
     private static final String NAMESPACE = "default";
@@ -50,8 +52,8 @@ public final class SSLSimpleMapTest {
         System.setProperty("java.net.preferIPv4Stack", "true");
     }
 
-    private SSLSimpleMapTest(final int threadCount, final int entryCount, final int valueSize,
-                          final int getPercentage, final int putPercentage, final boolean load) throws IOException {
+    private SSLSimpleMapTest(int threadCount, int entryCount, int valueSize, int getPercentage, int putPercentage, boolean load)
+            throws IOException {
         this.threadCount = threadCount;
         this.entryCount = entryCount;
         this.valueSize = valueSize;
@@ -70,10 +72,7 @@ public final class SSLSimpleMapTest {
     }
 
     /**
-     *
      * Expects the Management Center to be running.
-     * @param input
-     * @throws InterruptedException
      */
     public static void main(String[] input) throws InterruptedException, IOException {
         int threadCount = 20;
@@ -158,10 +157,10 @@ public final class SSLSimpleMapTest {
         }
 
         final IMap<String, Object> map = instance.getMap(NAMESPACE);
-        final Member thisMember = instance.getCluster().getLocalMember();
+        Member thisMember = instance.getCluster().getLocalMember();
         List<String> lsOwnedEntries = new LinkedList<String>();
         for (int i = 0; i < entryCount; i++) {
-            final String key = String.valueOf(i);
+            String key = String.valueOf(i);
             Partition partition = instance.getPartitionService().getPartition(key);
             if (thisMember.equals(partition.getOwner())) {
                 lsOwnedEntries.add(key);

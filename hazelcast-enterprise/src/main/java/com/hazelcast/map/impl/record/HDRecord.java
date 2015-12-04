@@ -14,7 +14,6 @@ import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.util.Preconditions.checkInstanceOf;
 
 /**
  * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
@@ -102,8 +101,10 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
             setValueAddress(NULL_PTR);
             return;
         }
-        checkInstanceOf(NativeMemoryData.class, value,
-                "Parameter `value` should be a type of [" + NativeMemoryData.class + "], but found [" + value + "]");
+
+        assert value instanceof NativeMemoryData
+                : "Parameter `value` should be a type of ["
+                + NativeMemoryData.class + "], but found [" + value + ']';
 
         setValueAddress(((NativeMemoryData) value).address());
     }

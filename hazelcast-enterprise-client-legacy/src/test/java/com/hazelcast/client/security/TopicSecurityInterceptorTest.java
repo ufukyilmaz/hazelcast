@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class TopicSecurityInterceptorTest extends BaseInterceptorTest {
+public class TopicSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void publish() {

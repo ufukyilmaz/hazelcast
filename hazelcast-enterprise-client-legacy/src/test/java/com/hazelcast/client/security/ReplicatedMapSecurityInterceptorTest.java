@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class ReplicatedMapSecurityInterceptorTest extends BaseInterceptorTest {
+public class ReplicatedMapSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     ReplicatedMap replicatedMap;

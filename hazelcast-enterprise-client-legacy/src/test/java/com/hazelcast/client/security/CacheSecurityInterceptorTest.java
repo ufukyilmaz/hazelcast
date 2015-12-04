@@ -23,7 +23,7 @@ import java.util.HashSet;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class CacheSecurityInterceptorTest extends BaseInterceptorTest {
+public class CacheSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     ICache cache;

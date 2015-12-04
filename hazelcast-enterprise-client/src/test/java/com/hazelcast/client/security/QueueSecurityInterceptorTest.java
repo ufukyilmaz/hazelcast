@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class QueueSecurityInterceptorTest extends BaseInterceptorTest {
+public class QueueSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     IQueue queue;

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class ClientInstanceSecurityInterceptorTest extends BaseInterceptorTest {
+public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSupport {
 
     @Test
     public void addPartitionLostListener() {

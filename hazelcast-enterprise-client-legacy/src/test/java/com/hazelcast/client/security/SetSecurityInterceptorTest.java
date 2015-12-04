@@ -15,7 +15,7 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class SetSecurityInterceptorTest extends BaseInterceptorTest {
+public class SetSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
 

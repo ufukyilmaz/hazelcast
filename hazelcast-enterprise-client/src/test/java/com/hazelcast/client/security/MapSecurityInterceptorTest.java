@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class MapSecurityInterceptorTest extends BaseInterceptorTest {
+public class MapSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     IMap map;

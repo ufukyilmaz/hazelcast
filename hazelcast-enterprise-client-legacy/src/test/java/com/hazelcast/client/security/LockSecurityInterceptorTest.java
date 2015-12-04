@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class LockSecurityInterceptorTest extends BaseInterceptorTest {
+public class LockSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     ILock lock;

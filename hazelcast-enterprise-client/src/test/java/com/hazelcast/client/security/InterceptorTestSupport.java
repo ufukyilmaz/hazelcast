@@ -1,6 +1,5 @@
 package com.hazelcast.client.security;
 
-
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
@@ -11,7 +10,6 @@ import com.hazelcast.config.SecurityInterceptorConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.MapLoader;
-import com.hazelcast.nio.serialization.ObjectCarryingPortable;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.security.Credentials;
 import com.hazelcast.security.Parameters;
@@ -31,9 +29,10 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertTrue;
 
-public abstract class BaseInterceptorTest extends HazelcastTestSupport {
+public abstract class InterceptorTestSupport extends HazelcastTestSupport {
 
-    public static Object SKIP_COMPARISON_OBJECT = new Object();
+    public static final Object SKIP_COMPARISON_OBJECT = new Object();
+
     TestHazelcastFactory factory = new TestHazelcastFactory();
     TestSecurityInterceptor interceptor = new TestSecurityInterceptor();
     HazelcastInstance instance;
@@ -41,7 +40,7 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
 
     @Before
     public void before() {
-        final Config config = createConfig(interceptor);
+        Config config = createConfig(interceptor);
         instance = factory.newHazelcastInstance(config);
         client = factory.newHazelcastClient();
     }
@@ -62,19 +61,19 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
     }
 
     private static Config createConfig(TestSecurityInterceptor interceptor) {
-        final Config config = new Config();
+        Config config = new Config();
         PermissionConfig perm = new PermissionConfig(PermissionConfig.PermissionType.ALL, "", null);
-        final SecurityConfig securityConfig = config.getSecurityConfig();
+        SecurityConfig securityConfig = config.getSecurityConfig();
         securityConfig.setEnabled(true).addClientPermissionConfig(perm);
 
-        final SecurityInterceptorConfig interceptorConfig = new SecurityInterceptorConfig();
+        SecurityInterceptorConfig interceptorConfig = new SecurityInterceptorConfig();
         interceptorConfig.setImplementation(interceptor);
         securityConfig.addSecurityInterceptorConfig(interceptorConfig);
 
-        final MapConfig mapConfig = config.getMapConfig("loadAll*");
-        final MapStoreConfig mapStoreConfig = new MapStoreConfig();
+        MapConfig mapConfig = config.getMapConfig("loadAll*");
+        MapStoreConfig mapStoreConfig = new MapStoreConfig();
         mapStoreConfig.setEnabled(true);
-        final DummyLoader dummyLoader = new DummyLoader();
+        DummyLoader dummyLoader = new DummyLoader();
         mapStoreConfig.setImplementation(dummyLoader);
         mapConfig.setMapStoreConfig(mapStoreConfig);
         return config;
@@ -104,7 +103,7 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
                 return;
             }
             synchronized (this) {
-                final int length = expectedParamLength();
+                int length = expectedParamLength();
                 for (int i = 0; i < length; i++) {
                     Object expectedParam = expectedParams[i];
                     Object actualParam = parameters.get(i);
@@ -158,12 +157,11 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
             if (expected != null && expected.equals(actual)) {
                 return true;
             }
-            if(expected == SKIP_COMPARISON_OBJECT){
+            if (expected == SKIP_COMPARISON_OBJECT) {
                 return true;
             }
             return false;
         }
-
     }
 
     static class DummyLoader implements MapLoader {
@@ -180,15 +178,15 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
         }
 
         @Override
-        public Object load(final Object key) {
+        public Object load(Object key) {
             return map.get(key);
         }
 
         @Override
-        public Map loadAll(final Collection keys) {
-            final HashMap hashMap = new HashMap();
+        public Map loadAll(Collection keys) {
+            HashMap hashMap = new HashMap();
             for (Object key : keys) {
-                final Object value = map.get(key);
+                Object value = map.get(key);
                 if (value != null) {
                     hashMap.put(key, value);
                 }
@@ -226,19 +224,23 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
         }
 
         @Override
-        public boolean apply(final Map.Entry entry) {
+        public boolean apply(Map.Entry entry) {
             return false;
         }
 
         @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
-            final DummyPredicate that = (DummyPredicate) o;
-
-            if (i != that.i) return false;
-
+            DummyPredicate that = (DummyPredicate) o;
+            if (i != that.i) {
+                return false;
+            }
             return true;
         }
 
@@ -248,12 +250,12 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
         }
     }
 
+    @SuppressWarnings("unused")
     static class DummyFunction implements IFunction {
 
         long i;
 
         DummyFunction() {
-
         }
 
         DummyFunction(long i) {
@@ -261,19 +263,23 @@ public abstract class BaseInterceptorTest extends HazelcastTestSupport {
         }
 
         @Override
-        public Object apply(final Object o) {
+        public Object apply(Object o) {
             return i;
         }
 
         @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
-            final DummyFunction that = (DummyFunction) o;
-
-            if (i != that.i) return false;
-
+            DummyFunction that = (DummyFunction) o;
+            if (i != that.i) {
+                return false;
+            }
             return true;
         }
 

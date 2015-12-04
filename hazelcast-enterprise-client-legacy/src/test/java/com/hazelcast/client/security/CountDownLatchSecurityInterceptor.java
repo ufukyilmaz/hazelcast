@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class CountDownLatchSecurityInterceptor extends BaseInterceptorTest {
+public class CountDownLatchSecurityInterceptor extends InterceptorTestSupport {
 
     String objectName;
     ICountDownLatch countDownLatch;

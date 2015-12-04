@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class RingBufferSecurityInterceptorTest extends BaseInterceptorTest {
+public class RingBufferSecurityInterceptorTest extends InterceptorTestSupport {
     String objectName;
     Ringbuffer ringBuffer;
 

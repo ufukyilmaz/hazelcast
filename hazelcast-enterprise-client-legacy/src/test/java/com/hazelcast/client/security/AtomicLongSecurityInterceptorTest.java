@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class AtomicLongSecurityInterceptorTest extends BaseInterceptorTest {
+public class AtomicLongSecurityInterceptorTest extends InterceptorTestSupport {
 
     String objectName;
     IAtomicLong atomicLong;

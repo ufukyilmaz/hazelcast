@@ -65,7 +65,10 @@ public class EnterpriseWanReplicationService
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        logger.finest("Preparing EWR replication for partition : " + event.getPartitionId());
+        if (wanReplications.isEmpty()) {
+            return null;
+        }
+
         int partitionId = event.getPartitionId();
         EWRMigrationContainer migrationData = new EWRMigrationContainer();
         Set<Map.Entry<String, WanReplicationPublisherDelegate>> entrySet = wanReplications.entrySet();
@@ -97,10 +100,8 @@ public class EnterpriseWanReplicationService
         }
 
         if (migrationData.isEmpty()) {
-            logger.finest("Migration data is empty");
             return null;
         } else {
-            logger.finest("Migration data filled. PartitionID : " + event.getPartitionId());
             return new EWRQueueReplicationOperation(migrationData, event.getPartitionId(), event.getReplicaIndex());
         }
     }
@@ -130,7 +131,6 @@ public class EnterpriseWanReplicationService
     }
 
     private void clearMigrationData(int partitionId) {
-        logger.finest("Starting clearing migration data for partitionId " + partitionId);
         for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
             Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();
             if (wanReplicationEndpoints != null) {
@@ -141,12 +141,10 @@ public class EnterpriseWanReplicationService
                         PartitionWanEventContainer eventQueueContainer
                                 = publisherQueueContainer.getPublisherEventQueueMap().get(partitionId);
                         eventQueueContainer.clear();
-                        logger.finest("Cleared event queue container");
                     }
                 }
             }
         }
-        logger.finest("End of clearing migration data");
     }
 
     @Override
@@ -218,7 +216,7 @@ public class EnterpriseWanReplicationService
         try {
             ex.execute(wanEventStripedRunnable);
         } catch (RejectedExecutionException ree) {
-            logger.info("Can not handle incoming wan replication event. Retrying.");
+            logger.warning("Can not handle incoming wan replication event. Retrying.", ree);
             op.sendResponse(false);
         }
     }
@@ -231,7 +229,7 @@ public class EnterpriseWanReplicationService
         try {
             ex.execute(wanEventStripedRunnable);
         } catch (RejectedExecutionException ree) {
-            logger.info("Can not handle incoming wan replication event.");
+            logger.warning("Can not handle incoming wan replication event.", ree);
             op.sendResponse(false);
         }
 
@@ -262,9 +260,9 @@ public class EnterpriseWanReplicationService
 
         WanReplicationEvent event;
 
-        public WanEventRunnable(WanReplicationEvent event,
-                                       WanOperation operation,
-                                       int partitionId) {
+        WanEventRunnable(WanReplicationEvent event,
+                         WanOperation operation,
+                         int partitionId) {
             super(operation, partitionId);
             this.event = event;
         }
@@ -292,8 +290,8 @@ public class EnterpriseWanReplicationService
 
         BatchWanReplicationEvent batchEvent;
 
-        public BatchWanEventRunnable(BatchWanReplicationEvent batchEvent,
-                                       WanOperation operation, int partitionId) {
+        BatchWanEventRunnable(BatchWanReplicationEvent batchEvent,
+                              WanOperation operation, int partitionId) {
             super(operation, partitionId);
             this.batchEvent = batchEvent;
         }
@@ -320,7 +318,7 @@ public class EnterpriseWanReplicationService
         WanOperation operation;
         int partitionId;
 
-        public AbstractWanEventRunnable(WanOperation operation, int partitionId) {
+        AbstractWanEventRunnable(WanOperation operation, int partitionId) {
             this.operation = operation;
             this.partitionId = partitionId;
         }
@@ -339,6 +337,7 @@ public class EnterpriseWanReplicationService
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
+
     }
 
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {
@@ -351,7 +350,7 @@ public class EnterpriseWanReplicationService
     }
 
     private int getPartitionId(Object key) {
-        return  node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 
     private StripedExecutor getExecutor() {

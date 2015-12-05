@@ -166,7 +166,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             capacity = capacity >> 1;
         } while (capacity > 0);
 
-        if (cacheRecordMap == null /* && oome != null */) {
+        if (cacheRecordMap == null) {
             throw oome;
         }
         return cacheRecordMap;

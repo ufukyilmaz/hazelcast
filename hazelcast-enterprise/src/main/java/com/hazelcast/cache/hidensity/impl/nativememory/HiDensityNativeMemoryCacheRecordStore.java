@@ -349,9 +349,9 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @SuppressWarnings("checkstyle:parameternumber")
     @Override
-    protected void onCreateRecordWithExpiryError(Data key, Object value, long expiryTime, long now,
-                                                 boolean disableWriteThrough, int completionId, String origin,
-                                                 HiDensityNativeMemoryCacheRecord record, Throwable error) {
+    protected void onCreateRecordError(Data key, Object value, long expiryTime, long now,
+                                       boolean disableWriteThrough, int completionId, String origin,
+                                       HiDensityNativeMemoryCacheRecord record, Throwable error) {
         if (isMemoryBlockValid(record)) {
             if (value instanceof NativeMemoryData) {
                 // If value is allocated outside of record store, disposing value is its responsibility.

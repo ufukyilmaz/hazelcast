@@ -226,6 +226,7 @@
             <includes>
                 <include>server.**</include>
                 <include>stop.**</include>
+                <include>cluster.**</include>
             </includes>
         </fileSet>
     </fileSets>

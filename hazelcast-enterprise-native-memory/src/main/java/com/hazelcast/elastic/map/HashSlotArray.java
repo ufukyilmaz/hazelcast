@@ -9,9 +9,9 @@ import com.hazelcast.nio.Disposable;
  *
  * <p>This map responds to lookup with a <code>long</code> value representing the address of
  * the value block. The actual data must be accessed using <code>Unsafe</code> memory operations.
- * <b>The returned address is valid only up to the next map update operation</b>. 
- * 
- * <p>One recommended approach to a convenient usage of the returned address is to construct 
+ * <b>The returned address is valid only up to the next map update operation</b>.
+ *
+ * <p>One recommended approach to a convenient usage of the returned address is to construct
  * a flyweight object around it and access the value's components through the object's API.
  *
  * <p>This map makes no assumptions about the key's semantics; it just uses them as the literal
@@ -25,7 +25,7 @@ import com.hazelcast.nio.Disposable;
  * acquired from a native data structure which complies with this concept and stores the relevant
  * key data.
  */
-public interface InlineNativeMemoryMap extends Disposable {
+public interface HashSlotArray extends Disposable {
 
     /**
      * Ensures that there is a mapping from {@code (key1, key2)} to a slot in the map.

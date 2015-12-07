@@ -1,7 +1,6 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.util.HashUtil;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
@@ -14,9 +13,9 @@ import static com.hazelcast.util.HashUtil.fastLongMix;
 /**
  * Implementation of {@code RawMap} using a native memory block as backing array.
  *
- * @see InlineNativeMemoryMap
+ * @see HashSlotArray
  */
-public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
+public class HashSlotArrayImpl implements HashSlotArray {
 
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
@@ -75,7 +74,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
      * @param malloc Memory allocator
      * @param valueLength Length of value in bytes
      */
-    public InlineNativeMemoryMapImpl(MemoryAllocator malloc, int valueLength) {
+    public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength) {
         this(malloc, valueLength, 16, 0.6f);
     }
 
@@ -88,7 +87,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
      * @param initialCapacity Initial capacity of map (will be rounded to closest power of 2, if not already)
      * @param loadFactor Load factor
      */
-    public InlineNativeMemoryMapImpl(MemoryAllocator malloc, int valueLength, int initialCapacity, float loadFactor) {
+    public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength, int initialCapacity, float loadFactor) {
         if (QuickMath.modPowerOfTwo(valueLength, 8) != 0) {
             throw new IllegalArgumentException("Value length should be factor of 8!");
         }

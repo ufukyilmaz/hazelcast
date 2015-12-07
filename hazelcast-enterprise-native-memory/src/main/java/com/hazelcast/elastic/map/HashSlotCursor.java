@@ -4,7 +4,7 @@ package com.hazelcast.elastic.map;
  * Inline native memory map cursor. Initially the cursor's location is
  * before the first map entry and the cursor is invalid.
  */
-public interface InmmCursor {
+public interface HashSlotCursor {
     /**
      * Advance to the next map entry.
      * @return true if the cursor has advanced. If false is returned, the cursor is now invalid.

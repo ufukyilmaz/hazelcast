@@ -25,18 +25,18 @@ import static org.junit.Assert.fail;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class InlineNativeMemoryMapImplTest {
+public class HashSlotArrayImplTest {
 
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
     private MemoryManager malloc;
-    private InlineNativeMemoryMap map;
+    private HashSlotArray map;
 
     @Before
     public void setUp() throws Exception {
         malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        map = new InlineNativeMemoryMapImpl(malloc, VALUE_LENGTH);
+        map = new HashSlotArrayImpl(malloc, VALUE_LENGTH);
     }
 
     @After

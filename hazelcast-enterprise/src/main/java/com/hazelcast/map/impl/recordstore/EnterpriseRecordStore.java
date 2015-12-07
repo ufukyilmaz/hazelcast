@@ -5,7 +5,6 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapKeyLoader;
-import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
@@ -36,6 +35,7 @@ import static java.util.Collections.emptyList;
 public class EnterpriseRecordStore extends DefaultRecordStore {
 
     private final long prefix;
+    private final boolean hotRestartEnabled;
 
     private RamStore ramStore;
 
@@ -43,6 +43,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
                                  MapKeyLoader keyLoader, ILogger logger, long prefix) {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
+        this.hotRestartEnabled = mapContainer.getMapConfig().isHotRestartEnabled();
     }
 
     public RamStore getRamStore() {
@@ -51,7 +52,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat memoryFormat) {
-        boolean hotRestartEnabled = mapContainer.getMapConfig().isHotRestartEnabled();
+
         EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) mapContainer.getMapServiceContext();
         if (NATIVE == inMemoryFormat) {
             EnterpriseSerializationService serializationService
@@ -73,23 +74,24 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     public Record createRecord(Object value, long ttlMillis, long now) {
+        return createRecordInternal(value, ttlMillis, now, NOT_AVAILABLE);
+    }
+
+    private Record createRecordInternal(Object value, long ttlMillis, long now, long sequence) {
         Record record = super.createRecord(value, ttlMillis, now);
+
         if (NATIVE == inMemoryFormat) {
-            record.setSequence(incrementSequence());
+            record.setSequence(sequence == NOT_AVAILABLE ? incrementSequence() : sequence);
+            // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
+            // `lastAccessTime` should be zero instead of `now`.
+            record.setLastAccessTime(NOT_AVAILABLE);
         }
+
         return record;
     }
 
-    public HDRecord createHDRecord(Object value, long sequence) {
-        long now = Clock.currentTimeMillis();
-
-        HDRecord record = (HDRecord) super.createRecord(value, DEFAULT_TTL, now);
-        record.setSequence(sequence);
-        // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
-        // `lastAccessTime` should be zero instead of `now`.
-        record.setLastAccessTime(NOT_AVAILABLE);
-
-        return record;
+    public Record createRecord(Object value, long sequence) {
+        return createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
     }
 
     @Override

@@ -145,7 +145,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
         HotRestartConfig hotRestartConfig = config.getHotRestartConfig();
         hotRestartConfig.setEnabled(true);
-        hotRestartConfig.setHomeDir(folder);
+        hotRestartConfig.setBaseDir(folder);
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(getNativeMemorySize())

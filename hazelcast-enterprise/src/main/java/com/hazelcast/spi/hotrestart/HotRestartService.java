@@ -77,7 +77,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         this.logger = node.getLogger(getClass());
         final Address adr = node.getThisAddress();
         HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
-        hotRestartHome = new File(hotRestartConfig.getHomeDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
+        hotRestartHome = new File(hotRestartConfig.getBaseDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
         clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hotRestartConfig);
         persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
         dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hotRestartConfig.getDataLoadTimeoutSeconds());

@@ -3,7 +3,6 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
-import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
 import org.junit.Test;

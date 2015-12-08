@@ -42,11 +42,10 @@ public class HotRestartStorageImpl<R extends Record> extends AbstractHotRestartS
     }
 
     @Override
-    public void removeInternal(R record, long tombstoneSequenceId) {
+    public void removeInternal(R record) {
         StorageImpl storageImpl = (StorageImpl) storage;
         storageImpl.updateSizeEstimator(-storageImpl.calculateHeapCost(record.getValue()));
         record.invalidate();
-        record.setTombstoneSequence(tombstoneSequenceId);
     }
 
     @Override

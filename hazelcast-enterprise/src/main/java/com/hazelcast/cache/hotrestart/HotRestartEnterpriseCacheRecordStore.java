@@ -13,11 +13,8 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.util.Clock;
-
-import java.util.Collection;
 
 /**
  * On-heap cache record store with Hot Restart support.
@@ -94,13 +91,6 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         return RamStoreHelper.copyEntry(keyHandle, value, expectedSize, sink);
     }
 
-    // called from Hot Restart GC thread
-    @Override
-    public void releaseTombstones(final Collection<TombstoneId> keysToRelease) {
-        InternalOperationService opService = (InternalOperationService) nodeEngine.getOperationService();
-        opService.execute(new TombstoneCleanerTask(keysToRelease));
-    }
-
     // called from PartitionOperationThread
     @Override
     public KeyOnHeap toKeyHandle(byte[] key) {
@@ -119,14 +109,8 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         }
     }
 
-    // called from PartitionOperationThread
-    @Override
-    public void acceptTombstone(KeyHandle kh, long seq) {
-        KeyOnHeap heavyKey = (KeyOnHeap) kh;
-        HeapData keyData = new HeapData(heavyKey.bytes());
-        CacheRecord record = cacheRecordFactory.newRecordWithExpiry(null, seq, -1L);
-        records.put(keyData, record);
-        tombstoneCount++;
+    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+
     }
 
     private void putToHotRestart(Data key, Object value) {
@@ -138,13 +122,11 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     private void removeFromHotRestart(Data key, CacheRecord record) {
         final byte[] keyBytes = key.toByteArray();
         final HotRestartStore store = hotRestartStore;
-        final long tombstoneSeq = store.removeStep1(new KeyOnHeap(prefix, keyBytes));
-        record.setTombstoneSequence(tombstoneSeq);
+        store.remove(new KeyOnHeap(prefix, keyBytes));
         record.setValue(null);
         // put back record as tombstone
         // Hotrestart will call #releaseTombstone() to actually remove the record
         records.put(key, record);
-        store.removeStep2();
         tombstoneCount++;
         cacheContext.decreaseEntryCount();
     }
@@ -173,34 +155,5 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     public void close() {
         clearInternal(false);
         closeListeners();
-    }
-
-    private class TombstoneCleanerTask implements PartitionSpecificRunnable {
-        private final Collection<TombstoneId> keysToRelease;
-
-        public TombstoneCleanerTask(Collection<TombstoneId> keysToRelease) {
-            this.keysToRelease = keysToRelease;
-        }
-
-        @Override
-        public int getPartitionId() {
-            return partitionId;
-        }
-
-        @Override
-        public void run() {
-            for (TombstoneId toRelease : keysToRelease) {
-                KeyOnHeap keyOnHeap = (KeyOnHeap) toRelease.keyHandle();
-                HeapData key = new HeapData(keyOnHeap.bytes());
-                CacheRecord record = records.get(key);
-                if (record == null || record.getValue() != null) {
-                    continue;
-                }
-                if (record.getTombstoneSequence() == toRelease.tombstoneSeq()) {
-                    records.remove(key, record);
-                    tombstoneCount--;
-                }
-            }
-        }
     }
 }

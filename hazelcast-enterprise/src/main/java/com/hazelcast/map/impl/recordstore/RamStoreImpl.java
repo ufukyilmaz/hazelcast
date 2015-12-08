@@ -8,9 +8,8 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.util.Clock;
-
-import java.util.Collection;
 
 /**
  * RamStore implementation for maps
@@ -38,19 +37,6 @@ public class RamStoreImpl extends AbstractRamStoreImpl {
     }
 
     @Override
-    public void releaseTombstonesInternal(Collection<TombstoneId> keysToRelease) {
-        for (TombstoneId toRelease : keysToRelease) {
-            KeyOnHeap keyOnHeap = (KeyOnHeap) toRelease.keyHandle();
-            HeapData key = new HeapData(keyOnHeap.bytes());
-            Record record = storage.getRecord(key);
-            if (record == null || record.getTombstoneSequence() != toRelease.tombstoneSeq() || !record.isTombstone()) {
-                return;
-            }
-            storage.removeTransient(record);
-        }
-    }
-
-    @Override
     public Data createKey(KeyHandle kh) {
         return new HeapData(((KeyOnHeap) kh).bytes());
     }
@@ -63,6 +49,10 @@ public class RamStoreImpl extends AbstractRamStoreImpl {
     @Override
     public KeyHandle toKeyHandle(byte[] key) {
         return new KeyOnHeap(recordStore.getPrefix(), key);
+    }
+
+    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+
     }
 
     private Data toData(Object value) {

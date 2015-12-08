@@ -15,12 +15,9 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
-import com.hazelcast.spi.impl.PartitionSpecificRunnable;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.Clock;
-
-import java.util.Collection;
 
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
 
@@ -171,11 +168,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     private void removeFromHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         final KeyOffHeap hotRestartKey = newHotRestartKey(key, record);
-        final long tombstoneSeq = hotRestartStore.removeStep1(hotRestartKey);
-        synchronized (recordMapMutex) {
-            record.setTombstoneSequence(tombstoneSeq);
-        }
-        hotRestartStore.removeStep2();
+        hotRestartStore.remove(hotRestartKey);
         tombstoneCount++;
         cacheInfo.decreaseEntryCount();
     }
@@ -200,13 +193,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
             }
             return RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
-    }
-
-    // called from hotrestart GC thread
-    @Override
-    public void releaseTombstones(final Collection<TombstoneId> keysToRelease) {
-        InternalOperationService opService = (InternalOperationService) nodeEngine.getOperationService();
-        opService.execute(new TombstoneCleanerTask(keysToRelease));
     }
 
     // called from PartitionOperationThread
@@ -246,10 +232,8 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         acceptInternal((KeyHandleOffHeap) kh, new HeapData(valueBytes), 0L);
     }
 
-    // called from PartitionOperationThread
-    @Override
-    public void acceptTombstone(KeyHandle kh, long seq) {
-        acceptInternal((KeyHandleOffHeap) kh, null, seq);
+    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+
     }
 
     private void acceptInternal(KeyHandleOffHeap keyHandle, HeapData value, long tombstoneSeq) {
@@ -336,49 +320,5 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         clearInternal(false);
         records.dispose();
         closeListeners();
-    }
-
-    private class TombstoneCleanerTask implements PartitionSpecificRunnable {
-        private final Collection<TombstoneId> keysToRelease;
-
-        public TombstoneCleanerTask(Collection<TombstoneId> keysToRelease) {
-            this.keysToRelease = keysToRelease;
-        }
-
-        @Override
-        public void run() {
-            final NativeMemoryData key = new NativeMemoryData();
-            synchronized (recordMapMutex) {
-                final HiDensityNativeMemoryCacheRecordMap recordMap = records;
-                if (recordMap.capacity() == 0) {
-                    // map is disposed
-                    return;
-                }
-
-                for (TombstoneId toRelease : keysToRelease) {
-                    final KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) toRelease.keyHandle();
-                    key.reset(keyHandle.address());
-                    final HiDensityNativeMemoryCacheRecord record = recordMap.get(key);
-                    if (record == null || record.getSequence() != keyHandle.sequenceId()) {
-                        continue;
-                    }
-                    if (record.getTombstoneSequence() != toRelease.tombstoneSeq()) {
-                        continue;
-                    }
-                    if (record.getValueAddress() == NULL_PTR) {
-                        recordMap.delete(key);
-                        tombstoneCount--;
-                    }
-                }
-            }
-            // Helps allow the GC thread to grab the lock in case there
-            // are many releaseTombstones operations in a row
-            Thread.yield();
-        }
-
-        @Override
-        public int getPartitionId() {
-            return partitionId;
-        }
     }
 }

@@ -42,7 +42,7 @@ public abstract class AbstractHotRestartStorageImpl<R extends Record> implements
 
     public abstract void updateInternal(Data key, R record, Object value);
 
-    public abstract void removeInternal(R record, long tombstoneSequenceId);
+    public abstract void removeInternal(R record);
 
     @Override
     public final void put(Data key, R record) {
@@ -67,9 +67,8 @@ public abstract class AbstractHotRestartStorageImpl<R extends Record> implements
             return;
         }
         HotRestartKey hotRestartKey = createHotRestartKey(record);
-        long tombstoneSequenceId = hotRestartStore.removeStep1(hotRestartKey);
-        removeInternal(record, tombstoneSequenceId);
-        hotRestartStore.removeStep2();
+        hotRestartStore.remove(hotRestartKey);
+        removeInternal(record);
         size--;
     }
 

@@ -20,7 +20,7 @@ public interface HotRestartStore {
      *
      * @param failIfAnyData if true, the call will fail if any persistent data is found.
      */
-    void hotRestart(boolean failIfAnyData);
+    void hotRestart(boolean failIfAnyData) throws InterruptedException;
 
     /**
      * Establishes a persistent mapping from the supplied key to the supplied value.
@@ -29,27 +29,10 @@ public interface HotRestartStore {
     void put(HotRestartKey key, byte[] value) throws HotRestartException;
 
     /**
-     * Step one of the two-step removal idiom. Prepares to remove the mapping
-     * for the supplied key from the Hot Restart store.
-     * <p>
-     * Must be directly followed by a call of {@link #removeStep2()}.
-     * @return Sequence ID of the associated tombstone, which will be
-     * referred to in a later call to {@link RamStore#releaseTombstones(java.util.Collection)}.
+     * Removes the persistent meapping for the supplied key.
      * @throws HotRestartException
      */
-    long removeStep1(HotRestartKey key) throws HotRestartException;
-
-    /**
-     * Completes the two-step removal idiom. When this call returns
-     * the mapping for the supplied has been removed from the Hot Restart store.
-     * <p>
-     * Must directly follow a call of {@link #removeStep1(HotRestartKey)}.
-     * Must not be called while holding a lock that can block any
-     * operation on any of the {@link RamStore}s that can be returned
-     * by the {@link RamStoreRegistry} associated with this Hot Restart store.
-     * @throws HotRestartException
-     */
-    void removeStep2() throws HotRestartException;
+    void remove(HotRestartKey key) throws HotRestartException;
 
     /**
      * Removes all mappings for the supplied list of key prefixes.

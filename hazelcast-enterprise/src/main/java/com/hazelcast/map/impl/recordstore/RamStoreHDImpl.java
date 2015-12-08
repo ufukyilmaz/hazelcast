@@ -10,9 +10,8 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
-
-import java.util.Collection;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
@@ -45,25 +44,6 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
     }
 
     @Override
-    public void releaseTombstonesInternal(Collection<TombstoneId> keysToRelease) {
-        synchronized (mutex) {
-            final NativeMemoryData key = new NativeMemoryData();
-            for (TombstoneId toRelease : keysToRelease) {
-                KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) toRelease.keyHandle();
-                key.reset(keyHandle.address());
-                HDRecord record = storage.getRecord(key);
-                if (record.getSequence() != keyHandle.sequenceId()
-                        || record.getTombstoneSequence() != toRelease.tombstoneSeq()) {
-                    continue;
-                }
-                if (record.isTombstone()) {
-                    storage.removeTransient(record);
-                }
-            }
-        }
-    }
-
-    @Override
     public KeyHandle toKeyHandle(byte[] key) {
         HeapData keyData = new HeapData(key);
         long nativeKeyAddress = storage.getNativeKeyAddress(keyData);
@@ -71,6 +51,10 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
             return readKeyHandle(nativeKeyAddress);
         }
         return newKeyHandle(key);
+    }
+
+    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+
     }
 
     @Override

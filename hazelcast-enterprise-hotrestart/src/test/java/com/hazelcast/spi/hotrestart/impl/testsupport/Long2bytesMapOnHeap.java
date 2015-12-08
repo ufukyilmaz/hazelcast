@@ -51,21 +51,9 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
         return true;
     }
 
-    @Override public void putTombstone(long key, long tombstoneSeq) {
+    @Override public void remove(long key) {
         if (map.remove(key) != null) {
             size--;
-        }
-        map.put(-key, ByteBuffer.allocate(TOMBSTONE_SEQ_SIZE).putLong(tombstoneSeq).array());
-    }
-
-    @Override public void removeTombstone(long key, long tombstoneSeq) {
-        final byte[] storedTombstone = map.get(-key);
-        if (storedTombstone == null) {
-            return;
-        }
-        final long storedTombstoneSeq = bytes2long(storedTombstone);
-        if (tombstoneSeq == storedTombstoneSeq) {
-            map.remove(-key);
         }
     }
 

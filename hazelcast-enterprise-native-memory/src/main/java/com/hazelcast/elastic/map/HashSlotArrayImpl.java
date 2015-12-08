@@ -7,13 +7,10 @@ import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
-import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 /**
- * Implementation of {@code RawMap} using a native memory block as backing array.
- *
- * @see HashSlotArray
+ * Implementation of {@link HashSlotArray} using a native memory block.
  */
 public class HashSlotArrayImpl implements HashSlotArray {
 
@@ -68,7 +65,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     private long resizeAt;
 
     /**
-     * Constructs a new {@code RawMapImpl} with default initial capacity and default load factor (0.6).
+     * Constructs a new {@code HashSlotArrayImpl} with default initial capacity and default load factor (0.6).
      * {@code valueLength} must be a factor of 8.
      *
      * @param malloc Memory allocator
@@ -79,8 +76,8 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     /**
-     * Constructs a new {@code RawMapImpl} with the given initial capacity and the load factor. {@code valueLength}
-     * must be a factor of 8.
+     * Constructs a new {@code HashSlotArrayImpl} with the given initial capacity and the load factor.
+     * {@code valueLength} must be a factor of 8.
      *
      * @param malloc Memory allocator
      * @param valueLength Length of value in bytes
@@ -92,7 +89,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
             throw new IllegalArgumentException("Value length should be factor of 8!");
         }
         this.valueLength = valueLength;
-        this.entryLength = valueLength + VALUE_OFFSET;
+        this.entryLength = VALUE_OFFSET + valueLength;
         this.malloc = malloc;
         this.loadFactor = loadFactor;
 
@@ -110,7 +107,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     @Override
-    public long put(long key1, long key2) {
+    public long ensure(long key1, long key2) {
         ensureLive();
 
         // Check if we need to grow. If so, reallocate new data and rehash.
@@ -287,7 +284,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         return valueLength;
     }
 
-    @Override public InmmCursor cursor() {
+    @Override public HashSlotCursor cursor() {
         return new Cursor();
     }
 
@@ -339,7 +336,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         }
     }
 
-    private class Cursor implements InmmCursor {
+    private class Cursor implements HashSlotCursor {
 
         private long currentSlot = -1L;
 

@@ -90,6 +90,7 @@ public final class GcExecutor {
                             didWork = chunkMgr.gc(gcp, mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
+                        didWork |= chunkMgr.deleteGarbageTombChunks();
                     }
                     Thread.yield();
                     if (idler.idle(workCount + (didWork ? 1 : 0))) {

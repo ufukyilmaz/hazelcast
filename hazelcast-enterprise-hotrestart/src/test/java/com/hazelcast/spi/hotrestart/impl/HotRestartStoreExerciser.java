@@ -4,7 +4,6 @@ import com.hazelcast.logging.LoggingService;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.util.collection.Long2LongHashMap;
@@ -22,10 +21,10 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.e
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.fillStore;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.logger;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.sleepSeconds;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.summarize;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.verifyRestartedStore;
 import static java.lang.Thread.currentThread;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HotRestartStoreExerciser {
 
@@ -69,7 +68,7 @@ public class HotRestartStoreExerciser {
     private void testRestart(int restartCount) throws InterruptedException {
         for (int i = 0; i < restartCount; i++) {
             final MockStoreRegistry reg = newStoreRegistry();
-            sleepSeconds(5, reg);
+            SECONDS.sleep(5);
             reg.closeHotRestartStore();
         }
     }
@@ -98,7 +97,7 @@ public class HotRestartStoreExerciser {
         }
     }
 
-    private MockStoreRegistry newStoreRegistry() {
+    private MockStoreRegistry newStoreRegistry() throws InterruptedException {
         return createStoreRegistry(cfg, malloc);
     }
 }

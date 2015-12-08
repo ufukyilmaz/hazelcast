@@ -49,10 +49,10 @@ public class HashSlotArrayImplTest {
     public void testPut() throws Exception {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        final long valueAddress = map.put(key1, key2);
+        final long valueAddress = map.ensure(key1, key2);
         assertNotEquals(NULL_ADDRESS, valueAddress);
 
-        final long valueAddress2 = map.put(key1, key2);
+        final long valueAddress2 = map.ensure(key1, key2);
         assertEquals(valueAddress, -valueAddress2);
     }
 
@@ -60,7 +60,7 @@ public class HashSlotArrayImplTest {
     public void testGet() throws Exception {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        final long valueAddress = map.put(key1, key2);
+        final long valueAddress = map.ensure(key1, key2);
 
         final long valueAddress2 = map.get(key1, key2);
         assertEquals(valueAddress, valueAddress2);
@@ -70,7 +70,7 @@ public class HashSlotArrayImplTest {
     public void testRemove() throws Exception {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        map.put(key1, key2);
+        map.ensure(key1, key2);
 
         assertTrue(map.remove(key1, key2));
         assertFalse(map.remove(key1, key2));
@@ -81,7 +81,7 @@ public class HashSlotArrayImplTest {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
 
-        map.put(key1, key2);
+        map.ensure(key1, key2);
         assertEquals(1, map.size());
 
         assertTrue(map.remove(key1, key2));
@@ -93,7 +93,7 @@ public class HashSlotArrayImplTest {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
 
-        map.put(key1, key2);
+        map.ensure(key1, key2);
         map.clear();
 
         assertEquals(NULL_ADDRESS, map.get(key1, key2));
@@ -108,7 +108,7 @@ public class HashSlotArrayImplTest {
         for (int i = 1; i <= k; i++) {
             long key1 = (long) i;
             long key2 = key1 * factor;
-            long valueAddress = map.put(key1, key2);
+            long valueAddress = map.ensure(key1, key2);
 
             writeValue(key1, key2, valueAddress);
         }
@@ -132,7 +132,7 @@ public class HashSlotArrayImplTest {
         for (int i = 1; i <= k; i++) {
             long key1 = (long) i;
             long key2 = key1 * factor;
-            long valueAddress = map.put(key1, key2);
+            long valueAddress = map.ensure(key1, key2);
 
             writeValue(key1, key2, valueAddress);
         }
@@ -159,7 +159,7 @@ public class HashSlotArrayImplTest {
     @Test(expected = IllegalStateException.class)
     public void testPut_whenDisposed() throws Exception {
         map.dispose();
-        map.put(1, 1);
+        map.ensure(1, 1);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -182,48 +182,48 @@ public class HashSlotArrayImplTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_key1_withoutAdvance() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.key1();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_key2_withoutAdvance() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.key2();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_valueAddress_withoutAdvance() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.valueAddress();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_remove_withoutAdvance() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.remove();
     }
 
     @Test
     public void testCursor_advance_whenEmpty() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         assertFalse(cursor.advance());
     }
 
     @Test
     public void testCursor_advance() {
-        map.put(random.nextLong(), random.nextLong());
+        map.ensure(random.nextLong(), random.nextLong());
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         assertTrue(cursor.advance());
         assertFalse(cursor.advance());
     }
 
     @Test
     public void testCursor_advance_afterAdvanceReturnsFalse() {
-        map.put(random.nextLong(), random.nextLong());
+        map.ensure(random.nextLong(), random.nextLong());
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.advance();
         cursor.advance();
 
@@ -238,9 +238,9 @@ public class HashSlotArrayImplTest {
     public void testCursor_key1() {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        map.put(key1, key2);
+        map.ensure(key1, key2);
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.advance();
         assertEquals(key1, cursor.key1());
     }
@@ -249,18 +249,18 @@ public class HashSlotArrayImplTest {
     public void testCursor_key2() {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        map.put(key1, key2);
+        map.ensure(key1, key2);
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.advance();
         assertEquals(key2, cursor.key2());
     }
 
     @Test
     public void testCursor_valueAddress() {
-        final long valueAddress = map.put(random.nextLong(), random.nextLong());
+        final long valueAddress = map.ensure(random.nextLong(), random.nextLong());
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.advance();
         assertEquals(valueAddress, cursor.valueAddress());
     }
@@ -269,9 +269,9 @@ public class HashSlotArrayImplTest {
     public void testCursor_remove() {
         final long key1 = random.nextLong();
         final long key2 = random.nextLong();
-        map.put(key1, key2);
+        map.ensure(key1, key2);
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         cursor.advance();
         cursor.remove();
 
@@ -281,35 +281,35 @@ public class HashSlotArrayImplTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_advance_whenDisposed() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         map.dispose();
         cursor.advance();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_key1_whenDisposed() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         map.dispose();
         cursor.key1();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_key2_whenDisposed() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         map.dispose();
         cursor.key2();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_valueAddress_whenDisposed() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         map.dispose();
         cursor.valueAddress();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_remove_whenDisposed() {
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         map.dispose();
         cursor.remove();
     }
@@ -322,7 +322,7 @@ public class HashSlotArrayImplTest {
         for (int i = 1; i <= k; i++) {
             long key1 = (long) i;
             long key2 = key1 * factor;
-            long valueAddress = map.put(key1, key2);
+            long valueAddress = map.ensure(key1, key2);
 
             writeValue(key1, key2, valueAddress);
         }
@@ -330,7 +330,7 @@ public class HashSlotArrayImplTest {
         boolean[] verifyKeys = new boolean[k];
         Arrays.fill(verifyKeys, false);
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         while (cursor.advance()) {
             long key1 = cursor.key1();
             long key2 = cursor.key2();
@@ -355,12 +355,12 @@ public class HashSlotArrayImplTest {
         for (int i = 1; i <= k; i++) {
             long key1 = (long) i;
             long key2 = key1 * factor;
-            long valueAddress = map.put(key1, key2);
+            long valueAddress = map.ensure(key1, key2);
 
             writeValue(key1, key2, valueAddress);
         }
 
-        InmmCursor cursor = map.cursor();
+        HashSlotCursor cursor = map.cursor();
         while (cursor.advance()) {
             cursor.remove();
         }

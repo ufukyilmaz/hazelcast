@@ -23,9 +23,7 @@ public interface Long2bytesMap extends Disposable {
 
     boolean copyEntry(long key, int expectedSize, RecordDataSink sink);
 
-    void putTombstone(long key, long tombstoneSeq);
-
-    void removeTombstone(long key, long tombstoneSeq);
+    void remove(long key);
 
     void clear();
 

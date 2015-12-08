@@ -8,9 +8,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.WriteThroughChunk;
-import com.hazelcast.util.Preconditions;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.Record.TOMBSTONE_VALUE;
+import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * This class is not thread-safe. The caller must ensure a
@@ -22,10 +21,8 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     private final ILogger logger;
     private final GcExecutor gcExec;
     private final GcHelper gcHelper;
-    private WriteThroughChunk activeChunk;
-
-    private HotRestartKey preparedTombstoneKey;
-    private long preparedTombstoneSeq;
+    private WriteThroughChunk activeValChunk;
+    private WriteThroughChunk activeTombChunk;
 
     private HotRestartStoreImpl(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
@@ -39,37 +36,47 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     }
 
     public static HotRestartStore newOffHeapHotRestartStore(HotRestartStoreConfig cfg) {
-        Preconditions.checkNotNull(cfg.malloc(), "malloc is null");
+        checkNotNull(cfg.malloc(), "malloc is null");
         return create(cfg);
     }
 
     private static HotRestartStore create(HotRestartStoreConfig cfg) {
-        Preconditions.checkNotNull(cfg.homeDir(), "homeDir is null");
-        Preconditions.checkNotNull(cfg.ramStoreRegistry(), "ramStoreRegistry is null");
+        checkNotNull(cfg.homeDir(), "homeDir is null");
+        checkNotNull(cfg.ramStoreRegistry(), "ramStoreRegistry is null");
         cfg.validateAndCreateHomeDir();
         return new HotRestartStoreImpl(
                 cfg, cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));
     }
 
     @Override public void put(HotRestartKey kh, byte[] value) {
-        validateStatus();
-        final int size = Record.size(kh.bytes(), value);
-        put0(kh, value, gcHelper.nextRecordSeq(size), size, value == TOMBSTONE_VALUE);
+        put0(kh, value);
     }
 
-    @Override public long removeStep1(HotRestartKey key) {
-        validateStatus();
-        preparedTombstoneKey = key;
-        return preparedTombstoneSeq = gcHelper.nextRecordSeq(Record.size(key.bytes(), TOMBSTONE_VALUE));
+    @Override public void remove(HotRestartKey key) {
+        put0(key, null);
     }
 
-    @Override public void removeStep2() {
-        final HotRestartKey k = preparedTombstoneKey;
-        if (k == null) {
-            throw new HotRestartException("removeStep2 not preceded by removeStep1");
+    @SuppressWarnings("checkstyle:innerassignment")
+    private void put0(HotRestartKey hrKey, byte[] value) {
+        validateStatus();
+        final int size = Record.size(hrKey.bytes(), value);
+        final long seq = gcHelper.nextRecordSeq(size);
+        final boolean isTombstone = value == null;
+        WriteThroughChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
+        gcExec.submitRecord(hrKey, seq, size, isTombstone);
+        final boolean full = activeChunk.addStep1(hrKey.prefix(), seq, hrKey.bytes(), value);
+        if (full) {
+            activeChunk.close();
+            final WriteThroughChunk inactiveChunk = activeChunk;
+            if (isTombstone) {
+                activeChunk = activeTombChunk = gcHelper.newActiveTombChunk();
+            } else {
+                activeChunk = activeValChunk = gcHelper.newActiveValChunk();
+            }
+            gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
+        } else if (autoFsync) {
+            activeChunk.fsync();
         }
-        preparedTombstoneKey = null;
-        put0(k, TOMBSTONE_VALUE, preparedTombstoneSeq, Record.size(k.bytes(), TOMBSTONE_VALUE), true);
     }
 
     @Override public void setAutoFsync(boolean fsync) {
@@ -81,19 +88,22 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     }
 
     @Override public void fsync() {
-        activeChunk.fsync();
+        activeValChunk.fsync();
+        activeTombChunk.fsync();
     }
 
-    @Override public void hotRestart(boolean failIfAnyData) {
-        if (activeChunk != null) {
+    @Override public void hotRestart(boolean failIfAnyData) throws InterruptedException {
+        if (activeValChunk != null) {
             throw new IllegalStateException("Hot restart already completed");
         }
         new HotRestarter(gcHelper, gcExec).restart(failIfAnyData);
-        activeChunk = gcHelper.newActiveChunk();
+        activeValChunk = gcHelper.newActiveValChunk();
+        activeTombChunk = gcHelper.newActiveTombChunk();
         gcExec.start();
-        gcExec.submitReplaceActiveChunk(null, activeChunk);
+        gcExec.submitReplaceActiveChunk(null, activeValChunk);
+        gcExec.submitReplaceActiveChunk(null, activeTombChunk);
         logger.info(String.format("%s reloaded %,d keys; chunk seq %03x",
-                name, gcExec.chunkMgr.trackedKeyCount(), activeChunk.seq));
+                name, gcExec.chunkMgr.trackedKeyCount(), activeValChunk.seq));
     }
 
     @Override public boolean isEmpty() {
@@ -112,15 +122,21 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     }
 
     @Override public void close() {
-        if (activeChunk != null) {
-            activeChunk.fsync();
-            activeChunk.close();
-            if (activeChunk.size() == 0) {
-                gcHelper.deleteChunkFile(activeChunk);
-            }
-            activeChunk = null;
-        }
+        closeAndDeleteIfEmpty(activeValChunk);
+        activeValChunk = null;
+        closeAndDeleteIfEmpty(activeTombChunk);
+        activeTombChunk = null;
         gcExec.shutdown();
+    }
+
+    private void closeAndDeleteIfEmpty(WriteThroughChunk cuhnk) {
+        if (cuhnk != null) {
+            cuhnk.close();
+            if (cuhnk.size() == 0) {
+                gcHelper.deleteChunkFile(cuhnk);
+            }
+        }
+
     }
 
     /**
@@ -131,26 +147,9 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.runWhileGcPaused(task);
     }
 
-    private long put0(HotRestartKey key, byte[] value, long seq, int size, boolean isTombstone) {
-        gcExec.submitRecord(key, seq, size, isTombstone);
-        final boolean chunkFull = activeChunk.addStep1(key.prefix(), seq, isTombstone, key.bytes(), value);
-        if (chunkFull) {
-            activeChunk.close();
-            final WriteThroughChunk inactiveChunk = activeChunk;
-            activeChunk = gcHelper.newActiveChunk();
-            gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
-        } else if (autoFsync) {
-            activeChunk.fsync();
-        }
-        return seq;
-    }
-
     private void validateStatus() {
-        if (activeChunk == null) {
+        if (activeValChunk == null) {
             throw new HotRestartException("Hot restart not yet complete");
-        }
-        if (preparedTombstoneKey != null) {
-            throw new HotRestartException("removeStep1 not followed by removeStep2");
         }
     }
 }

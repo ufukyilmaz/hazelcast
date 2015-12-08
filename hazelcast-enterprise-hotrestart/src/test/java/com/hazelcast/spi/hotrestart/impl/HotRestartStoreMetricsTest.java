@@ -38,7 +38,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private MockStoreRegistry store;
     private MetricsRegistry metrics;
 
-    @Before public void setup() {
+    @Before public void setup() throws InterruptedException {
         final File testingHome = hotRestartHome(getClass(), testName);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setHomeDir(new File(testingHome, storeName))

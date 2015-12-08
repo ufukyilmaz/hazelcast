@@ -16,8 +16,8 @@ class StableChunkBuilder {
         return new StableChunkBuilder();
     }
 
-    StableChunk build() {
-        return new StableChunk(
+    StableValChunk build() {
+        return new StableValChunk(
                 seq, records, liveRecordCount, youngestRecordSeq, size, garbage, needsDismissing, compressed);
     }
 

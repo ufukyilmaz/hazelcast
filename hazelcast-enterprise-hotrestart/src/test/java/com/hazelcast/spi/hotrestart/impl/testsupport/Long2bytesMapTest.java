@@ -40,7 +40,6 @@ public class Long2bytesMapTest {
 
     @Parameter public boolean offHeap;
 
-    private final long tombstoneSeq = 13;
     private final long key1 = 11;
     private final long key2 = 12;
     private final byte[] key1Bytes = long2bytes(key1);
@@ -76,7 +75,7 @@ public class Long2bytesMapTest {
         assertEquals(1, map.size());
         map.put(key2, value1);
         assertEquals(2, map.size());
-        map.putTombstone(key1, tombstoneSeq);
+        map.remove(key1);
         assertEquals(1, map.size());
         map.clear();
         assertEquals(0, map.size());
@@ -96,30 +95,11 @@ public class Long2bytesMapTest {
         assertContentsEqual(value2, holder.valueBuffer);
     }
 
-    @Test public void whenPutTombstone_thenGetJustKey() {
-        map.put(key1, value1);
-        map.putTombstone(key1, tombstoneSeq);
-        assertTrue(map.copyEntry(key1, KEY_SIZE, holder));
-        holder.flip();
-        assertContentsEqual(key1Bytes, holder.keyBuffer);
-        assertContentsEqual(empty, holder.valueBuffer);
-    }
-
-    @Test public void whenReplaceTombstoneWithValue2_thenGetValue2() {
-        map.put(key1, value1);
-        map.putTombstone(key1, tombstoneSeq);
-        map.put(key1, value2);
-        assertTrue(map.copyEntry(key1, KEY_SIZE + value2.length, holder));
-        holder.flip();
-        assertContentsEqual(key1Bytes, holder.keyBuffer);
-        assertContentsEqual(value2, holder.valueBuffer);
-    }
-
     @Test public void keysetShouldBehave() {
         map.put(key1, value1);
         map.put(key1, value2);
         map.put(key2, value1);
-        map.putTombstone(key1, tombstoneSeq);
+        map.remove(key1);
         final Set<Long> keyset = map.keySet();
         assertEquals(1, keyset.size());
         assertFalse(keyset.contains(key1));
@@ -130,7 +110,7 @@ public class Long2bytesMapTest {
         map.put(key1, value1);
         map.put(key1, value2);
         map.put(key2, value1);
-        map.putTombstone(key1, tombstoneSeq);
+        map.remove(key1);
         final L2bCursor cursor = map.cursor();
         assertTrue(cursor.advance());
         assertEquals(key2, cursor.key());

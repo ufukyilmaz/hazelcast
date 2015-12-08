@@ -28,8 +28,8 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferWorseBetter_thenPopWorseBetter() {
-        final StableChunk worse = mockChunk(1, 1000, 10, 9);
-        final StableChunk better = mockChunk(2, 10, 10, 9);
+        final StableValChunk worse = mockChunk(1, 1000, 10, 9);
+        final StableValChunk better = mockChunk(2, 10, 10, 9);
         q.offer(worse);
         q.offer(better);
         assertSame(worse, q.pop());
@@ -38,8 +38,8 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferBetterWorse_thenPopWorseBetter() {
-        final StableChunk worse = mockChunk(1, 1000, 10, 9);
-        final StableChunk better = mockChunk(2, 10, 10, 9);
+        final StableValChunk worse = mockChunk(1, 1000, 10, 9);
+        final StableValChunk better = mockChunk(2, 10, 10, 9);
         q.offer(better);
         q.offer(worse);
         assertSame(worse, q.pop());
@@ -48,9 +48,9 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferWorstMiddleBest_thenPopMiddleBest() {
-        final StableChunk worst = mockChunk(1, 1000, 10, 9);
-        final StableChunk middle = mockChunk(1, 100, 10, 9);
-        final StableChunk best = mockChunk(2, 10, 10, 9);
+        final StableValChunk worst = mockChunk(1, 1000, 10, 9);
+        final StableValChunk middle = mockChunk(1, 100, 10, 9);
+        final StableValChunk best = mockChunk(2, 10, 10, 9);
         q.offer(worst);
         q.offer(middle);
         q.offer(best);
@@ -60,9 +60,9 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferBestMiddleWorst_thenPopMiddleBest() {
-        final StableChunk worst = mockChunk(1, 1000, 10, 9);
-        final StableChunk middle = mockChunk(1, 100, 10, 9);
-        final StableChunk best = mockChunk(2, 10, 10, 9);
+        final StableValChunk worst = mockChunk(1, 1000, 10, 9);
+        final StableValChunk middle = mockChunk(1, 100, 10, 9);
+        final StableValChunk best = mockChunk(2, 10, 10, 9);
         q.offer(best);
         q.offer(middle);
         q.offer(worst);
@@ -71,8 +71,8 @@ public class ChunkPriorityQueueTest {
         assertNull(q.pop());
     }
 
-    private static StableChunk mockChunk(long seq, long youngestRecordSeq, long size, long garbage) {
-        final StableChunk c = new StableChunk(seq, null, 1, youngestRecordSeq, size, garbage, false, false);
+    private static StableValChunk mockChunk(long seq, long youngestRecordSeq, long size, long garbage) {
+        final StableValChunk c = new StableValChunk(seq, null, 1, youngestRecordSeq, size, garbage, false, false);
         c.updateCostBenefit(1000);
         return c;
     }

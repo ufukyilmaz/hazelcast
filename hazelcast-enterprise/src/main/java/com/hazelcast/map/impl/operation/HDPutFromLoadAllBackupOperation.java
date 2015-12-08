@@ -64,7 +64,7 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
             final Data key = keyValueSequence.get(i);
             final Data value = keyValueSequence.get(i + 1);
             final Object object = mapServiceContext.toObject(value);
-            recordStore.putFromLoad(key, object);
+            recordStore.putFromLoadBackup(key, object);
         }
     }
 

@@ -155,7 +155,7 @@ public final class Rebuilder {
         }
         logger.fine("Retired %,d tombstones. There are %,d left. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
-        cm.deleteGarbageTombChunks();
+        cm.deleteGarbageTombChunks(null);
         cm.gcHelper.initRecordSeq(maxSeq);
     }
 

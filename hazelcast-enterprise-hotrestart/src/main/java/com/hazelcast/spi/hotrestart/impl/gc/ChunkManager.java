@@ -221,18 +221,25 @@ public final class ChunkManager {
         }
     }
 
-    boolean deleteGarbageTombChunks() {
+    boolean deleteGarbageTombChunks(MutatorCatchup mc) {
         if (tombChunksToDelete.isEmpty()) {
             return false;
         }
-        logger.info("Deleting %d tombstone chunks", tombChunksToDelete.size());
-        for (StableTombChunk chunk : tombChunksToDelete) {
-            gcHelper.deleteChunkFile(chunk);
+        final int deleteCount = tombChunksToDelete.size();
+        logger.info("Deleting %d tombstone chunks", deleteCount);
+        final StableTombChunk[] toDelete = tombChunksToDelete.toArray(new StableTombChunk[deleteCount]);
+        tombChunksToDelete.clear();
+        for (StableTombChunk chunk : toDelete) {
             tombOccupancy.inc(-chunk.size());
             tombGarbage.inc(-chunk.size());
             disposeAndRemove(chunk);
         }
-        tombChunksToDelete.clear();
+        for (StableTombChunk chunk : toDelete) {
+            if (mc != null) {
+                mc.catchupNow();
+            }
+            gcHelper.deleteChunkFile(chunk);
+        }
         return true;
     }
 

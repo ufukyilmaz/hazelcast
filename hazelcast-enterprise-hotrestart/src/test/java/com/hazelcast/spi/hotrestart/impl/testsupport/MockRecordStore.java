@@ -8,5 +8,4 @@ public interface MockRecordStore extends RamStore, Disposable {
     void put(long key, byte[] value);
     void remove(long key);
     void clear();
-    void drainTombstoneReleaseQueue();
 }

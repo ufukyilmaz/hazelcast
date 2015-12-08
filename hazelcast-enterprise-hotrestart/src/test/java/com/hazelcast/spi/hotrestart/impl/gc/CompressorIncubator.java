@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.spi.hotrestart.impl.lz4.NativeLZ4BlockOutputStream.HEADER_LENGTH;
@@ -48,13 +49,13 @@ public final class CompressorIncubator implements Disposable {
     }
 
     @SuppressWarnings({ "checkstyle:innerassignment", "checkstyle:npathcomplexity" })
-    public boolean lz4Compress(StableChunk chunk, GcHelper gcHelper, MutatorCatchup mc, GcLogger logger) {
+    public boolean lz4Compress(StableValChunk chunk, GcHelper gcHelper, MutatorCatchup mc, GcLogger logger) {
         final long start = System.nanoTime();
         if (chunk == null) {
             return false;
         }
         logger.fine("LZ4 compressing chunk %03x", chunk.seq);
-        final File outFile = gcHelper.chunkFile(chunk.seq, Chunk.FNAME_SUFFIX + COMPRESSED_SUFFIX, true);
+        final File outFile = gcHelper.chunkFile(VAL_BASEDIR, chunk.seq, Chunk.FNAME_SUFFIX + COMPRESSED_SUFFIX, true);
         final FileOutputStream fileOut = gcHelper.createFileOutputStream(outFile);
         if (fileOut == null) {
             // happens only if IO is disabled by configuration
@@ -65,7 +66,7 @@ public final class CompressorIncubator implements Disposable {
         OutputStream out = null;
         boolean didCatchUp = false;
         try {
-            final File inFile = gcHelper.chunkFile(chunk.seq, Chunk.FNAME_SUFFIX, false);
+            final File inFile = gcHelper.chunkFile(VAL_BASEDIR, chunk.seq, Chunk.FNAME_SUFFIX, false);
             in = gcHelper.createFileInputStream(inFile);
             out = compressedOutputStream(fileOut);
             //noinspection ConstantConditions (fileOut != null already implies in != null)

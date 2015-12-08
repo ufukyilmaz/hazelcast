@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
@@ -43,7 +42,9 @@ public class HotRestartTestUtil {
         return new File(toFileName(testClass.getSimpleName()) + '_' + toFileName(testName.getMethodName()));
     }
 
-    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) {
+    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc)
+            throws InterruptedException
+    {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
         final MockStoreRegistry cs = new MockStoreRegistry(cfg, malloc);
@@ -58,7 +59,6 @@ public class HotRestartTestUtil {
         for (int i = 0; i < profile.keysetSize; i++) {
             for (int prefix = 1; prefix <= profile.prefixCount; prefix++) {
                 reg.put(prefix, i + 1, profile.randomValue());
-                reg.releaseTombstonesAsNeeded();
                 if ((putCount++ & mask) == mask) {
                     logger.info(String.format("Writing... %,d of %,d", putCount, totalPutCount));
                 }
@@ -80,7 +80,6 @@ public class HotRestartTestUtil {
             final long deadline = testStart + SECONDS.toNanos(profile.exerciseTimeSeconds);
             for (long iterStart; (iterStart = System.nanoTime()) < deadline; iterCount++) {
                 profile.performOp(reg);
-                reg.releaseTombstonesAsNeeded();
                 final long[] prefixesToClear = profile.prefixesToClear(lastCleared);
                 if (prefixesToClear.length > 0) {
                     logger.info(String.format("%n%nCLEAR %s%n", Arrays.toString(prefixesToClear)));
@@ -97,7 +96,7 @@ public class HotRestartTestUtil {
 //                }
                 hist.recordValue(took);
             }
-            final float runtimeSeconds = (float) (System.nanoTime() - testStart) / TimeUnit.SECONDS.toNanos(1);
+            final float runtimeSeconds = (float) (System.nanoTime() - testStart) / SECONDS.toNanos(1);
             if (runtimeSeconds > 1) {
                 logger.info(String.format("Throughput was %,.0f ops/second%n", iterCount / runtimeSeconds));
             }
@@ -198,14 +197,6 @@ public class HotRestartTestUtil {
         if (hadIssues) {
             fail(sw.toString());
         }
-    }
-
-    public static void sleepSeconds(int secs, MockStoreRegistry reg) throws InterruptedException {
-        final long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(secs);
-        do {
-            Thread.sleep(1);
-            reg.releaseTombstonesAsNeeded();
-        } while (System.currentTimeMillis() < deadline);
     }
 
     public static LoggingService createLoggingService() {

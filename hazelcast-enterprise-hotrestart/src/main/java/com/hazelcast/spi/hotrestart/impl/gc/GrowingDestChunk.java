@@ -48,9 +48,9 @@ public final class GrowingDestChunk extends GrowingChunk {
      * write any records which are known to be garbage at the point when
      * they are ready to be written to the file.
      */
-    public StableChunk flushAndClose(MutatorCatchup mc, GcLogger logger) {
+    public StableValChunk flushAndClose(MutatorCatchup mc, GcLogger logger) {
         DataOutputStream out = null;
-        final FileOutputStream fileOut = gch.createFileOutputStream(seq, DEST_FNAME_SUFFIX);
+        final FileOutputStream fileOut = gch.createFileOutputStream(VAL_BASEDIR, seq, DEST_FNAME_SUFFIX);
         try {
             final long start = System.nanoTime();
             out = dataOutputStream(fileOut);
@@ -106,7 +106,7 @@ public final class GrowingDestChunk extends GrowingChunk {
             fsync(fileOut);
             mc.catchupNow();
             out.close();
-            gch.changeSuffix(seq, DEST_FNAME_SUFFIX, gch.newStableChunkSuffix());
+            gch.changeSuffix(VAL_BASEDIR, seq, DEST_FNAME_SUFFIX, gch.newStableChunkSuffix());
             logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", seq, fileSize,
                     NANOSECONDS.toMillis(System.nanoTime() - start));
             mc.catchupNow();
@@ -119,7 +119,7 @@ public final class GrowingDestChunk extends GrowingChunk {
             // redirect ownership to the new stableChunk. It is vital that no
             // catching up occurs before transfer of ownership (otherwise the
             // wrong chunk's garbage field will be updated).
-            return new StableChunk(seq, gch.toPlainRecordMap(records), liveRecordCount, youngestRecordSeq, fileSize,
+            return new StableValChunk(seq, gch.toPlainRecordMap(records), liveRecordCount, youngestRecordSeq, fileSize,
                     garbage, needsDismissing, gch.compressionEnabled());
         } catch (IOException e) {
             throw new HotRestartException(e);

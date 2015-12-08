@@ -13,17 +13,17 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.spi.hotrestart.impl.BufferingInputStream.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.BufferingInputStream.LOG_OF_BUFFER_SIZE;
-import static com.hazelcast.spi.hotrestart.impl.gc.GrowingChunk.fsync;
 
 /**
  * A record in the chunk file. Represents a single insert/update/delete event.
  */
 public abstract class Record {
-    /** Size of the record header in a chunk file */
-    public static final int HEADER_SIZE =
+    /** Size of the value record header in a chunk file */
+    public static final int VAL_HEADER_SIZE =
             LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
-    /** Reusable instance of an empty array which represents a tombstone record. */
-    public static final byte[] TOMBSTONE_VALUE = new byte[0];
+    /** Size of the tombstone record header in a chunk file */
+    public static final int TOMB_HEADER_SIZE =
+            LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
 
     final long deadOrAliveSeq() {
         final long seq = rawSeqValue();
@@ -49,7 +49,7 @@ public abstract class Record {
     }
 
     final int payloadSize() {
-        return size() - HEADER_SIZE;
+        return size() - VAL_HEADER_SIZE;
     }
 
     final boolean isTombstone() {
@@ -88,7 +88,7 @@ public abstract class Record {
             out.writeInt(keySize);
             out.writeInt(isTombstone() ? -1 : valBuf.remaining());
             out.write(keyBuf.array(), keyBuf.position(), keySize);
-            filePosition += HEADER_SIZE + keySize;
+            filePosition += VAL_HEADER_SIZE + keySize;
             if (positionInUnitsOfBufsize(filePosition) > startPos) {
                 yield(fileOut, mc);
             }
@@ -119,7 +119,7 @@ public abstract class Record {
     private static void yield(FileOutputStream fileOut, MutatorCatchup mc) {
         mc.catchupNow();
         if (mc.fsyncOften) {
-            fsync(fileOut);
+            GrowingChunk.fsync(fileOut);
         }
     }
 
@@ -147,7 +147,7 @@ public abstract class Record {
     abstract void setRawSeqSize(long rawSeqValue, int rawSizeValue);
 
     public static int size(byte[] key, byte[] value) {
-        return HEADER_SIZE + key.length + value.length;
+        return value != null ? VAL_HEADER_SIZE + key.length + value.length : TOMB_HEADER_SIZE + key.length;
     }
 
     static int toRawSizeValue(int size, boolean isTombstone) {

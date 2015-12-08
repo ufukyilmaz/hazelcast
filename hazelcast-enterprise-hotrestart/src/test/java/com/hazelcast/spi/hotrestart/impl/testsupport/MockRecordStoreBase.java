@@ -4,6 +4,8 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -14,8 +16,6 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
     final Long2bytesMap ramStore;
     final HotRestartStore hrStore;
     final long prefix;
-    private final Queue<Collection<TombstoneId>> tombstoneReleaseQueue =
-            new ConcurrentLinkedQueue<Collection<TombstoneId>>();
 
     MockRecordStoreBase(long prefix, Long2bytesMap ramStore, HotRestartStore hrStore) {
         this.ramStore = ramStore;
@@ -39,10 +39,9 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
             if (!ramStore.containsKey(key)) {
                 return;
             }
-            final long tombstoneSeq = hrStore.removeStep1(hrKey(key));
-            ramStore.putTombstone(key, tombstoneSeq);
+            ramStore.remove(key);
         }
-        hrStore.removeStep2();
+        hrStore.remove(hrKey(key));
     }
 
     @Override public final void clear() {
@@ -51,14 +50,9 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         }
     }
 
-    @Override public void drainTombstoneReleaseQueue() {
-        for (Collection<TombstoneId> tombstoneIds; (tombstoneIds = tombstoneReleaseQueue.poll()) != null;) {
-            synchronized (ramStore) {
-                for (TombstoneId tid : tombstoneIds) {
-                    ramStore.removeTombstone(unwrapKey(tid.keyHandle()), tid.tombstoneSeq());
-                }
-            }
-            Thread.yield();
+    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+        for (KhCursor cursor = keyHandles.cursor(); cursor.advance();) {
+            ramStore.remove(unwrapKey(cursor.asKeyHandle()));
         }
     }
 
@@ -72,19 +66,10 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         }
     }
 
-    @Override public final void releaseTombstones(Collection<TombstoneId> tombstoneIds) {
-        tombstoneReleaseQueue.add(tombstoneIds);
-    }
-
     @Override public final void accept(KeyHandle kh, byte[] value) {
         assert kh != null : "accept() called with null key";
         assert value != null : "accept called with null value";
         ramStore.put(unwrapKey(kh), value);
-    }
-
-    @Override public final void acceptTombstone(KeyHandle kh, long seq) {
-        assert kh != null : "acceptTombstone() called with null key";
-        ramStore.putTombstone(unwrapKey(kh), seq);
     }
 
     public static byte[] long2bytes(long in) {

@@ -17,7 +17,7 @@ import static org.junit.Assert.assertFalse;
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkTest {
 
-    private StableChunk stableChunk;
+    private StableValChunk stableValChunk;
     private KeyHandle keyHandle;
     private Record record;
 
@@ -34,36 +34,36 @@ public class ChunkTest {
         keyHandle = new KeyOnHeap(keyPrefix, new byte[1]);
         records.putIfAbsent(keyPrefix, keyHandle, recordSeq, recordSize, false, 0);
         record = records.get(keyHandle);
-        stableChunk = new StableChunk(
+        stableValChunk = new StableValChunk(
                 chunkseq, records, 1, youngestRecordSeq, chunkSize, chunkGarbage, false, false);
     }
 
     @Test public void size_reportsCorrectly() {
-        assertEquals(chunkSize, stableChunk.size());
+        assertEquals(chunkSize, stableValChunk.size());
     }
 
     @Test public void retire_makesRecordDead() {
-        stableChunk.retire(keyHandle, record);
+        stableValChunk.retire(keyHandle, record);
         assertFalse(record.isAlive());
     }
 
     @Test public void retire_updatesGarbage() {
-        stableChunk.retire(keyHandle, record);
-        assertEquals(chunkGarbage + recordSize, stableChunk.garbage);
+        stableValChunk.retire(keyHandle, record);
+        assertEquals(chunkGarbage + recordSize, stableValChunk.garbage);
     }
 
     @Test public void retire_decrementsLiveRecordCount() {
-        stableChunk.retire(keyHandle, record);
-        assertEquals(0, stableChunk.liveRecordCount);
+        stableValChunk.retire(keyHandle, record);
+        assertEquals(0, stableValChunk.liveRecordCount);
     }
 
     @Test public void retire_incrementsGarbageCount() {
-        stableChunk.retire(keyHandle, record);
+        stableValChunk.retire(keyHandle, record);
         assertEquals(1, record.garbageCount());
     }
 
     @Test public void retire__dontIncrementGarbageCount_doesntIncrementIt() {
-        stableChunk.retire(keyHandle, record, false);
+        stableValChunk.retire(keyHandle, record, false);
         assertEquals(0, record.garbageCount());
     }
 

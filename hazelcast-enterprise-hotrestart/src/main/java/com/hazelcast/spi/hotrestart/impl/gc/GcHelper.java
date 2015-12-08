@@ -6,6 +6,7 @@ import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
 import java.io.Closeable;
 import java.io.File;
@@ -14,10 +15,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.ACTIVE_CHUNK_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.VAL_BASEDIR;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -98,10 +101,18 @@ public abstract class GcHelper implements Disposable {
         return ioDisabled;
     }
 
-    public WriteThroughChunk newActiveChunk() {
+    public WriteThroughValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new WriteThroughChunk(seq, newRecordMap(),
-                createFileOutputStream(chunkFile(seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)), this);
+        return new WriteThroughValChunk(seq, newRecordMap(),
+                createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                this);
+    }
+
+    public WriteThroughTombChunk newActiveTombChunk() {
+        final long seq = chunkSeq.incrementAndGet();
+        return new WriteThroughTombChunk(seq, newRecordMap(),
+                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                this);
     }
 
     public void initChunkSeq(long seq) {
@@ -121,12 +132,11 @@ public abstract class GcHelper implements Disposable {
             return;
         }
         final File toDelete = chunkFile(chunk, false);
-        if (!toDelete.delete()) {
-            throw new HazelcastException("Failed to delete " + toDelete);
-        }
+        assert toDelete.exists() : "Attempt to delete non-existent file " + toDelete;
+        delete(toDelete);
     }
 
-    long chunkSeq() {
+    long valChunkSeq() {
         return chunkSeq.get();
     }
 
@@ -138,12 +148,12 @@ public abstract class GcHelper implements Disposable {
         return compressor != null;
     }
 
-    void changeSuffix(long seq, String suffixNow, String targetSuffix) {
+    void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
         if (ioDisabled()) {
             return;
         }
-        final File nameNow = chunkFile(seq, suffixNow, false);
-        final File nameToBe = chunkFile(seq, targetSuffix, false);
+        final File nameNow = chunkFile(base, seq, suffixNow, false);
+        final File nameToBe = chunkFile(base, seq, suffixToBe, false);
         if (!nameNow.renameTo(nameToBe)) {
             throw new HazelcastException("Failed to rename " + nameNow + " to " + nameToBe);
         }
@@ -153,12 +163,8 @@ public abstract class GcHelper implements Disposable {
         return new GrowingDestChunk(chunkSeq.incrementAndGet(), this, pfixTombstomgr);
     }
 
-    FileChannel createFileChannel(long seq, String suffix) {
-        return createFileChannel(chunkFile(seq, suffix, true));
-    }
-
-    FileOutputStream createFileOutputStream(long seq, String suffix) {
-        return createFileOutputStream(chunkFile(seq, suffix, true));
+    FileOutputStream createFileOutputStream(String base, long seq, String suffix) {
+        return createFileOutputStream(chunkFile(base, seq, suffix, true));
     }
 
     OutputStream compressedOutputStream(FileOutputStream out) {
@@ -166,13 +172,13 @@ public abstract class GcHelper implements Disposable {
     }
 
     File chunkFile(Chunk chunk, boolean mkdirs) {
-        return chunkFile(chunk.seq, chunk.fnameSuffix(), mkdirs);
+        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
     }
 
-    File chunkFile(long seq, String suffix, boolean mkdirs) {
+    File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
         final String bucketDirname = String.format(BUCKET_DIRNAME_FORMAT, seq & BUCKET_DIR_MASK);
         final String chunkFilename = String.format(CHUNK_FNAME_FORMAT, seq, suffix);
-        final File bucketDir = new File(homeDir, bucketDirname);
+        final File bucketDir = new File(new File(homeDir, base), bucketDirname);
         if (mkdirs && !bucketDir.isDirectory() && !bucketDir.mkdirs()) {
             throw new HotRestartException("Cannot create chunk bucket directory " + bucketDir);
         }
@@ -194,6 +200,8 @@ public abstract class GcHelper implements Disposable {
 
     public abstract TrackerMap newTrackerMap();
 
+    public abstract SetOfKeyHandle newSetOfKeyHandle();
+
     /** The GC helper specialization for on-heap Hot Restart store */
     public static class OnHeap extends GcHelper {
 
@@ -212,7 +220,11 @@ public abstract class GcHelper implements Disposable {
             return new TrackerMapOnHeap();
         }
 
+        @Override public SetOfKeyHandle newSetOfKeyHandle() {
+            return new SetOfKeyHandleOnHeap();
+        }
     }
+
     /** The GC helper specialization for off-heap Hot Restart store */
     public static class OffHeap extends GcHelper {
 
@@ -233,11 +245,10 @@ public abstract class GcHelper implements Disposable {
         @Override public TrackerMap newTrackerMap() {
             return new TrackerMapOffHeap(malloc);
         }
-    }
 
-    FileChannel createFileChannel(File f) {
-        final FileOutputStream out = createFileOutputStream(f);
-        return out == null ? null : out.getChannel();
+        @Override public SetOfKeyHandle newSetOfKeyHandle() {
+            return new SetOfKeyHandleOffHeap(malloc);
+        }
     }
 
     FileOutputStream createFileOutputStream(File f) {

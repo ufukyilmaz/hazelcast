@@ -4,6 +4,7 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
 public class MockRecordStoreOnHeap extends MockRecordStoreBase {
 

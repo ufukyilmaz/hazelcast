@@ -70,11 +70,10 @@ public class HotRestartHDStorageImpl extends AbstractHotRestartStorageImpl<HDRec
     }
 
     @Override
-    public void removeInternal(HDRecord record, long tombstoneSequenceId) {
+    public void removeInternal(HDRecord record) {
         getStorageImpl().addDeferredDispose(record.getValue());
         synchronized (mutex) {
             record.setValueAddress(NULL_ADDRESS);
-            record.setTombstoneSequence(tombstoneSequenceId);
         }
     }
 

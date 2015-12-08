@@ -21,9 +21,9 @@ abstract class GrowingChunk extends Chunk {
      * May be called by the mutator thread.
      *
      * @return true if this chunk has now reached capacity
-     * @throws HotRestartException {@inheritDoc}
+     * @throws HotRestartException if attempting to add a record to a full chunk
      */
-    final boolean addStep1(int recordSize) {
+    public final boolean addStep1(int recordSize) {
         if (full()) {
             throw new HotRestartException(
                     String.format("Attempted to add record to a full chunk (no. %03x, size %d)", seq, size));
@@ -35,7 +35,7 @@ abstract class GrowingChunk extends Chunk {
     /**
      * Adds the record to this chunk's RAM-based index of records. Called by the collector thread.
      */
-    void addStep2(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
+    final void addStep2(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
         final Record existing = records.putIfAbsent(prefix, kh, seq, size, isTombstone, 0);
         if (existing != null) {
             existing.update(seq, size, isTombstone);
@@ -47,8 +47,8 @@ abstract class GrowingChunk extends Chunk {
         return size;
     }
 
-    final boolean full() {
-        return size >= SIZE_LIMIT;
+    boolean full() {
+        return size() >= Chunk.SIZE_LIMIT;
     }
 
     public static void fsync(FileOutputStream out) {

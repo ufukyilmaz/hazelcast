@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.InlineNativeMemoryMap;
-import com.hazelcast.elastic.map.InlineNativeMemoryMapImpl;
-import com.hazelcast.elastic.map.InmmCursor;
+import com.hazelcast.elastic.map.HashSlotArray;
+import com.hazelcast.elastic.map.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -18,11 +18,11 @@ final class RecordMapOffHeap implements RecordMap {
     private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
-    private InlineNativeMemoryMap records;
+    private HashSlotArray records;
     private final RecordOffHeap rec = new RecordOffHeap();
 
     public RecordMapOffHeap(MemoryAllocator malloc, int initialCapacity) {
-        this.records = new InlineNativeMemoryMapImpl(malloc, RecordOffHeap.SIZE, initialCapacity, LOAD_FACTOR);
+        this.records = new HashSlotArrayImpl(malloc, RecordOffHeap.SIZE, initialCapacity, LOAD_FACTOR);
     }
 
     RecordMapOffHeap(MemoryAllocator malloc, RecordMap gcRecordMap) {
@@ -33,7 +33,7 @@ final class RecordMapOffHeap implements RecordMap {
                 continue;
             }
             final KeyHandleOffHeap ohk = (KeyHandleOffHeap) cur.toKeyHandle();
-            rec.address = records.put(ohk.address(), ohk.sequenceId());
+            rec.address = records.ensure(ohk.address(), ohk.sequenceId());
             rec.setKeyPrefix(r.keyPrefix(null));
             rec.setRawSeqSize(r.rawSeqValue(), r.rawSizeValue());
             rec.setGarbageCount(r.garbageCount());
@@ -47,7 +47,7 @@ final class RecordMapOffHeap implements RecordMap {
     @Override
     public Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int garbageCount) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        final long addr = records.put(ohk.address(), ohk.sequenceId());
+        final long addr = records.ensure(ohk.address(), ohk.sequenceId());
         if (addr > 0) {
             rec.address = addr;
             rec.setKeyPrefix(prefix);
@@ -83,7 +83,7 @@ final class RecordMapOffHeap implements RecordMap {
     }
 
     private final class CursorOffHeap implements Cursor {
-        private final InmmCursor c = records.cursor();
+        private final HashSlotCursor c = records.cursor();
         private final RecordOffHeap r = new RecordOffHeap();
 
         @Override public boolean advance() {

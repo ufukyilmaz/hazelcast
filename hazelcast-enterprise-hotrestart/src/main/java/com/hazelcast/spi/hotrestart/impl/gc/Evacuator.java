@@ -39,12 +39,12 @@ final class Evacuator {
         this.start = start;
     }
 
-    static List<StableChunk> copyLiveRecords(
+    static List<StableValChunk> copyLiveRecords(
             ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
         return new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
     }
 
-    private List<StableChunk> evacuate() {
+    private List<StableValChunk> evacuate() {
         final List<GcRecord> liveRecords = sortedLiveRecords();
         // Sweep the source chunks just before dest chunks are created.
         // This is the last moment where needsDismissing won't need
@@ -62,7 +62,7 @@ final class Evacuator {
         // that needs to be dismissed.
         propagateDismissing(preparedDestChunks);
         logger.fine("GC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        final List<StableChunk> destChunks = persistDestChunks(preparedDestChunks);
+        final List<StableValChunk> destChunks = persistDestChunks(preparedDestChunks);
         dismissEvacuatedFiles();
         deleteEmptyDestFiles(destChunks);
         return destChunks;
@@ -90,7 +90,7 @@ final class Evacuator {
 
     private List<GcRecord> sortedLiveRecords() {
         final ArrayList<GcRecord> liveGcRecs = new ArrayList<GcRecord>(selected.liveRecordCount);
-        for (StableChunk chunk : selected.srcChunks) {
+        for (StableValChunk chunk : selected.srcChunks) {
             for (Cursor cur = chunk.records.cursor(); cur.advance();) {
                 if (cur.asRecord().isAlive()) {
                     // Here copies of records are made. The copies will not reflect
@@ -138,10 +138,10 @@ final class Evacuator {
         return dest;
     }
 
-    private List<StableChunk> persistDestChunks(List<GrowingDestChunk> preparedDestChunks) {
-        final List<StableChunk> compactedChunks = new ArrayList<StableChunk>();
+    private List<StableValChunk> persistDestChunks(List<GrowingDestChunk> preparedDestChunks) {
+        final List<StableValChunk> compactedChunks = new ArrayList<StableValChunk>();
         for (GrowingDestChunk destChunk : preparedDestChunks) {
-            final StableChunk stableChunk = destChunk.flushAndClose(mc, logger);
+            final StableValChunk stableChunk = destChunk.flushAndClose(mc, logger);
             compactedChunks.add(stableChunk);
             // This call transfers ownership of records from destChunk to stableChunk.
             // After this point retirements will be addressed at stableChunk.
@@ -153,7 +153,7 @@ final class Evacuator {
     }
 
     private void dismissEvacuatedFiles() {
-        for (StableChunk evacuated : selected.srcChunks) {
+        for (StableValChunk evacuated : selected.srcChunks) {
             gcHelper.deleteChunkFile(evacuated);
             // All garbage records collected from the source chunk in
             // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
@@ -162,9 +162,9 @@ final class Evacuator {
         }
     }
 
-    private void deleteEmptyDestFiles(List<StableChunk> destChunks) {
-        for (Iterator<StableChunk> iterator = destChunks.iterator(); iterator.hasNext();) {
-            final StableChunk c = iterator.next();
+    private void deleteEmptyDestFiles(List<StableValChunk> destChunks) {
+        for (Iterator<StableValChunk> iterator = destChunks.iterator(); iterator.hasNext();) {
+            final StableValChunk c = iterator.next();
             if (c.size() == c.garbage) {
                 mc.dismissGarbage(c);
                 gcHelper.deleteChunkFile(c);

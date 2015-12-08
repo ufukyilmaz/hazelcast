@@ -1,22 +1,18 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.util.HashUtil;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
-import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 /**
- * Implementation of {@code RawMap} using a native memory block as backing array.
- *
- * @see InlineNativeMemoryMap
+ * Implementation of {@link HashSlotArray} using a native memory block.
  */
-public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
+public class HashSlotArrayImpl implements HashSlotArray {
 
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
@@ -69,31 +65,31 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     private long resizeAt;
 
     /**
-     * Constructs a new {@code RawMapImpl} with default initial capacity and default load factor (0.6).
+     * Constructs a new {@code HashSlotArrayImpl} with default initial capacity and default load factor (0.6).
      * {@code valueLength} must be a factor of 8.
      *
      * @param malloc Memory allocator
      * @param valueLength Length of value in bytes
      */
-    public InlineNativeMemoryMapImpl(MemoryAllocator malloc, int valueLength) {
+    public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength) {
         this(malloc, valueLength, 16, 0.6f);
     }
 
     /**
-     * Constructs a new {@code RawMapImpl} with the given initial capacity and the load factor. {@code valueLength}
-     * must be a factor of 8.
+     * Constructs a new {@code HashSlotArrayImpl} with the given initial capacity and the load factor.
+     * {@code valueLength} must be a factor of 8.
      *
      * @param malloc Memory allocator
      * @param valueLength Length of value in bytes
      * @param initialCapacity Initial capacity of map (will be rounded to closest power of 2, if not already)
      * @param loadFactor Load factor
      */
-    public InlineNativeMemoryMapImpl(MemoryAllocator malloc, int valueLength, int initialCapacity, float loadFactor) {
+    public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength, int initialCapacity, float loadFactor) {
         if (QuickMath.modPowerOfTwo(valueLength, 8) != 0) {
             throw new IllegalArgumentException("Value length should be factor of 8!");
         }
         this.valueLength = valueLength;
-        this.entryLength = valueLength + VALUE_OFFSET;
+        this.entryLength = VALUE_OFFSET + valueLength;
         this.malloc = malloc;
         this.loadFactor = loadFactor;
 
@@ -111,7 +107,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
     }
 
     @Override
-    public long put(long key1, long key2) {
+    public long ensure(long key1, long key2) {
         ensureLive();
 
         // Check if we need to grow. If so, reallocate new data and rehash.
@@ -288,7 +284,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
         return valueLength;
     }
 
-    @Override public InmmCursor cursor() {
+    @Override public HashSlotCursor cursor() {
         return new Cursor();
     }
 
@@ -340,7 +336,7 @@ public class InlineNativeMemoryMapImpl implements InlineNativeMemoryMap {
         }
     }
 
-    private class Cursor implements InmmCursor {
+    private class Cursor implements HashSlotCursor {
 
         private long currentSlot = -1L;
 

@@ -24,8 +24,8 @@ import static java.util.Arrays.asList;
 final class ChunkSelector {
     @SuppressWarnings("MagicNumber")
     static final int INITIAL_TOP_CHUNKS = 32 * GcParams.COST_GOAL_CHUNKS;
-    private static final Comparator<StableChunk> BY_COST_BENEFIT = new Comparator<StableChunk>() {
-        @Override public int compare(StableChunk left, StableChunk right) {
+    private static final Comparator<StableValChunk> BY_COST_BENEFIT = new Comparator<StableValChunk>() {
+        @Override public int compare(StableValChunk left, StableValChunk right) {
             final double leftCb = left.cachedCostBenefit();
             final double rightCb = right.cachedCostBenefit();
             return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
@@ -49,7 +49,7 @@ final class ChunkSelector {
 
     /** Aggregates data returned to the caller of selectChunksToCollect() */
     static class ChunkSelection {
-        final List<StableChunk> srcChunks = new ArrayList<StableChunk>();
+        final List<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
         int liveRecordCount;
     }
 
@@ -61,7 +61,7 @@ final class ChunkSelector {
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
     private ChunkSelection select() {
-        final Set<StableChunk> candidates = candidateChunks();
+        final Set<StableValChunk> candidates = candidateChunks();
         if (candidates.isEmpty()) {
             return cs;
         }
@@ -71,7 +71,7 @@ final class ChunkSelector {
         int chunksToFind = initialChunksToFind;
         final String status;
         done: while (true) {
-            for (StableChunk c : topChunks(candidates, chunksToFind)) {
+            for (StableValChunk c : topChunks(candidates, chunksToFind)) {
                 mc.catchupAsNeeded();
                 pfixTombstoMgr.dismissGarbage(c);
                 cost += c.cost();
@@ -114,9 +114,13 @@ final class ChunkSelector {
         return cs;
     }
 
-    private Set<StableChunk> candidateChunks() {
-        final Set<StableChunk> candidates = new HashSet<StableChunk>();
-        for (StableChunk c : allChunks) {
+    private Set<StableValChunk> candidateChunks() {
+        final Set<StableValChunk> candidates = new HashSet<StableValChunk>();
+        for (StableChunk chunk : allChunks) {
+            if (!(chunk instanceof StableValChunk)) {
+                continue;
+            }
+            final StableValChunk c = (StableValChunk) chunk;
             if (c.size() > 0 && c.garbage == 0 || c.updateCostBenefit(gcp.currRecordSeq) < gcp.minCostBenefit) {
                 continue;
             }
@@ -125,19 +129,19 @@ final class ChunkSelector {
         return candidates;
     }
 
-    private List<StableChunk> topChunks(Set<StableChunk> candidates, int limit) {
+    private List<StableValChunk> topChunks(Set<StableValChunk> candidates, int limit) {
         if (candidates.size() <= limit) {
-            final List<StableChunk> sortedChunks = new ArrayList<StableChunk>(candidates);
+            final List<StableValChunk> sortedChunks = new ArrayList<StableValChunk>(candidates);
             Collections.sort(sortedChunks, BY_COST_BENEFIT);
             mc.catchupNow();
             return sortedChunks;
         } else {
             final ChunkPriorityQueue topChunks = new ChunkPriorityQueue(limit);
-            for (StableChunk c : candidates) {
+            for (StableValChunk c : candidates) {
                 mc.catchupAsNeeded();
                 topChunks.offer(c);
             }
-            final StableChunk[] result = new StableChunk[topChunks.size()];
+            final StableValChunk[] result = new StableValChunk[topChunks.size()];
             for (int i = result.length - 1; i >= 0; i--) {
                 mc.catchupAsNeeded();
                 result[i] = topChunks.pop();
@@ -160,18 +164,28 @@ final class ChunkSelector {
         if (!logger.isFinestEnabled()) {
             return;
         }
-        final StableChunk[] sorted = chunks.toArray(new StableChunk[chunks.size()]);
-        for (StableChunk c : chunks) {
+        final Collection<StableValChunk> valChunks = new ArrayList<StableValChunk>(chunks.size());
+        int tombChunkCount = 0;
+        for (StableChunk chunk : chunks) {
+            if (!(chunk instanceof StableValChunk)) {
+                tombChunkCount++;
+                continue;
+            }
+            final StableValChunk c = (StableValChunk) chunk;
             c.updateCostBenefit(currSeq);
+            valChunks.add(c);
         }
+        final StableValChunk[] sorted = valChunks.toArray(new StableValChunk[chunks.size()]);
         Arrays.sort(sorted, BY_COST_BENEFIT);
         final StringWriter sw = new StringWriter(512);
         final PrintWriter o = new PrintWriter(sw);
+        o.format("%nTombstone chunks: %,d", tombChunkCount);
         o.println("\nseq    garbage       cost   count  youngestSeq     costBenefit");
-        for (StableChunk c : sorted) {
+        for (StableValChunk c : sorted) {
             o.format("%3x %,10d %,10d %,7d %,12d %,15.2f%n",
                     c.seq, c.garbage, c.cost(), c.records.size(), c.youngestRecordSeq, c.cachedCostBenefit());
         }
         logger.finest(sw.toString());
     }
+
 }

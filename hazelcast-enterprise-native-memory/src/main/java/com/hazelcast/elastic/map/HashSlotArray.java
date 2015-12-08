@@ -2,19 +2,17 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.nio.Disposable;
 
-/**
- * <p>A hashtable which keeps densely packed (key, value) entries in a native memory block.
- * As a consequence, both key and value have fixed size. The key may be up to 16 bytes
- * and is represented as a pair of <code>long</code> values.
- *
- * <p>This map responds to lookup with a <code>long</code> value representing the address of
- * the value block. The actual data must be accessed using <code>Unsafe</code> memory operations.
- * <b>The returned address is valid only up to the next map update operation</b>. 
- * 
- * <p>One recommended approach to a convenient usage of the returned address is to construct 
- * a flyweight object around it and access the value's components through the object's API.
- *
- * <p>This map makes no assumptions about the key's semantics; it just uses them as the literal
+/** <p>
+ * Manages the backbone array of an off-heap open-addressed hashtable. The backbone consists
+ * of <i>slots</i>, where each slot has a key part and an optional value part. The key part
+ * consists of two {@code long} values and the value part is a block whose size is a multiple of 8.
+ * </p><p>
+ * The update operations on this class only ensure that a slot for a given key exists/doesn't exist
+ * and it is up to the caller to manage the contents of the value part. The caller will be provided
+ * with the raw address of the value, suitable for accessing with {@code Unsafe} memory operations.
+ * <b>The returned address is valid only up to the next map update operation</b>.
+ * </p><p>
+ * This class makes no assumptions about the key's semantics; it just uses them as the literal
  * 16 bytes of data. However, a major use case is where the key represents a "safe pointer" to
  * a native memory block. It consists of a pair <code>(nativeAddress, sequenceId)</code>, where
  * <code>nativeAddress</code> is the address of a native memory block containing key data and
@@ -24,8 +22,9 @@ import com.hazelcast.nio.Disposable;
  * pointing to invalid data. The <code>(nativeAddress, sequenceId)</code> pair is expected to be
  * acquired from a native data structure which complies with this concept and stores the relevant
  * key data.
+ * </p>
  */
-public interface InlineNativeMemoryMap extends Disposable {
+public interface HashSlotArray extends Disposable {
 
     /**
      * Ensures that there is a mapping from {@code (key1, key2)} to a slot in the map.
@@ -37,7 +36,7 @@ public interface InlineNativeMemoryMap extends Disposable {
      * @param key2 key part 2
      * @return address of value block
      */
-    long put(long key1, long key2);
+    long ensure(long key1, long key2);
 
     /**
      * Returns the address of the value block mapped by {@code (key1, key2)}.
@@ -78,5 +77,5 @@ public interface InlineNativeMemoryMap extends Disposable {
      */
     int valueLength();
 
-    InmmCursor cursor();
+    HashSlotCursor cursor();
 }

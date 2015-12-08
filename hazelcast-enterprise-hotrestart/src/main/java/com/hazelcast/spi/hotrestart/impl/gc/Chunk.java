@@ -20,9 +20,19 @@ public abstract class Chunk implements Disposable {
      * If system fails during GC, such file should not be considered during restart. */
     public static final String DEST_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".dest";
 
-    /** Chunk file size limit. */
+    /** Chunk file size limit in bytes. */
     @SuppressWarnings("checkstyle:magicnumber")
     public static final long SIZE_LIMIT = 8 << 20;
+
+    /** Record count limit in a tombstone chunk. */
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final long TOMB_COUNT_LIMIT = 1 << 9;
+
+    /** Name of the base directory for value records. */
+    public static final String VAL_BASEDIR = "value";
+
+    /** Name of the base directory for tombstone records. */
+    public static final String TOMB_BASEDIR = "tombstone";
 
     /** Unique sequence number of this chunk. */
     public final long seq;
@@ -39,7 +49,7 @@ public abstract class Chunk implements Disposable {
         this.records = records;
     }
 
-    Chunk(WriteThroughChunk from) {
+    Chunk(GrowingChunk from) {
         this.seq = from.seq;
         this.records = from.records;
         this.liveRecordCount = from.liveRecordCount;
@@ -70,6 +80,10 @@ public abstract class Chunk implements Disposable {
 
     String fnameSuffix() {
         return FNAME_SUFFIX;
+    }
+
+    String base() {
+        return VAL_BASEDIR;
     }
 
     public void dispose() {

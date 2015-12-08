@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.InlineNativeMemoryMap;
-import com.hazelcast.elastic.map.InlineNativeMemoryMapImpl;
-import com.hazelcast.elastic.map.InmmCursor;
+import com.hazelcast.elastic.map.HashSlotArray;
+import com.hazelcast.elastic.map.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -17,16 +17,16 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
-    private InlineNativeMemoryMap trackers;
+    private HashSlotArray trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
     TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new InlineNativeMemoryMapImpl(malloc, TrackerOffHeap.SIZE);
+        this.trackers = new HashSlotArrayImpl(malloc, TrackerOffHeap.SIZE);
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        final long addr = trackers.put(ohk.address(), ohk.sequenceId());
+        final long addr = trackers.ensure(ohk.address(), ohk.sequenceId());
         if (addr > 0) {
             tr.address = addr;
             tr.setLiveState(chunkSeq, isTombstone);
@@ -67,7 +67,7 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     }
 
     private class CursorOffHeap implements Cursor, KeyHandleOffHeap {
-        private final InmmCursor c = trackers.cursor();
+        private final HashSlotCursor c = trackers.cursor();
         private final TrackerOffHeap r = new TrackerOffHeap();
 
         @Override public boolean advance() {

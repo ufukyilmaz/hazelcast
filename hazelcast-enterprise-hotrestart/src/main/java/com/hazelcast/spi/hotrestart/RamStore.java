@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart;
 
-import java.util.Collection;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
 /**
  * Specifies operations that the Hot Restart store will request from the
@@ -29,21 +29,6 @@ public interface RamStore {
     boolean copyEntry(KeyHandle key, int expectedSize, RecordDataSink bufs) throws HotRestartException;
 
     /**
-     * The data of a record in the Hot Restart store is not kept
-     * by the Hot Restart store and the same holds even for tombstone
-     * records, representing entries which were deleted from the RAM store.
-     * The RAM store must retain a key even after deletion because the Hot
-     * Restart store will ask for it when garbage-collecting a chunk file
-     * which contains the tombstone record.
-     * <p>
-     * Eventually the Hot Restart store will conclude it is safe to remove
-     * the tombstone from the persistent store; at that point it will notify
-     * the RAM store that it can remove the key as well. It will do so by
-     * calling this method.
-     */
-    void releaseTombstones(Collection<TombstoneId> handles);
-
-    /**
      * Called during Hot Restart. Requests a handle object for the given
      * key bytes.
      *
@@ -58,31 +43,8 @@ public interface RamStore {
     void accept(KeyHandle hrKey, byte[] value);
 
     /**
-     * Called during Hot Restart. Allows the RAM store to re-establish a
-     * mapping from the supplied key to a tombstone with the supplied
-     * sequence ID.
+     * Called during Hot Restart. Gives the RAM store a set of key handles which can
+     * be removed because they have null-values.
      */
-    void acceptTombstone(KeyHandle hrKey, long seq);
-
-    /**
-     * Holder of the pair (keyHandle, tombstoneSeq) as required by the
-     * tombstone releasing mechanism, as explained in {@link RamStore#releaseTombstones(Collection)}.
-     * <p>
-     * This mechanism is subject to the A-B-A problem where first a mapping for a key
-     * is deleted, creating tombstone 1; then a new mapping established, then the new mapping
-     * again deleted, creating tombstone 2 with the same key. Without the help of the `tombstoneSeq`
-     * field these two tombstones couldn't be distinguished and a {@code releaseTombstones()} call
-     * could clear out the wrong tombstone.
-     */
-    interface TombstoneId {
-        /**
-         * @return the key handle of the tombstone
-         */
-        KeyHandle keyHandle();
-
-        /**
-         * @return an integer unique to this particular tombstone
-         */
-        long tombstoneSeq();
-    }
+    void removeNullEntries(SetOfKeyHandle keyHandles);
 }

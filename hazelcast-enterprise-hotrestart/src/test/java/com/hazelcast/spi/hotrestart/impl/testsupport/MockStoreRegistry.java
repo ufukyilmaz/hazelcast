@@ -19,7 +19,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     private final MemoryAllocator malloc;
     private long lastReleasedTombstones;
 
-    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) {
+    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws InterruptedException {
         this.malloc = malloc;
         cfg.setRamStoreRegistry(this);
         this.hrStore = malloc != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
@@ -43,16 +43,6 @@ public class MockStoreRegistry implements RamStoreRegistry {
         for (long prefix : prefixes) {
             getOrCreateRecordStoreForPrefix(prefix).clear();
         }
-    }
-
-    public void releaseTombstonesAsNeeded() {
-        if (System.currentTimeMillis() - lastReleasedTombstones < TOMBSTONE_RELEASE_INTERVAL_MILLIS) {
-            return;
-        }
-        for (MockRecordStore s : recordStores.values()) {
-            s.drainTombstoneReleaseQueue();
-        }
-        lastReleasedTombstones = System.currentTimeMillis();
     }
 
     @Override public RamStore ramStoreForPrefix(long prefix) {

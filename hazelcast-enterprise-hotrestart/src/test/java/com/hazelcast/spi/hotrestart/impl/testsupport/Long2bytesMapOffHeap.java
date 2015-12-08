@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.elastic.map.InlineNativeMemoryMap;
-import com.hazelcast.elastic.map.InlineNativeMemoryMapImpl;
-import com.hazelcast.elastic.map.InmmCursor;
+import com.hazelcast.elastic.map.HashSlotArray;
+import com.hazelcast.elastic.map.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
@@ -11,13 +11,13 @@ import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
-    private final InlineNativeMemoryMap map;
+    private final HashSlotArray map;
     private final ValueBlockAccessor vblockAccessor;
     private boolean isDisposed;
 
     public Long2bytesMapOffHeap(MemoryAllocator malloc) {
         this.vblockAccessor = new ValueBlockAccessor(malloc);
-        this.map = new InlineNativeMemoryMapImpl(malloc, 8, 16*1024, 0.6f);
+        this.map = new HashSlotArrayImpl(malloc, 8, 16*1024, 0.6f);
     }
 
     @Override public void put(long key, byte[] value) {
@@ -32,27 +32,15 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         size++;
     }
 
-    @Override public void putTombstone(long key, long tombstoneSeq) {
-        final long vSlotAddr = vacateSlot(key);
-        try {
-            vblockAccessor.allocateTombstone(tombstoneSeq);
-        } catch (Error e) {
-            map.remove(key, 0);
-            throw e;
-        }
-        UNSAFE.putLong(vSlotAddr, vblockAccessor.address());
-    }
-
-    @Override public void removeTombstone(long key, long tombstoneSeq) {
+    @Override public void remove(long key) {
         final long vSlotAddr = map.get(key, 0);
         if (vSlotAddr == NULL_ADDRESS) {
             return;
         }
+        size--;
         vblockAccessor.reset(vSlotAddr);
-        if (vblockAccessor.isTombstone() && vblockAccessor.tombstoneSeq() == tombstoneSeq) {
-            vblockAccessor.delete();
-            map.remove(key, 0);
-        }
+        vblockAccessor.delete();
+        map.remove(key, 0);
     }
 
     @Override public boolean containsKey(long key) {
@@ -90,7 +78,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public void clear() {
-        for (InmmCursor cursor = map.cursor(); cursor.advance();) {
+        for (HashSlotCursor cursor = map.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }
@@ -117,7 +105,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     private long vacateSlot(long key) {
-        long vSlotAddr = map.put(key, 0);
+        long vSlotAddr = map.ensure(key, 0);
         if (vSlotAddr < 0) {
             vSlotAddr = -vSlotAddr;
             vblockAccessor.reset(vSlotAddr);
@@ -132,9 +120,9 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
 
     private static final class Cursor implements L2bCursor {
         private final ValueBlockAccessor vblockAccessor = new ValueBlockAccessor(null);
-        private final InmmCursor cursor;
+        private final HashSlotCursor cursor;
 
-        Cursor(InmmCursor wrappedCursor) {
+        Cursor(HashSlotCursor wrappedCursor) {
             this.cursor = wrappedCursor;
         }
 

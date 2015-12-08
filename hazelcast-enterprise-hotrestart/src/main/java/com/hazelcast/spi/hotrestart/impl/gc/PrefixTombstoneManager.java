@@ -63,7 +63,7 @@ class PrefixTombstoneManager {
             multiPut(mutatorPrefixTombstones, prefixes, currRecordSeq);
             tombstoneSnapshot = new Long2LongHashMap(mutatorPrefixTombstones);
         }
-        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
+        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.valChunkSeq()));
         persistTombstones(gcHelper, tombstoneSnapshot);
     }
 
@@ -75,7 +75,7 @@ class PrefixTombstoneManager {
         return new Runnable() {
             @Override public void run() {
                 multiPut(collectorPrefixTombstones, prefixes, recordSeq);
-                final Chunk activeChunk = chunkMgr.activeChunk;
+                final Chunk activeChunk = chunkMgr.activeValChunk;
                 dismissGarbage(activeChunk, prefixes);
                 multiPut(dismissedActiveChunks, prefixes, activeChunk.seq);
                 for (StableChunk c : chunkMgr.chunks.values()) {
@@ -222,7 +222,7 @@ class PrefixTombstoneManager {
 
         Sweeper(long chunkSeqLimit) {
             this.chunkSeq = chunkSeqLimit;
-            final Chunk activeChunk = chunkMgr.activeChunk;
+            final Chunk activeChunk = chunkMgr.activeValChunk;
             if (activeChunk.seq <= chunkSeqLimit) {
                 markLiveTombstones(activeChunk);
                 sweptActiveChunkSeq = activeChunk.seq;

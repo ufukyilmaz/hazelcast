@@ -16,14 +16,14 @@ import java.util.List;
 final class ChunkPriorityQueue {
     private int size;
     private final int maxSize;
-    private final StableChunk[] heap;
+    private final StableValChunk[] heap;
 
     ChunkPriorityQueue(int maxSize) {
-        this.heap = new StableChunk[maxSize == 0 ? 2 : maxSize + 1];
+        this.heap = new StableValChunk[maxSize == 0 ? 2 : maxSize + 1];
         this.maxSize = maxSize;
     }
 
-    private static boolean betterThan(StableChunk left, StableChunk right) {
+    private static boolean betterThan(StableValChunk left, StableValChunk right) {
         return left.cachedCostBenefit() > right.cachedCostBenefit();
     }
 
@@ -37,14 +37,14 @@ final class ChunkPriorityQueue {
      * heap and now has been replaced by a better one, or null
      * if the queue wasn't yet full with maxSize elements.
      */
-    public StableChunk offer(StableChunk element) {
+    public StableValChunk offer(StableValChunk element) {
         if (size < maxSize) {
             size++;
             heap[size] = element;
             upHeap();
             return null;
         } else if (size > 0 && betterThan(element, heap[1])) {
-            StableChunk ret = heap[1];
+            StableValChunk ret = heap[1];
             heap[1] = element;
             downHeap();
             return ret;
@@ -53,14 +53,14 @@ final class ChunkPriorityQueue {
         }
     }
 
-    public StableChunk head() {
+    public StableValChunk head() {
         return size > 0 ? heap[1] : null;
     }
 
     /** Removes and returns the least chunk in O(log size) time. */
-    public StableChunk pop() {
+    public StableValChunk pop() {
         if (size > 0) {
-            StableChunk result = heap[1];
+            StableValChunk result = heap[1];
             heap[1] = heap[size];
             size--;
             downHeap();
@@ -78,8 +78,8 @@ final class ChunkPriorityQueue {
         size = 0;
     }
 
-    public List<StableChunk> asList() {
-        return isEmpty() ? Collections.<StableChunk>emptyList() : Arrays.asList(heap).subList(1, size + 1);
+    public List<StableValChunk> asList() {
+        return isEmpty() ? Collections.<StableValChunk>emptyList() : Arrays.asList(heap).subList(1, size + 1);
     }
 
     public boolean isEmpty() {
@@ -89,7 +89,7 @@ final class ChunkPriorityQueue {
     private void upHeap() {
         int i = size;
         // save bottom node
-        StableChunk node = heap[i];
+        StableValChunk node = heap[i];
         int j = i >>> 1;
         while (j > 0 && betterThan(heap[j], node)) {
             // shift parents down
@@ -104,7 +104,7 @@ final class ChunkPriorityQueue {
     private void downHeap() {
         int i = 1;
         // save top node
-        StableChunk node = heap[i];
+        StableValChunk node = heap[i];
         // find worse child
         int j = i << 1;
         int k = j + 1;

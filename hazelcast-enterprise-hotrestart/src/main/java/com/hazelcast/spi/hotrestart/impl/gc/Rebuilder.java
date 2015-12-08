@@ -85,7 +85,7 @@ public final class Rebuilder {
                 garbage.inc(stale.size());
                 chunkWithStale.retire(kh, stale);
                 chunk.add(prefix, kh, seq, size);
-                tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers);
+                tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers, true);
                 removeFromTombKeys(prefix, kh);
                 return true;
             } else {

@@ -39,10 +39,7 @@ public class RamStoreHDImpl implements RamStore {
         synchronized (mutex) {
             NativeMemoryData key = new NativeMemoryData().reset(kh.address());
             HDRecord record = storage.get(key);
-            if (record == null) {
-                return false;
-            }
-            return RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
+            return record != null && RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }
 

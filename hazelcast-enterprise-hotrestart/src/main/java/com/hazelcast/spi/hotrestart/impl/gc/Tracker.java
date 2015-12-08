@@ -23,13 +23,15 @@ abstract class Tracker {
         setLiveState(destChunkSeq, isTombstone());
     }
 
-    final void newLiveRecord(long chunkSeq, boolean freshIsTombstone, TrackerMap owner) {
+    final void newLiveRecord(long chunkSeq, boolean freshIsTombstone, TrackerMap owner, boolean restarting) {
         final TrackerMapBase ownr = (TrackerMapBase) owner;
         if (isAlive()) {
             final boolean staleIsTombstone = isTombstone();
             if (staleIsTombstone) {
                 if (!freshIsTombstone) {
                     ownr.replacedTombstoneWithValue();
+                } else {
+                    assert restarting : "Attempted to replace a tombstone with another tombstone";
                 }
             } else {
                 incrementGarbageCount();

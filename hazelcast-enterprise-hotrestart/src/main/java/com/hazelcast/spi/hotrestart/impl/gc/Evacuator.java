@@ -3,9 +3,9 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 final class Evacuator {
     private final ChunkSelection selected;
     private final GcLogger logger;
-    private final Map<Long, Chunk> destChunkMap;
+    private final Long2ObjectHashMap<Chunk> destChunkMap;
     private final TrackerMap recordTrackers;
     private final GcHelper gcHelper;
     private final PrefixTombstoneManager pfixTombstoMgr;
@@ -31,7 +31,7 @@ final class Evacuator {
     Evacuator(ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
         this.selected = selected;
         this.logger = logger;
-        this.destChunkMap = chunkMgr.destChunkMap = new HashMap<Long, Chunk>();
+        this.destChunkMap = chunkMgr.destChunkMap = new Long2ObjectHashMap<Chunk>();
         this.gcHelper = chunkMgr.gcHelper;
         this.pfixTombstoMgr = chunkMgr.pfixTombstoMgr;
         this.recordTrackers = chunkMgr.trackers;

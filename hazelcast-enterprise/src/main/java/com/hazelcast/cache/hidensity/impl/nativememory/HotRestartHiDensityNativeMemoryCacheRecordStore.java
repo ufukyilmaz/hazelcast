@@ -89,8 +89,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected HiDensityNativeMemoryCacheRecord doRemoveRecord(Data key, String source) {
-        // Don't remove the record! We'll use it later as tombstone
-        // see #onDeleteRecord() and #onRemove().
         HiDensityNativeMemoryCacheRecord record = records.get(key);
         if (record != null) {
             removeFromHotRestart(key, record);

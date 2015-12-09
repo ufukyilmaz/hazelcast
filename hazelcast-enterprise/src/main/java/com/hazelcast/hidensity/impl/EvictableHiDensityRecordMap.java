@@ -45,12 +45,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
      */
     public <C extends EvictionCandidate<Data, R>> int forceEvict(int evictionPercentage,
                                                                  EvictionListener<Data, R> evictionListener) {
-        return doForceEvict(evictionPercentage, evictionListener);
-    }
-
-    //CHECKSTYLE:OFF
-    protected <C extends EvictionCandidate<Data, R>> int doForceEvict(int evictionPercentage,
-                                                                      EvictionListener<Data, R> evictionListener) {
         int size = size();
         if (evictionPercentage < 0 || size == 0) {
             return 0;
@@ -71,7 +65,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         return forceEvict(iter, evictionListener, evictCount);
     }
 
-    protected int forceEvict(KeyIter iterator, EvictionListener<Data, R> evictionListener, int evictCount) {
+    private int forceEvict(KeyIter iterator, EvictionListener<Data, R> evictionListener, int evictCount) {
         int evictedEntryCount = 0;
         while (iterator.hasNext()) {
             iterator.nextSlot();
@@ -90,7 +84,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         }
         return evictedEntryCount;
     }
-    //CHECKSTYLE:ON
 
     public int evictExpiredRecords() {
         return doEvictExpiredRecords(null, null);

@@ -11,7 +11,7 @@ import static com.hazelcast.util.HashUtil.MurmurHash3_x86_32;
 import static java.lang.Character.MAX_RADIX;
 
 /**
- * Implementation usable both as {@link HotRestarKey} and {@link KeyHandle} for an
+ * Implementation usable both as {@link HotRestartKey} and {@link KeyHandle} for an
  * on-heap hot restart store.
  */
 public class KeyOnHeap implements HotRestartKey, KeyHandle {

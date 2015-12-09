@@ -22,17 +22,12 @@ public final class RamStoreHelper {
      */
     public static boolean copyEntry(KeyOnHeap keyHandle, Data value, int expectedSize, RecordDataSink sink) {
         byte[] keyBytes = keyHandle.bytes();
-        if (value == null) {
-            if (keyBytes.length != expectedSize) {
-                return false;
-            }
-        } else {
-            byte[] valueBytes = value.toByteArray();
-            if (valueBytes.length + keyBytes.length != expectedSize) {
-                return false;
-            }
-            sink.getValueBuffer(valueBytes.length).put(valueBytes);
+        byte[] valueBytes = value.toByteArray();
+
+        if (valueBytes.length + keyBytes.length != expectedSize) {
+            return false;
         }
+        sink.getValueBuffer(valueBytes.length).put(valueBytes);
         sink.getKeyBuffer(keyBytes.length).put(keyBytes);
         return true;
     }
@@ -49,18 +44,14 @@ public final class RamStoreHelper {
         }
 
         final int keySize = key.totalSize();
-        if (!record.isTombstone()) {
-            final long valueAddress = record.getValueAddress();
-            final NativeMemoryData value = new NativeMemoryData().reset(valueAddress);
-            final int valueSize = value.totalSize();
-            if (keySize + valueSize != expectedSize) {
-                return false;
-            }
-            writeDataToBuffer(value, sink.getValueBuffer(valueSize));
-        } else if (keySize != expectedSize) {
+        final long valueAddress = record.getValueAddress();
+        final NativeMemoryData value = new NativeMemoryData().reset(valueAddress);
+        final int valueSize = value.totalSize();
+        if (keySize + valueSize != expectedSize) {
             return false;
         }
 
+        writeDataToBuffer(value, sink.getValueBuffer(valueSize));
         writeDataToBuffer(key, sink.getKeyBuffer(keySize));
         return true;
     }

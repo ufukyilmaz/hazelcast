@@ -50,13 +50,6 @@ public abstract class HiDensityRecord
     public abstract void clear();
 
     /**
-     * Tells whether this record is a tombstone or not.
-     *
-     * @return true if this record is tombstone, false otherwise
-     */
-    public abstract boolean isTombstone();
-
-    /**
      * Returns sequence id associated with this record.
      */
     public abstract long getSequence();

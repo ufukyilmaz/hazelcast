@@ -9,8 +9,6 @@ import com.hazelcast.nio.serialization.Data;
 
 import java.util.Map;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-
 /**
  * Hot-restart variant of HiDensityNativeMemoryCacheRecordMap.
  * <p/>
@@ -30,13 +28,9 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     // This mutex guards all modifications and reads done by GC thread.
     private final Object mutex = new Object();
 
-    private final HiDensityNativeMemoryCacheRecord recordHolder;
-
     public HotRestartHiDensityNativeMemoryCacheRecordMap(int initialCapacity,
             HiDensityRecordProcessor cacheRecordProcessor, HiDensityStorageInfo cacheInfo) {
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
-
-        recordHolder = new HiDensityNativeMemoryCacheRecord(cacheRecordProcessor);
     }
 
     // All mutator methods should be in sync block
@@ -102,49 +96,11 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     }
 
     @Override
-    protected boolean isValidForSampling(int slot) {
-        if (!isAssigned(slot)) {
-            return false;
+    public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int forceEvict(int evictionPercentage,
+            EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
+        synchronized (mutex) {
+            return super.forceEvict(evictionPercentage, evictionListener);
         }
-        recordHolder.reset(getValue(slot));
-        return !recordHolder.isTombstone();
-    }
-
-    // Overridden to avoid disposing key and record itself.
-    // Only value will be disposed.
-    // Key and record itself will be removed
-    // when hot-restart GC thread instructs to release tombstones.
-    @Override
-    protected int forceEvict(KeyIter iterator,
-            EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener, int evictCount) {
-
-        int evictedEntryCount = 0;
-        HiDensityNativeMemoryCacheRecord record = recordHolder;
-        while (iterator.hasNext()) {
-            iterator.nextSlot();
-
-            int slot = iterator.getCurrentSlot();
-            record.reset(getValue(slot));
-
-            if (record.isTombstone()) {
-                continue;
-            }
-
-            synchronized (mutex) {
-                recordProcessor.disposeValue(record);
-            }
-
-            if (evictionListener != null) {
-                keyHolder.reset(getKey(slot));
-                evictionListener.onEvict(keyHolder, record);
-            }
-
-            if (++evictedEntryCount >= evictCount) {
-                break;
-            }
-        }
-        recordHolder.reset(NULL_ADDRESS);
-        return evictedEntryCount;
     }
 
     @Override
@@ -156,35 +112,12 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
         throw new UnsupportedOperationException();
     }
 
-    // Overridden to avoid disposing key and record itself.
-    // Only value will be disposed.
-    // Key and record itself will be removed
-    // when hot-restart GC thread instructs to release tombstones.
     @Override
     public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int evict(
             Iterable<C> evictionCandidates, EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
-
-        if (evictionCandidates == null) {
-            return 0;
+        synchronized (mutex) {
+            return super.evict(evictionCandidates, evictionListener);
         }
-
-        int actualEvictedCount = 0;
-        for (EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord> evictionCandidate : evictionCandidates) {
-            Data key = evictionCandidate.getAccessor();
-            HiDensityNativeMemoryCacheRecord record = get(key);
-            if (record != null) {
-                actualEvictedCount++;
-
-                synchronized (mutex) {
-                    recordProcessor.disposeValue(record);
-                }
-
-                if (evictionListener != null) {
-                    evictionListener.onEvict(key, record);
-                }
-            }
-        }
-        return actualEvictedCount;
     }
 
     @Override

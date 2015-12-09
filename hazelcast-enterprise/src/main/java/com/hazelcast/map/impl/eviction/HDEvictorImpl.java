@@ -119,7 +119,7 @@ public class HDEvictorImpl extends EvictorImpl {
         }
         for (Record record : recordsToEvict) {
             fireEvent(record, recordStore, backup, now);
-            storage.removeRecord(record);
+            recordStore.evict(record.getKey(), backup);
         }
 
         recordStore.dispose();

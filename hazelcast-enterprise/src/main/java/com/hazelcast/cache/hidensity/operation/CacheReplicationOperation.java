@@ -157,17 +157,12 @@ public final class CacheReplicationOperation
 
             for (Map.Entry<Data, HiDensityCacheRecord> e : value.entrySet()) {
                 HiDensityCacheRecord record = e.getValue();
+                valueData.reset(record.getValueAddress());
+                out.writeData(e.getKey());
+                out.writeData(valueData);
 
-                if (record.isTombstone()) {
-                    out.writeData(null);
-                } else {
-                    valueData.reset(record.getValueAddress());
-                    out.writeData(e.getKey());
-                    out.writeData(valueData);
-
-                    long remainingTtl = getRemainingTtl(record, now);
-                    out.writeLong(remainingTtl);
-                }
+                long remainingTtl = getRemainingTtl(record, now);
+                out.writeLong(remainingTtl);
                 subCount--;
             }
             if (subCount != 0) {

@@ -45,7 +45,7 @@ public class CacheKeyIteratorOperation
                 Map.Entry<Data, HiDensityCacheRecord> entry = iter.next();
                 Data key = entry.getKey();
                 HiDensityCacheRecord record = entry.getValue();
-                if (record.isExpiredAt(now) || record.isTombstone()) {
+                if (record.isExpiredAt(now)) {
                     continue;
                 }
 

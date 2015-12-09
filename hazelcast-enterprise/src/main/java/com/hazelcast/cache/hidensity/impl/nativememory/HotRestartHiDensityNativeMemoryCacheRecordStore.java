@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -28,6 +29,11 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         extends HiDensityNativeMemoryCacheRecordStore
         implements RamStore {
 
+    private static final boolean ASSERTION_ENABLED;
+    static {
+        ASSERTION_ENABLED = HotRestartHiDensityNativeMemoryCacheRecordStore.class.desiredAssertionStatus();
+    }
+
     private final long prefix;
     private final HotRestartStore hotRestartStore;
 
@@ -35,8 +41,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
      * See {@link HotRestartHiDensityNativeMemoryCacheRecordMap#mutex}
      */
     private final Object recordMapMutex;
-
-    private int tombstoneCount;
 
     private HiDensityNativeMemoryCacheRecord fetchedRecordDuringRestart;
 
@@ -72,91 +76,42 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     protected void onUpdateRecord(Data key, HiDensityNativeMemoryCacheRecord record, Object value, Data oldDataValue) {
         super.onUpdateRecord(key, record, value, oldDataValue);
         putToHotRestart(key, record);
-        if (oldDataValue == null) {
-            record.setTombstoneSequence(0);
-            tombstoneCount--;
-            cacheInfo.increaseEntryCount();
-        }
     }
 
     @Override
     public CacheRecord removeRecord(Data key) {
         HiDensityNativeMemoryCacheRecord record = records.get(key);
-        CacheRecord recordToReturn = null;
-        // If removed record is valid, first get a heap based copy of it and dispose it
-        if (record != null && !record.isTombstone()) {
-            recordToReturn = toHeapCacheRecord(record);
-            synchronized (recordMapMutex) {
-                cacheRecordProcessor.disposeValue(record);
-            }
+        if (isMemoryBlockValid(record)) {
             removeFromHotRestart(key, record);
         }
-        return recordToReturn;
+        return super.removeRecord(key);
     }
 
     @Override
     protected HiDensityNativeMemoryCacheRecord doRemoveRecord(Data key, String source) {
         // Don't remove the record! We'll use it later as tombstone
         // see #onDeleteRecord() and #onRemove().
-        HiDensityNativeMemoryCacheRecord removedRecord = records.get(key);
-        boolean removed = removedRecord != null && removedRecord.getValueAddress() != NULL_PTR;
-        if (removed) {
-            invalidateEntry(key, source);
-        }
-        return removed ? removedRecord : null;
-    }
-
-    @Override
-    protected void onDeleteRecord(Data key, HiDensityNativeMemoryCacheRecord record,
-            Data dataValue, boolean deleted) {
-        // If record is deleted and if this record is valid, dispose its data
-        // Keeping record itself because its needed as a tombstone for hotrestart later.
-        // Hotrestart will call #releaseTombstones() to actually remove the record
-        if (deleted && isMemoryBlockValid(record)) {
-            synchronized (recordMapMutex) {
-                cacheRecordProcessor.disposeValue(record);
-            }
-        }
-    }
-
-    @Override
-    protected void onRemove(Data key, Object value, String caller, boolean getValue,
-                            HiDensityNativeMemoryCacheRecord record, boolean removed) {
-        if (removed) {
+        HiDensityNativeMemoryCacheRecord record = records.get(key);
+        if (record != null) {
             removeFromHotRestart(key, record);
         }
-        onEntryInvalidated(key, caller);
+        return super.doRemoveRecord(key, source);
     }
 
     @Override
     public void onEvict(Data key, HiDensityNativeMemoryCacheRecord record) {
         super.onEvict(key, record);
-        assert records.containsKey(key);
-        removeFromHotRestart(key, record);
-    }
 
-    @Override
-    protected void onProcessExpiredEntry(Data key, HiDensityNativeMemoryCacheRecord record, long expiryTime, long now,
-            String source, String origin) {
-
-        if (isMemoryBlockValid(record)) {
-            synchronized (recordMapMutex) {
-                cacheRecordProcessor.disposeValue(record);
-            }
-
-            removeFromHotRestart(key, record);
-        }
+        // record is already removed from map
+        NativeMemoryData nativeKey = (NativeMemoryData) key;
+        KeyOffHeap hotRestartKey = new KeyOffHeap(prefix, key.toByteArray(), nativeKey.address(), record.getSequence());
+        hotRestartStore.remove(hotRestartKey);
     }
 
     @Override
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
             NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
-
         putToHotRestart(key, record);
-        if (!isNewPut) {
-            tombstoneCount--;
-            cacheInfo.increaseEntryCount();
-        }
     }
 
     private void putToHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
@@ -169,8 +124,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private void removeFromHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         final KeyOffHeap hotRestartKey = newHotRestartKey(key, record);
         hotRestartStore.remove(hotRestartKey);
-        tombstoneCount++;
-        cacheInfo.decreaseEntryCount();
     }
 
     private KeyOffHeap newHotRestartKey(Data key, HiDensityNativeMemoryCacheRecord record) {
@@ -209,11 +162,29 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     private KeyHandleOffHeap newKeyHandle(HeapData heapKey) {
-        fetchedRecordDuringRestart = null;
         HiDensityRecordProcessor recordProcessor = getRecordProcessor();
         NativeMemoryData nativeKey = (NativeMemoryData) recordProcessor.convertData(heapKey, NATIVE);
         long recordSequence = incrementSequence();
-        return new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
+        // fetchedRecordDuringRestart will be used in #accept() method
+        fetchedRecordDuringRestart = acceptNewRecord(nativeKey, recordSequence);
+        return  new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
+    }
+
+    private HiDensityNativeMemoryCacheRecord acceptNewRecord(NativeMemoryData key, long recordSequence) {
+        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
+        HiDensityNativeMemoryCacheRecord record = null;
+        try {
+            record = createRecordInternal(null, Clock.currentTimeMillis(), Long.MAX_VALUE, recordSequence);
+            boolean isNewRecord = records.set(key, record);
+            assert isNewRecord;
+        } catch (NativeOutOfMemoryError e) {
+            recordProcessor.disposeData(key);
+            if (record != null) {
+                recordProcessor.dispose(record);
+            }
+            throw e;
+        }
+        return record;
     }
 
     private KeyHandleOffHeap readExistingKeyHandle(long nativeKeyAddress) {
@@ -229,75 +200,55 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     @Override
     public void accept(KeyHandle kh, byte[] valueBytes) {
         assert valueBytes != null && valueBytes.length > 0;
-        acceptInternal((KeyHandleOffHeap) kh, new HeapData(valueBytes), 0L);
-    }
 
-    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+        final KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) kh;
 
-    }
-
-    private void acceptInternal(KeyHandleOffHeap keyHandle, HeapData value, long tombstoneSeq) {
-        NativeMemoryData key = new NativeMemoryData().reset(keyHandle.address());
         HiDensityNativeMemoryCacheRecord record = fetchedRecordDuringRestart;
-
         long recordSequence = keyHandle.sequenceId();
-        if (record == null) {
-            acceptNewRecord(key, value, recordSequence, tombstoneSeq);
-        } else {
-            assert recordSequence == record.getSequence()
-                    : "Expected Seq: " + recordSequence + ", Actual Seq: " + record.getSequence();
-            assert record.equals(records.get(key));
-            acceptNewValue(record, value, tombstoneSeq);
-            fetchedRecordDuringRestart = null;
-        }
+
+        assert record != null;
+        assert recordSequence == record.getSequence()
+                : "Expected Seq: " + recordSequence + ", Actual Seq: " + record.getSequence();
+
+        acceptNewValue(record, new HeapData(valueBytes));
+        fetchedRecordDuringRestart = null;
     }
 
-    private void acceptNewValue(HiDensityNativeMemoryCacheRecord record, HeapData value, long tombstoneSeq) {
+    private void acceptNewValue(HiDensityNativeMemoryCacheRecord record, HeapData value) {
         HiDensityRecordProcessor recordProcessor = getRecordProcessor();
-
-        NativeMemoryData nativeValue = null;
-        boolean isTombstone = value == null;
-
-        if (!isTombstone) {
-            nativeValue = (NativeMemoryData) recordProcessor.convertData(value, NATIVE);
-        }
-
-        long currentValueAddress = record.getValueAddress();
-        if (currentValueAddress != NULL_PTR && isTombstone) {
-            tombstoneCount++;
-        } else if (currentValueAddress == NULL_PTR && !isTombstone) {
-            tombstoneCount--;
-        }
+        NativeMemoryData nativeValue = (NativeMemoryData) recordProcessor.convertData(value, NATIVE);
 
         recordProcessor.disposeValue(record);
         record.setValue(nativeValue);
-        record.setTombstoneSequence(tombstoneSeq);
-    }
-
-    private void acceptNewRecord(NativeMemoryData key, HeapData value, long recordSequence, long tombstoneSeq) {
-        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
-        HiDensityNativeMemoryCacheRecord record = null;
-        try {
-            record = createRecordInternal(value, Clock.currentTimeMillis(), Long.MAX_VALUE, recordSequence);
-            record.setTombstoneSequence(tombstoneSeq);
-            boolean isNewRecord = records.set(key, record);
-            assert isNewRecord;
-
-            if (value == null) {
-                tombstoneCount++;
-            }
-        } catch (NativeOutOfMemoryError e) {
-            recordProcessor.disposeData(key);
-            if (record != null) {
-                recordProcessor.dispose(record);
-            }
-            throw e;
-        }
     }
 
     @Override
-    public int size() {
-        return records.size() - tombstoneCount;
+    public void removeNullEntries(SetOfKeyHandle keyHandles) {
+        SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();
+        NativeMemoryData key = new NativeMemoryData();
+        while (cursor.advance()) {
+            KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) cursor.asKeyHandle();
+            key.reset(keyHandle.address());
+            HiDensityNativeMemoryCacheRecord record = records.remove(key);
+            assert record != null;
+            assert record.getValueAddress() == NULL_PTR;
+            cacheRecordProcessor.dispose(record);
+            cacheRecordProcessor.disposeData(key);
+        }
+
+        // DEBUG
+        if (ASSERTION_ENABLED) {
+            scanEmptyRecords();
+        }
+    }
+
+    private void scanEmptyRecords() {
+        BinaryElasticHashMap<HiDensityNativeMemoryCacheRecord>.ValueIter iter = records.new ValueIter();
+        while (iter.hasNext()) {
+            HiDensityNativeMemoryCacheRecord record = iter.next();
+            assert record != null;
+            assert record.getValueAddress() != NULL_PTR;
+        }
     }
 
     @Override
@@ -309,10 +260,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
         }
-
         super.clear();
-        cacheInfo.addEntryCount(tombstoneCount);
-        tombstoneCount = 0;
     }
 
     @Override

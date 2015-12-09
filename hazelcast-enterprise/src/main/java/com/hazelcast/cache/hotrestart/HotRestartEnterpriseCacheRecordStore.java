@@ -3,7 +3,6 @@ package com.hazelcast.cache.hotrestart;
 import com.hazelcast.cache.DefaultEnterpriseCacheRecordStore;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.cache.impl.record.CacheRecordHashMap;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.NodeEngine;
@@ -23,7 +22,6 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
 
     private final long prefix;
     private final HotRestartStore hotRestartStore;
-    private int tombstoneCount;
 
     public HotRestartEnterpriseCacheRecordStore(
             String name, int partitionId, NodeEngine nodeEngine, EnterpriseCacheService cacheService, long keyPrefix) {
@@ -31,11 +29,6 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.onHeapHotRestartStoreForCurrentThread();
         assert hotRestartStore != null;
-    }
-
-    @Override
-    protected CacheRecordHashMap createRecordCacheMap() {
-        return new HotRestartCacheRecordHashMap(DEFAULT_INITIAL_CAPACITY, cacheContext);
     }
 
     @Override
@@ -49,11 +42,6 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     protected void onUpdateRecord(Data key, CacheRecord record, Object value, Data oldDataValue) {
         super.onUpdateRecord(key, record, value, oldDataValue);
         putToHotRestart(key, record.getValue());
-        if (oldDataValue == null) {
-            tombstoneCount--;
-            record.setTombstoneSequence(0);
-            cacheContext.increaseEntryCount();
-        }
     }
 
     @Override
@@ -61,20 +49,20 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
                             boolean removed) {
         super.onRemove(key, value, source, getValue, record, removed);
         if (removed) {
-            removeFromHotRestart(key, record);
+            removeFromHotRestart(key);
         }
     }
 
     @Override
     public void onEvict(Data key, CacheRecord record) {
         super.onEvict(key, record);
-        removeFromHotRestart(key, record);
+        removeFromHotRestart(key);
     }
 
     @Override
     protected void onProcessExpiredEntry(Data key, CacheRecord record, long expiryTime, long now, String source, String origin) {
         super.onProcessExpiredEntry(key, record, expiryTime, now, source, origin);
-        removeFromHotRestart(key, record);
+        removeFromHotRestart(key);
     }
 
     // called from Hot Restart GC thread
@@ -87,7 +75,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         if (record == null) {
             return false;
         }
-        Data value = record.isTombstone() ? null : toData(record.getValue());
+        Data value = toData(record.getValue());
         return RamStoreHelper.copyEntry(keyHandle, value, expectedSize, sink);
     }
 
@@ -103,14 +91,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         HeapData key = new HeapData(((KeyOnHeap) kh).bytes());
         HeapData value = new HeapData(valueBytes);
         CacheRecord record = cacheRecordFactory.newRecordWithExpiry(value, Clock.currentTimeMillis(), -1L);
-        CacheRecord oldRecord = records.put(key, record);
-        if (oldRecord != null && oldRecord.getValue() == null) {
-            tombstoneCount--;
-        }
-    }
-
-    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
-
+        records.put(key, record);
     }
 
     private void putToHotRestart(Data key, Object value) {
@@ -119,21 +100,14 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         hotRestartStore.put(new KeyOnHeap(prefix, keyBytes), valueBytes);
     }
 
-    private void removeFromHotRestart(Data key, CacheRecord record) {
-        final byte[] keyBytes = key.toByteArray();
-        final HotRestartStore store = hotRestartStore;
-        store.remove(new KeyOnHeap(prefix, keyBytes));
-        record.setValue(null);
-        // put back record as tombstone
-        // Hotrestart will call #releaseTombstone() to actually remove the record
-        records.put(key, record);
-        tombstoneCount++;
-        cacheContext.decreaseEntryCount();
+    private void removeFromHotRestart(Data key) {
+        byte[] keyBytes = key.toByteArray();
+        hotRestartStore.remove(new KeyOnHeap(prefix, keyBytes));
     }
 
     @Override
-    public int size() {
-        return records.size() - tombstoneCount;
+    public void removeNullEntries(SetOfKeyHandle keyHandles) {
+        // we don't keep tombstones during restart
     }
 
     @Override
@@ -145,10 +119,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
         }
-
         super.clear();
-        cacheContext.increaseEntryCount(tombstoneCount);
-        tombstoneCount = 0;
     }
 
     @Override

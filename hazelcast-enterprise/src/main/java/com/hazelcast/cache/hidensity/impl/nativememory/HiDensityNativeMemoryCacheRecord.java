@@ -24,14 +24,12 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
      * +--------------------+------------------+
      * | Record Sequence    |   8 bytes (long) |
      * +--------------------+------------------+
-     * | Tombstone Seq      |   8 bytes (long) |
-     * +--------------------+------------------+
      * | Value Address      |   8 bytes (long) |
      * +--------------------+------------------+
      * | Hit Count          |   4 bytes (int)  |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
-     * Total size = 52 bytes
+     * Total size = 44 bytes
      * All fields are aligned.
      *
      * PS: In current buddy memory allocator design,
@@ -52,11 +50,10 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
     private static final int TTL_OFFSET = ACCESS_TIME_OFFSET + LONG_SIZE_IN_BYTES;
     private static final int SEQUENCE_OFFSET = TTL_OFFSET + LONG_SIZE_IN_BYTES;
-    private static final int TOMBSTONE_SEQUENCE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
     private static final int ACCESS_HIT_OFFSET;
 
     static {
-        VALUE_OFFSET = TOMBSTONE_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+        VALUE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
         ACCESS_HIT_OFFSET = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
         SIZE = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
     }
@@ -137,9 +134,6 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     @Override
     public void setValueAddress(long valueAddress) {
-        if (valueAddress != NULL_PTR) {
-            setTombstoneSequence(0L);
-        }
         writeLong(VALUE_OFFSET, valueAddress);
     }
 
@@ -212,21 +206,6 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
     public void setSequence(long seq) {
         writeLong(SEQUENCE_OFFSET, seq);
-    }
-
-    @Override
-    public boolean isTombstone() {
-        return getValueAddress() == NULL_PTR;
-    }
-
-    @Override
-    public long getTombstoneSequence() {
-        return readLong(TOMBSTONE_SEQUENCE_OFFSET);
-    }
-
-    @Override
-    public void setTombstoneSequence(long seq) {
-        writeLong(TOMBSTONE_SEQUENCE_OFFSET, seq);
     }
 
     @Override

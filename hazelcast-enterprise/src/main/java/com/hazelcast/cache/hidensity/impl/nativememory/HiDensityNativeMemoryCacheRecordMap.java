@@ -37,7 +37,7 @@ public class HiDensityNativeMemoryCacheRecordMap
             Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
             Data key = entry.getKey();
             HiDensityNativeMemoryCacheRecord record = entry.getValue();
-            if (record.isExpiredAt(now) || record.isTombstone()) {
+            if (record.isExpiredAt(now)) {
                 continue;
             }
             keys.add(recordProcessor.convertData(key, DataType.HEAP));

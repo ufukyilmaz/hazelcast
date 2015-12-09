@@ -213,11 +213,6 @@ public class HiDensityNativeMemoryNearCacheRecord
     }
 
     @Override
-    public boolean isTombstone() {
-        return false;
-    }
-
-    @Override
     public long getSequence() {
         return 0;
     }

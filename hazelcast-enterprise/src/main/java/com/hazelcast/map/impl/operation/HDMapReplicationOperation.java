@@ -163,7 +163,6 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 }
 
                 recordStore.putRecord(key, record);
-                evict(recordStore);
             }
         }
 

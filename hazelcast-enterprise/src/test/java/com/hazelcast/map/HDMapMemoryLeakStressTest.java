@@ -21,6 +21,8 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.EntryObject;
+import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -56,7 +58,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(1 * 60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
-    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+    private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
     private static final int KEY_RANGE = 10000000;
     private static final int PARTITION_COUNT = 271;
     private static final String MAP_NAME = randomMapName("HD");
@@ -79,10 +81,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
-        IMap cache = hz.getMap(MAP_NAME);
-
-        // warm-up
-        cache.size();
+        IMap map = hz.getMap(MAP_NAME);
+        map.addIndex("__key", true);
 
         final AtomicBoolean done = new AtomicBoolean(false);
 
@@ -102,15 +102,15 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         CountDownLatch latch = new CountDownLatch(threads);
 
         for (int i = 0; i < threads; i++) {
-            new WorkerThread(cache, latch).start();
+            new WorkerThread(map, latch).start();
         }
 
         assertOpenEventually(latch, TIMEOUT * 2);
         done.set(true);
         bouncingThread.join();
 
-        cache.clear();
-        cache.destroy();
+        map.clear();
+        map.destroy();
 
         try {
             assertTrueEventually(new AssertFreeMemoryTask(hz, hz2));
@@ -129,21 +129,18 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig.setEnabled(true).setAllocatorType(ALLOCATOR_TYPE).setSize(MEMORY_SIZE);
 
-
         MapConfig mapConfig = new MapConfig(MAP_NAME);
         mapConfig.setBackupCount(1);
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         mapConfig.setStatisticsEnabled(true);
-
         mapConfig.setMinEvictionCheckMillis(0L);
         mapConfig.setEvictionPercentage(5);
         mapConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        mapConfig.setOptimizeQueries(true);
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
         maxSizeConfig.setSize(99);
         maxSizeConfig.setMaxSizePolicy(MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        mapConfig.setMaxSizeConfig(maxSizeConfig);
-
         mapConfig.setMaxSizeConfig(maxSizeConfig);
 
         config.addMapConfig(mapConfig);
@@ -305,6 +302,11 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     map.executeOnKeys(keysToRemove, new RemoverEntryProcessor());
                     break;
 
+                case 18:
+                    EntryObject entryObject = new PredicateBuilder().getEntryObject();
+                    PredicateBuilder predicate = entryObject.key().between(key, key + 32);
+                    map.values(predicate);
+                    break;
 
                 default:
                     byte[] bytes = newValue(key);

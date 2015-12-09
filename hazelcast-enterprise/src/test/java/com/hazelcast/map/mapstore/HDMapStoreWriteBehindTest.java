@@ -17,7 +17,7 @@
 package com.hazelcast.map.mapstore;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.HDTestSupport;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDMapStoreWriteBehindTest extends MapStoreWriteBehindTest {
 

@@ -125,7 +125,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public void invalidate() {
-        recordAccessor.dispose(this.address());
+        // no needed. invalidation is done by deferred dispose.
     }
 
     @Override
@@ -165,7 +165,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
         setLastStoredTime(Clock.currentTimeMillis());
     }
 
-    // TODO Add heap cost.
     @Override
     public long getCost() {
         // This is heap cost. For NATIVE we are not calculating this cost.
@@ -210,6 +209,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     public HiDensityRecord reset(long address) {
         setAddress(address);
         setSize(size());
+        invalidate();
         return this;
     }
 

@@ -48,12 +48,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         this.map = new SampleableElasticHashMap(initialCapacity, loadFactor, recordProcessor);
     }
 
-    HDStorageImpl(SampleableElasticHashMap<HDRecord> map, HiDensityRecordProcessor<HDRecord> recordProcessor) {
-        this.recordProcessor = recordProcessor;
-        this.sizeEstimator = createMapSizeEstimator(NATIVE);
-        this.map = map;
-    }
-
     public HiDensityRecordProcessor getRecordProcessor() {
         return recordProcessor;
     }

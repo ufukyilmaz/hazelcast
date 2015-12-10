@@ -14,11 +14,4 @@ public interface HotRestartStorage<R extends Record> extends Storage<Data, R> {
     void updateTransient(Data key, R record, Object value);
 
     void removeTransient(R record);
-
-    /**
-     * Returns the record even if it is a tombstone
-     * @param key
-     * @return record
-     */
-    R getRecord(Data key);
 }

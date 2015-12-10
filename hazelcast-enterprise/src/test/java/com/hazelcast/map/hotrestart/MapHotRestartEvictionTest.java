@@ -30,7 +30,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@Ignore
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartEvictionTest extends AbstractMapHotRestartTest {

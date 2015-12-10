@@ -109,11 +109,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
         setValueAddress(((NativeMemoryData) value).address());
     }
 
-    public boolean isTombstone() {
-        long valueAddress = getValueAddress();
-        return valueAddress == NULL_PTR;
-    }
-
     @Override
     public Data getKey() {
         if (address == NULL_PTR) {
@@ -177,13 +172,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     }
 
     public void setSequence(long sequence) {
-    }
-
-    public long getTombstoneSequence() {
-        return 0;
-    }
-
-    public void setTombstoneSequence(long tombstoneSequence) {
     }
 
     @Override

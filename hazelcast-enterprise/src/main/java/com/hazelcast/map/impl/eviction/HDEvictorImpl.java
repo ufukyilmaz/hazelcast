@@ -108,7 +108,7 @@ public class HDEvictorImpl extends EvictorImpl {
         List<Record> recordsToEvict = new ArrayList<Record>(removalSize);
         for (Record record : storage.values()) {
             Data key = record.getKey();
-            if (!recordStore.isLocked(key) && !record.isTombstone()) {
+            if (!recordStore.isLocked(key)) {
                 recordsToEvict.add(record);
                 removedEntryCount++;
             }

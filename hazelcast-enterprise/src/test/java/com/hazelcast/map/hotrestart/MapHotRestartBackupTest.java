@@ -21,7 +21,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 @RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -37,8 +36,8 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
     @Parameterized.Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {InMemoryFormat.BINARY, KEY_COUNT, false},
-                {InMemoryFormat.NATIVE, KEY_COUNT, false}
+                {InMemoryFormat.NATIVE, KEY_COUNT, false},
+                {InMemoryFormat.BINARY, KEY_COUNT, false}
         });
     }
 

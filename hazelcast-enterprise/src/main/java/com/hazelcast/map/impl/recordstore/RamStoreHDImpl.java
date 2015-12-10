@@ -8,6 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
+import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreHelper;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
@@ -18,14 +19,16 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 /**
  * RamStore implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
-public class RamStoreHDImpl extends AbstractRamStoreImpl {
+public class RamStoreHDImpl implements RamStore {
+
+    private final EnterpriseRecordStore recordStore;
 
     private final HotRestartHDStorageImpl storage;
 
     private final Object mutex;
 
     public RamStoreHDImpl(EnterpriseRecordStore recordStore) {
-        super(recordStore);
+        this.recordStore = recordStore;
         this.storage = (HotRestartHDStorageImpl) recordStore.getStorage();
         this.mutex = storage.getMutex();
     }
@@ -35,7 +38,7 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
         KeyHandleOffHeap kh = (KeyHandleOffHeap) keyHandle;
         synchronized (mutex) {
             NativeMemoryData key = new NativeMemoryData().reset(kh.address());
-            HDRecord record = storage.getRecord(key);
+            HDRecord record = storage.get(key);
             if (record == null) {
                 return false;
             }
@@ -53,30 +56,44 @@ public class RamStoreHDImpl extends AbstractRamStoreImpl {
         return newKeyHandle(key);
     }
 
-    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
-
-    }
-
     @Override
-    public Data createKey(KeyHandle kh) {
-        KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) kh;
-        return new NativeMemoryData().reset(keyHandle.address());
-    }
-
-    @Override
-    public Record createRecord(KeyHandle kh, Data value) {
-        KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) kh;
-        return recordStore.createRecord(value, keyHandle.sequenceId());
+    public void removeNullEntries(SetOfKeyHandle keyHandles) {
+        SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();
+        NativeMemoryData key = new NativeMemoryData();
+        while (cursor.advance()) {
+            KeyHandleOffHeap keyHandleOffHeap = (KeyHandleOffHeap) cursor.asKeyHandle();
+            key.reset(keyHandleOffHeap.address());
+            HDRecord record = storage.get(key);
+            assert record != null;
+            assert record.getSequence() == keyHandleOffHeap.sequenceId();
+            storage.removeTransient(record);
+        }
     }
 
     private KeyHandleOffHeap readKeyHandle(long nativeKeyAddress) {
         NativeMemoryData keyData = new NativeMemoryData().reset(nativeKeyAddress);
-        HDRecord record = storage.getRecord(keyData);
+        HDRecord record = storage.get(keyData);
         return new SimpleHandleOffHeap(keyData.address(), record.getSequence());
     }
 
     private KeyHandleOffHeap newKeyHandle(byte[] key) {
         NativeMemoryData keyData = storage.toNative(new HeapData(key));
-        return new SimpleHandleOffHeap(keyData.address(), recordStore.incrementSequence());
+        long sequenceId = recordStore.incrementSequence();
+        SimpleHandleOffHeap handleOffHeap = new SimpleHandleOffHeap(keyData.address(), sequenceId);
+        HDRecord record = recordStore.createRecord(null, handleOffHeap.sequenceId());
+        storage.putTransient(keyData, record);
+        return handleOffHeap;
+    }
+
+    @Override
+    public void accept(KeyHandle kh, byte[] valueBytes) {
+        HeapData value = new HeapData(valueBytes);
+        HotRestartStorage<Record> storage = (HotRestartStorage) recordStore.getStorage();
+        KeyHandleOffHeap keyHandleOffHeap = (KeyHandleOffHeap) kh;
+        Data key = new NativeMemoryData().reset(keyHandleOffHeap.address());
+        Record record = storage.get(key);
+        assert record != null;
+        storage.updateTransient(key, record, value);
+        recordStore.dispose();
     }
 }

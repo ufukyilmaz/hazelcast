@@ -232,10 +232,6 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 Data key = (Data) entries.get(j);
                 Record record = (Record) entries.get(j + 1);
 
-                if (record.isTombstone()) {
-                    out.writeData(null);
-                    continue;
-                }
                 out.writeData(key);
                 out.writeData(serializationService.toData(record.getValue()));
                 out.writeLong(record.getCreationTime());
@@ -287,11 +283,8 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
 
             List list = new ArrayList(recordStoreSize);
             for (int j = 0; j < recordStoreSize; j += 2) {
-                Data key = in.readData();
-                if (key == null) {
-                    continue;
-                }
                 HDRecordHolder recordHolder = new HDRecordHolder();
+                Data key = in.readData();
                 recordHolder.value = in.readData();
                 recordHolder.creationTime = in.readLong();
                 recordHolder.lastAccessTime = in.readLong();

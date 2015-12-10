@@ -230,6 +230,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
             HiDensityNativeMemoryCacheRecord record = records.remove(key);
             assert record != null;
             assert record.getValueAddress() == NULL_PTR;
+            assert record.getSequence() == keyHandle.sequenceId();
             cacheRecordProcessor.dispose(record);
             cacheRecordProcessor.disposeData(key);
         }

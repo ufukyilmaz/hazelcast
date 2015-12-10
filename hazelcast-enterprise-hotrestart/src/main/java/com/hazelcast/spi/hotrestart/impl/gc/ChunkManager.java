@@ -9,12 +9,11 @@ import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.util.collection.Long2ObjectHashMap;
 import com.hazelcast.util.counters.Counter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.copyLiveRecords;
@@ -33,12 +32,12 @@ public final class ChunkManager {
     @Probe final Counter valGarbage = newSwCounter();
     @Probe final Counter tombOccupancy = newSwCounter();
     @Probe final Counter tombGarbage = newSwCounter();
-    final Map<Long, StableChunk> chunks = new HashMap<Long, StableChunk>();
+    final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
     final TrackerMap trackers;
     final GcHelper gcHelper;
     final PrefixTombstoneManager pfixTombstoMgr;
     // temporary storage during GC
-    Map<Long, Chunk> destChunkMap;
+    Long2ObjectHashMap<Chunk> destChunkMap;
     // temporary storage during GC
     WriteThroughValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
@@ -122,9 +121,9 @@ public final class ChunkManager {
                     final Chunk chunk = chunk(tr.chunkSeq());
                     retire(chunk, keyHandle, chunk.records.get(keyHandle));
                 }
-                tr.newLiveRecord(activeChunk.seq, isTombstone, trackers);
-            } else if (isTombstone) {
-                throw new HotRestartException("Attempted to add a tombstone for non-existing key");
+                tr.newLiveRecord(activeChunk.seq, isTombstone, trackers, false);
+            } else {
+                assert !isTombstone : "Attempted to add a tombstone for non-existing key";
             }
             activeChunk.addStep2(prefix, keyHandle, seq, size, isTombstone);
         }
@@ -222,18 +221,25 @@ public final class ChunkManager {
         }
     }
 
-    boolean deleteGarbageTombChunks() {
+    boolean deleteGarbageTombChunks(MutatorCatchup mc) {
         if (tombChunksToDelete.isEmpty()) {
             return false;
         }
-        logger.info("Deleting %d tombstone chunks", tombChunksToDelete.size());
-        for (StableTombChunk chunk : tombChunksToDelete) {
-            gcHelper.deleteChunkFile(chunk);
+        final int deleteCount = tombChunksToDelete.size();
+        logger.info("Deleting %d tombstone chunks", deleteCount);
+        final StableTombChunk[] toDelete = tombChunksToDelete.toArray(new StableTombChunk[deleteCount]);
+        tombChunksToDelete.clear();
+        for (StableTombChunk chunk : toDelete) {
             tombOccupancy.inc(-chunk.size());
             tombGarbage.inc(-chunk.size());
             disposeAndRemove(chunk);
         }
-        tombChunksToDelete.clear();
+        for (StableTombChunk chunk : toDelete) {
+            if (mc != null) {
+                mc.catchupNow();
+            }
+            gcHelper.deleteChunkFile(chunk);
+        }
         return true;
     }
 

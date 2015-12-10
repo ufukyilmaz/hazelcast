@@ -139,10 +139,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         synchronized (recordMapMutex) {
             NativeMemoryData key = new NativeMemoryData().reset(kh.address());
             HiDensityNativeMemoryCacheRecord record = records.get(key);
-            if (record == null) {
-                return false;
-            }
-            return RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
+            return record != null && RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }
 

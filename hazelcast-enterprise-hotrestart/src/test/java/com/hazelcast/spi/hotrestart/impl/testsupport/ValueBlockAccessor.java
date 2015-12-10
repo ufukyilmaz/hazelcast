@@ -12,7 +12,6 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.TOMBST
 public class ValueBlockAccessor extends MemoryBlock {
     public static final int HEADER_SIZE = 4;
     private final MemoryAllocator malloc;
-    private boolean isTombstone;
     private int valueSize;
 
     ValueBlockAccessor(MemoryAllocator malloc) {
@@ -27,14 +26,6 @@ public class ValueBlockAccessor extends MemoryBlock {
         setAddress(address);
         final int sizeFromHeader = readInt(0);
         updateLocalState(sizeFromHeader);
-    }
-
-    final boolean isTombstone() {
-        return isTombstone;
-    }
-
-    final long tombstoneSeq() {
-        return readLong(HEADER_SIZE);
     }
 
     final int valueSize() {
@@ -55,13 +46,6 @@ public class ValueBlockAccessor extends MemoryBlock {
         copyFromByteArray(HEADER_SIZE, bytes, 0, bytes.length);
     }
 
-    final void allocateTombstone(long tombstoneSeq) {
-        final int size = HEADER_SIZE + TOMBSTONE_SEQ_SIZE;
-        final long addr = malloc.allocate(size);
-        resetToNew(addr, -TOMBSTONE_SEQ_SIZE);
-        writeLong(HEADER_SIZE, tombstoneSeq);
-    }
-
     final void delete() {
         malloc.free(address(), size());
         setAddress(NULL_ADDRESS);
@@ -75,14 +59,7 @@ public class ValueBlockAccessor extends MemoryBlock {
     }
 
     private void updateLocalState(int sizeInHeader) {
-        if (sizeInHeader == -TOMBSTONE_SEQ_SIZE) {
-            this.isTombstone = true;
-            this.valueSize = 0;
-            setSize(HEADER_SIZE + TOMBSTONE_SEQ_SIZE);
-        } else {
-            this.isTombstone = false;
-            this.valueSize = sizeInHeader;
-            setSize(HEADER_SIZE + sizeInHeader);
-        }
+        this.valueSize = sizeInHeader;
+        setSize(HEADER_SIZE + sizeInHeader);
     }
 }

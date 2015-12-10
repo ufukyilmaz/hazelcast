@@ -45,7 +45,6 @@ public class Long2bytesMapTest {
     private final byte[] key1Bytes = long2bytes(key1);
     private final byte[] value1 = {1, 2};
     private final byte[] value2 = {3, 4, 5};
-    private final byte[] empty = {};
     private final RecordDataHolder holder = new RecordDataHolder();
     private Long2bytesMap map;
 

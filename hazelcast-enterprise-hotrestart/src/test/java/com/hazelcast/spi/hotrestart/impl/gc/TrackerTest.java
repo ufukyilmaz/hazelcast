@@ -77,7 +77,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void newLiveTombstone_onLiveTracker_incrementsGarbageCount_andSetsNewState() {
         final int newChunkSeq = 1001;
-        tracker().newLiveRecord(newChunkSeq, true, containerMap);
+        tracker().newLiveRecord(newChunkSeq, true, containerMap, false);
         assertEquals(1, tracker().garbageCount());
         assertEquals(newChunkSeq, tracker().chunkSeq());
         assertTrue(tracker().isTombstone());
@@ -85,7 +85,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
 
     @Test public void newLiveRecord_onLiveTombstoneTracker_leavesGarbageCount_andSetsNewState() {
         final int newChunkSeq = 1001;
-        tombstoneTracker().newLiveRecord(newChunkSeq, false, containerMap);
+        tombstoneTracker().newLiveRecord(newChunkSeq, false, containerMap, false);
         assertEquals(0, tombstoneTracker().garbageCount());
         assertEquals(newChunkSeq, tombstoneTracker().chunkSeq());
         assertFalse(tombstoneTracker().isTombstone());

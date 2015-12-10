@@ -74,7 +74,7 @@ public final class GcExecutor {
     }
 
     private class MainLoop implements Runnable {
-        @SuppressWarnings("checkstyle:npathcomplexity")
+        @SuppressWarnings({ "checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity" })
         @Override public void run() {
             final IdleStrategy idler = idler();
             try {
@@ -90,9 +90,11 @@ public final class GcExecutor {
                             didWork = chunkMgr.gc(gcp, mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
-                        didWork |= chunkMgr.deleteGarbageTombChunks();
+                        didWork |= chunkMgr.deleteGarbageTombChunks(mc);
                     }
-                    Thread.yield();
+                    if (didWork) {
+                        Thread.yield();
+                    }
                     if (idler.idle(workCount + (didWork ? 1 : 0))) {
                         parkCount++;
                     } else {

@@ -85,7 +85,7 @@ public final class Rebuilder {
                 garbage.inc(stale.size());
                 chunkWithStale.retire(kh, stale);
                 chunk.add(prefix, kh, seq, size);
-                tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers);
+                tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers, true);
                 removeFromTombKeys(prefix, kh);
                 return true;
             } else {
@@ -155,7 +155,7 @@ public final class Rebuilder {
         }
         logger.fine("Retired %,d tombstones. There are %,d left. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
-        cm.deleteGarbageTombChunks();
+        cm.deleteGarbageTombChunks(null);
         cm.gcHelper.initRecordSeq(maxSeq);
     }
 

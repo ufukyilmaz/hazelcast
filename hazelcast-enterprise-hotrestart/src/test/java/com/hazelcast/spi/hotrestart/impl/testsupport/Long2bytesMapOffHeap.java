@@ -29,7 +29,6 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             throw e;
         }
         UNSAFE.putLong(vSlotAddr, vblockAccessor.address());
-        size++;
     }
 
     @Override public void remove(long key) {
@@ -37,7 +36,6 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         if (vSlotAddr == NULL_ADDRESS) {
             return;
         }
-        size--;
         vblockAccessor.reset(vSlotAddr);
         vblockAccessor.delete();
         map.remove(key, 0);
@@ -45,11 +43,11 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
 
     @Override public boolean containsKey(long key) {
         final long vSlotAddr = map.get(key, 0);
-        if (vSlotAddr == NULL_ADDRESS) {
-            return false;
-        }
-        vblockAccessor.reset(vSlotAddr);
-        return !vblockAccessor.isTombstone();
+        return vSlotAddr != NULL_ADDRESS;
+    }
+
+    @Override public int size() {
+        return (int) map.size();
     }
 
     @Override public L2bCursor cursor() {
@@ -62,18 +60,12 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             return false;
         }
         vblockAccessor.reset(vSlotAddr);
-        if (vblockAccessor.isTombstone()) {
-            if (expectedSize != KEY_SIZE) {
-                return false;
-            }
-        } else {
-            final int valueSize = vblockAccessor.valueSize();
-            if (expectedSize != KEY_SIZE + valueSize) {
-                return false;
-            }
-            vblockAccessor.copyInto(sink.getValueBuffer(valueSize));
+        final int valueSize = vblockAccessor.valueSize();
+        if (expectedSize != KEY_SIZE + valueSize) {
+            return false;
         }
         sink.getKeyBuffer(KEY_SIZE).putLong(key);
+        vblockAccessor.copyInto(sink.getValueBuffer(valueSize));
         return true;
     }
 
@@ -83,7 +75,6 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             vblockAccessor.delete();
         }
         map.clear();
-        size = 0;
     }
 
     @Override public int valueSize(long key) {
@@ -92,7 +83,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             return -1;
         }
         vblockAccessor.reset(vSlotAddr);
-        return vblockAccessor.isTombstone() ? -1 : vblockAccessor.valueSize();
+        return vblockAccessor.valueSize();
     }
 
     @Override public void dispose() {
@@ -109,9 +100,6 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         if (vSlotAddr < 0) {
             vSlotAddr = -vSlotAddr;
             vblockAccessor.reset(vSlotAddr);
-            if (!vblockAccessor.isTombstone()) {
-                size--;
-            }
             vblockAccessor.delete();
             UNSAFE.putLong(vSlotAddr, NULL_ADDRESS);
         }
@@ -127,11 +115,9 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         }
 
         @Override public boolean advance() {
-            while (cursor.advance()) {
+            if (cursor.advance()) {
                 vblockAccessor.reset(cursor.valueAddress());
-                if (!vblockAccessor.isTombstone()) {
-                    return true;
-                }
+                return true;
             }
             return false;
         }

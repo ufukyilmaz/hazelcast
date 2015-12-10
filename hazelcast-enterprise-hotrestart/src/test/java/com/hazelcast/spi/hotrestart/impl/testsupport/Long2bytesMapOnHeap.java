@@ -2,32 +2,24 @@ package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.hazelcast.spi.hotrestart.impl.testsupport.MockRecordStoreBase.bytes2long;
-
 public class Long2bytesMapOnHeap extends Long2bytesMapBase {
     private final Map<Long, byte[]> map = new HashMap<Long, byte[]>();
 
     @Override public void put(long key, byte[] value) {
-        assert key > 0 : String.format("Attempt to put non-positive key %x", key);
-        map.remove(-key);
-        if (map.put(key, value) == null) {
-            size++;
-        }
+        map.put(key, value);
     }
 
     @Override public boolean containsKey(long key) {
-        assert key > 0 : String.format("Attempt to check existence of non-positive key %x", key) ;
         return map.containsKey(key);
     }
 
     @Override public int size() {
-        return size;
+        return map.size();
     }
 
     @Override public L2bCursor cursor() {
@@ -35,37 +27,24 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
     }
 
     @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
-        assert key > 0 : String.format("Attempt to copy entry for negative key %x", key) ;
         final byte[] value = map.get(key);
-        if (value == null) {
-            if (expectedSize != KEY_SIZE || !map.containsKey(-key)) {
-                return false;
-            }
-        } else {
-            if (expectedSize != KEY_SIZE + value.length) {
-                return false;
-            }
-            sink.getValueBuffer(value.length).put(value);
+        if (value == null || expectedSize != KEY_SIZE + value.length) {
+            return false;
         }
         sink.getKeyBuffer(KEY_SIZE).putLong(key);
+        sink.getValueBuffer(value.length).put(value);
         return true;
     }
 
     @Override public void remove(long key) {
-        if (map.remove(key) != null) {
-            size--;
-        }
+        map.remove(key);
     }
 
     @Override public void clear() {
         map.clear();
-        size = 0;
     }
 
     @Override public int valueSize(long key) {
-        if (key < 0) {
-            throw new IllegalArgumentException("Negative key " + key);
-        }
         final byte[] value = map.get(key);
         return value != null ? value.length : -1;
     }
@@ -78,11 +57,9 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
         private Entry<Long, byte[]> current;
 
         @Override public boolean advance() {
-            while (iter.hasNext()) {
+            if (iter.hasNext()) {
                 current = iter.next();
-                if (current.getKey() > 0) {
-                    return true;
-                }
+                return true;
             }
             return false;
         }

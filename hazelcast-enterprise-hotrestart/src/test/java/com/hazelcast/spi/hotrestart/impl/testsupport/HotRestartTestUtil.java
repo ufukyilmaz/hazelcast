@@ -152,8 +152,13 @@ public class HotRestartTestUtil {
     static void verify0(Map<Long, Long2LongHashMap> summaries, Map<Long, MockRecordStore> recordStores) {
         final StringWriter sw = new StringWriter();
         final PrintWriter problems = new PrintWriter(sw);
-        assertEquals("Reloaded store's prefix set doesn't match", recordStores.keySet(), summaries.keySet());
         boolean hadIssues = false;
+        for (Entry<Long, Long2LongHashMap> e : summaries.entrySet()) {
+            if (!e.getValue().isEmpty() && recordStores.get(e.getKey()) == null) {
+                hadIssues = true;
+                problems.format("Reloaded store is missing prefix %x%n", e.getKey());
+            }
+        }
         for (Entry<Long, MockRecordStore> storeEntry : recordStores.entrySet()) {
             final long prefix = storeEntry.getKey();
             problems.format("Prefix %d:%n", prefix);

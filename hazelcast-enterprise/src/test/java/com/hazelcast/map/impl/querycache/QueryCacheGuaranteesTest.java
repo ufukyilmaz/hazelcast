@@ -14,6 +14,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -72,6 +73,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
     }
 
     @Test
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/570")
     public void continuesToReceiveEvents_afterNodeShutdown() throws Exception {
         String mapName = randomString();
         String queryCacheName = randomString();

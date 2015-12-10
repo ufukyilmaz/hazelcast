@@ -16,7 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
@@ -29,6 +28,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
+
+import static com.hazelcast.core.EntryEventType.MERGED;
 
 public class HDMergeOperation extends HDBasePutOperation {
 
@@ -85,8 +86,7 @@ public class HDMergeOperation extends HDBasePutOperation {
         if (merged) {
             MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
             mapServiceContext.interceptAfterPut(name, dataValue);
-            mapEventPublisher.publishEvent(getCallerAddress(), name, EntryEventType.MERGED, false, dataKey, dataOldValue,
-                    dataValue, mergingValue);
+            mapEventPublisher.publishEvent(getCallerAddress(), name, MERGED, dataKey, dataOldValue, dataValue, mergingValue);
             invalidateNearCache(dataKey);
             evict();
         }

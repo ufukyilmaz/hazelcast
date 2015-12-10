@@ -1,10 +1,9 @@
 package com.hazelcast.map.impl.querycache.publisher;
 
-import com.hazelcast.map.impl.SyntheticEventFilter;
 import com.hazelcast.map.impl.query.QueryEventFilter;
+import com.hazelcast.map.impl.querycache.Registry;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
-import com.hazelcast.map.impl.querycache.Registry;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.util.ConcurrencyUtil;
@@ -42,8 +41,7 @@ public class PartitionAccumulatorRegistry implements Registry<Integer, Accumulat
     private EventFilter createEventFilter() {
         boolean includeValue = info.isIncludeValue();
         Predicate predicate = info.getPredicate();
-        EventFilter eventFilter = new QueryEventFilter(includeValue, null, predicate);
-        return new SyntheticEventFilter(eventFilter);
+        return new QueryEventFilter(includeValue, null, predicate);
     }
 
     @Override

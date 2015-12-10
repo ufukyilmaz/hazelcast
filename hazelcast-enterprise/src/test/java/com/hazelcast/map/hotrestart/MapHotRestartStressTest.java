@@ -8,17 +8,17 @@ import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
+import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -46,23 +46,25 @@ import static com.hazelcast.util.FutureUtil.waitWithDeadline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-@Ignore
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+@RunWith(HazelcastTestRunner.class)
 @Category(NightlyTest.class)
 public class MapHotRestartStressTest extends HazelcastTestSupport {
 
+    static final int instance_count = 4;
+    static final int threadCount = 4;
     @Rule
     public TestName testName = new TestName();
-
-    static final int instance_count = 4;
-
-    static final int threadCount = 4;
-
     @Parameterized.Parameter(0)
-    InMemoryFormat memoryFormat;
+    public InMemoryFormat memoryFormat;
 
     @Parameterized.Parameter(1)
-    int keyRange;
+    public int keyRange;
+    ConcurrentMap<Integer, Integer> localMap;
+    TestHazelcastInstanceFactory fac;
+    File homeDir;
+    IMap map;
+    String name;
+    volatile boolean running = true;
 
     @Parameterized.Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
@@ -72,13 +74,6 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         });
     }
 
-    ConcurrentMap<Integer, Integer> localMap;
-    TestHazelcastInstanceFactory fac;
-    File homeDir;
-    IMap map;
-
-    volatile boolean running = true;
-
     @Before
     public void deleteHomeDir() {
         homeDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
@@ -87,6 +82,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
             throw new AssertionError("Unable to create test folder: " + homeDir.getAbsolutePath());
         }
         localMap = new ConcurrentHashMap<Integer, Integer>();
+        name = randomString();
     }
 
     @After
@@ -148,6 +144,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         Config config = new XmlConfigBuilder()
                 .build()
                 .setInstanceName("hr-test-" + instanceId);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         HotRestartConfig hrConfig = config.getHotRestartConfig();
         hrConfig.setBaseDir(homeDir).setEnabled(true);
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES))
@@ -192,7 +189,6 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         assertOpenEventually(latch);
 
         HazelcastInstance hz = fac.getAllHazelcastInstances().iterator().next();
-        String name = randomString();
         if (memoryFormat == NATIVE) {
             map = hz.getMap("native-" + name);
         } else {

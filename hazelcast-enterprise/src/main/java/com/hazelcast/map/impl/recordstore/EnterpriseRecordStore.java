@@ -5,6 +5,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapKeyLoader;
+import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
@@ -67,7 +68,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             return new HDStorageImpl(((HDRecordFactory) recordFactory).getRecordProcessor());
         }
         if (hotRestartEnabled) {
-            return new HotRestartStorageImpl(recordFactory, memoryFormat, mapServiceContext, prefix);
+            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat, prefix);
         }
         return super.createStorage(recordFactory, memoryFormat);
     }
@@ -90,8 +91,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         return record;
     }
 
-    public Record createRecord(Object value, long sequence) {
-        return createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
+    public HDRecord createRecord(Object value, long sequence) {
+        return (HDRecord) createRecordInternal(value, DEFAULT_TTL, Clock.currentTimeMillis(), sequence);
     }
 
     @Override

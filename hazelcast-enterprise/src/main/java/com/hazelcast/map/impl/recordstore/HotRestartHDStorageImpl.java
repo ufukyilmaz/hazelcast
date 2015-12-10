@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -12,14 +11,10 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 
-import static com.hazelcast.map.impl.recordstore.HDStorageImpl.DEFAULT_CAPACITY;
-import static com.hazelcast.map.impl.recordstore.HDStorageImpl.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-
 /**
  * HotRestart storage implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
-public class HotRestartHDStorageImpl extends AbstractHotRestartStorageImpl<HDRecord> {
+public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
 
     private final Object mutex = new Object();
 
@@ -35,16 +30,26 @@ public class HotRestartHDStorageImpl extends AbstractHotRestartStorageImpl<HDRec
 
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
-        HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
-        HotRestartSampleableHDRecordMap sampleableHDRecordMap = new HotRestartSampleableHDRecordMap(DEFAULT_CAPACITY,
-                DEFAULT_LOAD_FACTOR, recordProcessor);
-        return new HDStorageImpl(sampleableHDRecordMap, recordProcessor);
+        return new HDStorageImpl(((HDRecordFactory) recordFactory).getRecordProcessor());
+    }
+
+    public void put(Data key, HDRecord record) {
+        synchronized (mutex) {
+            super.put(key, record);
+        }
     }
 
     @Override
-    public void removeTransient(HDRecord record) {
+    public void updateRecordValue(Data key, HDRecord record, Object val) {
         synchronized (mutex) {
-            super.removeTransient(record);
+            super.updateRecordValue(key, record, val);
+        }
+    }
+
+    @Override
+    public void removeRecord(HDRecord record) {
+        synchronized (mutex) {
+            super.removeRecord(record);
         }
     }
 
@@ -56,29 +61,10 @@ public class HotRestartHDStorageImpl extends AbstractHotRestartStorageImpl<HDRec
     }
 
     @Override
-    public void putInternal(Data key, HDRecord record) {
+    public void destroy() {
         synchronized (mutex) {
-            storage.put(key, record);
+            super.destroy();
         }
-    }
-
-    @Override
-    public void updateInternal(Data key, HDRecord record, Object val) {
-        synchronized (mutex) {
-            storage.updateRecordValue(key, record, val);
-        }
-    }
-
-    @Override
-    public void removeInternal(HDRecord record) {
-        getStorageImpl().addDeferredDispose(record.getValue());
-        synchronized (mutex) {
-            record.setValueAddress(NULL_ADDRESS);
-        }
-    }
-
-    public Object getMutex() {
-        return mutex;
     }
 
     @Override
@@ -97,5 +83,9 @@ public class HotRestartHDStorageImpl extends AbstractHotRestartStorageImpl<HDRec
 
     public HDStorageImpl getStorageImpl() {
         return (HDStorageImpl) storage;
+    }
+
+    public Object getMutex() {
+        return mutex;
     }
 }

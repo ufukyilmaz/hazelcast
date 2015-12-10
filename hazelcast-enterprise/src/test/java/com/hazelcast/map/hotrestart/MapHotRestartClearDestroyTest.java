@@ -18,7 +18,6 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
 @RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

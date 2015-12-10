@@ -30,20 +30,17 @@ public class HotRestartHDRecord extends HDRecord {
      * Structure:
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      * | Sequence                 |   8 bytes (long)   |
-     * +--------------------------+--------------------+
-     * | Tombstone Sequence       |   8 bytes (long)   |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
-     * Total size =  76 (60 + 16 ) bytes
+     * Total size =  68 (60 + 8 ) bytes
      */
 
     public static final int SIZE;
 
     static final int SEQUENCE_OFFSET = BASE_SIZE;
-    static final int TOMBSTONE_SEQUENCE_OFFSET = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
 
     static {
-        SIZE = TOMBSTONE_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+        SIZE = SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
     }
 
     public HotRestartHDRecord(HiDensityRecordAccessor<HDRecord> recordAccessor) {
@@ -57,14 +54,6 @@ public class HotRestartHDRecord extends HDRecord {
 
     public void setSequence(long sequence) {
         writeLong(SEQUENCE_OFFSET, sequence);
-    }
-
-    public long getTombstoneSequence() {
-        return readLong(TOMBSTONE_SEQUENCE_OFFSET);
-    }
-
-    public void setTombstoneSequence(long tombstoneSequence) {
-        writeLong(TOMBSTONE_SEQUENCE_OFFSET, tombstoneSequence);
     }
 
     @Override

@@ -51,18 +51,18 @@ public class EnterpriseMapEventPublisherImpl
     }
 
     @Override
-    public void publishEvent(Address caller, String mapName, EntryEventType eventType, boolean syntheticEvent,
-                             Data dataKey, Object oldvalue, Object value, Object mergingValue) {
+    public void publishEvent(Address caller, String mapName, EntryEventType eventType, Data dataKey, Object oldValue,
+                             Object value, Object mergingValue) {
 
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
         if (inMemoryFormat == NATIVE) {
             dataKey = toHeapData(dataKey);
-            oldvalue = toHeapData(oldvalue);
+            oldValue = toHeapData(oldValue);
             value = toHeapData(value);
             mergingValue = toHeapData(mergingValue);
         }
-        super.publishEvent(caller, mapName, eventType, syntheticEvent, dataKey, oldvalue, value, mergingValue);
+        super.publishEvent(caller, mapName, eventType, dataKey, oldValue, value, mergingValue);
     }
 
     private Data toHeapData(Object object) {
@@ -176,9 +176,7 @@ public class EnterpriseMapEventPublisherImpl
                                                                  Data dataNewValue, Data dataOldValue, int eventType,
                                                                  int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
-        // TODO handle synthetic events when applying filter.
-        if (!doFilter(eventFilter, false, dataKey, dataOldValue, dataNewValue,
-                EntryEventType.getByType(eventType), null)) {
+        if (!doFilter(eventFilter, dataKey, dataOldValue, dataNewValue, EntryEventType.getByType(eventType), null)) {
             return null;
         }
 

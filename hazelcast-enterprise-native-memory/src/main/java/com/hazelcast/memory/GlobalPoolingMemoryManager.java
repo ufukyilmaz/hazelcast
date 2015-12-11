@@ -165,6 +165,7 @@ final class GlobalPoolingMemoryManager
         return pageAllocations.containsKey(address - offset);
     }
 
+    @Override
     protected int getSizeInternal(long address) {
         int size = UnsafeHelper.UNSAFE.getIntVolatile(null, address);
         size = Bits.clearBit(size, AVAILABLE_BIT);
@@ -172,24 +173,22 @@ final class GlobalPoolingMemoryManager
     }
 
     @Override
-    public int getSize(long address) {
-        return getSizeInternal(address - getHeaderSize());
+    public long validateAndGetAllocatedSize(long address) {
+        assertNotNullPtr(address);
+        final long blockAddress = address - HEADER_OFFSET;
+        final int blockSize = UnsafeHelper.UNSAFE.getIntVolatile(null, blockAddress);
+        return Bits.isBitSet(blockSize, AVAILABLE_BIT)
+                || !QuickMath.isPowerOfTwo(blockSize)
+                || blockSize < minBlockSize
+                || blockSize > pageSize
+                || blockSize < pageSize && getPage(blockAddress, blockSize) == NULL_ADDRESS
+                || blockSize == pageSize && !pageAllocations.containsKey(blockAddress)
+                ? SIZE_INVALID : blockSize;
     }
 
     @Override
     protected int getOffset(long address) {
         return UnsafeHelper.UNSAFE.getIntVolatile(null, address + HEADER_OFFSET);
-    }
-
-    @Override
-    public int getHeaderLength() {
-        return HEADER_OFFSET;
-    }
-
-    @Override
-    public long getPage(long address) {
-        int size = getSizeInternal(address);
-        return getPage(address, size);
     }
 
     private long getPage(long address, int size) {

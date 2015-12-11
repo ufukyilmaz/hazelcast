@@ -10,6 +10,11 @@ import static com.hazelcast.util.QuickMath.log2;
  */
 abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
+    static final boolean ASSERTION_ENABLED;
+    static {
+        ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
+    }
+
     /**
      * Power of two block sizes, using buddy memory allocation;
      * 
@@ -298,6 +303,35 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         }
     }
 
+    @Override
+    public final long getAllocatedSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetAllocatedSize(address);
+        }
+        return getSizeInternal(address - getHeaderSize());
+    }
+
+    @Override
+    public final long getUsableSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetUsableSize(address);
+        }
+        final long allocatedSize = getAllocatedSize(address);
+        if (allocatedSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        }
+        return allocatedSize - getHeaderSize();
+    }
+
+    @Override
+    public final long validateAndGetUsableSize(long address) {
+        final long allocatedSize = validateAndGetAllocatedSize(address);
+        if (allocatedSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        }
+        return allocatedSize - getHeaderSize();
+    }
+
     protected final void freePage(long pageAddress) {
         pageAllocator.free(pageAddress, pageSize);
     }
@@ -319,8 +353,6 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     protected abstract int getSizeInternal(long address);
 
     protected abstract int getOffset(long address);
-
-    public abstract int getHeaderLength();
 
     @Override
     public final MemoryStats getMemoryStats() {

@@ -153,11 +153,6 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public long getPage(long address) {
-        return address;
-    }
-
-    @Override
     public MemoryAllocator unwrapMemoryAllocator() {
         return this;
     }
@@ -175,7 +170,22 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public int getSize(long address) {
+    public long getUsableSize(long address) {
+        return SIZE_INVALID;
+    }
+
+    @Override
+    public long validateAndGetUsableSize(long address) {
+        return SIZE_INVALID;
+    }
+
+    @Override
+    public long getAllocatedSize(long address) {
+        return SIZE_INVALID;
+    }
+
+    @Override
+    public long validateAndGetAllocatedSize(long address) {
         return SIZE_INVALID;
     }
 

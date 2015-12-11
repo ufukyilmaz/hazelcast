@@ -185,7 +185,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     }
 
     @Override
-    public int getSize(MemoryBlock memoryBlock) {
+    public long getSize(MemoryBlock memoryBlock) {
         return recordAccessor.getSize(memoryBlock);
     }
 

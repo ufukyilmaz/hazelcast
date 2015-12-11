@@ -83,7 +83,7 @@ public interface HiDensityRecordAccessor<R extends HiDensityRecord>
      * @param memoryBlock {@link MemoryBlock} whose size will be calculated
      * @return the size of memory block
      */
-    int getSize(MemoryBlock memoryBlock);
+    long getSize(MemoryBlock memoryBlock);
 
     /**
      * Gets the size of given <code>address</code>.

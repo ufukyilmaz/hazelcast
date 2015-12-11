@@ -3,6 +3,7 @@ package com.hazelcast.memory;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Assert;
@@ -21,7 +22,7 @@ import static org.junit.Assert.assertEquals;
  */
 
 @RunWith(HazelcastSerialClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class MemoryBlockTest {
 
     private static final LibMalloc MALLOC = new UnsafeMalloc();

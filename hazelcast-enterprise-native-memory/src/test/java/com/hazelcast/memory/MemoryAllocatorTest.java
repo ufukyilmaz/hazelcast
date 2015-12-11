@@ -1,7 +1,8 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -14,8 +15,8 @@ import static org.junit.Assert.assertEquals;
  * @author mdogan 02/06/14
  */
 
-@RunWith(HazelcastSerialClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(HazelcastParallelClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class MemoryAllocatorTest {
 
     private static final Unsafe UNSAFE = UnsafeHelper.UNSAFE;

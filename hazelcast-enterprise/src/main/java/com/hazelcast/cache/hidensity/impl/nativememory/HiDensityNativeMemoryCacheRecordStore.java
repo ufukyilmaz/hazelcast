@@ -1,5 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
+import com.hazelcast.cache.CacheEntryView;
+import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
@@ -9,9 +11,7 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSiz
 import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheEntryProcessorEntry;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
-import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
-import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
@@ -29,7 +29,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.counters.Counter;
 
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -51,13 +50,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected EnterpriseSerializationService serializationService;
     protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
     protected HiDensityStorageInfo cacheInfo;
-    private MemoryManager memoryManager;
-    private Counter recordSequence;
+    protected MemoryManager memoryManager;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
                                                  EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
         super(name, partitionId, nodeEngine, cacheService);
-        recordSequence = cacheService.getGlobalRecordSequence();
         ensureInitialized();
     }
 
@@ -128,9 +125,6 @@ public class HiDensityNativeMemoryCacheRecordStore
                 // `GlobalPoolingMemoryManager` for every memory allocation/free every time.
                 // So, we explicitly use its partition specific `ThreadLocalPoolingMemoryManager` directly.
                 memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
-
-                // Sequence can be thread-local because ThreadLocalPoolingMemoryManager has its own private address pool.
-                recordSequence = new LocalCounter();
             }
         }
         if (memoryManager == null) {
@@ -303,11 +297,11 @@ public class HiDensityNativeMemoryCacheRecordStore
     @Override
     protected HiDensityNativeMemoryCacheRecord createRecord(Object value, long creationTime, long expiryTime) {
         evictIfRequired();
-        return createRecordInternal(value, creationTime, expiryTime, incrementSequence());
+        return createRecordInternal(value, creationTime, expiryTime, newSequence());
     }
 
     final HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime,
-            long expiryTime, long recordSequence) {
+            long expiryTime, long sequence) {
 
         NativeMemoryData data = null;
         HiDensityNativeMemoryCacheRecord record;
@@ -317,7 +311,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             recordAddress = cacheRecordProcessor.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
             record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
-            record.setSequence(recordSequence);
+            record.setSequence(sequence);
 
             if (creationTime >= 0) {
                 record.setCreationTime(creationTime);
@@ -347,6 +341,10 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    long newSequence() {
+        return 0L;
+    }
+
     @SuppressWarnings("checkstyle:parameternumber")
     @Override
     protected void onCreateRecordError(Data key, Object value, long expiryTime, long now,
@@ -370,10 +368,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (isMemoryBlockValid(record)) {
             cacheRecordProcessor.dispose(record);
         }
-    }
-
-    long incrementSequence() {
-        return recordSequence.inc();
     }
 
     @Override
@@ -846,25 +840,5 @@ public class HiDensityNativeMemoryCacheRecordStore
             return;
         }
         super.destroy();
-    }
-
-    private static class LocalCounter implements Counter {
-        private long value;
-
-        @Override
-        public long get() {
-            return value;
-        }
-
-        @Override
-        public long inc() {
-            return ++value;
-        }
-
-        @Override
-        public long inc(long amount) {
-            value += amount;
-            return value;
-        }
     }
 }

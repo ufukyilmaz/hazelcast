@@ -51,8 +51,6 @@ import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.util.counters.Counter;
-import com.hazelcast.util.counters.MwCounter;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 import com.hazelcast.wan.WanReplicationService;
@@ -111,8 +109,6 @@ public class EnterpriseCacheService
                     }
                 }
             };
-
-    private final Counter globalRecordSequence = MwCounter.newMwCounter();
 
     private ReplicationSupportingService replicationSupportingService;
     private CacheMergePolicyProvider cacheMergePolicyProvider;
@@ -569,9 +565,5 @@ public class EnterpriseCacheService
     @Override
     public CacheWanEventPublisher getCacheWanEventPublisher() {
         return cacheWanEventPublisher;
-    }
-
-    public Counter getGlobalRecordSequence() {
-        return globalRecordSequence;
     }
 }

@@ -67,6 +67,4 @@ public final class RamStoreHelper {
             buffer.put(data.toByteArray());
         }
     }
-
-
 }

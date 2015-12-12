@@ -3,6 +3,8 @@ package com.hazelcast.memory;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
+import com.hazelcast.util.counters.Counter;
+import com.hazelcast.util.counters.MwCounter;
 import com.hazelcast.util.function.LongLongConsumer;
 
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
@@ -18,6 +20,7 @@ public final class StandardMemoryManager implements MemoryManager {
 
     private final LibMalloc malloc;
     private final NativeMemoryStats memoryStats;
+    private final Counter sequenceGenerator = MwCounter.newMwCounter();
 
     private final Long2LongHashMap allocatedBlocks;
 
@@ -197,4 +200,8 @@ public final class StandardMemoryManager implements MemoryManager {
         throw new UnsupportedOperationException("Allocated blocks are tracked only in DEBUG mode!");
     }
 
+    @Override
+    public long newSequence() {
+        return sequenceGenerator.inc();
+    }
 }

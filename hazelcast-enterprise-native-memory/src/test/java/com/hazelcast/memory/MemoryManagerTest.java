@@ -244,4 +244,36 @@ public class MemoryManagerTest {
     private void testValidateAndGetAllocatedSize_withForeignAddress(MemoryManager memoryManager) throws Exception {
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetAllocatedSize(malloc.malloc(8)));
     }
+
+    @Test
+    public void testNewSequence_standard() {
+        memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        testNewSequence(memoryManager);
+    }
+
+    @Test
+    public void testNewSequence_threadLocalPooled() {
+        memoryManager = newThreadLocalPoolingMemoryManager();
+        testNewSequence(memoryManager);
+    }
+
+    @Test
+    public void testNewSequence_globalPooled() {
+        memoryManager = newGlobalPoolingMemoryManager();
+        testNewSequence(memoryManager);
+    }
+
+    @Test
+    public void testNewSequence_pooling() {
+        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        testNewSequence(memoryManager);
+    }
+
+    private void testNewSequence(MemoryManager memoryManager) {
+        long initialSeq = memoryManager.newSequence();
+        for (int k = 0; k < 1000; k++) {
+            assertEquals(++initialSeq, memoryManager.newSequence());
+        }
+    }
+
 }

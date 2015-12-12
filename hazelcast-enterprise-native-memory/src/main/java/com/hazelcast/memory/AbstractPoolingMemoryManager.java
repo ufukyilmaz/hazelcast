@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.counters.Counter;
 
 import static com.hazelcast.util.QuickMath.log2;
 
@@ -48,8 +49,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     // but total system allocations cannot exceed a predefined portion of max off-heap memory
     final SystemMemoryAllocator systemAllocator;
 
+    private final Counter sequenceGenerator;
+
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
             LibMalloc malloc, PooledNativeMemoryStats stats) {
+
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 
         memoryStats = stats;
@@ -61,7 +65,10 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         addressQueues = new AddressQueue[length];
         pageAllocator = new StandardMemoryManager(malloc, stats);
         systemAllocator = new SystemMemoryAllocator(malloc);
+        sequenceGenerator = newCounter();
     }
+
+    protected abstract Counter newCounter();
 
     final void initializeAddressQueues() {
         for (int i = 0; i < addressQueues.length; i++) {
@@ -330,6 +337,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             return SIZE_INVALID;
         }
         return allocatedSize - getHeaderSize();
+    }
+
+    @Override
+    public final long newSequence() {
+        return sequenceGenerator.inc();
     }
 
     protected final void freePage(long pageAddress) {

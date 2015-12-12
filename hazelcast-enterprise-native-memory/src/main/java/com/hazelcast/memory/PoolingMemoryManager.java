@@ -128,6 +128,11 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         return manager.validateAndGetAllocatedSize(address);
     }
 
+    @Override
+    public long newSequence() {
+        MemoryManager manager = getMemoryManager();
+        return manager.newSequence();
+    }
 
     public int getHeaderSize() {
         AbstractPoolingMemoryManager manager = (AbstractPoolingMemoryManager) getMemoryManager();

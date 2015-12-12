@@ -10,6 +10,7 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.counters.Counter;
 
 import java.util.concurrent.TimeUnit;
 
@@ -253,6 +254,11 @@ final class ThreadLocalPoolingMemoryManager
         return queue.capacity() / 3;
     }
 
+    @Override
+    protected Counter newCounter() {
+        return new ThreadLocalCounter();
+    }
+
     private final class ThreadAddressQueue implements AddressQueue {
 
         private final int index;
@@ -396,6 +402,26 @@ final class ThreadLocalPoolingMemoryManager
 
         public int getMemorySize() {
             return memorySize;
+        }
+    }
+
+    private static class ThreadLocalCounter implements Counter {
+        private long value;
+
+        @Override
+        public long get() {
+            return value;
+        }
+
+        @Override
+        public long inc() {
+            return ++value;
+        }
+
+        @Override
+        public long inc(long amount) {
+            value += amount;
+            return value;
         }
     }
 

@@ -120,4 +120,14 @@ public interface MemoryManager extends MemoryAllocator {
      */
     long validateAndGetAllocatedSize(long address);
 
+    /**
+     * Creates a new sequence. This sequence is guaranteed to be atomically incremental.
+     * <p/>
+     * Use case for this sequence is to avoid ABA problem by using it with the address
+     * to create a "safe pointer" {@code (address, sequence)} to a memory block.
+     *
+     * @return new sequence
+     */
+    long newSequence();
+
 }

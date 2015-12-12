@@ -6,6 +6,8 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.counters.Counter;
+import com.hazelcast.util.counters.MwCounter;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -235,6 +237,11 @@ final class GlobalPoolingMemoryManager
     @Override
     protected int getQueueMergeThreshold(AddressQueue queue) {
         return INITIAL_CAPACITY;
+    }
+
+    @Override
+    protected Counter newCounter() {
+        return MwCounter.newMwCounter();
     }
 
     @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF"})

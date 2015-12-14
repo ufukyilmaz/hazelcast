@@ -24,11 +24,7 @@ package com.hazelcast.util.concurrent;
 public class BusySpinIdleStrategy implements IdleStrategy {
     private int dummyCounter;
 
-    public boolean idle(final int workCount) {
-        if (workCount > 0) {
-            return false;
-        }
-
+    public boolean idle(final long n) {
         // Trick speculative execution into not progressing
         if (dummyCounter > 0) {
             if (Math.random() > 0) {

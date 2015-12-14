@@ -19,6 +19,10 @@ package com.hazelcast.util.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
+import static com.hazelcast.util.Preconditions.checkNotNegative;
+import static java.lang.Long.numberOfLeadingZeros;
+import static java.lang.Math.min;
+
 /**
  * Idling strategy for threads when they have no work to do.
  * <p/>
@@ -27,22 +31,11 @@ import java.util.concurrent.locks.LockSupport;
  * {@link java.util.concurrent.locks.LockSupport#parkNanos(long)} on an exponential backoff to maxParkPeriodNs
  */
 public class BackoffIdleStrategy implements IdleStrategy {
-    /** Possible states of the loop employing a backoff strategy */
-    @SuppressWarnings("checkstyle:javadocvariable")
-    public enum State {
-        NOT_IDLE, SPINNING, YIELDING, PARKING
-    }
-
-    private final long maxSpins;
-    private final long maxYields;
+    private final long yieldThreshold;
+    private final long parkThreshold;
     private final long minParkPeriodNs;
     private final long maxParkPeriodNs;
-
-    private State state;
-
-    private long spins;
-    private long yields;
-    private long parkPeriodNs;
+    private final int maxShift;
 
     /**
      * Create a set of state tracking idle behavior
@@ -53,55 +46,40 @@ public class BackoffIdleStrategy implements IdleStrategy {
      * @param maxParkPeriodNs to use when parking
      */
     public BackoffIdleStrategy(long maxSpins, long maxYields, long minParkPeriodNs, long maxParkPeriodNs) {
-        this.maxSpins = maxSpins;
-        this.maxYields = maxYields;
+        checkNotNegative(maxSpins, "maxSpins must be positive or zero");
+        checkNotNegative(maxYields, "maxYields must be positive or zero");
+        checkNotNegative(minParkPeriodNs, "minParkPeriodNs must be positive or zero");
+        checkNotNegative(maxParkPeriodNs - minParkPeriodNs,
+                "maxParkPeriodNs must be greater than or equal to minParkPeriodNs");
+        this.yieldThreshold = maxSpins;
+        this.parkThreshold = maxSpins + maxYields;
         this.minParkPeriodNs = minParkPeriodNs;
         this.maxParkPeriodNs = maxParkPeriodNs;
-        this.state = State.NOT_IDLE;
+        this.maxShift = numberOfLeadingZeros(minParkPeriodNs) - numberOfLeadingZeros(maxParkPeriodNs);
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean idle(final int workCount) {
-        if (workCount > 0) {
-            spins = 0;
-            yields = 0;
-            state = State.NOT_IDLE;
+    @Override public boolean idle(long n) {
+        if (n < yieldThreshold) {
             return false;
         }
-
-        switch (state) {
-            case NOT_IDLE:
-                state = State.SPINNING;
-                spins++;
-                break;
-
-            case SPINNING:
-                if (++spins > maxSpins) {
-                    state = State.YIELDING;
-                    yields = 0;
-                }
-                break;
-
-            case YIELDING:
-                if (++yields > maxYields) {
-                    state = State.PARKING;
-                    parkPeriodNs = minParkPeriodNs;
-                } else {
-                    Thread.yield();
-                }
-                break;
-
-            case PARKING:
-                LockSupport.parkNanos(parkPeriodNs);
-                parkPeriodNs = Math.min(parkPeriodNs << 1, maxParkPeriodNs);
-                break;
-
-            default:
-                throw new RuntimeException("enum member unaccounted for");
+        if (n < parkThreshold) {
+            Thread.yield();
+            return false;
         }
-        return state == State.PARKING && parkPeriodNs == maxParkPeriodNs;
+        final long parkTime = parkTime(n);
+        LockSupport.parkNanos(parkTime);
+        return parkTime == maxParkPeriodNs;
+    }
+
+    long parkTime(long n) {
+        final long proposedShift = n - parkThreshold;
+        final long allowedShift = min(maxShift, proposedShift);
+        return proposedShift > maxShift ? maxParkPeriodNs
+             : proposedShift < maxShift ? minParkPeriodNs << allowedShift
+             : min(minParkPeriodNs << allowedShift, maxParkPeriodNs);
     }
 }
 

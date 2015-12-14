@@ -42,14 +42,12 @@ public class HDRecordFactory implements RecordFactory<Data> {
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
     private final EnterpriseSerializationService serializationService;
     private final MemoryManager memoryManager;
-    private final boolean hotRestartEnabled;
 
     public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
-                           SerializationService serializationService, boolean hotRestartEnabled) {
+                           SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.serializationService = ((EnterpriseSerializationService) serializationService);
         this.memoryManager = this.serializationService.getMemoryManager();
-        this.hotRestartEnabled = hotRestartEnabled;
     }
 
     private static boolean isNull(Object object) {
@@ -66,7 +64,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
         long address = NULL_PTR;
         Data dataValue = null;
         try {
-            address = recordProcessor.allocate(hotRestartEnabled ? HotRestartHDRecord.SIZE : HDRecord.BASE_SIZE);
+            address = recordProcessor.allocate(HDRecord.SIZE);
             HDRecord record = recordProcessor.newRecord();
             record.reset(address);
 

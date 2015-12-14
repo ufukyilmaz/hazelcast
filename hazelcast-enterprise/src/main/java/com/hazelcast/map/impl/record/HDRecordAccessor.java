@@ -17,20 +17,13 @@ public class HDRecordAccessor
 
     private final boolean optimizeQuery;
 
-    private final boolean hotRestartEnabled;
-
-    public HDRecordAccessor(EnterpriseSerializationService serializationService,
-                            boolean optimizeQuery, boolean hotRestartEnabled) {
+    public HDRecordAccessor(EnterpriseSerializationService serializationService, boolean optimizeQuery) {
         super(serializationService, serializationService.getMemoryManager());
         this.optimizeQuery = optimizeQuery;
-        this.hotRestartEnabled = hotRestartEnabled;
     }
 
     @Override
     protected HDRecord createRecord() {
-        if (hotRestartEnabled) {
-            return optimizeQuery ? new HotRestartHDRecordWithCachedValue(this) : new HotRestartHDRecord(this);
-        }
         return optimizeQuery ? new HDRecordWithCachedValue(this) : new HDRecord(this);
     }
 

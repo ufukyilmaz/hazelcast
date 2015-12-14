@@ -9,6 +9,8 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
@@ -37,6 +39,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     private final long prefix;
     private final boolean hotRestartEnabled;
+    private final MemoryManager memoryManager;
 
     private RamStore ramStore;
 
@@ -45,6 +48,11 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
         this.hotRestartEnabled = mapContainer.getMapConfig().isHotRestartEnabled();
+        MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        if (memoryManager instanceof PoolingMemoryManager) {
+            memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
+        }
+        this.memoryManager = memoryManager;
     }
 
     public RamStore getRamStore() {
@@ -154,7 +162,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     public long incrementSequence() {
-        return ((EnterpriseMapServiceContext) mapServiceContext).incrementSequence();
+        return memoryManager.newSequence();
     }
 
     private class ReadBackupDataTask extends FutureTask<Data> implements PartitionSpecificRunnable {

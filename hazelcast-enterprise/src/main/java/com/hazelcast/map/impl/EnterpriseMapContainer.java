@@ -66,10 +66,8 @@ public class EnterpriseMapContainer extends MapContainer {
             return new ConstructorFunction<Void, RecordFactory>() {
                 @Override
                 public RecordFactory createNew(Void notUsedArg) {
-                    boolean optimizeQueries = mapConfig.isOptimizeQueries();
-                    HiDensityRecordProcessor recordProcessor
-                            = createHiDensityRecordProcessor(optimizeQueries);
-                    return new HDRecordFactory(recordProcessor, serializationService, mapConfig.isHotRestartEnabled());
+                    HiDensityRecordProcessor recordProcessor = createHiDensityRecordProcessor();
+                    return new HDRecordFactory(recordProcessor, serializationService);
                 }
             };
         } else {
@@ -78,12 +76,13 @@ public class EnterpriseMapContainer extends MapContainer {
     }
 
 
-    private HiDensityRecordProcessor createHiDensityRecordProcessor(boolean optimizeQueries) {
+    private HiDensityRecordProcessor createHiDensityRecordProcessor() {
+        boolean optimizeQueries = mapConfig.isOptimizeQueries();
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         HiDensityRecordAccessor<HDRecord> recordAccessor
-                = new HDRecordAccessor(serializationService, optimizeQueries, mapConfig.isHotRestartEnabled());
+                = new HDRecordAccessor(serializationService, optimizeQueries);
         MemoryManager memoryManager = serializationService.getMemoryManager();
         return new DefaultHiDensityRecordProcessor(serializationService, recordAccessor,
                 memoryManager, storageInfo);

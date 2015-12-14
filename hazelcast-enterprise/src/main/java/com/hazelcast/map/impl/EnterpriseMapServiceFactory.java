@@ -3,7 +3,6 @@ package com.hazelcast.map.impl;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublishingService;
 import com.hazelcast.spi.ClientAwareService;
 import com.hazelcast.spi.EventPublishingService;
-import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.RemoteService;
@@ -26,12 +25,6 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     ReplicationSupportingService createReplicationSupportingService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         return new EnterpriseMapReplicationSupportingService(mapServiceContext);
-    }
-
-    @Override
-    ManagedService createManagedService() {
-        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapManagedService(mapServiceContext);
     }
 
     @Override

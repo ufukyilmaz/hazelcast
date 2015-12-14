@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.counters.Counter;
 
 import static com.hazelcast.util.QuickMath.log2;
 
@@ -9,6 +10,11 @@ import static com.hazelcast.util.QuickMath.log2;
  * @author mdogan 03/12/13
  */
 abstract class AbstractPoolingMemoryManager implements MemoryManager {
+
+    static final boolean ASSERTION_ENABLED;
+    static {
+        ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
+    }
 
     /**
      * Power of two block sizes, using buddy memory allocation;
@@ -43,8 +49,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     // but total system allocations cannot exceed a predefined portion of max off-heap memory
     final SystemMemoryAllocator systemAllocator;
 
+    private final Counter sequenceGenerator;
+
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
             LibMalloc malloc, PooledNativeMemoryStats stats) {
+
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 
         memoryStats = stats;
@@ -56,7 +65,10 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         addressQueues = new AddressQueue[length];
         pageAllocator = new StandardMemoryManager(malloc, stats);
         systemAllocator = new SystemMemoryAllocator(malloc);
+        sequenceGenerator = newCounter();
     }
+
+    protected abstract Counter newCounter();
 
     final void initializeAddressQueues() {
         for (int i = 0; i < addressQueues.length; i++) {
@@ -298,6 +310,40 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         }
     }
 
+    @Override
+    public final long getAllocatedSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetAllocatedSize(address);
+        }
+        return getSizeInternal(address - getHeaderSize());
+    }
+
+    @Override
+    public final long getUsableSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetUsableSize(address);
+        }
+        final long allocatedSize = getAllocatedSize(address);
+        if (allocatedSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        }
+        return allocatedSize - getHeaderSize();
+    }
+
+    @Override
+    public final long validateAndGetUsableSize(long address) {
+        final long allocatedSize = validateAndGetAllocatedSize(address);
+        if (allocatedSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        }
+        return allocatedSize - getHeaderSize();
+    }
+
+    @Override
+    public final long newSequence() {
+        return sequenceGenerator.inc();
+    }
+
     protected final void freePage(long pageAddress) {
         pageAllocator.free(pageAddress, pageSize);
     }
@@ -319,8 +365,6 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     protected abstract int getSizeInternal(long address);
 
     protected abstract int getOffset(long address);
-
-    public abstract int getHeaderLength();
 
     @Override
     public final MemoryStats getMemoryStats() {

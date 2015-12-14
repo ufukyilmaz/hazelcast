@@ -7,6 +7,7 @@ import com.hazelcast.client.impl.protocol.MessageTaskFactory;
 import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.ConfigurationException;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
@@ -224,6 +225,10 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
+                if (isHotRestartEnabled()) {
+                    throw new ConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
+                            + "is enabled. Please use MemoryAllocatorType.POOLED!");
+                }
                 memoryManager = new StandardMemoryManager(size);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();

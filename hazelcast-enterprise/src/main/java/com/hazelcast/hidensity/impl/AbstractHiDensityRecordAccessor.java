@@ -107,11 +107,11 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     }
 
     @Override
-    public int getSize(MemoryBlock memoryBlock) {
+    public long getSize(MemoryBlock memoryBlock) {
         if (memoryBlock == null || memoryBlock.address() == MemoryManager.NULL_ADDRESS) {
             return  0;
         }
-        int size = memoryManager.getSize(memoryBlock.address());
+        long size = memoryManager.getAllocatedSize(memoryBlock.address());
         if (size == MemoryManager.SIZE_INVALID) {
             size = memoryBlock.size();
         }
@@ -124,7 +124,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         if (address == MemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + address);
         }
-        long size = memoryManager.getSize(address);
+        long size = memoryManager.getAllocatedSize(address);
         if (size == MemoryManager.SIZE_INVALID) {
             size = expectedSize;
         }

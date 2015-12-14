@@ -59,6 +59,11 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    long newSequence() {
+        return memoryManager.newSequence();
+    }
+
+    @Override
     protected HiDensityNativeMemoryCacheRecord doPutRecord(Data key, HiDensityNativeMemoryCacheRecord record, String source) {
         HiDensityNativeMemoryCacheRecord oldRecord = super.doPutRecord(key, record, source);
         putToHotRestart(key, record);
@@ -80,20 +85,21 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     public CacheRecord removeRecord(Data key) {
-        HiDensityNativeMemoryCacheRecord record = records.get(key);
-        if (isMemoryBlockValid(record)) {
-            removeFromHotRestart(key, record);
-        }
+        lookupAndRemoveFromHotRestart(key);
         return super.removeRecord(key);
     }
 
     @Override
     protected HiDensityNativeMemoryCacheRecord doRemoveRecord(Data key, String source) {
+        lookupAndRemoveFromHotRestart(key);
+        return super.doRemoveRecord(key, source);
+    }
+
+    private void lookupAndRemoveFromHotRestart(Data key) {
         HiDensityNativeMemoryCacheRecord record = records.get(key);
-        if (record != null) {
+        if (isMemoryBlockValid(record)) {
             removeFromHotRestart(key, record);
         }
-        return super.doRemoveRecord(key, source);
     }
 
     @Override
@@ -102,6 +108,9 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
         // record is already removed from map
         NativeMemoryData nativeKey = (NativeMemoryData) key;
+        assert nativeKey.address() != NULL_PTR;
+        assert record.address() != NULL_PTR;
+        assert record.getValueAddress() != NULL_PTR;
         KeyOffHeap hotRestartKey = new KeyOffHeap(prefix, key.toByteArray(), nativeKey.address(), record.getSequence());
         hotRestartStore.remove(hotRestartKey);
     }
@@ -127,6 +136,8 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private KeyOffHeap newHotRestartKey(Data key, HiDensityNativeMemoryCacheRecord record) {
         long keyAddress = records.getNativeKeyAddress(key);
         assert keyAddress != NULL_PTR : "Invalid key address!";
+        assert record.address() != NULL_PTR;
+        assert record.getValueAddress() != NULL_PTR;
         return new KeyOffHeap(prefix, key.toByteArray(), keyAddress, record.getSequence());
     }
 
@@ -137,7 +148,10 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         assert kh.address() != NULL_PTR;
 
         synchronized (recordMapMutex) {
-            NativeMemoryData key = new NativeMemoryData().reset(kh.address());
+            NativeMemoryData key = RamStoreHelper.validateAndGetKey(kh, memoryManager);
+            if (key == null) {
+                return false;
+            }
             HiDensityNativeMemoryCacheRecord record = records.get(key);
             return record != null && RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
@@ -159,7 +173,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private KeyHandleOffHeap newKeyHandle(HeapData heapKey) {
         HiDensityRecordProcessor recordProcessor = getRecordProcessor();
         NativeMemoryData nativeKey = (NativeMemoryData) recordProcessor.convertData(heapKey, NATIVE);
-        long recordSequence = incrementSequence();
+        long recordSequence = newSequence();
         // fetchedRecordDuringRestart will be used in #accept() method
         fetchedRecordDuringRestart = acceptNewRecord(nativeKey, recordSequence);
         return  new SimpleHandleOffHeap(nativeKey.address(), recordSequence);

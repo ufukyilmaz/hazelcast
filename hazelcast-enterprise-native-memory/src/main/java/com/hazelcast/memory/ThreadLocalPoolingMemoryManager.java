@@ -10,6 +10,7 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
+import com.hazelcast.util.counters.Counter;
 
 import java.util.concurrent.TimeUnit;
 
@@ -20,9 +21,13 @@ final class ThreadLocalPoolingMemoryManager
         extends AbstractPoolingMemoryManager
         implements MemoryManager {
 
-    private static final int HEADER_OFFSET = 1;
-    // using sign bit as available bit, since offset is already positive
+    /** Indicates the position of the "available" bit inside the header byte */
     private static final int AVAILABLE_BIT = Byte.SIZE - 1;
+    /** Maximum value of the header byte when occupied */
+    private static final int MAX_BLOCK_SIZE_POWER = 31;
+    /** headerByte & OCCUPIED_HEADER_MASK must be zero for any occupied header */
+    private static final int OCCUPIED_HEADER_MASK = ~MAX_BLOCK_SIZE_POWER;
+    private static final int HEADER_OFFSET = 1;
     private static final int INITIAL_CAPACITY = 1024;
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
@@ -104,7 +109,7 @@ final class ThreadLocalPoolingMemoryManager
         byte b = UnsafeHelper.UNSAFE.getByte(address);
         assert !Bits.isBitSet(b, AVAILABLE_BIT) : "Address already marked as available! " + address;
 
-        int memSize = (int) Math.pow(2, b);
+        int memSize = 1 << b;
         b = Bits.setBit(b, AVAILABLE_BIT);
         UnsafeHelper.UNSAFE.putByte(address, b);
 
@@ -157,7 +162,7 @@ final class ThreadLocalPoolingMemoryManager
         if (b < minBlockSizePower) {
             return false;
         }
-        int memSize = (int) Math.pow(2, b);
+        int memSize = 1 << b;
         if (memSize != expectedSize) {
             return false;
         }
@@ -177,24 +182,23 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    public int getSize(long address) {
-        return getSizeInternal(address - getHeaderSize());
+    public long validateAndGetAllocatedSize(long address) {
+        assertNotNullPtr(address);
+        final long blockAddress = address - HEADER_OFFSET;
+        final byte headerByte = UnsafeHelper.UNSAFE.getByte(blockAddress);
+        final byte blockSizePower = Bits.clearBit(headerByte, AVAILABLE_BIT);
+        final int blockSize = 1 << blockSizePower;
+        return (headerByte & OCCUPIED_HEADER_MASK) != 0
+                || blockSizePower < minBlockSizePower
+                || blockSize > pageSize
+                || blockSize < pageSize && getPage(blockAddress, blockSize) == NULL_ADDRESS
+                || blockSize == pageSize && !pageAllocations.contains(blockAddress)
+                ? SIZE_INVALID : blockSize;
     }
 
     @Override
     protected int getOffset(long address) {
         return UnsafeHelper.UNSAFE.getInt(address + HEADER_OFFSET);
-    }
-
-    @Override
-    public int getHeaderLength() {
-        return HEADER_OFFSET;
-    }
-
-    @Override
-    public long getPage(long address) {
-        int size = getSizeInternal(address);
-        return getPage(address, size);
     }
 
     // binary range search
@@ -248,6 +252,11 @@ final class ThreadLocalPoolingMemoryManager
     @Override
     protected int getQueueMergeThreshold(AddressQueue queue) {
         return queue.capacity() / 3;
+    }
+
+    @Override
+    protected Counter newCounter() {
+        return new ThreadLocalCounter();
     }
 
     private final class ThreadAddressQueue implements AddressQueue {
@@ -393,6 +402,26 @@ final class ThreadLocalPoolingMemoryManager
 
         public int getMemorySize() {
             return memorySize;
+        }
+    }
+
+    private static class ThreadLocalCounter implements Counter {
+        private long value;
+
+        @Override
+        public long get() {
+            return value;
+        }
+
+        @Override
+        public long inc() {
+            return ++value;
+        }
+
+        @Override
+        public long inc(long amount) {
+            value += amount;
+            return value;
         }
     }
 

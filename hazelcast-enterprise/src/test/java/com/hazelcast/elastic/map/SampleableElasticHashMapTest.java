@@ -346,11 +346,11 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             return size;
         }
 
-        int getSize(MemoryBlock data) {
+        long getSize(MemoryBlock data) {
             if (data == null) {
                 return  0;
             }
-            int size = memoryManager.getSize(data.address());
+            long size = memoryManager.getUsableSize(data.address());
             if (size == MemoryManager.SIZE_INVALID) {
                 size = data.size();
             }

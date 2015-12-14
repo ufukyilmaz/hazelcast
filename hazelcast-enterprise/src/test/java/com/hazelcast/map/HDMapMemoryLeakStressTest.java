@@ -31,6 +31,7 @@ import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -51,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * This test is an adapted version of {@link com.hazelcast.cache.CacheNativeMemoryLeakStressTest}.
  */
+@Ignore
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {

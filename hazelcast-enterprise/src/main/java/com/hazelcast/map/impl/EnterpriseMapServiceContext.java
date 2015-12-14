@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
+import com.hazelcast.map.impl.wan.filter.MapFilterProvider;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 
@@ -23,6 +23,4 @@ public interface EnterpriseMapServiceContext extends MapServiceContext {
     HotRestartStore getOnHeapHotRestartStoreForCurrentThread();
 
     HotRestartStore getOffHeapHotRestartStoreForCurrentThread();
-
-    long incrementSequence();
 }

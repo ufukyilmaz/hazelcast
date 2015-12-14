@@ -14,6 +14,8 @@ import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
@@ -31,7 +33,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
      * +--------------------------+--------------------+
      * | Creation Time            |   8 bytes (long)   |
      * +--------------------------+--------------------+
-     * | Time To live             |   8 bytes (long)   |
+     * | Time To live             |   4 bytes (int)    |
      * +--------------------------+--------------------+
      * | Last Access Time         |   4 bytes (int)    |
      * +--------------------------+--------------------+
@@ -42,6 +44,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
      * | Last Stored Time         |   4 bytes (int)    |
      * +--------------------------+--------------------+
      * | Expiration Time          |   4 bytes (int)    |
+     * +--------------------------+--------------------+
+     * | Sequence                 |   4 bytes (int)    |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      * Total size = 60 bytes
@@ -49,9 +53,9 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
 
     /**
-     * Gives the minimum size of an {@link HDRecord}
+     * Gives the size of an {@link HDRecord}
      */
-    public static final int BASE_SIZE;
+    public static final int SIZE;
 
     static final int KEY_OFFSET = 0;
     static final int VALUE_OFFSET = KEY_OFFSET + LONG_SIZE_IN_BYTES;
@@ -63,9 +67,10 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     static final int HITS = LAST_UPDATE_TIME_OFFSET + INT_SIZE_IN_BYTES;
     static final int LAST_STORED_TIME_OFFSET = HITS + INT_SIZE_IN_BYTES;
     static final int EXPIRATION_TIME_OFFSET = LAST_STORED_TIME_OFFSET + INT_SIZE_IN_BYTES;
+    static final int SEQUENCE_OFFSET = EXPIRATION_TIME_OFFSET + INT_SIZE_IN_BYTES;
 
     static {
-        BASE_SIZE = EXPIRATION_TIME_OFFSET + INT_SIZE_IN_BYTES;
+        SIZE = SEQUENCE_OFFSET + INT_SIZE_IN_BYTES;
     }
 
     protected HiDensityRecordAccessor<HDRecord> recordAccessor;
@@ -80,7 +85,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     }
 
     protected int getSize() {
-        return BASE_SIZE;
+        return SIZE;
     }
 
     @Override
@@ -168,10 +173,18 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public long getSequence() {
-        return 0;
+        return readInt(SEQUENCE_OFFSET);
     }
 
+    /**
+     * Since the address can be re-used, sequence provides a unique number () for the pointer
+     * Sequence is used for hot-restart
+     *
+     * @param sequence
+     */
+    @Override
     public void setSequence(long sequence) {
+        writeInt(SEQUENCE_OFFSET, (int) sequence);
     }
 
     @Override
@@ -261,12 +274,17 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public long getTtl() {
-        return readLong(TTL_OFFSET);
+        return SECONDS.toMillis(readInt(TTL_OFFSET));
     }
 
     @Override
     public void setTtl(long ttl) {
-        writeLong(TTL_OFFSET, ttl);
+        long ttlSeconds = MILLISECONDS.toSeconds(ttl);
+        if (ttlSeconds == 0 && ttl != 0) {
+            ttlSeconds = 1;
+        }
+        int value = ttlSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) ttlSeconds;
+        writeInt(TTL_OFFSET, value);
     }
 
     @Override

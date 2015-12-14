@@ -44,8 +44,6 @@ import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.util.counters.Counter;
-import com.hazelcast.util.counters.MwCounter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,9 +69,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             final MapServiceContext mapServiceContext = getService().getMapServiceContext();
             final Config config = mapServiceContext.getNodeEngine().getConfig();
             final MapConfig mapConfig = config.findMapConfig(mapName);
-            final EnterpriseMapContainer mapContainer
-                    = new EnterpriseMapContainer(mapName, mapConfig, mapServiceContext);
-            return mapContainer;
+            return new EnterpriseMapContainer(mapName, mapConfig, mapServiceContext);
         }
     };
 
@@ -83,8 +79,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartService hotRestartService;
-
-    private final Counter sequenceCounter = MwCounter.newMwCounter();
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
@@ -294,10 +288,5 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
         }
         return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, prefix);
-    }
-
-    @Override
-    public long incrementSequence() {
-        return sequenceCounter.inc();
     }
 }

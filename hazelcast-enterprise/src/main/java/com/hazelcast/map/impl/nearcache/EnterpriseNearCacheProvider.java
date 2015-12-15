@@ -89,8 +89,8 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
     }
 
     @Override
-    public void remove(String mapName) {
-        super.remove(mapName);
+    public void destroyNearCache(String mapName) {
+        super.destroyNearCache(mapName);
         nearCacheManager.destroyNearCache(mapName);
     }
 }

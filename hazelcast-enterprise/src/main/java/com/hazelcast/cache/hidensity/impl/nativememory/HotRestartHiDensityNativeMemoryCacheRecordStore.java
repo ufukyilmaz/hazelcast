@@ -35,6 +35,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     private final long prefix;
+    private final boolean fsync;
     private final HotRestartStore hotRestartStore;
 
     /**
@@ -44,9 +45,10 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     private HiDensityNativeMemoryCacheRecord fetchedRecordDuringRestart;
 
-    public HotRestartHiDensityNativeMemoryCacheRecordStore(
-            int partitionId, String name, EnterpriseCacheService cacheService, NodeEngine nodeEngine, long keyPrefix) {
+    public HotRestartHiDensityNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
+            NodeEngine nodeEngine, boolean fsync, long keyPrefix) {
         super(partitionId, name, cacheService, nodeEngine);
+        this.fsync = fsync;
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.offHeapHotRestartStoreForCurrentThread();
         recordMapMutex = ((HotRestartHiDensityNativeMemoryCacheRecordMap) records).getMutex();
@@ -113,6 +115,13 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         assert record.getValueAddress() != NULL_PTR;
         KeyOffHeap hotRestartKey = new KeyOffHeap(prefix, key.toByteArray(), nativeKey.address(), record.getSequence());
         hotRestartStore.remove(hotRestartKey);
+        fsyncIfRequired();
+    }
+
+    private void fsyncIfRequired() {
+        if (fsync) {
+            hotRestartStore.fsync();
+        }
     }
 
     @Override
@@ -126,11 +135,13 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         assert value != null : "Value should not be null! -> " + record;
         byte[] valueBytes = value.toByteArray();
         hotRestartStore.put(newHotRestartKey(key, record), valueBytes);
+        fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         final KeyOffHeap hotRestartKey = newHotRestartKey(key, record);
         hotRestartStore.remove(hotRestartKey);
+        fsyncIfRequired();
     }
 
     private KeyOffHeap newHotRestartKey(Data key, HiDensityNativeMemoryCacheRecord record) {
@@ -269,6 +280,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private void clearInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
+            fsyncIfRequired();
         }
         super.clear();
     }

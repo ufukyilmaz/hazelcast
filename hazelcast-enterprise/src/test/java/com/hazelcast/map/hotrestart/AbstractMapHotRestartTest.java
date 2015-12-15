@@ -2,7 +2,7 @@ package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -143,9 +143,9 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
 
-        HotRestartConfig hotRestartConfig = config.getHotRestartConfig();
-        hotRestartConfig.setEnabled(true);
-        hotRestartConfig.setBaseDir(folder);
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
+        hotRestartPersistenceConfig.setEnabled(true);
+        hotRestartPersistenceConfig.setBaseDir(folder);
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(getNativeMemorySize())
@@ -173,7 +173,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         for (HazelcastInstance instance : factory.getAllHazelcastInstances()) {
             Config config = instance.getConfig();
             MapConfig mapConfig = new MapConfig(mapName);
-            mapConfig.setHotRestartEnabled(true);
+            mapConfig.getHotRestartConfig().setEnabled(true);
             mapConfig.setInMemoryFormat(memoryFormat);
             mapConfig.setBackupCount(backupCount);
             setEvictionConfig(mapConfig);

@@ -25,11 +25,14 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
 
     protected final Storage<Data, R> storage;
 
+    protected final boolean fsync;
+
     protected final long prefix;
 
     HotRestartStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory<R> recordFactory,
-                          InMemoryFormat inMemoryFormat, long prefix) {
+            InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
         this.mapServiceContext = mapServiceContext;
+        this.fsync = fsync;
         this.hotRestartStore = getHotRestartStore();
         this.storage = createStorage(recordFactory, inMemoryFormat);
         this.prefix = prefix;
@@ -78,18 +81,27 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         storage.removeRecord(record);
         HotRestartKey hotRestartKey = createHotRestartKey(record);
         hotRestartStore.remove(hotRestartKey);
+        fsyncIfRequired();
     }
 
     @Override
     public void clear() {
         storage.clear();
         hotRestartStore.clear(prefix);
+        fsyncIfRequired();
     }
 
     @Override
     public void destroy() {
         storage.destroy();
         hotRestartStore.clear(prefix);
+        fsyncIfRequired();
+    }
+
+    private void fsyncIfRequired() {
+        if (fsync) {
+            hotRestartStore.fsync();
+        }
     }
 
     @Override
@@ -141,5 +153,6 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         HotRestartKey hotRestartKey = createHotRestartKey(record);
         Data value = mapServiceContext.toData(record.getValue());
         hotRestartStore.put(hotRestartKey, value.toByteArray());
+        fsyncIfRequired();
     }
 }

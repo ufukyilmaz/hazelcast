@@ -19,8 +19,8 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
     private final Object mutex = new Object();
 
     public HotRestartHDStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory recordFactory,
-                                   InMemoryFormat inMemoryFormat, long prefix) {
-        super(mapServiceContext, recordFactory, inMemoryFormat, prefix);
+            InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
+        super(mapServiceContext, recordFactory, inMemoryFormat, fsync, prefix);
     }
 
     @Override

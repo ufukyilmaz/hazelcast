@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart;
 
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.logging.ILogger;
@@ -76,11 +76,11 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         this.node = node;
         this.logger = node.getLogger(getClass());
         final Address adr = node.getThisAddress();
-        HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
-        hotRestartHome = new File(hotRestartConfig.getBaseDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
-        clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hotRestartConfig);
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = node.getConfig().getHotRestartPersistenceConfig();
+        hotRestartHome = new File(hotRestartPersistenceConfig.getBaseDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
+        clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hotRestartPersistenceConfig);
         persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
-        dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hotRestartConfig.getDataLoadTimeoutSeconds());
+        dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hotRestartPersistenceConfig.getDataLoadTimeoutSeconds());
     }
 
     public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
@@ -139,16 +139,12 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
            .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
         final HotRestartStore onHeapStore =
                 newOnHeapHotRestartStore(cfg.setHomeDir(new File(hotRestartHome, segment + ONHEAP_SUFFIX)));
-        //todo: Replace auto-fsync with a good fsync policy
-        onHeapStore.setAutoFsync(true);
         onHeapStoreHolder.set(onHeapStore);
 
         if (memoryManager != null) {
             final HotRestartStore offHeapStore =
                     newOffHeapHotRestartStore(cfg.setHomeDir(new File(hotRestartHome, segment + OFFHEAP_SUFFIX))
                                                  .setMalloc(memoryManager.unwrapMemoryAllocator()));
-            //todo: Replace auto-fsync with a good fsync policy
-            offHeapStore.setAutoFsync(true);
             offHeapStoreHolder.set(offHeapStore);
         }
     }

@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.cluster.impl.ClusterServiceImpl;
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
@@ -81,15 +81,15 @@ public final class ClusterMetadataManager implements PartitionListener {
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
 
-    public ClusterMetadataManager(Node node, File hotRestartHome, HotRestartConfig hotRestartConfig) {
+    public ClusterMetadataManager(Node node, File hotRestartHome, HotRestartPersistenceConfig hotRestartPersistenceConfig) {
         this.node = node;
         logger = node.getLogger(getClass());
         homeDir = new File(hotRestartHome, DIR_NAME);
         if (!homeDir.exists() && !homeDir.mkdirs()) {
             throw new HotRestartException("Cannot create " + homeDir.getAbsolutePath());
         }
-        validationTimeout = TimeUnit.SECONDS.toMillis(hotRestartConfig.getValidationTimeoutSeconds());
-        dataLoadTimeout = TimeUnit.SECONDS.toMillis(hotRestartConfig.getDataLoadTimeoutSeconds());
+        validationTimeout = TimeUnit.SECONDS.toMillis(hotRestartPersistenceConfig.getValidationTimeoutSeconds());
+        dataLoadTimeout = TimeUnit.SECONDS.toMillis(hotRestartPersistenceConfig.getDataLoadTimeoutSeconds());
         memberListWriter = new MemberListWriter(homeDir, node.getThisAddress());
         partitionTableWriter = new PartitionTableWriter(homeDir);
         clusterStateReaderWriter = new ClusterStateReaderWriter(homeDir);

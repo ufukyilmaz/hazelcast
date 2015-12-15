@@ -1,7 +1,7 @@
 package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -145,15 +145,15 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
                 .build()
                 .setInstanceName("hr-test-" + instanceId);
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
-        HotRestartConfig hrConfig = config.getHotRestartConfig();
+        HotRestartPersistenceConfig hrConfig = config.getHotRestartPersistenceConfig();
         hrConfig.setBaseDir(homeDir).setEnabled(true);
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES))
                 .setMetadataSpacePercentage(50);
         config.setProperty(GroupProperty.PARTITION_COUNT, "20");
-        config.getMapConfig("default").setHotRestartEnabled(true);
+        config.getMapConfig("default").getHotRestartConfig().setEnabled(true);
         MapConfig mapConfig = config.getMapConfig("native*");
         mapConfig.setInMemoryFormat(NATIVE);
-        mapConfig.setHotRestartEnabled(true);
+        mapConfig.getHotRestartConfig().setEnabled(true);
         mapConfig.setEvictionPolicy(LFU);
         mapConfig.setEvictionPercentage(10);
         mapConfig.setMinEvictionCheckMillis(0);

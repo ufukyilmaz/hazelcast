@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.recordstore;
 
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
@@ -38,16 +39,16 @@ import static java.util.Collections.emptyList;
 public class EnterpriseRecordStore extends DefaultRecordStore {
 
     private final long prefix;
-    private final boolean hotRestartEnabled;
+    private final HotRestartConfig hotRestartConfig;
     private final MemoryManager memoryManager;
 
     private RamStore ramStore;
 
-    public EnterpriseRecordStore(MapContainer mapContainer, int partitionId,
-                                 MapKeyLoader keyLoader, ILogger logger, long prefix) {
+    public EnterpriseRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader, ILogger logger,
+            HotRestartConfig hotRestartConfig, long prefix) {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
-        this.hotRestartEnabled = mapContainer.getMapConfig().isHotRestartEnabled();
+        this.hotRestartConfig = hotRestartConfig;
         MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
@@ -70,13 +71,14 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             assert serializationService != null : "serializationService is null";
             assert serializationService.getMemoryManager() != null : "MemoryManager is null";
 
-            if (hotRestartEnabled) {
-                return new HotRestartHDStorageImpl(mapServiceContext, recordFactory, inMemoryFormat, prefix);
+            if (hotRestartConfig.isEnabled()) {
+                return new HotRestartHDStorageImpl(mapServiceContext, recordFactory, inMemoryFormat,
+                        hotRestartConfig.isFsync(), prefix);
             }
             return new HDStorageImpl(((HDRecordFactory) recordFactory).getRecordProcessor());
         }
-        if (hotRestartEnabled) {
-            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat, prefix);
+        if (hotRestartConfig.isEnabled()) {
+            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat, hotRestartConfig.isFsync(), prefix);
         }
         return super.createStorage(recordFactory, memoryFormat);
     }

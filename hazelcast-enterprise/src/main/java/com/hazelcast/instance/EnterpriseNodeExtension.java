@@ -8,7 +8,7 @@ import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.config.SSLConfig;
@@ -76,8 +76,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     private HotRestartService createHotRestartService(Node node) {
-        HotRestartConfig hotRestartConfig = node.getConfig().getHotRestartConfig();
-        return hotRestartConfig.isEnabled() ? new HotRestartService(node) : null;
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = node.getConfig().getHotRestartPersistenceConfig();
+        return hotRestartPersistenceConfig.isEnabled() ? new HotRestartService(node) : null;
     }
 
     @Override

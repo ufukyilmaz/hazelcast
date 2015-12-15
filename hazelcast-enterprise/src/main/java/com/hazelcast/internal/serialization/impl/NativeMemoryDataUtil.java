@@ -29,7 +29,6 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 /**
  * @author mdogan 12/10/13
  */
-
 public final class NativeMemoryDataUtil {
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();

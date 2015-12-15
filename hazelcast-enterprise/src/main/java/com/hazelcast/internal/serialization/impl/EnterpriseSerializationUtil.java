@@ -63,7 +63,6 @@ public final class EnterpriseSerializationUtil {
                 data.copyFrom(NativeMemoryData.COPY_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
             }
             return data;
-
         } catch (NativeOutOfMemoryError e) {
             if (readToHeapOnOOME) {
                 byte[] bytes = new byte[size];

@@ -29,6 +29,7 @@ import com.hazelcast.cache.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
 import com.hazelcast.cache.wan.filter.CacheWanEventFilter;
 import com.hazelcast.config.CacheConfig;
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
@@ -183,17 +184,24 @@ public class EnterpriseCacheService
         }
 
         long prefix = 0L;
-        if (cacheConfig.isHotRestartEnabled()) {
+        HotRestartConfig hotRestartConfig = getHotRestartConfig(cacheConfig);
+        if (hotRestartConfig.isEnabled()) {
             if (hotRestartService == null) {
-                throw new HazelcastException("HotRestart is not enabled!");
+                throw new HazelcastException("Hot Restart is enabled for cache: " + cacheConfig.getName()
+                        + " but Hot Restart persistence is not enabled!");
             }
 
             hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
             prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
         }
         return isNative
-                ? newNativeRecordStore(name, partitionId, cacheConfig.isHotRestartEnabled(), prefix)
-                : newHeapRecordStore(name, partitionId, cacheConfig.isHotRestartEnabled(), prefix);
+                ? newNativeRecordStore(name, partitionId, hotRestartConfig, prefix)
+                : newHeapRecordStore(name, partitionId, hotRestartConfig, prefix);
+    }
+
+    private static HotRestartConfig getHotRestartConfig(CacheConfig cacheConfig) {
+        HotRestartConfig hotRestartConfig = cacheConfig.getHotRestartConfig();
+        return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
     }
 
     private HotRestartService getHotRestartService() {
@@ -203,16 +211,17 @@ public class EnterpriseCacheService
         return nodeExtension.isHotRestartEnabled() ? nodeExtension.getHotRestartService() : null;
     }
 
-    private ICacheRecordStore newHeapRecordStore(String name, int partitionId, boolean hotRestart, long prefix) {
-        return hotRestart
-                ? new HotRestartEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this, prefix)
+    private ICacheRecordStore newHeapRecordStore(String name, int partitionId, HotRestartConfig hotRestart, long prefix) {
+        return hotRestart.isEnabled()
+                ? new HotRestartEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this, hotRestart.isFsync(), prefix)
                 : new DefaultEnterpriseCacheRecordStore(name, partitionId, nodeEngine, this);
     }
 
-    private ICacheRecordStore newNativeRecordStore(String name, int partitionId, boolean hotRestart, long prefix) {
+    private ICacheRecordStore newNativeRecordStore(String name, int partitionId, HotRestartConfig hotRestart, long prefix) {
         try {
-            return hotRestart
-                    ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine, prefix)
+            return hotRestart.isEnabled()
+                    ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine,
+                        hotRestart.isFsync(), prefix)
                     : new HiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
         } catch (NativeOutOfMemoryError e) {
             throw new NativeOutOfMemoryError("Cannot create internal cache map, "

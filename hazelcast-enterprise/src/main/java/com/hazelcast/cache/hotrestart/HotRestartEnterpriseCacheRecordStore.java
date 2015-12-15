@@ -21,11 +21,13 @@ import com.hazelcast.util.Clock;
 public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCacheRecordStore implements RamStore {
 
     private final long prefix;
+    private final boolean fsync;
     private final HotRestartStore hotRestartStore;
 
-    public HotRestartEnterpriseCacheRecordStore(
-            String name, int partitionId, NodeEngine nodeEngine, EnterpriseCacheService cacheService, long keyPrefix) {
+    public HotRestartEnterpriseCacheRecordStore(String name, int partitionId, NodeEngine nodeEngine,
+            EnterpriseCacheService cacheService, boolean fsync, long keyPrefix) {
         super(name, partitionId, nodeEngine, cacheService);
+        this.fsync = fsync;
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.onHeapHotRestartStoreForCurrentThread();
         assert hotRestartStore != null;
@@ -98,11 +100,19 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         byte[] keyBytes = key.toByteArray();
         byte[] valueBytes = serializationService.toData(value).toByteArray();
         hotRestartStore.put(new KeyOnHeap(prefix, keyBytes), valueBytes);
+        fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key) {
         byte[] keyBytes = key.toByteArray();
         hotRestartStore.remove(new KeyOnHeap(prefix, keyBytes));
+        fsyncIfRequired();
+    }
+
+    private void fsyncIfRequired() {
+        if (fsync) {
+            hotRestartStore.fsync();
+        }
     }
 
     @Override
@@ -118,6 +128,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     private void clearInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
             hotRestartStore.clear(prefix);
+            fsyncIfRequired();
         }
         super.clear();
     }

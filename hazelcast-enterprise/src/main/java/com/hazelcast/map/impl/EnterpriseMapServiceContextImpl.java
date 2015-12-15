@@ -1,8 +1,10 @@
 package com.hazelcast.map.impl;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
@@ -279,14 +281,21 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     public RecordStore createRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader) {
         ILogger logger = nodeEngine.getLogger(DefaultRecordStore.class);
         long prefix = -1;
-        if (mapContainer.getMapConfig().isHotRestartEnabled()) {
+        HotRestartConfig hotRestartConfig = getHotRestartConfig(mapContainer);
+        if (hotRestartConfig.isEnabled()) {
             if (hotRestartService == null) {
-                throw new IllegalStateException("HotRestart is not enabled");
+                throw new HazelcastException("Hot Restart is enabled for map: " + mapContainer.getMapConfig().getName()
+                        + " but Hot Restart persistence is not enabled!");
             }
             String name = mapContainer.getName();
             hotRestartService.ensureHasConfiguration(MapService.SERVICE_NAME, name, null);
             prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
         }
-        return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, prefix);
+        return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, hotRestartConfig, prefix);
+    }
+
+    private HotRestartConfig getHotRestartConfig(MapContainer mapContainer) {
+        final HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
+        return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
     }
 }

@@ -6,7 +6,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.HotRestartConfig;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
@@ -143,9 +143,9 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
 
-        HotRestartConfig hotRestartConfig = config.getHotRestartConfig();
-        hotRestartConfig.setEnabled(true);
-        hotRestartConfig.setBaseDir(folder);
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
+        hotRestartPersistenceConfig.setEnabled(true);
+        hotRestartPersistenceConfig.setBaseDir(folder);
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(getNativeMemorySize())
@@ -169,7 +169,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount) {
         CacheConfig<Integer, V> cacheConfig = new CacheConfig<Integer, V>();
-        cacheConfig.setHotRestartEnabled(true);
+        cacheConfig.getHotRestartConfig().setEnabled(true);
         cacheConfig.setBackupCount(backupCount);
         cacheConfig.setStatisticsEnabled(true);
 

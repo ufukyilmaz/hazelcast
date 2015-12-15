@@ -214,7 +214,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         Config config = new Config();
         config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
-        config.getHotRestartConfig().setEnabled(true)
+        config.getHotRestartPersistenceConfig().setEnabled(true)
                 .setBaseDir(hotRestartDir)
                 .setValidationTimeoutSeconds(10).setDataLoadTimeoutSeconds(10);
 

@@ -78,11 +78,12 @@ public final class GcExecutor {
         @Override public void run() {
             final IdleStrategy idler = idler();
             try {
+                long idleCount = 0;
                 int parkCount = 0;
                 boolean didWork = false;
                 while (keepGoing && !interrupted()) {
-                    final int workCount = Math.max(0, mc.catchupNow());
-                    final GcParams gcp = (workCount != 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
+                    final int workCount = mc.catchupNow();
+                    final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
                     synchronized (gcMutex) {
                         if (gcp.forceGc) {
                             didWork = runForcedGC(gcp);
@@ -95,10 +96,11 @@ public final class GcExecutor {
                     if (didWork) {
                         Thread.yield();
                     }
-                    if (idler.idle(workCount + (didWork ? 1 : 0))) {
-                        parkCount++;
-                    } else {
+                    if (workCount > 0 || didWork) {
+                        idleCount = 0;
                         parkCount = 0;
+                    } else if (idler.idle(idleCount++)) {
+                        parkCount++;
                     }
                     if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
                         didWork = chunkMgr.compressSomeChunk(mc);
@@ -172,8 +174,8 @@ public final class GcExecutor {
         }
         boolean submitted = false;
 //        boolean reportedBlocking = false;
-        while (!(submitted || (submitted = workQueue.offer(task))) || backpressure) {
-            if (mutatorIdler.idle(0)) {
+        for (long i = 0; !(submitted || (submitted = workQueue.offer(task))) || backpressure; i++) {
+            if (mutatorIdler.idle(i)) {
 //                if (!reportedBlocking) {
 //                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
 //                    reportedBlocking = true;
@@ -187,8 +189,6 @@ public final class GcExecutor {
                 }
             }
         }
-        // work has been done (task submitted), so reset idler state
-        mutatorIdler.idle(1);
     }
 
     /**
@@ -213,7 +213,7 @@ public final class GcExecutor {
         // Consulted by output streams to decide whether to fsync after each buffer flush.
         // Perhaps expose this as configuration param (currently it's hardcoded).
         boolean fsyncOften;
-        // counts the number of calls to catchupAsNeeded since last catch up
+        // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
 
         int catchupAsNeeded() {
@@ -225,14 +225,13 @@ public final class GcExecutor {
         }
 
         int catchupNow() {
-            i = 0;
-            return catchupAsNeeded(0);
+            i = 1;
+            return catchUpWithMutator();
         }
 
-        @SuppressWarnings("checkstyle:innerassignment")
         private int catchUpWithMutator() {
-            final int workCount;
-            if ((workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY)) == 0) {
+            final int workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY);
+            if (workCount == 0) {
                 return 0;
             }
             for (Runnable op : workDrain) {

@@ -17,14 +17,14 @@
 package com.hazelcast.util.concurrent;
 
 /**
- * Idle strategy for use by threads when then do not have work to do.
+ * Idle strategy for use by threads when then they don't have work to do.
  */
 public interface IdleStrategy {
     /**
-     * Perform current idle strategy (or not) depending on whether work has been done or not
+     * Perform current idle strategy's step <i>n</i>.
      *
-     * @param workCount performed in last duty cycle.
-     * @return whether the strategy has reached the longest pause time
+     * @param n number of times this method has been previously called with no intervening work done.
+     * @return whether the strategy has reached the longest pause time.
      */
-    boolean idle(int workCount);
+    boolean idle(long n);
 }

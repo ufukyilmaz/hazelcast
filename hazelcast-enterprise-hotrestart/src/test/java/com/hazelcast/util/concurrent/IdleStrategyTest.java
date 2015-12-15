@@ -47,9 +47,8 @@ public class IdleStrategyTest {
     }
 
     @Test public void when_idle_thenReturnTrueEventually() {
-        idler.idle(1);
         for (int i = 0; i < MAX_CALLS; i++) {
-            if (idler.idle(0)) {
+            if (idler.idle(i)) {
                 return;
             }
         }

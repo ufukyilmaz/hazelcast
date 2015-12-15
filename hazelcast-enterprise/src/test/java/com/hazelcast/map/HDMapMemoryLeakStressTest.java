@@ -44,7 +44,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.instance.TestUtil.terminateInstance;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static org.junit.Assert.assertEquals;
 
@@ -91,7 +90,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                 while (!done.get()) {
                     HazelcastInstance hz = factory.newHazelcastInstance(config);
                     sleepSeconds(10);
-                    terminateInstance(hz);
+                    factory.terminate(hz);
                     sleepSeconds(5);
                 }
             }

@@ -175,7 +175,7 @@ final class ChunkSelector {
             c.updateCostBenefit(currSeq);
             valChunks.add(c);
         }
-        final StableValChunk[] sorted = valChunks.toArray(new StableValChunk[chunks.size()]);
+        final StableValChunk[] sorted = valChunks.toArray(new StableValChunk[valChunks.size()]);
         Arrays.sort(sorted, BY_COST_BENEFIT);
         final StringWriter sw = new StringWriter(512);
         final PrintWriter o = new PrintWriter(sw);

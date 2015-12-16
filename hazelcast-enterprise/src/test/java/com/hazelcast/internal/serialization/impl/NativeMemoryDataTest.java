@@ -1,15 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.strategy.StringPartitioningStrategy;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -20,8 +12,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,32 +22,27 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class NativeMemoryDataTest {
+public class NativeMemoryDataTest extends AbstractEnterpriseSerializationTest {
 
-    private final static PartitioningStrategy partitioningStrategy = new StringPartitioningStrategy();
-    private EnterpriseSerializationService ss;
-    private final static String TEST_STR = "TEST@1";
+    private static final String TEST_STR = "TEST@1";
+
+    private static final PartitioningStrategy partitioningStrategy = new StringPartitioningStrategy();
 
     @Before
     public void setUp() {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        ss = new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(memoryManager)
-                .setAllowUnsafe(true)
-                .build();
-
+        initMemoryManagerAndSerializationService();
     }
 
     @After
     public void tearDown() {
-        ss.destroy();
+        shutdownMemoryManagerAndSerializationService();
     }
 
     @Test
     public void testPartitionHashCode() {
-        HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
-        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
-        NativeMemoryData nativeMemoryData2 = ss.toData(TEST_STR, DataType.NATIVE);
+        HeapData heapData = serializationService.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+        NativeMemoryData nativeMemoryData2 = serializationService.toData(TEST_STR, DataType.NATIVE);
 
         assertFalse(nativeMemoryData2.hasPartitionHash());
         assertEquals(nativeMemoryData2.hashCode(), nativeMemoryData2.getPartitionHash());
@@ -70,8 +55,8 @@ public class NativeMemoryDataTest {
 
     @Test
     public void testSize() {
-        HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
-        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+        HeapData heapData = serializationService.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
         assertEquals(heapData.totalSize(), nativeMemoryData.totalSize());
         assertEquals(heapData.dataSize(), nativeMemoryData.dataSize());
@@ -79,7 +64,7 @@ public class NativeMemoryDataTest {
 
     @Test
     public void testReset() {
-        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
         NativeMemoryData nmd = new NativeMemoryData();
 
@@ -92,25 +77,26 @@ public class NativeMemoryDataTest {
 
     @Test
     public void testNativeHeapEqual() {
-        HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
-        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+        HeapData heapData = serializationService.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
         byte[] bytes = heapData.toByteArray();
         byte[] bytesWithoutLastByte = Arrays.copyOfRange(bytes, 0, bytes.length - 1);
         HeapData modifiedData = new HeapData(bytesWithoutLastByte);
 
-        assertEquals(nativeMemoryData, heapData);
+        assertEquals(nativeMemoryData.hashCode(), heapData.hashCode());
+        assertEquals(nativeMemoryData.totalSize(), heapData.totalSize());
+        assertEquals(nativeMemoryData.dataSize(), heapData.dataSize());
         assertNotEquals(nativeMemoryData, modifiedData);
     }
 
     @Test
     public void testToByteArray() {
-        HeapData heapData = ss.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
-        NativeMemoryData nativeMemoryData = ss.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
+        HeapData heapData = serializationService.toData(TEST_STR, DataType.HEAP, partitioningStrategy);
+        NativeMemoryData nativeMemoryData = serializationService.toData(TEST_STR, DataType.NATIVE, partitioningStrategy);
 
         byte[] expectedByteArray = heapData.toByteArray();
         byte[] actualByteArray = nativeMemoryData.toByteArray();
         assertArrayEquals(expectedByteArray, actualByteArray);
     }
-
 }

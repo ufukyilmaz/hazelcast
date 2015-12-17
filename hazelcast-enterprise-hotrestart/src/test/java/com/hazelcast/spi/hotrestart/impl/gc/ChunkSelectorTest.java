@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.INITIAL_TOP_CHUNKS;
+import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.diagnoseChunks;
 import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
@@ -111,28 +112,20 @@ public class ChunkSelectorTest {
         assertEquals(INITIAL_TOP_CHUNKS, selectChunks(allChunks, gcp).srcChunks.size());
     }
 
-    @Test public void when_finestEnabled_thenDontFailInDiagnoseChunks() {
-        final int chunkCount = INITIAL_TOP_CHUNKS + 1;
-        final GcParams gcp = gcp()
-                .currRecordSeq(1000 * 1000)
-                .costGoal(Long.MAX_VALUE)
-                .maxCost(Long.MAX_VALUE)
-                .reclamationGoal(Long.MAX_VALUE)
-                .minCostBenefit(0.02)
-                .forceGc(true)
-                .limitSrcChunks(true)
-                .build();
+    @Test public void when_logFinestEnabled_thenDontFailInDiagnoseChunks() {
         final Collection<StableChunk> allChunks = new ArrayList<StableChunk>();
+        final int chunkCount = 20;
+        final int currRecordSeq = 1000 * 1000;
         for (int i = 0; i < chunkCount; i++) {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(10)
-                    .youngestRecordSeq(11 * i)
-                    .size(10)
-                    .garbage(10)
+                    .youngestRecordSeq(i * currRecordSeq / chunkCount)
+                    .size(8*1000*1000)
+                    .garbage((chunkCount - i) * 100 * 1000)
                     .build());
         }
-        selectChunksToCollect(allChunks, gcp, pfixTombstoMgr, mc, loggerWithFinestEnabled).srcChunks.size();
+        diagnoseChunks(allChunks, gcp().currRecordSeq(currRecordSeq).build(), loggerWithFinestEnabled);
     }
 
     private ChunkSelector.ChunkSelection selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {

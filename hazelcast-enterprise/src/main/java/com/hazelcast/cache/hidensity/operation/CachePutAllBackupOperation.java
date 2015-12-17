@@ -95,7 +95,7 @@ public class CachePutAllBackupOperation
                 Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 cacheRecords.put(key, value);
             }
-        }    
+        }
     }
 
     @Override

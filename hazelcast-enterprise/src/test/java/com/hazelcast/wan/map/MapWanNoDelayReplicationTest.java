@@ -62,5 +62,4 @@ public class MapWanNoDelayReplicationTest extends AbstractMapWanReplicationTest 
 
         assertDataInFrom(clusterB, "map", 0, 1000, singleNodeC[0].getConfig().getGroupConfig().getName());
     }
-
 }

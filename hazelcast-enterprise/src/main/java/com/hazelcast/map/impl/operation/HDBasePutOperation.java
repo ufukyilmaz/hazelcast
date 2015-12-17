@@ -62,7 +62,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     }
 
     private void publishWANReplicationEvent(MapServiceContext mapServiceContext, MapEventPublisher mapEventPublisher) {
-        if (mapContainer.getWanReplicationPublisher() == null || mapContainer.getWanMergePolicy() == null) {
+        if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
 

@@ -401,6 +401,12 @@ public class EnterpriseWanReplicationService
         endpoint.resume();
     }
 
+    @Override
+    public void checkWanReplicationQueues(String name) {
+        WanReplicationPublisherDelegate delegate = wanReplications.get(name);
+        delegate.checkWanReplicationQueues();
+    }
+
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWebReplicationPublisherMapping() {
         return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
     }

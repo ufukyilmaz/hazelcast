@@ -24,6 +24,7 @@ import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
 import com.hazelcast.cache.operation.CacheDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
+import com.hazelcast.cache.operation.WANAwareCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
 import com.hazelcast.cache.wan.CacheReplicationSupportingService;
 import com.hazelcast.cache.wan.CacheReplicationUpdate;
@@ -422,12 +423,32 @@ public class EnterpriseCacheService
      * @return
      */
     @Override
-    public CacheOperationProvider getCacheOperationProvider(String cacheNameWithPrefix,
+    protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix,
                                                             InMemoryFormat inMemoryFormat) {
+        EnterpriseCacheOperationProvider operationProvider;
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
-            return new HiDensityCacheOperationProvider(cacheNameWithPrefix);
+            operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
+        } else {
+            operationProvider = new EnterpriseCacheOperationProvider(cacheNameWithPrefix);
         }
-        return new EnterpriseCacheOperationProvider(cacheNameWithPrefix);
+
+        if (isWanReplicationEnabled(cacheNameWithPrefix)) {
+            return new WANAwareCacheOperationProvider(cacheNameWithPrefix,
+                    operationProvider, wanReplicationPublishers.get(cacheNameWithPrefix));
+        } else {
+            return operationProvider;
+        }
+    }
+
+    @Override
+    public CacheOperationProvider getCacheOperationProvider(String nameWithPrefix, InMemoryFormat inMemoryFormat) {
+        CacheOperationProvider cacheOperationProvider = operationProviderCache.get(nameWithPrefix);
+        if (cacheOperationProvider != null) {
+            return cacheOperationProvider;
+        }
+        cacheOperationProvider = createOperationProvider(nameWithPrefix, inMemoryFormat);
+        CacheOperationProvider current = operationProviderCache.putIfAbsent(nameWithPrefix, cacheOperationProvider);
+        return current == null ? cacheOperationProvider : current;
     }
 
     /**

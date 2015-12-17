@@ -11,12 +11,12 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanReplicationRef;
+import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.enterprise.wan.WANReplicationQueueFullException;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.wan.WanReplicationTestSupport;
 import org.junit.Ignore;
@@ -440,5 +440,18 @@ public abstract class AbstractCacheWanReplicationTest extends WanReplicationTest
         sleepSeconds(20);
         createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false, expiryPolicy);
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+    }
+
+    @Test(expected = WANReplicationQueueFullException.class)
+    public void testExceptionOnQueueOverrun() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
+        WanTargetClusterConfig targetClusterConfig = wanConfig.getTargetClusterConfigs().get(0);
+        targetClusterConfig.setQueueCapacity(10);
+        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
+        startClusterA();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 1000, false);
     }
 }

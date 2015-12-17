@@ -2,17 +2,18 @@ package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.config.WanAcknowledgeType;
+import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
+import com.hazelcast.enterprise.wan.WANReplicationQueueFullException;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
@@ -54,13 +55,14 @@ public abstract class AbstractWanReplication
     String wanReplicationName;
     boolean snapshotEnabled;
     Node node;
-    int queueSize;
+    int queueCapacity;
     WanConnectionManager connectionManager;
     WanAcknowledgeType acknowledgeType;
+    WANQueueFullBehavior queueFullBehavior;
 
     int batchSize;
-    long batchFrequency;
-    long operationTimeout;
+    long batchMaxDelayMillis;
+    long responseTimeoutMillis;
     long lastQueueFullLogTimeMs;
 
     int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
@@ -86,12 +88,12 @@ public abstract class AbstractWanReplication
         this.wanReplicationName = wanReplicationName;
         this.logger = node.getLogger(AbstractWanReplication.class.getName());
 
-        this.queueSize = node.groupProperties.getInteger(GroupProperty.ENTERPRISE_WAN_REP_QUEUE_CAPACITY);
+        queueCapacity = targetClusterConfig.getQueueCapacity();
         localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
 
-        batchSize = node.groupProperties.getInteger(GroupProperty.ENTERPRISE_WAN_REP_BATCH_SIZE);
-        batchFrequency = node.groupProperties.getMillis(GroupProperty.ENTERPRISE_WAN_REP_BATCH_FREQUENCY_SECONDS);
-        operationTimeout = node.groupProperties.getMillis(GroupProperty.ENTERPRISE_WAN_REP_OP_TIMEOUT_MILLIS);
+        batchSize = targetClusterConfig.getBatchSize();
+        batchMaxDelayMillis = targetClusterConfig.getBatchMaxDelayMillis();
+        responseTimeoutMillis = targetClusterConfig.getResponseTimeoutMillis();
 
         connectionManager = new WanConnectionManager(node);
         connectionManager.init(targetGroupName, targetClusterConfig.getGroupPassword(), targetClusterConfig.getEndpoints());
@@ -99,6 +101,7 @@ public abstract class AbstractWanReplication
         eventQueueContainer = new PublisherQueueContainer(node);
         stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
         acknowledgeType = targetClusterConfig.getAcknowledgeType();
+        queueFullBehavior = targetClusterConfig.getQueueFullBehavior();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
 
@@ -126,7 +129,7 @@ public abstract class AbstractWanReplication
         InvocationBuilder invocationBuilder
                 = operationService.createInvocationBuilder(serviceName, wanOperation, target);
         InternalCompletableFuture<Boolean> future = invocationBuilder.setTryCount(1)
-                .setCallTimeout(operationTimeout)
+                .setCallTimeout(responseTimeoutMillis)
                 .invoke();
         return future.getSafely();
     }
@@ -182,7 +185,8 @@ public abstract class AbstractWanReplication
 
     private boolean isEventDroppingNeeded() {
         boolean dropEvent = false;
-        if (currentElementCount.get() >= queueSize) {
+        if (currentElementCount.get() >= queueCapacity
+                && queueFullBehavior == WANQueueFullBehavior.DISCARD_AFTER_MUTATION) {
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
                 lastQueueFullLogTimeMs = curTime;
@@ -319,6 +323,14 @@ public abstract class AbstractWanReplication
         localWanPublisherStats.setConnected(connectionManager.getFailedAddressSet().isEmpty());
         localWanPublisherStats.setOutboundQueueSize(currentElementCount.get());
         return localWanPublisherStats;
+    }
+
+    @Override
+    public void checkWanReplicationQueues() {
+        if (WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
+                && currentElementCount.get() >= queueCapacity) {
+            throw new WANReplicationQueueFullException();
+        }
     }
 
     private class QueuePoller implements Runnable {

@@ -12,12 +12,13 @@ import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
 import com.hazelcast.map.impl.nearcache.EnterpriseNearCacheProvider;
 import com.hazelcast.map.impl.nearcache.NearCacheProvider;
+import com.hazelcast.map.impl.operation.EnterpriseMapOperationProviders;
 import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
-import com.hazelcast.map.impl.operation.HDMapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
+import com.hazelcast.map.impl.operation.MapOperationProviders;
 import com.hazelcast.map.impl.query.HDMapQueryEngineImpl;
 import com.hazelcast.map.impl.query.MapQueryEngine;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
@@ -77,7 +78,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     private final QueryCacheContext queryCacheContext;
     private final MapQueryEngine hdMapQueryEngine;
-    private final MapOperationProvider hdMapOperationProvider;
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartService hotRestartService;
@@ -87,7 +87,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         this.queryCacheContext = new NodeQueryCacheContext(this);
         this.hdMapQueryEngine = new HDMapQueryEngineImpl(this,
                 newOptimizer(nodeEngine.getGroupProperties()));
-        this.hdMapOperationProvider = new HDMapOperationProvider();
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
@@ -95,6 +94,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             hotRestartService = nodeExtension.getHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
+    }
+
+    @Override
+    MapOperationProviders createOperationProviders() {
+        return new EnterpriseMapOperationProviders(this);
     }
 
     public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
@@ -186,12 +190,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     public MapOperationProvider getMapOperationProvider(String name) {
-        InMemoryFormat inMemoryFormat = getInMemoryFormat(name);
-
-        if (NATIVE == inMemoryFormat) {
-            return hdMapOperationProvider;
-        }
-        return super.getMapOperationProvider(name);
+        return operationProviders.getOperationProvider(name);
     }
 
     @Override

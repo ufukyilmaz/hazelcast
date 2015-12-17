@@ -249,8 +249,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     private void publishWanReplicationEvent() {
         final MapContainer mapContainer = this.mapContainer;
-        if (mapContainer.getWanReplicationPublisher() == null
-                && mapContainer.getWanMergePolicy() == null) {
+        if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
         final MapEventPublisher mapEventPublisher = getMapEventPublisher();

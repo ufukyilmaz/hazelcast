@@ -16,6 +16,7 @@ import com.hazelcast.security.Parameters;
 import com.hazelcast.security.SecurityInterceptor;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.util.RandomPicker;
 import org.junit.After;
 import org.junit.Before;
 
@@ -23,7 +24,6 @@ import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -208,8 +208,12 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
         return randomInt(1000) + 1;
     }
 
+    public static int randomInt(int min, int max) {
+        return RandomPicker.getInt(min, max);
+    }
+
     public static int randomInt(int max) {
-        return new Random(System.currentTimeMillis()).nextInt(max);
+        return RandomPicker.getInt(max);
     }
 
     static class DummyPredicate implements Predicate {

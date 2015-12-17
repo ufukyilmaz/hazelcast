@@ -94,7 +94,7 @@ public class RingBufferSecurityInterceptorTest extends InterceptorTestSupport {
     public void readManyAsync() throws ExecutionException, InterruptedException {
         long startSequence = ringBuffer.add(1);
         int minCount = 1;
-        int maxCount = randomInt(200);
+        int maxCount = randomInt(minCount, 200);
 
         interceptor.setExpectation(getObjectType(), objectName, "readMany", startSequence, minCount, maxCount, null);
         ringBuffer.readManyAsync(startSequence, minCount, maxCount, null);

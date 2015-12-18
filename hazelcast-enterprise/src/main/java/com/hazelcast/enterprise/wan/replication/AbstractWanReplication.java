@@ -239,14 +239,19 @@ public abstract class AbstractWanReplication
     public void removeBackup(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         int partitionId = getPartitionId(eventObject.getKey());
+        WanReplicationEvent wanEvent = null;
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            eventQueueContainer.pollCacheWanEvent(cacheReplicationObject.getNameWithPrefix(), partitionId);
+            wanEvent = eventQueueContainer.pollCacheWanEvent(cacheReplicationObject.getNameWithPrefix(), partitionId);
         } else if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
+            wanEvent = eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
         } else {
             logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
+        }
+
+        if (wanEvent != null) {
+            currentElementCount.decrementAndGet();
         }
     }
 

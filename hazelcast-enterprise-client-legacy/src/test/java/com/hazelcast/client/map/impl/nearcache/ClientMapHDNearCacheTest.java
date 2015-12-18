@@ -5,9 +5,12 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -15,9 +18,10 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category({QuickTest.class})
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass
@@ -76,6 +80,20 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.RANDOM);
         getNearCachedMapFromClient(nearCacheConfig);
+    }
+
+    @Override
+    protected void assertNearCacheInvalidation_whenMaxSizeExceeded(NearCacheConfig config) {
+        final IMap<Integer, Integer> map = getNearCachedMapFromClient(config);
+        populateNearCache(map, MAX_CACHE_SIZE);
+
+        triggerEviction(map);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertThatOwnedEntryCountIsSmallerThan(map, MAX_CACHE_SIZE);
+            }
+        });
     }
 
 }

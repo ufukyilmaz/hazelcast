@@ -92,7 +92,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         }
     }
 
-    @Test
+    @Test(timeout = 10 * 60 * 1000)
     public void test() throws Exception {
         resetFixture(instance_count);
         ArrayList<Future> futures = new ArrayList<Future>();

@@ -1,15 +1,17 @@
 package com.hazelcast.client.map.impl.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.BeforeClass;
@@ -18,9 +20,11 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+
+@RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
@@ -53,9 +57,17 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     @Override
     protected ClientConfig newClientConfig() {
         ClientConfig clientConfig = super.newClientConfig();
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, UNLIMITED_LICENSE);
         NativeMemoryConfig nativeMemoryConfig = newNativeMemoryConfig();
         clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
         return clientConfig;
+    }
+
+    @Override
+    protected Config newConfig() {
+        Config config = super.newConfig();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, UNLIMITED_LICENSE);
+        return config;
     }
 
     /**

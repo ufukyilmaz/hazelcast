@@ -37,7 +37,7 @@ final class ThreadLocalPoolingMemoryManager
     private long lastFullCompaction;
 
     ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledNativeMemoryStats stats) {
+                                    LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
         pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
@@ -340,7 +340,13 @@ final class ThreadLocalPoolingMemoryManager
                 }
             } catch (NativeOutOfMemoryError e) {
                 if (purge) {
-                    return purgeEmptySpaceAndResizeQueue(current, newCap);
+                    try {
+                        return purgeEmptySpaceAndResizeQueue(current, newCap);
+                    } catch (Throwable t) {
+                        // We are printing actual exception's message and using `NativeOutOfMemoryError` as cause
+                        throw new NativeOutOfMemoryError("Cannot expand internal memory pool "
+                                + "even though purging and compacting are applied -> " + t.getMessage(), e);
+                    }
                 }
                 throw new NativeOutOfMemoryError("Cannot expand internal memory pool -> " + e.getMessage(), e);
             }

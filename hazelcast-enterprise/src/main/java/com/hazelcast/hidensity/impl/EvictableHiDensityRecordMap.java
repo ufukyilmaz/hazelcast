@@ -70,10 +70,12 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         while (iterator.hasNext()) {
             iterator.nextSlot();
 
+            int slot = iterator.getCurrentSlot();
+            keyHolder.reset(getKey(slot));
+            R value = recordProcessor.read(getValue(slot));
+            onEvict(keyHolder, value);
+
             if (evictionListener != null) {
-                int slot = iterator.getCurrentSlot();
-                keyHolder.reset(getKey(slot));
-                R value = recordProcessor.read(getValue(slot));
                 evictionListener.onEvict(keyHolder, value);
             }
 
@@ -131,6 +133,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     evict = expirationChecker.isExpired(value);
                 }
                 if (evict) {
+                    onEvict(keyData, value);
                     if (evictionListener != null) {
                         evictionListener.onEvict(keyData, value);
                     }
@@ -165,6 +168,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             R removedRecord = remove(key);
             if (removedRecord != null) {
                 actualEvictedCount++;
+                onEvict(key, removedRecord);
                 if (evictionListener != null) {
                     evictionListener.onEvict(key, removedRecord);
                 }
@@ -175,4 +179,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         return actualEvictedCount;
     }
 
+    protected void onEvict(Data key, R record) {
+    }
 }

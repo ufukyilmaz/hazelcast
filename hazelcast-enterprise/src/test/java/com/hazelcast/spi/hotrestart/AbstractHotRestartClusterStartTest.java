@@ -210,7 +210,17 @@ public abstract class AbstractHotRestartClusterStartTest {
         }
     }
 
-    private Config newConfig(ClusterHotRestartEventListener listener) {
+    protected HazelcastInstance getInstance(Address address) {
+        return factory.getInstance(address);
+    }
+
+    protected Collection<HazelcastInstance> getAllInstances() {
+        return USE_NETWORK
+                ? HazelcastInstanceFactory.getAllHazelcastInstances()
+                : factory.getAllHazelcastInstances();
+    }
+
+    protected Config newConfig(ClusterHotRestartEventListener listener) {
         Config config = new Config();
         config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
@@ -225,22 +235,20 @@ public abstract class AbstractHotRestartClusterStartTest {
         return config;
     }
 
-    protected static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances, NodeState nodeState,
-                                                ClusterState clusterState) {
+    protected static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances,
+            NodeState expectedNodeState, ClusterState expectedClusterState) {
         assertEquals(numberOfInstances, instances.length);
         for (HazelcastInstance instance : instances) {
             Node node = getNode(instance);
             assertNotNull(node);
             assertTrue(node.joined());
-            assertEquals(node.getState(), nodeState);
-            assertEquals(instance.getCluster().getClusterState(), clusterState);
+            assertEquals(expectedNodeState, node.getState());
+            assertEquals(expectedClusterState, instance.getCluster().getClusterState());
         }
     }
 
     protected void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
-        Collection<HazelcastInstance> allHazelcastInstances = USE_NETWORK
-                ? HazelcastInstanceFactory.getAllHazelcastInstances()
-                : factory.getAllHazelcastInstances();
+        Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
         HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
         assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
     }

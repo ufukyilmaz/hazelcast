@@ -317,7 +317,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         if (hotRestartService != null) {
-            hotRestartService.registerThread(thread, memoryManager);
+            hotRestartService.createThreadLocalHotRestartStores(thread, memoryManager);
         }
     }
 
@@ -450,5 +450,19 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return true;
         }
         return false;
+    }
+
+    public MemoryManager getMemoryManager() {
+        return memoryManager;
+    }
+
+    @Override
+    public boolean triggerForceStart() {
+        if (hotRestartService == null) {
+            logger.warning("Ignoring force start request, hot restart is not enabled!");
+            return false;
+        }
+
+        return hotRestartService.triggerForceStart();
     }
 }

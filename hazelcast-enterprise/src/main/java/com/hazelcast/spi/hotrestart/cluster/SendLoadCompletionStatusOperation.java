@@ -11,6 +11,8 @@ import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import java.io.IOException;
 
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
+
 /**
  * Operation, which is used to send cluster-wide completion result (success or failure)
  * by master member to all cluster after cluster-wide load completes.
@@ -41,7 +43,7 @@ public class SendLoadCompletionStatusOperation
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.receiveHotRestartStatusFromMasterAfterLoadCompletion(result);
-        if (result == HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED) {
+        if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
             clusterMetadataManager.setFinalClusterState(loadedState);
         }
     }

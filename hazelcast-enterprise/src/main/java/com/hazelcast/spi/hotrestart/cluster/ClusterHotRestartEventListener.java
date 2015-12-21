@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
+import com.hazelcast.core.Member;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.annotation.PrivateApi;
 
@@ -33,6 +34,14 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
+     * Called while waiting for all members to join.
+     * @param currentMembers currently joined members
+     */
+    public void beforeAllMembersJoin(Collection<Member> currentMembers) {
+
+    }
+
+    /**
      * Called on all nodes after all expected members joins to the cluster
      *
      * @param members expected member list
@@ -62,6 +71,14 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
+     * Called when data load is started.
+     * @param address address of the node that starts to load its own data
+     */
+    public void onDataLoadStart(Address address) {
+
+    }
+
+    /**
      * Called on master when it receives a hot-restart data load result from a node
      *
      * @param sender  address of the node that sends its hot-restart data load result
@@ -78,6 +95,14 @@ public abstract class ClusterHotRestartEventListener
      * @param result result of the cluster wide load operation
      */
     public void onHotRestartDataLoadComplete(HotRestartClusterInitializationStatus result) {
+
+    }
+
+    /**
+     * Called when hot restart status is moved to {@link HotRestartClusterInitializationStatus#FORCE_STARTED} and hot restart
+     * will continue with clearing all hot restart data and start with a fresh new hot restart state
+     */
+    public void onForceStart() {
 
     }
 

@@ -1,5 +1,6 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
@@ -13,6 +14,11 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
     @Override
     public String getReplicationImpl() {
         return WanBatchReplication.class.getName();
+    }
+
+    @Override
+    public InMemoryFormat getMemoryFormat() {
+        return InMemoryFormat.BINARY;
     }
 
     @Override

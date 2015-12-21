@@ -45,12 +45,6 @@ public abstract class AbstractCacheWanReplicationTest extends WanReplicationTest
     protected ClassLoader classLoaderB;
     protected ClassLoader classLoaderC;
 
-    public abstract InMemoryFormat getMemoryFormat();
-
-    public boolean isNativeMemoryEnabled() {
-        return getMemoryFormat() == InMemoryFormat.NATIVE;
-    }
-
     protected void initConfigA() {
         classLoaderA = createCacheManagerClassLoader();
         configA = createConfig("A", "confA", 5701, classLoaderA, isNativeMemoryEnabled());
@@ -76,7 +70,6 @@ public abstract class AbstractCacheWanReplicationTest extends WanReplicationTest
         CacheSimpleConfig cacheConfig = config.getCacheConfig(DEFAULT_CACHE_NAME);
         EvictionConfig evictionConfig = new EvictionConfig();
         if (nativeMemoryEnabled) {
-            config.setNativeMemoryConfig(getMemoryConfig());
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
             evictionConfig.setSize(90);
             evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
@@ -85,14 +78,6 @@ public abstract class AbstractCacheWanReplicationTest extends WanReplicationTest
         }
         cacheConfig.setEvictionConfig(evictionConfig);
         return config;
-    }
-
-    private NativeMemoryConfig getMemoryConfig() {
-        MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                        .setSize(memorySize).setEnabled(true);
     }
 
     protected void setupReplicateFrom(Config fromConfig, Config toConfig, int clusterSz,

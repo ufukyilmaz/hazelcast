@@ -6,7 +6,7 @@ import com.hazelcast.test.annotation.SlowTest;
 import org.junit.experimental.categories.Category;
 
 @Category(SlowTest.class)
-public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
+public class HdMapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 
     @Override
     public String getReplicationImpl() {
@@ -15,6 +15,6 @@ public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 
     @Override
     public InMemoryFormat getMemoryFormat() {
-        return InMemoryFormat.BINARY;
+        return InMemoryFormat.NATIVE;
     }
 }

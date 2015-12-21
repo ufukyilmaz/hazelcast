@@ -15,7 +15,7 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.test.annotation.SlowTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -26,7 +26,7 @@ import java.util.Random;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(SlowTest.class)
+@Category(QuickTest.class)
 public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStoreTestSupport {
 
     private static final int DEFAULT_MEMORY_SIZE_IN_MEGABYTES = 256;

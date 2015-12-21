@@ -40,10 +40,6 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     private boolean putTransient;
     private boolean disableWanReplicationEvent;
 
-    public HDPutBackupOperation(String name, Data dataKey, Data dataValue, RecordInfo recordInfo) {
-        this(name, dataKey, dataValue, recordInfo, false, false);
-    }
-
     public HDPutBackupOperation(String name, Data dataKey, Data dataValue, RecordInfo recordInfo, boolean putTransient) {
         this(name, dataKey, dataValue, recordInfo, false, putTransient);
     }

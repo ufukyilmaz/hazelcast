@@ -56,11 +56,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     public HDPutAllOperation() {
     }
 
-    public HDPutAllOperation(String name, MapEntries mapEntries) {
-        super(name);
-        this.mapEntries = mapEntries;
-    }
-
     public HDPutAllOperation(String name, MapEntries mapEntries, boolean initialLoad) {
         super(name);
         this.mapEntries = mapEntries;
@@ -129,12 +124,9 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     }
 
     protected final void invalidateNearCaches(MapEntries mapEntries) {
-        List<Data> keys = new ArrayList<Data>(mapEntries.size());
         for (Map.Entry<Data, Data> mapEntry : mapEntries) {
-            keys.add(mapEntry.getKey());
+            invalidateNearCache(mapEntry.getKey());
         }
-
-        invalidateNearCache(keys);
     }
 
     @Override

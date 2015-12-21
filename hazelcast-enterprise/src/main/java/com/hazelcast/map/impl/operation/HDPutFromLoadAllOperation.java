@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.EntryViews;
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
@@ -58,11 +57,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
     @Override
     protected void runInternal() {
         final List<Data> keyValueSequence = this.keyValueSequence;
-        if (keyValueSequence == null || keyValueSequence.isEmpty()) {
-            return;
-        }
         final int partitionId = getPartitionId();
-        final MapService mapService = this.mapService;
         MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         final RecordStore recordStore = mapServiceContext.getRecordStore(partitionId, name);
         for (int i = 0; i < keyValueSequence.size(); i += 2) {

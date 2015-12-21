@@ -183,6 +183,16 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
+    public MapOperation createMapFlushOperation(String name) {
+        return new HDMapFlushOperation(name);
+    }
+
+    @Override
+    public MapOperation createLoadMapOperation(String name, boolean replaceExistingValues) {
+        return new HDLoadMapOperation(name, replaceExistingValues);
+    }
+
+    @Override
     public MapOperation createGetEntryViewOperation(String name, Data dataKey) {
         return new HDGetEntryViewOperation(name, dataKey);
     }

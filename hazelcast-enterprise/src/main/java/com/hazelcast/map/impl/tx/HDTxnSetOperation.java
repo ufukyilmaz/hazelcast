@@ -46,11 +46,6 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
     public HDTxnSetOperation() {
     }
 
-    public HDTxnSetOperation(String name, Data dataKey, Data value, long version) {
-        super(name, dataKey, value);
-        this.version = version;
-    }
-
     public HDTxnSetOperation(String name, Data dataKey, Data value, long version, long ttl) {
         super(name, dataKey, value);
         this.version = version;

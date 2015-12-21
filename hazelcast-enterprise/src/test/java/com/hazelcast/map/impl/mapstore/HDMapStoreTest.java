@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.map.mapstore;
+package com.hazelcast.map.impl.mapstore;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -29,7 +29,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDMapStoreWriteBehindTest extends MapStoreWriteBehindTest {
+public class HDMapStoreTest extends MapStoreTest {
 
     @BeforeClass
     public static void setupClass() {
@@ -45,4 +45,5 @@ public class HDMapStoreWriteBehindTest extends MapStoreWriteBehindTest {
     protected Config getConfig() {
         return HDTestSupport.getHDConfig();
     }
+
 }

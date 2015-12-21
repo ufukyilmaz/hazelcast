@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -52,7 +53,7 @@ import java.util.Queue;
 public class HDMapReplicationOperation extends AbstractOperation implements MutatingOperation {
 
     // list of mapName + statsEnabled + list of key&value pairs.
-    private transient List<String> mapNames;
+    private transient List<String> mapNames = Collections.emptyList();
     private transient Queue data;
     private transient Map<String, Collection<DelayedEntry>> delayedEntries;
     private transient NativeOutOfMemoryError oome;
@@ -188,20 +189,10 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
     }
 
     private void disposePartition() {
-        if (mapNames == null) {
-            return;
-        }
-
         for (int i = 0; i < mapNames.size(); i++) {
             String mapName = mapNames.get(i);
             dispose(mapName);
         }
-    }
-
-    private void evict(RecordStore recordStore) {
-        final long now = Clock.currentTimeMillis();
-        recordStore.evictEntries(now);
-        recordStore.dispose();
     }
 
     @Override

@@ -17,6 +17,7 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.ExceptionUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,6 +25,9 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertTrue;
 
@@ -85,49 +89,49 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
         }
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithUsedNativeMemorySizeMaxSizePolicyAndLRUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LRU,
                                              EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithFreeNativeMemorySizeMaxSizePolicyAndLRUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LRU,
                                              EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithUsedNativeMemoryPercentageMaxSizePolicyAndLRUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LRU,
                                              EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithFreeNativeMemoryPercentageMaxSizePolicyAndLRUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LRU,
                                              EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithUsedNativeMemorySizeMaxSizePolicyAndLFUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU,
                                              EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithFreeNativeMemorySizeMaxSizePolicyAndLFUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU,
                                              EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithUsedNativeMemoryPercentageMaxSizePolicyAndLFUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU,
                                              EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
     }
 
-    @Test(timeout = 10 * 60 * 1000) // 10 minutes
+    @Test
     public void evictWithFreeNativeMemoryPercentageMaxSizePolicyAndLFUEvictionPolicyOnHiDensityNativeMemoryNearCacheRecordStore() {
         doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy.LFU,
                                              EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
@@ -167,71 +171,111 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
     }
 
     private void doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy evictionPolicy,
-                                                      EvictionConfig.MaxSizePolicy maxSizePolicy, int percentage) {
-        final int HUGE_RECORD_COUNT = 1000000;
-        final int DEFAULT_SIZE = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
-        final int DEFAULT_PERCENTAGE = percentage;
-
-        NearCacheConfig nearCacheConfig =
-                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-
-        if (evictionPolicy == null) {
-            evictionPolicy = EvictionConfig.DEFAULT_EVICTION_POLICY;
-        }
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(maxSizePolicy);
-        if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
-            evictionConfig.setSize(DEFAULT_SIZE);
-        } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
-            evictionConfig.setSize(DEFAULT_PERCENTAGE);
-        } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
-            evictionConfig.setSize(DEFAULT_SIZE);
-        } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
-            evictionConfig.setSize(DEFAULT_PERCENTAGE);
-        }
-        evictionConfig.setEvictionPolicy(evictionPolicy);
-        nearCacheConfig.setEvictionConfig(evictionConfig);
-
-        NearCacheContext nearCacheContext = createNearCacheContext();
-        EnterpriseSerializationService serializationService =
-                (EnterpriseSerializationService) nearCacheContext.getSerializationService();
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-
-        NearCacheRecordStore<Integer, String> nearCacheRecordStore =
-                createNearCacheRecordStore(
-                        nearCacheConfig,
-                        nearCacheContext,
-                        InMemoryFormat.NATIVE);
-
-        Random random = new Random();
-        byte[] bytes = new byte[128];
-        random.nextBytes(bytes);
-        String value = new String(bytes);
-
-        for (int i = 0; i < HUGE_RECORD_COUNT; i++) {
-            nearCacheRecordStore.put(i, value);
-
-            nearCacheRecordStore.doEvictionIfRequired();
-
-            MemoryStats memoryStats = memoryManager.getMemoryStats();
-            if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
-                long usedNativeMemory = memoryStats.getUsedNativeMemory();
-                long maxAllowedNativeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
-                assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
-            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
-                long usedNativeMemory = memoryStats.getUsedNativeMemory();
-                long maxAllowedNativeMemory = (memoryStats.getMaxNativeMemory() * DEFAULT_PERCENTAGE) / 100;
-                assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
-            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
-                long freeNativeMemory = memoryStats.getFreeNativeMemory();
-                long minAllowedFreeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
-                assertTrue(freeNativeMemory >= minAllowedFreeMemory);
-            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
-                long freeNativeMemory = memoryStats.getFreeNativeMemory();
-                long minAllowedFreeMemory = (memoryStats.getMaxNativeMemory() * DEFAULT_PERCENTAGE) / 100;
-                assertTrue(freeNativeMemory >= minAllowedFreeMemory);
+                                                      EvictionConfig.MaxSizePolicy maxSizePolicy,
+                                                      int percentage) {
+        AtomicBoolean shutdown = new AtomicBoolean(false);
+        Future future = spawn(new NearCacheTestWorker(shutdown, evictionPolicy, maxSizePolicy, percentage));
+        try {
+            future.get(2, TimeUnit.MINUTES);
+        } catch (Exception e1) {
+            // Worker couldn't finish its job in time so terminate it forcefully
+            shutdown.set(true);
+            try {
+                future.get(10, TimeUnit.SECONDS);
+            } catch (Exception e2) {
+                ExceptionUtil.rethrow(e2);
             }
         }
+    }
+
+    private class NearCacheTestWorker implements Runnable {
+
+        private AtomicBoolean shutdown;
+        private EvictionPolicy evictionPolicy;
+        private EvictionConfig.MaxSizePolicy maxSizePolicy;
+        private int percentage;
+
+        private NearCacheTestWorker(AtomicBoolean shutdown,
+                                    EvictionPolicy evictionPolicy,
+                                    EvictionConfig.MaxSizePolicy maxSizePolicy,
+                                    int percentage) {
+            this.shutdown = shutdown;
+            this.evictionPolicy = evictionPolicy;
+            this.maxSizePolicy = maxSizePolicy;
+            this.percentage = percentage;
+        }
+
+        @Override
+        public void run() {
+            final int HUGE_RECORD_COUNT = 1000000;
+            final int DEFAULT_SIZE = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
+            final int DEFAULT_PERCENTAGE = percentage;
+
+            NearCacheConfig nearCacheConfig =
+                    createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+
+            if (evictionPolicy == null) {
+                evictionPolicy = EvictionConfig.DEFAULT_EVICTION_POLICY;
+            }
+            EvictionConfig evictionConfig = new EvictionConfig();
+            evictionConfig.setMaximumSizePolicy(maxSizePolicy);
+            if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
+                evictionConfig.setSize(DEFAULT_SIZE);
+            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
+                evictionConfig.setSize(DEFAULT_PERCENTAGE);
+            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
+                evictionConfig.setSize(DEFAULT_SIZE);
+            } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
+                evictionConfig.setSize(DEFAULT_PERCENTAGE);
+            }
+            evictionConfig.setEvictionPolicy(evictionPolicy);
+            nearCacheConfig.setEvictionConfig(evictionConfig);
+
+            NearCacheContext nearCacheContext = createNearCacheContext();
+            EnterpriseSerializationService serializationService =
+                    (EnterpriseSerializationService) nearCacheContext.getSerializationService();
+            MemoryManager memoryManager = serializationService.getMemoryManager();
+
+            NearCacheRecordStore<Integer, String> nearCacheRecordStore =
+                    createNearCacheRecordStore(
+                            nearCacheConfig,
+                            nearCacheContext,
+                            InMemoryFormat.NATIVE);
+
+            Random random = new Random();
+            byte[] bytes = new byte[128];
+            random.nextBytes(bytes);
+            String value = new String(bytes);
+
+            for (int i = 0; i < HUGE_RECORD_COUNT; i++) {
+                if (shutdown.get()) {
+                    break;
+                }
+                nearCacheRecordStore.put(i, value);
+
+                nearCacheRecordStore.doEvictionIfRequired();
+
+                MemoryStats memoryStats = memoryManager.getMemoryStats();
+                if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
+                    long usedNativeMemory = memoryStats.getUsedNativeMemory();
+                    long maxAllowedNativeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
+                    assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
+                } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
+                    long usedNativeMemory = memoryStats.getUsedNativeMemory();
+                    long maxAllowedNativeMemory = (memoryStats.getMaxNativeMemory() * DEFAULT_PERCENTAGE) / 100;
+                    assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
+                } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
+                    long freeNativeMemory = memoryStats.getFreeNativeMemory();
+                    long minAllowedFreeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
+                    assertTrue(freeNativeMemory >= minAllowedFreeMemory);
+                } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
+                    long freeNativeMemory = memoryStats.getFreeNativeMemory();
+                    long minAllowedFreeMemory = (memoryStats.getMaxNativeMemory() * DEFAULT_PERCENTAGE) / 100;
+                    assertTrue(freeNativeMemory >= minAllowedFreeMemory);
+                }
+            }
+        }
+
     }
 
 }

@@ -6,6 +6,7 @@ import com.hazelcast.elastic.NativeSort;
 import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
+import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
@@ -342,6 +343,8 @@ final class ThreadLocalPoolingMemoryManager
                 if (purge) {
                     try {
                         return purgeEmptySpaceAndResizeQueue(current, newCap);
+                    } catch (OutOfMemoryError oome) {
+                        OutOfMemoryErrorDispatcher.onOutOfMemory(oome);
                     } catch (Throwable t) {
                         // We are printing actual exception's message and using `NativeOutOfMemoryError` as cause
                         throw new NativeOutOfMemoryError("Cannot expand internal memory pool "

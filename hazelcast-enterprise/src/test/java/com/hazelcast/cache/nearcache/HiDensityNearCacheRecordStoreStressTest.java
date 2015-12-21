@@ -158,7 +158,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
 
     private void doEvictionWithHiDensityMaxSizePolicy(EvictionPolicy evictionPolicy,
                                                       EvictionConfig.MaxSizePolicy maxSizePolicy, int percentage) {
-        final int HUGE_RECORD_COUNT = 10000000;
+        final int HUGE_RECORD_COUNT = 1000000;
         final int DEFAULT_SIZE = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
         final int DEFAULT_PERCENTAGE = percentage;
 

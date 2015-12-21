@@ -7,6 +7,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -15,6 +16,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.test.annotation.QuickTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -27,14 +29,31 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     private PoolingMemoryManager memoryManager;
 
-    @Override
-    protected NearCacheContext createNearCacheContext() {
-        return createNearCacheContext(DEFAULT_MEMORY_SIZE);
+    @Before
+    public void setup() {
+        memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
+        memoryManager.registerThread(Thread.currentThread());
     }
 
-    private NearCacheContext createNearCacheContext(MemorySize memorySize) {
-        memoryManager = new PoolingMemoryManager(memorySize);
-        memoryManager.registerThread(Thread.currentThread());
+    @After
+    public void tearDown() {
+        super.tearDown();
+        if (memoryManager != null) {
+            memoryManager.destroy();
+            memoryManager = null;
+        }
+    }
+
+    @Override
+    protected NearCacheContext createNearCacheContext() {
+        return new NearCacheContext(
+                new EnterpriseSerializationServiceBuilder()
+                        .setMemoryManager(memoryManager)
+                        .build(),
+                createNearCacheExecutor());
+    }
+
+    private NearCacheContext createNearCacheContext(MemoryManager memoryManager) {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
@@ -50,15 +69,6 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         evictionConfig.setSize(99);
         nearCacheConfig.setEvictionConfig(evictionConfig);
         return nearCacheConfig;
-    }
-
-    @After
-    public void tearDown() {
-        super.tearDown();
-        if (memoryManager != null) {
-            memoryManager.destroy();
-            memoryManager = null;
-        }
     }
 
     @Override
@@ -145,14 +155,19 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
         NearCacheConfig nearCacheConfig =
                 createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        NearCacheContext nearCacheContext = createNearCacheContext(memorySize);
-        NearCache<Integer, byte[]> nearCache =
-                new HiDensityNearCache<Integer, byte[]>(
-                        DEFAULT_NEAR_CACHE_NAME,
-                        nearCacheConfig,
-                        nearCacheContext);
-        byte[] value = new byte[40 * 1024 * 1024];
-        nearCache.put(1, value);
+        PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
+        try {
+            NearCacheContext nearCacheContext = createNearCacheContext(mm);
+            NearCache<Integer, byte[]> nearCache =
+                    new HiDensityNearCache<Integer, byte[]>(
+                            DEFAULT_NEAR_CACHE_NAME,
+                            nearCacheConfig,
+                            nearCacheContext);
+            byte[] value = new byte[(int) (2 * memorySize.bytes())];
+            nearCache.put(1, value);
+        } finally {
+            mm.destroy();
+        }
     }
 
 }

@@ -14,6 +14,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.Clock;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -35,10 +36,23 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     private PoolingMemoryManager memoryManager;
 
-    @Override
-    protected NearCacheContext createNearCacheContext() {
+    @Before
+    public void setup() {
         memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
         memoryManager.registerThread(Thread.currentThread());
+    }
+
+    @After
+    public void tearDown() {
+        super.tearDown();
+        if (memoryManager != null) {
+            memoryManager.destroy();
+            memoryManager = null;
+        }
+    }
+
+    @Override
+    protected NearCacheContext createNearCacheContext() {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
@@ -54,15 +68,6 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         evictionConfig.setSize(99);
         nearCacheConfig.setEvictionConfig(evictionConfig);
         return nearCacheConfig;
-    }
-
-    @After
-    public void tearDown() {
-        super.tearDown();
-        if (memoryManager != null) {
-            memoryManager.destroy();
-            memoryManager = null;
-        }
     }
 
     @Override

@@ -1,5 +1,6 @@
 package com.hazelcast.cache.nearcache;
 
+import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
@@ -14,6 +15,7 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.test.annotation.QuickTest;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -28,10 +30,23 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     private PoolingMemoryManager memoryManager;
 
-    @Override
-    protected NearCacheContext createNearCacheContext() {
+    @Before
+    public void setup() {
         memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
         memoryManager.registerThread(Thread.currentThread());
+    }
+
+    @After
+    public void tearDown() {
+        super.tearDown();
+        if (memoryManager != null) {
+            memoryManager.destroy();
+            memoryManager = null;
+        }
+    }
+
+    @Override
+    protected NearCacheContext createNearCacheContext() {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
@@ -46,14 +61,6 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         evictionConfig.setSize(99);
         nearCacheConfig.setEvictionConfig(evictionConfig);
         return nearCacheConfig;
-    }
-
-    @After
-    public void tearDown() {
-        if (memoryManager != null) {
-            memoryManager.destroy();
-            memoryManager = null;
-        }
     }
 
     @Override

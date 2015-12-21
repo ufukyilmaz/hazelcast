@@ -6,6 +6,7 @@ import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStoreTestSupport {
 
-    private static final int DEFAULT_MEMORY_SIZE_IN_MEGABYTES = 256;
+    private static final int DEFAULT_MEMORY_SIZE_IN_MEGABYTES = 128;
     private static final MemorySize DEFAULT_MEMORY_SIZE =
             new MemorySize(DEFAULT_MEMORY_SIZE_IN_MEGABYTES, MemoryUnit.MEGABYTES);
 
@@ -37,7 +38,10 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
 
     @Override
     protected NearCacheContext createNearCacheContext() {
-        memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
+        memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE,
+                                                 NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE,
+                                                 NativeMemoryConfig.DEFAULT_PAGE_SIZE,
+                                                 2 * NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE);
         memoryManager.registerThread(Thread.currentThread());
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
@@ -194,7 +198,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
                         InMemoryFormat.NATIVE);
 
         Random random = new Random();
-        byte[] bytes = new byte[256];
+        byte[] bytes = new byte[128];
         random.nextBytes(bytes);
         String value = new String(bytes);
 

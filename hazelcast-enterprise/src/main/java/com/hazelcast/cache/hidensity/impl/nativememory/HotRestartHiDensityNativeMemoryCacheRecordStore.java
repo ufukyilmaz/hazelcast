@@ -123,6 +123,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
             NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
         putToHotRestart(key, record);
+        super.onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
     }
 
     private void putToHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {

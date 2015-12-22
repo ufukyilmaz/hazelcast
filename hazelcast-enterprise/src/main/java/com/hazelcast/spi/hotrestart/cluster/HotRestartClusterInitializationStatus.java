@@ -26,6 +26,11 @@ public enum HotRestartClusterInitializationStatus {
     /**
      * Final state of the cluster after load process succeeds on all nodes
      */
-    VERIFICATION_AND_LOAD_SUCCEEDED
+    VERIFICATION_AND_LOAD_SUCCEEDED,
+
+    /**
+     * Final state of the cluster after hot restart start process is interrupted and cluster is started with force start
+     */
+    FORCE_STARTED
 
 }

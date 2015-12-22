@@ -6,23 +6,29 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+/**
+ * This test does not test an actual event arrival guarantee between the subscriber and publisher.
+ * The guarantee should be deemed in the context of {@link QueryCache} design.
+ * Because the design relies on a fire&forget eventing system.
+ * So this test should be thought under query-cache-context-guarantees and it is fragile.
+ */
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
 
     @Test
@@ -73,7 +79,6 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
     }
 
     @Test
-    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/570")
     public void continuesToReceiveEvents_afterNodeShutdown() throws Exception {
         String mapName = randomString();
         String queryCacheName = randomString();

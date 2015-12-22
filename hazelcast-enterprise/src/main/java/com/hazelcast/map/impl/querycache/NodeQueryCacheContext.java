@@ -2,8 +2,12 @@ package com.hazelcast.map.impl.querycache;
 
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.IMapEvent;
+import com.hazelcast.core.LifecycleEvent;
+import com.hazelcast.core.LifecycleListener;
 import com.hazelcast.core.Member;
+import com.hazelcast.instance.LifecycleServiceImpl;
 import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.instance.Node;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.ListenerAdapter;
@@ -17,10 +21,13 @@ import com.hazelcast.map.impl.querycache.subscriber.SubscriberContext;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static com.hazelcast.core.LifecycleEvent.LifecycleState.SHUTTING_DOWN;
 
 /**
  * Node side implementation of {@link QueryCacheContext}.
@@ -58,6 +65,24 @@ public class NodeQueryCacheContext implements QueryCacheContext {
         // init these in the end.
         this.subscriberContext = new NodeSubscriberContext(this);
         this.publisherContext = new DefaultPublisherContext(this, nodeEngine, listenerRegistrator);
+        flushPublishersOnNodeShutdown();
+    }
+
+    /**
+     * This is a best effort approach, there is no guarantee that events in publishers internal buffers will be fired,
+     * {@link com.hazelcast.spi.EventService} can drop them.
+     */
+    protected void flushPublishersOnNodeShutdown() {
+        Node node = ((NodeEngineImpl) this.nodeEngine).getNode();
+        LifecycleServiceImpl lifecycleService = node.hazelcastInstance.getLifecycleService();
+        lifecycleService.addLifecycleListener(new LifecycleListener() {
+            @Override
+            public void stateChanged(LifecycleEvent event) {
+                if (SHUTTING_DOWN == event.getState()) {
+                    publisherContext.flush();
+                }
+            }
+        });
     }
 
     @Override

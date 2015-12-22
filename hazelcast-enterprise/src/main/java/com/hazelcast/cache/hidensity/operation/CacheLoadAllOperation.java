@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.CacheClearResponse;
-import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -29,7 +29,7 @@ public class CacheLoadAllOperation
     private boolean replaceExistingValues;
     private boolean shouldBackup;
 
-    private transient Map<Data, CacheRecord> backupRecords;
+    private transient Map<Data, Data> backupRecords;
 
     public CacheLoadAllOperation() {
     }
@@ -59,13 +59,13 @@ public class CacheLoadAllOperation
             final Set<Data> keysLoaded = cache.loadAll(filteredKeys, replaceExistingValues);
             shouldBackup = !keysLoaded.isEmpty();
             if (shouldBackup) {
-                backupRecords = new HashMap<Data, CacheRecord>();
+                backupRecords = new HashMap<Data, Data>();
                 for (Data key : keysLoaded) {
-                    CacheRecord record = cache.getRecord(key);
+                    HiDensityCacheRecord record = (HiDensityCacheRecord) cache.getRecord(key);
                     // Loaded keys may have been evicted, then record will be null.
                     // So if the loaded key is evicted, don't send it to backup.
                     if (record != null) {
-                        backupRecords.put(key, record);
+                        backupRecords.put(key, record.getValue());
                     }
                 }
             }
@@ -81,7 +81,7 @@ public class CacheLoadAllOperation
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutAllBackupOperation(name, backupRecords);
+        return new CachePutAllBackupOperation(name, backupRecords, null);
     }
 
     // Currently, since `CacheLoadAllOperation` is created by `CacheLoadAllOperationFactory`,

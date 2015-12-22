@@ -56,6 +56,15 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     }
 
     @Override
+    public CacheRecord removeRecord(Data key) {
+        CacheRecord record = super.removeRecord(key);
+        if (record != null) {
+            removeFromHotRestart(key);
+        }
+        return record;
+    }
+
+    @Override
     public void onEvict(Data key, CacheRecord record) {
         super.onEvict(key, record);
         removeFromHotRestart(key);
@@ -99,13 +108,15 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     private void putToHotRestart(Data key, Object value) {
         byte[] keyBytes = key.toByteArray();
         byte[] valueBytes = serializationService.toData(value).toByteArray();
-        hotRestartStore.put(new KeyOnHeap(prefix, keyBytes), valueBytes);
+        final KeyOnHeap kh = new KeyOnHeap(prefix, keyBytes);
+        hotRestartStore.put(kh, valueBytes);
         fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key) {
         byte[] keyBytes = key.toByteArray();
-        hotRestartStore.remove(new KeyOnHeap(prefix, keyBytes));
+        final KeyOnHeap kh = new KeyOnHeap(prefix, keyBytes);
+        hotRestartStore.remove(kh);
         fsyncIfRequired();
     }
 

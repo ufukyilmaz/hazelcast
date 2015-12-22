@@ -16,9 +16,7 @@
 
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -47,7 +45,7 @@ public class CachePutAllOperation
     private List<Map.Entry<Data, Data>> entries;
     private ExpiryPolicy expiryPolicy;
 
-    private transient Map<Data, CacheRecord> backupRecords;
+    private transient Map<Data, Data> backupRecords;
 
     public CachePutAllOperation() {
     }
@@ -64,7 +62,7 @@ public class CachePutAllOperation
 
         int backups = getSyncBackupCount() + getAsyncBackupCount();
         if (backups > 0) {
-            backupRecords = new HashMap<Data, CacheRecord>(entries.size());
+            backupRecords = new HashMap<Data, Data>(entries.size());
         }
 
         Iterator<Map.Entry<Data, Data>> iter = entries.iterator();
@@ -72,7 +70,7 @@ public class CachePutAllOperation
             Map.Entry<Data, Data> entry = iter.next();
             Data key = entry.getKey();
             Data value = entry.getValue();
-            CacheRecord backupRecord = cache.put(key, value, expiryPolicy, callerUuid, completionId);
+            cache.put(key, value, expiryPolicy, callerUuid, completionId);
 
             if (backupRecords != null) {
                 /*
@@ -83,10 +81,8 @@ public class CachePutAllOperation
                  * this is passed to CachePutAllBackupOperation.
                  * Then possibly there will be JVM crash or serialization exception.
                  */
-                if (backupRecord instanceof HiDensityCacheRecord) {
-                    backupRecord = cache.toHeapCacheRecord((HiDensityCacheRecord) backupRecord);
-                }
-                backupRecords.put(serializationService.convertData(key, DataType.HEAP), backupRecord);
+                backupRecords.put(serializationService.convertData(key, DataType.HEAP),
+                        serializationService.convertData(value, DataType.HEAP));
             }
 
             iter.remove();
@@ -113,7 +109,7 @@ public class CachePutAllOperation
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutAllBackupOperation(name, backupRecords);
+        return new CachePutAllBackupOperation(name, backupRecords, expiryPolicy);
     }
 
     @Override

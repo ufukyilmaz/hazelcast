@@ -1,23 +1,14 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.cache.impl.record.CacheDataRecord;
-import com.hazelcast.cache.impl.record.CacheRecord;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.NativeOutOfMemoryError;
-import com.hazelcast.nio.EnterpriseObjectDataInput;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
-import com.hazelcast.util.ExceptionUtil;
 
+import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,25 +24,27 @@ public class CachePutAllBackupOperation
         extends AbstractHiDensityCacheOperation
         implements BackupOperation, MutableOperation, MutatingOperation {
 
-    private Map<Data, CacheRecord> cacheRecords;
+    private Map<Data, Data> cacheRecords;
+    private ExpiryPolicy expiryPolicy;
 
     public CachePutAllBackupOperation() {
     }
 
-    public CachePutAllBackupOperation(String name, Map<Data, CacheRecord> cacheRecords) {
+    public CachePutAllBackupOperation(String name, Map<Data, Data> cacheRecords, ExpiryPolicy expiryPolicy) {
         super(name);
         this.cacheRecords = cacheRecords;
+        this.expiryPolicy = expiryPolicy;
     }
 
     @Override
     protected void runInternal() throws Exception {
         if (cacheRecords != null) {
-            final Iterator<Map.Entry<Data, CacheRecord>> iter = cacheRecords.entrySet().iterator();
+            final Iterator<Map.Entry<Data, Data>> iter = cacheRecords.entrySet().iterator();
             while (iter.hasNext()) {
-                Map.Entry<Data, CacheRecord> entry = iter.next();
+                Map.Entry<Data, Data> entry = iter.next();
                 Data key = entry.getKey();
-                CacheRecord record = entry.getValue();
-                cache.putRecord(key, record);
+                Data value = entry.getValue();
+                cache.putBackup(key, value, expiryPolicy);
                 iter.remove();
             }
         }
@@ -59,26 +52,15 @@ public class CachePutAllBackupOperation
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        if (cacheRecords != null) {
-            final MemoryManager memoryManager = serializationService.getMemoryManager();
-            final Iterator<Map.Entry<Data, CacheRecord>> iter = cacheRecords.entrySet().iterator();
+        if (cacheRecords != null && !cacheRecords.isEmpty()) {
+            Iterator<Map.Entry<Data, Data>> iter = cacheRecords.entrySet().iterator();
             // Dispose remaining entries
             while (iter.hasNext()) {
-                Map.Entry<Data, CacheRecord> entry = iter.next();
+                Map.Entry<Data, Data> entry = iter.next();
                 Data key = entry.getKey();
-                CacheRecord record = entry.getValue();
                 serializationService.disposeData(key);
-                if (record instanceof HiDensityCacheRecord) {
-                    HiDensityCacheRecord hdRecord = (HiDensityCacheRecord) record;
-                    NativeMemoryData hdCacheRecordValue = ((HiDensityCacheRecord) record).getValue();
-                    long recordAddress = hdRecord.address();
-                    if (recordAddress != MemoryManager.NULL_ADDRESS) {
-                        memoryManager.free(recordAddress, hdRecord.size());
-                    }
-                    if (hdCacheRecordValue != null && hdCacheRecordValue.address() != MemoryManager.NULL_ADDRESS) {
-                        serializationService.disposeData(hdCacheRecordValue);
-                    }
-                }
+                Data value = entry.getValue();
+                serializationService.disposeData(value);
                 iter.remove();
             }
         }
@@ -87,160 +69,32 @@ public class CachePutAllBackupOperation
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
+        out.writeObject(expiryPolicy);
 
-        out.writeBoolean(cacheRecords != null);
+        out.writeInt(cacheRecords != null ? cacheRecords.size() : 0);
         if (cacheRecords != null) {
-            out.writeInt(cacheRecords.size());
-            for (Map.Entry<Data, CacheRecord> entry : cacheRecords.entrySet()) {
+            for (Map.Entry<Data, Data> entry : cacheRecords.entrySet()) {
                 Data key = entry.getKey();
-                CacheRecord record = entry.getValue();
+                Data value = entry.getValue();
                 out.writeData(key);
-                if (record instanceof HiDensityCacheRecord) {
-                    out.writeBoolean(true);
-                    writeHiDensityCacheRecord(out, (HiDensityCacheRecord) record);
-                } else {
-                    out.writeBoolean(false);
-                    out.writeObject(record);
-                }
-            }
-        }
-    }
-
-    private void writeHiDensityCacheRecord(ObjectDataOutput out, HiDensityCacheRecord record) throws IOException {
-        if (record == null) {
-            out.writeBoolean(false);
-            return;
-        }
-
-        out.writeBoolean(true);
-
-        out.writeLong(record.getCreationTime());
-        out.writeLong(record.getAccessTime());
-        out.writeInt(record.getAccessHit());
-        out.writeLong(record.getTtlMillis());
-
-        Data valueData = record.getValue();
-        if (valueData == null) {
-            out.writeBoolean(false);
-        } else {
-            if (valueData instanceof NativeMemoryData) {
-                NativeMemoryData nativeMemoryData = (NativeMemoryData) valueData;
-                if (nativeMemoryData.address() == MemoryManager.NULL_ADDRESS) {
-                    out.writeBoolean(false);
-                } else {
-                    out.writeBoolean(true);
-                    out.writeData(nativeMemoryData);
-                }
-            } else {
-                out.writeBoolean(true);
-                out.writeData(valueData);
+                out.writeData(value);
             }
         }
     }
 
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        assert (in instanceof EnterpriseObjectDataInput)
-                : "\"ObjectDataInput\" must be an \"EnterpriseObjectDataInput\"";
-        final EnterpriseSerializationService serializationService =
-                ((EnterpriseObjectDataInput) in).getSerializationService();
-
         super.readInternal(in);
+        expiryPolicy = in.readObject();
 
-        final boolean recordNotNull = in.readBoolean();
-        if (recordNotNull) {
             int size = in.readInt();
-            cacheRecords = new HashMap<Data, CacheRecord>(size);
+            cacheRecords = new HashMap<Data, Data>(size);
             for (int i = 0; i < size; i++) {
                 Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
-                CacheRecord record;
-                try {
-                    final boolean isHiDensityCacheRecord = in.readBoolean();
-                    if (isHiDensityCacheRecord) {
-                        record = readCacheRecord(in, serializationService);
-                    } else {
-                        record = in.readObject();
-                    }
-                    cacheRecords.put(key, record);
-                } catch (Throwable t) {
-                    serializationService.disposeData(key);
-                    disposeInternal(serializationService);
-                    throw ExceptionUtil.rethrow(t);
-                }
-            }
+                Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
+                cacheRecords.put(key, value);
         }
     }
-
-    //CHECKSTYLE:OFF
-    private CacheRecord readCacheRecord(ObjectDataInput in, EnterpriseSerializationService serializationService)
-            throws IOException {
-        final MemoryManager memoryManager = serializationService.getMemoryManager();
-        final long recordSize = HiDensityNativeMemoryCacheRecord.SIZE;
-        long recordAddress = MemoryManager.NULL_ADDRESS;
-        NativeMemoryData nativeMemoryData = null;
-
-        final boolean recordNotNull = in.readBoolean();
-        final long creationTime = in.readLong();
-        final long accessTime = in.readLong();
-        final int accessHit = in.readInt();
-        final long ttlMillis = in.readLong();
-        final boolean valueNotNull = in.readBoolean();
-        Data valueData = valueNotNull ? AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in) : null;
-        if (valueData instanceof NativeMemoryData) {
-            nativeMemoryData = (NativeMemoryData) valueData;
-        }
-        try {
-            if (recordNotNull) {
-                recordAddress = memoryManager.allocate(recordSize);
-                HiDensityCacheRecord cacheRecord = new HiDensityNativeMemoryCacheRecord(recordAddress);
-                cacheRecord.setCreationTime(creationTime);
-                cacheRecord.setAccessTime(accessTime);
-                cacheRecord.setAccessHit(accessHit);
-                cacheRecord.setTtlMillis(ttlMillis);
-                if (valueNotNull) {
-                    if (nativeMemoryData == null) {
-                        nativeMemoryData = serializationService.convertData(valueData, DataType.NATIVE);
-                    }
-                    cacheRecord.setValue(nativeMemoryData);
-                } else {
-                    cacheRecord.setValue(null);
-                }
-                return cacheRecord;
-            } else {
-                return null;
-            }
-        } catch (Throwable t) {
-            final boolean readToHeap = t instanceof NativeOutOfMemoryError;
-            if (recordAddress != MemoryManager.NULL_ADDRESS) {
-                memoryManager.free(recordAddress, recordSize);
-            }
-            if (nativeMemoryData != null && nativeMemoryData.address() != MemoryManager.NULL_ADDRESS) {
-                if (readToHeap) {
-                    valueData = serializationService.convertData(nativeMemoryData, DataType.HEAP);
-                }
-                serializationService.disposeData(nativeMemoryData);
-            }
-            if (readToHeap) {
-                // Read record to heap
-                CacheDataRecord cacheRecord = new CacheDataRecord();
-                cacheRecord.setCreationTime(creationTime);
-                cacheRecord.setAccessHit(accessHit);
-                cacheRecord.setAccessTime(creationTime + accessTime);
-                if (ttlMillis >= 0) {
-                    cacheRecord.setExpirationTime(creationTime + ttlMillis);
-                }
-                if (valueNotNull) {
-                    cacheRecord.setValue(valueData);
-                } else {
-                    cacheRecord.setValue(null);
-                }
-                return cacheRecord;
-            } else {
-                throw ExceptionUtil.rethrow(t);
-            }
-        }
-    }
-    //CHECKSTYLE:ON
 
     @Override
     public int getId() {

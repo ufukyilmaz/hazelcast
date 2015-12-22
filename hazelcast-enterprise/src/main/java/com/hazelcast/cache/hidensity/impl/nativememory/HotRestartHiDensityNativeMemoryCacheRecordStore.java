@@ -51,8 +51,17 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         this.fsync = fsync;
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.offHeapHotRestartStoreForCurrentThread();
-        recordMapMutex = ((HotRestartHiDensityNativeMemoryCacheRecordMap) records).getMutex();
         assert hotRestartStore != null;
+
+        HotRestartHiDensityNativeMemoryCacheRecordMap recordMap = (HotRestartHiDensityNativeMemoryCacheRecordMap) records;
+        recordMapMutex = recordMap.getMutex();
+        initMap(recordMap);
+    }
+
+    private void initMap(HotRestartHiDensityNativeMemoryCacheRecordMap recordMap) {
+        recordMap.setPrefix(prefix);
+        recordMap.setHotRestartStore(hotRestartStore);
+        recordMap.setFsync(fsync);
     }
 
     @Override
@@ -104,20 +113,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    @Override
-    public void onEvict(Data key, HiDensityNativeMemoryCacheRecord record) {
-        super.onEvict(key, record);
-
-        // record is already removed from map
-        NativeMemoryData nativeKey = (NativeMemoryData) key;
-        assert nativeKey.address() != NULL_PTR;
-        assert record.address() != NULL_PTR;
-        assert record.getValueAddress() != NULL_PTR;
-        KeyOffHeap hotRestartKey = new KeyOffHeap(prefix, key.toByteArray(), nativeKey.address(), record.getSequence());
-        hotRestartStore.remove(hotRestartKey);
-        fsyncIfRequired();
-    }
-
     private void fsyncIfRequired() {
         if (fsync) {
             hotRestartStore.fsync();
@@ -128,6 +123,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
             NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
         putToHotRestart(key, record);
+        super.onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
     }
 
     private void putToHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {

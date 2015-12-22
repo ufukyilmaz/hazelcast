@@ -5,9 +5,16 @@ import com.hazelcast.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+
+import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
 
 /**
  * Hot-restart variant of HiDensityNativeMemoryCacheRecordMap.
@@ -27,6 +34,12 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     // reads of record map and its records.
     // This mutex guards all modifications and reads done by GC thread.
     private final Object mutex = new Object();
+
+    private final List<KeyOffHeap> evictedKeys = new ArrayList<KeyOffHeap>();
+
+    private HotRestartStore hotRestartStore;
+    private long prefix;
+    private boolean fsync;
 
     public HotRestartHiDensityNativeMemoryCacheRecordMap(int initialCapacity,
             HiDensityRecordProcessor cacheRecordProcessor, HiDensityStorageInfo cacheInfo) {
@@ -98,9 +111,12 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     @Override
     public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int forceEvict(int evictionPercentage,
             EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
+        int evictedCount;
         synchronized (mutex) {
-            return super.forceEvict(evictionPercentage, evictionListener);
+            evictedCount = super.forceEvict(evictionPercentage, evictionListener);
         }
+        evictKeysFromHotRestartStore();
+        return evictedCount;
     }
 
     @Override
@@ -115,9 +131,34 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     @Override
     public <C extends EvictionCandidate<Data, HiDensityNativeMemoryCacheRecord>> int evict(
             Iterable<C> evictionCandidates, EvictionListener<Data, HiDensityNativeMemoryCacheRecord> evictionListener) {
+        int evictedCount;
         synchronized (mutex) {
-            return super.evict(evictionCandidates, evictionListener);
+            evictedCount = super.evict(evictionCandidates, evictionListener);
         }
+        evictKeysFromHotRestartStore();
+        return evictedCount;
+    }
+
+    private void evictKeysFromHotRestartStore() {
+        for (KeyOffHeap key : evictedKeys) {
+            hotRestartStore.remove(key);
+        }
+        evictedKeys.clear();
+        if (fsync) {
+            hotRestartStore.fsync();
+        }
+    }
+
+    @Override
+    protected void onEvict(Data key, HiDensityNativeMemoryCacheRecord record) {
+        super.onEvict(key, record);
+
+        NativeMemoryData nativeKey = (NativeMemoryData) key;
+        assert nativeKey.address() != NULL_PTR;
+        assert record.address() != NULL_PTR;
+        assert record.getValueAddress() != NULL_PTR;
+        KeyOffHeap hotRestartKey = new KeyOffHeap(prefix, key.toByteArray(), nativeKey.address(), record.getSequence());
+        evictedKeys.add(hotRestartKey);
     }
 
     @Override
@@ -140,4 +181,17 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
             super.dispose();
         }
     }
+
+    void setPrefix(long prefix) {
+        this.prefix = prefix;
+    }
+
+    void setHotRestartStore(HotRestartStore hotRestartStore) {
+        this.hotRestartStore = hotRestartStore;
+    }
+
+    void setFsync(boolean fsync) {
+        this.fsync = fsync;
+    }
+
 }

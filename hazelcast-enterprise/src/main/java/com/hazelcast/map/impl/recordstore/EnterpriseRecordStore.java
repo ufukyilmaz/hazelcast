@@ -109,7 +109,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     public void init() {
         super.init();
         if (prefix != -1) {
-            this.ramStore = inMemoryFormat == NATIVE ? new RamStoreHDImpl(this) : new RamStoreImpl(this);
+            this.ramStore = inMemoryFormat == NATIVE ? new RamStoreHDImpl(this, memoryManager) : new RamStoreImpl(this);
         }
     }
 

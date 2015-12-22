@@ -18,10 +18,13 @@ import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -45,6 +48,7 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
 
     @Override
     void setupInternal() {
+        newHazelcastInstance();
         cache = createCache(newHazelcastInstance());
         warmupCacheAndHotRestart();
     }
@@ -175,6 +179,22 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         String value = randomString();
         assertFalse(cache.putIfAbsent(0, value));
         assertFalse(cache.putIfAbsent(KEY_COUNT, value));
+    }
+
+    @Test
+    public void testPutAll() {
+        cache.put(0, randomString());
+        cache.put(KEY_COUNT, randomString());
+
+        Map<Integer, String> values = new HashMap<Integer, String>();
+        for (int i = 0; i < KEY_COUNT; i++) {
+            values.put(i, randomString());
+        }
+        cache.putAll(values);
+
+        for (int i = 0; i < KEY_COUNT; i++) {
+            assertNotNull(cache.get(i));
+        }
     }
 
     @Test

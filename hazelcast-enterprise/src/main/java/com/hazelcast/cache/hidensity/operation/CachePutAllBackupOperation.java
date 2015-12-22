@@ -87,13 +87,15 @@ public class CachePutAllBackupOperation
         super.readInternal(in);
         expiryPolicy = in.readObject();
 
-            int size = in.readInt();
+        final int size = in.readInt();
+        if (size > 0) {
             cacheRecords = new HashMap<Data, Data>(size);
             for (int i = 0; i < size; i++) {
                 Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 cacheRecords.put(key, value);
-        }
+            }
+        }    
     }
 
     @Override

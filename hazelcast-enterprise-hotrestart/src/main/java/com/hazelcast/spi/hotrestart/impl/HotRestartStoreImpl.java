@@ -99,9 +99,9 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         new HotRestarter(gcHelper, gcExec).restart(failIfAnyData);
         activeValChunk = gcHelper.newActiveValChunk();
         activeTombChunk = gcHelper.newActiveTombChunk();
-        gcExec.start();
         gcExec.submitReplaceActiveChunk(null, activeValChunk);
         gcExec.submitReplaceActiveChunk(null, activeTombChunk);
+        gcExec.start();
         logger.info(String.format("%s reloaded %,d keys; chunk seq %03x",
                 name, gcExec.chunkMgr.trackedKeyCount(), activeValChunk.seq));
     }

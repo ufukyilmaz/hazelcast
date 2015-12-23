@@ -27,6 +27,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass

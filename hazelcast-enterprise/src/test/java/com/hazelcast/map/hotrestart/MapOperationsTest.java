@@ -30,6 +30,7 @@ import static org.junit.Assert.assertTrue;
 @RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore
 public class MapOperationsTest extends AbstractMapHotRestartTest {
 
     private static final int KEY_COUNT = 1000;
@@ -228,14 +229,14 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testGetEntryView(){
+    public void testGetEntryView() {
         map.remove(0);
 
         assertNull(map.getEntryView(0));
     }
 
     @Test
-    public void testGetAll(){
+    public void testGetAll() {
         map.remove(0);
 
         HashSet<Integer> keys = new HashSet<Integer>();
@@ -246,7 +247,7 @@ public class MapOperationsTest extends AbstractMapHotRestartTest {
     }
 
     @Test
-    public void testEvict(){
+    public void testEvict() {
         map.remove(0);
 
         assertFalse(map.evict(0));

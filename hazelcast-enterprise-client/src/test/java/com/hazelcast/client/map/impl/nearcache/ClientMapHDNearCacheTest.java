@@ -16,6 +16,7 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.RunParallel;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -109,4 +110,10 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
         });
     }
 
+
+    @Ignore
+    @Override
+    public void testAfterDestroyNearCacheIsInvalidated() {
+        super.testAfterDestroyNearCacheIsInvalidated();
+    }
 }

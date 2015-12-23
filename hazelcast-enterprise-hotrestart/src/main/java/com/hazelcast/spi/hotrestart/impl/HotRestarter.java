@@ -138,7 +138,7 @@ class HotRestarter {
         while (valCursor.advance()) {
             if (loadStep1(valCursor)
                     && rebuilder.accept(valCursor.prefix, keyHandle, valCursor.seq, valCursor.recordSize())
-                    ) {
+            ) {
                 ramStore.accept(keyHandle, valCursor.value);
             }
         }

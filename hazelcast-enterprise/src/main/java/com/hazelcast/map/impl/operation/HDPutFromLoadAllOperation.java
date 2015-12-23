@@ -105,7 +105,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             return;
         }
 
-        if (mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null) {
+        if (mapContainer.isWanReplicationEnabled()) {
             final EntryView entryView = EntryViews.createSimpleEntryView(key, value, record);
             MapServiceContext mapServiceContext = mapService.getMapServiceContext();
             MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();

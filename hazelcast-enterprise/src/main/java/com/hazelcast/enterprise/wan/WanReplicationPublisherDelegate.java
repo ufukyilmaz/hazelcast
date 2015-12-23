@@ -73,4 +73,10 @@ final class WanReplicationPublisherDelegate
         }
         return statsMap;
     }
+
+    public void checkWanReplicationQueues() {
+        for (WanReplicationEndpoint endpoint : endpoints.values()) {
+            endpoint.checkWanReplicationQueues();
+        }
+    }
 }

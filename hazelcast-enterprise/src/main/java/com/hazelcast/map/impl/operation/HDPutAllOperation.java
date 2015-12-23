@@ -99,7 +99,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
         Record record = recordStore.getRecord(dataKey);
 
-        if (shouldWanReplicate()) {
+        if (mapContainer.isWanReplicationEnabled()) {
             EntryView entryView = createSimpleEntryView(dataKey, dataValue, record);
             mapEventPublisher.publishWanReplicationUpdate(name, entryView);
         }
@@ -117,10 +117,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         }
         Record record = recordStore.getRecord(dataKey);
         return mapServiceContext.toData(record.getValue());
-    }
-
-    private boolean shouldWanReplicate() {
-        return mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null;
     }
 
     protected final void invalidateNearCaches(MapEntries mapEntries) {

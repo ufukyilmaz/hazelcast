@@ -79,4 +79,6 @@ public interface WanReplicationEndpoint
      * @return {@link LocalWanPublisherStats}
      */
     LocalWanPublisherStats getStats();
+
+    void checkWanReplicationQueues();
 }

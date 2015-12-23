@@ -226,8 +226,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
 
     protected void publishWanReplicationEvent(Data key, Data dataValue, EntryEventType eventType) {
         final MapContainer mapContainer = this.mapContainer;
-        if (mapContainer.getWanReplicationPublisher() == null
-                && mapContainer.getWanMergePolicy() == null) {
+        if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
         final MapEventPublisher mapEventPublisher = getMapEventPublisher();

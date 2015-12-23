@@ -95,7 +95,7 @@ public class WanBatchReplication extends AbstractWanReplication
                 || sendingPeriodPassed(wanReplicationEventList.size()))) {
             WanReplicationEvent event = null;
             try {
-                 event = stagingQueue.poll(batchFrequency, TimeUnit.MILLISECONDS);
+                 event = stagingQueue.poll(batchMaxDelayMillis, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) {
                 EmptyStatement.ignore(ignored);
             }
@@ -126,7 +126,7 @@ public class WanBatchReplication extends AbstractWanReplication
     }
 
     private boolean sendingPeriodPassed(int eventQueueSize) {
-        return System.currentTimeMillis() - lastBatchSendTime > batchFrequency
+        return System.currentTimeMillis() - lastBatchSendTime > batchMaxDelayMillis
                 && eventQueueSize > 0;
     }
 

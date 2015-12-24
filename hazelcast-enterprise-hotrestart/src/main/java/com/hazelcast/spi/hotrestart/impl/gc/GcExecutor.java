@@ -43,7 +43,7 @@ public final class GcExecutor {
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final Runnable shutdown = new Runnable() {
         @Override public void run() {
-            keepGoing = false;
+            stopped = true;
         }
     };
     private final OneToOneConcurrentArrayQueue<Runnable> workQueue =
@@ -56,7 +56,9 @@ public final class GcExecutor {
     private final GcHelper gcHelper;
     private volatile boolean backpressure;
     private volatile Throwable gcThreadFailureCause;
-    private boolean keepGoing;
+
+    private boolean started;
+    private boolean stopped;
     /** This lock exists only to serve the needs of {@link #runWhileGcPaused(Runnable)}. */
     private final Object gcMutex = new Object();
 
@@ -81,7 +83,7 @@ public final class GcExecutor {
                 long idleCount = 0;
                 int parkCount = 0;
                 boolean didWork = false;
-                while (keepGoing && !interrupted()) {
+                while (!stopped && !interrupted()) {
                     final int workCount = mc.catchupNow();
                     final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
                     synchronized (gcMutex) {
@@ -115,7 +117,7 @@ public final class GcExecutor {
                 }
                 logger.info("GC thread done. ");
             } catch (Throwable t) {
-                keepGoing = false;
+                stopped = true;
                 logger.severe("GC thread terminated by exception", t);
                 gcThreadFailureCause = t;
             } finally {
@@ -137,12 +139,12 @@ public final class GcExecutor {
     }
 
     public void start() {
-        keepGoing = true;
+        started = true;
         gcThread.start();
     }
 
     public void shutdown() {
-        if (keepGoing && gcThread.isAlive()) {
+        if (!stopped && gcThread.isAlive()) {
             submit(shutdown);
         }
         try {
@@ -169,8 +171,8 @@ public final class GcExecutor {
     }
 
     void submit(Runnable task) {
-        if (!keepGoing) {
-            throw new HotRestartException("keepGoing == false", gcThreadFailureCause);
+        if (stopped) {
+            throw new HotRestartException("stopped == true", gcThreadFailureCause);
         }
         boolean submitted = false;
 //        boolean reportedBlocking = false;
@@ -181,7 +183,7 @@ public final class GcExecutor {
 //                    reportedBlocking = true;
 //                }
                 if (!gcThread.isAlive()) {
-                    if (task == shutdown) {
+                    if (!started && submitted || task == shutdown) {
                         return;
                     }
                     throw new HotRestartException(
@@ -250,7 +252,7 @@ public final class GcExecutor {
         }
 
         boolean shutdownRequested() {
-            return !keepGoing;
+            return stopped;
         }
     }
 }

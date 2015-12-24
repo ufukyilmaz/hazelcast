@@ -24,6 +24,7 @@ public abstract class TestProfile {
     public int sizeIncreaseSteps = 5;
     public int logStepSize = 3;
     public boolean powerLawSizeDistribution = true;
+    public int valueOverhead = 1;
     public int clearIntervalSeconds = 6;
     public int offHeapMb = 1024;
     public float offHeapMetadataPercentage = DEFAULT_METADATA_SPACE_PERCENTAGE;
@@ -74,7 +75,7 @@ public abstract class TestProfile {
         for (int i = 0; i < sizeIncreaseSteps && rnd.nextInt(1 << logStepSize) == 0; i++) {
             size <<= logStepSize;
         }
-        return buildValue(size - 1);
+        return buildValue(size);
     }
 
     private byte[] randomValueUniform() {
@@ -98,9 +99,12 @@ public abstract class TestProfile {
     }
 
     private byte[] buildValue(int size) {
-        assert size >= 1 : "size must be at least 1";
-        final byte[] value = new byte[size];
-        final int dataOff = rnd.nextInt(valueData.length - size);
+        final int adjustedSize = size - valueOverhead;
+        if (adjustedSize < 1) {
+            throw new IllegalArgumentException("(1 << logMinSize) - valueOverhead must be at least 1");
+        }
+        final byte[] value = new byte[adjustedSize];
+        final int dataOff = rnd.nextInt(valueData.length - adjustedSize);
         System.arraycopy(valueData, dataOff, value, 0, value.length);
         return value;
     }

@@ -5,7 +5,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -15,6 +14,7 @@ import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.SRC_CHUNKS_GOAL;
+import static com.hazelcast.util.QuickMath.log2;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
@@ -108,7 +108,7 @@ final class ChunkSelector {
             }
             logger.finest("Finding " + chunksToFind + " more top chunks");
         }
-        diagnoseChunks(allChunks, gcp.currRecordSeq);
+        diagnoseChunks(allChunks, gcp, logger);
         logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
                 status, garbage, cost, cs.srcChunks.size(), allChunks.size());
         return cs;
@@ -160,11 +160,11 @@ final class ChunkSelector {
                 : null;
     }
 
-    private void diagnoseChunks(Collection<StableChunk> chunks, long currSeq) {
+    static void diagnoseChunks(Collection<StableChunk> chunks, GcParams gcp, GcLogger logger) {
         if (!logger.isFinestEnabled()) {
             return;
         }
-        final Collection<StableValChunk> valChunks = new ArrayList<StableValChunk>(chunks.size());
+        final List<StableValChunk> valChunks = new ArrayList<StableValChunk>(chunks.size());
         int tombChunkCount = 0;
         for (StableChunk chunk : chunks) {
             if (!(chunk instanceof StableValChunk)) {
@@ -172,20 +172,42 @@ final class ChunkSelector {
                 continue;
             }
             final StableValChunk c = (StableValChunk) chunk;
-            c.updateCostBenefit(currSeq);
+            c.updateCostBenefit(gcp.currRecordSeq);
             valChunks.add(c);
         }
-        final StableValChunk[] sorted = valChunks.toArray(new StableValChunk[valChunks.size()]);
-        Arrays.sort(sorted, BY_COST_BENEFIT);
+        Collections.sort(valChunks, BY_COST_BENEFIT);
         final StringWriter sw = new StringWriter(512);
         final PrintWriter o = new PrintWriter(sw);
-        o.format("%nTombstone chunks: %,d", tombChunkCount);
-        o.println("\nseq    garbage       cost   count  youngestSeq     costBenefit");
-        for (StableValChunk c : sorted) {
-            o.format("%3x %,10d %,10d %,7d %,12d %,15.2f%n",
-                    c.seq, c.garbage, c.cost(), c.records.size(), c.youngestRecordSeq, c.cachedCostBenefit());
+        o.format("%nValue chunks %,d Tombstone chunks: %,d", valChunks.size(), tombChunkCount);
+        o.println("\n seq age        CB factor  recCount");
+        boolean cbThresholdCrossed = false;
+        for (StableValChunk c : valChunks) {
+            if (!cbThresholdCrossed && c.cachedCostBenefit() < gcp.minCostBenefit) {
+                cbThresholdCrossed = true;
+                o.println("/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\"
+                +         "/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\");
+            }
+            o.format("%4x %3d %,15.2f    %,7d %s%n",
+                    c.seq,
+                    log2(gcp.currRecordSeq - c.youngestRecordSeq),
+                    c.cachedCostBenefit(),
+                    c.liveRecordCount,
+                    visualizedChunk(c.garbage, c.size()));
         }
         logger.finest(sw.toString());
+    }
+
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static String visualizedChunk(long garbage, long size) {
+        final int chunkLimitChars = 16;
+        final int bytesPerChar = (int) Chunk.SIZE_LIMIT / chunkLimitChars;
+        final StringBuilder b = new StringBuilder(chunkLimitChars * 3 / 2).append('|');
+        final long garbageChars = garbage / bytesPerChar;
+        final long sizeChars = size / bytesPerChar;
+        for (int i = 0; i < sizeChars; i++) {
+            b.append(i <= garbageChars ? '-' : '#');
+        }
+        return b.toString();
     }
 
 }

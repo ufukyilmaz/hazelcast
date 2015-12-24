@@ -28,6 +28,7 @@ public final class ChunkManager {
     private static final int MIN_SIZE_TO_COMPRESS = 64 * 1024;
     /** Batch size while releasing tombstones. Between batches we catch up and Thread.yield */
     private static final int TOMBSTONE_RELEASING_BATCH_SIZE = 4 * 1024;
+    private static final double UNIT_PERCENTAGE = 100.0;
     @Probe final Counter valOccupancy = newSwCounter();
     @Probe final Counter valGarbage = newSwCounter();
     @Probe final Counter tombOccupancy = newSwCounter();
@@ -277,8 +278,9 @@ public final class ChunkManager {
         }
         final long garbageBeforeGc = valGarbage.get();
         final long liveBeforeGc = valOccupancy.get() - garbageBeforeGc;
-        logger.fine("Start GC: garbage %,d; live %,d; costGoal %,d; reclamationGoal %,d; minCostBenefit %,.2f",
-                garbageBeforeGc, liveBeforeGc, gcp.costGoal, gcp.reclamationGoal, gcp.minCostBenefit);
+        logger.fine("Start GC: garbage/live %3.0f%% (%,d/%,d); costGoal %,d; reclamationGoal %,d; min CB factor %,.2f",
+                UNIT_PERCENTAGE * garbageBeforeGc / liveBeforeGc, garbageBeforeGc, liveBeforeGc,
+                gcp.costGoal, gcp.reclamationGoal, gcp.minCostBenefit);
         if (gcp.forceGc) {
             logger.fine("Forcing GC due to ratio %.2f", (float) garbageBeforeGc / liveBeforeGc);
         }
@@ -297,8 +299,10 @@ public final class ChunkManager {
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = valGarbage.inc(-reclaimed);
         final long liveAfterGc = valOccupancy.inc(-reclaimed) - garbageAfterGc;
-        logger.info("Done GC: reclaimed %,d at cost %,d in %,d ms; garbage %,d; live %,d",
-                reclaimed, sizeAfter, NANOSECONDS.toMillis(System.nanoTime() - start), garbageAfterGc, liveAfterGc);
+        logger.info("Done GC: took %,3d ms; b/c %4.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
+                NANOSECONDS.toMillis(System.nanoTime() - start),
+                (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
+                reclaimed, sizeAfter, garbageAfterGc, liveAfterGc);
         assert garbageAfterGc >= 0 : String.format("Garbage went below zero: %,d", garbageAfterGc);
         assert liveAfterGc >= 0 : String.format("Live went below zero: %,d", liveAfterGc);
         return true;

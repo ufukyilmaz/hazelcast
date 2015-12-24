@@ -82,7 +82,7 @@ public final class Rebuilder {
             final Record stale = chunkWithStale.records.get(kh);
             if (seq >= stale.liveSeq()) {
                 // We are accepting a record which replaces an existing, now stale record
-                garbage.inc(stale.size());
+                (stale.isTombstone() ? cm.tombGarbage : cm.valGarbage).inc(stale.size());
                 chunkWithStale.retire(kh, stale);
                 chunk.add(prefix, kh, seq, size);
                 tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers, true);

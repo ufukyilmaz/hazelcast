@@ -20,6 +20,7 @@ import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createStoreRegistry;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.logger;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -39,14 +40,7 @@ public class GcExecutorSchedulingTest {
         p.disableIo = true;
         MockStoreRegistry reg = null;
         try {
-            final LoggingService loggingService = createLoggingService();
-            logger = loggingService.getLogger("hotrestart-test");
-            final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
-                    .setHomeDir(new File(testingHome, "hr-store"))
-                    .setLoggingService(loggingService)
-                    .setMetricsRegistry(metricsRegistry(loggingService))
-                    .setIoDisabled(p.disableIo);
-            reg = createStoreRegistry(cfg, null);
+            reg = createStoreRegistry(hrStoreConfig(testingHome).setIoDisabled(true), null);
             final byte[] value = new byte[1];
             for (int i = 0; i < 20; i++) {
                 reg.put(1, 1, value);

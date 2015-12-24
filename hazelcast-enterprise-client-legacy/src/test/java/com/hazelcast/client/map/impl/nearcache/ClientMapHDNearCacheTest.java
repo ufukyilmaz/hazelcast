@@ -14,8 +14,8 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.RunParallel;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -24,10 +24,9 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 
-
+@RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass
@@ -109,11 +108,4 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
             }
         });
     }
-
-    @Ignore
-    @Override
-    public void testAfterDestroyNearCacheIsInvalidated() {
-        super.testAfterDestroyNearCacheIsInvalidated();
-    }
-
 }

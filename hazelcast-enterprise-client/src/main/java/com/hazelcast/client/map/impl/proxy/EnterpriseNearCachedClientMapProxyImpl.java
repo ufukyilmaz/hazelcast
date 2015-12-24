@@ -137,12 +137,11 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
 
     @Override
     protected void onDestroy() {
-        InMemoryFormat nearCacheInMemoryFormat = nearCache.getInMemoryFormat();
-
-        super.onDestroy();
-
-        if (NATIVE == nearCacheInMemoryFormat) {
+        if (NATIVE == nearCache.getInMemoryFormat()) {
+            removeNearCacheInvalidationListener();
             hdNearCacheRegistry.remove(name);
+        } else {
+            super.onDestroy();
         }
     }
 }

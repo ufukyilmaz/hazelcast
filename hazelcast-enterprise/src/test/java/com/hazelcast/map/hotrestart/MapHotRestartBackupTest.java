@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 @RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore
 public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
 
     private static final int KEY_COUNT = 1000;

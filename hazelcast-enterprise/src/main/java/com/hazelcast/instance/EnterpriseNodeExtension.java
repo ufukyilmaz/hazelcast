@@ -64,6 +64,8 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 @SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
+    private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
+
     private final HotRestartService hotRestartService;
     private volatile License license;
     private volatile SecurityContext securityContext;
@@ -160,11 +162,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             node.shutdown(true);
             return;
         }
-        final int count = node.getClusterService().getSize();
-        if (count > license.getAllowedNumberOfNodes()) {
+        final int nodeCount = node.getClusterService().getSize();
+        if (nodeCount > license.getAllowedNumberOfNodes()) {
             logger.log(Level.SEVERE,
                     "Exceeded maximum number of nodes allowed in Hazelcast Enterprise license! Max: "
-                            + license.getAllowedNumberOfNodes() + ", Current: " + count);
+                            + license.getAllowedNumberOfNodes() + ", Current: " + nodeCount);
             node.shutdown(true);
         }
 
@@ -174,6 +176,23 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             } catch (Throwable e) {
                 logger.severe("Hot-restart failed!", e);
                 node.shutdown(true);
+            }
+        }
+
+        if (memoryManager != null) {
+            // (<native_memory_size> * <node_count>) / (2 * <partition_count>)
+            // `2` comes from default backup count is `1` so by default there are primary and backup partitions.
+            final MemoryStats memoryStats = memoryManager.getMemoryStats();
+            final int maxNativeMemorySizeInMegaBytes = (int) MemoryUnit.BYTES.toMegaBytes(memoryStats.getMaxNativeMemory());
+            final int partitionCount = node.getPartitionService().getPartitionCount();
+            final int nativeMemorySizePerPartition = (maxNativeMemorySizeInMegaBytes * nodeCount) / (2 * partitionCount);
+            if (nativeMemorySizePerPartition > SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB) {
+                logger.warning(String.format("Native memory size per partition (%d MB) is higher than "
+                                + "suggested maximum native memory size per partition (%d MB). "
+                                + "You may think increasing partition count which is `%d` at the moment.",
+                                nativeMemorySizePerPartition,
+                                SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB,
+                                partitionCount));
             }
         }
     }

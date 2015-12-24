@@ -5,10 +5,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.cache.filter.DummyCacheWanFilter;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(SlowTest.class)
+@Ignore
 public class CacheWanNoDelayReplicationTest extends AbstractCacheWanReplicationTest {
 
     @Test

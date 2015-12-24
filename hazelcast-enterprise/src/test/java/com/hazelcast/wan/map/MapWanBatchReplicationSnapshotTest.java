@@ -5,10 +5,12 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(SlowTest.class)
+@Ignore
 public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSupport {
 
     @Override

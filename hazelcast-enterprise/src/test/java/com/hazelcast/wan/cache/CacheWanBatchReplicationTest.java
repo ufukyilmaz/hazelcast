@@ -4,10 +4,12 @@ import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.test.annotation.SlowTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 @Category(SlowTest.class)
+@Ignore
 public class CacheWanBatchReplicationTest extends AbstractCacheWanReplicationTest {
 
     @Test

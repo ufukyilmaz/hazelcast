@@ -7,9 +7,9 @@ import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
-import com.hazelcast.map.impl.wan.MapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
+@Ignore
 public class EWRDataSerializerHookTest {
 
     @Test

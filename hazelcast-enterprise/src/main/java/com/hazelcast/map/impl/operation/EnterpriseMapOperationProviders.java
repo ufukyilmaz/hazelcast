@@ -14,30 +14,23 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 public class EnterpriseMapOperationProviders extends MapOperationProviders {
 
     private final MapOperationProvider hdWanAwareProvider;
-
-    private final MapServiceContext mapServiceContext;
-
     private final MapOperationProvider hdMapOperationProvider = new HDMapOperationProvider();
 
     public EnterpriseMapOperationProviders(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.mapServiceContext = mapServiceContext;
         this.hdWanAwareProvider = new WANAwareOperationProvider(mapServiceContext, hdMapOperationProvider);
     }
 
+    @Override
     public MapOperationProvider getOperationProvider(String name) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(name);
         MapConfig mapConfig = mapContainer.getMapConfig();
         InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
 
         if (NATIVE == inMemoryFormat) {
-            if (mapContainer.isWanReplicationEnabled()) {
-                return hdWanAwareProvider;
-            } else {
-                return hdMapOperationProvider;
-            }
+            return mapContainer.isWanReplicationEnabled() ? hdWanAwareProvider : hdMapOperationProvider;
+        } else {
+            return super.getOperationProvider(name);
         }
-
-        return super.getOperationProvider(name);
     }
 }

@@ -21,15 +21,15 @@ public class HotRestartStoreNightlyTest {
 
     @Rule public final TestName testName = new TestName();
 
-    @Test public void onHeapTest() throws Exception {
-        longTest(false);
+    @Test(timeout = 15 * 60 * 1000) public void onHeapTest() throws Exception {
+        exercise(false);
     }
 
-    @Test public void offHeapTest() throws Exception {
-        longTest(true);
+    @Test(timeout = 15 * 60 * 1000) public void offHeapTest() throws Exception {
+        exercise(true);
     }
 
-    private void longTest(boolean offHeap) throws Exception {
+    private void exercise(boolean offHeap) throws Exception {
         final File testingHome = hotRestartHome(getClass(), testName);
         final TestProfile p = new TestProfile.Default();
         p.testCycleCount = 20;

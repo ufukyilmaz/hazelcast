@@ -25,7 +25,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -46,7 +45,6 @@ public class ClientSocketInterceptorTest {
         Hazelcast.shutdownAll();
     }
 
-    @Ignore
     @Test(timeout = 120000)
     public void testSuccessfulSocketInterceptor() {
         Config config = new Config();

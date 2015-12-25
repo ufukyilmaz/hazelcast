@@ -7,6 +7,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -53,6 +54,10 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     @Override
     protected NearCacheContext createNearCacheContext() {
+        return createNearCacheContext(memoryManager);
+    }
+
+    protected NearCacheContext createNearCacheContext(MemoryManager memoryManager) {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
@@ -108,21 +113,28 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     @Test
     public void recoverFromNativeOutOfMemory() {
-        NearCacheConfig nearCacheConfig =
-                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
-        NearCacheContext nearCacheContext = createNearCacheContext();
-        NearCache<Integer, byte[]> nearCache =
-                new HiDensityNearCache<Integer, byte[]>(
-                        DEFAULT_NEAR_CACHE_NAME,
-                        nearCacheConfig,
-                        nearCacheContext);
+        MemorySize valueSize = new MemorySize(1, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
+        PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
+        try {
+            mm.registerThread(Thread.currentThread());
 
-        final long finishTime = Clock.currentTimeMillis() + TIMEOUT;
-        for (int i = 0; Clock.currentTimeMillis() < finishTime; i++) {
-            byte[] value = new byte[128 * 1024 * 1024];
-            nearCache.put(i, value);
-            //Each put after 1st one should cause NativeOutOfMemory and force evict the previous entry
-            assertEquals(1, nearCache.size());
+            NearCacheConfig nearCacheConfig =
+                    createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+            NearCacheContext nearCacheContext = createNearCacheContext(mm);
+            NearCache<Integer, byte[]> nearCache =
+                    new HiDensityNearCache<Integer, byte[]>(
+                            DEFAULT_NEAR_CACHE_NAME,
+                            nearCacheConfig,
+                            nearCacheContext);
+
+            byte[] value = new byte[(int) valueSize.bytes()];
+            int iterationCount = (int) (2 * (memorySize.bytes() / valueSize.bytes()));
+            for (int i = 0; i < iterationCount; i++) {
+                nearCache.put(i, value);
+            }
+        } finally {
+            mm.destroy();
         }
     }
 

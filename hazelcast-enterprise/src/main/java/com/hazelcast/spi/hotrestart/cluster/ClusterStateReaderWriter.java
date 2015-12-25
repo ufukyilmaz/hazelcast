@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.logging.ILogger;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -17,11 +18,15 @@ import static com.hazelcast.nio.IOUtil.closeResource;
 class ClusterStateReaderWriter {
     private static final String FILE_NAME = "cluster.state";
 
+
+    private final ILogger logger;
+
     private final File homeDir;
 
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
 
-    ClusterStateReaderWriter(File homeDir) {
+    ClusterStateReaderWriter(ILogger logger, File homeDir) {
+        this.logger = logger;
         this.homeDir = homeDir;
     }
 
@@ -53,6 +58,9 @@ class ClusterStateReaderWriter {
             String name = in.readUTF();
             closeResource(in);
             clusterState = ClusterState.valueOf(name);
+            if (logger.isFineEnabled()) {
+                logger.fine("Read " + clusterState + " from disk.");
+            }
         } finally {
             closeResource(fileIn);
         }

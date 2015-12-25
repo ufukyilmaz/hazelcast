@@ -78,6 +78,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private final AtomicReference<Collection<Address>> memberListRef = new AtomicReference<Collection<Address>>();
     private final AtomicReference<Address[][]> partitionTableRef = new AtomicReference<Address[][]>();
+    private final AtomicReference<Boolean> localLoadResult = new AtomicReference<Boolean>();
     private int partitionTableVersion;
 
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
@@ -92,7 +93,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         dataLoadTimeout = TimeUnit.SECONDS.toMillis(hotRestartPersistenceConfig.getDataLoadTimeoutSeconds());
         memberListWriter = new MemberListWriter(homeDir, node.getThisAddress());
         partitionTableWriter = new PartitionTableWriter(homeDir);
-        clusterStateReaderWriter = new ClusterStateReaderWriter(homeDir);
+        ILogger clusterStateReaderWriterLogger = node.getLogger(ClusterStateReaderWriter.class);
+        clusterStateReaderWriter = new ClusterStateReaderWriter(clusterStateReaderWriterLogger, homeDir);
     }
 
     private void mkdirHome() {
@@ -113,7 +115,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
             if (startWithHotRestart) {
                 final ClusterServiceImpl clusterService = node.clusterService;
-                setClusterState(clusterService, ClusterState.PASSIVE);
+                setClusterState(clusterService, ClusterState.PASSIVE, false);
                 addMembersRemovedInNotActiveState(clusterService, addresses);
             }
 
@@ -173,6 +175,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         node.partitionService.addPartitionListener(this);
         loadStartTime = Clock.currentTimeMillis();
 
+        if (logger.isFineEnabled()) {
+            logger.fine("Load start time: " + new Date(loadStartTime));
+        }
+
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onDataLoadStart(node.getThisAddress());
         }
@@ -208,7 +214,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         notValidatedAddresses.remove(node.getThisAddress());
 
         EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
-                .of(VERIFICATION_FAILED, PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED);
+                .of(VERIFICATION_FAILED, PARTITION_TABLE_VERIFIED);
         waitForFailureOrExpectedStatus(statuses, new ValidationTask(), validationStartTime + validationTimeout);
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
@@ -383,8 +389,14 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (notValidatedAddresses.isEmpty()) {
             hotRestartStatus.compareAndSet(PENDING_VERIFICATION, PARTITION_TABLE_VERIFIED);
 
-            final HotRestartClusterInitializationStatus result = hotRestartStatus.get();
-            if (logger.isFineEnabled()) {
+            HotRestartClusterInitializationStatus result = hotRestartStatus.get();
+            if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
+                result = PARTITION_TABLE_VERIFIED;
+                if (logger.isFineEnabled()) {
+                    logger.fine("Will send " + PARTITION_TABLE_VERIFIED + " instead of " + VERIFICATION_AND_LOAD_SUCCEEDED
+                            + " to member: " + sender);
+                }
+            } else if (logger.isFineEnabled()) {
                 logger.fine("Partition table validation completed for all members. Sending " + result
                         + " to: " + sender);
             }
@@ -426,7 +438,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // operation thread
     void receiveHotRestartStatusFromMasterAfterPartitionTableVerification(HotRestartClusterInitializationStatus result) {
-        if (result == PENDING_VERIFICATION || result == FORCE_STARTED) {
+        if (!(result == VERIFICATION_FAILED || result == PARTITION_TABLE_VERIFIED)) {
             throw new IllegalArgumentException("Can not set hot restart status after partition table verification to " + result);
         }
 
@@ -463,15 +475,17 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // main thread
     public void loadCompletedLocal(final Throwable failure) {
-        boolean success = failure == null;
+        final boolean success = failure == null;
         if (logger.isFineEnabled()) {
             logger.fine("Local hot-restart load completed: " + success + ". Waiting for all members to load...");
         }
 
+        localLoadResult.set(success);
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
 
         EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
                 .of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED);
+
         waitForFailureOrExpectedStatus(statuses, new LoadTask(success), loadStartTime + dataLoadTimeout);
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
@@ -482,18 +496,20 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (status == VERIFICATION_FAILED) {
             throw new HotRestartException("Cluster-wide load failed!", failure);
         } else if (logger.isFineEnabled()) {
-            logger.fine("Cluster-wide load completed...");
+            logger.fine("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
         }
 
         writeMembers();
         writePartitions();
         memberListRef.set(null);
         partitionTableRef.set(null);
+        localLoadResult.set(null);
     }
 
     public void reset() {
         memberListRef.set(null);
         partitionTableRef.set(null);
+        localLoadResult.set(null);
         notLoadedAddresses.clear();
         notValidatedAddresses.clear();
 
@@ -544,13 +560,18 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
 
         if (!success) {
+            if (!node.isMaster()) {
+                if (logger.isFineEnabled() && !node.getThisAddress().equals(sender)) {
+                    logger.fine("Received load-completion status [false] from: " + sender + " but this is not master! ");
+                }
+                return;
+            }
             processFailedLoadCompletionStatus(sender);
-            return;
         } else if (hotRestartStatus.get() == PARTITION_TABLE_VERIFIED) {
             processSuccessfulLoadCompletionStatusWhenPartitionTableVerified(sender);
+        } else {
+            sendClusterWideLoadCompletionResultIfAvailable(sender);
         }
-
-        sendClusterWideLoadCompletionResultIfAvailable(sender);
     }
 
     private void sendClusterWideLoadCompletionResultIfAvailable(Address sender) {
@@ -558,15 +579,13 @@ public final class ClusterMetadataManager implements PartitionListener {
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
 
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
-            final ClusterState clusterState = clusterStateReaderWriter.get();
             if (!node.getThisAddress().equals(sender)) {
+                final ClusterState clusterState = node.getClusterService().getClusterState();
                 if (logger.isFineEnabled()) {
-                    logger.fine("Sending cluster-wide load-completion result " + status + " to: " + sender);
+                    logger.fine("Sending cluster-wide load-completion result " + status + " and cluster state: "
+                            + clusterState +  " to: " + sender);
                 }
                 operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
-            }
-            if (status == VERIFICATION_AND_LOAD_SUCCEEDED) {
-                setFinalClusterState(clusterState);
             }
         } else if (status == FORCE_STARTED) {
             if (!node.getThisAddress().equals(sender)) {
@@ -616,11 +635,23 @@ public final class ClusterMetadataManager implements PartitionListener {
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onHotRestartDataLoadComplete(VERIFICATION_AND_LOAD_SUCCEEDED);
                 }
+
+                setFinalClusterState(clusterStateReaderWriter.get());
             }
 
             if (logger.isFineEnabled()) {
                 logger.fine("Cluster-wide load-completion status is: " + hotRestartStatus.get());
             }
+
+            sendClusterWideLoadCompletionResultIfAvailable(sender);
+        } else if (Boolean.FALSE.equals(localLoadResult.get())) {
+            if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_FAILED)) {
+                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+                    listener.onHotRestartDataLoadComplete(VERIFICATION_FAILED);
+                }
+            }
+
+            sendClusterWideLoadCompletionResultIfAvailable(sender);
         }
     }
 
@@ -642,7 +673,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (logger.isFineEnabled()) {
             logger.fine("Setting final cluster state to: " + newState);
         }
-        setClusterState(node.getClusterService(), newState);
+        setClusterState(node.getClusterService(), newState, true);
     }
 
     public boolean isStartWithHotRestart() {
@@ -690,8 +721,8 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // operation thread
     public void onClusterStateChange(ClusterState newState) {
-        if (logger.isFinestEnabled()) {
-            logger.finest("Persisting cluster state: " + newState);
+        if (logger.isFineEnabled()) {
+            logger.fine("Persisting cluster state: " + newState);
         }
         try {
             clusterStateReaderWriter.write(newState);
@@ -746,8 +777,10 @@ public final class ClusterMetadataManager implements PartitionListener {
                 }
 
                 final InternalOperationService operationService = node.nodeEngine.getOperationService();
-                if (!node.getThisAddress().equals(sender)) {
-                    operationService.send(new ForceStartMemberOperation(), sender);
+                for (Address memberAddress : memberListRef.get()) {
+                    if (!node.getThisAddress().equals(memberAddress)) {
+                        operationService.send(new ForceStartMemberOperation(), memberAddress);
+                    }
                 }
 
                 return true;

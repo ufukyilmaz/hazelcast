@@ -69,7 +69,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         final AtomicBoolean crash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMemberOnAllMembersJoin(port, ports, true, crash));
+            listeners.put(port, new CrashMemberOnAllMembersJoin(port, true, crash));
         }
 
         startInstances(ports, listeners);
@@ -85,7 +85,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         final AtomicBoolean crash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMemberOnAllMembersJoin(port, ports, false, crash));
+            listeners.put(port, new CrashMemberOnAllMembersJoin(port, false, crash));
         }
 
         startInstances(ports, listeners);
@@ -157,18 +157,15 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
         private final int portToStart;
 
-        private final List<Integer> portsToDiscover;
-
         private final boolean crashMaster;
 
         private final AtomicBoolean crash;
 
         private HazelcastInstance instance;
 
-        public CrashMemberOnAllMembersJoin(int portToStart, List<Integer> portsToDiscover, boolean crashMaster,
+        public CrashMemberOnAllMembersJoin(int portToStart, boolean crashMaster,
                                            AtomicBoolean crash) {
             this.portToStart = portToStart;
-            this.portsToDiscover = portsToDiscover;
             this.crashMaster = crashMaster;
             this.crash = crash;
         }

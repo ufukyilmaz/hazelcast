@@ -124,11 +124,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     }
 
     @Override
-    public void invalidate() {
-        // no needed. invalidation is done by deferred dispose.
-    }
-
-    @Override
     public RecordStatistics getStatistics() {
         return this;
     }
@@ -210,7 +205,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     public HiDensityRecord reset(long address) {
         setAddress(address);
         setSize(size());
-        invalidate();
         return this;
     }
 

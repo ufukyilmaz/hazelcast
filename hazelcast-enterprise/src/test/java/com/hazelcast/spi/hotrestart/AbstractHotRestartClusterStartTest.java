@@ -93,6 +93,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     public void after() throws IOException {
         if (factory != null) {
             factory.terminateAll();
+            factory = null;
         }
         if (USE_NETWORK) {
             HazelcastInstanceFactory.terminateAll();

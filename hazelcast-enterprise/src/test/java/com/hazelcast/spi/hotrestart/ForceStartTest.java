@@ -27,7 +27,6 @@ import com.hazelcast.test.ExpectedRuntimeException;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.ExceptionUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -48,7 +47,6 @@ import static com.hazelcast.test.HazelcastTestSupport.spawn;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     private final MockHotRestartService service = new MockHotRestartService();
@@ -151,7 +149,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     @Test
     public void testForceStart_duringDataLoad() throws Exception {
-        List<Integer> ports = acquirePorts(nodeCount);
         HazelcastInstance[] instances = startInstances(ports);
         warmUpPartitions(instances);
         service.put();

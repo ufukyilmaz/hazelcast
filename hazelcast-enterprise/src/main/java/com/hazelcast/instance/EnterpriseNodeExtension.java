@@ -449,8 +449,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void onClusterStateChange(ClusterState newState) {
-        if (hotRestartService != null) {
+    public void onClusterStateChange(ClusterState newState, boolean persistentChange) {
+        if (hotRestartService != null && persistentChange) {
             hotRestartService.getClusterMetadataManager().onClusterStateChange(newState);
         }
     }

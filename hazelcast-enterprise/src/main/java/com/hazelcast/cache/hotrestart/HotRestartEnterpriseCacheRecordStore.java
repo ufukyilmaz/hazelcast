@@ -145,7 +145,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     }
 
     @Override
-    public void close() {
+    public void close(boolean onShutdown) {
         clearInternal(false);
         closeListeners();
     }

@@ -36,7 +36,7 @@ public final class CacheSegmentCloseOperation
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
             CachePartitionSegment segment = service.getSegment(partitionId);
-            segment.close();
+            segment.shutdown();
         } finally {
             done.countDown();
         }

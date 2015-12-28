@@ -282,7 +282,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void close() {
+    public void close(boolean onShutdown) {
         clearInternal(false);
         records.dispose();
         closeListeners();

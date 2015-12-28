@@ -822,8 +822,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
-    public void close() {
-        super.close();
+    public void close(boolean onShutdown) {
+        super.close(onShutdown);
         records.dispose();
     }
 

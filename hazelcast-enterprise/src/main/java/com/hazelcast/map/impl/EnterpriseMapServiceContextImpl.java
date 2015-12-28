@@ -212,7 +212,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    public void clearPartitions() {
+    public void clearPartitions(boolean onShutdown) {
         OperationService operationService = nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();

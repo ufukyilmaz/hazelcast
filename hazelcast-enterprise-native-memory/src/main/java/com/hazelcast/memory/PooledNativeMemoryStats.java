@@ -40,6 +40,13 @@ class PooledNativeMemoryStats extends NativeMemoryStats implements MemoryStats {
     }
 
     @Override
+    void reset() {
+        super.reset();
+        usedMetadata.set(0);
+        usedNative.set(0);
+    }
+
+    @Override
     void appendAdditionalToString(StringBuilder sb) {
         sb.append(", Max Metadata: ").append(MemorySize.toPrettyString(maxMetadata));
         sb.append(", Used Metadata: ").append(MemorySize.toPrettyString(usedMetadata.get()));

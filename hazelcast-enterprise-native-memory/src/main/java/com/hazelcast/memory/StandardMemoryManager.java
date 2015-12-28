@@ -170,6 +170,7 @@ public final class StandardMemoryManager implements MemoryManager {
         if (DEBUG) {
             allocatedBlocks.clear();
         }
+        memoryStats.reset();
     }
 
     @Override

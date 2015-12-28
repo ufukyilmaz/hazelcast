@@ -204,7 +204,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         final PartitionContainer container = partitionContainers[partitionId];
         if (container != null) {
             for (RecordStore recordStore : container.getMaps().values()) {
-                recordStore.clearPartition();
                 recordStore.destroy();
             }
             container.getMaps().clear();
@@ -224,7 +223,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
                 continue;
             }
 
-            EnterpriseMapPartitionClearOperation operation = new EnterpriseMapPartitionClearOperation();
+            EnterpriseMapPartitionClearOperation operation = new EnterpriseMapPartitionClearOperation(onShutdown);
             operation.setPartitionId(i)
                     .setNodeEngine(nodeEngine)
                     .setService(getService());

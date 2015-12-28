@@ -5,7 +5,7 @@ import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
-import com.hazelcast.cache.hidensity.operation.CacheSegmentCloseOperation;
+import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
@@ -290,10 +290,10 @@ public class EnterpriseCacheService
     @Override
     public void shutdown(boolean terminate) {
         OperationService operationService = nodeEngine.getOperationService();
-        List<CacheSegmentCloseOperation> ops = new ArrayList<CacheSegmentCloseOperation>();
+        List<CacheSegmentShutdownOperation> ops = new ArrayList<CacheSegmentShutdownOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
-                CacheSegmentCloseOperation op = new CacheSegmentCloseOperation();
+                CacheSegmentShutdownOperation op = new CacheSegmentShutdownOperation();
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
 
@@ -305,7 +305,7 @@ public class EnterpriseCacheService
                 }
             }
         }
-        for (CacheSegmentCloseOperation op : ops) {
+        for (CacheSegmentShutdownOperation op : ops) {
             try {
                 op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
             } catch (InterruptedException e) {

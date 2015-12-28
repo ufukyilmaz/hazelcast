@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 20/03/14
  */
-public final class CacheSegmentCloseOperation
+public final class CacheSegmentShutdownOperation
         extends AbstractOperation
         implements PartitionAwareOperation, AllowedDuringPassiveState {
 

@@ -15,6 +15,8 @@ import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.hidensity.HiDensityStorageInfo;
@@ -823,8 +825,17 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void close(boolean onShutdown) {
-        super.close(onShutdown);
-        records.dispose();
+        if (shouldExplicitlyClear(onShutdown)) {
+            clear();
+            records.dispose();
+        }
+        closeListeners();
+    }
+
+    boolean shouldExplicitlyClear(boolean onShutdown) {
+        NativeMemoryConfig nativeMemoryConfig = nodeEngine.getConfig().getNativeMemoryConfig();
+        return !onShutdown
+                || (nativeMemoryConfig != null && nativeMemoryConfig.getAllocatorType() != MemoryAllocatorType.POOLED);
     }
 
     @Override

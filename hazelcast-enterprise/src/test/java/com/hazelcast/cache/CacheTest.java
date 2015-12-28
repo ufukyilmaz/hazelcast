@@ -21,11 +21,12 @@ import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -52,9 +53,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -534,4 +537,23 @@ public class CacheTest extends AbstractCacheTest {
         factory.create(Integer.MIN_VALUE);
     }
 
+    @Test
+    public void testNativeCache_UsedNativeMemory_beforeAndAfterShutdown() {
+        CacheConfig cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
+        Cache cache = cacheManager.createCache(CACHE_NAME, cacheConfig);
+        final int count = 100;
+        for (int i = 0; i < count; i++) {
+            cache.put(i, i);
+        }
+
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
+        MemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
+
+        long minUsedMemory = count * 8L; // int key + int value
+        assertThat(memoryStats.getUsedNativeMemory(), greaterThanOrEqualTo(minUsedMemory));
+
+        instance.shutdown();
+
+        assertEquals(0, memoryStats.getUsedNativeMemory());
+    }
 }

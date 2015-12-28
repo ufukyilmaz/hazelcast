@@ -24,6 +24,11 @@ public final class EnterpriseMapPartitionClearOperation
         implements PartitionAwareOperation, AllowedDuringPassiveState {
 
     private final CountDownLatch done = new CountDownLatch(1);
+    private boolean onShutdown;
+
+    public EnterpriseMapPartitionClearOperation(boolean onShutdown) {
+        this.onShutdown = onShutdown;
+    }
 
     @Override
     public void run() throws Exception {
@@ -39,7 +44,7 @@ public final class EnterpriseMapPartitionClearOperation
             MapService mapService = getService();
             MapServiceContext mapServiceContext = mapService.getMapServiceContext();
             PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(partitionId);
-            partitionContainer.clear(false);
+            partitionContainer.clear(onShutdown);
         } finally {
             done.countDown();
         }

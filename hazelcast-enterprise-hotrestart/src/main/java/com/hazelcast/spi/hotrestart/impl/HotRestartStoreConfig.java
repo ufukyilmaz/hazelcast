@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static com.hazelcast.spi.hotrestart.HotRestartStore.LOG_CATEGORY;
+import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * Internal configuration class for the Hot Restart store.
@@ -60,6 +61,7 @@ public class HotRestartStoreConfig {
     }
 
     public HotRestartStoreConfig validateAndCreateHomeDir() {
+        checkNotNull(homeDir, "homeDir is null");
         try {
             final File canonicalHome = homeDir.getCanonicalFile();
             if (canonicalHome.exists() && !canonicalHome.isDirectory()) {

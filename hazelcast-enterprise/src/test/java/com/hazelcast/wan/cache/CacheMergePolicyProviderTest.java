@@ -4,9 +4,11 @@ import com.hazelcast.cache.CacheMergePolicy;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -19,9 +21,8 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests for {@link com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider}
  */
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
-@Ignore
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class CacheMergePolicyProviderTest extends HazelcastTestSupport{
 
     HazelcastInstance instance;

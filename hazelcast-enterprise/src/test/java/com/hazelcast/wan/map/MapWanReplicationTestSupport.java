@@ -17,7 +17,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     private int ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE = 3 * 60;
 
     @Before
-    public void setup() throws Exception {
+    public void setup() {
         configA = getConfig();
         configA.getGroupConfig().setName("A");
         configA.setInstanceName("confA");

@@ -41,7 +41,6 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     }
 
     private static HotRestartStore create(HotRestartStoreConfig cfg) {
-        checkNotNull(cfg.homeDir(), "homeDir is null");
         checkNotNull(cfg.ramStoreRegistry(), "ramStoreRegistry is null");
         cfg.validateAndCreateHomeDir();
         return new HotRestartStoreImpl(

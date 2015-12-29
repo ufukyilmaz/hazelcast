@@ -24,12 +24,24 @@ public interface HotRestartStore {
 
     /**
      * Establishes a persistent mapping from the supplied key to the supplied value.
+     * <p>
+     * This method must not be called while holding a lock that can block the progress of
+     * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
+     * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
+     * associated with this Hot Restart store.
+     *
      * @throws HotRestartException
      */
     void put(HotRestartKey key, byte[] value) throws HotRestartException;
 
     /**
      * Removes the persistent meapping for the supplied key.
+     * <p>
+     * This method must not be called while holding a lock that can block the progress of
+     * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
+     * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
+     * associated with this Hot Restart store.
+     *
      * @throws HotRestartException
      */
     void remove(HotRestartKey key) throws HotRestartException;
@@ -39,9 +51,11 @@ public interface HotRestartStore {
      * <p>
      * The completion of this method must <i>happen-before</i> any call of
      * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} which
-     * observes the effects of the clear operation. Must not be called
-     * while holding a lock that can block any operation on any of the
-     * {@link RamStore}s that can be returned by the {@link RamStoreRegistry}
+     * observes the effects of the clear operation on the RAM store.
+     * <p>
+     * This method must not be called while holding a lock that can block the progress of
+     * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
+     * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
      * associated with this Hot Restart store.
      *
      * @param keyPrefixes The key prefixes whose data is to be cleared.
@@ -69,7 +83,7 @@ public interface HotRestartStore {
 
     /**
      * When this method completes it is guaranteed that the effects of all preceding
-     * calls to {@link #put(HotRestartKey, byte[])}, {@link #removeStep2()}, and
+     * calls to {@link #put(HotRestartKey, byte[])}, {@link #remove(HotRestartKey)}, and
      * {@link #clear(long...)} have become persistent.
      */
     void fsync();
@@ -84,6 +98,12 @@ public interface HotRestartStore {
     /**
      * Closes this Hot Restart store and releases any system resources it
      * had acquired. The store will permit no further operations on it.
+     * <p>
+     * This method must not be called while holding a lock that can block the progress of
+     * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
+     * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
+     * associated with this Hot Restart store.
+     *
      * @throws HotRestartException
      */
     void close() throws HotRestartException;

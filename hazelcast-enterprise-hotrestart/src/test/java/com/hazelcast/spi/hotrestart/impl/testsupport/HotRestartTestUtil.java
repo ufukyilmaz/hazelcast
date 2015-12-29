@@ -42,6 +42,15 @@ public class HotRestartTestUtil {
         return new File(toFileName(testClass.getSimpleName()) + '_' + toFileName(testName.getMethodName()));
     }
 
+    public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
+        final LoggingService loggingService = createLoggingService();
+        logger = loggingService.getLogger("hotrestart-test");
+        return new HotRestartStoreConfig()
+                .setHomeDir(new File(testingHome, "hr-store"))
+                .setLoggingService(loggingService)
+                .setMetricsRegistry(metricsRegistry(loggingService));
+    }
+
     public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc)
             throws InterruptedException
     {

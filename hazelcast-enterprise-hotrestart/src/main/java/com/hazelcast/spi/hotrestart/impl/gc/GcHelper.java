@@ -70,20 +70,17 @@ public abstract class GcHelper implements Disposable {
 
     public final GcLogger logger;
 
-    private final boolean ioDisabled;
-
     private final AtomicLong chunkSeq = new AtomicLong();
 
     private volatile long recordSeq;
 
     public GcHelper(HotRestartStoreConfig cfg) {
-        this.homeDir = cfg.homeDir();
+        this.homeDir = cfg.ioDisabled() ? null : cfg.homeDir();
         checkNotNull(cfg.logger(), "Logger is null");
         this.logger = new GcLogger(cfg.logger());
         logger.info("homeDir " + homeDir);
         this.ramStoreRegistry = cfg.ramStoreRegistry();
         this.compressor = cfg.compression() ? new Compressor() : null;
-        this.ioDisabled = cfg.ioDisabled();
     }
 
     @SuppressWarnings("checkstyle:emptyblock")
@@ -98,7 +95,7 @@ public abstract class GcHelper implements Disposable {
 
     /** @return whether file I/O is disabled. Should return true only in testing. */
     public boolean ioDisabled() {
-        return ioDisabled;
+        return homeDir == null;
     }
 
     public WriteThroughValChunk newActiveValChunk() {
@@ -176,6 +173,9 @@ public abstract class GcHelper implements Disposable {
     }
 
     File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
+        if (ioDisabled()) {
+            return null;
+        }
         final String bucketDirname = String.format(BUCKET_DIRNAME_FORMAT, seq & BUCKET_DIR_MASK);
         final String chunkFilename = String.format(CHUNK_FNAME_FORMAT, seq, suffix);
         final File bucketDir = new File(new File(homeDir, base), bucketDirname);

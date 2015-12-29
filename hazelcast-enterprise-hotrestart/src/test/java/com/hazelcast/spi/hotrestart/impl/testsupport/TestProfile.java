@@ -124,9 +124,10 @@ public abstract class TestProfile {
     }
 
     public static class Default extends TestProfile {
-        private final List<Long> prefixes = new ArrayList<Long>(prefixCount);
+        private final List<Long> prefixes = new ArrayList<Long>();
 
-        public Default() {
+        @Override public void build() {
+            super.build();
             for (long i = 0; i < prefixCount; i++) {
                 prefixes.add(i + 1);
             }

@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.logging.LoggingService;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
@@ -16,10 +15,8 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.logger;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.metricsRegistry;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -50,12 +47,7 @@ public class HotRestartStoreQuickTest {
 
     @Test public void testRemoveAllKeys() throws Exception {
         profile.keysetSize = 100;
-        final LoggingService loggingService = createLoggingService();
-        logger = loggingService.getLogger("hotrestart-test");
-        final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
-                .setHomeDir(new File(testingHome, "hr-store"))
-                .setLoggingService(loggingService)
-                .setMetricsRegistry(metricsRegistry(loggingService));
+        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
         MockStoreRegistry reg = new MockStoreRegistry(cfg, null);
         putAll(reg);
         removeAll(reg);

@@ -104,23 +104,22 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected void markAvailable(long address) {
-        assertNotNullPtr(address);
+    protected void markAvailable(long blockBase) {
+        assertNotNullPtr(blockBase);
 
-        byte b = UnsafeHelper.UNSAFE.getByte(address);
-        assert !Bits.isBitSet(b, AVAILABLE_BIT) : "Address already marked as available! " + address;
+        final byte headerVal = UnsafeHelper.UNSAFE.getByte(blockBase);
+        assert !Bits.isBitSet(headerVal, AVAILABLE_BIT) : "Address already marked as available! " + blockBase;
 
-        int memSize = 1 << b;
-        b = Bits.setBit(b, AVAILABLE_BIT);
-        UnsafeHelper.UNSAFE.putByte(address, b);
-
-        long base = getOwningPage(address, memSize);
-        if (base == NULL_ADDRESS) {
-            throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
+        final int blockSize = 1 << headerVal;
+        final long pageBase = getOwningPage(blockBase, blockSize);
+        if (pageBase == NULL_ADDRESS) {
+            throw new IllegalArgumentException("Address: " + blockBase + " does not belong to this memory pool!");
         }
-        int offset = (int) (address - base);
-        assert offset >= 0 : "Invalid offset: " + offset;
-        UnsafeHelper.UNSAFE.putInt(address + HEADER_OFFSET, offset);
+
+        final int pageOffset = (int) (blockBase - pageBase);
+        assert pageOffset >= 0 : "Invalid offset: " + pageOffset;
+        UnsafeHelper.UNSAFE.putByte(blockBase, Bits.setBit(headerVal, AVAILABLE_BIT));
+        UnsafeHelper.UNSAFE.putInt(blockBase + HEADER_OFFSET, pageOffset);
     }
 
     @Override

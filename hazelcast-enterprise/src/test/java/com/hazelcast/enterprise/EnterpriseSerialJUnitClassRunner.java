@@ -17,6 +17,10 @@ public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner
         super(klass);
     }
 
+    public EnterpriseSerialJUnitClassRunner(Class<?> clazz, Object[] parameters, String name) throws InitializationError {
+        super(clazz, parameters, name);
+    }
+
     @Override
     protected void runChild(FrameworkMethod method, RunNotifier notifier) {
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(UNLIMITED_LICENSE);

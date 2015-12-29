@@ -2,10 +2,6 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.WANQueueFullBehavior;
-import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.config.WanTargetClusterConfig;
-import com.hazelcast.enterprise.wan.WANReplicationQueueFullException;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -339,16 +335,5 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterB, "map", 0, 100);
         createDataIn(clusterA, "map", 0, 100);
         assertKeysNotIn(clusterB, "map", 0, 100);
-    }
-
-    @Test(expected = WANReplicationQueueFullException.class)
-    public void testExceptionOnQueueOverrun() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanTargetClusterConfig targetClusterConfig = wanConfig.getTargetClusterConfigs().get(0);
-        targetClusterConfig.setQueueCapacity(10);
-        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
-        startClusterA();
-        createDataIn(clusterA, "map", 0, 1000);
     }
 }

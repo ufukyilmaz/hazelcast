@@ -13,6 +13,7 @@ import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
 import org.junit.runner.RunWith;
 
@@ -87,6 +88,13 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         for (int i = 0; i < cluster.length; i++) {
             config.setInstanceName(config.getInstanceName() + i);
             cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(config);
+        }
+    }
+
+    protected void initCluster(HazelcastInstance[] cluster, Config config, TestHazelcastInstanceFactory factory) {
+        for (int i = 0; i < cluster.length; i++) {
+            config.setInstanceName(config.getInstanceName() + i);
+            cluster[i] = factory.newHazelcastInstance(config);
         }
     }
 

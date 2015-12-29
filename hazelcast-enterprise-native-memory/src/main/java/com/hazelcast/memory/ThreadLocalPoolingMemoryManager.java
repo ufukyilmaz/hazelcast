@@ -114,7 +114,7 @@ final class ThreadLocalPoolingMemoryManager
         b = Bits.setBit(b, AVAILABLE_BIT);
         UnsafeHelper.UNSAFE.putByte(address, b);
 
-        long base = getPage(address, memSize);
+        long base = getOwningPage(address, memSize);
         if (base == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
         }
@@ -192,7 +192,7 @@ final class ThreadLocalPoolingMemoryManager
         return (headerByte & OCCUPIED_HEADER_MASK) != 0
                 || blockSizePower < minBlockSizePower
                 || blockSize > pageSize
-                || blockSize < pageSize && getPage(blockAddress, blockSize) == NULL_ADDRESS
+                || blockSize < pageSize && getOwningPage(blockAddress, blockSize) == NULL_ADDRESS
                 || blockSize == pageSize && !pageAllocations.contains(blockAddress)
                 ? SIZE_INVALID : blockSize;
     }
@@ -203,23 +203,24 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     // binary range search
-    private long getPage(long address, long memSize) {
-        final long blockEnd = address + memSize;
+    private long getOwningPage(long blockBase, long blockSize) {
+        final long blockEnd = blockBase + blockSize - 1;
         int low = 0;
         int high = pageAllocations.size() - 1;
 
         while (low <= high) {
-            int middle = (low + high) >>> 1;
-            long pageAddress = sortedPageAllocations.get(middle);
-
-            if (pageAddress <= address && (pageAddress + pageSize) >= blockEnd) {
-                return pageAddress;
-            }
-
-            if (pageAddress <= address - pageSize) {
+            final int middle = (low + high) >>> 1;
+            final long pageBase = sortedPageAllocations.get(middle);
+            final long pageEnd = pageBase + pageSize - 1;
+            if (blockBase > pageEnd) {
                 low = middle + 1;
-            } else if (pageAddress > address) {
+            } else if (blockEnd < pageBase) {
                 high = middle - 1;
+            } else {
+                assert pageBase <= blockBase && pageEnd >= blockEnd
+                        : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
+                                        blockBase, blockEnd, pageBase, pageEnd);
+                return pageBase;
             }
         }
         return NULL_ADDRESS;

@@ -142,7 +142,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
      * Runs the supplied task while GC activity is paused. This method is provided
      * strictly to facilitate testing.
      */
-    public void runWhileGcPaused(Runnable task) {
+    public void runWhileGcPaused(CatchupRunnable task) {
         gcExec.runWhileGcPaused(task);
     }
 
@@ -150,5 +150,15 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         if (activeValChunk == null) {
             throw new HotRestartException("Hot restart not yet complete");
         }
+    }
+
+    // interfaces that expose some internals exclusively for testing purposes
+
+    public interface CatchupRunnable {
+        void run(CatchupTestSupport mc);
+    }
+
+    public interface CatchupTestSupport {
+        int catchupNow();
     }
 }

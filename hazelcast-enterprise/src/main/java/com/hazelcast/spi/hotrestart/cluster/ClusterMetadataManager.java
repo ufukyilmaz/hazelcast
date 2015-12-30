@@ -776,12 +776,7 @@ public final class ClusterMetadataManager implements PartitionListener {
                     listener.onForceStart();
                 }
 
-                final InternalOperationService operationService = node.nodeEngine.getOperationService();
-                for (Address memberAddress : memberListRef.get()) {
-                    if (!node.getThisAddress().equals(memberAddress)) {
-                        operationService.send(new ForceStartMemberOperation(), memberAddress);
-                    }
-                }
+                sendOperationToOthers(new ForceStartMemberOperation());
 
                 return true;
             } else {
@@ -792,6 +787,24 @@ public final class ClusterMetadataManager implements PartitionListener {
         return false;
     }
 
+    private void askForPartitionTableValidationStatus() {
+        sendOperationToOthers(new AskForPartitionTableValidationStatusOperation());
+    }
+
+    private void askForLoadCompletionStatus() {
+        sendOperationToOthers(new AskForLoadCompletionStatusOperation());
+    }
+
+    private void sendOperationToOthers(Operation operation) {
+        final InternalOperationService operationService = node.nodeEngine.getOperationService();
+        for (Address memberAddress : memberListRef.get()) {
+            if (!node.getThisAddress().equals(memberAddress)) {
+                operationService.send(operation, memberAddress);
+            }
+        }
+    }
+
+
     private interface TimeoutableRunnable extends Runnable {
         void onTimeout();
     }
@@ -799,7 +812,9 @@ public final class ClusterMetadataManager implements PartitionListener {
     private class ValidationTask implements TimeoutableRunnable {
         @Override
         public void run() {
-            if (!node.isMaster()) {
+            if (node.isMaster()) {
+                askForPartitionTableValidationStatus();
+            } else {
                 sendPartitionTableToMaster();
             }
         }
@@ -823,7 +838,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         @Override
         public void run() {
-            if (!node.isMaster()) {
+            if (node.isMaster()) {
+                askForLoadCompletionStatus();
+            } else {
                 sendLoadCompleteToMaster(success);
             }
         }

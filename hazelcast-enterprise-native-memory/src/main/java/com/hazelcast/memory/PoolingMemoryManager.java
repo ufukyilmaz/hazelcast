@@ -167,7 +167,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
         threadLocalManagers.clear();
         destroyPool(globalMemoryManager);
-        memoryStats.reset();
+        memoryStats.resetUsedNativeMemory();
     }
 
     @Override

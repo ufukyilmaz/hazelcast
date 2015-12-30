@@ -47,6 +47,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
@@ -253,7 +254,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-                memoryManager = new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
+                memoryManager = isHotRestartEnabled()
+                        ? new HotRestartPoolingMemoryManager(size, blockSize, pageSize, metadataSpace)
+                        : new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
             }
         }
     }

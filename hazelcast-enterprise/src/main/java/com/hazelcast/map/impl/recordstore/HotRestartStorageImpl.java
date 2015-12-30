@@ -79,8 +79,7 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
             return;
         }
         storage.removeRecord(record);
-        HotRestartKey hotRestartKey = createHotRestartKey(record);
-        hotRestartStore.remove(hotRestartKey);
+        hotRestartStore.remove(createHotRestartKey(record));
         fsyncIfRequired();
     }
 
@@ -96,12 +95,6 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         storage.destroy();
         hotRestartStore.clear(prefix);
         fsyncIfRequired();
-    }
-
-    private void fsyncIfRequired() {
-        if (fsync) {
-            hotRestartStore.fsync();
-        }
     }
 
     @Override
@@ -149,10 +142,16 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         return new KeyOnHeap(prefix, key.toByteArray());
     }
 
-    private void putToHotRestart(R record) {
+    protected final void putToHotRestart(R record) {
         HotRestartKey hotRestartKey = createHotRestartKey(record);
         Data value = mapServiceContext.toData(record.getValue());
         hotRestartStore.put(hotRestartKey, value.toByteArray());
         fsyncIfRequired();
+    }
+
+    protected final void fsyncIfRequired() {
+        if (fsync) {
+            hotRestartStore.fsync();
+        }
     }
 }

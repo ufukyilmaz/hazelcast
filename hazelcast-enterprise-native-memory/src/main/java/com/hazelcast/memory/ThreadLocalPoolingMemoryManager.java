@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 03/12/13
  */
-final class ThreadLocalPoolingMemoryManager
+public class ThreadLocalPoolingMemoryManager
         extends AbstractPoolingMemoryManager
         implements MemoryManager {
 
@@ -37,8 +37,9 @@ final class ThreadLocalPoolingMemoryManager
     private final LongArray sortedPageAllocations;
     private long lastFullCompaction;
 
-    ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
-                                    LibMalloc malloc, PooledNativeMemoryStats stats) {
+    protected ThreadLocalPoolingMemoryManager(
+            int minBlockSize, int pageSize, LibMalloc malloc, PooledNativeMemoryStats stats
+    ) {
         super(minBlockSize, pageSize, malloc, stats);
         pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
@@ -110,11 +111,14 @@ final class ThreadLocalPoolingMemoryManager
         final byte headerVal = UnsafeHelper.UNSAFE.getByte(blockBase);
         assert !Bits.isBitSet(headerVal, AVAILABLE_BIT) : "Address already marked as available! " + blockBase;
 
-        final int blockSize = 1 << headerVal;
-        final long pageBase = getOwningPage(blockBase, blockSize);
+        final long pageBase = getOwningPage(blockBase);
         if (pageBase == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address: " + blockBase + " does not belong to this memory pool!");
         }
+        final int blockSize = 1 << headerVal;
+        assert pageBase <= blockBase && pageBase + pageSize >= blockBase + blockSize
+                : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
+                blockBase, blockBase + blockSize - 1, pageBase, pageBase + pageSize - 1);
 
         final int pageOffset = (int) (blockBase - pageBase);
         assert pageOffset >= 0 : "Invalid offset: " + pageOffset;
@@ -184,16 +188,19 @@ final class ThreadLocalPoolingMemoryManager
     @Override
     public long validateAndGetAllocatedSize(long address) {
         assertNotNullPtr(address);
-        final long blockAddress = address - HEADER_OFFSET;
-        final byte headerByte = UnsafeHelper.UNSAFE.getByte(blockAddress);
+        final long blockBase = address - HEADER_OFFSET;
+        final byte headerByte = UnsafeHelper.UNSAFE.getByte(blockBase);
         final byte blockSizePower = Bits.clearBit(headerByte, AVAILABLE_BIT);
         final int blockSize = 1 << blockSizePower;
-        return (headerByte & OCCUPIED_HEADER_MASK) != 0
-                || blockSizePower < minBlockSizePower
-                || blockSize > pageSize
-                || blockSize < pageSize && getOwningPage(blockAddress, blockSize) == NULL_ADDRESS
-                || blockSize == pageSize && !pageAllocations.contains(blockAddress)
-                ? SIZE_INVALID : blockSize;
+        return (headerByte & OCCUPIED_HEADER_MASK) == 0
+               && blockSizePower >= minBlockSizePower
+               && blockSize <= pageSize
+            ? getOwningPage(blockBase, blockSize) : SIZE_INVALID;
+    }
+
+    protected long getOwningPage(long blockBase, int blockSize) {
+        final long page = getOwningPage(blockBase);
+        return page != NULL_ADDRESS && page + pageSize >= blockBase + blockSize ? blockSize : SIZE_INVALID;
     }
 
     @Override
@@ -202,8 +209,7 @@ final class ThreadLocalPoolingMemoryManager
     }
 
     // binary range search
-    private long getOwningPage(long blockBase, long blockSize) {
-        final long blockEnd = blockBase + blockSize - 1;
+    protected long getOwningPage(long address) {
         int low = 0;
         int high = pageAllocations.size() - 1;
 
@@ -211,14 +217,11 @@ final class ThreadLocalPoolingMemoryManager
             final int middle = (low + high) >>> 1;
             final long pageBase = sortedPageAllocations.get(middle);
             final long pageEnd = pageBase + pageSize - 1;
-            if (blockBase > pageEnd) {
+            if (address > pageEnd) {
                 low = middle + 1;
-            } else if (blockEnd < pageBase) {
+            } else if (address < pageBase) {
                 high = middle - 1;
             } else {
-                assert pageBase <= blockBase && pageEnd >= blockEnd
-                        : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
-                                        blockBase, blockEnd, pageBase, pageEnd);
                 return pageBase;
             }
         }
@@ -436,6 +439,6 @@ final class ThreadLocalPoolingMemoryManager
 
     @Override
     public String toString() {
-        return "ThreadLocalPoolingMemoryManager [" + threadName + "]";
+        return "ThreadLocalPoolingMemoryManager [" + threadName + ']';
     }
 }

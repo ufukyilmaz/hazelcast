@@ -14,11 +14,12 @@ import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
- * Pooling MemoryManager
+ * {@link MemoryManager} implementation which allocates native memory in fixed-size pages and
+ * then internally manages application-level allocation within the pages.
  *
  * @author mdogan 17/12/13
  */
-public final class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
+public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
 
     static final int MIN_MIN_BLOCK_SIZE = 1 << 3;
     static final int MAX_PAGE_SIZE = 1 << 30;
@@ -63,7 +64,8 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         }
 
         if (minBlockSize < MIN_MIN_BLOCK_SIZE) {
-            throw new IllegalArgumentException("Minimum block size must be greater than or equal to: " + MIN_MIN_BLOCK_SIZE);
+            throw new IllegalArgumentException(
+                    "Minimum block size must be greater than or equal to: " + MIN_MIN_BLOCK_SIZE);
         }
 
         if (!isPowerOfTwo(pageSize)) {
@@ -176,7 +178,7 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
         return manager == null || manager.isDestroyed();
     }
 
-    private void destroyPool(MemoryManager pool) {
+    private static void destroyPool(MemoryManager pool) {
         try {
             pool.destroy();
         } catch (Throwable e) {
@@ -189,10 +191,14 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
             throw new IllegalArgumentException();
         }
         gc();
-        int minBlockSize = globalMemoryManager.minBlockSize;
-        int pageSize = globalMemoryManager.pageSize;
-        MemoryManager memoryManager = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, malloc, memoryStats);
-        threadLocalManagers.put(thread, memoryManager);
+        threadLocalManagers.put(thread, newThreadLocalPoolingMemoryManager(
+                globalMemoryManager.minBlockSize, globalMemoryManager.pageSize, malloc, memoryStats));
+    }
+
+    protected ThreadLocalPoolingMemoryManager newThreadLocalPoolingMemoryManager(
+            int minBlockSize, int pageSize, LibMalloc malloc, PooledNativeMemoryStats stats
+    ) {
+        return new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, malloc, stats);
     }
 
     public void deregisterThread(Thread thread) {
@@ -231,9 +237,6 @@ public final class PoolingMemoryManager implements MemoryManager, GarbageCollect
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PoolingMemoryManager{");
-        sb.append("globalMemoryManager=").append(globalMemoryManager);
-        sb.append('}');
-        return sb.toString();
+        return "PoolingMemoryManager{globalMemoryManager=" + globalMemoryManager + '}';
     }
 }

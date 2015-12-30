@@ -88,21 +88,23 @@ final class GlobalPoolingMemoryManager
     protected void markAvailable(long address) {
         assertNotNullPtr(address);
 
-        long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
-        int size = Bits.extractInt(value, true);
+        final long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
+        final int size = Bits.extractInt(value, true);
         assert !Bits.isBitSet(size, AVAILABLE_BIT) : "Address already marked as available! " + address;
 
         int header = Bits.setBit(size, AVAILABLE_BIT);
 
-        long base = getPage(address, size);
+        final long base = getOwningPage(address);
         if (base == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
         }
+        assert base + pageSize >= address + size
+                : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
+                                address, address + size - 1, base, base + pageSize - 1);
         int offset = (int) (address - base);
         assert offset >= 0 : "Invalid offset: " + offset;
 
-        value = Bits.combineToLong(offset, header);
-        UnsafeHelper.UNSAFE.putLongVolatile(null, address, value);
+        UnsafeHelper.UNSAFE.putLongVolatile(null, address, Bits.combineToLong(offset, header));
     }
 
     @Override
@@ -179,13 +181,13 @@ final class GlobalPoolingMemoryManager
         assertNotNullPtr(address);
         final long blockAddress = address - HEADER_OFFSET;
         final int blockSize = UnsafeHelper.UNSAFE.getIntVolatile(null, blockAddress);
-        return Bits.isBitSet(blockSize, AVAILABLE_BIT)
-                || !QuickMath.isPowerOfTwo(blockSize)
-                || blockSize < minBlockSize
-                || blockSize > pageSize
-                || blockSize < pageSize && getPage(blockAddress, blockSize) == NULL_ADDRESS
-                || blockSize == pageSize && !pageAllocations.containsKey(blockAddress)
-                ? SIZE_INVALID : blockSize;
+        if (Bits.isBitSet(blockSize, AVAILABLE_BIT) || !QuickMath.isPowerOfTwo(blockSize)
+                || blockSize < minBlockSize || blockSize > pageSize
+        ) {
+            return SIZE_INVALID;
+        }
+        final long page = getOwningPage(blockAddress);
+        return page != NULL_ADDRESS && page + pageSize >= blockAddress + blockSize ? blockSize : SIZE_INVALID;
     }
 
     @Override
@@ -193,17 +195,9 @@ final class GlobalPoolingMemoryManager
         return UnsafeHelper.UNSAFE.getIntVolatile(null, address + HEADER_OFFSET);
     }
 
-    private long getPage(long address, int size) {
-        Long page = pageAllocations.floorKey(address);
-        if (page == null) {
-            return NULL_ADDRESS;
-        }
-
-        if ((page + pageSize) >= (address + size)) {
-            return page;
-        }
-
-        return NULL_ADDRESS;
+    private long getOwningPage(long address) {
+        final Long pageBase = pageAllocations.floorKey(address);
+        return pageBase != null && pageBase + pageSize - 1 >= address ? pageBase : NULL_ADDRESS;
     }
 
     public final void destroy() {

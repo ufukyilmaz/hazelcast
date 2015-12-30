@@ -64,10 +64,10 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startAllClusters();
 
         createDataIn(clusterA, "map", 0, 10);
-        assertDataInFromNoSleep(clusterC, "map", 0, 10, clusterA);
+        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
 
         createDataIn(clusterB, "map", 10, 20);
-        assertDataInFromNoSleep(clusterC, "map", 10, 20, clusterB);
+        assertDataInFrom(clusterC, "map", 10, 20, clusterB);
 
         sleepSeconds(20);
         assertKeysNotIn(clusterA, "map", 0, 10);
@@ -146,17 +146,17 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMapMergePolicy.class.getName());
         startAllClusters();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
+        createDataIn(clusterA, "map", 0, 10);
+        assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterA);
 
-        createDataIn(clusterB, "map", 0, 1000);
+        createDataIn(clusterB, "map", 0, 10);
 
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
+        assertDataInFrom(clusterC, "map", 0, 10, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 1000, 100);
-        createDataIn(clusterB, "map", 0, 1000);
+        increaseHitCount(clusterB, "map", 0, 10, 100);
+        createDataIn(clusterB, "map", 0, 10);
 
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterB);
+        assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterB);
     }
 
     //("Issue #1368 multi replicar topology cluster A replicates to B and C")
@@ -215,12 +215,12 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterA();
         startClusterB();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        createDataIn(clusterA, "map", 0, 10);
+        assertDataInFromWithSleep(clusterB, "map", 0, 10, clusterA);
 
-        increaseHitCount(clusterB, "map", 0, 500, 1000);
-        createDataIn(clusterB, "map", 0, 500);
-        assertDataInFrom(clusterA, "map", 0, 500, clusterB);
+        increaseHitCount(clusterB, "map", 0, 5, 100);
+        createDataIn(clusterB, "map", 0, 5);
+        assertDataInFromWithSleep(clusterA, "map", 0, 5, clusterB);
         sleepSeconds(10);
     }
 

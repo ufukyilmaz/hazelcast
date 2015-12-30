@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
@@ -119,6 +120,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         target.setGroupName(config.getGroupConfig().getName());
         target.setReplicationImpl(getReplicationImpl());
         target.setEndpoints(getClusterEndPoints(config, count));
+        target.setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
         return target;
     }
 

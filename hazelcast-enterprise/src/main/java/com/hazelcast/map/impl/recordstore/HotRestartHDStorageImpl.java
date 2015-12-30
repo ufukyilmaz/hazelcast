@@ -35,36 +35,47 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
 
     public void put(Data key, HDRecord record) {
         synchronized (mutex) {
-            super.put(key, record);
+            storage.put(key, record);
         }
+        putToHotRestart(record);
     }
 
     @Override
     public void updateRecordValue(Data key, HDRecord record, Object val) {
         synchronized (mutex) {
-            super.updateRecordValue(key, record, val);
+            storage.updateRecordValue(key, record, val);
         }
+        putToHotRestart(record);
     }
 
     @Override
     public void removeRecord(HDRecord record) {
-        synchronized (mutex) {
-            super.removeRecord(record);
+        if (record == null) {
+            return;
         }
+        synchronized (mutex) {
+            storage.removeRecord(record);
+        }
+        hotRestartStore.remove(createHotRestartKey(record));
+        fsyncIfRequired();
     }
 
     @Override
     public void clear() {
         synchronized (mutex) {
-            super.clear();
+            storage.clear();
         }
+        hotRestartStore.clear(prefix);
+        fsyncIfRequired();
     }
 
     @Override
     public void destroy() {
         synchronized (mutex) {
-            super.destroy();
+            storage.destroy();
         }
+        hotRestartStore.clear(prefix);
+        fsyncIfRequired();
     }
 
     @Override

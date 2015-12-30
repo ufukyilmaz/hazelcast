@@ -33,6 +33,7 @@ import com.hazelcast.nio.serialization.PortableFactory;
 import java.nio.ByteOrder;
 import java.util.Map;
 
+import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
 import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
@@ -116,13 +117,13 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             serializer.write(out, obj);
 
             int size = out.position();
-            int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
+            int memSize = size + NATIVE_MEMORY_DATA_OVERHEAD;
             long address = memoryManager.allocate(memSize);
             assert address != MemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
-            out.copyToMemoryBlock(data, NativeMemoryData.COPY_OFFSET, size);
+            out.copyToMemoryBlock(data, NATIVE_MEMORY_DATA_OVERHEAD, size);
             return data;
         } catch (Throwable e) {
             throw handleException(e);
@@ -153,12 +154,12 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
                     }
 
                     int size = data.totalSize();
-                    int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
+                    int memSize = size + NATIVE_MEMORY_DATA_OVERHEAD;
 
                     long address = memoryManager.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
                     nativeData.writeInt(NativeMemoryData.SIZE_OFFSET, size);
-                    nativeData.copyFrom(NativeMemoryData.COPY_OFFSET, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
+                    nativeData.copyFrom(NATIVE_MEMORY_DATA_OVERHEAD, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
 
                     return nativeData;
                 }

@@ -50,17 +50,17 @@ public final class EnterpriseSerializationUtil {
     public static Data readNativeData(EnterpriseObjectDataInput in, MemoryManager memoryManager, int size,
             boolean readToHeapOnOOME) throws IOException {
         try {
-            int memSize = size + NativeMemoryData.NATIVE_HEADER_OVERHEAD;
+            int memSize = size + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
             NativeMemoryData data = allocateNativeData(in, memoryManager, memSize, size, !readToHeapOnOOME);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
 
             if (in instanceof EnterpriseBufferObjectDataInput) {
                 EnterpriseBufferObjectDataInput bufferIn = (EnterpriseBufferObjectDataInput) in;
-                bufferIn.copyToMemoryBlock(data, NativeMemoryData.COPY_OFFSET, size);
+                bufferIn.copyToMemoryBlock(data, NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD, size);
             } else {
                 byte[] bytes = new byte[size];
                 in.readFully(bytes);
-                data.copyFrom(NativeMemoryData.COPY_OFFSET, bytes, BYTE_ARRAY_BASE_OFFSET, size);
+                data.copyFrom(NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD, bytes, BYTE_ARRAY_BASE_OFFSET, size);
             }
             return data;
         } catch (NativeOutOfMemoryError e) {

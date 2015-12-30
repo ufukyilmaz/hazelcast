@@ -26,6 +26,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.nio.ByteOrder;
 
+import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+
 final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
 
     @Override
@@ -33,7 +35,7 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
         EnterpriseSerializationService serializationService = (EnterpriseSerializationService) service;
         if (data instanceof NativeMemoryData) {
             MemoryBlock memoryBlock = (NativeMemoryData) data;
-            return new MemoryBlockDataInput(memoryBlock,  NativeMemoryData.DATA_OFFSET, serializationService);
+            return new MemoryBlockDataInput(memoryBlock, HeapData.DATA_OFFSET, NATIVE_MEMORY_DATA_OVERHEAD, serializationService);
         } else {
             return new EnterpriseUnsafeObjectDataInput(data.toByteArray(), HeapData.DATA_OFFSET, serializationService);
         }

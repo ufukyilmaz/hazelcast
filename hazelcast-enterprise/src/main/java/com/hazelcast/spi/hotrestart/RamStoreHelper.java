@@ -62,7 +62,7 @@ public final class RamStoreHelper {
             final byte[] bufferArray = buffer.array();
             final int position = buffer.position();
             final int length = data.totalSize();
-            data.copyToByteArray(NativeMemoryData.COPY_OFFSET, bufferArray, position, length);
+            data.copyToByteArray(NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD, bufferArray, position, length);
             buffer.position(position + length);
         } else {
             buffer.put(data.toByteArray());

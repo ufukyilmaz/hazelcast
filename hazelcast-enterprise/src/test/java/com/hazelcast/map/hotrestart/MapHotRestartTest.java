@@ -6,7 +6,6 @@ import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.RunParallel;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -24,7 +23,6 @@ import static org.junit.Assert.assertNull;
 @RunParallel
 @RunWith(HazelcastTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 
     private static final int KEY_COUNT = 1000;

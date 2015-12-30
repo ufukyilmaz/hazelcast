@@ -7,6 +7,7 @@ import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 
 @Category(SlowTest.class)
+@Ignore
 public class HdMapWanNoDelayReplicationTest extends AbstractMapWanReplicationTest {
 
     @Override

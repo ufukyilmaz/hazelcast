@@ -827,8 +827,8 @@ public class HiDensityNativeMemoryCacheRecordStore
     public void close(boolean onShutdown) {
         if (shouldExplicitlyClear(onShutdown)) {
             clear();
-            records.dispose();
         }
+        records.dispose();
         closeListeners();
     }
 

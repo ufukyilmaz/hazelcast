@@ -18,6 +18,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -26,6 +27,7 @@ import com.hazelcast.query.PredicateBuilder;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
@@ -73,7 +75,31 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testMapBasics_doesNotCauseMemoryLeak() throws InterruptedException {
+    @Category(QuickTest.class)
+    public void test_shutdown() throws InterruptedException {
+        final Config config = createConfig();
+        config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.POOLED);
+
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+
+        final IMap<Object, Object> map = hz.getMap(MAP_NAME);
+        for (int i = 0; i < 1000; i++) {
+            map.put(i, i);
+        }
+
+        MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
+        hz.shutdown();
+
+        assertEquals(0, memoryStats.getUsedNativeMemory());
+        assertEquals(0, memoryStats.getCommittedNativeMemory());
+        if (memoryStats instanceof PooledNativeMemoryStats) {
+            assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
+        }
+    }
+
+    @Test
+    public void test_MapOperations() throws InterruptedException {
         final Config config = createConfig();
 
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();

@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 03/12/13
  */
-final class ThreadLocalPoolingMemoryManager
+public class ThreadLocalPoolingMemoryManager
         extends AbstractPoolingMemoryManager
         implements MemoryManager {
 
@@ -37,8 +37,9 @@ final class ThreadLocalPoolingMemoryManager
     private final LongArray sortedPageAllocations;
     private long lastFullCompaction;
 
-    ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
-                                    LibMalloc malloc, PooledNativeMemoryStats stats) {
+    protected ThreadLocalPoolingMemoryManager(
+            int minBlockSize, int pageSize, LibMalloc malloc, PooledNativeMemoryStats stats
+    ) {
         super(minBlockSize, pageSize, malloc, stats);
         pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
@@ -438,6 +439,6 @@ final class ThreadLocalPoolingMemoryManager
 
     @Override
     public String toString() {
-        return "ThreadLocalPoolingMemoryManager [" + threadName + "]";
+        return "ThreadLocalPoolingMemoryManager [" + threadName + ']';
     }
 }

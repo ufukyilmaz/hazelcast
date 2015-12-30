@@ -46,19 +46,10 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     public static final int TYPE_OFFSET = 8;
     public static final int DATA_OFFSET = 12;
 
-    public static final int COPY_OFFSET = PARTITION_HASH_OFFSET;
-
     /**
      * Native memory data size overhead relative to wrapped data
      */
     public static final int NATIVE_MEMORY_DATA_OVERHEAD = Bits.INT_SIZE_IN_BYTES;
-
-    /**
-     * Native memory data over head
-     */
-    public static final int NATIVE_DATA_OVERHEAD = DATA_OFFSET;
-
-    static final int NATIVE_HEADER_OVERHEAD = PARTITION_HASH_OFFSET - HeapData.PARTITION_HASH_OFFSET;
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 
@@ -105,7 +96,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     public byte[] toByteArray() {
         int len = totalSize();
         byte[] buffer = new byte[len];
-        copyTo(COPY_OFFSET, buffer, BYTE_ARRAY_BASE_OFFSET, len);
+        copyTo(NATIVE_MEMORY_DATA_OVERHEAD, buffer, BYTE_ARRAY_BASE_OFFSET, len);
         return buffer;
     }
 

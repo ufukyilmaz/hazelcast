@@ -34,7 +34,12 @@ public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestS
         serializationService = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .setAllowUnsafe(true)
+                .setUseNativeByteOrder(isUseNativeByteOrder())
                 .build();
+    }
+
+    protected boolean isUseNativeByteOrder() {
+        return false;
     }
 
     protected void shutdownMemoryManagerAndSerializationService() {

@@ -46,6 +46,8 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     private final int size;
 
+    private final int offset;
+
     private int pos;
 
     private int mark;
@@ -54,11 +56,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     private char[] charBuffer;
 
-    MemoryBlockDataInput(MemoryBlock memoryBlock, int offset, EnterpriseSerializationService serializationService) {
+    MemoryBlockDataInput(MemoryBlock memoryBlock, int position, int offset, EnterpriseSerializationService serializationService) {
         memory = memoryBlock;
         size = memoryBlock.size();
         service = serializationService;
-        pos = offset;
+        pos = position;
+        this.offset = offset;
     }
 
     @Override
@@ -73,12 +76,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public int read() throws IOException {
-        return (pos < size) ? memory.readByte(pos++) : -1;
+        return (pos + offset < size) ? memory.readByte((pos++) + offset) : -1;
     }
 
     @Override
     public int read(int position) throws IOException {
-        return (position < size) ? memory.readByte(position) : -1;
+        return (position + offset < size) ? memory.readByte(position + offset) : -1;
     }
 
     @Override
@@ -92,10 +95,10 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         if (len <= 0) {
             return 0;
         }
-        if (pos >= size) {
+        if (pos + offset >= size) {
             return -1;
         }
-        if (pos + len > size) {
+        if (pos + offset + len > size) {
             len = size - pos;
         }
         memCopy(b, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + off, len, UnsafeHelper.BYTE_ARRAY_INDEX_SCALE);
@@ -160,7 +163,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public char readChar(int position) throws IOException {
         try {
-            return memory.readChar(position);
+            return memory.readChar(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -176,7 +179,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public double readDouble(int position) throws IOException {
         try {
-            return memory.readDouble(position);
+            return memory.readDouble(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -212,7 +215,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public float readFloat(int position) throws IOException {
         try {
-            return memory.readFloat(position);
+            return memory.readFloat(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -244,7 +247,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public int readInt(int position) throws IOException {
         try {
-            return memory.readInt(position);
+            return memory.readInt(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -278,7 +281,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public long readLong(int position) throws IOException {
         try {
-            return memory.readLong(position);
+            return memory.readLong(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -312,7 +315,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public short readShort(int position) throws IOException {
         try {
-            return memory.readShort(position);
+            return memory.readShort(position + offset);
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
         }
@@ -471,7 +474,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
         int actualLength = length * indexScale;
         try {
-            memory.copyTo(pos, dest, destOffset, actualLength);
+            memory.copyTo(pos + offset, dest, destOffset, actualLength);
             pos += actualLength;
         } catch (IndexOutOfBoundsException e) {
             throw new IOException(e);
@@ -615,8 +618,8 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         int skip = n;
         final int pos = position();
-        if (pos + skip > size) {
-            skip = size - pos;
+        if (pos + skip > size - offset) {
+            skip = size - offset - pos;
         }
         position(pos + skip);
         return skip;
@@ -632,7 +635,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public void position(int newPos) {
-        if ((newPos > size) || (newPos < 0)) {
+        if ((newPos > size - offset) || (newPos < 0)) {
             throw new IllegalArgumentException();
         }
         pos = newPos;

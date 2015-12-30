@@ -70,8 +70,7 @@ public final class NativeMemoryDataUtil {
     }
 
     static int readDataSize(long address) {
-        return Math.max(readTotalSize(address) - (NativeMemoryData.NATIVE_DATA_OVERHEAD
-                - NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD), 0);
+        return Math.max(readTotalSize(address) - HeapData.HEAP_DATA_OVERHEAD, 0);
     }
 
     static int readTotalSize(long address) {

@@ -809,29 +809,31 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * <p>Does not release internal buffers.</p>
+     * Clears the map by removing and disposing all key/value pairs stored.
      */
     @Override
     public void clear() {
         ensureMemory();
-        if (address != NULL_ADDRESS) {
-            KeyIter iter = new KeyIter();
-            while (iter.hasNext()) {
-                iter.nextSlot();
-                iter.remove();
-            }
 
-            assigned = 0;
-            Unsafe unsafe = UnsafeHelper.UNSAFE;
-            unsafe.setMemory(address, allocated * ENTRY_LENGTH, (byte) 0);
+        KeyIter iter = new KeyIter();
+        while (iter.hasNext()) {
+            iter.nextSlot();
+            iter.remove();
         }
+
+        assigned = 0;
+        Unsafe unsafe = UnsafeHelper.UNSAFE;
+        unsafe.setMemory(address, allocated * ENTRY_LENGTH, (byte) 0);
     }
 
+    /**
+     * Disposes internal backing array of this map. Does not dispose key/value pairs inside.
+     * To dispose key/value pairs, {@link #clear()} must be called explicitly.
+     *
+     * @see #clear()
+     */
     @Override
     public void dispose() {
-        if (assigned > 0) {
-            clear();
-        }
         if (address != NULL_ADDRESS) {
             malloc.free(address, allocated * ENTRY_LENGTH);
         }

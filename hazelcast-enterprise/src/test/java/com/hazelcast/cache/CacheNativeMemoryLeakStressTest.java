@@ -24,6 +24,7 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
@@ -31,12 +32,12 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.EmptyStatement;
-
+import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -70,8 +71,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.instance.TestUtil.terminateInstance;
 import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -93,6 +94,40 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
     @AfterClass
     public static void tearDownClass() {
         System.setProperty(StandardMemoryManager.PROPERTY_DEBUG_ENABLED, "false");
+    }
+
+    @Test
+    @Category(QuickTest.class)
+    public void test_shutdown() throws InterruptedException {
+        final Config config = new Config();
+        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
+        memoryConfig.setEnabled(true)
+                .setAllocatorType(MemoryAllocatorType.POOLED)
+                .setSize(MEMORY_SIZE);
+
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        HazelcastInstance hz = factory.newHazelcastInstance(config);
+
+        CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
+        final String cacheName = randomName();
+        CacheConfiguration cacheConfig = new CacheConfig()
+                        .setInMemoryFormat(InMemoryFormat.NATIVE)
+                        .setEvictionConfig(getEvictionConfig());
+
+        final ICache cache = (ICache) cacheManager.createCache(cacheName, cacheConfig);
+
+        for (int i = 0; i < 1000; i++) {
+            cache.put(i, i);
+        }
+
+        MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
+        hz.shutdown();
+
+        assertEquals(0, memoryStats.getUsedNativeMemory());
+        assertEquals(0, memoryStats.getCommittedNativeMemory());
+        if (memoryStats instanceof PooledNativeMemoryStats) {
+            assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
+        }
     }
 
     @Test
@@ -204,11 +239,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 new CacheConfig()
                         .setBackupCount(1)
                         .setInMemoryFormat(InMemoryFormat.NATIVE)
-                        .setEvictionConfig(
-                                new EvictionConfig()
-                                        .setSize(95)
-                                        .setEvictionPolicy(EvictionPolicy.LRU)
-                                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE))
+                        .setEvictionConfig(getEvictionConfig())
                         .setCacheLoaderFactory(new CacheLoaderFactory())
                         .setWriteThrough(true)
                         .setCacheWriterFactory(new CacheWriterFactory());
@@ -216,6 +247,13 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
             cacheConfig.setExpiryPolicyFactory(expiryPolicyFactory);
         }
         return cacheConfig;
+    }
+
+    private static EvictionConfig getEvictionConfig() {
+        return new EvictionConfig()
+                .setSize(95)
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
     }
 
     private static class WorkerThread extends Thread {

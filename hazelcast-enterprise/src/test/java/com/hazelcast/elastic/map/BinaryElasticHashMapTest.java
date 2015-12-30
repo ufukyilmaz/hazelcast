@@ -61,6 +61,9 @@ public class BinaryElasticHashMapTest {
 
     @After
     public void tearDown() throws Exception {
+        if (map.capacity() > 0) {
+            map.clear();
+        }
         map.dispose();
         serializationService.destroy();
         memoryManager.destroy();
@@ -570,6 +573,7 @@ public class BinaryElasticHashMapTest {
             }
         }
 
+        map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
@@ -750,6 +754,7 @@ public class BinaryElasticHashMapTest {
             }
         }
 
+        map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());

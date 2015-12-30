@@ -116,7 +116,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         } else {
             address = pageAllocator.allocate(size);
         }
-        memoryStats.addUsedOffHeap(size);
+        memoryStats.addUsedNativeMemory(size);
         return address;
     }
 
@@ -178,7 +178,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         } else {
             pageAllocator.free(address, size);
         }
-        memoryStats.addUsedOffHeap(-size);
+        memoryStats.addUsedNativeMemory(-size);
     }
 
     private static void zero(long address, long size) {

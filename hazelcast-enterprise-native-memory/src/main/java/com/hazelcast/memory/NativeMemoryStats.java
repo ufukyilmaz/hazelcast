@@ -78,11 +78,6 @@ public class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats
         }
     }
 
-    void reset() {
-        committedNative.set(0);
-        internalFragmentation.set(0);
-    }
-
     @Override
     public final String toString() {
         StringBuilder sb = new StringBuilder();

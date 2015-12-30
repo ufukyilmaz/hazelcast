@@ -285,8 +285,8 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     public void close(boolean onShutdown) {
         if (shouldExplicitlyClear(onShutdown)) {
             clearInternal(false);
-            records.dispose();
         }
+        records.dispose();
         closeListeners();
     }
 }

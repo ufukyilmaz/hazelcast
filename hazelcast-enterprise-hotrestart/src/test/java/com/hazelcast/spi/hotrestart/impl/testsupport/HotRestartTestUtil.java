@@ -9,6 +9,8 @@ import com.hazelcast.logging.LoggingServiceImpl;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
@@ -32,7 +34,6 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class HotRestartTestUtil {
@@ -124,8 +125,8 @@ public class HotRestartTestUtil {
     public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg) {
         logger.info("Waiting to start summarizing record stores");
         final Map<Long, Long2LongHashMap>[] summary = new Map[1];
-        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new Runnable() {
-            @Override public void run() {
+        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
+            @Override public void run(CatchupTestSupport mc) {
                 logger.info("Summarizing record stores");
                 summary[0] = summarize0(reg);
             }
@@ -149,8 +150,8 @@ public class HotRestartTestUtil {
 
     public static void verifyRestartedStore(final Map<Long, Long2LongHashMap> summaries, final MockStoreRegistry reg) {
         logger.info("Waiting to start verification");
-        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new Runnable() {
-            @Override public void run() {
+        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
+            @Override public void run(CatchupTestSupport mc) {
                 logger.info("Verifying restarted store");
                 verify0(summaries, reg.recordStores);
             }

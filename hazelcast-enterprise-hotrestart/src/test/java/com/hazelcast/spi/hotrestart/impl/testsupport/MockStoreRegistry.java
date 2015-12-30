@@ -17,7 +17,6 @@ public class MockStoreRegistry implements RamStoreRegistry {
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
     private final MemoryAllocator malloc;
-    private long lastReleasedTombstones;
 
     public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws InterruptedException {
         this.malloc = malloc;

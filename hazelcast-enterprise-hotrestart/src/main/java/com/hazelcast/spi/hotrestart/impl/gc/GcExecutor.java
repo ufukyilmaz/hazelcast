@@ -4,6 +4,8 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
+import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -59,7 +61,7 @@ public final class GcExecutor {
 
     private boolean started;
     private boolean stopped;
-    /** This lock exists only to serve the needs of {@link #runWhileGcPaused(Runnable)}. */
+    /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
     private final Object gcMutex = new Object();
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
@@ -197,9 +199,9 @@ public final class GcExecutor {
      * Runs the task while holding a mutex lock which is also held during GC activity.
      * This method is provided only to facilitate testing.
      */
-    public void runWhileGcPaused(Runnable task) {
+    public void runWhileGcPaused(CatchupRunnable task) {
         synchronized (gcMutex) {
-            task.run();
+            task.run(mc);
         }
     }
 
@@ -211,7 +213,7 @@ public final class GcExecutor {
      * Instance of this class is passed around to allow catching up with
      * the mutator thread at any point along the GC cycle codepath.
      */
-    class MutatorCatchup {
+    class MutatorCatchup implements CatchupTestSupport {
         // Consulted by output streams to decide whether to fsync after each buffer flush.
         // Perhaps expose this as configuration param (currently it's hardcoded).
         boolean fsyncOften;
@@ -226,7 +228,7 @@ public final class GcExecutor {
             return (i++ & ((1 << power) - 1)) == 0 ? catchUpWithMutator() : 0;
         }
 
-        int catchupNow() {
+        @Override public int catchupNow() {
             i = 1;
             return catchUpWithMutator();
         }

@@ -151,9 +151,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         });
     }
 
-    private class CrashMemberOnAllMembersJoin
-            extends ClusterHotRestartEventListener
-            implements HazelcastInstanceAware {
+    private class CrashMemberOnAllMembersJoin extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final int portToStart;
 
@@ -186,8 +184,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
     }
 
-    private class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener
-            implements HazelcastInstanceAware {
+    private class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final int portToStart;
 
@@ -217,9 +214,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     }
 
-    private static class ByzantineFailPartitionTableAfterPartitionTableValidationCompleted
-            extends ClusterHotRestartEventListener
-            implements HazelcastInstanceAware {
+    private static class ByzantineFailPartitionTableAfterPartitionTableValidationCompleted extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final AtomicBoolean firstCrash;
 

@@ -1,11 +1,9 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.impl.operations.JoinOperation;
-import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import java.io.IOException;
@@ -28,13 +26,6 @@ public class SendPartitionTableValidationResultOperation
 
     @Override
     public void run() throws Exception {
-        NodeEngine nodeEngine = getNodeEngine();
-        Address caller = getCallerAddress();
-        if (!nodeEngine.getMasterAddress().equals(caller)) {
-            getLogger().warning("Received hot-restart validation result from non-master member: " + caller);
-            return;
-        }
-
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.receiveHotRestartStatusFromMasterAfterPartitionTableVerification(result);

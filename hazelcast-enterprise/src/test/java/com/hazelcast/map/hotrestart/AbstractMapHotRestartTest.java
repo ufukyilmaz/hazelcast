@@ -143,19 +143,22 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
 
+        // to reduce used native memory size
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, "4");
+
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         hotRestartPersistenceConfig.setEnabled(true);
         hotRestartPersistenceConfig.setBaseDir(folder);
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(getNativeMemorySize())
-                .setMetadataSpacePercentage(50);
+                .setMetadataSpacePercentage(20);
 
         return config;
     }
 
     MemorySize getNativeMemorySize() {
-        return new MemorySize(128, MemoryUnit.MEGABYTES);
+        return new MemorySize(64, MemoryUnit.MEGABYTES);
     }
 
     <V> IMap<Integer, V> createMap() {

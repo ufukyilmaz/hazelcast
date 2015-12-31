@@ -86,10 +86,11 @@ public final class GrowingDestChunk extends GrowingChunk {
                         // the record to the file, so to bring our bookkeeping back in sync we must
                         // keep catching up until we observe the event.
                         if (!catchUpUntilRetired(r, mc)) {
+                            final String ramStoreName = ramStore != null ? ramStore.getClass().getSimpleName() : "null";
                             throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired. Chunk #%02x, record #%02x,"
-                                + " isTombstone? %b, size %d, RAM store found? %b",
-                                    seq, r.liveSeq(), r.isTombstone(), r.size(), ramStore != null));
+                                + " isTombstone? %b, size %d, RAM store found? %s",
+                                    seq, r.liveSeq(), r.isTombstone(), r.size(), ramStoreName));
                         }
                     }
                 }

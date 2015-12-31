@@ -333,17 +333,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void onThreadStart(Thread thread) {
         registerThreadToPoolingMemoryManager(thread);
-        registerThreadToHotRestart(thread);
-    }
-
-    private void registerThreadToHotRestart(Thread thread) {
-        if (!(thread instanceof PartitionOperationThread)) {
-            return;
-        }
-
-        if (hotRestartService != null) {
-            hotRestartService.createThreadLocalHotRestartStores(thread, memoryManager);
-        }
     }
 
     private void registerThreadToPoolingMemoryManager(Thread thread) {

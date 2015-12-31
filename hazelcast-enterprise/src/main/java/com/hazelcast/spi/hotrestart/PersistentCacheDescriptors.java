@@ -108,6 +108,9 @@ public class PersistentCacheDescriptors {
                     return name.endsWith(CONFIG_SUFFIX);
                 }
             });
+            if (configFiles == null) {
+                return;
+            }
             int maxId = 0;
             for (File configFile : configFiles) {
                 CacheDescriptor desc;

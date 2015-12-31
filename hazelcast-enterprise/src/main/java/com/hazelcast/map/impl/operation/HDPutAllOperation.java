@@ -26,7 +26,6 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.InternalPartitionService;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
@@ -52,6 +51,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     private List<Map.Entry<Data, Data>> backupEntries;
     private List<RecordInfo> backupRecordInfos;
     private transient RecordStore recordStore;
+    private List<Data> invalidationKeys;
 
     public HDPutAllOperation() {
     }
@@ -63,28 +63,23 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     }
 
     @Override
-    public void runInternal() {
+    protected void runInternal() {
         backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());
         backupEntries = new ArrayList<Map.Entry<Data, Data>>(mapEntries.size());
-        int partitionId = getPartitionId();
-        recordStore = mapServiceContext.getRecordStore(partitionId, name);
-        InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+        recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
+
         Iterator<Map.Entry<Data, Data>> iterator = mapEntries.iterator();
         while (iterator.hasNext()) {
             Map.Entry<Data, Data> entry = iterator.next();
-            put(partitionId, partitionService, entry);
+            put(entry);
             iterator.remove();
         }
-        invalidateNearCaches(mapEntries);
     }
 
-    private boolean put(int partitionId, InternalPartitionService partitionService, Map.Entry<Data, Data> entry) {
+    private boolean put(Map.Entry<Data, Data> entry) {
         Data dataKey = entry.getKey();
-        if (partitionId != partitionService.getPartitionId(dataKey)) {
-            return false;
-        }
-
         Data dataValue = entry.getValue();
+
         Object oldValue = null;
         if (initialLoad) {
             recordStore.putFromLoad(dataKey, dataValue, -1);
@@ -99,7 +94,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
         Record record = recordStore.getRecord(dataKey);
 
-        if (mapContainer.isWanReplicationEnabled()) {
+        if (shouldWanReplicate()) {
             EntryView entryView = createSimpleEntryView(dataKey, dataValue, record);
             mapEventPublisher.publishWanReplicationUpdate(name, entryView);
         }
@@ -108,7 +103,25 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         backupRecordInfos.add(replicationInfo);
         evict();
 
+        addInvalidation(dataKey);
+
         return true;
+    }
+
+    private void addInvalidation(Data dataKey) {
+        if (mapContainer.isNearCacheEnabled()) {
+            if (invalidationKeys == null) {
+                invalidationKeys = new ArrayList<Data>(mapEntries.size());
+            }
+            invalidationKeys.add(dataKey);
+        }
+    }
+
+    @Override
+    public void afterRun() throws Exception {
+        invalidateNearCache(invalidationKeys);
+
+        super.afterRun();
     }
 
     private Data getValueOrPostProcessedValue(Data dataKey, Data dataValue) {
@@ -119,10 +132,8 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         return mapServiceContext.toData(record.getValue());
     }
 
-    protected final void invalidateNearCaches(MapEntries mapEntries) {
-        for (Map.Entry<Data, Data> mapEntry : mapEntries) {
-            invalidateNearCache(mapEntry.getKey());
-        }
+    private boolean shouldWanReplicate() {
+        return mapContainer.getWanReplicationPublisher() != null && mapContainer.getWanMergePolicy() != null;
     }
 
     @Override

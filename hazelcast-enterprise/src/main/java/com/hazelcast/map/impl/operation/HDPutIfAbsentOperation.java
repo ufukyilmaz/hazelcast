@@ -37,7 +37,7 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation {
     }
 
     @Override
-    public void afterRun() {
+    public void afterRun() throws Exception {
         if (successful) {
             super.afterRun();
         }

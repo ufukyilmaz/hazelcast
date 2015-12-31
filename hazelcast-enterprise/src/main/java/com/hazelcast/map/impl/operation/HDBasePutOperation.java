@@ -49,19 +49,26 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     }
 
     @Override
-    public void afterRun() {
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
+    public void afterRun() throws Exception {
         mapServiceContext.interceptAfterPut(name, dataValue);
-        eventType = getEventType();
-        mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataOldValue, dataValue);
+        publishEvent();
+        publishWANReplicationEvent();
         invalidateNearCache(dataKey);
-        publishWANReplicationEvent(mapServiceContext, mapEventPublisher);
         evict();
-
-        dispose();
     }
 
-    private void publishWANReplicationEvent(MapServiceContext mapServiceContext, MapEventPublisher mapEventPublisher) {
+    private void publishEvent() {
+        eventType = getEventType();
+        Object value = dataValue;
+        if (recordStore.getMapDataStore().isPostProcessingMapStore()) {
+            final Record record = recordStore.getRecord(dataKey);
+            value = record.getValue();
+        }
+        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
+        mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataOldValue, value);
+    }
+
+    private void publishWANReplicationEvent() {
         if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
@@ -72,6 +79,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         }
         final Data valueConvertedData = mapServiceContext.toData(dataValue);
         final EntryView entryView = EntryViews.createSimpleEntryView(dataKey, valueConvertedData, record);
+        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.publishWanReplicationUpdate(name, entryView);
     }
 
@@ -90,10 +98,10 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
 
     @Override
     public Operation getBackupOperation() {
-        Record record = recordStore.getRecord(dataKey);
-        RecordInfo replicationInfo = buildRecordInfo(record);
-        MapDataStore<Data, Object> mapDataStore = recordStore.getMapDataStore();
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
+        final Record record = recordStore.getRecord(dataKey);
+        final RecordInfo replicationInfo = buildRecordInfo(record);
+        final MapDataStore<Data, Object> mapDataStore = recordStore.getMapDataStore();
+        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         if (mapServiceContext.hasInterceptor(name) || mapDataStore.isPostProcessingMapStore()) {
             dataValue = mapServiceContext.toData(record.getValue());
         }
@@ -114,5 +122,4 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     public void onWaitExpire() {
         sendResponse(null);
     }
-
 }

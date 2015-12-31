@@ -32,7 +32,7 @@ public class HDSetOperation extends HDBasePutOperation implements IdentifiedData
     }
 
     @Override
-    public void afterRun() {
+    public void afterRun() throws Exception {
         eventType = newRecord ? EntryEventType.ADDED : EntryEventType.UPDATED;
         super.afterRun();
     }

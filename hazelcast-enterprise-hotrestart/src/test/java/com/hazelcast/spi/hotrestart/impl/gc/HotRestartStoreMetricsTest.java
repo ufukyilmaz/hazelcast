@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.concurrent.Callable;
 
-import static com.hazelcast.internal.metrics.ProbeLevel.INFO;
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
@@ -53,7 +53,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setHomeDir(new File(testingHome, storeName))
            .setLoggingService(createLoggingService())
-           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), INFO))
+           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY))
            .setIoDisabled(true);
         metrics = cfg.metricsRegistry();
         store = new MockStoreRegistry(cfg, null);

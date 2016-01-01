@@ -4,6 +4,7 @@ import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.util.counters.SwCounter;
 
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.util.counters.SwCounter.newSwCounter;
 
 /**
@@ -11,8 +12,8 @@ import static com.hazelcast.util.counters.SwCounter.newSwCounter;
  */
 abstract class TrackerMapBase implements TrackerMap {
 
-    @Probe final SwCounter liveValues = newSwCounter();
-    @Probe final SwCounter liveTombstones = newSwCounter();
+    @Probe(level = MANDATORY) final SwCounter liveValues = newSwCounter();
+    @Probe(level = MANDATORY) final SwCounter liveTombstones = newSwCounter();
 
     @Override public void removeLiveTombstone(KeyHandle kh) {
         liveTombstones.inc(-1);

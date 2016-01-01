@@ -15,6 +15,7 @@ import com.hazelcast.util.counters.Counter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.copyLiveRecords;
 import static com.hazelcast.util.counters.SwCounter.newSwCounter;
@@ -29,10 +30,10 @@ public final class ChunkManager {
     /** Batch size while releasing tombstones. Between batches we catch up and Thread.yield */
     private static final int TOMBSTONE_RELEASING_BATCH_SIZE = 4 * 1024;
     private static final double UNIT_PERCENTAGE = 100.0;
-    @Probe final Counter valOccupancy = newSwCounter();
-    @Probe final Counter valGarbage = newSwCounter();
-    @Probe final Counter tombOccupancy = newSwCounter();
-    @Probe final Counter tombGarbage = newSwCounter();
+    @Probe(level = MANDATORY) final Counter valOccupancy = newSwCounter();
+    @Probe(level = MANDATORY) final Counter valGarbage = newSwCounter();
+    @Probe(level = MANDATORY) final Counter tombOccupancy = newSwCounter();
+    @Probe(level = MANDATORY) final Counter tombGarbage = newSwCounter();
     final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
     final TrackerMap trackers;
     final GcHelper gcHelper;
@@ -299,8 +300,8 @@ public final class ChunkManager {
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = valGarbage.inc(-reclaimed);
         final long liveAfterGc = valOccupancy.inc(-reclaimed) - garbageAfterGc;
-        logger.info("%nDone GC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d" +
-                " tombGarbage %,d tombLive %,d",
+        logger.info("%nDone GC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d"
+                + " tombGarbage %,d tombLive %,d",
                 NANOSECONDS.toMillis(System.nanoTime() - start),
                 (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
                 reclaimed, sizeAfter, garbageAfterGc, liveAfterGc, tombGarbage.get(), tombOccupancy.get());

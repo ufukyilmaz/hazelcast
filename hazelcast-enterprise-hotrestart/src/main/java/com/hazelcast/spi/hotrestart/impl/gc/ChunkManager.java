@@ -299,10 +299,11 @@ public final class ChunkManager {
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = valGarbage.inc(-reclaimed);
         final long liveAfterGc = valOccupancy.inc(-reclaimed) - garbageAfterGc;
-        logger.info("Done GC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
+        logger.info("%nDone GC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d" +
+                " tombGarbage %,d tombLive %,d",
                 NANOSECONDS.toMillis(System.nanoTime() - start),
                 (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
-                reclaimed, sizeAfter, garbageAfterGc, liveAfterGc);
+                reclaimed, sizeAfter, garbageAfterGc, liveAfterGc, tombGarbage.get(), tombOccupancy.get());
         assert garbageAfterGc >= 0 : String.format("Garbage went below zero: %,d", garbageAfterGc);
         assert liveAfterGc >= 0 : String.format("Live went below zero: %,d", liveAfterGc);
         return true;

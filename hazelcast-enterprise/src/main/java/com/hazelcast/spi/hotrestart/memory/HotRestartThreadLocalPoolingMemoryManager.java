@@ -8,7 +8,7 @@ import com.hazelcast.memory.ThreadLocalPoolingMemoryManager;
  * Specialization of {@link com.hazelcast.memory.ThreadLocalPoolingMemoryManager} which contributes
  * mutex locking needed to safely perform pointer validation inside
  * {@link com.hazelcast.spi.hotrestart.RamStore#copyEntry(
- * com.hazelcast.spi.hotrestart.KeyHandle, int, com.hazelcast.spi.hotrestart.RecordDataSinkRecordDataSink)} calls.
+ * com.hazelcast.spi.hotrestart.KeyHandle, int, com.hazelcast.spi.hotrestart.RecordDataSink)} calls.
  */
 public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolingMemoryManager {
 

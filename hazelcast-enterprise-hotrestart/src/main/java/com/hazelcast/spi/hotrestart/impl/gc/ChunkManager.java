@@ -282,7 +282,7 @@ public final class ChunkManager {
                 UNIT_PERCENTAGE * garbageBeforeGc / liveBeforeGc, garbageBeforeGc, liveBeforeGc,
                 gcp.costGoal, gcp.reclamationGoal, gcp.minCostBenefit);
         if (gcp.forceGc) {
-            logger.fine("Forcing GC due to ratio %.2f", (float) garbageBeforeGc / liveBeforeGc);
+            logger.info("Forcing GC due to ratio %.2f", (float) garbageBeforeGc / liveBeforeGc);
         }
         final List<StableValChunk> destChunks = copyLiveRecords(selected, this, mc, logger, start);
         long sizeBefore = 0;

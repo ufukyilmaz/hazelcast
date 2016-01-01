@@ -90,11 +90,12 @@ public abstract class TestProfile {
         return hotKeys;
     }
 
-    private static byte[] generateValueData(int maxSize) {
+    private byte[] generateValueData(int maxSize) {
         final byte[] valueData = new byte[maxSize << 1];
-        for (int i = 0; i < valueData.length; i++) {
-            valueData[i] = (byte) ('A' + (i % 64));
-        }
+        rnd.nextBytes(valueData);
+//        for (int i = 0; i < valueData.length; i++) {
+//            valueData[i] = (byte) ('A' + (i % 64));
+//        }
         return valueData;
     }
 

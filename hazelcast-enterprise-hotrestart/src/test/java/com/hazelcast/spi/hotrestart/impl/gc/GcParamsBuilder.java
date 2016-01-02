@@ -9,8 +9,8 @@ class GcParamsBuilder {
     private long costGoal;
     private long maxCost;
     private long currRecordSeq;
-    private long reclamationGoal;
-    private double minCostBenefit;
+    private long benefitGoal;
+    private double minBenefitToCost;
     private boolean forceGc;
     private boolean limitSrcChunks;
 
@@ -25,8 +25,8 @@ class GcParamsBuilder {
         setField("costGoal", costGoal);
         setField("maxCost", maxCost);
         setField("currRecordSeq", currRecordSeq);
-        setField("reclamationGoal", reclamationGoal);
-        setField("minCostBenefit", minCostBenefit);
+        setField("benefitGoal", benefitGoal);
+        setField("minBenefitToCost", minBenefitToCost);
         setField("forceGc", forceGc);
         setField("limitSrcChunks", limitSrcChunks);
         return gcp;
@@ -57,13 +57,13 @@ class GcParamsBuilder {
         return this;
     }
 
-    GcParamsBuilder reclamationGoal(long reclamationGoal) {
-        this.reclamationGoal = reclamationGoal;
+    GcParamsBuilder benefitGoal(long benefitGoal) {
+        this.benefitGoal = benefitGoal;
         return this;
     }
 
-    GcParamsBuilder minCostBenefit(double minCostBenefit) {
-        this.minCostBenefit = minCostBenefit;
+    GcParamsBuilder minBenefitToCost(double minBenefitToCost) {
+        this.minBenefitToCost = minBenefitToCost;
         return this;
     }
 

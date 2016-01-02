@@ -1,47 +1,52 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BYTES_PER_RECORD_SEQ_INCREMENT;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 
 /**
  * Contains GC ergonomics logic: when to GC and how much to GC.
  */
 final class GcParams {
-    public static final double START_COLLECTING_THRESHOLD = 0.1;
-    public static final double FORCE_COLLECTING_THRESHOLD = 0.5;
-    public static final double NORMAL_MIN_CB = 20 * (Chunk.SIZE_LIMIT / BYTES_PER_RECORD_SEQ_INCREMENT);
-    public static final double FORCED_MIN_CB = 1e-2;
+    public static final double MIN_GARBAGE_RATIO = 0.05;
+    public static final double HIGH_GARBAGE_RATIO = 0.2;
+    public static final double MAX_GARBAGE_RATIO = 0.3;
+    public static final double BOOSTED_BENEFIT_TO_COST = 5.0;
+    public static final double BASE_BENEFIT_TO_COST = 0.4;
+    public static final double FORCED_MIN_B2C = 1e-2;
     public static final long MIN_GARBAGE_TO_FORCE_GC = 10 * Chunk.SIZE_LIMIT;
-    public static final int COST_GOAL_CHUNKS = 2;
     public static final int MAX_COST_CHUNKS = 8;
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int MAX_RECORD_COUNT = 1 << 20;
-    static final int SRC_CHUNKS_GOAL = 3;
     static final GcParams ZERO = new GcParams(0, 0, 0.0, 0, false);
 
     final long costGoal;
+    final long minCost;
+    final long benefitGoal;
     final long maxCost;
-    final long currRecordSeq;
-    final long reclamationGoal;
-    final double minCostBenefit;
+    final double minBenefitToCost;
     final boolean forceGc;
     final boolean limitSrcChunks;
+    final long currRecordSeq;
 
     private GcParams(long garbage, long liveData, double ratio, long currRecordSeq, boolean forceGc) {
         this.currRecordSeq = currRecordSeq;
         this.forceGc = forceGc;
-        final long costGoalBytes = COST_GOAL_CHUNKS * Chunk.SIZE_LIMIT;
+        final long costGoalChunks = max(1, min(MAX_COST_CHUNKS, liveData / Chunk.SIZE_LIMIT));
+        final long costGoalBytes = Chunk.SIZE_LIMIT * costGoalChunks;
         this.limitSrcChunks = costGoalBytes < liveData;
         this.costGoal = limitSrcChunks ? costGoalBytes : liveData;
+        this.minCost = ratio < HIGH_GARBAGE_RATIO ? Chunk.SIZE_LIMIT / 2 : 0;
         if (forceGc) {
-            this.minCostBenefit = FORCED_MIN_CB;
-            this.reclamationGoal = garbageExceedingThreshold(FORCE_COLLECTING_THRESHOLD, garbage, liveData);
+            this.minBenefitToCost = FORCED_MIN_B2C;
+            this.benefitGoal = garbageExceedingThreshold(MAX_GARBAGE_RATIO, garbage, liveData);
             this.maxCost = Long.MAX_VALUE;
         } else {
-            final double excessRatio = (ratio - START_COLLECTING_THRESHOLD)
-                    / (FORCE_COLLECTING_THRESHOLD - START_COLLECTING_THRESHOLD);
-            this.minCostBenefit = Math.max(FORCED_MIN_CB,
-                    NORMAL_MIN_CB - (NORMAL_MIN_CB - FORCED_MIN_CB) * excessRatio);
-            this.reclamationGoal = garbageExceedingThreshold(START_COLLECTING_THRESHOLD, garbage, liveData);
+            final double boostBc = BOOSTED_BENEFIT_TO_COST;
+            final double baseBc = BASE_BENEFIT_TO_COST;
+            final double minRatio = MIN_GARBAGE_RATIO;
+            final double highRatio = HIGH_GARBAGE_RATIO;
+            this.minBenefitToCost = boostBc - (boostBc - baseBc) * (ratio - minRatio) / (highRatio - minRatio);
+            this.benefitGoal = garbageExceedingThreshold(minRatio, garbage, liveData);
             this.maxCost = MAX_COST_CHUNKS * Chunk.SIZE_LIMIT;
         }
     }
@@ -49,18 +54,15 @@ final class GcParams {
     static GcParams gcParams(long garbage, long occupancy, long currRecordSeq) {
         final long liveData = occupancy - garbage;
         final double ratio = garbage / (double) liveData;
-        final boolean forceGc =
-                ratio >= FORCE_COLLECTING_THRESHOLD && garbage >= MIN_GARBAGE_TO_FORCE_GC;
-        return ratio < START_COLLECTING_THRESHOLD ? ZERO
+        final boolean forceGc = ratio >= MAX_GARBAGE_RATIO && garbage >= MIN_GARBAGE_TO_FORCE_GC;
+        return ratio < MIN_GARBAGE_RATIO ? ZERO
                 : new GcParams(garbage, liveData, ratio, currRecordSeq, forceGc);
     }
 
     @Override public String toString() {
-        return "(cost goal " + costGoal
-                + ", min cost-benefit " + minCostBenefit
-                + ", reclamation goal " + reclamationGoal
-                + ", forceGc " + forceGc
-                + ')';
+        return String.format(
+                "(cost goal %,d, min cost %,d, max cost %,d, benefit goal %,d, min benefit/cost %.2f, forceGc %s)",
+                costGoal, minCost, maxCost, benefitGoal, minBenefitToCost, forceGc);
     }
 
     private static long garbageExceedingThreshold(double thresholdRatio, long garbage, long liveData) {

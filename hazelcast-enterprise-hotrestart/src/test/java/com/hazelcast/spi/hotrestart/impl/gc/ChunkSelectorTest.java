@@ -46,8 +46,8 @@ public class ChunkSelectorTest {
                 .currRecordSeq(1000 * 1000)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
-                .reclamationGoal(Long.MAX_VALUE)
-                .minCostBenefit(0.02)
+                .benefitGoal(Long.MAX_VALUE)
+                .minBenefitToCost(0.02)
                 .forceGc(true)
                 .limitSrcChunks(true)
                 .build();
@@ -70,8 +70,8 @@ public class ChunkSelectorTest {
                 .currRecordSeq(1000 * 1000)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
-                .reclamationGoal(Long.MAX_VALUE)
-                .minCostBenefit(0.02)
+                .benefitGoal(Long.MAX_VALUE)
+                .minBenefitToCost(0.02)
                 .forceGc(true)
                 .limitSrcChunks(true)
                 .build();
@@ -94,8 +94,8 @@ public class ChunkSelectorTest {
                 .currRecordSeq(1000 * 1000)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
-                .reclamationGoal(Long.MAX_VALUE)
-                .minCostBenefit(0.02)
+                .benefitGoal(Long.MAX_VALUE)
+                .minBenefitToCost(0.02)
                 .forceGc(true)
                 .limitSrcChunks(true)
                 .build();
@@ -125,7 +125,7 @@ public class ChunkSelectorTest {
                     .garbage((chunkCount - i) * 100 * 1000)
                     .build());
         }
-        diagnoseChunks(allChunks, gcp().currRecordSeq(currRecordSeq).build(), loggerWithFinestEnabled);
+        diagnoseChunks(allChunks, allChunks, gcp().currRecordSeq(currRecordSeq).build(), loggerWithFinestEnabled);
     }
 
     private ChunkSelector.ChunkSelection selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {

@@ -89,7 +89,7 @@ public final class GrowingDestChunk extends GrowingChunk {
                             final String ramStoreName = ramStore != null ? ramStore.getClass().getSimpleName() : "null";
                             throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired. Chunk #%02x, record #%02x,"
-                                + " isTombstone? %b, size %d, RAM store found? %s",
+                                + " isTombstone? %b, size %d, RAM store was %s",
                                     seq, r.liveSeq(), r.isTombstone(), r.size(), ramStoreName));
                         }
                     }

@@ -56,13 +56,13 @@ public final class GcExecutor {
     private final IdleStrategy mutatorIdler = idler();
     private final GcLogger logger;
     private final GcHelper gcHelper;
+    /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
+    private final Object testGcMutex = new Object();
     private volatile boolean backpressure;
     private volatile Throwable gcThreadFailureCause;
 
     private boolean started;
     private boolean stopped;
-    /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
-    private final Object gcMutex = new Object();
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
@@ -86,9 +86,10 @@ public final class GcExecutor {
                 int parkCount = 0;
                 boolean didWork = false;
                 while (!stopped && !interrupted()) {
-                    final int workCount = mc.catchupNow();
-                    final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
-                    synchronized (gcMutex) {
+                    final int workCount;
+                    synchronized (testGcMutex) {
+                        workCount = mc.catchupNow();
+                        final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
                         if (gcp.forceGc) {
                             didWork = runForcedGC(gcp);
                         } else {
@@ -107,8 +108,10 @@ public final class GcExecutor {
                         parkCount++;
                     }
                     if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
-                        didWork = chunkMgr.compressSomeChunk(mc);
-                        parkCount = 0;
+                        synchronized (testGcMutex) {
+                            didWork = chunkMgr.compressSomeChunk(mc);
+                            parkCount = 0;
+                        }
                     }
                 }
                 // This should be optional, configurable behavior.
@@ -200,7 +203,7 @@ public final class GcExecutor {
      * This method is provided only to facilitate testing.
      */
     public void runWhileGcPaused(CatchupRunnable task) {
-        synchronized (gcMutex) {
+        synchronized (testGcMutex) {
             task.run(mc);
         }
     }

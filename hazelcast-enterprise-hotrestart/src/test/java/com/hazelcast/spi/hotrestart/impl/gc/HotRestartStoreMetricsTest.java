@@ -147,12 +147,4 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         assertEquals(0, gauge.read());
         return gauge;
     }
-
-    private static Callable<Long> readGauge(final LongGauge gauge) {
-        return new Callable<Long>() {
-            @Override public Long call() {
-                return gauge.read();
-            }
-        };
-    }
 }

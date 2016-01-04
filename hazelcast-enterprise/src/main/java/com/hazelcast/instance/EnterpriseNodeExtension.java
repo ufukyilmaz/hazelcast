@@ -22,6 +22,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseType;
+import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
@@ -93,7 +94,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
         final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
         license = LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
-                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
+                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_HD, LicenseType.ENTERPRISE_SECURITY_ONLY);
         logger.log(Level.INFO, license.toString());
 
         createSecurityContext(node);
@@ -138,6 +139,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void beforeJoin() {
         if (hotRestartService != null) {
+            final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+            LicenseHelper.checkLicenseKey(license.getKey(), buildInfo.getVersion(), LicenseType.ENTERPRISE_HD);
             hotRestartService.prepare();
         }
     }
@@ -399,15 +402,23 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public <T> T createService(Class<T> clazz) {
         if (WanReplicationService.class.isAssignableFrom(clazz)) {
-            if (license.getType() == LicenseType.ENTERPRISE_SECURITY_ONLY) {
-                return (T) new WanReplicationServiceImpl(node);
-            } else {
+            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
                 return (T) new EnterpriseWanReplicationService(node);
+            } else {
+                return (T) new WanReplicationServiceImpl(node);
             }
         } else if (ICacheService.class.isAssignableFrom(clazz)) {
-            return (T) new EnterpriseCacheService();
+            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
+                return (T) new EnterpriseCacheService();
+            } else {
+                return super.createService(clazz);
+            }
         } else if (MapService.class.isAssignableFrom(clazz)) {
-            return (T) getEnterpriseMapServiceConstructor().createNew(node.getNodeEngine());
+            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
+                return (T) getEnterpriseMapServiceConstructor().createNew(node.getNodeEngine());
+            } else {
+                return super.createService(clazz);
+            }
         }
         throw new IllegalArgumentException("Unknown service class: " + clazz);
     }
@@ -439,15 +450,18 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!memoryConfig.isEnabled()) {
             return;
         }
-        final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-        license = LicenseHelper.checkLicenseKey(license.getKey(), buildInfo.getVersion(),
-                LicenseType.ENTERPRISE);
-        long totalNativeMemorySize = node.getClusterService().getSize()
-                * memoryConfig.getSize().bytes();
-        long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());
-        if (totalNativeMemorySize >= licensedNativeMemorySize) {
-            throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
-                    + "Please contact sales@hazelcast.com");
+        if (license.getVersion() == LicenseVersion.V2) {
+            long totalNativeMemorySize = node.getClusterService().getSize()
+                    * memoryConfig.getSize().bytes();
+            long licensedNativeMemorySize = MemoryUnit.GIGABYTES.toBytes(license.getAllowedNativeMemorySize());
+            if (totalNativeMemorySize >= licensedNativeMemorySize) {
+                throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
+                        + "Please contact sales@hazelcast.com");
+            }
+        } else {
+            final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+            license = LicenseHelper.checkLicenseKey(license.getKey(), buildInfo.getVersion(),
+                    LicenseType.ENTERPRISE_HD);
         }
     }
 

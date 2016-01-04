@@ -1,5 +1,7 @@
 package com.hazelcast.enterprise;
 
+import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -8,6 +10,8 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
+import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
@@ -17,12 +21,14 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
 import static com.hazelcast.enterprise.SampleLicense.EXPIRED_ENTERPRISE_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_DIFFERENT_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,7 +46,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "        <name>dev</name>\n"
                 + "        <password>dev-pass</password>\n"
                 + "    </group>\n"
-                + "    <license-key>HazelcastEnterprise#2Nodes#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
+                + "    <license-key>HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo</license-key>\n"
                 + "    <network>\n"
                 + "        <port auto-increment=\"true\">5701</port>\n"
                 + "        <join>\n"
@@ -59,7 +65,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "</hazelcast>";
 
         Config config = new InMemoryXmlConfig(xml);
-        assertEquals("HazelcastEnterprise#2Nodes#HDMemory:1024GB#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
+        assertEquals("HazelcastEnterprise#2Nodes#OFN7iUaVTmjIB6SRArKc5bw319000240o011003021042q5Q0n1p0QLq30Wo",
                 config.getLicenseKey());
     }
 
@@ -126,6 +132,26 @@ public class LicenseTest extends HazelcastTestSupport {
     }
 
     @Test
+    public void testSecurityOnlyLicenseOnlyUsesOpenSourceMapServices() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
+        HazelcastInstance h = createHazelcastInstance(config);
+        Node node = TestUtil.getNode(h);
+        MapService mapService = node.getNodeExtension().createService(MapService.class);
+        assertFalse(mapService.getMapServiceContext() instanceof EnterpriseMapServiceContext);
+    }
+
+    @Test
+    public void testSecurityOnlyLicenseOnlyUsesOpenSourceCacheServices() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
+        HazelcastInstance h = createHazelcastInstance(config);
+        Node node = TestUtil.getNode(h);
+        CacheService cacheService = node.getNodeExtension().createService(CacheService.class);
+        assertFalse(cacheService instanceof EnterpriseCacheService);
+    }
+
+    @Test
     public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
         HazelcastInstance h = createHazelcastInstance();
         Node node = TestUtil.getNode(h);
@@ -140,10 +166,25 @@ public class LicenseTest extends HazelcastTestSupport {
         createHazelcastInstance(config);
     }
 
-    @Test(expected = InvalidLicenseException.class)
+    @Test
     public void testLicenseInvalidForSmallerHZVersion() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
-        createHazelcastInstance(config);
+        try {
+            Config config = new Config();
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
+            createHazelcastInstance(config);
+        } catch (InvalidLicenseException e) {
+            fail("V2 license should work with V3 license parser.");
+        }
+    }
+
+    @Test
+    public void testValidEnterpriseHDLicense() {
+        try {
+            Config config = new Config();
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_HD_LICENSE);
+            createHazelcastInstance(config);
+        } catch (InvalidLicenseException ile) {
+            fail("Hazelcast should not fail because valid license has been provided.");
+        }
     }
 }

@@ -30,12 +30,14 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
-import com.hazelcast.util.CollectionUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static com.hazelcast.util.CollectionUtil.isEmpty;
+import static com.hazelcast.util.Preconditions.checkFalse;
 
 /**
  * Puts records to map which are loaded from map store by {@link com.hazelcast.core.IMap#loadAll}
@@ -44,6 +46,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
         BackupAwareOperation {
 
     private List<Data> keyValueSequence;
+    private List<Data> invalidationKeys;
 
     public HDPutFromLoadAllOperation() {
         keyValueSequence = Collections.emptyList();
@@ -51,49 +54,48 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
 
     public HDPutFromLoadAllOperation(String name, List<Data> keyValueSequence) {
         super(name);
+        checkFalse(isEmpty(keyValueSequence), "key-value sequence cannot be empty or null");
         this.keyValueSequence = keyValueSequence;
     }
 
     @Override
     protected void runInternal() {
-        final List<Data> keyValueSequence = this.keyValueSequence;
-        final int partitionId = getPartitionId();
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final RecordStore recordStore = mapServiceContext.getRecordStore(partitionId, name);
+        RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
+        boolean hasInterceptor = mapServiceContext.hasInterceptor(name);
+
+        List<Data> keyValueSequence = this.keyValueSequence;
         for (int i = 0; i < keyValueSequence.size(); i += 2) {
-            final Data key = keyValueSequence.get(i);
-            final Data dataValue = keyValueSequence.get(i + 1);
+            Data key = keyValueSequence.get(i);
+            Data dataValue = keyValueSequence.get(i + 1);
             // here object conversion is for interceptors.
-            final Object objectValue = mapServiceContext.toObject(dataValue);
-            final Object previousValue = recordStore.putFromLoad(key, objectValue);
+            Object value = hasInterceptor ? mapServiceContext.toObject(dataValue) : dataValue;
+            Object previousValue = recordStore.putFromLoad(key, value);
 
-            callAfterPutInterceptors(objectValue);
-            publishEntryEvent(key, mapServiceContext.toData(previousValue), dataValue);
+            callAfterPutInterceptors(value);
+            publishEntryEvent(key, previousValue, dataValue);
             publishWanReplicationEvent(key, dataValue, recordStore.getRecord(key));
+            addInvalidation(key);
         }
     }
 
-
-    @Override
-    public void afterRun() throws Exception {
-        if (!CollectionUtil.isEmpty(keyValueSequence)) {
-            final int size = keyValueSequence.size();
-            final List<Data> dataKeys = new ArrayList<Data>(size / 2);
-            for (int i = 0; i < size; i += 2) {
-                final Data key = keyValueSequence.get(i);
-                dataKeys.add(key);
-            }
-            invalidateNearCache(dataKeys);
+    private void addInvalidation(Data key) {
+        if (!mapContainer.isNearCacheEnabled()) {
+            return;
         }
 
-        dispose();
+        if (invalidationKeys == null) {
+            invalidationKeys = new ArrayList<Data>(keyValueSequence.size() / 2);
+        }
+
+        invalidationKeys.add(key);
     }
+
 
     private void callAfterPutInterceptors(Object value) {
         mapService.getMapServiceContext().interceptAfterPut(name, value);
     }
 
-    private void publishEntryEvent(Data key, Data previousValue, Data newValue) {
+    private void publishEntryEvent(Data key, Object previousValue, Data newValue) {
         final EntryEventType eventType = previousValue == null ? EntryEventType.ADDED : EntryEventType.UPDATED;
         final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         final MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
@@ -111,6 +113,13 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
             mapEventPublisher.publishWanReplicationUpdate(name, entryView);
         }
+    }
+
+    @Override
+    public void afterRun() throws Exception {
+        invalidateNearCache(invalidationKeys);
+
+        super.afterRun();
     }
 
     @Override

@@ -111,7 +111,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     }
 
     @Override public void clear(long... keyPrefixes) {
-        if (keyPrefixes.length == 0) {
+        if (keyPrefixes.length == 0 || gcHelper.recordSeq() == 0) {
             return;
         }
         gcExec.addPrefixTombstones(keyPrefixes);

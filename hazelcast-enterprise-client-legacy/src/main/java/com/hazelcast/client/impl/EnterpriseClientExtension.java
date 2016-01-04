@@ -16,6 +16,7 @@ import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
@@ -34,6 +35,7 @@ import com.hazelcast.util.ExceptionUtil;
 public class EnterpriseClientExtension extends DefaultClientExtension {
 
     private volatile SocketInterceptor socketInterceptor;
+    private volatile License license;
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -46,8 +48,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
         }
         final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-        LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
-                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY);
+        license = LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
+                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY, LicenseType.ENTERPRISE_HD);
     }
 
     @Override
@@ -136,8 +138,12 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
-                    client.getSerializationService(), client.getClientConfig());
+            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD)  {
+                return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
+                        client.getSerializationService(), client.getClientConfig());
+            } else {
+                return super.createServiceProxyFactory(service);
+            }
         }
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);

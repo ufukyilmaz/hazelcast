@@ -165,7 +165,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
     private NativeMemoryConfig getMemoryConfig() {
-        MemorySize memorySize = new MemorySize(64, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
                         .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)

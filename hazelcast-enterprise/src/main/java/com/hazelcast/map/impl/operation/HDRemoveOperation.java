@@ -26,10 +26,6 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
     public HDRemoveOperation() {
     }
 
-    public HDRemoveOperation(String name, Data dataKey) {
-        super(name, dataKey);
-    }
-
     public HDRemoveOperation(String name, Data dataKey, boolean disableWanReplicationEvent) {
         super(name, dataKey, disableWanReplicationEvent);
     }

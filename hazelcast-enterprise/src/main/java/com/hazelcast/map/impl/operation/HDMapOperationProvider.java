@@ -71,11 +71,6 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createRemoveOperation(String name, Data key) {
-        return new HDRemoveOperation(name, key);
-    }
-
-    @Override
     public MapOperation createRemoveOperation(String name, Data key, boolean disableWanReplicationEvent) {
         return new HDRemoveOperation(name, key, disableWanReplicationEvent);
     }

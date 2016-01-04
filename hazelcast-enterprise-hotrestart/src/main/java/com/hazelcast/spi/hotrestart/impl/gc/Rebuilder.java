@@ -100,14 +100,13 @@ public final class Rebuilder {
     }
 
     /**
-     * Called when encountering a record with a key prefix whose RAM store
-     * no longer exists (i.e., has been destroyed).
+     * Called when encountering a record which is interred by a prefix tombstone.
      * @param size size of the record
      */
     public void acceptCleared(int size) {
         chunk.size += size;
         chunk.garbage += size;
-        cm.valGarbage.inc(size);
+        garbage.inc(size);
     }
 
     private void removeFromTombKeys(long prefix, KeyHandle kh) {

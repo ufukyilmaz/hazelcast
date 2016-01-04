@@ -42,6 +42,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
 
     private static HotRestartStore create(HotRestartStoreConfig cfg) {
         checkNotNull(cfg.ramStoreRegistry(), "ramStoreRegistry is null");
+        checkNotNull(cfg.metricsRegistry(), "metricsRegistry is null");
         cfg.validateAndCreateHomeDir();
         return new HotRestartStoreImpl(
                 cfg, cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));

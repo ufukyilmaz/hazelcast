@@ -50,7 +50,7 @@ public abstract class WriteThroughChunk extends GrowingChunk implements Closeabl
 
     final void ensureHasRoom() {
         if (full()) {
-            throw new HotRestartException(String.format("Attempted to write to a full file #%x", seq));
+            throw new HotRestartException(String.format("Attempted to write to a full %s file #%x", base(), seq));
         }
     }
 

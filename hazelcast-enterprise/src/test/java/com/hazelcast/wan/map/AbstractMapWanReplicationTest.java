@@ -6,6 +6,7 @@ import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.BrokenBarrierException;
@@ -88,14 +89,14 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         printAllReplicarConfig();
 
-        createDataIn(clusterA, "map", 0, 1000);
-        createDataIn(clusterB, "map", 1000, 2000);
+        createDataIn(clusterA, "map", 0, 100);
+        createDataIn(clusterB, "map", 100, 200);
 
-        assertDataInFrom(clusterC, "map", 0, 1000, clusterA);
-        assertDataInFrom(clusterC, "map", 1000, 2000, clusterB);
+        assertDataInFrom(clusterC, "map", 0, 100, clusterA);
+        assertDataInFrom(clusterC, "map", 100, 200, clusterB);
 
-        assertDataInFrom(clusterA, "map", 1000, 2000, clusterB);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+        assertDataInFrom(clusterA, "map", 100, 200, clusterB);
+        assertDataInFrom(clusterB, "map", 0, 100, clusterA);
     }
 
     @Test
@@ -182,6 +183,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
+    @Ignore //see #linkTopo_ActiveActiveReplication_Threading_Test
     public void linkTopo_ActiveActiveReplication_Test() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
@@ -225,6 +227,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
+    @Ignore //Same of replicationRing
     public void chainTopo_2passiveReplicars_1producer() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());

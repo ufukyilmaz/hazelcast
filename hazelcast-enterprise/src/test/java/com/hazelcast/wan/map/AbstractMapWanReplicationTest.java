@@ -260,13 +260,13 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         setupReplicateFrom(configC, configA, clusterA.length, "ctoa", PassThroughMergePolicy.class.getName());
         startAllClusters();
 
-        createDataIn(clusterA, "map", 0, 1000);
+        createDataIn(clusterA, "map", 0, 10);
 
-        assertKeysIn(clusterB, "map", 0, 1000);
-        assertDataSizeEventually(clusterB, "map", 1000);
+        assertKeysIn(clusterB, "map", 0, 10);
+        assertDataSizeEventually(clusterB, "map", 10);
 
-        assertKeysIn(clusterC, "map", 0, 1000);
-        assertDataSizeEventually(clusterC, "map", 1000);
+        assertKeysIn(clusterC, "map", 0, 10);
+        assertDataSizeEventually(clusterC, "map", 10);
     }
 
     @Test

@@ -53,7 +53,7 @@ public class ClientSSLSocketTest {
         Hazelcast.shutdownAll();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalStateException.class, timeout = 60000)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Properties serverSslProps = TestKeyStoreUtil.createSslProperties();
         Config cfg = new Config();

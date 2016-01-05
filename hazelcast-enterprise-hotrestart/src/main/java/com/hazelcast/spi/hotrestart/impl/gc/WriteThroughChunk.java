@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 
-import java.io.Closeable;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -14,10 +13,11 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream
  * <p>
  * Not thread-safe.
  */
-public abstract class WriteThroughChunk extends GrowingChunk implements Closeable {
+public abstract class WriteThroughChunk extends GrowingChunk {
     final DataOutputStream dataOut;
     private final FileOutputStream fileOut;
     private final GcHelper gcHelper;
+    private boolean needsFsyncBeforeClosing;
 
     WriteThroughChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
         super(seq, records);
@@ -26,12 +26,18 @@ public abstract class WriteThroughChunk extends GrowingChunk implements Closeabl
         this.dataOut = new DataOutputStream(bufferedOutputStream(out));
     }
 
-    @Override public void close() {
+    public void flagForFsyncOnClose(boolean fsyncOnClose) {
+        this.needsFsyncBeforeClosing |= fsyncOnClose;
+    }
+
+    public void close() {
         if (dataOut == null) {
             return;
         }
         try {
-            fsync();
+            if (needsFsyncBeforeClosing) {
+                fsync();
+            }
             dataOut.close();
             gcHelper.changeSuffix(base(), seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, Chunk.FNAME_SUFFIX);
         } catch (IOException e) {
@@ -46,6 +52,7 @@ public abstract class WriteThroughChunk extends GrowingChunk implements Closeabl
             throw new HotRestartException(e);
         }
         fsync(fileOut);
+        needsFsyncBeforeClosing = false;
     }
 
     final void ensureHasRoom() {

@@ -7,14 +7,12 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -150,7 +148,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         doPutToNearCacheStatsAndSeeEvictionCheckIsDone();
     }
 
-    @Test(expected = NativeOutOfMemoryError.class)
+    @Test
     public void createEntryBiggerThanNativeMemory() {
         MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
         NearCacheConfig nearCacheConfig =

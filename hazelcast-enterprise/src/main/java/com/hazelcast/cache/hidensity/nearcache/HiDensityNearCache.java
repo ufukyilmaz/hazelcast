@@ -8,6 +8,8 @@ import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.impl.DefaultNearCache;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.util.EmptyStatement;
@@ -26,6 +28,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
     private final NearCacheManager nearCacheManager;
+    private final ILogger logger = Logger.getLogger(getClass());
     private MemoryManager memoryManager;
 
     public HiDensityNearCache(String s, NearCacheConfig nearCacheConfig,
@@ -146,14 +149,27 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     private void checkAndHandleOOME(K key, V value, NativeOutOfMemoryError oomeError) {
-        if (oomeError != null) {
-            if (memoryManager != null) {
-                memoryManager.compact();
-                // Try for last time after compaction
-                super.put(key, value);
-            } else {
-                throw oomeError;
-            }
+        if (oomeError == null) {
+            return;
+        }
+
+        assert memoryManager != null : "memoryManager cannot be null";
+
+        memoryManager.compact();
+
+        // Try for last time after compaction
+        try {
+            super.put(key, value);
+        } catch (NativeOutOfMemoryError e) {
+            // There may be an existing entry in near-cache for the specified `key`, to be in safe side, remove that entry,
+            // otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
+            // the value from underlying imap/cache.
+            super.remove(key);
+            // Due to the ongoing compaction, one user thread may not see sufficient space to put entry into near-cache.
+            // In that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured).
+            // This is because, near-cache feature is an optimization and it is ok not to put some entries.
+            // We are expecting to put next entries into near-cache after compaction or after near-cache invalidation.
+            logger.warning("Entry can not be put into near-cache for this time");
         }
     }
 

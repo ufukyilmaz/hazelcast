@@ -50,11 +50,6 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             return 0;
         }
 
-        if (evictionPercentage >= ONE_HUNDRED_PERCENT || size <= MIN_EVICTION_ELEMENT_COUNT) {
-            clear();
-            return size;
-        }
-
         int evictCount = (int) (size * (long) evictionPercentage / ONE_HUNDRED_PERCENT);
         evictCount = Math.max(evictCount, MIN_EVICTION_ELEMENT_COUNT);
 

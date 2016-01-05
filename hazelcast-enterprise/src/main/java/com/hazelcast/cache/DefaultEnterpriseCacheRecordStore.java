@@ -53,8 +53,8 @@ public class DefaultEnterpriseCacheRecordStore extends CacheRecordStore
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
                                                     now, true, completionId, caller, origin);
                 }
-                publishEvent(createCacheCompleteEvent(key,
-                        CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE, origin, completionId));
+                publishEvent(createCacheCompleteEvent(key, CacheRecord.TIME_NOT_AVAILABLE,
+                                                      origin, completionId));
             }
 
             if (merged && isStatisticsEnabled()) {

@@ -607,18 +607,18 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     private long expiryPolicyToTTL(ExpiryPolicy expiryPolicy) {
         if (expiryPolicy == null) {
-            return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+            return CacheRecord.TIME_NOT_AVAILABLE;
         }
         try {
             Duration expiryDuration = expiryPolicy.getExpiryForCreation();
             if (expiryDuration == null || expiryDuration.isEternal()) {
-                return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+                return CacheRecord.TIME_NOT_AVAILABLE;
             }
             long durationAmount = expiryDuration.getDurationAmount();
             TimeUnit durationTimeUnit = expiryDuration.getTimeUnit();
             return TimeUnit.MILLISECONDS.convert(durationAmount, durationTimeUnit);
         } catch (Exception e) {
-            return CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE;
+            return CacheRecord.TIME_NOT_AVAILABLE;
         }
     }
 
@@ -773,7 +773,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                                                     now, true, completionId, caller, origin);
                 }
                 publishEvent(createCacheCompleteEvent(toHeapData(key),
-                                                      CacheRecord.EXPIRATION_TIME_NOT_AVAILABLE,
+                                                      CacheRecord.TIME_NOT_AVAILABLE,
                                                       origin, completionId));
             }
 

@@ -192,13 +192,13 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         NativeMemoryData value = record.getValue();
         assert value != null : "Value should not be null! -> " + record;
         byte[] valueBytes = value.toByteArray();
-        hotRestartStore.put(newHotRestartKey(key, record), valueBytes);
+        hotRestartStore.put(newHotRestartKey(key, record), valueBytes, fsync);
         fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         final KeyOffHeap hotRestartKey = newHotRestartKey(key, record);
-        hotRestartStore.remove(hotRestartKey);
+        hotRestartStore.remove(hotRestartKey, fsync);
         fsyncIfRequired();
     }
 

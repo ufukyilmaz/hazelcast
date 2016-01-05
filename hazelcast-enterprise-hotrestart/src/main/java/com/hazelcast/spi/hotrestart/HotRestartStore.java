@@ -6,6 +6,15 @@ package com.hazelcast.spi.hotrestart;
  * Data retrieval happens only during the hot restart procedure, when this
  * store pushes data to its associated RAM stores.
  * <p>
+ * The store supports a batch operating mode where a number of updates are fsync'd
+ * to the file system together instead of one by one. To achieve this,
+ * <ol>
+ *     <li>call {@link #fsync()} when all the updates in a batch are done;</li>
+ *     <li>when calling {@link #put(HotRestartKey, byte[], boolean)} and {@link #remove(HotRestartKey, boolean)},
+ *     make sure you pass {@code true} for the {@code boolean needsFsync} parameter to ensure that all chunk files
+ *     that were active at some point during the batch operation are fsync'd before closing.</li>
+ * </ol>
+ * <p>
  * This class is not thread-safe. The caller must ensure a <i>happens-before</i>
  * relationship between any two method calls.
  */
@@ -30,21 +39,27 @@ public interface HotRestartStore {
      * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
      * associated with this Hot Restart store.
      *
+     * @param needsFsync if true, the currently active chunk will be fsync'd before closing.
+     *                   If this parameter is {@code false}, there is no guarantee that a later call
+     *                   to {@link #fsync()} will make this operation persistent.
      * @throws HotRestartException
      */
-    void put(HotRestartKey key, byte[] value) throws HotRestartException;
+    void put(HotRestartKey key, byte[] value, boolean needsFsync) throws HotRestartException;
 
     /**
-     * Removes the persistent meapping for the supplied key.
+     * Removes the persistent mapping for the supplied key.
      * <p>
      * This method must not be called while holding a lock that can block the progress of
      * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
      * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
      * associated with this Hot Restart store.
      *
+     * @param needsFsync if true, the currently active chunk will be fsync'd before closing.
+     *                   If this parameter is {@code false}, there is no guarantee that a later call
+     *                   to {@link #fsync()} will make this operation persistent.
      * @throws HotRestartException
      */
-    void remove(HotRestartKey key) throws HotRestartException;
+    void remove(HotRestartKey key, boolean needsFsync) throws HotRestartException;
 
     /**
      * Removes all mappings for the supplied list of key prefixes.
@@ -69,22 +84,10 @@ public interface HotRestartStore {
     String name();
 
     /**
-     * Sets whether auto-fsync is enabled for this Hot Restart store.
-     * When enabled, at the completion of each call to {@link #put(HotRestartKey, byte[])},
-     * {@link #removeStep2()}, and {@link #clear(long...)} there is a guarantee
-     * that its effects have become persistent.
-     */
-    void setAutoFsync(boolean autoFsync);
-
-    /**
-     * @return whether auto-fsync is enabled for this Hot Restart store.
-     */
-    boolean isAutoFsync();
-
-    /**
-     * When this method completes it is guaranteed that the effects of all preceding
-     * calls to {@link #put(HotRestartKey, byte[])}, {@link #remove(HotRestartKey)}, and
-     * {@link #clear(long...)} have become persistent.
+     * When this method completes, it is guaranteed that the effects of all preceding
+     * calls to {@link #put(HotRestartKey, byte[], boolean)}, {@link #remove(HotRestartKey, boolean)},
+     * and {@link #clear(long...)} have become persistent. Note that calls to {@code put} and {@code remove}
+     * with {@code needsFsync == false} are excluded from this guarantee.
      */
     void fsync();
 

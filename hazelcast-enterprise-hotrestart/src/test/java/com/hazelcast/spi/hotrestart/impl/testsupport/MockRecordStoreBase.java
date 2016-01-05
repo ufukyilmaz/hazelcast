@@ -31,7 +31,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         synchronized (ramStore) {
             ramStore.put(key, value);
         }
-        hrStore.put(hrKey(key), value);
+        hrStore.put(hrKey(key), value, false);
     }
 
     @Override public final void remove(long key) {
@@ -41,7 +41,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
             }
             ramStore.remove(key);
         }
-        hrStore.remove(hrKey(key));
+        hrStore.remove(hrKey(key), false);
     }
 
     @Override public final void clear() {

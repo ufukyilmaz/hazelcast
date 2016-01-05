@@ -336,7 +336,15 @@ public class ThreadLocalPoolingMemoryManager
         private LongArrayQueue resizeQueue(LongArrayQueue current, int newCap, boolean purge) {
             LongArrayQueue queue;
             try {
-                if (current != null) {
+                /*
+                 * While resizing queue, current address queue might be not-null but disposed.
+                 * Because global compaction (`compact`) might be called
+                 * by `purgeEmptySpaceAndResizeQueue` below and
+                 * the sub-sequent calls through other address queues from here
+                 * might dispose this address queue after compaction/merging buddies.
+                 * So we need to check that is current address queue is still available or not.
+                 */
+                if (current != null && current.isAvailable()) {
                     queue = new LongArrayQueue(systemAllocator, newCap, current);
                     current.dispose();
                 } else {
@@ -348,6 +356,8 @@ public class ThreadLocalPoolingMemoryManager
                         return purgeEmptySpaceAndResizeQueue(current, newCap);
                     } catch (OutOfMemoryError oome) {
                         OutOfMemoryErrorDispatcher.onOutOfMemory(oome);
+                    } catch (NativeOutOfMemoryError oome) {
+                        throw oome;
                     } catch (Throwable t) {
                         // We are printing actual exception's message and using `NativeOutOfMemoryError` as cause
                         throw new NativeOutOfMemoryError("Cannot expand internal memory pool "

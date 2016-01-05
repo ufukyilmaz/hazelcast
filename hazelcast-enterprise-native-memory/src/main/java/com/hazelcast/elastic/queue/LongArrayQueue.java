@@ -153,6 +153,10 @@ public final class LongArrayQueue implements LongQueue {
         return new Iter();
     }
 
+    public boolean isAvailable() {
+        return size >= 0;
+    }
+
     private class Iter implements LongIterator {
         int remaining;
         int cursor;

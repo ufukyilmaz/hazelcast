@@ -1,0 +1,121 @@
+package com.hazelcast.map;
+
+import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+
+import java.util.Random;
+
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
+import static org.junit.Assert.assertEquals;
+
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
+public class HDEvictionCheckerTest extends HazelcastTestSupport {
+
+    @Test
+    public void testMapEvicted_when_used_native_memory_size_exceeded() throws Exception {
+        Config config = newConfig(USED_NATIVE_MEMORY_SIZE, 10);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(10));
+
+        assertEquals(0, map.size());
+    }
+
+    @Test
+    public void testMapNotEvicted_when_used_native_memory_size_not_exceeded() throws Exception {
+        Config config = newConfig(USED_NATIVE_MEMORY_SIZE, 10);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(5));
+
+        assertEquals(1, map.size());
+    }
+
+    @Test
+    public void testMapEvicted_when_free_native_memory_size_exceeded() throws Exception {
+        Config config = newConfig(FREE_NATIVE_MEMORY_SIZE, 1000);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(10));
+
+        assertEquals(0, map.size());
+    }
+
+    @Test
+    public void testMapNotEvicted_when_free_native_memory_size_not_exceeded() throws Exception {
+        Config config = newConfig(FREE_NATIVE_MEMORY_SIZE, 1);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(10));
+
+        assertEquals(1, map.size());
+    }
+
+
+    @Test
+    public void testMapEvicted_when_free_native_memory_percentage_exceeded() throws Exception {
+        Config config = newConfig(FREE_NATIVE_MEMORY_PERCENTAGE, 80);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(10));
+
+        assertEquals(0, map.size());
+    }
+
+
+    @Test
+    public void testMapNotEvicted_when_free_native_memory_percentage_not_exceeded() throws Exception {
+        Config config = newConfig(FREE_NATIVE_MEMORY_PERCENTAGE, 10);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        map.put(1, newValueInMegaBytes(10));
+
+        assertEquals(1, map.size());
+    }
+
+    private static Config newConfig(MaxSizeConfig.MaxSizePolicy maxSizePolicy, int maxSize) {
+        Config config = HDTestSupport.getHDConfig();
+
+        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
+        maxSizeConfig.setMaxSizePolicy(maxSizePolicy).setSize(maxSize);
+
+        config.getMapConfig("default")
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setMaxSizeConfig(maxSizeConfig);
+        return config;
+    }
+
+
+    private static byte[] newValueInMegaBytes(int megabytes) {
+        Random random = new Random();
+        byte[] bytes = new byte[(int) MemoryUnit.MEGABYTES.toBytes(megabytes)];
+        random.nextBytes(bytes);
+        return bytes;
+    }
+}

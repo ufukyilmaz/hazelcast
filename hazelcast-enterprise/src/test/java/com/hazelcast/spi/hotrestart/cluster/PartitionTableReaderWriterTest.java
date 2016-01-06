@@ -16,6 +16,7 @@ import static com.hazelcast.partition.InternalPartition.MAX_REPLICA_COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -82,6 +83,46 @@ public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
         assertEquals(memberCount, reader.getPartitionVersion());
         Address[][] partitionTable = reader.getTable();
         assertPartitionTableEquals(partitions, partitionTable);
+    }
+
+    @Test
+    public void test_withIncreasingPartitionCount() throws IOException {
+        Address[] members = initializeAddresses(0);
+        int partitionCount = 100;
+
+        InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
+
+        PartitionTableWriter writer = new PartitionTableWriter(folder);
+        writer.write(partitions);
+
+        int newPartitionCount = partitionCount + 1;
+        PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
+
+        try {
+            reader.read();
+            fail("Should fail to read partition table!");
+        } catch (IOException expected) {
+        }
+    }
+
+    @Test
+    public void test_withDecreasingPartitionCount() throws IOException {
+        Address[] members = initializeAddresses(0);
+        int partitionCount = 100;
+
+        InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
+
+        PartitionTableWriter writer = new PartitionTableWriter(folder);
+        writer.write(partitions);
+
+        int newPartitionCount = partitionCount - 1;
+        PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
+
+        try {
+            reader.read();
+            fail("Should fail to read partition table!");
+        } catch (IOException expected) {
+        }
     }
 
     private void assertPartitionTableEquals(InternalPartition[] partitions, Address[][] partitionTable) {

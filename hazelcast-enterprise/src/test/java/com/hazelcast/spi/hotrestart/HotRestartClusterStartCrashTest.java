@@ -15,16 +15,20 @@ import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
@@ -40,6 +44,21 @@ import static org.junit.Assert.assertEquals;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterStartTest {
+
+    private Future startNodeFuture;
+
+    @After
+    public void after() throws IOException {
+        try {
+            // Nothing to do with test's correctness.
+            // Just to avoid some IO errors to be printed
+            // when test finishes and deletes hot-restart folders
+            // before new node's restart process completes.
+            startNodeFuture.get(2, TimeUnit.MINUTES);
+        } catch (Exception ignored) {
+        }
+        super.after();
+    }
 
     @Test
     public void testClusterHotRestartEventListenerRegistration() throws InterruptedException {
@@ -69,7 +88,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         final AtomicBoolean crash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMemberOnAllMembersJoin(port, true, crash));
+            listeners.put(port, new CrashMemberOnAllMembersJoin(true, crash));
         }
 
         startInstances(ports, listeners);
@@ -85,7 +104,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         final AtomicBoolean crash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMemberOnAllMembersJoin(port, false, crash));
+            listeners.put(port, new CrashMemberOnAllMembersJoin(false, crash));
         }
 
         startInstances(ports, listeners);
@@ -101,7 +120,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
         final Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
         for (Integer port : ports) {
-            listeners.put(port, new CrashMasterOnPartitionTableValidationComplete(port, firstCrash));
+            listeners.put(port, new CrashMasterOnPartitionTableValidationComplete(firstCrash));
         }
 
         startInstances(ports, listeners);
@@ -153,17 +172,13 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     private class CrashMemberOnAllMembersJoin extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private final int portToStart;
-
         private final boolean crashMaster;
 
         private final AtomicBoolean crash;
 
         private HazelcastInstance instance;
 
-        public CrashMemberOnAllMembersJoin(int portToStart, boolean crashMaster,
-                                           AtomicBoolean crash) {
-            this.portToStart = portToStart;
+        public CrashMemberOnAllMembersJoin(boolean crashMaster, AtomicBoolean crash) {
             this.crashMaster = crashMaster;
             this.crash = crash;
         }
@@ -178,6 +193,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             final Node node = getNode(instance);
             boolean shouldCrash = crashMaster && node.isMaster() || !crashMaster && !node.isMaster();
             if (shouldCrash && crash.compareAndSet(false, true)) {
+                int portToStart = node.getThisAddress().getPort();
                 startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }
@@ -186,14 +202,11 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
     private class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private final int portToStart;
-
         private final AtomicBoolean firstCrash;
 
         private HazelcastInstance instance;
 
-        public CrashMasterOnPartitionTableValidationComplete(int portToStart, AtomicBoolean firstCrash) {
-            this.portToStart = portToStart;
+        public CrashMasterOnPartitionTableValidationComplete(AtomicBoolean firstCrash) {
             this.firstCrash = firstCrash;
         }
 
@@ -205,8 +218,8 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         @Override
         public void onPartitionTableValidationComplete(HotRestartClusterInitializationStatus result) {
             final Node node = getNode(instance);
-            if (result == PARTITION_TABLE_VERIFIED && node.isMaster() && firstCrash
-                    .compareAndSet(false, true)) {
+            if (result == PARTITION_TABLE_VERIFIED && node.isMaster() && firstCrash.compareAndSet(false, true)) {
+                int portToStart = node.getThisAddress().getPort();
                 startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }
@@ -271,7 +284,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     private void startNodeAfterTermination(final Node node, final int portToStart) {
-        spawn(new Runnable() {
+        startNodeFuture = spawn(new Runnable() {
             @Override
             public void run() {
                 try {

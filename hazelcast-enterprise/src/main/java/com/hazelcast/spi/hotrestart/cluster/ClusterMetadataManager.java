@@ -172,6 +172,9 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void start() {
         validate();
+
+        setInitialPartitionTable();
+
         node.partitionService.addPartitionListener(this);
         loadStartTime = Clock.currentTimeMillis();
 
@@ -182,6 +185,11 @@ public final class ClusterMetadataManager implements PartitionListener {
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onDataLoadStart(node.getThisAddress());
         }
+    }
+
+    private void setInitialPartitionTable() {
+        InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) node.getPartitionService();
+        partitionService.setInitialState(partitionTableRef.get(), partitionTableVersion);
     }
 
     public void shutdown() {
@@ -227,8 +235,6 @@ public final class ClusterMetadataManager implements PartitionListener {
             throw new HotRestartException("Cluster-wide validation failed!");
         }
 
-        InternalPartitionServiceImpl partitionService = (InternalPartitionServiceImpl) node.getPartitionService();
-        partitionService.setInitialState(partitionTableRef.get(), partitionTableVersion);
         logger.info("Cluster member-list & partition table validation completed.");
     }
 

@@ -1,10 +1,13 @@
 package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.IOUtil;
+import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
@@ -15,6 +18,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
@@ -23,10 +27,14 @@ import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
+
+    private int partitionCount = 271;
+    private int partitionThreadCount = -1;
 
     @Test
     public void testFreshStart() throws IOException, InterruptedException {
@@ -144,4 +152,81 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         }
     }
 
+    @Test
+    public void test_hotRestartFails_whenPartitionThreadCountIncreases() {
+        partitionThreadCount = 4;
+
+        int port = acquirePort();
+        initializeFactory(Collections.singletonList(port));
+        startInstance(port);
+        terminateInstances();
+
+        partitionThreadCount = 128;
+        initializeFactory(Collections.singletonList(port));
+        try {
+            startInstance(port);
+            fail("Hot restart should fail!");
+        } catch (HotRestartException expected) {
+        }
+    }
+
+    @Test
+    public void test_hotRestartFails_whenPartitionThreadCountDecreases() {
+        partitionThreadCount = 128;
+
+        int port = acquirePort();
+        initializeFactory(Collections.singletonList(port));
+        startInstance(port);
+        terminateInstances();
+
+        partitionThreadCount = 4;
+        initializeFactory(Collections.singletonList(port));
+        try {
+            startInstance(port);
+            fail("Hot restart should fail!");
+        } catch (HotRestartException expected) {
+        }
+    }
+
+    @Test
+    public void test_hotRestartFails_whenPartitionCountIncreased() {
+        int port = acquirePort();
+        initializeFactory(Collections.singletonList(port));
+        HazelcastInstance instance = startInstance(port);
+        warmUpPartitions(instance);
+        terminateInstances();
+
+        partitionCount++;
+        initializeFactory(Collections.singletonList(port));
+        try {
+            startInstance(port);
+            fail("Hot restart should fail!");
+        } catch (HotRestartException expected) {
+        }
+    }
+
+    @Test
+    public void test_hotRestartFails_whenPartitionCountDecreased() {
+        int port = acquirePort();
+        initializeFactory(Collections.singletonList(port));
+        HazelcastInstance instance = startInstance(port);
+        warmUpPartitions(instance);
+        terminateInstances();
+
+        partitionCount--;
+        initializeFactory(Collections.singletonList(port));
+        try {
+            startInstance(port);
+            fail("Hot restart should fail!");
+        } catch (HotRestartException expected) {
+        }
+    }
+
+    @Override
+    protected Config newConfig(ClusterHotRestartEventListener listener) {
+        final Config config = super.newConfig(listener);
+        config.setProperty(GroupProperty.PARTITION_COUNT, String.valueOf(partitionCount));
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, String.valueOf(partitionThreadCount));
+        return config;
+    }
 }

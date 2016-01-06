@@ -23,16 +23,30 @@ class PartitionTableReader extends AbstractMetadataReader {
 
     @Override
     protected void doRead(DataInputStream in) throws IOException {
-        partitionVersion = in.readInt();
-        for (int partition = 0; partition < table.length; partition++) {
-            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                Address address = null;
-                boolean hasReplica = in.readBoolean();
-                if (hasReplica) {
-                    address = readAddressFromStream(in);
+        int partitionCount = in.readInt();
+        if (partitionCount != table.length) {
+            throw new IOException("Invalid partition count! Expected: " + table.length + ", Actual: " + partitionCount);
+        }
+
+        try {
+            partitionVersion = in.readInt();
+        } catch (IOException e) {
+            throw new IOException("Cannot read partition version!", e);
+        }
+
+        try {
+            for (int partition = 0; partition < table.length; partition++) {
+                for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
+                    Address address = null;
+                    boolean hasReplica = in.readBoolean();
+                    if (hasReplica) {
+                        address = readAddressFromStream(in);
+                    }
+                    table[partition][replica] = address;
                 }
-                table[partition][replica] = address;
             }
+        } catch (IOException e) {
+            throw new IOException("Cannot read partition table!", e);
         }
     }
 

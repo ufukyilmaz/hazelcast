@@ -22,6 +22,7 @@ class PartitionTableWriter extends AbstractMetadataWriter<InternalPartition[]> {
     }
 
     void doWrite(InternalPartition[] partitions) throws IOException {
+        writeInt(partitions.length);
         writeInt(partitionVersion);
         for (InternalPartition partition : partitions) {
             for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {

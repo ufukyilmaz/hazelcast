@@ -38,8 +38,6 @@ abstract class AbstractMetadataReader {
             doRead(in);
 
             closeResource(in);
-        } catch (IOException e) {
-            throw new IOException("Cannot read partition table from: " + file.getAbsolutePath(), e);
         } finally {
             closeResource(fileIn);
         }

@@ -374,7 +374,7 @@
             <properties>
                 <argLine>
                     ${extraVmArgs}
-                    -Xms1g -Xmx1g -XX:MaxPermSize=1024M
+                    -Xms2g -Xmx2g -XX:MaxPermSize=1024M
                     -Dhazelcast.hidensity.check.freememory=false
                     -Dhazelcast.phone.home.enabled=false
                     -Dhazelcast.mancenter.enabled=false
@@ -390,6 +390,14 @@
                         <version>${maven.surefire.plugin.version}</version>
                         <configuration combine.self="override">
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <argLine>
+                                ${extraVmArgs}
+                                -Xms2g -Xmx2g
+                                -Dhazelcast.hidensity.check.freememory=false
+                                -Dhazelcast.phone.home.enabled=false
+                                -Dhazelcast.mancenter.enabled=false
+                                -Dhazelcast.test.use.network=false
+                            </argLine>
                             <testFailureIgnore>true</testFailureIgnore>
                             <groups>com.hazelcast.test.annotation.NightlyTest,com.hazelcast.test.annotation.SlowTest</groups>
                         </configuration>

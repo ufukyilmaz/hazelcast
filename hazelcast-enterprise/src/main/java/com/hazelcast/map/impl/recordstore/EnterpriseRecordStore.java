@@ -85,14 +85,14 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     @Override
     public Record createRecord(Object value, long ttlMillis, long now) {
-        return createRecordInternal(value, ttlMillis, now, NOT_AVAILABLE);
+        return createRecordInternal(value, ttlMillis, now, incrementSequence());
     }
 
     private Record createRecordInternal(Object value, long ttlMillis, long now, long sequence) {
         Record record = super.createRecord(value, ttlMillis, now);
 
         if (NATIVE == inMemoryFormat) {
-            record.setSequence(sequence == NOT_AVAILABLE ? incrementSequence() : sequence);
+            record.setSequence(sequence);
             // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
             // `lastAccessTime` should be zero instead of `now`.
             record.setLastAccessTime(NOT_AVAILABLE);
@@ -164,7 +164,10 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     public long incrementSequence() {
-        return memoryManager.newSequence();
+        if (memoryManager != null && ramStore != null) {
+            return memoryManager.newSequence();
+        }
+        return NOT_AVAILABLE;
     }
 
     private class ReadBackupDataTask extends FutureTask<Data> implements PartitionSpecificRunnable {

@@ -1,13 +1,12 @@
 package com.hazelcast.enterprise.wan.replication;
 
 import com.hazelcast.cache.wan.CacheReplicationObject;
-import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
-import com.hazelcast.enterprise.wan.WANReplicationQueueFullException;
 import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.connection.WanConnectionManager;
@@ -31,6 +30,7 @@ import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.ReplicationEventObject;
+import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
@@ -329,7 +329,9 @@ public abstract class AbstractWanReplication
     public void checkWanReplicationQueues() {
         if (WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
                 && currentElementCount.get() >= queueCapacity) {
-            throw new WANReplicationQueueFullException();
+            throw new WANReplicationQueueFullException(
+                    String.format("WAN replication for target cluster %s is full. Queue capacity is %d",
+                            targetGroupName, queueCapacity));
         }
     }
 

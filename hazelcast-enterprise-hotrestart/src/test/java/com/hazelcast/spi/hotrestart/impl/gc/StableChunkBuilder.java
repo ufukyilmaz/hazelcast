@@ -4,7 +4,6 @@ class StableChunkBuilder {
     private long seq;
     private RecordMap records = new RecordMapOnHeap();
     private int liveRecordCount;
-    private long youngestRecordSeq;
     private long size;
     private long garbage;
     private boolean needsDismissing;
@@ -18,7 +17,7 @@ class StableChunkBuilder {
 
     StableValChunk build() {
         return new StableValChunk(
-                seq, records, liveRecordCount, youngestRecordSeq, size, garbage, needsDismissing, compressed);
+                seq, records, liveRecordCount, size, garbage, needsDismissing, compressed);
     }
 
     StableChunkBuilder compressed(boolean compressed) {
@@ -53,11 +52,6 @@ class StableChunkBuilder {
 
     StableChunkBuilder size(long size) {
         this.size = size;
-        return this;
-    }
-
-    StableChunkBuilder youngestRecordSeq(long youngestRecordSeq) {
-        this.youngestRecordSeq = youngestRecordSeq;
         return this;
     }
 }

@@ -26,10 +26,10 @@ final class GcParams {
     final double minBenefitToCost;
     final boolean forceGc;
     final boolean limitSrcChunks;
-    final long currRecordSeq;
+    final long currChunkSeq;
 
-    private GcParams(long garbage, long liveData, double ratio, long currRecordSeq, boolean forceGc) {
-        this.currRecordSeq = currRecordSeq;
+    private GcParams(long garbage, long liveData, double ratio, long currChunkSeq, boolean forceGc) {
+        this.currChunkSeq = currChunkSeq;
         this.forceGc = forceGc;
         final long costGoalChunks = max(1, min(MAX_COST_CHUNKS, liveData / Chunk.SIZE_LIMIT));
         final long costGoalBytes = Chunk.SIZE_LIMIT * costGoalChunks;
@@ -51,12 +51,12 @@ final class GcParams {
         }
     }
 
-    static GcParams gcParams(long garbage, long occupancy, long currRecordSeq) {
+    static GcParams gcParams(long garbage, long occupancy, long currChunkSeq) {
         final long liveData = occupancy - garbage;
         final double ratio = garbage / (double) liveData;
         final boolean forceGc = ratio >= MAX_GARBAGE_RATIO && garbage >= MIN_GARBAGE_TO_FORCE_GC;
         return ratio < MIN_GARBAGE_RATIO ? ZERO
-                : new GcParams(garbage, liveData, ratio, currRecordSeq, forceGc);
+                : new GcParams(garbage, liveData, ratio, currChunkSeq, forceGc);
     }
 
     @Override public String toString() {

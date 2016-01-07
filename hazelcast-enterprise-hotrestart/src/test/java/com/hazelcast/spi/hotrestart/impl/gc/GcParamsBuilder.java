@@ -8,7 +8,7 @@ class GcParamsBuilder {
     private final GcParams gcp = gcParams(1, 1, 1);
     private long costGoal;
     private long maxCost;
-    private long currRecordSeq;
+    private long currChunkSeq;
     private long benefitGoal;
     private double minBenefitToCost;
     private boolean forceGc;
@@ -24,7 +24,7 @@ class GcParamsBuilder {
     GcParams build() {
         setField("costGoal", costGoal);
         setField("maxCost", maxCost);
-        setField("currRecordSeq", currRecordSeq);
+        setField("currChunkSeq", currChunkSeq);
         setField("benefitGoal", benefitGoal);
         setField("minBenefitToCost", minBenefitToCost);
         setField("forceGc", forceGc);
@@ -52,8 +52,8 @@ class GcParamsBuilder {
         return this;
     }
 
-    GcParamsBuilder currRecordSeq(long currRecordSeq) {
-        this.currRecordSeq = currRecordSeq;
+    GcParamsBuilder currChunkSeq(long currChunkSeq) {
+        this.currChunkSeq = currChunkSeq;
         return this;
     }
 

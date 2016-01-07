@@ -186,19 +186,16 @@ public final class Rebuilder {
     }
 
     private static final class RebuildingValChunk extends RebuildingChunk {
-        private long youngestSeq;
-
         RebuildingValChunk(long seq, RecordMap records, boolean compressed) {
             super(seq, records, compressed);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            youngestSeq = seq;
             add0(prefix, kh, seq, size, false);
         }
 
         @Override StableChunk toStableChunk() {
-            return new StableValChunk(seq, records, liveRecordCount, youngestSeq, size(), garbage, false, compressed);
+            return new StableValChunk(seq, records, liveRecordCount, size(), garbage, false, compressed);
         }
 
         @Override void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {

@@ -121,8 +121,6 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         target.setReplicationImpl(getReplicationImpl());
         target.setEndpoints(getClusterEndPoints(config, count));
         target.setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
-        target.setBatchMaxDelayMillis(5000);
-        target.setBatchSize(50);
         return target;
     }
 
@@ -165,7 +163,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
     private NativeMemoryConfig getMemoryConfig() {
-        MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
+        MemorySize memorySize = new MemorySize(128, MemoryUnit.MEGABYTES);
         return
                 new NativeMemoryConfig()
                         .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)

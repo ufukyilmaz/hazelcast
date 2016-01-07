@@ -4,52 +4,45 @@ import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.Node;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.LinkedList;
 
 /**
- * No delaying distribution implementation on WAN replication
+ * No delaying distribution implementation on WAN replication.
  */
-public class WanNoDelayReplication extends AbstractWanReplication
+public class WanNoDelayReplication
+        extends AbstractWanReplication
         implements Runnable {
 
-    private ILogger logger;
     private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
-    private volatile boolean running = true;
 
     @Override
-    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig,
+                     boolean snapshotEnabled) {
         super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
-        this.logger = node.getLogger(WanNoDelayReplication.class.getName());
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
-    }
-
-    public void shutdown() {
-        running = false;
     }
 
     public void run() {
         while (running) {
             WanConnectionWrapper connectionWrapper = null;
             try {
-                WanReplicationEvent event = (failureQ.size() > 0) ? failureQ.removeFirst() : stagingQueue.take();
-
+                WanReplicationEvent event =
+                        (failureQ.size() > 0)
+                                ? failureQ.removeFirst()
+                                : stagingQueue.take();
                 if (event != null) {
                     EnterpriseReplicationEventObject replicationEventObject
                             = (EnterpriseReplicationEventObject) event.getEventObject();
-                    connectionWrapper = connectionManager.getConnection(getPartitionId(replicationEventObject.getKey()));
+                    int partitionId = getPartitionId(replicationEventObject.getKey());
+                    connectionWrapper = connectionManager.getConnection(partitionId);
                     Connection conn = connectionWrapper.getConnection();
                     handleEvent(event, conn);
                 }
-            } catch (InterruptedException e) {
-                running = false;
-            } catch (Throwable e) {
-                if (logger != null) {
-                    logger.warning(e);
-                }
+            } catch (Throwable t) {
+                logger.warning(t);
                 if (connectionWrapper != null) {
                     connectionManager.reportFailedConnection(connectionWrapper.getTargetAddress());
                 }
@@ -59,19 +52,19 @@ public class WanNoDelayReplication extends AbstractWanReplication
 
     private void handleEvent(WanReplicationEvent event, Connection conn) {
         boolean eventSuccessfullySent = false;
-        if (conn != null && conn.isAlive()) {
-            try {
-                boolean isTargetInvocationSuccessfull = invokeOnWanTarget(conn.getEndPoint(), event);
-                if (isTargetInvocationSuccessfull) {
+        try {
+            if (conn != null && conn.isAlive()) {
+                boolean isTargetInvocationSuccessful = invokeOnWanTarget(conn.getEndPoint(), event);
+                if (isTargetInvocationSuccessful) {
                     removeReplicationEvent(event);
                 }
-                eventSuccessfullySent = isTargetInvocationSuccessfull;
-            } catch (Exception ignored) {
-                logger.warning(ignored);
+                eventSuccessfullySent = isTargetInvocationSuccessful;
+            }
+        } finally {
+            if (!eventSuccessfullySent) {
+                failureQ.add(event);
             }
         }
-        if (!eventSuccessfullySent) {
-            failureQ.add(event);
-        }
     }
+
 }

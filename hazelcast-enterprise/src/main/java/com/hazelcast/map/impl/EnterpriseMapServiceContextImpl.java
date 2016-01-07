@@ -113,8 +113,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     public RamStore ramStoreForPrefix(long prefix) {
         int partitionId = PersistentCacheDescriptors.toPartitionId(prefix);
         String name = hotRestartService.getCacheName(prefix);
-        EnterpriseRecordStore recordStore = (EnterpriseRecordStore) getRecordStore(partitionId, name);
-        return recordStore.getRamStore();
+        EnterpriseRecordStore recordStore = (EnterpriseRecordStore) getExistingRecordStore(partitionId, name);
+        return recordStore == null ? null : recordStore.getRamStore();
     }
 
     @Override

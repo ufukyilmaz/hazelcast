@@ -6,7 +6,6 @@ import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Connection;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.EmptyStatement;
@@ -24,32 +23,30 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Wan replication publisher that sends events in batches.
- * <p>Basically, it either publishes events either when a pre-defined
- * (see {@link com.hazelcast.instance.GroupProperties#ENTERPRISE_WAN_REP_BATCH_SIZE}) number of events are enqueued
- * or
- * enqueued events are waited enough (see
- * {@link com.hazelcast.instance.GroupProperties#PROP_ENTERPRISE_WAN_REP_BATCH_FREQUENCY_SECONDS}
+ * <p>
+ * Basically, it either publishes events either when a pre-defined
+ * (see {@link WanTargetClusterConfig#batchSize}) number of events are enqueued
+ * or enqueued events are waited enough (see {@link WanTargetClusterConfig#batchMaxDelayMillis}).
  * </p>
  */
-public class WanBatchReplication extends AbstractWanReplication
+public class WanBatchReplication
+        extends AbstractWanReplication
         implements Runnable {
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 50;
 
-    private ILogger logger;
-    private List<String> targets = new ArrayList<String>();
+    private final List<String> targets = new ArrayList<String>();
+    private final Object mutex = new Object();
 
+    private volatile StripedExecutor executor;
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
-    private final Object mutex = new Object();
-    private volatile StripedExecutor executor;
-
     @Override
-    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig,
+                     boolean snapshotEnabled) {
         super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
-        logger = node.getLogger(WanBatchReplication.class.getName());
-        this.targets.addAll(targetClusterConfig.getEndpoints());
+        targets.addAll(targetClusterConfig.getEndpoints());
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -93,6 +90,9 @@ public class WanBatchReplication extends AbstractWanReplication
         List<WanReplicationEvent> wanReplicationEventList = new ArrayList<WanReplicationEvent>();
         while (!(wanReplicationEventList.size() >= batchSize
                 || sendingPeriodPassed(wanReplicationEventList.size()))) {
+            if (!running) {
+                break;
+            }
             WanReplicationEvent event = null;
             try {
                  event = stagingQueue.poll(batchMaxDelayMillis, TimeUnit.MILLISECONDS);
@@ -117,7 +117,7 @@ public class WanBatchReplication extends AbstractWanReplication
             } catch (RejectedExecutionException ree) {
                 logger.info("WanBatchReplication striped runnable job queue is full. Retrying.");
             }
-        } while (!taskSubmitted && ex.isLive());
+        } while (!taskSubmitted && running);
     }
 
     private String getTarget(Data key) {
@@ -166,30 +166,27 @@ public class WanBatchReplication extends AbstractWanReplication
         public void run() {
             boolean transmitSucceed = false;
             do {
-                WanConnectionWrapper connectionWrapper;
+                WanConnectionWrapper connectionWrapper = null;
                 try {
                     connectionWrapper = connectionManager.getConnection(target);
                     Connection conn = connectionWrapper.getConnection();
                     if (conn != null && conn.isAlive()) {
-                        try {
-                            boolean isTargetInvocationSuccesfull
-                                    = invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent);
-                            if (isTargetInvocationSuccesfull) {
-                                for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
-                                    removeReplicationEvent(event);
-                                }
+                        boolean isTargetInvocationSuccessful
+                                = invokeOnWanTarget(conn.getEndPoint(), batchReplicationEvent);
+                        if (isTargetInvocationSuccessful) {
+                            for (WanReplicationEvent event : batchReplicationEvent.getEventList()) {
+                                removeReplicationEvent(event);
                             }
-                            transmitSucceed = isTargetInvocationSuccesfull;
-                        } catch (Exception ignored) {
-                            logger.warning(ignored);
                         }
+                        transmitSucceed = isTargetInvocationSuccessful;
                     }
-                } catch (Throwable e) {
-                    if (logger != null) {
-                        logger.warning(e);
+                } catch (Throwable t) {
+                    logger.warning(t);
+                    if (connectionWrapper != null) {
+                        connectionManager.reportFailedConnection(connectionWrapper.getTargetAddress());
                     }
                 }
-            } while (!transmitSucceed);
+            } while (!transmitSucceed && running);
         }
 
         @Override
@@ -206,5 +203,7 @@ public class WanBatchReplication extends AbstractWanReplication
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
+
     }
+
 }

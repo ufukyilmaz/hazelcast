@@ -40,39 +40,39 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Abstract WAN event publisher implementation
+ * Abstract WAN event publisher implementation.
  */
 public abstract class AbstractWanReplication
         implements WanReplicationPublisher, WanReplicationEndpoint {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
 
-    volatile boolean running = true;
-    volatile boolean paused;
+    protected volatile boolean running = true;
+    protected volatile boolean paused;
 
-    String targetGroupName;
-    String localGroupName;
-    String wanReplicationName;
-    boolean snapshotEnabled;
-    Node node;
-    int queueCapacity;
-    WanConnectionManager connectionManager;
-    WanAcknowledgeType acknowledgeType;
-    WANQueueFullBehavior queueFullBehavior;
+    protected String targetGroupName;
+    protected String localGroupName;
+    protected String wanReplicationName;
+    protected boolean snapshotEnabled;
+    protected Node node;
+    protected int queueCapacity;
+    protected WanConnectionManager connectionManager;
+    protected WanAcknowledgeType acknowledgeType;
+    protected WANQueueFullBehavior queueFullBehavior;
 
-    int batchSize;
-    long batchMaxDelayMillis;
-    long responseTimeoutMillis;
-    long lastQueueFullLogTimeMs;
+    protected int batchSize;
+    protected long batchMaxDelayMillis;
+    protected long responseTimeoutMillis;
+    protected long lastQueueFullLogTimeMs;
 
-    int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
+    protected int queueLoggerTimePeriodMs = QUEUE_LOGGER_PERIOD_MILLIS;
 
-    PublisherQueueContainer eventQueueContainer;
-    BlockingQueue<WanReplicationEvent> stagingQueue;
+    protected PublisherQueueContainer eventQueueContainer;
+    protected BlockingQueue<WanReplicationEvent> stagingQueue;
 
-    private LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
+    protected ILogger logger;
 
-    private ILogger logger;
+    private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
 
@@ -81,30 +81,32 @@ public abstract class AbstractWanReplication
         publishReplicationEvent(serviceName, eventObject);
     }
 
-    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled) {
+    @Override
+    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig,
+                     boolean snapshotEnabled) {
         this.node = node;
         this.targetGroupName = targetClusterConfig.getGroupName();
         this.snapshotEnabled = snapshotEnabled;
         this.wanReplicationName = wanReplicationName;
-        this.logger = node.getLogger(AbstractWanReplication.class.getName());
+        this.logger = node.getLogger(getClass());
 
-        queueCapacity = targetClusterConfig.getQueueCapacity();
-        localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
+        this.queueCapacity = targetClusterConfig.getQueueCapacity();
+        this.localGroupName = node.nodeEngine.getConfig().getGroupConfig().getName();
 
-        batchSize = targetClusterConfig.getBatchSize();
-        batchMaxDelayMillis = targetClusterConfig.getBatchMaxDelayMillis();
-        responseTimeoutMillis = targetClusterConfig.getResponseTimeoutMillis();
+        this.batchSize = targetClusterConfig.getBatchSize();
+        this.batchMaxDelayMillis = targetClusterConfig.getBatchMaxDelayMillis();
+        this.responseTimeoutMillis = targetClusterConfig.getResponseTimeoutMillis();
 
-        connectionManager = new WanConnectionManager(node);
-        connectionManager.init(targetGroupName, targetClusterConfig.getGroupPassword(), targetClusterConfig.getEndpoints());
+        this.connectionManager = new WanConnectionManager(node);
+        this.connectionManager.init(targetGroupName, targetClusterConfig.getGroupPassword(),
+                                    targetClusterConfig.getEndpoints());
 
-        eventQueueContainer = new PublisherQueueContainer(node);
-        stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
-        acknowledgeType = targetClusterConfig.getAcknowledgeType();
-        queueFullBehavior = targetClusterConfig.getQueueFullBehavior();
+        this.eventQueueContainer = new PublisherQueueContainer(node);
+        this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(batchSize);
+        this.acknowledgeType = targetClusterConfig.getAcknowledgeType();
+        this.queueFullBehavior = targetClusterConfig.getQueueFullBehavior();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
-
     }
 
     int getPartitionId(Object key) {
@@ -137,8 +139,10 @@ public abstract class AbstractWanReplication
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject replicationEventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        EWRPutOperation ewrPutOperation = new EWRPutOperation(wanReplicationName,
-                targetGroupName, node.nodeEngine.toData(wanReplicationEvent), replicationEventObject.getBackupCount());
+        EWRPutOperation ewrPutOperation =
+                new EWRPutOperation(wanReplicationName, targetGroupName,
+                                    node.nodeEngine.toData(wanReplicationEvent),
+                                    replicationEventObject.getBackupCount());
         invokeOnPartition(wanReplicationEvent.getServiceName(), replicationEventObject.getKey(), ewrPutOperation);
     }
 
@@ -164,19 +168,18 @@ public abstract class AbstractWanReplication
         boolean eventPublished = false;
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
+            String cacheName = cacheReplicationObject.getNameWithPrefix();
             if (dropEvent) {
-                eventQueueContainer.pollCacheWanEvent(
-                        cacheReplicationObject.getNameWithPrefix(), partitionId);
+                eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
             }
-            eventPublished = eventQueueContainer.publishCacheWanEvent(
-                    cacheReplicationObject.getNameWithPrefix(), partitionId, replicationEvent);
+            eventPublished = eventQueueContainer.publishCacheWanEvent(cacheName, partitionId, replicationEvent);
         } else if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
+            String mapName = mapReplicationObject.getMapName();
             if (dropEvent) {
-                eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
+                eventQueueContainer.pollMapWanEvent(mapName, partitionId);
             }
-            eventPublished = eventQueueContainer.publishMapWanEvent(
-                    mapReplicationObject.getMapName(), partitionId, replicationEvent);
+            eventPublished = eventQueueContainer.publishMapWanEvent(mapName, partitionId, replicationEvent);
         } else {
             logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
         }
@@ -203,18 +206,22 @@ public abstract class AbstractWanReplication
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         removeLocal();
         updateStats(wanReplicationEvent);
-        Operation ewrRemoveOperation = new EWRRemoveBackupOperation(wanReplicationName,
-                targetGroupName,
-                node.nodeEngine.getSerializationService().toData(wanReplicationEvent));
+        Data wanReplicationEventData
+                = node.nodeEngine.getSerializationService().toData(wanReplicationEvent);
+        Operation ewrRemoveOperation
+                = new EWRRemoveBackupOperation(wanReplicationName, targetGroupName, wanReplicationEventData);
         OperationService operationService = node.nodeEngine.getOperationService();
-        EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        EnterpriseReplicationEventObject evObj
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         int backupCount = evObj.getBackupCount();
         int clusterSize = node.getClusterService().getSize();
+        int partitionId = getPartitionId(evObj.getKey());
         for (int i = 0; i < backupCount && i < clusterSize - 1; i++) {
             try {
-                operationService.createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
-                        ewrRemoveOperation,
-                        getPartitionId(evObj.getKey()))
+                operationService
+                        .createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
+                                                 ewrRemoveOperation,
+                                                 partitionId)
                         .setResultDeserialized(false)
                         .setReplicaIndex(i + 1)
                         .invoke().get();
@@ -237,15 +244,18 @@ public abstract class AbstractWanReplication
 
     @Override
     public void removeBackup(WanReplicationEvent wanReplicationEvent) {
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        EnterpriseReplicationEventObject eventObject
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         int partitionId = getPartitionId(eventObject.getKey());
         WanReplicationEvent wanEvent = null;
         if (eventObject instanceof CacheReplicationObject) {
             CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            wanEvent = eventQueueContainer.pollCacheWanEvent(cacheReplicationObject.getNameWithPrefix(), partitionId);
+            String cacheName = cacheReplicationObject.getNameWithPrefix();
+            wanEvent = eventQueueContainer.pollCacheWanEvent(cacheName, partitionId);
         } else if (eventObject instanceof EnterpriseMapReplicationObject) {
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            wanEvent = eventQueueContainer.pollMapWanEvent(mapReplicationObject.getMapName(), partitionId);
+            String mapName = mapReplicationObject.getMapName();
+            wanEvent = eventQueueContainer.pollMapWanEvent(mapName, partitionId);
         } else {
             logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
         }
@@ -257,19 +267,9 @@ public abstract class AbstractWanReplication
 
     @Override
     public void putBackup(WanReplicationEvent wanReplicationEvent) {
-        EnterpriseReplicationEventObject eventObject = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+        EnterpriseReplicationEventObject eventObject
+                = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         publishReplicationEvent(wanReplicationEvent.getServiceName(), eventObject);
-        /*int partitionId = getPartitionId(eventObject.getKey());
-        if (eventObject instanceof CacheReplicationObject) {
-            CacheReplicationObject cacheReplicationObject = (CacheReplicationObject) eventObject;
-            eventQueueContainer.publishCacheWanEvent(cacheReplicationObject.getNameWithPrefix(),
-                    partitionId, wanReplicationEvent);
-        } else if (eventObject instanceof EnterpriseMapReplicationObject) {
-            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            eventQueueContainer.publishMapWanEvent(mapReplicationObject.getMapName(), partitionId, wanReplicationEvent);
-        } else {
-            logger.warning("Unexpected replication event object type" + eventObject.getClass().getName());
-        }*/
     }
 
     public String getTargetGroupName() {
@@ -338,7 +338,6 @@ public abstract class AbstractWanReplication
         @Override
         public void run() {
             while (running) {
-
                 boolean offered = false;
 
                 if (!paused) {
@@ -351,8 +350,9 @@ public abstract class AbstractWanReplication
                         if (event == null) {
                             continue;
                         }
+
                         offered = false;
-                        while (!offered) {
+                        while (!offered && running) {
                             try {
                                 stagingQueue.put(event);
                                 offered = true;
@@ -364,7 +364,7 @@ public abstract class AbstractWanReplication
                     }
                 }
 
-                if (!offered) {
+                if (!offered && running) {
                     int sleepMs = ++emptyIterationCount * SLEEP_INTERVAL_MS;
                     try {
                         Thread.sleep(Math.min(sleepMs, MAX_SLEEP_MS));
@@ -372,8 +372,9 @@ public abstract class AbstractWanReplication
                         EmptyStatement.ignore(ignored);
                     }
                 }
-
             }
         }
+
     }
+
 }

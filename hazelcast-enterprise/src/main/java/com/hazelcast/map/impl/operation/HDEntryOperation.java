@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.InMemoryFormat;
@@ -43,6 +27,9 @@ import com.hazelcast.util.Clock;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.hazelcast.core.EntryEventType.ADDED;
+import static com.hazelcast.core.EntryEventType.REMOVED;
+import static com.hazelcast.core.EntryEventType.UPDATED;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
@@ -52,7 +39,7 @@ import static com.hazelcast.map.impl.recordstore.RecordStore.DEFAULT_TTL;
  */
 public class HDEntryOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
 
-    protected Object value;
+    protected Object oldValue;
     private EntryProcessor entryProcessor;
     private EntryEventType eventType;
     private Object response;
@@ -77,18 +64,21 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     @Override
     protected void runInternal() {
-        value = recordStore.get(dataKey, false);
-        Map.Entry entry = createMapEntry(dataKey, value);
+        final long now = getNow();
+        oldValue = recordStore.get(dataKey, false);
+
+        Map.Entry entry = createMapEntry(dataKey, oldValue);
+
         response = process(entry);
 
         // first call noOp, other if checks below depends on it.
         if (noOp(entry)) {
             return;
         }
-        if (entryRemoved(entry, getNow())) {
+        if (entryRemoved(entry, now)) {
             return;
         }
-        entryAddedOrUpdated(entry, getNow());
+        entryAddedOrUpdated(entry, now);
     }
 
     @Override
@@ -156,7 +146,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
      */
     private boolean noOp(Map.Entry entry) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
-        return !mapEntrySimple.isModified() || (value == null && entry.getValue() == null);
+        return !mapEntrySimple.isModified() || (oldValue == null && entry.getValue() == null);
     }
 
     private boolean entryRemoved(Map.Entry entry, long now) {
@@ -164,7 +154,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         if (value == null) {
             recordStore.remove(dataKey);
             getLocalMapStats().incrementRemoves(getLatencyFrom(now));
-            eventType = pickEventTypeOrNull(entry);
+            eventType = REMOVED;
             return true;
         }
         return false;
@@ -173,38 +163,19 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     /**
      * Only difference between add and update is event type to be published.
      */
-    private boolean entryAddedOrUpdated(Map.Entry entry, long now) {
-        final Object value = entry.getValue();
-        if (value != null) {
-            put(value);
-            getLocalMapStats().incrementPuts(getLatencyFrom(now));
-            eventType = pickEventTypeOrNull(entry);
-            return true;
-        }
-        return false;
+    private void entryAddedOrUpdated(Map.Entry entry, long now) {
+        Object value = entry.getValue();
+        put(dataKey, value);
+        getLocalMapStats().incrementPuts(getLatencyFrom(now));
+
+        dataValue = value;
+        eventType = oldValue == null ? ADDED : UPDATED;
     }
 
-    private EntryEventType pickEventTypeOrNull(Map.Entry entry) {
-        final Object value = entry.getValue();
-        if (value == null) {
-            return EntryEventType.REMOVED;
-        } else {
-            dataValue = value;
-            if (this.value == null) {
-                return EntryEventType.ADDED;
-            }
-            final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
-            if (mapEntrySimple.isModified()) {
-                return EntryEventType.UPDATED;
-            }
-        }
-        // return null for read only operations.
-        return null;
+    private void put(Data key, Object value) {
+        recordStore.put(key, value, DEFAULT_TTL);
     }
 
-    private void put(Object value) {
-        recordStore.put(dataKey, value, DEFAULT_TTL);
-    }
 
     private Data process(Map.Entry entry) {
         final Object result = entryProcessor.process(entry);
@@ -234,8 +205,8 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     private void nullifyOldValueIfNecessary() {
         final MapConfig mapConfig = mapContainer.getMapConfig();
         final InMemoryFormat format = mapConfig.getInMemoryFormat();
-        if (format == InMemoryFormat.OBJECT && eventType != EntryEventType.REMOVED) {
-            value = null;
+        if (format == InMemoryFormat.OBJECT && eventType != REMOVED) {
+            oldValue = null;
         }
     }
 
@@ -243,19 +214,20 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         if (hasRegisteredListenerForThisMap()) {
             nullifyOldValueIfNecessary();
             final MapEventPublisher mapEventPublisher = getMapEventPublisher();
-            mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, value, dataValue);
+            mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, oldValue, dataValue);
         }
     }
 
     private void publishWanReplicationEvent() {
         final MapContainer mapContainer = this.mapContainer;
-        if (!mapContainer.isWanReplicationEnabled()) {
+        if (mapContainer.getWanReplicationPublisher() == null
+                && mapContainer.getWanMergePolicy() == null) {
             return;
         }
         final MapEventPublisher mapEventPublisher = getMapEventPublisher();
         final Data key = dataKey;
 
-        if (EntryEventType.REMOVED.equals(eventType)) {
+        if (REMOVED.equals(eventType)) {
             mapEventPublisher.publishWanReplicationRemove(name, key, getNow());
         } else {
             final Record record = recordStore.getRecord(key);

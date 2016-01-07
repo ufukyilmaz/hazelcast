@@ -8,6 +8,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.IMap;
 import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.map.HDTestSupport;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.AssertTask;
@@ -66,7 +67,7 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @Override
     protected Config newConfig() {
-        Config config = super.newConfig();
+        Config config = HDTestSupport.getHDConfig(super.newConfig());
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, UNLIMITED_LICENSE);
         return config;
     }

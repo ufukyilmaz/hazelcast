@@ -31,6 +31,10 @@ public final class HDTestSupport {
     public static final MemorySize NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
 
     public static Config getHDConfig() {
+        return getHDConfig(new Config());
+    }
+
+    public static Config getHDConfig(Config config) {
         MapConfig mapConfig = new MapConfig();
         mapConfig.setName("default");
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
@@ -40,7 +44,6 @@ public final class HDTestSupport {
         memoryConfig.setSize(NATIVE_MEMORY_SIZE);
         memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
-        Config config = new Config();
         config.addMapConfig(mapConfig);
         config.setNativeMemoryConfig(memoryConfig);
         return config;

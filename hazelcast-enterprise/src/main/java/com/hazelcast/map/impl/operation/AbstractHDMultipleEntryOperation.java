@@ -26,9 +26,7 @@ import com.hazelcast.map.impl.LazyMapEntry;
 import com.hazelcast.map.impl.LocalMapStatsProvider;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
@@ -104,11 +102,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         } else {
             return oldValue;
         }
-    }
-
-    protected MapEventPublisher getMapEventPublisher() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        return mapServiceContext.getMapEventPublisher();
     }
 
     protected LocalMapStatsImpl getLocalMapStats() {
@@ -201,12 +194,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         recordStore.put(key, value, DEFAULT_TTL);
     }
 
-
-    protected Object toObject(Object data) {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        return mapServiceContext.toObject(data);
-    }
-
     protected Data toData(Object obj) {
         final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         return mapServiceContext.toData(obj);
@@ -219,8 +206,8 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     protected void publishEntryEvent(Data key, Object value, Object oldValue, EntryEventType eventType) {
         if (hasRegisteredListenerForThisMap()) {
             oldValue = nullifyOldValueIfNecessary(oldValue, eventType);
-            final MapEventPublisher mapEventPublisher = getMapEventPublisher();
-            mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, key, oldValue, value);
+            mapServiceContext.getMapEventPublisher()
+                    .publishEvent(getCallerAddress(), name, eventType, key, oldValue, value);
         }
     }
 
@@ -229,24 +216,16 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
-        final MapEventPublisher mapEventPublisher = getMapEventPublisher();
         if (EntryEventType.REMOVED.equals(eventType)) {
-            mapEventPublisher.publishWanReplicationRemove(name, key, getNow());
+            mapServiceContext.getMapEventPublisher().publishWanReplicationRemove(name, key, getNow());
         } else {
             final Record record = recordStore.getRecord(key);
             if (record != null) {
                 final EntryView entryView = createSimpleEntryView(key, dataValue, record);
-                mapEventPublisher.publishWanReplicationUpdate(name, entryView);
+                mapServiceContext.getMapEventPublisher().publishWanReplicationUpdate(name, entryView);
             }
         }
     }
-
-
-    protected MapServiceContext getMapServiceContext() {
-        final MapService mapService = getService();
-        return mapService.getMapServiceContext();
-    }
-
 
     protected long getLatencyFrom(long begin) {
         return Clock.currentTimeMillis() - begin;

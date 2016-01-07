@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.BackupAwareOperation;
@@ -40,24 +39,23 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
     private int numberOfEvictedEntries;
 
     public HDEvictAllOperation() {
+        this(null);
     }
 
     public HDEvictAllOperation(String name) {
         super(name);
+        createRecordStoreOnDemand = false;
     }
 
     @Override
     protected void runInternal() {
-
         // TODO this also clears locked keys from near cache which should be preserved.
         clearNearCache(true);
 
-        final RecordStore recordStore = mapServiceContext.getExistingRecordStore(getPartitionId(), name);
-        if (recordStore == null) {
-            return;
+        if (recordStore != null) {
+            numberOfEvictedEntries = recordStore.evictAll(false);
+            shouldRunOnBackup = true;
         }
-        numberOfEvictedEntries = recordStore.evictAll(false);
-        shouldRunOnBackup = true;
     }
 
     @Override
@@ -110,13 +108,5 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         numberOfEvictedEntries = in.readInt();
-    }
-
-    @Override
-    protected void toString(StringBuilder sb) {
-        sb.append("HDEvictAllOperation{");
-        sb.append("shouldRunOnBackup=" + shouldRunOnBackup);
-        sb.append(", numberOfEvictedEntries=" + numberOfEvictedEntries + '}');
-
     }
 }

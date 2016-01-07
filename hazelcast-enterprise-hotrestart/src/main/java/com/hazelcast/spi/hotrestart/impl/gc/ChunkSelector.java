@@ -133,7 +133,7 @@ final class ChunkSelector {
             }
             final StableValChunk c = (StableValChunk) chunk;
             if (c.size() == 0 || c.garbage > 0) {
-                c.updateCostBenefit(gcp.currRecordSeq);
+                c.updateCostBenefit(gcp.currChunkSeq);
                 candidates.add(c);
             }
         }
@@ -185,7 +185,7 @@ final class ChunkSelector {
                 continue;
             }
             final StableValChunk c = (StableValChunk) chunk;
-            c.updateCostBenefit(gcp.currRecordSeq);
+            c.updateCostBenefit(gcp.currChunkSeq);
             valChunks.add(c);
         }
         Collections.sort(valChunks, BY_SEQ_DESC);
@@ -200,7 +200,7 @@ final class ChunkSelector {
         for (StableValChunk c : valChunks) {
             o.format("%4x %3d %,15.2f    %,7d %s %s%n",
                     c.seq,
-                    log2(gcp.currRecordSeq - c.youngestRecordSeq),
+                    log2(gcp.currChunkSeq - c.seq),
                     c.cachedCostBenefit(),
                     c.liveRecordCount,
                     selectedSeqs.contains(c.seq) ? "X" : " ",

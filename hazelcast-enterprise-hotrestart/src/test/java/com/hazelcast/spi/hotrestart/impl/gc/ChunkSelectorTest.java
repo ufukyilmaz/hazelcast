@@ -43,7 +43,7 @@ public class ChunkSelectorTest {
     @Test public void when_goalsAreHigh_then_selectAllChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
-                .currRecordSeq(1000 * 1000)
+                .currChunkSeq(10)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
                 .benefitGoal(Long.MAX_VALUE)
@@ -56,7 +56,6 @@ public class ChunkSelectorTest {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(10)
-                    .youngestRecordSeq(11 * i)
                     .size(10)
                     .garbage(9)
                     .build());
@@ -67,7 +66,7 @@ public class ChunkSelectorTest {
     @Test public void when_tooManyRecords_thenLimitChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
-                .currRecordSeq(1000 * 1000)
+                .currChunkSeq(10)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
                 .benefitGoal(Long.MAX_VALUE)
@@ -80,7 +79,6 @@ public class ChunkSelectorTest {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(1 + MAX_RECORD_COUNT / 10)
-                    .youngestRecordSeq(11 * i)
                     .size(10)
                     .garbage(9)
                     .build());
@@ -91,7 +89,7 @@ public class ChunkSelectorTest {
     @Test public void when_tooManyEmptyChunks_thenLimitChunks() {
         final int chunkCount = INITIAL_TOP_CHUNKS + 1;
         final GcParams gcp = gcp()
-                .currRecordSeq(1000 * 1000)
+                .currChunkSeq(10)
                 .costGoal(Long.MAX_VALUE)
                 .maxCost(Long.MAX_VALUE)
                 .benefitGoal(Long.MAX_VALUE)
@@ -104,7 +102,6 @@ public class ChunkSelectorTest {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(10)
-                    .youngestRecordSeq(11 * i)
                     .size(10)
                     .garbage(10)
                     .build());
@@ -115,17 +112,15 @@ public class ChunkSelectorTest {
     @Test public void when_logFinestEnabled_thenDontFailInDiagnoseChunks() {
         final Collection<StableChunk> allChunks = new ArrayList<StableChunk>();
         final int chunkCount = 20;
-        final int currRecordSeq = 1000 * 1000;
         for (int i = 0; i < chunkCount; i++) {
             allChunks.add(chunkBuilder()
                     .seq(i + 1)
                     .liveRecordCount(10)
-                    .youngestRecordSeq(i * currRecordSeq / chunkCount)
                     .size(8*1000*1000)
                     .garbage((chunkCount - i) * 100 * 1000)
                     .build());
         }
-        diagnoseChunks(allChunks, allChunks, gcp().currRecordSeq(currRecordSeq).build(), loggerWithFinestEnabled);
+        diagnoseChunks(allChunks, allChunks, gcp().currChunkSeq(chunkCount).build(), loggerWithFinestEnabled);
     }
 
     private ChunkSelector.ChunkSelection selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {

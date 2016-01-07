@@ -23,7 +23,6 @@ public class ChunkTest {
 
     final long keyPrefix = 1;
     final long chunkseq = 7;
-    final long youngestRecordSeq = 1000;
     final long chunkSize = 100;
     final long chunkGarbage = 90;
     final long recordSeq = 11;
@@ -35,7 +34,7 @@ public class ChunkTest {
         records.putIfAbsent(keyPrefix, keyHandle, recordSeq, recordSize, false, 0);
         record = records.get(keyHandle);
         stableValChunk = new StableValChunk(
-                chunkseq, records, 1, youngestRecordSeq, chunkSize, chunkGarbage, false, false);
+                chunkseq, records, 1, chunkSize, chunkGarbage, false, false);
     }
 
     @Test public void size_reportsCorrectly() {

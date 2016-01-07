@@ -266,7 +266,7 @@ public final class ChunkManager {
     }
 
     GcParams gcParams() {
-        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.recordSeq());
+        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.chunkSeq());
     }
 
     @SuppressWarnings("checkstyle:innerassignment")

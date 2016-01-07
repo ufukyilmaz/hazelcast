@@ -59,7 +59,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     private void put0(HotRestartKey hrKey, byte[] value, boolean needsFsync) {
         validateStatus();
         final int size = Record.size(hrKey.bytes(), value);
-        final long seq = gcHelper.nextRecordSeq(size);
+        final long seq = gcHelper.nextRecordSeq();
         final boolean isTombstone = value == null;
         WriteThroughChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
         activeChunk.flagForFsyncOnClose(needsFsync);

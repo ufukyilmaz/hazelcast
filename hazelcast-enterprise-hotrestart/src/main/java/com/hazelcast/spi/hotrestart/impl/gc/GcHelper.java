@@ -31,10 +31,6 @@ public abstract class GcHelper implements Disposable {
     /** Name of the file that contains prefix tombstones */
     public static final String PREFIX_TOMBSTONES_FILENAME = "prefix-tombstones";
 
-    /** Sequence number of records increases by amount proportional to record size.
-     * This constant defines the proportion's ratio. */
-    public static final long BYTES_PER_RECORD_SEQ_INCREMENT = 32;
-
     /** A hex digit represents this many bits. */
     public static final int BITS_PER_HEX_DIGIT = 4;
 
@@ -116,12 +112,16 @@ public abstract class GcHelper implements Disposable {
         chunkSeq.set(seq);
     }
 
+    public long chunkSeq() {
+        return chunkSeq.get();
+    }
+
     public long recordSeq() {
         return recordSeq;
     }
 
-    public long nextRecordSeq(long size) {
-        return recordSeq += 1 + size / BYTES_PER_RECORD_SEQ_INCREMENT;
+    public long nextRecordSeq() {
+        return ++recordSeq;
     }
 
     public void deleteChunkFile(Chunk chunk) {

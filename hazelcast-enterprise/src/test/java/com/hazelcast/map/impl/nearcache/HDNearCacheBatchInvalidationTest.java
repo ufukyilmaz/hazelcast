@@ -57,6 +57,7 @@ public class HDNearCacheBatchInvalidationTest extends NearCacheBatchInvalidation
 
         MapConfig mapConfig = new MapConfig(mapName);
         mapConfig.setNearCacheConfig(nearCacheConfig);
+        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
         Config config = new Config();
         config.addMapConfig(mapConfig);

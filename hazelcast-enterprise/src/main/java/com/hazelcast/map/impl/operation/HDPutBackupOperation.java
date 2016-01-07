@@ -65,6 +65,7 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     @Override
     protected void runInternal() {
         ttl = recordInfo != null ? recordInfo.getTtl() : ttl;
+
         Record record = recordStore.putBackup(dataKey, dataValue, ttl, putTransient);
         if (recordInfo != null) {
             Records.applyRecordInfo(record, recordInfo);

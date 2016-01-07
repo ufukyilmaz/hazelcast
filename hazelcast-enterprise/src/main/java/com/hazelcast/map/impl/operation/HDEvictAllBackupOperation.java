@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
@@ -12,21 +11,20 @@ public class HDEvictAllBackupOperation extends HDMapOperation implements BackupO
         DataSerializable {
 
     public HDEvictAllBackupOperation() {
+        this(null);
     }
 
     public HDEvictAllBackupOperation(String name) {
         super(name);
+        createRecordStoreOnDemand = false;
     }
 
     @Override
     public void runInternal() {
         clearNearCache(false);
 
-        RecordStore recordStore = mapServiceContext.getExistingRecordStore(getPartitionId(), name);
-        //if there is no recordStore, then there is nothing to evict.
-        if (recordStore == null) {
-            return;
+        if (recordStore != null) {
+            recordStore.evictAll(true);
         }
-        recordStore.evictAll(true);
     }
 }

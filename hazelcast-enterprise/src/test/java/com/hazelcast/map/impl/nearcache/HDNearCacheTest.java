@@ -156,6 +156,7 @@ public class HDNearCacheTest extends NearCacheTest {
         MapConfig mapConfig = new MapConfig();
         mapConfig.setName("default");
         mapConfig.setEvictionPolicy(EvictionPolicy.LRU);
+        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
         NativeMemoryConfig memoryConfig = new NativeMemoryConfig();
         memoryConfig.setEnabled(true);

@@ -47,7 +47,7 @@ public class HDRemoveIfSameOperation extends HDBaseRemoveOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

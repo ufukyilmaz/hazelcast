@@ -92,7 +92,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         publishWanReplicationEvent();
         evict();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

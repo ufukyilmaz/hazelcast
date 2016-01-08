@@ -47,7 +47,7 @@ public class HDReplaceOperation extends HDBasePutOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

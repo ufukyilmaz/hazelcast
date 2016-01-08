@@ -116,7 +116,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     @Override
     public void reset() {
         super.reset();
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

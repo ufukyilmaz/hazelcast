@@ -47,7 +47,7 @@ public final class HDGetOperation extends HDKeyBasedMapOperation
     public void afterRun() {
         mapServiceContext.interceptAfterGet(name, result);
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

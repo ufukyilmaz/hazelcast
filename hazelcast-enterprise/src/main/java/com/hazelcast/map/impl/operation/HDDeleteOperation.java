@@ -44,7 +44,7 @@ public class HDDeleteOperation extends HDBaseRemoveOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

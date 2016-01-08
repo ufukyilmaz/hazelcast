@@ -43,6 +43,6 @@ public class HDClearBackupOperation extends HDMapOperation implements BackupOper
 
     @Override
     public void afterRun() throws Exception {
-        dispose();
+        disposeDeferredBlocks();
     }
 }

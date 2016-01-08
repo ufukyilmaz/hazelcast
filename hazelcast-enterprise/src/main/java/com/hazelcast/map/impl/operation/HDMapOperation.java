@@ -72,7 +72,7 @@ public abstract class HDMapOperation extends MapOperation {
 
             getOrCreateRecordStore();
         } catch (Throwable e) {
-            dispose();
+            disposeDeferredBlocks();
             throw ExceptionUtil.rethrow(e, Exception.class);
         }
     }
@@ -101,12 +101,12 @@ public abstract class HDMapOperation extends MapOperation {
     @Override
     public void afterRun() throws Exception {
         super.afterRun();
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override
     public void onExecutionFailure(Throwable e) {
-        dispose();
+        disposeDeferredBlocks();
         super.onExecutionFailure(e);
     }
 
@@ -121,7 +121,7 @@ public abstract class HDMapOperation extends MapOperation {
             // We need to introduce a proper method to handle operation failures.
             // right now, this is the only place we can dispose
             // native memory allocations on failure.
-            dispose();
+            disposeDeferredBlocks();
             super.logError(e);
         }
     }
@@ -153,7 +153,7 @@ public abstract class HDMapOperation extends MapOperation {
         }
 
         if (oome != null) {
-            dispose();
+            disposeDeferredBlocks();
             throw oome;
         }
     }
@@ -191,13 +191,13 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
-    protected final void dispose() {
+    protected final void disposeDeferredBlocks() {
         ensureInitialized();
 
         int partitionId = getPartitionId();
         RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, name);
         if (recordStore != null) {
-            recordStore.dispose();
+            recordStore.disposeDeferredBlocks();
         }
     }
 
@@ -215,7 +215,7 @@ public abstract class HDMapOperation extends MapOperation {
     protected final void evict() {
         if (recordStore != null) {
             recordStore.evictEntries(Clock.currentTimeMillis());
-            dispose();
+            disposeDeferredBlocks();
         }
     }
 

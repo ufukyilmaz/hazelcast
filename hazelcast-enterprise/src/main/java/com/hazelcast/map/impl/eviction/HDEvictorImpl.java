@@ -122,7 +122,7 @@ public class HDEvictorImpl extends EvictorImpl {
             recordStore.evict(record.getKey(), backup);
         }
 
-        recordStore.dispose();
+        recordStore.disposeDeferredBlocks();
     }
 
     @Override

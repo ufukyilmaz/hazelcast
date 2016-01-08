@@ -98,6 +98,6 @@ public class RamStoreHDImpl implements RamStore {
         Record record = storage.get(key);
         assert record != null;
         storage.updateTransient(key, record, value);
-        recordStore.dispose();
+        recordStore.disposeDeferredBlocks();
     }
 }

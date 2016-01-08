@@ -48,7 +48,7 @@ public class HDTryRemoveOperation extends HDBaseRemoveOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

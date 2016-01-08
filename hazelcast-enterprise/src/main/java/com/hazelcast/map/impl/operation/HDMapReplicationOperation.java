@@ -336,7 +336,7 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
         MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         RecordStore recordStore = mapServiceContext.getExistingRecordStore(partitionId, mapName);
         if (recordStore != null) {
-            recordStore.dispose();
+            recordStore.disposeDeferredBlocks();
         }
     }
 

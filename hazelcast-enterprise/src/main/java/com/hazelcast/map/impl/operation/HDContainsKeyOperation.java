@@ -46,7 +46,7 @@ public class HDContainsKeyOperation extends HDKeyBasedMapOperation implements Re
     public void afterRun() throws Exception {
         super.afterRun();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

@@ -59,7 +59,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
     public void afterRun() throws Exception {
         super.afterRun();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     private List<Data> selectThisPartitionsKeys(Collection<Data> keys) {

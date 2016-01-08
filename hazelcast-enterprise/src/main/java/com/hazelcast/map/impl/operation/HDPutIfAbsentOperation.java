@@ -42,7 +42,7 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

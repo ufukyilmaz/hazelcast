@@ -57,7 +57,7 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
         mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataValue, null);
         invalidateNearCache(dataKey);
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

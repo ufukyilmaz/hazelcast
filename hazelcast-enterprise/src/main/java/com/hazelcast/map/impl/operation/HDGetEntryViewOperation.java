@@ -57,7 +57,7 @@ public class HDGetEntryViewOperation extends HDKeyBasedMapOperation implements R
     public void afterRun() throws Exception {
         super.afterRun();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

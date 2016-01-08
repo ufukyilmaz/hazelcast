@@ -77,7 +77,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     public void afterRun() throws Exception {
         super.afterRun();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     protected Map.Entry createMapEntry(Data key, Object value) {

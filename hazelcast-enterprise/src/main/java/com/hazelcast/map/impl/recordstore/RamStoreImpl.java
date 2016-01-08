@@ -61,6 +61,6 @@ public class RamStoreImpl implements RamStore {
         } else {
             storage.updateTransient(key, record, value);
         }
-        recordStore.dispose();
+        recordStore.disposeDeferredBlocks();
     }
 }

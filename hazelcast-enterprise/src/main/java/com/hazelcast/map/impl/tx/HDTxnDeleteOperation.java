@@ -74,7 +74,7 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

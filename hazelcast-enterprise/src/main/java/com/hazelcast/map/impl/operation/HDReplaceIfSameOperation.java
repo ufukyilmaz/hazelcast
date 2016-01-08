@@ -49,7 +49,7 @@ public class HDReplaceIfSameOperation extends HDBasePutOperation {
             super.afterRun();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     @Override

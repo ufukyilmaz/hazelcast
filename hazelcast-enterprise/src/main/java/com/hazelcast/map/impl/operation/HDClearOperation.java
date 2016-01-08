@@ -56,7 +56,7 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
         super.afterRun();
         hintMapEvent();
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     private void hintMapEvent() {

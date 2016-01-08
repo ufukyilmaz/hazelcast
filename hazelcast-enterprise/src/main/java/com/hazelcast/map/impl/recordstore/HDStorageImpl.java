@@ -149,7 +149,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
             // otherwise will cause a SIGSEGV
             return;
         }
-        dispose();
+        disposeDeferredBlocks();
         map.dispose();
     }
 
@@ -164,7 +164,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     }
 
     @Override
-    public void dispose() {
+    public void disposeDeferredBlocks() {
         recordProcessor.disposeDeferredBlocks();
     }
 

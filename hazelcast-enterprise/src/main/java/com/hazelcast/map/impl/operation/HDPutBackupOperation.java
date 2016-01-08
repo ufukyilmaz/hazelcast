@@ -84,7 +84,7 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
             publishWANReplicationEventBackup();
         }
 
-        dispose();
+        disposeDeferredBlocks();
     }
 
     private void publishWANReplicationEventBackup() {

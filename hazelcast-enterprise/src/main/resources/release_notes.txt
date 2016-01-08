@@ -75,10 +75,43 @@ a `SAXParse` exception is thrown. [5528]
 
 3. Fixes
 
-*3.6 Fixes*
+*3.6-RC1 Fixes*
 
-This section lists issues solved for Hazelcast 3.6 release.
+This section lists issues solved for Hazelcast 3.6-RC1 release.
 
+- On WAN Replication Queue overrun, a WANReplicationQueueFullException is expected, but instead, the client receives an UndefinedErrorCodeException.[7241]
+- When using Hazelcast as a JCache provider: As JSR-107 Javadoc states, an update should not reset expiry time for CreatedExpiryPolicy. However, when a cache entry is updated, it does not expire. [7236]
+- Default WAN acknowledge type should be ACK_ON_RECEIPT. [7160]
+- NullPointerException is thrown in ClientRegressionWithMockNetworkTest. [7148]
+- Changing clusters in the Management Center does not update/refresh the cluster members in the Scripting tab. [7119]
+- A fix is needed for operation retries in PartitionCheckIfLoadedOperation. [7114]
+- WAN Queue counts in the Management Center for Hazelcast 3.6-EA3 are not correct. [7100]
+- Hazelcast 3.6 Reference Manual is not correct for its Enterprise WAN Replication content. [7099]
+- NPE is thrown because of null `hotRestartStore` in HD backed IMAP. [662]
+- "GC thread stuck" issue. Constantly reproducable using only `map.put()` and `cache.put()`, running 2 simulator tests in parallel on single worker member. [653]
+- Assertion failure in Hot Restart Store: "Live went below zero". [649]
+- A global level lock should be implemented per operation thread. [623]
+- Interaction between `MemoryManager` and `copyEntry` should be fixed. [619]
+- Enterprise Serialization service cannot deserialize Portable from High-Density memory data. [617]
+- Hot Restart should check and validate the partition thread count. [615]
+- High-Density deallocation should be optimized for cluster shutdown. [613]
+- A warning message should be logged when a node started if native memory size per partition exceeds a threshold. [596]
+- WAN's ACK_ON_TRANSMIT ACK type name should be changed to ACK_ON_RECEIPT as the former one might mislead users. [594]
+- Following should be performed for WAN Replication: Enable throwing exception when WAN queue is full, remove WAN related global configurations, and move these configurations to publisher level.[588]
+- Entries coming from `HDMergeOperation` might have wrong time to live, last update and access times. [582]
+
+
+
+*3.6-EA3 Fixes*
+
+This section lists issues solved for Hazelcast 3.6-EA3 (Early Access 3) release.
+
+- `NullPointerException` is thrown for the thread `cached4` in a test which uses `MapLoader`. [7098]
+- The method `loadInternal` of `MapProxySupport` requires `dataKeys`. Hence, a serialization step should be added to `MapProxy.loadAll()`. [7090]
+- Near cache heap cost calculation is not proper when the cache gets concurrent misses. [7057]
+- `IQueue` accepts null values from the Hazelcast Java client. [7048]
+- `WriteBehindMapStore` for a map that has `OBJECT` as the in-memory format causes the entry processors to serialize the objects. [7040]
+- Latest code does not include the file `com.hazelcast.client.impl.protocol.codec.CacheContainsKeyCodec` and build fails.  [7019]
 - Two members of a cluster become masters and ignore each other. [7016]
 - `AbstractCacheRecordStore` should update the field `isOwner` while it is being cleared after migration. [6983]
 - There are memory leaks in the local map statistics and near cache invalidation queues. The map containers also leak memory caused either by the near cache invalidation mechanism (when re-creating objects to check whether the near cache is enabled) or `MapPartitionDestroyOperation` (when re-creating objects and trying to the backup count). [6972]

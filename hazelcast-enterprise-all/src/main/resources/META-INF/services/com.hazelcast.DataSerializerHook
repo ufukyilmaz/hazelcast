@@ -1,9 +1,16 @@
+# Whenever these hook files in corresponding modules are changed
+# It needs to be added/removed from here manually
+
 # enterprise hooks
 com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook
 com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook
 com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook
 com.hazelcast.enterprise.wan.EWRDataSerializerHook
 
+# wm hook
+com.hazelcast.web.WebDataSerializerHook
+
+# oss hooks
 com.hazelcast.cluster.impl.ClusterDataSerializerHook
 com.hazelcast.spi.impl.SpiDataSerializerHook
 com.hazelcast.partition.PartitionDataSerializerHook

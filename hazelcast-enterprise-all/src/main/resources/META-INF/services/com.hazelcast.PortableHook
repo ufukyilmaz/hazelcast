@@ -1,6 +1,10 @@
+# Whenever these hook files in corresponding modules are changed
+# It needs to be added/removed from here manually
+
 # enterprise hooks
 com.hazelcast.map.impl.client.EnterpriseMapPortableHook
 
+# oss hooks
 com.hazelcast.spi.impl.SpiPortableHook
 com.hazelcast.partition.PartitionPortableHook
 com.hazelcast.client.impl.client.ClientPortableHook

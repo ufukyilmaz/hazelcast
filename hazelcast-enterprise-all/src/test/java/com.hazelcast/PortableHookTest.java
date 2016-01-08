@@ -13,21 +13,18 @@ import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 
-public class DataSerializerHookTest {
-
+public class PortableHookTest {
     private final Set<String> enterpriseAllSet = new HashSet<String>();
     private BufferedReader eeAllInput;
     private URL ossURL;
-    private URL wmURL;
     private BufferedReader ossIn;
     private BufferedReader eeInput;
-    private BufferedReader wmInput;
 
     @Before
     public void loadResources() throws IOException {
         eeAllInput = new BufferedReader(
                 new FileReader(
-                        "src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+                        "src/main/resources/META-INF/services/com.hazelcast.PortableHook"
                 )
         );
 
@@ -38,22 +35,16 @@ public class DataSerializerHookTest {
         }
 
         ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
         );
         ossIn = new BufferedReader(
                 new InputStreamReader(ossURL.openStream()));
 
         eeInput = new BufferedReader(
                 new FileReader(
-                        "../hazelcast-enterprise/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+                        "../hazelcast-enterprise/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
                 )
         );
-
-        wmURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast-wm/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
-        );
-        wmInput = new BufferedReader(
-                new InputStreamReader(wmURL.openStream()));
     }
 
     @Test
@@ -61,12 +52,6 @@ public class DataSerializerHookTest {
         for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
             if (line.startsWith("com")) {
                 assertTrue("Class in OSS: " + line + " is missing!", enterpriseAllSet.contains(line));
-            }
-        }
-
-        for (String line = wmInput.readLine(); line != null; line = wmInput.readLine()) {
-            if (line.startsWith("com")) {
-                assertTrue("Class in WM module: " + line + " is missing!", enterpriseAllSet.contains(line));
             }
         }
 

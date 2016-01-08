@@ -67,8 +67,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     }
 
     void increaseHitCount(HazelcastInstance[] cluster, String mapName, int start, int end, int repeat) {
-        HazelcastInstance node = getNode(cluster);
-        IMap m = node.getMap(mapName);
+        IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
             for (int i = 0; i < repeat; i++) {
                 m.get(start);
@@ -77,16 +76,14 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
     }
 
     void removeDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
-        HazelcastInstance node = getNode(cluster);
-        IMap m = node.getMap(mapName);
+        IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
             m.remove(start);
         }
     }
 
     boolean checkKeysIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
-        HazelcastInstance node = getNode(cluster);
-        IMap m = node.getMap(mapName);
+        IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
             if (!m.containsKey(start)) {
                 return false;
@@ -115,8 +112,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
 
 
     boolean checkKeysNotIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
-        HazelcastInstance node = getNode(cluster);
-        IMap m = node.getMap(mapName);
+        IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
             if (m.containsKey(start)) {
                 return false;
@@ -129,8 +125,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
-                HazelcastInstance node = getNode(cluster);
-                IMap m = node.getMap(mapName);
+                IMap m = getMap(cluster, mapName);
                 assertEquals(size, m.size());
             }
         });
@@ -187,4 +182,8 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }
     }
 
+    IMap getMap(HazelcastInstance[] cluster, String mapName) {
+        HazelcastInstance node = getNode(cluster);
+        return node.getMap(mapName);
+    }
 }

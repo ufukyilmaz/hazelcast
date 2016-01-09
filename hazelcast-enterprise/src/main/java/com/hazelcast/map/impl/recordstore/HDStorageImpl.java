@@ -27,7 +27,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     /**
      * Default capacity for a hash container.
      */
-    public static final int DEFAULT_CAPACITY = 1000;
+    public static final int DEFAULT_CAPACITY = 128;
 
     /**
      * Default load factor.

@@ -47,7 +47,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
     // DEFAULT_INITIAL_CAPACITY;
-    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 256;
+    private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 128;
 
     protected EnterpriseSerializationService serializationService;
     protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;

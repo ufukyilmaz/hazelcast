@@ -4,6 +4,7 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -17,7 +18,10 @@ import org.junit.runner.RunWith;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
+import static com.hazelcast.map.impl.HDMapConfigValidator.HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.util.RandomPicker.getInt;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -67,6 +71,29 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
     public void testNearCacheMaxSizePolicy_throwsException_whenEntryCount() throws Exception {
         testSupportedNearCacheMaxSizePolicies(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testHotRestartsEnabledMap_throwsException_when_FREE_NATIVE_MEMORY_PERCENTAGE_isSmallerThan_threshold() throws Exception {
+        String mapName = randomName();
+
+        MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
+        maxSizeConfig.setSize(getInt(1, HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE));
+        maxSizeConfig.setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE);
+
+        MapConfig mapConfig = new MapConfig();
+        mapConfig.setName(mapName);
+        mapConfig.setInMemoryFormat(NATIVE);
+        mapConfig.getHotRestartConfig().setEnabled(true);
+        mapConfig.setMaxSizeConfig(maxSizeConfig);
+        mapConfig.setEvictionPolicy(LRU);
+
+        Config config = new Config();
+        config.addMapConfig(mapConfig);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        node.getMap(mapName);
+    }
+
 
     private void testSupportedMapEvictionPolicies(EvictionPolicy evictionPolicy) {
         testSupportedHDMapConfig(evictionPolicy, MaxSizeConfig.MaxSizePolicy.PER_NODE);

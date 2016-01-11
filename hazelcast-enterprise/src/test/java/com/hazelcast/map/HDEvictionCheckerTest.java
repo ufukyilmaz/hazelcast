@@ -2,28 +2,39 @@ package com.hazelcast.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.Random;
 
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.PER_NODE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDEvictionCheckerTest extends HazelcastTestSupport {
+
+    @Rule
+    public TemporaryFolder hotRestartFolder = new TemporaryFolder();
 
     @Test
     public void testMapEvicted_when_used_native_memory_size_exceeded() throws Exception {
@@ -99,7 +110,30 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
         assertEquals(1, map.size());
     }
 
-    private static Config newConfig(MaxSizeConfig.MaxSizePolicy maxSizePolicy, int maxSize) {
+    @Test
+    public void testHotRestartEnabledMapEvicted_according_to_FREE_NATIVE_MEMORY_PERCENTAGE_whenConfiguredMaxSizePolicyIsDifferent() throws Exception {
+        // PER_NODE max-size-policy is configured .
+        Config config = newConfig(PER_NODE, Integer.MAX_VALUE);
+        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
+        // hot-restart specific config.
+        HotRestartPersistenceConfig hrConfig = config.getHotRestartPersistenceConfig();
+        hrConfig.setBaseDir(hotRestartFolder.newFolder()).setEnabled(true);
+        config.getNativeMemoryConfig().setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED);
+        // enable hot restart config on map.
+        config.getMapConfig("default").getHotRestartConfig().setEnabled(true);
+
+        HazelcastInstance node = createHazelcastInstance(config);
+        IMap map = node.getMap("default");
+
+        // Try to put 100 MB into 32 MB native memory.
+        for (int i = 0; i < 100; i++) {
+            map.put(i, newValueInMegaBytes(1));
+        }
+
+        assertTrue("Expecting FREE_NATIVE_MEMORY_PERCENTAGE eviction to kick in", map.size() < 100);
+    }
+
+    private Config newConfig(MaxSizeConfig.MaxSizePolicy maxSizePolicy, int maxSize) throws IOException {
         Config config = HDTestSupport.getHDConfig();
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
@@ -107,7 +141,8 @@ public class HDEvictionCheckerTest extends HazelcastTestSupport {
 
         config.getMapConfig("default")
                 .setEvictionPolicy(EvictionPolicy.LRU)
-                .setMaxSizeConfig(maxSizeConfig);
+                .setMaxSizeConfig(maxSizeConfig).setMinEvictionCheckMillis(0);
+
         return config;
     }
 

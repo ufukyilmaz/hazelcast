@@ -81,7 +81,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         // Max-Size checker is created before internal map,
         // so in case of failure because of invalid max-size policy,
         // since there is no allocated native memory yet,
-        // there is need to free allocated memory.
+        // there is no need to free allocated memory.
 
         boolean skipConfiguredMaxSizeChecker = false;
 

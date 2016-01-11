@@ -2,6 +2,7 @@ package com.hazelcast.map.impl;
 
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
+import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -19,6 +20,7 @@ import static com.hazelcast.config.MapConfig.DEFAULT_EVICTION_PERCENTAGE;
 import static com.hazelcast.config.MapConfig.DEFAULT_MIN_EVICTION_CHECK_MILLIS;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
 import static java.util.EnumSet.complementOf;
@@ -27,6 +29,11 @@ import static java.util.EnumSet.complementOf;
  * Responsible for validating supported configurations of HD backed IMap and its NearCache.
  */
 public final class HDMapConfigValidator {
+
+    /**
+     * When hot-restart is enabled we want at least this percent free HD space.
+     */
+    public static final int HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE = 20;
 
     private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES
             = EnumSet.of(NONE, RANDOM);
@@ -51,32 +58,68 @@ public final class HDMapConfigValidator {
      * @param mapConfig the mapConfig
      */
     public static void checkHDConfig(MapConfig mapConfig) {
-        InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
-        if (NATIVE != inMemoryFormat) {
+        if (NATIVE != mapConfig.getInMemoryFormat()) {
             return;
         }
 
+        logIgnoredConfig(mapConfig);
+
+        checkEvictionPolicy(mapConfig);
+
+        checkMaxSizePolicy(mapConfig);
+
+        checkHotRestartSpecificConfig(mapConfig);
+    }
+
+    protected static void logIgnoredConfig(MapConfig mapConfig) {
         if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
                 || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
 
             LOGGER.warning("Beware that eviction mechanism is different for NATIVE in-memory format. "
                     + "For this in-memory format, `minEvictionCheckMillis` and `evictionPercentage` has no effect");
         }
+    }
 
-
-        EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
-        if (UNSUPPORTED_HD_MAP_EVICTION_POLICIES.contains(evictionPolicy)) {
-            throw new IllegalArgumentException("Map eviction policy " + evictionPolicy
-                    + " cannot be used with NATIVE in memory format."
-                    + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_MAP_EVICTION_POLICIES));
-        }
-
+    protected static void checkMaxSizePolicy(MapConfig mapConfig) {
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
         if (UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES.contains(maxSizePolicy)) {
             throw new IllegalArgumentException("Map maximum size policy " + maxSizePolicy
                     + " cannot be used with NATIVE in memory format."
                     + " Supported maximum size policies are : " + complementOf(UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES));
+        }
+    }
+
+    protected static void checkEvictionPolicy(MapConfig mapConfig) {
+        EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
+        if (UNSUPPORTED_HD_MAP_EVICTION_POLICIES.contains(evictionPolicy)) {
+            throw new IllegalArgumentException("Map eviction policy " + evictionPolicy
+                    + " cannot be used with NATIVE in memory format."
+                    + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_MAP_EVICTION_POLICIES));
+        }
+    }
+
+    /**
+     * When hot-restart is enabled we do want at least {@value HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE} percent
+     * free HD space.
+     * <p/>
+     * If configured max-size-policy is {@link com.hazelcast.config.MaxSizeConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE},
+     * this method asserts that max-size is not below {@value HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE}
+     */
+    private static void checkHotRestartSpecificConfig(MapConfig mapConfig) {
+        HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
+        if (hotRestartConfig == null || !hotRestartConfig.isEnabled()) {
+            return;
+        }
+
+        MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
+        MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
+
+        if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
+                && maxSizeConfig.getSize() < HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE) {
+            throw new IllegalArgumentException(FREE_NATIVE_MEMORY_PERCENTAGE + " maximum size policy cannot be smaller than "
+                    + HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE + " when hot-restart is enabled for map "
+                    + mapConfig.getName());
         }
     }
 

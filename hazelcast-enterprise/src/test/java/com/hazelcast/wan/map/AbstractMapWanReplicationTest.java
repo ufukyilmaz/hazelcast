@@ -457,32 +457,42 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     private static class UpdatingEntryProcessor
-            implements EntryProcessor<Object, Object> {
+            implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override
-        public Object process(java.util.Map.Entry<Object, Object> entry) {
+        public Object process(Map.Entry<Object, Object> entry) {
             entry.setValue("EP" + entry.getValue());
             return "done";
         }
 
         @Override
         public EntryBackupProcessor<Object, Object> getBackupProcessor() {
-            return null;
+            return this;
+        }
+
+        @Override
+        public void processBackup(Map.Entry<Object, Object> entry) {
+            process(entry);
         }
     }
 
     private static class DeletingEntryProcessor
-            implements EntryProcessor<Object, Object> {
+            implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override
-        public Object process(java.util.Map.Entry<Object, Object> entry) {
+        public Object process(Map.Entry<Object, Object> entry) {
             entry.setValue(null);
             return "done";
         }
 
         @Override
         public EntryBackupProcessor<Object, Object> getBackupProcessor() {
-            return null;
+            return this;
+        }
+
+        @Override
+        public void processBackup(Map.Entry<Object, Object> entry) {
+            process(entry);
         }
     }
 

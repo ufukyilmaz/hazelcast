@@ -2,14 +2,36 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.core.IMap;
+import com.hazelcast.core.MapStore;
+import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.map.EntryBackupProcessor;
+import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.operation.MapOperation;
+import com.hazelcast.map.impl.operation.MapOperationProvider;
+import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
+import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.util.MapUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
@@ -338,5 +360,179 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         createDataIn(clusterB, "map", 0, 100);
         createDataIn(clusterA, "map", 0, 100);
         assertKeysNotIn(clusterB, "map", 0, 100);
+    }
+
+    @Test
+    public void putAllTest() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        Map<Object, Object> inputMap = MapUtil.createHashMap(10);
+        for (int i = 0; i < 10; i++) {
+            inputMap.put(i, i);
+        }
+        IMap map = getMap(clusterA, "map");
+        map.putAll(inputMap);
+
+        assertKeysIn(clusterB, "map", 0, 10);
+    }
+
+    @Test
+    public void entryOperationTest() throws Exception {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        IMap map = getMap(clusterA, "map");
+        for (int i = 0; i < 20; i++) {
+            map.put(i, i);
+        }
+
+        MapProxyImpl mapProxy = (MapProxyImpl) map;
+        MapServiceContext mapServiceContext = ((MapService) mapProxy.getService()).getMapServiceContext();
+        MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapProxy.getName());
+
+        SerializationService serializationService = getSerializationService(clusterA[0]);
+        Set keySet = new HashSet();
+        for (int i = 0; i < 10; i++) {
+            keySet.add(serializationService.toData(i));
+        }
+
+        //Multiple entry operations
+        OperationFactory operationFactory
+                = operationProvider.createMultipleEntryOperationFactory(mapProxy.getName(), keySet, new UpdatingEntryProcessor());
+
+        InternalOperationService operationService = getOperationService(clusterA[0]);
+        operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, operationFactory);
+
+        assertDataInFrom(clusterB, "map", 0, 10, "EP");
+
+        OperationFactory deletingOperationFactory
+                = operationProvider.createMultipleEntryOperationFactory(mapProxy.getName(), keySet, new DeletingEntryProcessor());
+        operationService.invokeOnAllPartitions(MapService.SERVICE_NAME, deletingOperationFactory);
+
+        assertKeysNotIn(clusterB, "map", 0, 10);
+
+        //Entry operations
+
+        InternalPartitionService partitionService = getPartitionService(clusterA[0]);
+
+        MapOperation updatingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(), serializationService.toData(10), new UpdatingEntryProcessor());
+        operationService.invokeOnPartition(MapService.SERVICE_NAME, updatingEntryOperation, partitionService.getPartitionId(10));
+
+        checkDataInFrom(clusterB, "map", 10, 11, "EP");
+
+        MapOperation deletingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(), serializationService.toData(10), new DeletingEntryProcessor());
+        operationService.invokeOnPartition(MapService.SERVICE_NAME, deletingEntryOperation, partitionService.getPartitionId(10));
+
+        assertKeysNotIn(clusterB, "map", 10, 11);
+    }
+
+    @Test
+    public void putFromLoadAllTest() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+
+        MapConfig mapConfig = configA.getMapConfig("stored-map");
+
+        MapStoreConfig mapStoreConfig = new MapStoreConfig();
+        mapStoreConfig.setImplementation(new SimpleStore());
+        mapStoreConfig.setWriteDelaySeconds(0);
+        mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.LAZY);
+        mapConfig.setMapStoreConfig(mapStoreConfig);
+
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "stored-map", 0, 10);
+        assertKeysIn(clusterB, "stored-map", 0, 10);
+
+        getMap(clusterB, "stored-map").evictAll();
+        assertKeysNotIn(clusterB, "store-map", 0, 10);
+
+        IMap storedMap = getMap(clusterA, "stored-map");
+        storedMap.loadAll(true);
+
+        assertKeysIn(clusterB, "stored-map", 0, 10);
+    }
+
+    private static class UpdatingEntryProcessor
+            implements EntryProcessor<Object, Object> {
+
+        @Override
+        public Object process(java.util.Map.Entry<Object, Object> entry) {
+            entry.setValue("EP" + entry.getValue());
+            return "done";
+        }
+
+        @Override
+        public EntryBackupProcessor<Object, Object> getBackupProcessor() {
+            return null;
+        }
+    }
+
+    private static class DeletingEntryProcessor
+            implements EntryProcessor<Object, Object> {
+
+        @Override
+        public Object process(java.util.Map.Entry<Object, Object> entry) {
+            entry.setValue(null);
+            return "done";
+        }
+
+        @Override
+        public EntryBackupProcessor<Object, Object> getBackupProcessor() {
+            return null;
+        }
+    }
+
+    private static class SimpleStore implements MapStore {
+        private ConcurrentMap store = new ConcurrentHashMap();
+
+        @Override
+        public void store(Object key, Object value) {
+            store.put(key, value);
+        }
+
+        @Override
+        public void storeAll(Map map) {
+            final Set<Map.Entry> entrySet = map.entrySet();
+            for (Map.Entry entry : entrySet) {
+                final Object key = entry.getKey();
+                final Object value = entry.getValue();
+                store(key, value);
+            }
+
+        }
+
+        @Override
+        public void delete(Object key) {
+
+        }
+
+        @Override
+        public void deleteAll(Collection keys) {
+
+        }
+
+        @Override
+        public Object load(Object key) {
+            return store.get(key);
+        }
+
+        @Override
+        public Map loadAll(Collection keys) {
+            final Map map = new HashMap();
+            for (Object key : keys) {
+                final Object value = load(key);
+                map.put(key, value);
+            }
+            return map;
+        }
+
+        @Override
+        public Set loadAllKeys() {
+            return store.keySet();
+        }
     }
 }

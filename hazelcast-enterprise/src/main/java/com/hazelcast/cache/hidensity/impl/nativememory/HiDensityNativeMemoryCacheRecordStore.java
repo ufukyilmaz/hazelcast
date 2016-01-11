@@ -810,6 +810,8 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (isStatisticsEnabled() && evictedCount > 0) {
             statistics.increaseCacheEvictions(evictedCount);
         }
+        cacheInfo.increaseForceEvictionCount();
+        cacheInfo.increaseForceEvictedEntryCount(evictedCount);
         return evictedCount;
     }
 

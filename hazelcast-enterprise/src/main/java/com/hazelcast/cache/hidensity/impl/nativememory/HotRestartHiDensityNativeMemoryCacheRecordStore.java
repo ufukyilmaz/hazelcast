@@ -1,13 +1,18 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
+import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
+import com.hazelcast.cache.impl.maxsize.impl.CompositeMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.elastic.map.BinaryElasticHashMap;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -28,6 +33,8 @@ import static com.hazelcast.nio.serialization.DataType.NATIVE;
 public class HotRestartHiDensityNativeMemoryCacheRecordStore
         extends HiDensityNativeMemoryCacheRecordStore
         implements RamStore {
+
+    public static final int MIN_FREE_NATIVE_MEMORY_PERCENTAGE = 20;
 
     private static final boolean ASSERTION_ENABLED;
     static {
@@ -67,6 +74,58 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     @Override
     protected HiDensityNativeMemoryCacheRecordMap createMapInternal(int capacity) {
         return new HotRestartHiDensityNativeMemoryCacheRecordMap(capacity, cacheRecordProcessor, cacheInfo);
+    }
+
+    @Override
+    protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+        // Max-Size checker is created before internal map,
+        // so in case of failure because of invalid max-size policy,
+        // since there is no allocated native memory yet,
+        // there is need to free allocated memory.
+
+        boolean skipConfiguredMaxSizeChecker = false;
+
+        if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
+            // TODO
+            // Check is done while creating cache record store.
+            // Should we do it while creating cache (proxy) or somewhere else?
+
+            if (size < MIN_FREE_NATIVE_MEMORY_PERCENTAGE) {
+                throw new IllegalArgumentException("Free native memory percentage cannot be less than "
+                        + MIN_FREE_NATIVE_MEMORY_PERCENTAGE + "%");
+            }
+
+            /*
+             * We will also apply `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
+             * with size `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)` and
+             * configuring `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy must be bigger than
+             * `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)`. So no need to two different
+             * `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy here.
+             * Therefore skipping configured `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy and
+             * using default `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
+             * with size `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)`.
+             */
+            skipConfiguredMaxSizeChecker = true;
+
+            // TODO Should we log here about skipping the configured one.
+            // But since this log is printed for every partition of cache, it might cause lots of log message.
+        }
+
+        final long maxNativeMemory =
+                ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                        .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+        MaxSizeChecker freeNativeMemoryMaxSizeChecker =
+                new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
+                        memoryManager, MIN_FREE_NATIVE_MEMORY_PERCENTAGE, maxNativeMemory);
+        if (skipConfiguredMaxSizeChecker) {
+            return freeNativeMemoryMaxSizeChecker;
+        } else {
+            MaxSizeChecker maxSizeChecker = super.createCacheMaxSizeChecker(size, maxSizePolicy);
+            return CompositeMaxSizeChecker.newCompositeMaxSizeChecker(
+                        CompositeMaxSizeChecker.CompositionOperator.OR,
+                        maxSizeChecker,
+                        freeNativeMemoryMaxSizeChecker);
+        }
     }
 
     @Override

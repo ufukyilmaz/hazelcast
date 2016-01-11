@@ -1,7 +1,11 @@
 package com.hazelcast;
 
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -13,6 +17,8 @@ import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category(QuickTest.class)
 public class DataSerializerHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();

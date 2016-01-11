@@ -25,9 +25,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class HiDensityStorageInfo {
 
-    protected final String storageName;
-    protected final AtomicLong usedMemory = new AtomicLong(0L);
-    protected final EntryCountResolver entryCountResolver;
+    private final String storageName;
+    private final AtomicLong usedMemory = new AtomicLong(0L);
+    private final AtomicLong forceEvictionCount = new AtomicLong(0L);
+    private final AtomicLong forceEvictedEntryCount = new AtomicLong(0L);
+    private final EntryCountResolver entryCountResolver;
 
     public HiDensityStorageInfo(String storageName) {
         this.storageName = storageName;
@@ -75,6 +77,22 @@ public class HiDensityStorageInfo {
         return usedMemory.get();
     }
 
+    public long increaseForceEvictionCount() {
+        return forceEvictionCount.incrementAndGet();
+    }
+
+    public long getForceEvictionCount() {
+        return forceEvictionCount.get();
+    }
+
+    public long increaseForceEvictedEntryCount(long evictedEntryCount) {
+        return forceEvictedEntryCount.addAndGet(evictedEntryCount);
+    }
+
+    public long getForceEvictedEntryCount() {
+        return forceEvictedEntryCount.get();
+    }
+
     @Override
     public int hashCode() {
         return storageName.hashCode();
@@ -86,6 +104,17 @@ public class HiDensityStorageInfo {
             return false;
         }
         return storageName.equals(((HiDensityStorageInfo) obj).storageName);
+    }
+
+    @Override
+    public String toString() {
+        return "HiDensityStorageInfo{"
+                    + "storageName='" + storageName + '\''
+                    + ", usedMemory=" + usedMemory.get()
+                    + ", forceEvictionCount=" + forceEvictionCount.get()
+                    + ", forceEvictedEntryCount=" + forceEvictedEntryCount.get()
+                    + ", entryCount=" + entryCountResolver.getEntryCount()
+                    + '}';
     }
 
     public static EntryCountResolver createEntryCountResolver() {

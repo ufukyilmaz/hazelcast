@@ -171,22 +171,29 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount) {
-        CacheConfig<Integer, V> cacheConfig = new CacheConfig<Integer, V>();
-        cacheConfig.getHotRestartConfig().setEnabled(true);
-        cacheConfig.setBackupCount(backupCount);
-        cacheConfig.setStatisticsEnabled(true);
-
         EvictionConfig evictionConfig;
-
         if (memoryFormat == InMemoryFormat.NATIVE) {
-            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
             int size = evictionEnabled ? 90 : 100;
             evictionConfig = new EvictionConfig(size, MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE, EvictionPolicy.LRU);
         } else {
             int size = evictionEnabled ? keyRange / 2 : Integer.MAX_VALUE;
             evictionConfig = new EvictionConfig(size, MaxSizePolicy.ENTRY_COUNT, EvictionPolicy.LRU);
         }
+        return createCache(hz, backupCount, evictionConfig);
+    }
 
+    <V> ICache<Integer, V> createCache(HazelcastInstance hz, EvictionConfig evictionConfig) {
+        return createCache(hz, 1, evictionConfig);
+    }
+
+    <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount, EvictionConfig evictionConfig) {
+        CacheConfig<Integer, V> cacheConfig = new CacheConfig<Integer, V>();
+        cacheConfig.getHotRestartConfig().setEnabled(true);
+        cacheConfig.setBackupCount(backupCount);
+        cacheConfig.setStatisticsEnabled(true);
+        if (memoryFormat == InMemoryFormat.NATIVE) {
+            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        }
         cacheConfig.setEvictionConfig(evictionConfig);
 
         CacheManager cacheManager = createCachingProvider(hz).getCacheManager();

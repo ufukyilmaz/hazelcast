@@ -14,7 +14,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.config.EvictionPolicy.LRU;
+import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -22,57 +25,68 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalArgumentException.class)
     public void testMapEvictionPolicy_throwsException_whenRandom() throws Exception {
-        testUnsupportedMapEvictionPolicies(EvictionPolicy.RANDOM);
+        testSupportedMapEvictionPolicies(EvictionPolicy.RANDOM);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testMapMaxSizePolicy_throwsException_whenFreeHeapSize() throws Exception {
-        testUnsupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE);
+        testSupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testMapMaxSizePolicy_throwsException_whenFreeHeapPercentage() throws Exception {
-        testUnsupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.FREE_HEAP_PERCENTAGE);
+        testSupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.FREE_HEAP_PERCENTAGE);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testMapMaxSizePolicy_throwsException_whenUsedHeapSize() throws Exception {
-        testUnsupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE);
+        testSupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testMapMaxSizePolicy_throwsException_whenUsedHeapPercentage() throws Exception {
-        testUnsupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE);
+        testSupportedMapMaxSizePolicies(USED_HEAP_PERCENTAGE);
+    }
+
+    @Test
+    public void testUsedHeapPercentageMaxSizePolicy_whenInMemoryFormat_BINARY() throws Exception {
+        testSupportedMapConfig(LRU, USED_HEAP_PERCENTAGE, BINARY);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testNearCacheEvictionPolicy_throwsException_whenRandom() throws Exception {
-        testUnsupportedNearCacheEvictionPolicies(EvictionPolicy.RANDOM);
+        testSupportedNearCacheEvictionPolicies(EvictionPolicy.RANDOM);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testNearCacheEvictionPolicy_throwsException_whenNone() throws Exception {
-        testUnsupportedNearCacheEvictionPolicies(EvictionPolicy.NONE);
+        testSupportedNearCacheEvictionPolicies(EvictionPolicy.NONE);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testNearCacheMaxSizePolicy_throwsException_whenEntryCount() throws Exception {
-        testUnsupportedNearCacheMaxSizePolicies(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+        testSupportedNearCacheMaxSizePolicies(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
     }
 
-    private void testUnsupportedMapEvictionPolicies(EvictionPolicy evictionPolicy) {
-        testUnsupportedMapConfig(evictionPolicy, MaxSizeConfig.MaxSizePolicy.PER_NODE);
+    private void testSupportedMapEvictionPolicies(EvictionPolicy evictionPolicy) {
+        testSupportedHDMapConfig(evictionPolicy, MaxSizeConfig.MaxSizePolicy.PER_NODE);
     }
 
-    private void testUnsupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy maxSizePolicy) {
-        testUnsupportedMapConfig(EvictionPolicy.LRU, maxSizePolicy);
+    private void testSupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy maxSizePolicy) {
+        testSupportedHDMapConfig(LRU, maxSizePolicy);
     }
 
-    private void testUnsupportedMapConfig(EvictionPolicy evictionPolicy, MaxSizeConfig.MaxSizePolicy maxSizePolicy) {
+    private void testSupportedHDMapConfig(EvictionPolicy evictionPolicy,
+                                          MaxSizeConfig.MaxSizePolicy maxSizePolicy) {
+        testSupportedMapConfig(evictionPolicy, maxSizePolicy, NATIVE);
+    }
+
+    private void testSupportedMapConfig(EvictionPolicy evictionPolicy,
+                                        MaxSizeConfig.MaxSizePolicy maxSizePolicy, InMemoryFormat inMemoryFormat) {
         String mapName = randomMapName();
         Config config = new Config();
         config.getMapConfig(mapName)
-                .setInMemoryFormat(NATIVE)
+                .setInMemoryFormat(inMemoryFormat)
                 .setEvictionPolicy(evictionPolicy).getMaxSizeConfig().setMaxSizePolicy(maxSizePolicy);
 
 
@@ -80,19 +94,19 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
         node.getMap(mapName);
     }
 
-    private void testUnsupportedNearCacheEvictionPolicies(EvictionPolicy evictionPolicy) {
-        testUnsupportedNearCacheConfig(evictionPolicy, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+    private void testSupportedNearCacheEvictionPolicies(EvictionPolicy evictionPolicy) {
+        testSupportedNearCacheConfig(evictionPolicy, EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
     }
 
-    private void testUnsupportedNearCacheMaxSizePolicies(EvictionConfig.MaxSizePolicy maxSizePolicy) {
-        testUnsupportedNearCacheConfig(EvictionPolicy.LRU, maxSizePolicy);
+    private void testSupportedNearCacheMaxSizePolicies(EvictionConfig.MaxSizePolicy maxSizePolicy) {
+        testSupportedNearCacheConfig(LRU, maxSizePolicy);
     }
 
-    private void testUnsupportedNearCacheConfig(EvictionPolicy evictionPolicy, EvictionConfig.MaxSizePolicy maxSizePolicy) {
+    private void testSupportedNearCacheConfig(EvictionPolicy evictionPolicy, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         String mapName = randomMapName();
 
         NearCacheConfig nearCacheConfig = new NearCacheConfig();
-        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE).getEvictionConfig()
+        nearCacheConfig.setInMemoryFormat(NATIVE).getEvictionConfig()
                 .setEvictionPolicy(evictionPolicy)
                 .setMaximumSizePolicy(maxSizePolicy);
 

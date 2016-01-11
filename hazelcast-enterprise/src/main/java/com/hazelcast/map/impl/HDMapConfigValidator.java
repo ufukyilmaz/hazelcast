@@ -6,6 +6,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 
 import java.util.EnumSet;
 
@@ -13,6 +15,8 @@ import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.config.MapConfig.DEFAULT_EVICTION_PERCENTAGE;
+import static com.hazelcast.config.MapConfig.DEFAULT_MIN_EVICTION_CHECK_MILLIS;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
@@ -36,6 +40,8 @@ public final class HDMapConfigValidator {
     private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_MAP_EVICTION_POLICIES
             = EnumSet.of(RANDOM);
 
+    private static final ILogger LOGGER = Logger.getLogger(MapConfig.class);
+
     private HDMapConfigValidator() {
     }
 
@@ -45,6 +51,19 @@ public final class HDMapConfigValidator {
      * @param mapConfig the mapConfig
      */
     public static void checkHDConfig(MapConfig mapConfig) {
+        InMemoryFormat inMemoryFormat = mapConfig.getInMemoryFormat();
+        if (NATIVE != inMemoryFormat) {
+            return;
+        }
+
+        if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
+                || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
+
+            LOGGER.warning("Beware that eviction mechanism is different for NATIVE in-memory format. "
+                    + "For this in-memory format, `minEvictionCheckMillis` and `evictionPercentage` has no effect");
+        }
+
+
         EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
         if (UNSUPPORTED_HD_MAP_EVICTION_POLICIES.contains(evictionPolicy)) {
             throw new IllegalArgumentException("Map eviction policy " + evictionPolicy

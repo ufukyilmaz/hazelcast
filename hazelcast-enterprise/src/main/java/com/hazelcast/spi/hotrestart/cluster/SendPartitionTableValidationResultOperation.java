@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.impl.operations.JoinOperation;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
@@ -26,9 +27,10 @@ public class SendPartitionTableValidationResultOperation
 
     @Override
     public void run() throws Exception {
+        Address caller = getCallerAddress();
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveHotRestartStatusFromMasterAfterPartitionTableVerification(result);
+        clusterMetadataManager.receiveHotRestartStatusFromMasterAfterPartitionTableVerification(caller, result);
     }
 
     @Override

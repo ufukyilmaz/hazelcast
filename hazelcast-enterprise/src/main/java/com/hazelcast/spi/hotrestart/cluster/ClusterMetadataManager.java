@@ -126,9 +126,7 @@ public final class ClusterMetadataManager implements PartitionListener {
             throw new HotRestartException(e);
         }
 
-        if (logger.isFineEnabled()) {
-            logger.fine("Preparation completed...");
-        }
+        logger.info("Preparation completed...");
     }
 
     private Address[][] restorePartitionTable() throws IOException {
@@ -178,9 +176,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         node.partitionService.addPartitionListener(this);
         loadStartTime = Clock.currentTimeMillis();
 
-        if (logger.isFineEnabled()) {
-            logger.fine("Load start time: " + new Date(loadStartTime));
-        }
+        logger.info("Starting hot restart local data load.");
 
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onDataLoadStart(node.getThisAddress());
@@ -210,9 +206,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         logger.info("Starting cluster member-list & partition table validation.");
         if (startWithHotRestart) {
             awaitUntilAllMembersJoin();
-            if (logger.isFineEnabled()) {
-                logger.fine("All expected members joined...");
-            }
+            logger.info("All expected members joined...");
         }
 
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -304,15 +298,10 @@ public final class ClusterMetadataManager implements PartitionListener {
     private void sendPartitionTableToMaster() {
         Address masterAddress = node.getMasterAddress();
         if (masterAddress == null) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Failed to send partition table to master since master address is null.");
-            }
-
+            logger.warning("Failed to send partition table to master since master address is null.");
             return;
         } else if (masterAddress.equals(node.getThisAddress())) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Failed to send partition table to master since this node became master just now.");
-            }
+            logger.warning("Failed to send partition table to master since this node is master.");
             return;
         }
 
@@ -329,24 +318,22 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // operation thread
     void receivePartitionTableFromMember(Address sender, Address[][] remoteTable) {
+        if (!node.isMaster()) {
+            logger.warning("Ignoring partition table received from " + sender + " since this node is not master!");
+            return;
+        }
+
         if (logger.isFineEnabled()) {
             logger.fine("Received partition table from " + sender);
-        }
-        if (!node.isMaster()) {
-            return;
         }
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         if (status == VERIFICATION_FAILED) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Partition table validation is already failed. Sending failure to: " + sender);
-            }
+            logger.info("Partition table validation is already failed. Sending failure to: " + sender);
             InternalOperationService operationService = node.getNodeEngine().getOperationService();
             operationService.send(new SendPartitionTableValidationResultOperation(VERIFICATION_FAILED), sender);
         } else if (status == FORCE_STARTED) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Ignored partition table from " + sender + " and sent force start response.");
-            }
+            logger.info("Ignored partition table from " + sender + " and sent force start response.");
             InternalOperationService operationService = node.getNodeEngine().getOperationService();
             operationService.send(new ForceStartMemberOperation(), sender);
         } else {
@@ -401,13 +388,10 @@ public final class ClusterMetadataManager implements PartitionListener {
             HotRestartClusterInitializationStatus result = hotRestartStatus.get();
             if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
                 result = PARTITION_TABLE_VERIFIED;
-                if (logger.isFineEnabled()) {
-                    logger.fine("Will send " + PARTITION_TABLE_VERIFIED + " instead of " + VERIFICATION_AND_LOAD_SUCCEEDED
+                logger.info("Will send " + PARTITION_TABLE_VERIFIED + " instead of " + VERIFICATION_AND_LOAD_SUCCEEDED
                             + " to member: " + sender);
-                }
             } else if (logger.isFineEnabled()) {
-                logger.fine("Partition table validation completed for all members. Sending " + result
-                        + " to: " + sender);
+                logger.fine("Partition table validation completed for all members. Sending " + result + " to: " + sender);
             }
 
             final Operation op = result == FORCE_STARTED ? new ForceStartMemberOperation()
@@ -421,20 +405,16 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED) {
-            logger.warning("Wrong partition table received from " + sender
-                    + " after load successfully completed cluster-wide");
+            logger.warning("Wrong partition table received from " + sender + " after load successfully completed cluster-wide");
             operationService.send(new SendPartitionTableValidationResultOperation(VERIFICATION_FAILED), sender);
         } else if (status == FORCE_STARTED) {
-            logger.warning("Wrong partition table received from " + sender
-                    + " after status is set to " + FORCE_STARTED);
+            logger.info("Wrong partition table received from " + sender + " after status is set to " + FORCE_STARTED);
             operationService.send(new ForceStartMemberOperation(), sender);
         } else {
             // we can only CAS if it is not already completed with the 2 status values above
             hotRestartStatus.compareAndSet(status, VERIFICATION_FAILED);
             final HotRestartClusterInitializationStatus result = hotRestartStatus.get();
-            if (logger.isFineEnabled()) {
-                logger.fine("Partition table validation failed for: " + sender + ", Current validation " + result);
-            }
+            logger.info("Partition table validation failed for: " + sender + ", Current validation " + result);
 
             final Operation op = result == FORCE_STARTED ? new ForceStartMemberOperation()
                     : new SendPartitionTableValidationResultOperation(result);
@@ -446,7 +426,15 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     // operation thread
-    void receiveHotRestartStatusFromMasterAfterPartitionTableVerification(HotRestartClusterInitializationStatus result) {
+    void receiveHotRestartStatusFromMasterAfterPartitionTableVerification(Address sender,
+                                                                          HotRestartClusterInitializationStatus result) {
+        Address master = node.getMasterAddress();
+        if (!master.equals(sender)) {
+            logger.warning("Received partition table validation result from non-master member: " + sender + " master: "
+                    + master);
+            return;
+        }
+
         if (!(result == VERIFICATION_FAILED || result == PARTITION_TABLE_VERIFIED)) {
             throw new IllegalArgumentException("Can not set hot restart status after partition table verification to " + result);
         }
@@ -485,9 +473,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void loadCompletedLocal(final Throwable failure) {
         final boolean success = failure == null;
-        if (logger.isFineEnabled()) {
-            logger.fine("Local hot-restart load completed: " + success + ". Waiting for all members to load...");
-        }
+        logger.info("Local hot-restart load completed: " + success + ". Waiting for all members to load...");
 
         localLoadResult.set(success);
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
@@ -504,9 +490,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (status == VERIFICATION_FAILED) {
             throw new HotRestartException("Cluster-wide load failed!", failure);
-        } else if (logger.isFineEnabled()) {
-            logger.fine("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
         }
+
+        logger.info("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
 
         writeMembers();
         writePartitions();
@@ -530,16 +516,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         Address masterAddress = node.getMasterAddress();
 
         if (masterAddress == null) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Failed to send load-completion status [" + success + "] to master since master address is null");
-            }
-
+            logger.warning("Failed to send load-completion status [" + success + "] to master since master address is null.");
             return;
         } else if (masterAddress.equals(node.getThisAddress())) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Failed to send load-completion status [" + success + "] to master since this node is master");
-            }
-
+            logger.warning("Failed to send load-completion status [" + success + "] to master since this node is master.");
             return;
         }
 
@@ -570,8 +550,8 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (!success) {
             if (!node.isMaster()) {
-                if (logger.isFineEnabled() && !node.getThisAddress().equals(sender)) {
-                    logger.fine("Received load-completion status [false] from: " + sender + " but this is not master! ");
+                if (!node.getThisAddress().equals(sender)) {
+                    logger.warning("Received load-completion status [false] from: " + sender + " but this is not master!");
                 }
                 return;
             }
@@ -590,17 +570,13 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
             if (!node.getThisAddress().equals(sender)) {
                 final ClusterState clusterState = node.getClusterService().getClusterState();
-                if (logger.isFineEnabled()) {
-                    logger.fine("Sending cluster-wide load-completion result " + status + " and cluster state: "
+                logger.info("Sending cluster-wide load-completion result " + status + " and cluster state: "
                             + clusterState +  " to: " + sender);
-                }
                 operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
             }
         } else if (status == FORCE_STARTED) {
             if (!node.getThisAddress().equals(sender)) {
-                if (logger.isFineEnabled()) {
-                    logger.fine("Sending " + status + " to: " + sender);
-                }
+                logger.info("Sending " + status + " to: " + sender);
                 operationService.send(new ForceStartMemberOperation(), sender);
             }
         }
@@ -617,15 +593,12 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (!node.getThisAddress().equals(sender)) {
             final HotRestartClusterInitializationStatus result = hotRestartStatus.get();
 
-            if (logger.isFineEnabled()) {
-                if (result == FORCE_STARTED) {
-                    logger.warning("Failed load status received from " + sender + " after status: " + FORCE_STARTED);
-                } else if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
-                    logger.warning("Failed load status received from " + sender
-                            + " after load successfully completed cluster-wide");
-                } else {
-                    logger.fine("Sending failure result to: " + sender + ", Current load-completion status: " + result);
-                }
+            if (result == FORCE_STARTED) {
+                logger.info("Failed load status received from " + sender + " after status: " + FORCE_STARTED);
+            } else if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
+                logger.warning("Failed load status received from " + sender + " after load successfully completed cluster-wide");
+            } else if (logger.isFineEnabled()) {
+                logger.fine("Sending failure result to: " + sender + ", Current hot restart status: " + result);
             }
 
             final Operation op = result == FORCE_STARTED ? new ForceStartMemberOperation()
@@ -641,15 +614,15 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (notLoadedAddresses.isEmpty()) {
             if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED)) {
+                logger.info("Cluster wide hot restart status is set to " + VERIFICATION_AND_LOAD_SUCCEEDED);
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onHotRestartDataLoadComplete(VERIFICATION_AND_LOAD_SUCCEEDED);
                 }
 
                 setFinalClusterState(clusterStateReaderWriter.get());
-            }
-
-            if (logger.isFineEnabled()) {
-                logger.fine("Cluster-wide load-completion status is: " + hotRestartStatus.get());
+            } else if (logger.isFineEnabled()) {
+                logger.fine("Cluster wide hot restart status is: " + hotRestartStatus.get()
+                        + " successful when load completion received from: " + sender);
             }
 
             sendClusterWideLoadCompletionResultIfAvailable(sender);
@@ -665,13 +638,19 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     // operation thread
-    void receiveHotRestartStatusFromMasterAfterLoadCompletion(HotRestartClusterInitializationStatus result) {
+    void receiveHotRestartStatusFromMasterAfterLoadCompletion(Address sender, HotRestartClusterInitializationStatus result) {
+        Address master = node.getMasterAddress();
+        if (!master.equals(sender)) {
+            logger.warning("Received load completion result from non-master member: " + sender + " master: " + master);
+            return;
+        }
+
         if (!(result == VERIFICATION_FAILED || result == VERIFICATION_AND_LOAD_SUCCEEDED)) {
             throw new IllegalArgumentException("Can not set hot restart status after load completion to " + result);
         }
 
         if (logger.isFineEnabled()) {
-            logger.fine("Setting cluster-wide load-completion status " + hotRestartStatus.get() + " to " + result);
+            logger.fine("Setting cluster-wide hot restart status " + hotRestartStatus.get() + " to " + result);
         }
 
         hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, result);
@@ -679,9 +658,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // main & operation thread
     void setFinalClusterState(ClusterState newState) {
-        if (logger.isFineEnabled()) {
-            logger.fine("Setting final cluster state to: " + newState);
-        }
+        logger.info("Setting final cluster state to: " + newState);
         setClusterState(node.getClusterService(), newState, true);
     }
 
@@ -696,8 +673,8 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     private void writeMembers() {
-        if (logger.isFinestEnabled()) {
-            logger.finest("Persisting member list...");
+        if (logger.isFineEnabled()) {
+            logger.fine("Persisting member list...");
         }
         final ClusterServiceImpl clusterService = node.getClusterService();
         try {
@@ -753,9 +730,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
             if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
-                if (logger.isFineEnabled()) {
-                    logger.fine("Force start will proceed as it is received from master: " + sender);
-                }
+                logger.info("Force start will proceed as it is received from master: " + sender);
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onForceStart();
                 }
@@ -777,16 +752,12 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
             if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
-                if (logger.isFineEnabled()) {
-                    logger.fine("Force start will proceed. Sender: " + sender);
-                }
-
+                logger.info("Force start will proceed. Sender: " + sender);
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onForceStart();
                 }
 
                 sendOperationToOthers(new ForceStartMemberOperation());
-
                 return true;
             } else {
                 logger.warning("Could not set hot restart status to " + FORCE_STARTED + ". Current: " + hotRestartStatus.get());

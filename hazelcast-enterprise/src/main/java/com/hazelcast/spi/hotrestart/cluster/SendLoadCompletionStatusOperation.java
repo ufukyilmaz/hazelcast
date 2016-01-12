@@ -35,8 +35,9 @@ public class SendLoadCompletionStatusOperation
     public void run() throws Exception {
         NodeEngine nodeEngine = getNodeEngine();
         Address caller = getCallerAddress();
-        if (!nodeEngine.getMasterAddress().equals(caller)) {
-            getLogger().warning("Received hot-restart validation result from non-master member: " + caller);
+        final Address master = nodeEngine.getMasterAddress();
+        if (!master.equals(caller)) {
+            getLogger().warning("Received load completion result from non-master member: " + caller + " master: " + master);
             return;
         }
 

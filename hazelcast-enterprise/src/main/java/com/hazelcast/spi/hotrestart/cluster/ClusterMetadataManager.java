@@ -241,7 +241,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     private boolean completeValidationIfSingleMember() {
         final int memberListSize = memberListRef.get().size();
         if (memberListSize <= 1) {
-            logger.info("No need to start validation since member list size is " + memberListSize);
+            logger.info("No need to start validation since expected member count is: " + memberListSize);
             hotRestartStatus.set(PARTITION_TABLE_VERIFIED);
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                 listener.onSingleMemberCluster();
@@ -260,8 +260,11 @@ public final class ClusterMetadataManager implements PartitionListener {
 
             if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
                 throw new HotRestartException(
-                        "Validation phase timed-out! " + "Start: " + new Date(validationStartTime) + ", Timeout: "
-                                + validationTimeout);
+                        "Expected number of members didn't join, validation phase timed-out!"
+                                + " Expected member-count: " + loadedAddresses.size()
+                                + ", Actual member-count: " + members.size()
+                                + ". Start-time: " + new Date(validationStartTime)
+                                + ", Timeout: " + TimeUnit.MILLISECONDS.toSeconds(validationTimeout) + " sec.");
             } else if (hotRestartStatus.get() == FORCE_STARTED) {
                 throw new ForceStartException();
             }
@@ -829,8 +832,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         public void onTimeout() {
             if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
                 throw new HotRestartException(
-                        "Validation phase timed-out! " + "Start: " + new Date(validationStartTime) + ", Deadline: "
-                                + new Date(validationStartTime + validationTimeout) + ", Timeout: " + validationTimeout);
+                        "Could not validate partition table, validation phase timed-out! "
+                                + "Start: " + new Date(validationStartTime) + ", Deadline: "
+                                + new Date(validationStartTime + validationTimeout)
+                                + ", Timeout: " + TimeUnit.MILLISECONDS.toSeconds(validationTimeout) + " sec.");
             }
         }
     }
@@ -854,8 +859,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         @Override
         public void onTimeout() {
             throw new HotRestartException(
-                    "Load phase timed-out! " + "Start: " + new Date(loadStartTime) + ", Deadline: "
-                            + new Date(loadStartTime + dataLoadTimeout) + ", Timeout: " + dataLoadTimeout);
+                    "Could not load hot-restart data, load phase timed-out! "
+                            + "Start: " + new Date(loadStartTime) + ", Deadline: "
+                            + new Date(loadStartTime + dataLoadTimeout)
+                            + ", Timeout: " + TimeUnit.MILLISECONDS.toSeconds(dataLoadTimeout) + " sec.");
         }
     }
 }

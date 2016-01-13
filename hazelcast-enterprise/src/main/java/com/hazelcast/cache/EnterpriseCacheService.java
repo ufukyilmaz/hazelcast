@@ -399,6 +399,29 @@ public class EnterpriseCacheService
     }
 
     /**
+     * Clears all record stores on the partitions owned by partition thread of original partition.
+     *
+     * @param originalPartitionId the id of original partition
+     */
+    public void clearAll(int originalPartitionId) {
+        NodeEngine nodeEngine = getNodeEngine();
+        int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
+        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int mod = originalPartitionId % threadCount;
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            if (partitionId % threadCount == mod) {
+                for (CacheConfig cacheConfig : getCacheConfigs()) {
+                    String cacheName = cacheConfig.getNameWithPrefix();
+                    ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
+                    if (cache != null) {
+                        cache.clear();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Creates a {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation} to start the replication.
      *
      * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>

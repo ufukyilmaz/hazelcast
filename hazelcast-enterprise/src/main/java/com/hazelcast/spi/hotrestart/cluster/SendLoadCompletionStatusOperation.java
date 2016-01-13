@@ -6,7 +6,6 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.AbstractOperation;
-import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import java.io.IOException;
@@ -33,17 +32,10 @@ public class SendLoadCompletionStatusOperation
 
     @Override
     public void run() throws Exception {
-        NodeEngine nodeEngine = getNodeEngine();
         Address caller = getCallerAddress();
-        final Address master = nodeEngine.getMasterAddress();
-        if (!master.equals(caller)) {
-            getLogger().warning("Received load completion result from non-master member: " + caller + " master: " + master);
-            return;
-        }
-
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveHotRestartStatusFromMasterAfterLoadCompletion(result);
+        clusterMetadataManager.receiveHotRestartStatusFromMasterAfterLoadCompletion(caller, result);
         if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
             clusterMetadataManager.setFinalClusterState(loadedState);
         }

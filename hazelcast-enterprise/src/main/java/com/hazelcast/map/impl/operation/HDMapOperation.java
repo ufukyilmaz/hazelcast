@@ -129,9 +129,10 @@ public abstract class HDMapOperation extends MapOperation {
 
 
     private void forceEvictionAndRunInternal() throws Exception {
-        tryRunInternalByForceEviction();
 
-        tryRunInternalByClearing();
+        tryForceEviction();
+
+        tryEvictAll();
 
         if (oome != null) {
             disposeDeferredBlocks();
@@ -139,7 +140,7 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
-    private void tryRunInternalByForceEviction() {
+    private void tryForceEviction() {
         final ILogger logger = getLogger();
 
         for (int i = 0; i < FORCED_EVICTION_RETRY_COUNT; i++) {
@@ -175,16 +176,17 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
-    private void tryRunInternalByClearing() {
-        final ILogger logger = getLogger();
+    private void tryEvictAll() {
+        ILogger logger = getLogger();
+        boolean backup = this instanceof BackupOperation;
 
         if (oome != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Clearing current record store because force eviction was not enough!");
+                    logger.info("Evicting all entries in current record-store because force eviction was not enough!");
                 }
                 // If still there is OOME, clear current record store and try again.
-                recordStore.clear();
+                recordStore.evictAll(backup);
                 runInternal();
                 oome = null;
             } catch (NativeOutOfMemoryError e) {
@@ -195,11 +197,11 @@ public abstract class HDMapOperation extends MapOperation {
         if (oome != null) {
             try {
                 if (logger.isLoggable(Level.INFO)) {
-                    logger.info("Clearing other record stores owned by same partition thread "
+                    logger.info("Evicting all entries in other record-stores owned by same partition thread "
                             + "because force eviction was not enough!");
                 }
-                // If still there is OOME, for the last chance, clear other record stores and try again.
-                clearAll();
+                // If still there is OOME, for the last chance, evict other record stores and try again.
+                evictAll(backup);
                 runInternal();
                 oome = null;
             } catch (NativeOutOfMemoryError e) {
@@ -240,10 +242,9 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     /**
-     * Clears all record stores on the partitions owned by partition thread of current partition.
+     * Evicts all record-stores on the partitions owned by partition thread of current partition.
      */
-    private void clearAll() {
-        boolean isBackup = this instanceof BackupOperation;
+    private void evictAll(boolean backup) {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
@@ -255,7 +256,7 @@ public abstract class HDMapOperation extends MapOperation {
                 for (RecordStore recordStore : maps.values()) {
                     MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
                     if (recordStore.isEvictionEnabled() && NATIVE == mapConfig.getInMemoryFormat()) {
-                        recordStore.evictAll(isBackup);
+                        recordStore.evictAll(backup);
                     }
                 }
             }

@@ -353,6 +353,15 @@ public class HiDensityNativeMemoryCacheRecordStore
                                        boolean disableWriteThrough, int completionId, String origin,
                                        HiDensityNativeMemoryCacheRecord record, Throwable error) {
         if (isMemoryBlockValid(record)) {
+            /*
+             * Record might be put somehow before error, so in case of error we should revert it.
+             * Note that, we don't use `delete` but `remove`, because we want to dispose it explicitly.
+             *
+             * If `key` is converted to `NativeMemoryData` inside record map, it is disposed there, not here.
+             * But if it is already `NativeMemoryData`, it is disposed inside operation itself.
+             * So no need to explicitly disposing at here in case of error.
+             */
+            records.remove(key);
             if (value instanceof NativeMemoryData) {
                 // If value is allocated outside of record store, disposing value is its responsibility.
                 // So just dispose record which is allocated here.
@@ -587,6 +596,14 @@ public class HiDensityNativeMemoryCacheRecordStore
                               boolean disableDeferredDispose, Throwable error) {
         // If record is created
         if (isNewPut && isMemoryBlockValid(record)) {
+            /*
+             * Record might be put somehow before error, so in case of error we should revert it.
+             * Note that, we don't use `delete` but `remove`, because we want to dispose it explicitly.
+             * If `key` is converted to `NativeMemoryData` inside record map, it is disposed there, not here.
+             * But if it is already `NativeMemoryData`, it is disposed inside operation itself.
+             * So no need to explicitly disposing at here in case of error.
+             */
+            records.remove(key);
             if (value instanceof NativeMemoryData) {
                 record.setValue(null);
                 // If value is allocated outside of record store, disposing value is its responsibility.

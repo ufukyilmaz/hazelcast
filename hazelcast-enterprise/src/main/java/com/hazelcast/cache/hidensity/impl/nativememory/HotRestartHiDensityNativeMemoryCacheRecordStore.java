@@ -25,6 +25,7 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.util.Clock;
 
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
 
 /**
@@ -34,9 +35,8 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         extends HiDensityNativeMemoryCacheRecordStore
         implements RamStore {
 
-    public static final int MIN_FREE_NATIVE_MEMORY_PERCENTAGE = 20;
-
     private static final boolean ASSERTION_ENABLED;
+
     static {
         ASSERTION_ENABLED = HotRestartHiDensityNativeMemoryCacheRecordStore.class.desiredAssertionStatus();
     }
@@ -53,7 +53,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
     private HiDensityNativeMemoryCacheRecord fetchedRecordDuringRestart;
 
     public HotRestartHiDensityNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
-            NodeEngine nodeEngine, boolean fsync, long keyPrefix) {
+                                                           NodeEngine nodeEngine, boolean fsync, long keyPrefix) {
         super(partitionId, name, cacheService, nodeEngine);
         this.fsync = fsync;
         this.prefix = keyPrefix;
@@ -83,6 +83,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         // since there is no allocated native memory yet,
         // there is no need to free allocated memory.
 
+        int minFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
         boolean skipConfiguredMaxSizeChecker = false;
 
         if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
@@ -90,20 +91,20 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
             // Check is done while creating cache record store.
             // Should we do it while creating cache (proxy) or somewhere else?
 
-            if (size < MIN_FREE_NATIVE_MEMORY_PERCENTAGE) {
+            if (size < minFreeNativeMemoryPercentage) {
                 throw new IllegalArgumentException("Free native memory percentage cannot be less than "
-                        + MIN_FREE_NATIVE_MEMORY_PERCENTAGE + "%");
+                        + minFreeNativeMemoryPercentage + "%");
             }
 
             /*
              * We will also apply `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
-             * with size `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)` and
+             * with size `minFreeNativeMemoryPercentage (20%)` and
              * configuring `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy must be bigger than
-             * `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)`. So no need to two different
+             * `minFreeNativeMemoryPercentage (20%)`. So no need to two different
              * `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy here.
              * Therefore skipping configured `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy and
              * using default `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
-             * with size `MIN_FREE_NATIVE_MEMORY_PERCENTAGE (20%)`.
+             * with size `minFreeNativeMemoryPercentage (20%)`.
              */
             skipConfiguredMaxSizeChecker = true;
 
@@ -116,15 +117,15 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
                         .getMemoryManager().getMemoryStats().getMaxNativeMemory();
         MaxSizeChecker freeNativeMemoryMaxSizeChecker =
                 new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
-                        memoryManager, MIN_FREE_NATIVE_MEMORY_PERCENTAGE, maxNativeMemory);
+                        memoryManager, minFreeNativeMemoryPercentage, maxNativeMemory);
         if (skipConfiguredMaxSizeChecker) {
             return freeNativeMemoryMaxSizeChecker;
         } else {
             MaxSizeChecker maxSizeChecker = super.createCacheMaxSizeChecker(size, maxSizePolicy);
             return CompositeMaxSizeChecker.newCompositeMaxSizeChecker(
-                        CompositeMaxSizeChecker.CompositionOperator.OR,
-                        maxSizeChecker,
-                        freeNativeMemoryMaxSizeChecker);
+                    CompositeMaxSizeChecker.CompositionOperator.OR,
+                    maxSizeChecker,
+                    freeNativeMemoryMaxSizeChecker);
         }
     }
 
@@ -180,7 +181,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
-            NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
+                         NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
         putToHotRestart(key, record);
         super.onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
     }
@@ -242,7 +243,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         long recordSequence = newSequence();
         // fetchedRecordDuringRestart will be used in #accept() method
         fetchedRecordDuringRestart = acceptNewRecord(nativeKey, recordSequence);
-        return  new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
+        return new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
     }
 
     private HiDensityNativeMemoryCacheRecord acceptNewRecord(NativeMemoryData key, long recordSequence) {

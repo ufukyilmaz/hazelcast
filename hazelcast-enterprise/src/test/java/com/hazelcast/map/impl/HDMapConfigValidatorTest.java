@@ -20,7 +20,7 @@ import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
-import static com.hazelcast.map.impl.HDMapConfigValidator.HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.util.RandomPicker.getInt;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -77,7 +77,7 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
         String mapName = randomName();
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setSize(getInt(1, HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE));
+        maxSizeConfig.setSize(getInt(1, getHotRestartFreeNativeMemoryPercentage()));
         maxSizeConfig.setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE);
 
         MapConfig mapConfig = new MapConfig();

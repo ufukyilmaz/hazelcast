@@ -23,17 +23,13 @@ import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static java.util.EnumSet.complementOf;
 
 /**
  * Responsible for validating supported configurations of HD backed IMap and its NearCache.
  */
 public final class HDMapConfigValidator {
-
-    /**
-     * When hot-restart is enabled we want at least this percent free HD space.
-     */
-    public static final int HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE = 20;
 
     private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES
             = EnumSet.of(NONE, RANDOM);
@@ -100,11 +96,11 @@ public final class HDMapConfigValidator {
     }
 
     /**
-     * When hot-restart is enabled we do want at least {@value HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE} percent
+     * When hot-restart is enabled we do want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
      * free HD space.
      * <p/>
      * If configured max-size-policy is {@link com.hazelcast.config.MaxSizeConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE},
-     * this method asserts that max-size is not below {@value HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE}
+     * this method asserts that max-size is not below "hazelcast.hotrestart.free.native.memory.percentage"
      */
     private static void checkHotRestartSpecificConfig(MapConfig mapConfig) {
         HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
@@ -115,10 +111,11 @@ public final class HDMapConfigValidator {
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
 
+        int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
         if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
-                && maxSizeConfig.getSize() < HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE) {
+                && maxSizeConfig.getSize() < hotRestartMinFreeNativeMemoryPercentage) {
             throw new IllegalArgumentException(FREE_NATIVE_MEMORY_PERCENTAGE + " maximum size policy cannot be smaller than "
-                    + HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE + " when hot-restart is enabled for map "
+                    + hotRestartMinFreeNativeMemoryPercentage + " when hot-restart is enabled for map "
                     + mapConfig.getName());
         }
     }

@@ -28,16 +28,20 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-import static com.hazelcast.map.impl.HDMapConfigValidator.HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 
 /**
  * Checks whether a specific threshold is exceeded or not
  * according to configured {@link MaxSizePolicy}
  * to start eviction process.
+ * <p/>
+ * Created one per map-container.
  *
  * @see EvictionCheckerImpl#checkEvictionPossible(RecordStore)
  */
 public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
+
+    private final int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
 
     public HDEvictionCheckerImpl(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
@@ -79,9 +83,7 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
     }
 
     /**
-     * When hot-restart is enabled we want at least
-     * {@value com.hazelcast.map.impl.HDMapConfigValidator#HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE} percent
-     * free HD space.
+     * When hot-restart is enabled we want at least `hotRestartMinFreeNativeMemoryPercentage` free HD space.
      */
     protected boolean checkHotRestartSpecificEviction(MapConfig mapConfig) {
         HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
@@ -89,7 +91,7 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
             return false;
         }
 
-        return checkMinFreeNativeMemoryPercentage(HOT_RESTART_MIN_FREE_NATIVE_MEMORY_PERCENTAGE);
+        return checkMinFreeNativeMemoryPercentage(hotRestartMinFreeNativeMemoryPercentage);
     }
 
     protected boolean checkMaxUsedNativeMemorySize(double maxUsedSize, HiDensityStorageInfo storageInfo) {

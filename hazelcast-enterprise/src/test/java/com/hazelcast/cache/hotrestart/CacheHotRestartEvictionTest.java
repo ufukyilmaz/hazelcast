@@ -2,7 +2,6 @@ package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.ICache;
-import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
@@ -36,6 +35,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -51,9 +51,9 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
     @Parameterized.Parameters(name = "memoryFormat:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
-            {InMemoryFormat.NATIVE, 25000, true},
-            {InMemoryFormat.BINARY, 25000, true}
+        return Arrays.asList(new Object[][]{
+                {InMemoryFormat.NATIVE, 25000, true},
+                {InMemoryFormat.BINARY, 25000, true}
         });
     }
 
@@ -157,17 +157,17 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     @Test
     public void freeNativeMemoryPercentageCannotBeLessThanItsMinimumLimit() {
         if (memoryFormat == InMemoryFormat.NATIVE) {
+            int freeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
             HazelcastInstance hz = newHazelcastInstance();
             EvictionConfig evictionConfig =
-                    new EvictionConfig(HotRestartHiDensityNativeMemoryCacheRecordStore.MIN_FREE_NATIVE_MEMORY_PERCENTAGE / 2,
+                    new EvictionConfig(freeNativeMemoryPercentage / 2,
                             EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,
                             EvictionPolicy.LRU);
             ICache<Integer, byte[]> cache = createCache(hz, evictionConfig);
             try {
                 // Config is checked while creating cache record store, so to trigger it we are putting to cache.
                 cache.put(1, new byte[1]);
-                fail("Free native memory percentage cannot be less than "
-                        + HotRestartHiDensityNativeMemoryCacheRecordStore.MIN_FREE_NATIVE_MEMORY_PERCENTAGE);
+                fail("Free native memory percentage cannot be less than " + freeNativeMemoryPercentage);
             } catch (IllegalArgumentException expected) {
                 expected.printStackTrace();
             }
@@ -177,6 +177,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     @Test
     public void evictionShouldBeTriggeredWhenFreeNativeMemoryPercentageIsReached() {
         if (memoryFormat == InMemoryFormat.NATIVE) {
+            int freeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
             HazelcastInstance hz = newHazelcastInstance();
             ICache cache = createCache(hz);
 
@@ -190,7 +191,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
 
             long maxNativeMemory = memoryStats.getMaxNativeMemory();
             long minFreeNativeMemory = (long) (maxNativeMemory
-                    * (HotRestartHiDensityNativeMemoryCacheRecordStore.MIN_FREE_NATIVE_MEMORY_PERCENTAGE) / 100f);
+                    * freeNativeMemoryPercentage / 100f);
             int entrySize = 1024 * 1024; // 1MB
             long entryCountToFillUpMemory = maxNativeMemory / entrySize; // In fact, it is less than this
 

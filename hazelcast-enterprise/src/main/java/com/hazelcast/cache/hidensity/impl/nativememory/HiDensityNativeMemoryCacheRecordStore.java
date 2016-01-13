@@ -642,7 +642,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             record = records.get(key);
             if (record == null) {
                 isNewPut = true;
-                record = createRecord(value, now);
+                record = createRecord(value, now, Long.MAX_VALUE);
                 creationTime = now;
                 records.put(key, record);
             } else {
@@ -652,9 +652,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
 
             onAccess(now, record, creationTime);
-
-            ttlMillis = ttlMillis < Integer.MAX_VALUE ? ttlMillis : Integer.MAX_VALUE;
-            record.setTtlMillis((int) ttlMillis);
+            record.setTtlMillis(ttlMillis);
 
             onOwn(key, value, ttlMillis, record, oldValueData, isNewPut, disableDeferredDispose);
 

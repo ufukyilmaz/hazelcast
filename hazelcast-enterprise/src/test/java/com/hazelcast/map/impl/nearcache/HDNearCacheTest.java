@@ -148,7 +148,7 @@ public class HDNearCacheTest extends NearCacheTest {
         evictionConfig.setSize(90);
         nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         nearCacheConfig.setInvalidateOnChange(true);
-        nearCacheConfig.setCacheLocalEntries(true);
+        nearCacheConfig.setCacheLocalEntries(false);
         return nearCacheConfig;
     }
 

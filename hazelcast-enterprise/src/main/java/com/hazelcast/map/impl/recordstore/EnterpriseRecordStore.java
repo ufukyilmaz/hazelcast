@@ -32,11 +32,18 @@ import java.util.concurrent.FutureTask;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Enterprise specific extensions for {@link DefaultRecordStore}
  */
 public class EnterpriseRecordStore extends DefaultRecordStore {
+
+    /**
+     * @see EnterpriseRecordStore#markRecordStoreExpirable(long)
+     */
+    // public for testing purposes.
+    public static final long HD_RECORD_MAX_TTL_MILLIS = SECONDS.toMillis(Integer.MAX_VALUE);
 
     private final long prefix;
     private final HotRestartConfig hotRestartConfig;
@@ -45,7 +52,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     private RamStore ramStore;
 
     public EnterpriseRecordStore(MapContainer mapContainer, int partitionId, MapKeyLoader keyLoader, ILogger logger,
-            HotRestartConfig hotRestartConfig, long prefix) {
+                                 HotRestartConfig hotRestartConfig, long prefix) {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
         this.hotRestartConfig = hotRestartConfig;
@@ -58,6 +65,27 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     public RamStore getRamStore() {
         return ramStore;
+    }
+
+    /**
+     * The reason of overriding this method is an optimization which we did to fit a {@link HDRecord} size in a 64 bit
+     * HD block. One of the changes for this was converting a long ttl to an int ttl. As a result of that change,
+     * an infinite ttl is represented with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS} instead of Long.MAX_VALUE.
+     * <p/>
+     * When marking a record-store as expirable we should also take care of this new case and should not mark a record-store
+     * as expirable if a ttl was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
+     *
+     * @param ttl ttl in milliseconds.
+     */
+    @Override
+    protected void markRecordStoreExpirable(long ttl) {
+        if (NATIVE == inMemoryFormat) {
+            if (ttl > 0L && ttl < HD_RECORD_MAX_TTL_MILLIS) {
+                super.markRecordStoreExpirable(ttl);
+            }
+        } else {
+            super.markRecordStoreExpirable(ttl);
+        }
     }
 
     @Override

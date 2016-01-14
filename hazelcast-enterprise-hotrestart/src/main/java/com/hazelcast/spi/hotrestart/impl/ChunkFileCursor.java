@@ -62,10 +62,10 @@ abstract class ChunkFileCursor {
                         truncationPoint += recordSize();
                         return true;
                     } else {
-                        in = null;
+                        closeCurrentChunk();
                     }
                 } catch (EOFException e) {
-                    if (isActiveChunkFile(chunkFile)) {
+                    if (closeCurrentChunk()) {
                         removeBrokenTrailingRecord();
                     } else {
                         throw e;
@@ -95,12 +95,6 @@ abstract class ChunkFileCursor {
 
     private boolean tryOpenNextChunk() {
         try {
-            if (in != null) {
-                in.close();
-                if (isActiveChunkFile(chunkFile)) {
-                    removeActiveSuffix(chunkFile);
-                }
-            }
             final File chunkFile = findNonemptyFile();
             if (chunkFile == null) {
                 return false;
@@ -115,6 +109,17 @@ abstract class ChunkFileCursor {
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
+    }
+
+    /** @return true if current chunk was an active chunk */
+    private boolean closeCurrentChunk() throws IOException {
+        in.close();
+        final boolean active = isActiveChunkFile(chunkFile);
+        if (active) {
+            removeActiveSuffixFromChunkFile();
+        }
+        in = null;
+        return active;
     }
 
     private File findNonemptyFile() {
@@ -151,7 +156,6 @@ abstract class ChunkFileCursor {
 
     private void removeBrokenTrailingRecord() {
         try {
-            in.close();
             final RandomAccessFile raf = new RandomAccessFile(chunkFile, "rw");
             raf.setLength(truncationPoint);
             raf.getFD().sync();
@@ -161,12 +165,14 @@ abstract class ChunkFileCursor {
         }
     }
 
-    private static void removeActiveSuffix(File activeChunkFile) {
-        final String nameNow = activeChunkFile.getName();
+    private void removeActiveSuffixFromChunkFile() {
+        final String nameNow = chunkFile.getName();
         final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_CHUNK_SUFFIX.length());
-        if (!activeChunkFile.renameTo(new File(activeChunkFile.getParent(), nameToBe))) {
+        final File renamed = new File(chunkFile.getParent(), nameToBe);
+        if (!chunkFile.renameTo(renamed)) {
             throw new HazelcastException("Failed to rename " + nameNow + " to " + nameToBe);
         }
+        chunkFile = renamed;
     }
 
     static class ValChunkFileCursor extends ChunkFileCursor {

@@ -104,6 +104,8 @@
                                     org.slf4j;resolution:=optional,
                                     org.codehaus.groovy.jsr223;resolution:=optional,
                                     org.jruby.embed.jsr223;resolution:=optional,
+                                    org.jclouds.*;resolution:=optional,
+                                    com.google.*;resolution:=optional,
                                     *
                                 </Import-Package>
                                 <Embed-Dependency>*; scope=compile|runtime</Embed-Dependency>

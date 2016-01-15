@@ -8,7 +8,9 @@ import static java.lang.Integer.getInteger;
  */
 public final class HotRestartEvictionHelper {
 
-    private static final int DEFAULT_HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE = 30;
+    public static final int DEFAULT_HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE = 30;
+    public static final String SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE =
+            "hazelcast.hotrestart.free.native.memory.percentage";
 
     private HotRestartEvictionHelper() {
     }
@@ -20,7 +22,7 @@ public final class HotRestartEvictionHelper {
      * @return percentage of minimum free native memory space.
      */
     public static int getHotRestartFreeNativeMemoryPercentage() {
-        return getInteger("hazelcast.hotrestart.free.native.memory.percentage",
+        return getInteger(SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE,
                 DEFAULT_HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE);
     }
 }

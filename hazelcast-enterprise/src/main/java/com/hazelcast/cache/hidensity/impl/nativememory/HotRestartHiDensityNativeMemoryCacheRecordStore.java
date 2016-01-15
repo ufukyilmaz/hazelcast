@@ -27,6 +27,7 @@ import com.hazelcast.util.Clock;
 
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
+import static java.lang.Math.max;
 
 /**
  * NativeMemory cache record store with Hot Restart support.
@@ -107,6 +108,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
              * with size `minFreeNativeMemoryPercentage (20%)`.
              */
             skipConfiguredMaxSizeChecker = true;
+            minFreeNativeMemoryPercentage = max(minFreeNativeMemoryPercentage, size);
 
             // TODO Should we log here about skipping the configured one.
             // But since this log is printed for every partition of cache, it might cause lots of log message.

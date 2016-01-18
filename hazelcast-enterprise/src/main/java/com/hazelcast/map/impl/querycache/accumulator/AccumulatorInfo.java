@@ -18,7 +18,6 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  *
  * This metadata is used in communications between: node <--> node and client <--> node.
  *
- * @see com.hazelcast.map.impl.client.PublisherCreateRequest
  * @see QueryCacheConfig
  */
 public class AccumulatorInfo implements Portable {

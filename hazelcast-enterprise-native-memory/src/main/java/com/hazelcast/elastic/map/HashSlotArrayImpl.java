@@ -2,6 +2,8 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.memory.MemoryAllocator;
 
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -13,11 +15,6 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
  * Implementation of {@link HashSlotArray} using a native memory block.
  */
 public class HashSlotArrayImpl implements HashSlotArray {
-
-    /** Default initial capacity of the map */
-    public static final int DEFAULT_INITIAL_CAPACITY = 16;
-    /** Default load factor of the map */
-    public static final float DEFAULT_LOAD_FACTOR = 0.6f;
 
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
@@ -48,7 +45,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     /**
      * Number of allocated slots
      */
-    private long allocated;
+    private long capacity;
 
     /**
      * Bit mask used to compute slot index.
@@ -56,9 +53,9 @@ public class HashSlotArrayImpl implements HashSlotArray {
     private long mask;
 
     /**
-     * Cached number of assigned slots in {@link #allocated}.
+     * Cached number of assigned slots in {@link #capacity}.
      */
-    private long assigned;
+    private long size;
 
     /**
      * The load factor for this map (fraction of allocated slots
@@ -67,19 +64,21 @@ public class HashSlotArrayImpl implements HashSlotArray {
     private final float loadFactor;
 
     /**
-     * Resize buffers when {@link #assigned} hits this value.
+     * Resize buffers when {@link #size} hits this value.
      */
-    private long resizeAt;
+    private long expandAt;
 
     /**
-     * Constructs a new {@code HashSlotArrayImpl} with default initial capacity and default load factor (0.6).
+     * Constructs a new {@code HashSlotArrayImpl} with default initial capacity
+     * ({@link com.hazelcast.elastic.CapacityUtil#DEFAULT_CAPACITY})
+     * and default load factor ({@link com.hazelcast.elastic.CapacityUtil#DEFAULT_LOAD_FACTOR}).
      * {@code valueLength} must be a factor of 8.
      *
      * @param malloc Memory allocator
      * @param valueLength Length of value in bytes
      */
     public HashSlotArrayImpl(MemoryAllocator malloc, int valueLength) {
-        this(malloc, valueLength, DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
+        this(malloc, valueLength, DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR);
     }
 
     /**
@@ -96,21 +95,11 @@ public class HashSlotArrayImpl implements HashSlotArray {
             throw new IllegalArgumentException("Value length should be factor of 8!");
         }
         this.valueLength = valueLength;
-        this.entryLength = VALUE_OFFSET + valueLength;
+        this.entryLength = KEY_LENGTH + valueLength;
         this.malloc = malloc;
         this.loadFactor = loadFactor;
 
-        allocate(roundCapacity((int) (initialCapacity / loadFactor)));
-    }
-
-    private void allocate(long capacity) {
-        long allocationCapacity = capacity * entryLength;
-        baseAddress = malloc.allocate(allocationCapacity);
-        UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
-
-        allocated = capacity;
-        mask = capacity - 1;
-        resizeAt = Math.max(2, (int) Math.ceil(capacity * loadFactor)) - 1;
+        allocateArrayAndAdjustFields(roundCapacity((int) (initialCapacity / loadFactor)));
     }
 
     @Override
@@ -118,8 +107,8 @@ public class HashSlotArrayImpl implements HashSlotArray {
         ensureLive();
 
         // Check if we need to grow. If so, reallocate new data and rehash.
-        if (assigned == resizeAt) {
-            expand();
+        if (size == expandAt) {
+            resizeTo(nextCapacity(capacity));
         }
 
         long slot = hash(key1, key2);
@@ -133,41 +122,9 @@ public class HashSlotArrayImpl implements HashSlotArray {
             slot = (slot + 1) & mask;
         }
 
-        assigned++;
+        size++;
         putKey(slot, key1, key2);
         return getValueAddress(slot);
-    }
-
-    /**
-     * Expand the internal storage buffers (capacity) and rehash.
-     */
-    private void expand() {
-        assert assigned == resizeAt;
-
-        // Try to allocate new buffers first. If we OOM, it'll be now without
-        // leaving the data structure in an inconsistent state.
-        final long oldAddress = baseAddress;
-        final long oldAllocated = allocated;
-
-        allocate(nextCapacity(allocated));
-
-        // Rehash all stored keys into the new buffers.
-        for (long slot = oldAllocated; --slot >= 0;) {
-            if (isAssigned(oldAddress, slot)) {
-                long key1 = getKey1(oldAddress, slot);
-                long key2 = getKey2(oldAddress, slot);
-                long valueAddress = getValueAddress(oldAddress, slot);
-
-                long newSlot = hash(key1, key2);
-                while (isAssigned(newSlot)) {
-                    newSlot = (newSlot + 1) & mask;
-                }
-
-                putKey(newSlot, key1, key2);
-                UNSAFE.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
-            }
-        }
-        malloc.free(oldAddress, oldAllocated * entryLength);
     }
 
     @Override
@@ -202,7 +159,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
             long slotKey2 = getKey2(slot);
 
             if (slotKey1 == key1 && slotKey2 == key2) {
-                assigned--;
+                size--;
                 shiftConflictingKeys(slot);
                 return true;
             }
@@ -214,59 +171,32 @@ public class HashSlotArrayImpl implements HashSlotArray {
         return false;
     }
 
-    /**
-     * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
-     */
-    private void shiftConflictingKeys(long slotCurr) {
-        long slotPrev;
-        while (true) {
-            slotPrev = slotCurr;
-            slotCurr = (slotCurr + 1) & mask;
-
-            while (isAssigned(slotCurr)) {
-                long slotOther = hash(getKey1(slotCurr), getKey2(slotCurr));
-
-                if (slotPrev <= slotCurr) {
-                    // we're on the right of the original slot.
-                    if (slotPrev >= slotOther || slotOther > slotCurr) {
-                        break;
-                    }
-                } else {
-                    // we've wrapped around.
-                    if (slotPrev >= slotOther && slotOther > slotCurr) {
-                        break;
-                    }
-                }
-                slotCurr = (slotCurr + 1) & mask;
-            }
-
-            if (!isAssigned(slotCurr)) {
-                break;
-            }
-
-            // Shift key/value pair.
-            putKey(slotPrev, getKey1(slotCurr), getKey2(slotCurr));
-            UNSAFE.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
-        }
-
-        putKey(slotPrev, 0L, 0L);
-        UNSAFE.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
-    }
-
     protected long hash(long key1, long key2) {
         return fastLongMix(fastLongMix(key1) + key2) & mask;
     }
 
     @Override
     public long size() {
-        return assigned;
+        return size;
     }
 
     @Override
     public void clear() {
         ensureLive();
-        UNSAFE.setMemory(baseAddress, allocated * entryLength, (byte) 0);
-        assigned = 0;
+        UNSAFE.setMemory(baseAddress, capacity * entryLength, (byte) 0);
+        size = 0;
+    }
+
+    @Override public boolean trimToSize() {
+        final long minCapacity = minCapacityForSize(size, loadFactor);
+        if (capacity <= minCapacity) {
+            return false;
+        }
+        resizeTo(minCapacity);
+        assert expandAt >= size : String.format(
+                "trimToSize() shrunk the capacity to %,d and expandAt to %,d, which is less than the current size %,d",
+                capacity, expandAt, size);
+        return true;
     }
 
     @Override
@@ -274,22 +204,12 @@ public class HashSlotArrayImpl implements HashSlotArray {
         if (baseAddress <= 0L) {
             return;
         }
-        malloc.free(baseAddress, allocated * entryLength);
+        malloc.free(baseAddress, capacity * entryLength);
         baseAddress = -1L;
-        allocated = 0;
+        capacity = 0;
         mask = 0;
-        resizeAt = 0;
-        assigned = 0;
-    }
-
-    @Override
-    public int keyLength() {
-        return KEY_LENGTH;
-    }
-
-    @Override
-    public int valueLength() {
-        return valueLength;
+        expandAt = 0;
+        size = 0;
     }
 
     @Override public HashSlotCursor cursor() {
@@ -344,6 +264,94 @@ public class HashSlotArrayImpl implements HashSlotArray {
         }
     }
 
+    private void allocateArrayAndAdjustFields(long newCapacity) {
+        long allocatedSize = newCapacity * entryLength;
+        baseAddress = malloc.allocate(allocatedSize);
+        UNSAFE.setMemory(baseAddress, allocatedSize, (byte) 0);
+
+        capacity = newCapacity;
+        mask = newCapacity - 1;
+        expandAt = maxSizeForCapacity(newCapacity, loadFactor);
+    }
+
+    private static long maxSizeForCapacity(long capacity, float loadFactor) {
+        return Math.max(2, (long) Math.ceil(capacity * loadFactor)) - 1;
+    }
+
+    private static long minCapacityForSize(long size, float loadFactor) {
+        return roundCapacity((long) Math.ceil(size / loadFactor));
+    }
+
+    /**
+     * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
+     */
+    @SuppressWarnings("checkstyle:innerassignment")
+    private void shiftConflictingKeys(long slotCurr) {
+        long slotPrev;
+        long slotOther;
+        while (true) {
+            slotCurr = ((slotPrev = slotCurr) + 1) & mask;
+
+            while (isAssigned(slotCurr)) {
+                slotOther = hash(getKey1(slotCurr), getKey2(slotCurr));
+
+                if (slotPrev <= slotCurr) {
+                    // we're on the right of the original slot.
+                    if (slotPrev >= slotOther || slotOther > slotCurr) {
+                        break;
+                    }
+                } else {
+                    // we've wrapped around.
+                    if (slotPrev >= slotOther && slotOther > slotCurr) {
+                        break;
+                    }
+                }
+                slotCurr = (slotCurr + 1) & mask;
+            }
+
+            if (!isAssigned(slotCurr)) {
+                break;
+            }
+
+            // Shift key/value pair.
+            putKey(slotPrev, getKey1(slotCurr), getKey2(slotCurr));
+            UNSAFE.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
+        }
+
+        putKey(slotPrev, 0L, 0L);
+        UNSAFE.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
+    }
+
+    /**
+     * Allocate a new slot array with the requested size and move all the
+     * assigned slots from the current array into the new one.
+     */
+    private void resizeTo(long newCapacity) {
+        // Allocate new array first, ensuring that the possible OOME
+        // does not ruin the consistency of the existing data structure.
+        final long oldAddress = baseAddress;
+        final long oldCapacity = capacity;
+        allocateArrayAndAdjustFields(newCapacity);
+
+        // Put the assigned slots into the new array.
+        for (long slot = oldCapacity; --slot >= 0;) {
+            if (isAssigned(oldAddress, slot)) {
+                long key1 = getKey1(oldAddress, slot);
+                long key2 = getKey2(oldAddress, slot);
+                long valueAddress = getValueAddress(oldAddress, slot);
+
+                long newSlot = hash(key1, key2);
+                while (isAssigned(newSlot)) {
+                    newSlot = (newSlot + 1) & mask;
+                }
+
+                putKey(newSlot, key1, key2);
+                UNSAFE.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
+            }
+        }
+        malloc.free(oldAddress, oldCapacity * entryLength);
+    }
+
     private class Cursor implements HashSlotCursor {
 
         private long currentSlot = -1L;
@@ -363,7 +371,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         }
 
         private boolean tryAdvance() {
-            for (long slot = currentSlot + 1; slot < allocated; slot++) {
+            for (long slot = currentSlot + 1; slot < capacity; slot++) {
                 if (isAssigned(slot)) {
                     currentSlot = slot;
                     return true;
@@ -390,7 +398,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         @Override public void remove() {
             ensureValid();
 
-            assigned--;
+            size--;
             shiftConflictingKeys(currentSlot);
 
             // if current slot is assigned after

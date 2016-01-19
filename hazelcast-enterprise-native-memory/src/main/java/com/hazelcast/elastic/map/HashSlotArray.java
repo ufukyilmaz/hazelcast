@@ -58,24 +58,18 @@ public interface HashSlotArray extends Disposable {
     boolean remove(long key1, long key2);
 
     /**
-     * Returns the current size of the map.
-     */
-    long size();
-
-    /**
      * Clears the map.
      */
     void clear();
 
-    /**
-     * Returns key length in bytes (up to 16).
-     */
-    int keyLength();
+    /** Compact the slot array if allowed by the current size.
+     * @return true if the array was compacted; false if no action was taken. */
+    boolean trimToSize();
 
     /**
-     * Returns value length in bytes.
+     * Returns the current size of the map.
      */
-    int valueLength();
+    long size();
 
     HashSlotCursor cursor();
 }

@@ -52,6 +52,8 @@
     <suppress checks="JavadocType" files="com/hazelcast/nio/serialization/"/>
     <suppress checks="JavadocMethod" files="com/hazelcast/internal/serialization/"/>
     <suppress checks="JavadocType" files="com/hazelcast/internal/serialization/"/>
+    <suppress checks="MagicNumber" files="com/hazelcast/nio/OffHeapBits"/>
+    <suppress checks="MethodCount" files="com/hazelcast/nio/OffHeapBits"/>
     <suppress checks="ParameterNumber"
               files="com/hazelcast/internal/serialization/impl/EnterpriseSerializationServiceV1"/>
     <suppress checks="MethodCount|MagicNumber" files="com/hazelcast/internal/serialization/impl/MemoryBlockDataInput"/>
@@ -60,6 +62,12 @@
     <suppress checks="MagicNumber" files="com/hazelcast/nio/CipherHelper"/>
     <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketReader"/>
     <suppress checks="NPathComplexity" files="com/hazelcast/nio/tcp/SymmetricCipherPacketWriter"/>
+    <suppress checks="MethodCount|MagicNumber"
+              files="com/hazelcast/internal/serialization/impl/OffHeapByteArrayObjectDataInput"/>
+    <suppress checks="MethodCount|MagicNumber"
+              files="com/hazelcast/internal/serialization/impl/OffHeapByteArrayObjectDataOutput"/>
+    <suppress checks="MethodCount|MagicNumber"
+              files="com/hazelcast/internal/serialization/impl/OffHeapDataInput"/>
 
     <!-- Instance -->
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/instance/EnterpriseNodeExtension"/>

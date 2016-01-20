@@ -50,7 +50,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             ++sShift;
             sSize <<= 1;
         }
-        this.hashSeed = this.hashCode();
+        this.hashSeed = hashCode();
         this.segmentShift = 32 - sShift;
         this.segmentMask = sSize - 1;
         this.segments = new HiDensityNativeMemoryNearCacheRecordStore[sSize];

@@ -19,6 +19,7 @@ import java.nio.ByteOrder;
 public class EnterpriseSerializationServiceBuilder extends DefaultSerializationServiceBuilder
         implements SerializationServiceBuilder {
 
+    protected boolean allowSerializeOffHeap;
     private MemoryManager memoryManager;
     private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
 
@@ -112,6 +113,11 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         return (EnterpriseSerializationServiceBuilder) super.setInitialOutputBufferSize(initialOutputBufferSize);
     }
 
+    public EnterpriseSerializationServiceBuilder setAllowSerializeOffHeap(boolean allowSerializeOffHeap) {
+        this.allowSerializeOffHeap = allowSerializeOffHeap;
+        return this;
+    }
+
     @Override
     public EnterpriseSerializationService build() {
         return (EnterpriseSerializationService) super.build();
@@ -124,7 +130,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
                         partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject);
+                        enableSharedObject, allowSerializeOffHeap
+                );
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 
@@ -139,12 +146,19 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         if (byteOrder == null) {
             byteOrder = ByteOrder.BIG_ENDIAN;
         }
+
         if (useNativeByteOrder || byteOrder == ByteOrder.nativeOrder()) {
             byteOrder = ByteOrder.nativeOrder();
+
             if (allowUnsafe && UnsafeHelper.UNSAFE_AVAILABLE) {
-                return new EnterpriseUnsafeInputOutputFactory();
+                if (allowSerializeOffHeap) {
+                    return new EnterpriseOffHeapInputOutputFactory();
+                } else {
+                    return new EnterpriseUnsafeInputOutputFactory();
+                }
             }
         }
+
         return new EnterpriseByteArrayInputOutputFactory(byteOrder);
     }
 }

@@ -203,7 +203,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
         this.currentMemoryBlock = null;
     }
 
-    private class MemoryBlock {
+    private static class MemoryBlock {
         private final long size;
         private final long address;
 

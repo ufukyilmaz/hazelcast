@@ -95,12 +95,10 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     @Override
     public final void writeBytes(final String s) throws IOException {
-        byte[] bytes = s.getBytes("UTF-8");
-        final int len = bytes.length;
+        final int len = s.length();
         ensureAvailable(len);
-
-        for (byte aByte : bytes) {
-            UnsafeHelper.UNSAFE.putByte(this.bufferPointer + (pos++), aByte);
+        for (int i = 0; i < len; i++) {
+            UnsafeHelper.UNSAFE.putByte(this.bufferPointer + (pos++), (byte) s.charAt(i));
         }
     }
 

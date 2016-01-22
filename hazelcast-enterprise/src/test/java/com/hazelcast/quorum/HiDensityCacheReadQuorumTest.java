@@ -1,24 +1,12 @@
 package com.hazelcast.quorum;
 
-import com.hazelcast.cache.ICache;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.config.CacheSimpleConfig;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;

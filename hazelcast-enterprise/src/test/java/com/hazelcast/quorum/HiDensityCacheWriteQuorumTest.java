@@ -1,18 +1,7 @@
 package com.hazelcast.quorum;
 
-import com.hazelcast.cache.ICache;
-import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
-import com.hazelcast.config.CacheSimpleConfig;
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceFactory;
-import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +11,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -163,7 +151,7 @@ public class HiDensityCacheWriteQuorumTest extends HiDensityCacheQuorumTestSuppo
     }
 
     @Test(expected = ExecutionException.class)
-    public void testGetAndRemoveAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception{
+    public void testGetAndRemoveAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
         Future<String> foo = cache4.getAndRemoveAsync(1);
         foo.get();
     }
@@ -254,7 +242,7 @@ public class HiDensityCacheWriteQuorumTest extends HiDensityCacheQuorumTestSuppo
 
     @Test
     public void testReplaceAsyncOperationSuccessfulWhenQuorumSizeMet() throws Exception {
-        Future<Boolean> foo =cache1.replaceAsync(1, "");
+        Future<Boolean> foo = cache1.replaceAsync(1, "");
         foo.get();
     }
 

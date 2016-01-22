@@ -6,7 +6,7 @@ import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.QuorumConfig;
-import com.hazelcast.instance.HazelcastInstanceFactory;
+import com.hazelcast.instance.HazelcastInstanceManager;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.AfterClass;
@@ -73,7 +73,7 @@ public class HiDensityCacheQuorumTestSupport extends HazelcastTestSupport {
 
     @AfterClass
     public static void killAllHazelcastInstances() throws IOException {
-        HazelcastInstanceFactory.terminateAll();
+        HazelcastInstanceManager.terminateAll();
         if (hazelcastElasticMemoryEnabledProperty != null ) {
             System.setProperty(elasticMemoryPropertyString, hazelcastElasticMemoryEnabledProperty);
         } else {

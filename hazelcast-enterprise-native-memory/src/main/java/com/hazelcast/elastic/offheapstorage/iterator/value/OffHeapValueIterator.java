@@ -1,11 +1,11 @@
 package com.hazelcast.elastic.offheapstorage.iterator.value;
 
-/***
- * Represents API to iterate over key's entry values of the off-heap storage structure
+/**
+ * API to iterate over values in off-heap storage
  */
 public interface OffHeapValueIterator {
     /***
-     * @return true if there are also elements to fetch, false in opposite
+     * @return true if there are more elements to fetch, false otherwise
      */
     boolean hasNext();
 

@@ -4,6 +4,9 @@ import java.util.NoSuchElementException;
 
 import com.hazelcast.elastic.offheapstorage.OffHeapKeyValueStorage;
 
+/**
+ * Iterator over values in off-heap storage.
+ */
 public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
     private final OffHeapKeyValueStorage offHeapRedBlackTree;
 

@@ -153,22 +153,23 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         final int MAX_RECORD_COUNT = 10000000;
         final String VALUE_PREFIX = getValuePrefix();
 
+        final long finishTime1 = Clock.currentTimeMillis() + TIMEOUT;
         // Do initial load from main thread
-        for (int i = 0; i < MAX_RECORD_COUNT / 10; i++) {
+        for (int i = 0; i < MAX_RECORD_COUNT / 10 && Clock.currentTimeMillis() < finishTime1; i++) {
             String value = VALUE_PREFIX + "value-" + i;
             nearCache.put(i, value);
             assertEquals(value, nearCache.get(i));
         }
 
         ExecutorService ex = Executors.newFixedThreadPool(THREAD_COUNT);
-        final long finishTime = Clock.currentTimeMillis() + TIMEOUT;
+        final long finishTime2 = Clock.currentTimeMillis() + TIMEOUT;
         for (int i = 0; i < THREAD_COUNT; i++) {
             if (i % 3 == 0) {
                 ex.execute(new Runnable() {
                     @Override
                     public void run() {
                         Random random = new Random();
-                        while (Clock.currentTimeMillis() < finishTime) {
+                        while (Clock.currentTimeMillis() < finishTime2) {
                             int key = random.nextInt(MAX_RECORD_COUNT);
                             String value = VALUE_PREFIX + "value-" + key;
                             nearCache.put(key, value);
@@ -181,7 +182,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                     @Override
                     public void run() {
                         Random random = new Random();
-                        while (Clock.currentTimeMillis() < finishTime) {
+                        while (Clock.currentTimeMillis() < finishTime2) {
                             int key = random.nextInt(MAX_RECORD_COUNT);
                             nearCache.remove(key);
                             sleepMillis(100);
@@ -192,7 +193,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                 ex.execute(new Runnable() {
                     @Override
                     public void run() {
-                        while (Clock.currentTimeMillis() < finishTime) {
+                        while (Clock.currentTimeMillis() < finishTime2) {
                             Random random = new Random();
                             int key = random.nextInt(MAX_RECORD_COUNT);
                             String expectedValue = VALUE_PREFIX + "value-" + key;

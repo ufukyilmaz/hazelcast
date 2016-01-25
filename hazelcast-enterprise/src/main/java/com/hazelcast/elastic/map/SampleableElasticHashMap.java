@@ -15,9 +15,13 @@ import java.util.Random;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 
+/**
+ * Variant of the {@link BinaryElasticHashMap} that allows quick random sampling of its entries.
+ * @param <V> type of value.
+ */
 public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElasticHashMap<V> {
 
-    // Because of JDK6 compatibility,
+    // Due to the constraints of JDK6 compatibility
     // we cannot use "java.util.concurrent.ThreadLocalRandom" (valid for JDK7+ versions).
     private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM =
             new ThreadLocal<Random>() {
@@ -167,6 +171,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             return this;
         }
 
+        @SuppressWarnings("checkstyle:npathcomplexity")
         private void iterate() {
             if (returnedEntryCount >= maxSampleCount || reachedToEnd) {
                 currentSample = null;
@@ -183,7 +188,8 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
 
                     // Find an allocated index to be sampled from current random index
                     while (ix < segmentEnd && !isValidForSampling(ix)) {
-                        ix++; // Move to right in right-half of bucket
+                        // Move to right in right-half of bucket
+                        ix++;
                     }
                     if (ix < segmentEnd) {
                         currentSample = createSamplingEntry(ix);
@@ -200,26 +206,24 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
                 toRight = false;
             }
 
-            if (!toRight) {
-                // Iterate to left from current segment
-                for (; passedSegmentCount < segmentCount;
-                     passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
-                    int segmentStart = currentSegmentNo * segmentSize;
-                    int segmentEnd = segmentStart + segmentSize;
-                    int ix = segmentStart + randomIndex - 1;
+            // Iterate to left from current segment
+            for (; passedSegmentCount < segmentCount;
+                 passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
+                int segmentStart = currentSegmentNo * segmentSize;
+                int ix = segmentStart + randomIndex - 1;
 
-                    // Find an allocated index to be sampled from current random index
-                    while (ix >= segmentStart && !isValidForSampling(ix)) {
-                        ix--; // Move to left in left-half of bucket
-                    }
-                    if (ix >= segmentStart) {
-                        currentSample = createSamplingEntry(ix);
-                        passedSegmentCount++;
-                        // Move to next segment
-                        currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
-                        returnedEntryCount++;
-                        return;
-                    }
+                // Find an allocated index to be sampled from current random index
+                while (ix >= segmentStart && !isValidForSampling(ix)) {
+                    // Move to left in left-half of bucket
+                    ix--;
+                }
+                if (ix >= segmentStart) {
+                    currentSample = createSamplingEntry(ix);
+                    passedSegmentCount++;
+                    // Move to next segment
+                    currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
+                    returnedEntryCount++;
+                    return;
                 }
             }
 
@@ -250,7 +254,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     protected boolean isValidForSampling(int slot) {
-        return isAssigned(slot);
+        return accessor.isAssigned(slot);
     }
 
 }

@@ -1,13 +1,10 @@
 package com.hazelcast.elastic.set;
 
-import com.hazelcast.elastic.CapacityUtil;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.HashUtil;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.Callable;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
@@ -15,6 +12,8 @@ import static com.hazelcast.elastic.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**
  * A hash set of <code>long</code>s, implemented using using open
@@ -61,8 +60,8 @@ public class LongHashSet implements LongSet {
     private int perturbation;
 
     /**
-     * Creates a hash map with the default capacity of {@value CapacityUtil#DEFAULT_CAPACITY},
-     * load factor of {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * Creates a hash map with the default capacity of {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_CAPACITY},
+     * load factor of {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public LongHashSet(MemoryAllocator malloc, long nullItem) {
         this(DEFAULT_CAPACITY, malloc, nullItem);
@@ -70,11 +69,9 @@ public class LongHashSet implements LongSet {
 
     /**
      * Creates a hash map with the given initial capacity, default load factor of
-     * {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      *  @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
-     * @param malloc
-     * @param nullItem
      */
     public LongHashSet(int initialCapacity, MemoryAllocator malloc, long nullItem) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR, malloc, nullItem);
@@ -86,8 +83,6 @@ public class LongHashSet implements LongSet {
      * @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
      * @param loadFactor      The load factor (greater than zero and smaller than 1).
-     * @param malloc
-     * @param nullItem
      */
     public LongHashSet(int initialCapacity, float loadFactor, MemoryAllocator malloc, long nullItem) {
         initialCapacity = Math.max(initialCapacity, MIN_CAPACITY);
@@ -154,7 +149,7 @@ public class LongHashSet implements LongSet {
 
         // Rehash all stored keys into the new buffers.
         final int mask = allocated - 1;
-        for (int slot = oldAllocated; --slot >= 0; ) {
+        for (int slot = oldAllocated; --slot >= 0;) {
             if (isAssigned(oldAddress, slot)) {
                 long key = getItem(oldAddress, slot);
 
@@ -212,14 +207,15 @@ public class LongHashSet implements LongSet {
     /**
      * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
      */
-    protected void shiftConflictingKeys(int slotCurr) {
+    private void shiftConflictingKeys(int slotCurr) {
         final int mask = allocated - 1;
-        int slotPrev, slotOther;
+        int slotPrev;
         while (true) {
-            slotCurr = ((slotPrev = slotCurr) + 1) & mask;
+            slotPrev = slotCurr;
+            slotCurr = (slotCurr + 1) & mask;
 
             while (isAssigned(slotCurr)) {
-                slotOther = rehash(getItem(slotCurr), perturbation) & mask;
+                int slotOther = rehash(getItem(slotCurr), perturbation) & mask;
 
                 if (slotPrev <= slotCurr) {
                     // we're on the right of the original slot.
@@ -386,53 +382,23 @@ public class LongHashSet implements LongSet {
 
     private static boolean isAssigned(long address, int slot) {
         long offset = slot * ENTRY_LENGTH;
-        return UnsafeHelper.UNSAFE.getLong(address + offset) != 0L;
+        return UNSAFE.getLong(address + offset) != 0L;
     }
 
     private static long getItem(long address, int slot) {
         long offset = slot * ENTRY_LENGTH;
-        return UnsafeHelper.UNSAFE.getLong(address + offset);
+        return UNSAFE.getLong(address + offset);
     }
 
     private static void setItem(long address, int slot, long key) {
         long offset = slot * ENTRY_LENGTH;
-        UnsafeHelper.UNSAFE.putLong(address + offset, key);
+        UNSAFE.putLong(address + offset, key);
     }
 
     private static int rehash(long o, int p) {
         return (int) HashUtil.MurmurHash3_fmix(o ^ p);
     }
 
-    /**
-     * Computer static perturbations table.
-     */
-    private final static int[] PERTURBATIONS = new Callable<int[]>() {
-        public int[] call() {
-            int[] result = new int[32];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = HashUtil.MurmurHash3_fmix(17 + i);
-            }
-            return result;
-        }
-    }.call();
-
-
-    /**
-     * <p>Compute the key perturbation value applied before hashing. The returned value
-     * should be non-zero and ideally different for each capacity. This matters because
-     * keys are nearly-ordered by their hashed values so when adding one container's
-     * values to the other, the number of collisions can skyrocket into the worst case
-     * possible.
-     * <p/>
-     * <p>If it is known that hash containers will not be added to each other
-     * (will be used for counting only, for example) then some speed can be gained by
-     * not perturbing keys before hashing and returning a value of zero for all possible
-     * capacities. The speed gain is a result of faster rehash operation (keys are mostly
-     * in order).
-     */
-    private static int computePerturbationValue(int capacity) {
-        return PERTURBATIONS[Integer.numberOfLeadingZeros(capacity)];
-    }
 
     private void ensureMemory() {
         if (address == NULL_ADDRESS) {

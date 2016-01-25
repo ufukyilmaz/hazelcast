@@ -1,8 +1,11 @@
 package com.hazelcast.elastic.offheapstorage;
 
+/**
+ * Comparator of off-heap binary data.
+ */
 public interface OffHeapComparator {
     /***
-     * Compares to blobs specified by addresses and sizes;
+     * Compares two blobs specified by addresses and sizes;
      *
      * @param leftAddress  address of the first blob;
      * @param leftSize     size of the first blob;

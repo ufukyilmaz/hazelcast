@@ -2,9 +2,13 @@ package com.hazelcast.elastic.offheapstorage.iterator.secondarykey;
 
 import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
 
+/**
+ * Iterator over secondary keys in off-heap storage sorted using primary and secondary
+ * sort key.
+ */
 public interface OffHeapSecondaryKeyIterator extends OffHeapKeyIterator {
     /***
-     * Set RB-tree rootAddress's address to iterate over it's keys;
+     * Sets address of rootAddress to iterate over its keys.
      *
      * @param keyEntryAddress - address of the corresponding key address;
      */

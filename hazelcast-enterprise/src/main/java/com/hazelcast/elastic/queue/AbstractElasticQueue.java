@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.Queue;
 
 /**
+ * @param <E> entry type
  * @author mdogan 22/01/14
  */
 abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements ElasticQueue<E> {

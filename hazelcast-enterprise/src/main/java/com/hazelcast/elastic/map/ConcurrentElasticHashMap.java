@@ -16,7 +16,9 @@ import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
-* @author mdogan 07/01/14
+ * @param <K> key type
+ * @param <V> value type
+ * @author mdogan 07/01/14
 */
 public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V> {
 
@@ -30,6 +32,7 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
      * The maximum number of segments to allow; used to bound
      * constructor arguments.
      */
+    @SuppressWarnings("checkstyle:magicnumber")
     private static final int MAX_SEGMENTS = 1 << 16;
 
     private final EnterpriseSerializationService ss;
@@ -50,15 +53,6 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
      */
     private final Segment<V>[] segments;
 
-    /**
-     * Returns the segment that should be used for key with given hash
-     * @param key the key
-     * @return the segment
-     */
-    protected final Segment<V> segmentFor(Data key) {
-        return segments[(key.hashCode() >>> segmentShift) & segmentMask];
-    }
-
     public ConcurrentElasticHashMap(EnterpriseSerializationService ss, MemoryAllocator malloc) {
         this(DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR, DEFAULT_CONCURRENCY_LEVEL, ss, malloc);
     }
@@ -73,12 +67,13 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
             ++sshift;
             ssize <<= 1;
         }
-        segmentShift = 32 - sshift;
+        segmentShift = Integer.SIZE - sshift;
         segmentMask = ssize - 1;
 
         int c = initialCapacity / ssize;
-        if (c * ssize < initialCapacity)
+        if (c * ssize < initialCapacity) {
             ++c;
+        }
         int cap = 1;
         while (cap < c) {
             cap <<= 1;
@@ -90,16 +85,21 @@ public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V
         this.ss = ss;
     }
 
+    /**
+     * Returns the segment that should be used for key with given hash
+     * @param key the key
+     * @return the segment
+     */
+    protected final Segment<V> segmentFor(Data key) {
+        return segments[(key.hashCode() >>> segmentShift) & segmentMask];
+    }
+
+    /** A segment of hash buckets for this map. */
     protected static final class Segment<V> {
 
         final ReentrantLock lock = new ReentrantLock();
         final EnterpriseSerializationService ss;
         final BinaryElasticHashMap<NativeMemoryData> map;
-
-//        /**
-//         * The number of elements in this segment's region.
-//         */
-//        transient volatile int count;
 
         Segment(EnterpriseSerializationService ss, int initialCapacity, float loadFactor, MemoryAllocator malloc) {
             this.ss = ss;

@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * @param <E> entry type
  * @author mdogan 22/01/14
  */
 abstract class AbstractBlockingElasticQueue<E> extends AbstractQueue<E> implements BlockingElasticQueue<E> {

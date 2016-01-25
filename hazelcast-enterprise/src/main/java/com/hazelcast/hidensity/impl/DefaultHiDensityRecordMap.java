@@ -105,7 +105,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
      * @return the slottable iterator for specified <code>slot</code>
      */
     public SlottableIterator<Map.Entry<Data, R>> iterator(int slot) {
-        return new EntryIter(slot);
+        return entryIter(slot);
     }
 
 }

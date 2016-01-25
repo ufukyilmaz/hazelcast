@@ -6,7 +6,10 @@ import com.hazelcast.nio.UnsafeHelper;
 
 import java.util.NoSuchElementException;
 
+/** Implementation of {@link LongQueue} with an off-heap array. */
 public final class LongArrayQueue implements LongQueue {
+    static final long ENTRY_SIZE = 8L;
+
     private final MemoryAllocator malloc;
     private final int capacity;
     private final long address;
@@ -19,7 +22,7 @@ public final class LongArrayQueue implements LongQueue {
         this.malloc = memoryAllocator;
         this.capacity = capacity;
         this.nullItem = nullItem;
-        long realCap = capacity * 8L;
+        long realCap = capacity * ENTRY_SIZE;
         this.address = malloc.allocate(realCap);
         clear();
     }
@@ -42,14 +45,14 @@ public final class LongArrayQueue implements LongQueue {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        return UnsafeHelper.UNSAFE.getLong(address + (index * 8L));
+        return UnsafeHelper.UNSAFE.getLong(address + (index * ENTRY_SIZE));
     }
 
     private void set(int index, long value) {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        UnsafeHelper.UNSAFE.putLong(address + (index * 8L), value);
+        UnsafeHelper.UNSAFE.putLong(address + (index * ENTRY_SIZE), value);
     }
 
     @Override
@@ -125,7 +128,7 @@ public final class LongArrayQueue implements LongQueue {
     public void clear() {
         ensureMemory();
         for (int i = 0; i < capacity; i++) {
-            UnsafeHelper.UNSAFE.putLong(address + (i * 8L), nullItem);
+            UnsafeHelper.UNSAFE.putLong(address + (i * ENTRY_SIZE), nullItem);
         }
         add = 0;
         remove = 0;
@@ -135,7 +138,7 @@ public final class LongArrayQueue implements LongQueue {
     @Override
     public void dispose() {
         if (size >= 0) {
-            malloc.free(address, capacity * 8L);
+            malloc.free(address, capacity * ENTRY_SIZE);
             add = 0;
             remove = 0;
             size = -1;
@@ -157,7 +160,7 @@ public final class LongArrayQueue implements LongQueue {
         return size >= 0;
     }
 
-    private class Iter implements LongIterator {
+    private final class Iter implements LongIterator {
         int remaining;
         int cursor;
 
@@ -200,13 +203,7 @@ public final class LongArrayQueue implements LongQueue {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("LongArrayQueue{");
-        sb.append("capacity=").append(capacity);
-        sb.append(", size=").append(size);
-        sb.append(", add=").append(add);
-        sb.append(", remove=").append(remove);
-        sb.append(", nullItem=").append(nullItem);
-        sb.append('}');
-        return sb.toString();
+        return "LongArrayQueue{capacity=" + capacity + ", size=" + size + ", add="
+                + add + ", remove=" + remove + ", nullItem=" + nullItem + '}';
     }
 }

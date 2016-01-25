@@ -3,7 +3,7 @@ package com.hazelcast.elastic;
 import java.util.Iterator;
 
 /**
- * @author sozal 26/10/14
+ * @param <E> {@inheritDoc}
  */
 public interface SlottableIterator<E> extends Iterator<E> {
 

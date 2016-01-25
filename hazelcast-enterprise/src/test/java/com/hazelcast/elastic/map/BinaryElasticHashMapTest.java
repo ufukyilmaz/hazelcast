@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.elastic.CapacityUtil;
+import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryManager;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
@@ -689,7 +691,7 @@ public class BinaryElasticHashMapTest {
             map.set(newKey(), newValue());
         }
 
-        BinaryElasticHashMap<NativeMemoryData>.KeyIter iter = map.new KeyIter();
+        BinaryElasticHashMap<NativeMemoryData>.KeyIter iter = map.keyIter(0);
         while (iter.hasNext()) {
             iter.nextSlot();
             iter.remove();
@@ -725,7 +727,7 @@ public class BinaryElasticHashMapTest {
             map.set(newKey(), newValue());
         }
 
-        BinaryElasticHashMap<NativeMemoryData>.EntryIter iter = map.new EntryIter();
+        SlottableIterator<Entry<Data, NativeMemoryData>> iter = map.entryIter(0);
         while (iter.hasNext()) {
             iter.nextSlot();
             iter.remove();

@@ -4,6 +4,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**
+ * @param <E> entry type
  * @author mdogan 22/01/14
  */
 public final class ArrayElasticQueue<E> extends AbstractElasticQueue<E> implements ElasticQueue<E> {

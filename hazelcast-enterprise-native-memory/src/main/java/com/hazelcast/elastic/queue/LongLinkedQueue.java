@@ -2,31 +2,26 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
 import sun.misc.Unsafe;
 
 import java.util.NoSuchElementException;
 
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+
+/** Implementation of {@link LongQueue} with a linked list. */
 public final class LongLinkedQueue implements LongQueue {
 
     private static final long NULL_PTR = 0L;
-
     private static final int NODE_SIZE = 16;
-
     private static final int NEXT_OFFSET = 8;
 
     private final MemoryAllocator malloc;
-
     private final long nullItem;
-
     private final int capacity;
-
     private final boolean hasCapacity;
 
     private long head;
-
     private long tail;
-
     private int size;
 
     public LongLinkedQueue(final MemoryAllocator malloc, final int capacity, final long nullValue) {
@@ -34,7 +29,8 @@ public final class LongLinkedQueue implements LongQueue {
         this.capacity = capacity;
         this.hasCapacity =  capacity < Integer.MAX_VALUE;
         nullItem = nullValue;
-        tail = head = newNode(nullItem);
+        head = newNode(nullItem);
+        tail = head;
     }
 
     public LongLinkedQueue(MemoryAllocator memoryAllocator, long nullValue) {
@@ -42,26 +38,26 @@ public final class LongLinkedQueue implements LongQueue {
     }
 
     private long newNode(final long e) {
-        Unsafe unsafe = UnsafeHelper.UNSAFE;
+        Unsafe unsafe = UNSAFE;
         long address = malloc.allocate(NODE_SIZE);
         unsafe.putLong(null, address, e);
         unsafe.putLong(null, address + NEXT_OFFSET, NULL_PTR);
         return address;
     }
 
-    private long getItem(long node) {
+    private static long getItem(long node) {
         assert node != NULL_PTR;
-        return UnsafeHelper.UNSAFE.getLong(node);
+        return UNSAFE.getLong(node);
     }
 
-    private long getNextNode(long node) {
+    private static long getNextNode(long node) {
         assert node != NULL_PTR;
-        return UnsafeHelper.UNSAFE.getLong(node + NEXT_OFFSET);
+        return UNSAFE.getLong(node + NEXT_OFFSET);
     }
 
-    private void setNextNode(long node, long value) {
+    private static void setNextNode(long node, long value) {
         assert node != NULL_PTR;
-        UnsafeHelper.UNSAFE.putLong(node + NEXT_OFFSET, value);
+        UNSAFE.putLong(node + NEXT_OFFSET, value);
     }
 
     @Override
@@ -134,25 +130,25 @@ public final class LongLinkedQueue implements LongQueue {
 
     @Override
     public int remainingCapacity() {
-        return hasCapacity ? capacity - size() : Integer.MAX_VALUE ;
+        return hasCapacity ? capacity - size() : Integer.MAX_VALUE;
     }
 
     @Override
+    @SuppressWarnings("checkstyle:emptyblock")
     public void clear() {
-        while (poll() != nullItem);
+        while (poll() != nullItem) { }
     }
 
     @Override
     public void dispose() {
         if (head != NULL_PTR) {
             clear();
-            long ptr = head;
-            long ptr2 = tail;
-            assert ptr == ptr2;
-            if (ptr != NULL_PTR) {
-                malloc.free(ptr, NODE_SIZE);
+            assert head == tail;
+            if (head != NULL_PTR) {
+                malloc.free(head, NODE_SIZE);
             }
-            head = tail = NULL_PTR;
+            head = NULL_PTR;
+            tail = NULL_PTR;
         }
     }
 
@@ -173,7 +169,7 @@ public final class LongLinkedQueue implements LongQueue {
         }
     }
 
-    private class Iter implements LongIterator {
+    private final class Iter implements LongIterator {
         long currentNode;
 
         private Iter() {

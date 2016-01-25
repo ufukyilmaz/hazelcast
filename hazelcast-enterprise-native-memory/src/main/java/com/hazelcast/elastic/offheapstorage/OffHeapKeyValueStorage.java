@@ -57,7 +57,8 @@ public interface OffHeapKeyValueStorage {
      * In case if found - append value represented by;
      * valueAddress with params  valueWrittenBytes and  valueAllocatedBytes to the chain of key's values;
      * <p/>
-     * In case if not-found - adds new key to the corresponding place in the tree and assign value to this 'new' key;
+     * In case if not-found - adds new key to the corresponding place in the tree and assign value
+     * to this 'new' key;
      *
      * @param keyAddress          - address of the key;
      * @param keyWrittenBytes     - amount of written bytes of the key;
@@ -99,7 +100,8 @@ public interface OffHeapKeyValueStorage {
      * @param createIfNotExists - flag which determines if we want to create entry if it doesn't exist
      * @return address of the key entry
      */
-    long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes, OffHeapComparator comparator, boolean createIfNotExists);
+    long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
+                     OffHeapComparator comparator, boolean createIfNotExists);
 
     /***
      * @param keyEntryPointer - address of the key entry

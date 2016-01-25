@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * @param <K> key type
+ * @param <V> value type
  * @author mdogan 07/01/14
  */
 public interface ElasticMap<K, V> extends Map<K, V>, Disposable {

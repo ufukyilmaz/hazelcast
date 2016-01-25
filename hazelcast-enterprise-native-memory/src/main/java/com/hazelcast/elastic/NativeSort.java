@@ -1,10 +1,8 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.nio.UnsafeHelper;
-import sun.misc.Unsafe;
-
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 /**
  * Quick sort algorithm implementations for native {@code int}
@@ -12,7 +10,7 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  */
 public final class NativeSort {
 
-    private static final Unsafe unsafe = UnsafeHelper.UNSAFE;
+    private NativeSort() { }
 
     /**
      * Sorts the native int array into ascending numerical order
@@ -47,23 +45,24 @@ public final class NativeSort {
     }
 
     private static long partitionInt(long address, long left, long right) {
-        long i = left, j = right;
+        long i = left;
+        long j = right;
         long offset = ((left + right) >> 1) * INT_SIZE_IN_BYTES;
-        int pivot = unsafe.getInt(address + offset);
+        int pivot = UNSAFE.getInt(address + offset);
         int tmp;
 
         while (i <= j) {
-            while (unsafe.getInt(address + i * INT_SIZE_IN_BYTES) < pivot) {
+            while (UNSAFE.getInt(address + i * INT_SIZE_IN_BYTES) < pivot) {
                 i++;
             }
-            while (unsafe.getInt(address + j * INT_SIZE_IN_BYTES) > pivot) {
+            while (UNSAFE.getInt(address + j * INT_SIZE_IN_BYTES) > pivot) {
                 j--;
             }
 
             if (i <= j) {
-                tmp = unsafe.getInt(address + i * INT_SIZE_IN_BYTES);
-                unsafe.putInt(address + i * INT_SIZE_IN_BYTES, unsafe.getInt(address + j * INT_SIZE_IN_BYTES));
-                unsafe.putInt(address + j * INT_SIZE_IN_BYTES, tmp);
+                tmp = UNSAFE.getInt(address + i * INT_SIZE_IN_BYTES);
+                UNSAFE.putInt(address + i * INT_SIZE_IN_BYTES, UNSAFE.getInt(address + j * INT_SIZE_IN_BYTES));
+                UNSAFE.putInt(address + j * INT_SIZE_IN_BYTES, tmp);
                 i++;
                 j--;
             }
@@ -82,23 +81,24 @@ public final class NativeSort {
     }
 
     private static long partitionLong(long address, long left, long right) {
-        long i = left, j = right;
+        long i = left;
+        long j = right;
         long offset = ((left + right) >> 1) * LONG_SIZE_IN_BYTES;
-        long pivot = unsafe.getLong(address + offset);
+        long pivot = UNSAFE.getLong(address + offset);
         long tmp;
 
         while (i <= j) {
-            while (unsafe.getLong(address + i * LONG_SIZE_IN_BYTES) < pivot) {
+            while (UNSAFE.getLong(address + i * LONG_SIZE_IN_BYTES) < pivot) {
                 i++;
             }
-            while (unsafe.getLong(address + j * LONG_SIZE_IN_BYTES) > pivot) {
+            while (UNSAFE.getLong(address + j * LONG_SIZE_IN_BYTES) > pivot) {
                 j--;
             }
 
             if (i <= j) {
-                tmp = unsafe.getLong(address + i * LONG_SIZE_IN_BYTES);
-                unsafe.putLong(address + i * LONG_SIZE_IN_BYTES, unsafe.getLong(address + j * LONG_SIZE_IN_BYTES));
-                unsafe.putLong(address + j * LONG_SIZE_IN_BYTES, tmp);
+                tmp = UNSAFE.getLong(address + i * LONG_SIZE_IN_BYTES);
+                UNSAFE.putLong(address + i * LONG_SIZE_IN_BYTES, UNSAFE.getLong(address + j * LONG_SIZE_IN_BYTES));
+                UNSAFE.putLong(address + j * LONG_SIZE_IN_BYTES, tmp);
                 i++;
                 j--;
             }

@@ -16,8 +16,9 @@
  */
 package com.hazelcast.util.concurrent;
 
-import java.util.Collection;
 import com.hazelcast.util.function.Consumer;
+
+import java.util.Collection;
 
 import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 

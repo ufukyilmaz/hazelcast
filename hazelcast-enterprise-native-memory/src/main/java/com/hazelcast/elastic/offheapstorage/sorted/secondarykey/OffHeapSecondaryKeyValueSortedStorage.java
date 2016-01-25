@@ -6,7 +6,7 @@ import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
 import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
 
-/***
+/**
  * Provides key-value storage functionality with 2-layer keys structure
  * KEY1 -----
  * SECONDARY_KEY1_1
@@ -96,6 +96,7 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      * @param valueAllocatedBytes        - amount of allocated bytes of the value;
      * @return address of the key entry;
      */
+    @SuppressWarnings("checkstyle:parameternumber")
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes
@@ -127,6 +128,7 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      *                                   if null - default storage's comparator to be used;
      * @return address of the key entry;
      */
+    @SuppressWarnings("checkstyle:parameternumber")
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes,

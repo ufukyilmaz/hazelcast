@@ -7,6 +7,9 @@ import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeSt
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIteratorImpl;
 
+/**
+ * Specialization of off-heap red-black tree to secondary key storage
+ */
 public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValueRedBlackTreeStorage
         implements OffHeapSecondaryKeyValueSortedStorage {
     private long lastInsertedSecondaryKeyEntry;
@@ -40,7 +43,8 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
                 true
         );
 
-        if (UNSAFE.getLong(secondaryKeyEntryOffsetAddress) == 0L) { //Insert rootAddress's address here
+        if (UNSAFE.getLong(secondaryKeyEntryOffsetAddress) == 0L) {
+            //Insert rootAddress's address here
             UNSAFE.putLong(secondaryKeyEntryOffsetAddress, secondaryKeyEntryAddress);
         }
 
@@ -69,6 +73,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
      * @return address of the key entry;
      */
     @Override
+    @SuppressWarnings("checkstyle:parameternumber")
     public long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
                     long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
                     long valueAddress, long valueWrittenBytes, long valueAllocatedBytes
@@ -106,6 +111,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
      * @return address of the key entry;
      */
     @Override
+    @SuppressWarnings("checkstyle:parameternumber")
     public long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
                     long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
                     long valueAddress, long valueWrittenBytes, long valueAllocatedBytes,

@@ -5,8 +5,11 @@ import java.util.NoSuchElementException;
 import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
 import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueSortedStorage;
 
+/**
+ * Iterator over secondary keys stored in a red-black tree.
+ */
 public class OffHeapSecondaryKeyIteratorImpl implements OffHeapSecondaryKeyIterator {
-    private long pointer = 0L;
+    private long pointer;
     private long keyEntryAddress;
     private OrderingDirection direction;
     private final OffHeapSecondaryKeyValueSortedStorage storage;

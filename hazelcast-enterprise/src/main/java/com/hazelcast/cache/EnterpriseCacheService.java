@@ -1,7 +1,7 @@
 package com.hazelcast.cache;
 
-import com.hazelcast.cache.hidensity.HiDensityCacheEntryCountResolver;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.hidensity.HiDensityCacheStorageInfo;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HotRestartHiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
@@ -101,14 +101,8 @@ public class EnterpriseCacheService
                         throw new CacheNotExistsException("Cache " + cacheNameWithPrefix
                                 + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
                     }
-                    if (cacheConfig.isStatisticsEnabled()) {
-                        CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
-                        return new HiDensityStorageInfo(
-                                        cacheNameWithPrefix,
-                                        new HiDensityCacheEntryCountResolver(cacheContext));
-                    } else {
-                        return new HiDensityStorageInfo(cacheNameWithPrefix);
-                    }
+                    CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
+                    return new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
                 }
             };
 

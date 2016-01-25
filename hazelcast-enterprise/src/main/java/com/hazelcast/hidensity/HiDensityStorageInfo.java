@@ -29,16 +29,10 @@ public class HiDensityStorageInfo {
     private final AtomicLong usedMemory = new AtomicLong(0L);
     private final AtomicLong forceEvictionCount = new AtomicLong(0L);
     private final AtomicLong forceEvictedEntryCount = new AtomicLong(0L);
-    private final EntryCountResolver entryCountResolver;
+    private final AtomicLong entryCount = new AtomicLong(0L);
 
     public HiDensityStorageInfo(String storageName) {
         this.storageName = storageName;
-        this.entryCountResolver = createEntryCountResolver();
-    }
-
-    public HiDensityStorageInfo(String storageName, EntryCountResolver entryCountResolver) {
-        this.storageName = storageName;
-        this.entryCountResolver = entryCountResolver;
     }
 
     public String getStorageName() {
@@ -46,23 +40,23 @@ public class HiDensityStorageInfo {
     }
 
     public long addEntryCount(long count) {
-        return entryCountResolver.increaseEntryCount(count);
+        return entryCount.addAndGet(count);
     }
 
     public long removeEntryCount(long count) {
-        return entryCountResolver.decreaseEntryCount(count);
+        return entryCount.addAndGet(-count);
     }
 
     public long increaseEntryCount() {
-        return entryCountResolver.increaseEntryCount();
+        return entryCount.incrementAndGet();
     }
 
     public long decreaseEntryCount() {
-        return entryCountResolver.decreaseEntryCount();
+        return entryCount.decrementAndGet();
     }
 
     public long getEntryCount() {
-        return entryCountResolver.getEntryCount();
+        return entryCount.get();
     }
 
     public long addUsedMemory(long size) {
@@ -113,58 +107,8 @@ public class HiDensityStorageInfo {
                     + ", usedMemory=" + usedMemory.get()
                     + ", forceEvictionCount=" + forceEvictionCount.get()
                     + ", forceEvictedEntryCount=" + forceEvictedEntryCount.get()
-                    + ", entryCount=" + entryCountResolver.getEntryCount()
+                    + ", entryCount=" + entryCount.get()
                     + '}';
-    }
-
-    public static EntryCountResolver createEntryCountResolver() {
-        return new DefaultEntryCountResolver();
-    }
-
-    /**
-     * Contract point for tracking stored entry count.
-     */
-    public interface EntryCountResolver {
-
-        long getEntryCount();
-
-        long increaseEntryCount();
-        long increaseEntryCount(long count);
-
-        long decreaseEntryCount();
-        long decreaseEntryCount(long count);
-
-    }
-
-    private static class DefaultEntryCountResolver implements EntryCountResolver {
-
-        private final AtomicLong entryCount = new AtomicLong(0L);
-
-        @Override
-        public long getEntryCount() {
-            return entryCount.get();
-        }
-
-        @Override
-        public long increaseEntryCount() {
-            return entryCount.incrementAndGet();
-        }
-
-        @Override
-        public long increaseEntryCount(long count) {
-            return entryCount.addAndGet(count);
-        }
-
-        @Override
-        public long decreaseEntryCount() {
-            return entryCount.decrementAndGet();
-        }
-
-        @Override
-        public long decreaseEntryCount(long count) {
-            return entryCount.addAndGet(-count);
-        }
-
     }
 
 }

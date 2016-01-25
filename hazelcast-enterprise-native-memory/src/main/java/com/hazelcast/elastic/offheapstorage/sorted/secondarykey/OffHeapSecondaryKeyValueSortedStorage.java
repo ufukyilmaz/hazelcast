@@ -6,7 +6,7 @@ import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
 import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
 
-/***
+/**
  * Provides key-value storage functionality with 2-layer keys structure
  * KEY1 -----
  * SECONDARY_KEY1_1

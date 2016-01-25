@@ -1,2 +1,2 @@
-/** Iterator over values used in Hazelcast Jet */
+/** Iterator over values stored in off-heap key-value blob storage. */
 package com.hazelcast.elastic.offheapstorage.iterator.value;

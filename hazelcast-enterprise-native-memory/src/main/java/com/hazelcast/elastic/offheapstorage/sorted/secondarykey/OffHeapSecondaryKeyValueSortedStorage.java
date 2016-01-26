@@ -8,29 +8,36 @@ import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSeconda
 
 /**
  * Provides key-value storage functionality with 2-layer keys structure
- * KEY1 -----
- * SECONDARY_KEY1_1
- * value1
- * value2
- * value3
- * SECONDARY_KEY1_2
- * value4
- * value5
- * value6
+ * <pre>
+ *          KEY1 -----
+ *                 SECONDARY_KEY1_1
+ *                     value1
+ *                     value2
+ *                     value3
+ *                 SECONDARY_KEY1_2
+ *                     value4
+ *                     value5
+ *                     value6
+ *                 SECONDARY_KEY1_3
+ *                     value7
+ *                     value8
+ *                     value9
+ *          KEY2 -----
+ *                 SECONDARY_KEY2_1
+ *                     value1
+ *                     value2
+ *                     value3
+ *                 SECONDARY_KEY2_2
+ *                     value4
+ *                     value5
+ *                     value6
+ *                 SECONDARY_KEY2_3
+ *                     value7
+ *                     value8
+ *                     value9
+ * </pre>
  * <p/>
- * SECONDARY_KEY1_3
- * value7
- * value8
- * value9
- * KEY2 ------
- * SECONDARY_KEY2_1
- * ......
- * SECONDARY_KEY2_2
- * ......
- * SECONDARY_KEY2_3
- * ......
- * ..................................................
- * <p/>
+ * Keys are sorted on 1-st level and on each branch of the 2-nd level.
  * RedBlack structure is used in both keys levels.
  */
 public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSortedStorage {

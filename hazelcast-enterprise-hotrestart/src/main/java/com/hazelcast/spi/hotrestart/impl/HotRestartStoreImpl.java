@@ -16,7 +16,6 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * <i>happens-before</i> relationship between any two operations on this object.
  */
 public final class HotRestartStoreImpl implements HotRestartStore {
-    private boolean autoFsync;
     private final String name;
     private final ILogger logger;
     private final GcExecutor gcExec;
@@ -48,21 +47,22 @@ public final class HotRestartStoreImpl implements HotRestartStore {
                 cfg, cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));
     }
 
-    @Override public void put(HotRestartKey kh, byte[] value) {
-        put0(kh, value);
+    @Override public void put(HotRestartKey kh, byte[] value, boolean needsFsync) {
+        put0(kh, value, needsFsync);
     }
 
-    @Override public void remove(HotRestartKey key) {
-        put0(key, null);
+    @Override public void remove(HotRestartKey key, boolean needsFsync) {
+        put0(key, null, needsFsync);
     }
 
     @SuppressWarnings("checkstyle:innerassignment")
-    private void put0(HotRestartKey hrKey, byte[] value) {
+    private void put0(HotRestartKey hrKey, byte[] value, boolean needsFsync) {
         validateStatus();
         final int size = Record.size(hrKey.bytes(), value);
         final long seq = gcHelper.nextRecordSeq(size);
         final boolean isTombstone = value == null;
         WriteThroughChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
+        activeChunk.flagForFsyncOnClose(needsFsync);
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
         final boolean full = activeChunk.addStep1(hrKey.prefix(), seq, hrKey.bytes(), value);
         if (full) {
@@ -74,17 +74,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
                 activeChunk = activeValChunk = gcHelper.newActiveValChunk();
             }
             gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
-        } else if (autoFsync) {
-            activeChunk.fsync();
         }
-    }
-
-    @Override public void setAutoFsync(boolean fsync) {
-        this.autoFsync = fsync;
-    }
-
-    @Override public boolean isAutoFsync() {
-        return autoFsync;
     }
 
     @Override public void fsync() {
@@ -129,11 +119,11 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.shutdown();
     }
 
-    private void closeAndDeleteIfEmpty(WriteThroughChunk cuhnk) {
-        if (cuhnk != null) {
-            cuhnk.close();
-            if (cuhnk.size() == 0) {
-                gcHelper.deleteChunkFile(cuhnk);
+    private void closeAndDeleteIfEmpty(WriteThroughChunk chunk) {
+        if (chunk != null) {
+            chunk.close();
+            if (chunk.size() == 0) {
+                gcHelper.deleteChunkFile(chunk);
             }
         }
 

@@ -218,7 +218,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
                         long prefix = hotRestartService.registerRamStore(registry, NAME, name, thread.getThreadId());
                         HotRestartStore store = hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
                         byte[] bytes = "value".getBytes();
-                        store.put(new KeyOnHeap(prefix, bytes), bytes);
+                        store.put(new KeyOnHeap(prefix, bytes), bytes, false);
                     } finally {
                         latch.countDown();
                     }

@@ -141,7 +141,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
 
     private void evictKeysFromHotRestartStore() {
         for (KeyOffHeap key : evictedKeys) {
-            hotRestartStore.remove(key);
+            hotRestartStore.remove(key, fsync);
         }
         evictedKeys.clear();
         if (fsync) {

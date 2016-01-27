@@ -58,6 +58,10 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
     private transient Map<String, Collection<DelayedEntry>> delayedEntries;
     private transient NativeOutOfMemoryError oome;
     private transient SerializationService serializationService;
+    /**
+     * @see WriteBehindStore#flushCounter
+     */
+    private Map<String, Integer> flushCounters;
 
     public HDMapReplicationOperation() {
     }
@@ -102,6 +106,7 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
     }
 
     private void prepareWriteBehindQueueData(PartitionContainer container) {
+        flushCounters = new HashMap<String, Integer>(container.getMaps().size());
         delayedEntries = new HashMap<String, Collection<DelayedEntry>>(container.getMaps().size());
         for (Entry<String, RecordStore> entry : container.getMaps().entrySet()) {
             RecordStore recordStore = entry.getValue();
@@ -109,13 +114,18 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
             if (!mapContainer.getMapStoreContext().isWriteBehindMapStoreEnabled()) {
                 continue;
             }
-            final WriteBehindQueue<DelayedEntry> writeBehindQueue = ((WriteBehindStore) recordStore.getMapDataStore())
-                    .getWriteBehindQueue();
-            final Collection<DelayedEntry> delayedEntries = writeBehindQueue.asList();
-            if (delayedEntries != null && delayedEntries.size() == 0) {
+            WriteBehindStore mapDataStore = (WriteBehindStore) recordStore.getMapDataStore();
+            WriteBehindQueue<DelayedEntry> writeBehindQueue = mapDataStore.getWriteBehindQueue();
+
+            Collection<DelayedEntry> entries = writeBehindQueue.asList();
+            if (entries != null && entries.size() == 0) {
                 continue;
             }
-            this.delayedEntries.put(entry.getKey(), delayedEntries);
+
+            String mapName = entry.getKey();
+
+            delayedEntries.put(mapName, entries);
+            flushCounters.put(mapName, mapDataStore.getNumberOfEntriesToFlush());
         }
     }
 
@@ -168,9 +178,11 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
         }
 
         for (Entry<String, Collection<DelayedEntry>> entry : delayedEntries.entrySet()) {
-            RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), entry.getKey());
+            String mapName = entry.getKey();
+            RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), mapName);
             WriteBehindStore mapDataStore = (WriteBehindStore) recordStore.getMapDataStore();
             mapDataStore.clear();
+            mapDataStore.setNumberOfEntriesToFlush(flushCounters.get(mapName));
 
             Collection<DelayedEntry> replicatedEntries = entry.getValue();
             for (DelayedEntry delayedEntry : replicatedEntries) {
@@ -258,6 +270,12 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 out.writeInt(e.getPartitionId());
             }
         }
+
+        out.writeInt(flushCounters.size());
+        for (Entry<String, Integer> entry : flushCounters.entrySet()) {
+            out.writeUTF(entry.getKey());
+            out.writeInt(entry.getValue());
+        }
     }
 
     @Override
@@ -314,6 +332,14 @@ public class HDMapReplicationOperation extends AbstractOperation implements Muta
                 delayedEntriesList.add(entry);
             }
             delayedEntries.put(mapName, delayedEntriesList);
+        }
+
+        int counterSize = in.readInt();
+        flushCounters = new HashMap<String, Integer>(counterSize);
+        for (int i = 0; i < counterSize; i++) {
+            String mapName = in.readUTF();
+            int count = in.readInt();
+            flushCounters.put(mapName, count);
         }
     }
 

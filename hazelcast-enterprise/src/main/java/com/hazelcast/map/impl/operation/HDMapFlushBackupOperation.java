@@ -18,6 +18,6 @@ public class HDMapFlushBackupOperation extends HDMapOperation implements BackupO
 
     @Override
     public void runInternal() {
-        recordStore.getMapDataStore().clear();
+        recordStore.softFlush();
     }
 }

@@ -16,7 +16,7 @@ public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOp
 
     @Override
     protected void runInternal() {
-        recordStore.flush();
+        recordStore.softFlush();
     }
 
     @Override

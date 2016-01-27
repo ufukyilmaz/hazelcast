@@ -89,7 +89,7 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
     }
 
     private void assertExpectedTotalCacheSize(final ICache[] caches) {
-        final int expectedSize = cache.size() * clusterSize;
+        final int expectedSize = cache.size();
 
         assertTrueEventually(new AssertTask() {
             @Override

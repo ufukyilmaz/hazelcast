@@ -50,15 +50,19 @@ public class GcLogger {
         }
     }
 
-    public void info(String template, Object arg1, Object arg2) {
+    public void info(String template,
+                     Object arg1, Object arg2, Object arg3, Object arg4, Object arg5
+    ) {
         if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2));
+            info(String.format(template, arg1, arg2, arg3, arg4, arg5));
         }
     }
 
-    public void info(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
+    public void info(String template,
+                     Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6
+    ) {
         if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3, arg4, arg5));
+            info(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6));
         }
     }
 

@@ -266,7 +266,7 @@ public final class ChunkManager {
     }
 
     GcParams gcParams() {
-        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.recordSeq());
+        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.chunkSeq());
     }
 
     @SuppressWarnings("checkstyle:innerassignment")
@@ -279,9 +279,9 @@ public final class ChunkManager {
         }
         final long garbageBeforeGc = valGarbage.get();
         final long liveBeforeGc = valOccupancy.get() - garbageBeforeGc;
-        logger.fine("Start GC: garbage/live %3.0f%% (%,d/%,d); costGoal %,d; reclamationGoal %,d; min CB factor %,.2f",
+        logger.fine("Start GC: g/l %2.0f%% (%,d/%,d); costGoal %,d; benefitGoal %,d; min b/c %,.2f",
                 UNIT_PERCENTAGE * garbageBeforeGc / liveBeforeGc, garbageBeforeGc, liveBeforeGc,
-                gcp.costGoal, gcp.reclamationGoal, gcp.minCostBenefit);
+                gcp.costGoal, gcp.benefitGoal, gcp.minBenefitToCost);
         if (gcp.forceGc) {
             logger.info("Forcing GC due to ratio %.2f", (float) garbageBeforeGc / liveBeforeGc);
         }

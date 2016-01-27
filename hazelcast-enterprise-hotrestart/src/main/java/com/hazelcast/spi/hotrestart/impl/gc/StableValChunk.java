@@ -4,35 +4,32 @@ package com.hazelcast.spi.hotrestart.impl.gc;
  * Represents a chunk whose on-disk contents are stable (immutable).
  */
 class StableValChunk extends StableChunk {
-    final long youngestRecordSeq;
     private double costBenefit;
 
-    StableValChunk(WriteThroughValChunk from, long youngestRecordSeq, boolean compressed) {
+    StableValChunk(WriteThroughValChunk from, boolean compressed) {
         super(from, compressed);
-        this.youngestRecordSeq = youngestRecordSeq;
     }
 
-    StableValChunk(long seq, RecordMap records, int liveRecordCount, long youngestRecordSeq,
+    StableValChunk(long seq, RecordMap records, int liveRecordCount,
                    long size, long garbage, boolean needsDismissing, boolean compressed) {
         super(seq, records, liveRecordCount, size, garbage, needsDismissing, compressed);
-        this.youngestRecordSeq = youngestRecordSeq;
     }
 
     final long cost() {
         return size() - garbage;
     }
 
-    final double updateCostBenefit(long currRecordSeq) {
-        return costBenefit = costBenefit(currRecordSeq);
+    final double updateCostBenefit(long currChunkSeq) {
+        return costBenefit = costBenefit(currChunkSeq);
     }
 
-    final double costBenefit(long currRecordSeq) {
+    final double costBenefit(long currChunkSeq) {
         final double benefit = this.garbage;
         final double cost = cost();
         if (cost == 0) {
             return Double.POSITIVE_INFINITY;
         }
-        final double age = currRecordSeq - youngestRecordSeq;
+        final double age = currChunkSeq - this.seq;
         return age * benefit / cost;
     }
 

@@ -64,7 +64,6 @@ public final class GrowingDestChunk extends GrowingChunk {
             // And now we may catch up again.
             mc.catchupNow();
             long fileSize = 0;
-            long youngestRecordSeq = -1;
             final RecordDataHolder holder = gch.recordDataHolder;
             for (GcRecord r : recs) {
                 final KeyHandle kh = r.toKeyHandle();
@@ -76,7 +75,6 @@ public final class GrowingDestChunk extends GrowingChunk {
                             && ramStore.copyEntry(kh, r.payloadSize(), holder)) {
                         holder.flip();
                         assert holder.payloadSizeValid(r);
-                        youngestRecordSeq = r.liveSeq();
                         // catches up for each bufferful
                         fileSize = r.intoOut(out, fileOut, fileSize, prefix, holder, mc);
                         continue;
@@ -89,7 +87,7 @@ public final class GrowingDestChunk extends GrowingChunk {
                             final String ramStoreName = ramStore != null ? ramStore.getClass().getSimpleName() : "null";
                             throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired. Chunk #%02x, record #%02x,"
-                                + " isTombstone? %b, size %d, RAM store found? %s",
+                                + " isTombstone? %b, size %d, RAM store was %s",
                                     seq, r.liveSeq(), r.isTombstone(), r.size(), ramStoreName));
                         }
                     }
@@ -120,7 +118,7 @@ public final class GrowingDestChunk extends GrowingChunk {
             // redirect ownership to the new stableChunk. It is vital that no
             // catching up occurs before transfer of ownership (otherwise the
             // wrong chunk's garbage field will be updated).
-            return new StableValChunk(seq, gch.toPlainRecordMap(records), liveRecordCount, youngestRecordSeq, fileSize,
+            return new StableValChunk(seq, gch.toPlainRecordMap(records), liveRecordCount, fileSize,
                     garbage, needsDismissing, gch.compressionEnabled());
         } catch (IOException e) {
             throw new HotRestartException(e);

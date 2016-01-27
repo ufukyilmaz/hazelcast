@@ -9,7 +9,6 @@ import java.io.IOException;
  * Write-through chunk specialized to contain value records.
  */
 final class WriteThroughValChunk extends WriteThroughChunk {
-    private long youngestSeq;
 
     WriteThroughValChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
         super(seq, records, out, gcHelper);
@@ -25,7 +24,6 @@ final class WriteThroughValChunk extends WriteThroughChunk {
             dataOut.write(keyBytes);
             dataOut.write(valueBytes);
             size += Record.VAL_HEADER_SIZE + keyBytes.length + valueBytes.length;
-            youngestSeq = recordSeq;
             return full();
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -33,6 +31,6 @@ final class WriteThroughValChunk extends WriteThroughChunk {
     }
 
     @Override StableValChunk toStableChunk() {
-        return new StableValChunk(this, youngestSeq, false);
+        return new StableValChunk(this, false);
     }
 }

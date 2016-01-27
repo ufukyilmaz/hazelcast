@@ -31,11 +31,23 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
         this.storageInfo = storageInfo;
     }
 
+    protected void increaseEntryCount() {
+        storageInfo.increaseEntryCount();
+    }
+
+    protected void decreaseEntryCount() {
+        storageInfo.decreaseEntryCount();
+    }
+
+    protected void decreaseEntryCount(int entryCount) {
+        storageInfo.removeEntryCount(entryCount);
+    }
+
     @Override
     public boolean set(Data key, R value) {
         boolean added = super.set(key, value);
         if (added) {
-            storageInfo.increaseEntryCount();
+            increaseEntryCount();
         }
         return added;
     }
@@ -45,7 +57,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
         R record = super.put(key, value);
         // If there is no previous value with specified key, means that new entry is added
         if (record == null) {
-            storageInfo.increaseEntryCount();
+            increaseEntryCount();
         }
         return record;
     }
@@ -55,7 +67,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
         R record = super.putIfAbsent(key, value);
         // If there is no previous value with specified key, means that new entry is added
         if (record == null) {
-            storageInfo.increaseEntryCount();
+            increaseEntryCount();
         }
         return record;
     }
@@ -64,7 +76,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     public boolean delete(Data key) {
         boolean deleted = super.delete(key);
         if (deleted) {
-            storageInfo.decreaseEntryCount();
+            decreaseEntryCount();
         }
         return deleted;
     }
@@ -73,7 +85,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     public R remove(Object k) {
         R removedRecord = super.remove(k);
         if (removedRecord != null) {
-            storageInfo.decreaseEntryCount();
+            decreaseEntryCount();
         }
         return removedRecord;
     }
@@ -82,7 +94,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     public boolean remove(Object k, Object v) {
         boolean removed = super.remove(k, v);
         if (removed) {
-            storageInfo.decreaseEntryCount();
+            decreaseEntryCount();
         }
         return removed;
     }
@@ -91,7 +103,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     public void clear() {
         final int sizeBeforeClear = size();
         super.clear();
-        storageInfo.removeEntryCount(sizeBeforeClear);
+        decreaseEntryCount(sizeBeforeClear);
     }
 
     protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {

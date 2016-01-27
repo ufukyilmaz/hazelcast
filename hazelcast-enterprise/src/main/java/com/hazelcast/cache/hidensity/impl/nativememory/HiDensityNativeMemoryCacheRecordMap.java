@@ -21,10 +21,54 @@ public class HiDensityNativeMemoryCacheRecordMap
         extends SampleableEvictableHiDensityRecordMap<HiDensityNativeMemoryCacheRecord>
         implements SampleableHiDensityCacheRecordMap<HiDensityNativeMemoryCacheRecord> {
 
+    private boolean entryCountingEnable;
+
     public HiDensityNativeMemoryCacheRecordMap(int initialCapacity,
                                                HiDensityRecordProcessor cacheRecordProcessor,
                                                HiDensityStorageInfo cacheInfo) {
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
+    }
+
+    // Called by only same partition thread. So there is no synchronization and visibility problem.
+    @Override
+    public void setEntryCounting(boolean enable) {
+        if (enable) {
+            if (!entryCountingEnable) {
+                // It was disable before but now it will be enable.
+                // Therefore, we increase the entry count as size of records.
+                storageInfo.addEntryCount(size());
+            }
+        } else {
+            if (entryCountingEnable) {
+                int size = size();
+                assert (size == 0) : "Expected empty cache record map!";
+                // It was enable before but now it will be disable.
+                // Therefore, we decrease the entry count as size of records.
+                storageInfo.removeEntryCount(size);
+            }
+        }
+        this.entryCountingEnable = enable;
+    }
+
+    @Override
+    protected void increaseEntryCount() {
+        if (entryCountingEnable) {
+            super.increaseEntryCount();
+        }
+    }
+
+    @Override
+    protected void decreaseEntryCount() {
+        if (entryCountingEnable) {
+            super.decreaseEntryCount();
+        }
+    }
+
+    @Override
+    protected void decreaseEntryCount(int entryCount) {
+        if (entryCountingEnable) {
+            super.decreaseEntryCount(entryCount);
+        }
     }
 
     @Override

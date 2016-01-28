@@ -47,13 +47,16 @@ public abstract class InterceptorTestSupport extends HazelcastTestSupport {
 
     @After
     public void check() {
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertTrue(interceptor.success);
-            }
-        });
-        factory.terminateAll();
+        try {
+            assertTrueEventually(new AssertTask() {
+                @Override
+                public void run() throws Exception {
+                    assertTrue(interceptor.success);
+                }
+            }, 20);
+        } finally {
+            factory.terminateAll();
+        }
     }
 
     String getObjectType() {

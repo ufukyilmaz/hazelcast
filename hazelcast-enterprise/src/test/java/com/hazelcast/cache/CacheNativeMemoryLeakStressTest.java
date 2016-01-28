@@ -511,7 +511,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry)
                         throws CacheWriterException {
                     Integer keyValue = entry.getKey().intValue();
-                    if (keyValue % 10 == 0) {
+                    if (keyValue % 100 == 0) {
                         throw new CacheWriterException("Key value is invalid: " + keyValue);
                     }
                 }
@@ -527,7 +527,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 @Override
                 public void delete(Object key) throws CacheWriterException {
                     Integer keyValue = (Integer) key;
-                    if (keyValue % 10 == 0) {
+                    if (keyValue % 100 == 0) {
                         throw new CacheWriterException("Key value is invalid: " + keyValue);
                     }
                 }

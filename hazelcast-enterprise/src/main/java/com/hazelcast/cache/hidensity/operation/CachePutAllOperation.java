@@ -29,7 +29,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,7 @@ public class CachePutAllOperation
     private List<Map.Entry<Data, Data>> entries;
     private ExpiryPolicy expiryPolicy;
 
-    private transient Map<Data, Data> backupRecords;
+    private transient CacheBackupRecordStore cacheBackupRecordStore;
 
     public CachePutAllOperation() {
     }
@@ -62,7 +61,7 @@ public class CachePutAllOperation
 
         int backups = getSyncBackupCount() + getAsyncBackupCount();
         if (backups > 0) {
-            backupRecords = new HashMap<Data, Data>(entries.size());
+            cacheBackupRecordStore = new CacheBackupRecordStore(entries.size());
         }
 
         Iterator<Map.Entry<Data, Data>> iter = entries.iterator();
@@ -72,7 +71,7 @@ public class CachePutAllOperation
             Data value = entry.getValue();
             cache.put(key, value, expiryPolicy, callerUuid, completionId);
 
-            if (backupRecords != null) {
+            if (cacheBackupRecordStore != null) {
                 /*
                  * We should be sure that backup records are heap based.
                  * Because keys/values, have been already put to record store,
@@ -81,8 +80,8 @@ public class CachePutAllOperation
                  * this is passed to CachePutAllBackupOperation.
                  * Then possibly there will be JVM crash or serialization exception.
                  */
-                backupRecords.put(serializationService.convertData(key, DataType.HEAP),
-                        serializationService.convertData(value, DataType.HEAP));
+                cacheBackupRecordStore.addBackupRecord(serializationService.convertData(key, DataType.HEAP),
+                                                       serializationService.convertData(value, DataType.HEAP));
             }
 
             iter.remove();
@@ -104,12 +103,12 @@ public class CachePutAllOperation
 
     @Override
     public boolean shouldBackup() {
-        return backupRecords != null && !backupRecords.isEmpty();
+        return cacheBackupRecordStore != null && !cacheBackupRecordStore.isEmpty();
     }
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutAllBackupOperation(name, backupRecords, expiryPolicy);
+        return new CachePutAllBackupOperation(name, cacheBackupRecordStore, expiryPolicy);
     }
 
     @Override

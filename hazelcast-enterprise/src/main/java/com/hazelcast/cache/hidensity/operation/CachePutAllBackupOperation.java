@@ -10,9 +10,8 @@ import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Cache PutAllBackup Operation is the backup operation used by load all operation. Provides backup of
@@ -24,27 +23,27 @@ public class CachePutAllBackupOperation
         extends AbstractHiDensityCacheOperation
         implements BackupOperation, MutableOperation, MutatingOperation {
 
-    private Map<Data, Data> cacheRecords;
+    private CacheBackupRecordStore cacheBackupRecordStore;
     private ExpiryPolicy expiryPolicy;
 
     public CachePutAllBackupOperation() {
     }
 
-    public CachePutAllBackupOperation(String name, Map<Data, Data> cacheRecords, ExpiryPolicy expiryPolicy) {
+    public CachePutAllBackupOperation(String name, CacheBackupRecordStore cacheBackupRecordStore,
+                                      ExpiryPolicy expiryPolicy) {
         super(name);
-        this.cacheRecords = cacheRecords;
+        this.cacheBackupRecordStore = cacheBackupRecordStore;
         this.expiryPolicy = expiryPolicy;
     }
 
     @Override
     protected void runInternal() throws Exception {
-        if (cacheRecords != null) {
-            final Iterator<Map.Entry<Data, Data>> iter = cacheRecords.entrySet().iterator();
+        if (cacheBackupRecordStore != null) {
+            List<CacheBackupRecordStore.CacheBackupRecord> cacheBackupRecords = cacheBackupRecordStore.backupRecords;
+            Iterator<CacheBackupRecordStore.CacheBackupRecord> iter = cacheBackupRecords.iterator();
             while (iter.hasNext()) {
-                Map.Entry<Data, Data> entry = iter.next();
-                Data key = entry.getKey();
-                Data value = entry.getValue();
-                cache.putBackup(key, value, expiryPolicy);
+                CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord = iter.next();
+                cache.putBackup(cacheBackupRecord.key, cacheBackupRecord.value, expiryPolicy);
                 iter.remove();
             }
         }
@@ -52,15 +51,14 @@ public class CachePutAllBackupOperation
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        if (cacheRecords != null && !cacheRecords.isEmpty()) {
-            Iterator<Map.Entry<Data, Data>> iter = cacheRecords.entrySet().iterator();
+        if (cacheBackupRecordStore != null) {
+            List<CacheBackupRecordStore.CacheBackupRecord> cacheBackupRecords = cacheBackupRecordStore.backupRecords;
+            Iterator<CacheBackupRecordStore.CacheBackupRecord> iter = cacheBackupRecords.iterator();
             // Dispose remaining entries
             while (iter.hasNext()) {
-                Map.Entry<Data, Data> entry = iter.next();
-                Data key = entry.getKey();
-                serializationService.disposeData(key);
-                Data value = entry.getValue();
-                serializationService.disposeData(value);
+                CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord = iter.next();
+                serializationService.disposeData(cacheBackupRecord.key);
+                serializationService.disposeData(cacheBackupRecord.value);
                 iter.remove();
             }
         }
@@ -70,14 +68,17 @@ public class CachePutAllBackupOperation
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         super.writeInternal(out);
         out.writeObject(expiryPolicy);
-
-        out.writeInt(cacheRecords != null ? cacheRecords.size() : 0);
-        if (cacheRecords != null) {
-            for (Map.Entry<Data, Data> entry : cacheRecords.entrySet()) {
-                Data key = entry.getKey();
-                Data value = entry.getValue();
-                out.writeData(key);
-                out.writeData(value);
+        List<CacheBackupRecordStore.CacheBackupRecord> cacheBackupRecords = null;
+        if (cacheBackupRecordStore != null) {
+            cacheBackupRecords = cacheBackupRecordStore.backupRecords;
+        }
+        out.writeInt(cacheBackupRecords != null ? cacheBackupRecords.size() : 0);
+        if (cacheBackupRecords != null) {
+            Iterator<CacheBackupRecordStore.CacheBackupRecord> iter = cacheBackupRecords.iterator();
+            while (iter.hasNext()) {
+                CacheBackupRecordStore.CacheBackupRecord cacheBackupRecord = iter.next();
+                out.writeData(cacheBackupRecord.key);
+                out.writeData(cacheBackupRecord.value);
             }
         }
     }
@@ -89,11 +90,11 @@ public class CachePutAllBackupOperation
 
         final int size = in.readInt();
         if (size > 0) {
-            cacheRecords = new HashMap<Data, Data>(size);
+            cacheBackupRecordStore = new CacheBackupRecordStore(size);
             for (int i = 0; i < size; i++) {
                 Data key = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
                 Data value = AbstractHiDensityCacheOperation.readNativeMemoryOperationData(in);
-                cacheRecords.put(key, value);
+                cacheBackupRecordStore.addBackupRecord(key, value);
             }
         }
     }

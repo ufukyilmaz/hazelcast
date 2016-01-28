@@ -11,9 +11,7 @@ import com.hazelcast.spi.impl.MutatingOperation;
 
 import javax.cache.CacheException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -29,7 +27,7 @@ public class CacheLoadAllOperation
     private boolean replaceExistingValues;
     private boolean shouldBackup;
 
-    private transient Map<Data, Data> backupRecords;
+    private transient CacheBackupRecordStore cacheBackupRecordStore;
 
     public CacheLoadAllOperation() {
     }
@@ -59,13 +57,13 @@ public class CacheLoadAllOperation
             final Set<Data> keysLoaded = cache.loadAll(filteredKeys, replaceExistingValues);
             shouldBackup = !keysLoaded.isEmpty();
             if (shouldBackup) {
-                backupRecords = new HashMap<Data, Data>();
+                cacheBackupRecordStore = new CacheBackupRecordStore();
                 for (Data key : keysLoaded) {
                     HiDensityCacheRecord record = (HiDensityCacheRecord) cache.getRecord(key);
                     // Loaded keys may have been evicted, then record will be null.
                     // So if the loaded key is evicted, don't send it to backup.
                     if (record != null) {
-                        backupRecords.put(key, record.getValue());
+                        cacheBackupRecordStore.addBackupRecord(key, record.getValue());
                     }
                 }
             }
@@ -81,7 +79,7 @@ public class CacheLoadAllOperation
 
     @Override
     public Operation getBackupOperation() {
-        return new CachePutAllBackupOperation(name, backupRecords, null);
+        return new CachePutAllBackupOperation(name, cacheBackupRecordStore, null);
     }
 
     // Currently, since `CacheLoadAllOperation` is created by `CacheLoadAllOperationFactory`,

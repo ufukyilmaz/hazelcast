@@ -20,6 +20,8 @@ import com.hazelcast.config.Config;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -30,5 +32,34 @@ public class HDInterceptorTest extends InterceptorTest {
     @Override
     protected Config getConfig() {
         return HDTestSupport.getHDConfig();
+    }
+
+
+    @Test
+    @Ignore
+    @Override
+    public void testPutEvent_withInterceptor() {
+        super.testPutEvent_withInterceptor();
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testPutEvent_withInterceptor_withEntryProcessor_multipleKeys() {
+        super.testPutEvent_withInterceptor_withEntryProcessor_multipleKeys();
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testPutEvent_withInterceptor_withEntryProcessor() {
+        super.testPutEvent_withInterceptor_withEntryProcessor();
+    }
+
+    @Test
+    @Ignore
+    @Override
+    public void testPutEvent_withInterceptor_withLoadAll() {
+        super.testPutEvent_withInterceptor_withLoadAll();
     }
 }

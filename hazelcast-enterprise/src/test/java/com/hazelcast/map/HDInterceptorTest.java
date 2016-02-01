@@ -34,32 +34,4 @@ public class HDInterceptorTest extends InterceptorTest {
         return HDTestSupport.getHDConfig();
     }
 
-
-    @Test
-    @Ignore
-    @Override
-    public void testPutEvent_withInterceptor() {
-        super.testPutEvent_withInterceptor();
-    }
-
-    @Test
-    @Ignore
-    @Override
-    public void testPutEvent_withInterceptor_withEntryProcessor_multipleKeys() {
-        super.testPutEvent_withInterceptor_withEntryProcessor_multipleKeys();
-    }
-
-    @Test
-    @Ignore
-    @Override
-    public void testPutEvent_withInterceptor_withEntryProcessor() {
-        super.testPutEvent_withInterceptor_withEntryProcessor();
-    }
-
-    @Test
-    @Ignore
-    @Override
-    public void testPutEvent_withInterceptor_withLoadAll() {
-        super.testPutEvent_withInterceptor_withLoadAll();
-    }
 }

@@ -453,7 +453,6 @@ public class MapSecurityInterceptorTest extends InterceptorTestSupport {
     }
 
     @Test
-    @Ignore
     public void putAll() {
         final HashMap hashMap = new HashMap();
         hashMap.put(randomString(), randomString());

@@ -165,6 +165,11 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
 
         Object newValue = entry.getValue();
         invalidateNearCache(key);
+        mapServiceContext.interceptAfterPut(name, newValue);
+        if (isPostProcessing(recordStore)) {
+            Record record = recordStore.getRecord(key);
+            newValue = record.getValue();
+        }
         if (mapContainer.isWanReplicationEnabled()) {
             newValue = toData(newValue);
             publishWanReplicationEvent(key, (Data) newValue, eventType);

@@ -125,7 +125,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     }
 
     private Data getValueOrPostProcessedValue(Data dataKey, Data dataValue) {
-        if (!recordStore.getMapDataStore().isPostProcessingMapStore()) {
+        if (!isPostProcessing(recordStore)) {
             return dataValue;
         }
         Record record = recordStore.getRecord(dataKey);

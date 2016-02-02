@@ -72,8 +72,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             Object previousValue = recordStore.putFromLoad(key, value);
 
             callAfterPutInterceptors(value);
-//            publishEntryEvent(key, previousValue, dataValue);
-//            publishWanReplicationEvent(key, dataValue, recordStore.getRecord(key));
             Record record = recordStore.getRecord(key);
             if (isPostProcessing(recordStore)) {
                 value = record.getValue();

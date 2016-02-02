@@ -19,9 +19,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.EntryViews;
-import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.event.MapEventPublisher;
-import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.nio.serialization.Data;
@@ -50,25 +48,17 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
 
     @Override
     public void afterRun() throws Exception {
+        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapServiceContext.interceptAfterPut(name, dataValue);
-        publishEvent();
-        publishWANReplicationEvent();
+        Object value = isPostProcessing(recordStore) ? recordStore.getRecord(dataKey).getValue() : dataValue;
+        mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(), dataKey, dataOldValue, value);
+        publishWANReplicationEvent(value);
         invalidateNearCache(dataKey);
         evict();
     }
 
-    private void publishEvent() {
-        eventType = getEventType();
-        Object value = dataValue;
-        if (recordStore.getMapDataStore().isPostProcessingMapStore()) {
-            final Record record = recordStore.getRecord(dataKey);
-            value = record.getValue();
-        }
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
-        mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, dataOldValue, value);
-    }
 
-    private void publishWANReplicationEvent() {
+    private void publishWANReplicationEvent(Object value) {
         if (!mapContainer.isWanReplicationEnabled()) {
             return;
         }
@@ -77,7 +67,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         if (record == null) {
             return;
         }
-        final Data valueConvertedData = mapServiceContext.toData(dataValue);
+        final Data valueConvertedData = mapServiceContext.toData(value);
         final EntryView entryView = EntryViews.createSimpleEntryView(dataKey, valueConvertedData, record);
         MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.publishWanReplicationUpdate(name, entryView);
@@ -100,9 +90,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     public Operation getBackupOperation() {
         final Record record = recordStore.getRecord(dataKey);
         final RecordInfo replicationInfo = buildRecordInfo(record);
-        final MapDataStore<Data, Object> mapDataStore = recordStore.getMapDataStore();
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        if (mapServiceContext.hasInterceptor(name) || mapDataStore.isPostProcessingMapStore()) {
+        if (isPostProcessing(recordStore)) {
             dataValue = mapServiceContext.toData(record.getValue());
         }
         return new HDPutBackupOperation(name, dataKey, dataValue, replicationInfo, putTransient);

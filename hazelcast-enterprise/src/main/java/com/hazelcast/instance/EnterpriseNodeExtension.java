@@ -2,9 +2,6 @@ package com.hazelcast.instance;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.ICacheService;
-import com.hazelcast.client.impl.protocol.EnterpriseMessageTaskFactoryImpl;
-import com.hazelcast.client.impl.protocol.MessageTaskFactory;
-import com.hazelcast.client.impl.protocol.MessageTaskFactoryImpl;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.ConfigurationException;
@@ -311,23 +308,6 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return new SymmetricCipherMemberWriteHandler(connection, ioService);
         }
         return super.createWriteHandler(connection, ioService);
-    }
-
-    @Override
-    public MessageTaskFactory createMessageTaskFactory() {
-        EnterpriseMessageTaskFactoryImpl enterprise = new EnterpriseMessageTaskFactoryImpl(node);
-        MessageTaskFactoryImpl messageTaskFactory = (MessageTaskFactoryImpl) super.createMessageTaskFactory();
-
-        MessageTaskFactory[] communityTasks = messageTaskFactory.getTasks();
-        MessageTaskFactory[] enterpriseTasks = enterprise.getTasks();
-        for (int i = 0; i < communityTasks.length; i++) {
-            MessageTaskFactory task = communityTasks[i];
-            if (task != null) {
-                enterpriseTasks[i] = task;
-            }
-        }
-
-        return enterprise;
     }
 
     @Override

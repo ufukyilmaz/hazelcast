@@ -123,28 +123,42 @@ class PrefixTombstoneManager {
         return false;
     }
 
-    boolean dismissGarbage(Chunk chunk) {
-        return dismissGarbage(chunk, EMPTY_LONGS);
-    }
-
     /**
-     * @param prefixesToDismiss Prefixes to dismiss unconditionally. Other prefixes will be dismissed only
-     *                          if the chunk seq doesn't match the seq saved in dismissedActiveChunks.
-     * @return whether the chunk needed dismissing garbage.
+     * Applies the effects of newly added prefix tombstones to the active chunk.
+     * The point is to immediately reset the garbage counts on records in the active chunk so
+     * future updates on the same chunk will be distinguished from those that happened before
+     * the clear operation.
      */
-    boolean dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
-        final boolean mustDismissSomePrefixes = prefixesToDismiss.length != 0;
-        if (!(mustDismissSomePrefixes || chunk.needsDismissing)) {
-            return false;
-        }
-        logger.fine("Dismiss garbage in #%03x", chunk.seq);
+    void dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
+        logger.fine("Dismiss garbage in active chunk #%03x", chunk.seq);
         final LongHashSet prefixSetToDismiss = new LongHashSet(prefixesToDismiss, 0);
         for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();
             final KeyHandle kh = cursor.toKeyHandle();
             final long prefix = r.keyPrefix(kh);
-            final boolean mustDismiss = mustDismissSomePrefixes && prefixSetToDismiss.contains(prefix);
-            if ((mustDismiss || dismissedActiveChunks.get(prefix) != chunk.seq)
+            if (prefixSetToDismiss.contains(prefix)) {
+                chunkMgr.dismissPrefixGarbage(chunk, kh, r);
+            }
+        }
+    }
+
+    /**
+     * Propagates the effects of all prefix tombstones to the given chunk.
+     * Avoids applying a prefix tombstone to the chunk which was active at the time the
+     * tombstone was added (that work was already done by {@link #dismissGarbage(Chunk, long[])}).
+     *
+     * @return true if the chunk needed dismissing.
+     */
+    boolean dismissGarbage(Chunk chunk) {
+        if (!chunk.needsDismissing) {
+            return false;
+        }
+        logger.fine("Dismiss garbage in #%03x", chunk.seq);
+        for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
+            final Record r = cursor.asRecord();
+            final KeyHandle kh = cursor.toKeyHandle();
+            final long prefix = r.keyPrefix(kh);
+            if (dismissedActiveChunks.get(prefix) != chunk.seq
                     && r.deadOrAliveSeq() <= collectorPrefixTombstones.get(prefix)
             ) {
                 chunkMgr.dismissPrefixGarbage(chunk, kh, r);

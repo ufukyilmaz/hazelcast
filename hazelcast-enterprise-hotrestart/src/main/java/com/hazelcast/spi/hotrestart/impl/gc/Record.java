@@ -64,10 +64,10 @@ public abstract class Record {
         setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
     }
 
-    final void retire(boolean incrementGarbageCount) {
+    final void retire(boolean mayIncrementGarbageCount) {
         assert isAlive() : "Attempt to retire a dead record";
         negateSeq();
-        if (incrementGarbageCount && !isTombstone()) {
+        if (mayIncrementGarbageCount && !isTombstone()) {
             incrementGarbageCount();
         }
     }

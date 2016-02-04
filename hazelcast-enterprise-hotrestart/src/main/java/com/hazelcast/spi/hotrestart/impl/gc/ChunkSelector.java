@@ -196,7 +196,7 @@ final class ChunkSelector {
         final StringWriter sw = new StringWriter(512);
         final PrintWriter o = new PrintWriter(sw);
         o.format("%nValue chunks %,d Tombstone chunks: %,d", valChunks.size(), tombChunkCount);
-        o.println("\n seq age        CB factor  recCount");
+        o.format("%n seq age        CB factor  recCount%n");
         for (StableValChunk c : valChunks) {
             o.format("%4x %3d %,15.2f    %,7d %s %s%n",
                     c.seq,

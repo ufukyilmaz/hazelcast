@@ -157,7 +157,6 @@ public final class Rebuilder {
         assert tombstoneCount == trackerMap.liveTombstones.get();
         cm.deleteGarbageTombChunks(null);
         cm.gcHelper.initRecordSeq(maxSeq);
-        trackerMap.trimToSize();
         assert validateTombstoneChunks(trackerMap, tombstoneCount);
     }
 

@@ -40,7 +40,6 @@ public final class ChunkManager {
     final PrefixTombstoneManager pfixTombstoMgr;
     // temporary storage during GC
     Long2ObjectHashMap<Chunk> destChunkMap;
-    // temporary storage during GC
     WriteThroughValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
     private final List<StableTombChunk> tombChunksToDelete = new ArrayList<StableTombChunk>();
@@ -141,13 +140,6 @@ public final class ChunkManager {
         submitForDeletionAsNeeded(chunk);
     }
 
-    void retireTombstone(KeyHandle kh, long chunkSeq) {
-        final Chunk chunk = chunk(chunkSeq);
-        final Record r = chunk.records.get(kh);
-        retire(chunk, kh, r);
-        trackers.removeLiveTombstone(kh);
-    }
-
     void dismissGarbage(Chunk c) {
         for (Cursor cursor = c.records.cursor(); cursor.advance();) {
             final KeyHandle kh = cursor.toKeyHandle();
@@ -169,7 +161,7 @@ public final class ChunkManager {
         final long newCount = tr.garbageCount();
         if (newCount == 0) {
             if (tr.isTombstone()) {
-                retireTombstone(kh, tr.chunkSeq());
+                dismissTombstone(kh, tr.chunkSeq());
             } else {
                 trackers.removeIfDead(kh, tr);
             }
@@ -191,11 +183,18 @@ public final class ChunkManager {
         if (globalCountIsZero) {
             assert localCount == 0 : "Inconsistent zero global garbage count and local count " + localCount;
             if (tr.isTombstone()) {
-                retireTombstone(kh, tr.chunkSeq());
+                dismissTombstone(kh, tr.chunkSeq());
             } else {
                 trackers.removeIfDead(kh, tr);
             }
         }
+    }
+
+    private void dismissTombstone(KeyHandle kh, long chunkSeq) {
+        final Chunk chunk = chunk(chunkSeq);
+        final Record r = chunk.records.get(kh);
+        retire(chunk, kh, r);
+        trackers.removeLiveTombstone(kh);
     }
 
     void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {

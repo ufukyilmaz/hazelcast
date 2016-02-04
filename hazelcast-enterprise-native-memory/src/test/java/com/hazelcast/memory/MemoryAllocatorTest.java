@@ -11,6 +11,9 @@ import sun.misc.Unsafe;
 
 import static org.junit.Assert.assertEquals;
 
+import static com.hazelcast.util.QuickMath.modPowerOfTwo;
+import static org.junit.Assert.assertTrue;
+
 /**
  * @author mdogan 02/06/14
  */
@@ -145,5 +148,42 @@ public class MemoryAllocatorTest {
         UNSAFE.putInt(address1, value);
         address1 = memoryAllocator.reallocate(address1, 8, 4);
         assertEquals(value, UNSAFE.getInt(address1));
+    }
+
+    @Test
+    public void testMalloc_8bytes_Aligned_Standard() {
+        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        testMalloc_8bytes_Aligned(memoryManager);
+        memoryManager.destroy();
+    }
+
+    @Test
+    public void testMalloc_8bytes_Aligned_GlobalPooled() {
+        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        testMalloc_8bytes_Aligned(memoryManager);
+        memoryManager.destroy();
+    }
+
+    @Test
+    public void testMalloc_8bytes_Aligned_ThreadLocalPooled() {
+        PoolingMemoryManager memoryManager = new PoolingMemoryManager(
+                new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        memoryManager.registerThread(Thread.currentThread());
+        testMalloc_8bytes_Aligned(memoryManager);
+        memoryManager.destroy();
+    }
+
+    private void testMalloc_8bytes_Aligned(MemoryAllocator memoryAllocator) {
+        testMalloc_8bytes_Aligned(memoryAllocator, 5);
+        testMalloc_8bytes_Aligned(memoryAllocator, 55);
+        testMalloc_8bytes_Aligned(memoryAllocator, 555);
+        testMalloc_8bytes_Aligned(memoryAllocator, 5555);
+        testMalloc_8bytes_Aligned(memoryAllocator, 55555);
+    }
+
+    private void testMalloc_8bytes_Aligned(MemoryAllocator memoryAllocator, int size) {
+        long address = memoryAllocator.allocate(size);
+        assertTrue("Address: " + address + " is not aligned!", modPowerOfTwo(address, 8) == 0);
+        memoryAllocator.free(address, size);
     }
 }

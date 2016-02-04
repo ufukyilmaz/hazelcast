@@ -28,13 +28,6 @@ public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolin
     }
 
     @Override
-    protected long getOwningPage(long blockBase, int blockSize) {
-        synchronized (copyEntryMutex) {
-            return super.getOwningPage(blockBase, blockSize);
-        }
-    }
-
-    @Override
     public void destroy() {
         synchronized (copyEntryMutex) {
             super.destroy();

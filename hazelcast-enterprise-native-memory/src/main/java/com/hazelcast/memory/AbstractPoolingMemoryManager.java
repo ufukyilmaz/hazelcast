@@ -82,7 +82,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected final AddressQueue getAddressQueue(long size) {
         if (size <= 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Size must be positive: " + size);
         }
         size += getHeaderSize();
         if (size > pageSize) {
@@ -107,12 +107,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             do {
                 address = acquireInternal(queue);
                 assertNotNullPtr(address);
-            } while (!markUnavailable(address, memorySize));
+            } while (!markUnavailable(address, (int) size, memorySize));
 
             assert !isAvailable(address);
-            address += getHeaderSize();
-            memoryStats.addInternalFragmentation(queue.getMemorySize() - size);
-            size = queue.getMemorySize();
+            memoryStats.addInternalFragmentation(memorySize - size);
+            size = memorySize;
         } else {
             address = pageAllocator.allocate(size);
         }
@@ -162,23 +161,23 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         assertNotNullPtr(address);
         final AddressQueue queue = getAddressQueue(size);
         if (queue != null) {
+            int memorySize = queue.getMemorySize();
             zero(address, size);
-            address -= getHeaderSize();
             if (isAvailable(address)) {
-                throw new AssertionError("Double free(): " + address);
+                throw new AssertionError("Double free() -> address: " + address + ", size: " + size);
             }
 
-            assert queue.getMemorySize() == getSizeInternal(address)
-                    : "Size mismatch -> header: " + getSizeInternal(address) + ", param: " + queue.getMemorySize();
+            assert memorySize == getSizeInternal(address)
+                    : "Size mismatch -> header: " + getSizeInternal(address) + ", param: " + memorySize;
 
-            memoryStats.addInternalFragmentation(size - queue.getMemorySize());
+            memoryStats.removeInternalFragmentation(memorySize - size);
             markAvailable(address);
             releaseInternal(queue, address);
-            size = queue.getMemorySize();
+            size = memorySize;
         } else {
             pageAllocator.free(address, size);
         }
-        memoryStats.addUsedNativeMemory(-size);
+        memoryStats.removeUsedNativeMemory(size);
     }
 
     private static void zero(long address, long size) {
@@ -216,14 +215,14 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             return false;
         }
 
-        if (!markInvalid(address, memorySize)) {
+        if (!markInvalid(address, memorySize, offset)) {
             // happens if memory manager is accessed by multiple threads
             return false;
         }
 
         // need to read offset before invalidation
         int buddyOffset = getOffset(buddyAddress);
-        if (!markInvalid(buddyAddress, memorySize)) {
+        if (!markInvalid(buddyAddress, memorySize, buddyOffset)) {
             // restore status of other buddy back..
             initialize(address, memorySize, offset);
             return false;
@@ -297,7 +296,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
                 }
 
                 offset = getOffset(address);
-            } while (!markInvalid(address, nextQ.getMemorySize()));
+            } while (!markInvalid(address, nextQ.getMemorySize(), offset));
 
             int offset2 = offset + memorySize;
             long address2 = address + memorySize;
@@ -315,7 +314,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (ASSERTION_ENABLED) {
             return validateAndGetAllocatedSize(address);
         }
-        return getSizeInternal(address - getHeaderSize());
+        return getSizeInternal(address);
     }
 
     @Override
@@ -354,11 +353,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract void markAvailable(long address);
 
-    protected abstract boolean markUnavailable(long address, int expectedSize);
+    protected abstract boolean markUnavailable(long address, int usedSize, int internalSize);
 
     protected abstract boolean isAvailable(long address);
 
-    protected abstract boolean markInvalid(long address, int expectedSize);
+    protected abstract boolean markInvalid(long address, int expectedSize, int offset);
 
     protected abstract boolean isValidAndAvailable(long address, int expectedSize);
 
@@ -457,7 +456,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         @Override
         public void free(long address, long size) {
             malloc.free(address);
-            memoryStats.addMetadataUsage(-size);
+            memoryStats.removeMetadataUsage(size);
         }
 
         @Override

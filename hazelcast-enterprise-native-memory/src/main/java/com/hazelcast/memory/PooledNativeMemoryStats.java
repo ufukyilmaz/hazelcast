@@ -31,8 +31,16 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
         usedNative.addAndGet(size);
     }
 
+    final void removeUsedNativeMemory(long size) {
+        usedNative.addAndGet(-size);
+    }
+
     final void addMetadataUsage(long size) {
         usedMetadata.addAndGet(size);
+    }
+
+    final void removeMetadataUsage(long size) {
+        usedMetadata.addAndGet(-size);
     }
 
     public final long getUsedMetadata() {

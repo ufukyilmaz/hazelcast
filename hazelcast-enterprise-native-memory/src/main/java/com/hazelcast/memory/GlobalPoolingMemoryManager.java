@@ -21,10 +21,67 @@ final class GlobalPoolingMemoryManager
         extends AbstractPoolingMemoryManager
         implements MemoryManager {
 
-    private static final int HEADER_OFFSET = 4;
-    // using sign bit as available bit, since offset is already positive
+    // Size of the memory block header in bytes
+    private static final int HEADER_SIZE = 4;
+    // Using sign bit as available bit, since offset is already positive
+    // so the first bit represents that is this memory block is available or not (in use already)
     private static final int AVAILABLE_BIT = Integer.SIZE - 1;
+    // The second bit represents that is this memory block has offset value to its owner page
+    private static final int PAGE_OFFSET_EXIST_BIT = AVAILABLE_BIT - 1;
+    // Extra required native memory when page offset is stored
+    private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = HEADER_SIZE + Bits.INT_SIZE_IN_BYTES;
+    // We store size as encoded by shifting it 3 bit since it is always multiply of 8.
+    private static final int SIZE_SHIFT_COUNT = 3;
     private static final int INITIAL_CAPACITY = 2048;
+
+    /*
+     * Header Structure: (4 byte = 32 bits)
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Encoded size           |   28 bits            | ==> Size is encoded by shifting 3 bit
+     * +------------------------+----------------------+
+     * | RESERVED-1             |   1 bit              |
+     * +------------------------+----------------------+
+     * | RESERVED-2             |   1 bit              |
+     * +------------------------+----------------------+
+     * | PAGE_OFFSET_EXIST_BIT  |   1 bit              |
+     * +------------------------+----------------------+
+     * | AVAILABLE_BIT          |   1 bit              |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * P.S (1): Size can be encoded by shifting 3 bit because regarding to buddy allocation algorithm,
+     *          all sizes are power of 2 and there is minimum 16 byte so size must be multiply of 8.
+     *
+     * P.S (2): As byte order (Little/Big endian), positions of bits is changed.
+     *          For example `Encoded size` can be at the end instead of at the beginning.
+     *          But for simplicity, it is showed as this order.
+     */
+
+    /*
+     * Memory Block Structure:
+     *
+     * Headers are located at the end of previous record.
+     *
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * +                  RECORD N-1                   +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | ...                    |                      |
+     * +------------------------+----------------------+
+     * | Header                 |   1 byte (byte)      |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * +                   RECORD N                    +
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | Used Memory            |   <size>             |
+     * +------------------------+----------------------+
+     * | Internal Fragmentation |                      |
+     * +------------------------+----------------------+
+     * | Page Offset            |   4 bytes (int)      | ==> (If `PAGE_OFFSET_EXIST_BIT` is set in the header)
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * P.S: If the memory block is the first block in its page,
+     *      its header is located at the end of last memory block in the page.
+     *      It means at the end of page.
+     */
 
     private final GarbageCollector gc;
     private final ConcurrentNavigableMap<Long, Object> pageAllocations
@@ -39,6 +96,81 @@ final class GlobalPoolingMemoryManager
         initializeAddressQueues();
     }
 
+    private static int encodeSize(int size) {
+        // We may use `QuickMath.log2(size);` but it is more expensive than bit shifting.
+        return size >> SIZE_SHIFT_COUNT;
+    }
+
+    private static int decodeSize(int size) {
+        // We may use `1 << size` if we use `QuickMath.log2(size);` for encoding above.
+        return size << SIZE_SHIFT_COUNT;
+    }
+
+    private int initHeader(int size) {
+        return Bits.setBit(encodeSize(size), AVAILABLE_BIT);
+    }
+
+    private long getHeaderAddress(long address) {
+        if (pageAllocations.containsKey(address)) {
+            // If this is the first block, wrap around
+            return address + pageSize - HEADER_SIZE;
+        }
+        return address - HEADER_SIZE;
+    }
+
+    private long getHeaderAddressByOffset(long address, int offset) {
+        if (offset == 0) {
+            // If this is the first block, wrap around
+            return address + pageSize - HEADER_SIZE;
+        }
+        return address - HEADER_SIZE;
+    }
+
+    private int getHeader(long address) {
+        long headerAddress = getHeaderAddress(address);
+        return UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
+    }
+
+    private boolean isHeaderAvailable(int header) {
+        return Bits.isBitSet(header, AVAILABLE_BIT);
+    }
+
+    private boolean isAddressAvailable(long address) {
+        int header = getHeader(address);
+        return isHeaderAvailable(header);
+    }
+
+    private int getSizeFromHeader(int header) {
+        int size;
+        size = Bits.clearBit(header, AVAILABLE_BIT);
+        size = Bits.clearBit(size, PAGE_OFFSET_EXIST_BIT);
+        return decodeSize(size);
+    }
+
+    private int getSizeFromAddress(long address) {
+        int header = getHeader(address);
+        return getSizeFromHeader(header);
+    }
+
+    private static int makeHeaderAvailable(int header) {
+        return Bits.setBit(header, AVAILABLE_BIT);
+    }
+
+    private static int makeHeaderUnavailable(int header) {
+        return Bits.clearBit(header, AVAILABLE_BIT);
+    }
+
+    private long getPageOffsetAddressByHeader(long address, int header) {
+        int size = getSizeFromHeader(header);
+        // We keep the page offset (if there is enough space) at the end of block as aligned
+        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
+    }
+
+    private long getPageOffsetAddressBySize(long address, int size) {
+        // We keep the page offset (if there is enough space) at the end of block as aligned
+        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
+    }
+
     @Override
     protected AddressQueue createAddressQueue(int index, int memorySize) {
         return new GlobalAddressQueue(index, memorySize);
@@ -46,14 +178,14 @@ final class GlobalPoolingMemoryManager
 
     @Override
     protected int getHeaderSize() {
-        return HEADER_OFFSET;
+        return HEADER_SIZE;
     }
 
     @Override
     protected void onMallocPage(long pageAddress) {
         assertNotNullPtr(pageAddress);
         boolean added = pageAllocations.put(pageAddress, Boolean.TRUE) == null;
-        assert added : "Duplicate malloc() for pageAddress: " + pageAddress;
+        assert added : "Duplicate malloc() for page address: " + pageAddress;
         lastFullCompaction = 0L;
     }
 
@@ -72,132 +204,169 @@ final class GlobalPoolingMemoryManager
     @Override
     protected void initialize(long address, int size, int offset) {
         assertNotNullPtr(address);
-        assert !Bits.isBitSet(size, AVAILABLE_BIT) : "Invalid size: negative! " + size;
-        assert offset >= 0 : "Invalid offset: negative! " + offset;
+        assert QuickMath.isPowerOfTwo(size) : "Invalid size -> " + size + " is not power of two";
+        assert size >= minBlockSize : "Invalid size -> "
+                + size + " cannot be smaller than minimum block size " + minBlockSize;
+        assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
 
-        int header = Bits.setBit(size, AVAILABLE_BIT);
-        long value = Bits.combineToLong(offset, header);
-
-        if (!UnsafeHelper.UNSAFE.compareAndSwapLong(null, address, 0L, value)) {
+        int header = initHeader(size);
+        long headerAddress = getHeaderAddressByOffset(address, offset);
+        if (!UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
-                    + ", Size: " + size + ", Header: " + getSizeInternal(address));
+                    + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
         }
+        UnsafeHelper.UNSAFE.putIntVolatile(null, address, offset);
     }
 
     @Override
     protected void markAvailable(long address) {
         assertNotNullPtr(address);
 
-        final long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
-        final int size = Bits.extractInt(value, true);
-        assert !Bits.isBitSet(size, AVAILABLE_BIT) : "Address already marked as available! " + address;
+        long headerAddress = getHeaderAddress(address);
+        int header = UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
+        assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
-        int header = Bits.setBit(size, AVAILABLE_BIT);
-
-        final long base = getOwningPage(address);
-        if (base == NULL_ADDRESS) {
-            throw new IllegalArgumentException("Address: " + address + " does not belong to this memory pool!");
+        long pageBase = getOwningPage(address, header);
+        if (pageBase == NULL_ADDRESS) {
+            throw new IllegalArgumentException("Address " + address + " does not belong to this memory pool!");
         }
-        assert base + pageSize >= address + size
+        int size = getSizeFromHeader(header);
+        assert pageBase + pageSize >= address + size
                 : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
-                                address, address + size - 1, base, base + pageSize - 1);
-        int offset = (int) (address - base);
-        assert offset >= 0 : "Invalid offset: " + offset;
+                                address, address + size - 1,
+                                pageBase, pageBase + pageSize - 1);
+        int pageOffset = (int) (address - pageBase);
+        assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
 
-        UnsafeHelper.UNSAFE.putLongVolatile(null, address, Bits.combineToLong(offset, header));
+        int availableHeader = makeHeaderAvailable(header);
+        availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
+
+        UnsafeHelper.UNSAFE.putIntVolatile(null, headerAddress, availableHeader);
+        UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
+        UnsafeHelper.UNSAFE.putIntVolatile(null, address, pageOffset);
     }
 
     @Override
-    protected boolean markUnavailable(long address, int expectedSize) {
+    protected boolean markUnavailable(long address, int usedSize, int internalSize) {
         assertNotNullPtr(address);
 
-        long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
-        int header = Bits.extractInt(value, true);
+        long headerAddress = getHeaderAddress(address);
+        int header = UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
         // This memory address may be merged up (after acquired but not marked as unavailable yet)
         // as buddy by our GarbageCollector thread so its size may be changed.
         // In this case, it must be discarded since it is not served by its current address queue.
-        if (Bits.clearBit(header, AVAILABLE_BIT) != expectedSize) {
+        if (getSizeFromHeader(header) != internalSize) {
             return false;
         }
-        int offset = Bits.extractInt(value, false);
 
-        long expected = Bits.combineToLong(offset, Bits.setBit(header, AVAILABLE_BIT));
-        long update = Bits.combineToLong(0, Bits.clearBit(header, AVAILABLE_BIT));
-
-        return UnsafeHelper.UNSAFE.compareAndSwapLong(null, address, expected, update);
+        int availableHeader = makeHeaderAvailable(header);
+        int unavailableHeader = makeHeaderUnavailable(header);
+        boolean pageOffsetExist = false;
+        if (internalSize - usedSize >= MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED) {
+            // If there is enough space for storing page offset,
+            // set the header as page offset is stored in the memory block.
+            unavailableHeader = Bits.setBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
+            pageOffsetExist = true;
+        } else {
+            unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
+        }
+        if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
+            int offset = getOffset(address);
+            if (pageOffsetExist) {
+                // If page offset will be stored, write it to the unused part of the memory block.
+                UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
+            }
+            UnsafeHelper.UNSAFE.putIntVolatile(null, address, 0);
+            return true;
+        }
+        return false;
     }
 
     @Override
     protected boolean isAvailable(long address) {
-        assertNotNullPtr(address);
-        int b = UnsafeHelper.UNSAFE.getIntVolatile(null, address);
-        return Bits.isBitSet(b, AVAILABLE_BIT);
+        return isAddressAvailable(address);
     }
 
     @Override
-    protected boolean markInvalid(long address, int expectedSize) {
+    protected boolean markInvalid(long address, int expectedSize, int offset) {
         assertNotNullPtr(address);
 
-        int offset = UnsafeHelper.UNSAFE.getIntVolatile(null, address + HEADER_OFFSET);
-        int header = Bits.setBit(expectedSize, AVAILABLE_BIT);
-
-        long expected = Bits.combineToLong(offset, header);
-        return UnsafeHelper.UNSAFE.compareAndSwapLong(null, address, expected, 0);
+        long headerAddress = getHeaderAddress(address);
+        int expectedHeader = initHeader(expectedSize);
+        if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
+            UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
+            UnsafeHelper.UNSAFE.putIntVolatile(null, address, 0);
+            return true;
+        }
+        return false;
     }
 
     @Override
     protected boolean isValidAndAvailable(long address, int expectedSize) {
         assertNotNullPtr(address);
 
-        long value = UnsafeHelper.UNSAFE.getLongVolatile(null, address);
-        int size = Bits.extractInt(value, true);
+        int header = getHeader(address);
 
-        boolean available = Bits.isBitSet(size, AVAILABLE_BIT);
+        boolean available = isHeaderAvailable(header);
         if (!available) {
             return false;
         }
 
-        size = Bits.clearBit(size, AVAILABLE_BIT);
+        int size = getSizeFromHeader(header);
         if (size != expectedSize) {
             return false;
         }
 
-        int offset = Bits.extractInt(value, false);
+        int offset = getOffset(address);
         if (offset < 0 || QuickMath.modPowerOfTwo(offset, size) != 0) {
             return false;
         }
+
         return pageAllocations.containsKey(address - offset);
     }
 
     @Override
     protected int getSizeInternal(long address) {
-        int size = UnsafeHelper.UNSAFE.getIntVolatile(null, address);
-        size = Bits.clearBit(size, AVAILABLE_BIT);
-        return size;
+        return getSizeFromAddress(address);
     }
 
     @Override
     public long validateAndGetAllocatedSize(long address) {
         assertNotNullPtr(address);
-        final long blockAddress = address - HEADER_OFFSET;
-        final int blockSize = UnsafeHelper.UNSAFE.getIntVolatile(null, blockAddress);
-        if (Bits.isBitSet(blockSize, AVAILABLE_BIT) || !QuickMath.isPowerOfTwo(blockSize)
-                || blockSize < minBlockSize || blockSize > pageSize
-        ) {
+
+        int header = getHeader(address);
+        int size = getSizeFromHeader(header);
+
+        if (isHeaderAvailable(header) || !QuickMath.isPowerOfTwo(size)
+                || size < minBlockSize || size > pageSize) {
             return SIZE_INVALID;
         }
-        final long page = getOwningPage(blockAddress);
-        return page != NULL_ADDRESS && page + pageSize >= blockAddress + blockSize ? blockSize : SIZE_INVALID;
+
+        long page = getOwningPage(address, header);
+        return page != NULL_ADDRESS && page + pageSize >= address + size ? size : SIZE_INVALID;
     }
 
     @Override
     protected int getOffset(long address) {
-        return UnsafeHelper.UNSAFE.getIntVolatile(null, address + HEADER_OFFSET);
+        return UnsafeHelper.UNSAFE.getIntVolatile(null, address);
     }
 
-    private long getOwningPage(long address) {
-        final Long pageBase = pageAllocations.floorKey(address);
-        return pageBase != null && pageBase + pageSize - 1 >= address ? pageBase : NULL_ADDRESS;
+    private long getOwningPage(long address, int header) {
+        if (Bits.isBitSet(header, PAGE_OFFSET_EXIST_BIT)) {
+            // If page offset is stored in the memory block, get the offset directly from there
+            // and calculate page address by using this offset.
+
+            int pageOffset = UnsafeHelper.UNSAFE.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
+            if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
+                throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
+                        + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
+                        + " where pageSize is " + pageSize + " and minBlockSize is " + minBlockSize);
+            }
+            return address - pageOffset;
+        } else {
+            final Long pageBase = pageAllocations.floorKey(address);
+            return pageBase != null && pageBase + pageSize - 1 >= address ? pageBase : NULL_ADDRESS;
+        }
     }
 
     public final void destroy() {

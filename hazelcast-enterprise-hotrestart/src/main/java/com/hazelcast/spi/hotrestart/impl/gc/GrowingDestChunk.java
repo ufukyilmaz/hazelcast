@@ -50,7 +50,7 @@ public final class GrowingDestChunk extends GrowingChunk {
      */
     public StableValChunk flushAndClose(MutatorCatchup mc, GcLogger logger) {
         DataOutputStream out = null;
-        final FileOutputStream fileOut = gch.createFileOutputStream(VAL_BASEDIR, seq, DEST_FNAME_SUFFIX);
+        final FileOutputStream fileOut = gch.createFileOutputStream(base(), seq, DEST_FNAME_SUFFIX);
         try {
             final long start = System.nanoTime();
             out = dataOutputStream(fileOut);
@@ -105,7 +105,7 @@ public final class GrowingDestChunk extends GrowingChunk {
             fsync(fileOut);
             mc.catchupNow();
             out.close();
-            gch.changeSuffix(VAL_BASEDIR, seq, DEST_FNAME_SUFFIX, gch.newStableChunkSuffix());
+            gch.changeSuffix(base(), seq, DEST_FNAME_SUFFIX, gch.newStableChunkSuffix());
             logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", seq, fileSize,
                     NANOSECONDS.toMillis(System.nanoTime() - start));
             mc.catchupNow();

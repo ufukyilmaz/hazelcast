@@ -116,13 +116,6 @@ public abstract class Record {
         return String.format("%s(%03x)", getClass().getSimpleName(), liveSeq());
     }
 
-    private static void yield(FileOutputStream fileOut, MutatorCatchup mc) {
-        mc.catchupNow();
-        if (mc.fsyncOften) {
-            GrowingChunk.fsync(fileOut);
-        }
-    }
-
     abstract long keyPrefix(KeyHandle kh);
 
     // If seq is zero, this object does not relate to any live record, but garbageCount
@@ -152,6 +145,13 @@ public abstract class Record {
 
     static int toRawSizeValue(int size, boolean isTombstone) {
         return isTombstone ? -size : size;
+    }
+
+    private static void yield(FileOutputStream fileOut, MutatorCatchup mc) {
+        mc.catchupNow();
+        if (mc.fsyncOften) {
+            GrowingChunk.fsync(fileOut);
+        }
     }
 
     private static long positionInUnitsOfBufsize(long filePosition) {

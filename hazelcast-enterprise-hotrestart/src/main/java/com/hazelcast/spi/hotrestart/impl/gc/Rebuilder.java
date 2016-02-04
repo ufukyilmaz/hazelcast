@@ -2,9 +2,11 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 import com.hazelcast.util.counters.Counter;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Rebuilds the runtime metadata of the chunk manager when the system
@@ -128,34 +130,55 @@ public final class Rebuilder {
      */
     public void done() {
         finishCurrentChunk();
+        final TrackerMapBase trackerMap = (TrackerMapBase) cm.trackers;
         long tombstoneCount = 0;
         long retiredCount = 0;
+        for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
+            for (KhCursor cursor = e.getValue().cursor(); cursor.advance();) {
+                final KeyHandle kh = cursor.asKeyHandle();
+                final Tracker tr = trackerMap.get(kh);
+                assert tr.isAlive() : "tr is dead";
+                assert tr.isTombstone() : "tr is not a tombstone";
+                if (tr.garbageCount() > 0) {
+                    tombstoneCount++;
+                    continue;
+                }
+                final StableChunk chunk = cm.chunks.get(tr.chunkSeq());
+                final Record r = chunk.records.get(kh);
+                trackerMap.removeLiveTombstone(kh);
+                cm.tombGarbage.inc(r.size());
+                chunk.retire(kh, r);
+                cm.submitForDeletionAsNeeded(this.chunk);
+                retiredCount++;
+            }
+        }
+        logger.info("Retired %,d tombstones, left %,d live ones. Record seq is %x",
+                retiredCount, tombstoneCount, maxSeq);
+        assert tombstoneCount == trackerMap.liveTombstones.get();
+        cm.deleteGarbageTombChunks(null);
+        cm.gcHelper.initRecordSeq(maxSeq);
+        trackerMap.trimToSize();
+        assert validateTombstoneChunks(trackerMap, tombstoneCount);
+    }
+
+    private boolean validateTombstoneChunks(TrackerMapBase trackerMap, long tombstoneCount) {
+        long tombstoneCountTakeTwo = 0;
         for (StableChunk chunk : cm.chunks.values()) {
             if (!(chunk instanceof StableTombChunk)) {
                 continue;
             }
             for (RecordMap.Cursor cursor = chunk.records.cursor(); cursor.advance();) {
                 final KeyHandle kh = cursor.toKeyHandle();
-                final Tracker tr = cm.trackers.get(kh);
+                final Tracker tr = trackerMap.get(kh);
                 final Record r = cursor.asRecord();
-                if (!r.isAlive()) {
-                    continue;
-                }
-                if (tr.garbageCount() > 0) {
-                    tombstoneCount++;
-                    continue;
-                }
-                retiredCount++;
-                cm.tombGarbage.inc(r.size());
-                chunk.retire(kh, r);
-                cm.trackers.removeLiveTombstone(kh);
-                cm.submitForDeletionAsNeeded(chunk);
+                assert r.isAlive() : "Found live tombstone";
+                assert tr.garbageCount() > 0 : "Found orphan tombstone";
+                tombstoneCountTakeTwo++;
             }
         }
-        logger.fine("Retired %,d tombstones. There are %,d left. Record seq is %x",
-                retiredCount, tombstoneCount, maxSeq);
-        cm.deleteGarbageTombChunks(null);
-        cm.gcHelper.initRecordSeq(maxSeq);
+        assert tombstoneCount == tombstoneCountTakeTwo : String.format(
+                "Tombstone count take one %,d, take two %,d", tombstoneCount, tombstoneCountTakeTwo);
+        return true;
     }
 
     private void finishCurrentChunk() {

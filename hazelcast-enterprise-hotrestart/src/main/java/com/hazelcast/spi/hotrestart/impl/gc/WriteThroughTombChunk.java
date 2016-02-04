@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -18,16 +19,21 @@ final class WriteThroughTombChunk extends WriteThroughChunk {
     @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] ignored) {
         ensureHasRoom();
         try {
-            dataOut.writeLong(recordSeq);
-            dataOut.writeLong(keyPrefix);
-            dataOut.writeInt(keyBytes.length);
-            dataOut.write(keyBytes);
+            writeTombstone(dataOut, recordSeq, keyPrefix, keyBytes);
             size += Record.TOMB_HEADER_SIZE + keyBytes.length;
             tombstoneCount++;
             return full();
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
+    }
+
+    static void writeTombstone(DataOutputStream out, long recordSeq, long keyPrefix, byte[] keyBytes)
+            throws IOException {
+        out.writeLong(recordSeq);
+        out.writeLong(keyPrefix);
+        out.writeInt(keyBytes.length);
+        out.write(keyBytes);
     }
 
     @Override boolean full() {

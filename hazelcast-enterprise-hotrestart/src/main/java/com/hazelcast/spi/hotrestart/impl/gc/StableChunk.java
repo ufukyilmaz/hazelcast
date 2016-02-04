@@ -7,7 +7,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
  */
 class StableChunk extends Chunk {
     boolean compressed;
-    private final long size;
+    long size;
 
     StableChunk(GrowingChunk from, boolean compressed) {
         super(from);
@@ -31,5 +31,9 @@ class StableChunk extends Chunk {
 
     @Override final String fnameSuffix() {
         return Chunk.FNAME_SUFFIX + (compressed ? COMPRESSED_SUFFIX : "");
+    }
+
+    @Override boolean compressed() {
+        return compressed;
     }
 }

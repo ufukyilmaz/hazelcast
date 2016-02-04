@@ -4,8 +4,6 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
-import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor.TombChunkFileCursor;
-import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor.ValChunkFileCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
@@ -97,8 +95,10 @@ class HotRestarter {
         this.rebuilder = new Rebuilder(gcExec.chunkMgr, gcHelper.logger);
         gcExec.setPrefixTombstones(prefixTombstones);
         this.prefixTombstones = prefixTombstones;
-        final ChunkFileCursor tombCursor = new TombChunkFileCursor(sortedChunkFiles(TOMB_BASEDIR), rebuilder, gcHelper);
-        final ChunkFileCursor valCursor = new ValChunkFileCursor(sortedChunkFiles(VAL_BASEDIR), rebuilder, gcHelper);
+        final ChunkFilesetCursor tombCursor =
+                new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR), rebuilder, gcHelper);
+        final ChunkFilesetCursor valCursor =
+                new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR), rebuilder, gcHelper);
         if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
             throw new HotRestartException("failIfAnyData == true and there's data to reload");
         }
@@ -118,28 +118,28 @@ class HotRestarter {
         }
     }
 
-    private void loadTombstones(ChunkFileCursor tombCursor) throws InterruptedException {
+    private void loadTombstones(ChunkFilesetCursor tombCursor) throws InterruptedException {
         while (tombCursor.advance()) {
-            if (!loadStep1(tombCursor)) {
+            final ChunkFileRecord rec = tombCursor.currentRecord();
+            if (!loadStep1(rec)) {
                 continue;
             }
-            final long prefix = tombCursor.prefix;
+            final long prefix = rec.prefix();
             SetOfKeyHandle sokh = tombKeys.get(prefix);
             if (sokh == null) {
                 sokh = gcHelper.newSetOfKeyHandle();
                 tombKeys.put(prefix, sokh);
             }
             sokh.add(keyHandle);
-            rebuilder.accept(prefix, keyHandle, tombCursor.seq, tombCursor.recordSize());
+            rebuilder.accept(prefix, keyHandle, rec.recordSeq(), rec.size());
         }
     }
 
-    private void loadValues(ChunkFileCursor valCursor) throws InterruptedException {
+    private void loadValues(ChunkFilesetCursor valCursor) throws InterruptedException {
         while (valCursor.advance()) {
-            if (loadStep1(valCursor)
-                    && rebuilder.accept(valCursor.prefix, keyHandle, valCursor.seq, valCursor.recordSize())
-            ) {
-                ramStore.accept(keyHandle, valCursor.value);
+            final ChunkFileRecord rec = valCursor.currentRecord();
+            if (loadStep1(rec) && rebuilder.accept(rec.prefix(), keyHandle, rec.recordSeq(), rec.size())) {
+                ramStore.accept(keyHandle, rec.value());
             }
         }
     }
@@ -189,16 +189,16 @@ class HotRestarter {
         return files;
     }
 
-    private boolean loadStep1(ChunkFileCursor cursor) {
-        rebuilder.preAccept(cursor.seq, cursor.recordSize());
-        if (cursor.seq <= prefixTombstones.get(cursor.prefix)) {
+    private boolean loadStep1(ChunkFileRecord rec) {
+        rebuilder.preAccept(rec.recordSeq(), rec.size());
+        if (rec.recordSeq() <= prefixTombstones.get(rec.prefix())) {
             // We are accepting a cleared record (interred by a prefix tombstone)
-            rebuilder.acceptCleared(cursor.recordSize());
+            rebuilder.acceptCleared(rec.size());
             return false;
         }
-        this.ramStore = reg.restartingRamStoreForPrefix(cursor.prefix);
-        assert ramStore != null : "RAM store registry failed to provide a store for prefix " + cursor.prefix;
-        this.keyHandle = ramStore.toKeyHandle(cursor.key);
+        this.ramStore = reg.restartingRamStoreForPrefix(rec.prefix());
+        assert ramStore != null : "RAM store registry failed to provide a store for prefix " + rec.prefix();
+        this.keyHandle = ramStore.toKeyHandle(rec.key());
         return true;
     }
 

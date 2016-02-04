@@ -66,11 +66,15 @@ public abstract class Chunk implements Disposable {
 
     abstract long size();
 
-    void retire(KeyHandle kh, Record r, boolean incrementGarbageCount) {
+    boolean compressed() {
+        return false;
+    }
+
+    void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
         assert records.get(kh).liveSeq() == r.liveSeq()
                 : String.format("%s.retire(%s, %s) but have %s", this, kh, r, records.get(kh));
         garbage += r.size();
-        r.retire(incrementGarbageCount);
+        r.retire(mayIncrementGarbageCount);
         liveRecordCount--;
     }
 

@@ -21,6 +21,7 @@ import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.VAL_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -168,8 +169,10 @@ public abstract class GcHelper implements Disposable {
         return out == null ? nullOutputStream() : compressor.compressedOutputStream(out);
     }
 
-    File chunkFile(Chunk chunk, boolean mkdirs) {
-        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
+    public final File chunkFile(Chunk chunk, boolean mkdirs) {
+        return chunkFile(chunk.base(), chunk.seq,
+                chunk.fnameSuffix() + (chunk.compressed() ? COMPRESSED_SUFFIX : ""),
+                mkdirs);
     }
 
     File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
@@ -292,6 +295,6 @@ public abstract class GcHelper implements Disposable {
     }
 
     String newStableChunkSuffix() {
-        return Chunk.FNAME_SUFFIX + (compressionEnabled() ? Compressor.COMPRESSED_SUFFIX : "");
+        return Chunk.FNAME_SUFFIX + (compressionEnabled() ? COMPRESSED_SUFFIX : "");
     }
 }

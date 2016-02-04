@@ -1,4 +1,4 @@
-package com.hazelcast.cluster.impl;
+package com.hazelcast.internal.cluster.impl;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.nio.Address;

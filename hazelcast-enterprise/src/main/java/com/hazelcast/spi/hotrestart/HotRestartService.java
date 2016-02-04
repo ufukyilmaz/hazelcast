@@ -1,11 +1,11 @@
 package com.hazelcast.spi.hotrestart;
 
-import com.hazelcast.cluster.ClusterService;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.Address;
@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.cluster.impl.ClusterStateManagerAccessor.setClusterState;
+import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
@@ -57,7 +57,9 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHot
 @SuppressWarnings({"checkstyle:classfanoutcomplexity" })
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
-    /** Name of the Hot Restart service */
+    /**
+     * Name of the Hot Restart service
+     */
     public static final String SERVICE_NAME = "hz:ee:hotRestartService";
 
     private static final String STORE_PREFIX = "s";

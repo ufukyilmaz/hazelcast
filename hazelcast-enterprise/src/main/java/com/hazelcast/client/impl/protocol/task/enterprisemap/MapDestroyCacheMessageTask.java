@@ -19,7 +19,7 @@ package com.hazelcast.client.impl.protocol.task.enterprisemap;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.codec.EnterpriseMapDestroyCacheCodec;
 import com.hazelcast.client.impl.protocol.task.AbstractCallableMessageTask;
-import com.hazelcast.cluster.ClusterService;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;

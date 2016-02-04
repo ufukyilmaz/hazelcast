@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.publisher;
 
-import com.hazelcast.cluster.impl.ClusterServiceImpl;
+import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MembershipAdapter;

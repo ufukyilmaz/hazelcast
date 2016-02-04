@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.operation;
 
-import com.hazelcast.cluster.impl.operations.WanReplicationOperation;
+import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.nio.ObjectDataInput;

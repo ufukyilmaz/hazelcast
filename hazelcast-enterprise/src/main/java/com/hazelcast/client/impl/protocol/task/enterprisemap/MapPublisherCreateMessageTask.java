@@ -20,7 +20,7 @@ import com.hazelcast.client.ClientEndpoint;
 import com.hazelcast.client.impl.protocol.ClientMessage;
 import com.hazelcast.client.impl.protocol.codec.EnterpriseMapPublisherCreateCodec;
 import com.hazelcast.client.impl.protocol.task.AbstractCallableMessageTask;
-import com.hazelcast.cluster.ClusterService;
+import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.impl.MapService;

@@ -1,6 +1,6 @@
 package com.hazelcast.enterprise.wan.connection;
 
-import com.hazelcast.cluster.impl.operations.AuthorizationOperation;
+import com.hazelcast.internal.cluster.impl.operations.AuthorizationOperation;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;

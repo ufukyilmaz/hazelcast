@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.cluster.impl.ClusterServiceImpl;
+import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.GroupProperty;
@@ -35,8 +35,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hazelcast.cluster.impl.ClusterStateManagerAccessor.addMembersRemovedInNotActiveState;
-import static com.hazelcast.cluster.impl.ClusterStateManagerAccessor.setClusterState;
+import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.addMembersRemovedInNotActiveState;
+import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PENDING_VERIFICATION;

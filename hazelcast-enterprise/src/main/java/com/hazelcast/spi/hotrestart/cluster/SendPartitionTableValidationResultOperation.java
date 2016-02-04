@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.cluster.impl.operations.JoinOperation;
+import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

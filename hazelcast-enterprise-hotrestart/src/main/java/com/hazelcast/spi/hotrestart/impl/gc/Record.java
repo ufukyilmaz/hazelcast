@@ -90,7 +90,7 @@ public abstract class Record {
             out.write(keyBuf.array(), keyBuf.position(), keySize);
             filePosition += VAL_HEADER_SIZE + keySize;
             if (positionInUnitsOfBufsize(filePosition) > startPos) {
-                yield(fileOut, mc);
+                mc.catchupNow();
             }
             if (isTombstone() || valSize <= 0) {
                 return filePosition;
@@ -101,7 +101,7 @@ public abstract class Record {
                 final int pos = valBuf.position();
                 out.write(valBuf.array(), pos, transferredCount);
                 if (transferredCount == alignedCount) {
-                    yield(fileOut, mc);
+                    mc.catchupNow();
                 }
                 valBuf.position(pos + transferredCount);
                 filePosition += transferredCount;
@@ -147,14 +147,7 @@ public abstract class Record {
         return isTombstone ? -size : size;
     }
 
-    private static void yield(FileOutputStream fileOut, MutatorCatchup mc) {
-        mc.catchupNow();
-        if (mc.fsyncOften) {
-            GrowingChunk.fsync(fileOut);
-        }
-    }
-
-    private static long positionInUnitsOfBufsize(long filePosition) {
+    static long positionInUnitsOfBufsize(long filePosition) {
         return filePosition >> LOG_OF_BUFFER_SIZE;
     }
 }

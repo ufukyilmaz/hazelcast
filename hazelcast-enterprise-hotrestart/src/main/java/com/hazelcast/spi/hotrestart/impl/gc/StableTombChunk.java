@@ -1,8 +1,10 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.util.collection.Long2ObjectHashMap;
 import com.hazelcast.util.collection.LongHashSet;
 import com.hazelcast.util.counters.Counter;
 
@@ -20,6 +22,10 @@ import static com.hazelcast.spi.hotrestart.impl.gc.WriteThroughTombChunk.writeTo
  */
 final class StableTombChunk extends StableChunk {
 
+    private double benefitToCost;
+
+    private Long2ObjectHashMap<KeyHandle> seqToKeyHandle;
+
     StableTombChunk(WriteThroughTombChunk from, boolean compressed) {
         super(from, compressed);
     }
@@ -32,36 +38,42 @@ final class StableTombChunk extends StableChunk {
         return TOMB_BASEDIR;
     }
 
-    public void compactFile(GcHelper gcHelper, Counter tombOccupancy, Counter tombGarbage) {
-        final LongHashSet liveSeqs = new LongHashSet(liveRecordCount, 0L);
+    @Override void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
+        if (seqToKeyHandle != null) {
+            seqToKeyHandle.remove(r.liveSeq());
+        }
+        super.retire(kh, r, mayIncrementGarbageCount);
+    }
+
+    void initLiveSeqToKeyHandle() {
+        seqToKeyHandle = new Long2ObjectHashMap<KeyHandle>(liveRecordCount, 0L);
         for (Cursor cursor = records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();
-            if (!r.isAlive()) {
-                continue;
+            if (r.isAlive()) {
+                seqToKeyHandle.put(r.liveSeq(), cursor.toKeyHandle());
             }
-            liveSeqs.add(r.liveSeq());
         }
-        final File currFile = gcHelper.chunkFile(this, false);
-        final FileOutputStream fileOut = gcHelper.createFileOutputStream(base(), seq, DEST_FNAME_SUFFIX);
-        final DataOutputStream dataOut = new DataOutputStream(bufferedOutputStream(fileOut));
-        try {
-            for (ChunkFileCursor.Tomb fc = new ChunkFileCursor.Tomb(currFile, gcHelper); fc.advance();) {
-                if (liveSeqs.contains(fc.recordSeq())) {
-                    writeTombstone(dataOut, fc.recordSeq(), fc.prefix(), fc.key());
-                }
-            }
-            dataOut.flush();
-            fileOut.getFD().sync();
-            dataOut.close();
-            gcHelper.changeSuffix(base(), seq, DEST_FNAME_SUFFIX, FNAME_SUFFIX);
-            tombOccupancy.inc(-garbage);
-            tombGarbage.inc(-garbage);
-            size -= garbage;
-            garbage = 0;
-        } catch (IOException e) {
-            throw new HotRestartException(String.format("Failed to compact tombstone chunk #%x", seq), e);
-        } finally {
-            closeIgnoringFailure(dataOut);
-        }
+    }
+
+    KeyHandle getLiveKeyHandle(long seq) {
+        return seqToKeyHandle.get(seq);
+    }
+
+    double cachedBenefitToCost() {
+        return benefitToCost;
+    }
+
+    double updateBenefitToCost() {
+        return benefitToCost = benefitToCost(garbage, size());
+    }
+
+    @SuppressWarnings("checkstyle:magicnumber")
+    static double benefitToCost(long garbage, long size) {
+        // Benefit is the amount of garbage, cost is the sum of read cost and write cost.
+        // We assume a weighted read cost of size/2 and a write cost of size - garbage (i.e., live data size).
+        // benefitToCost = benefit/cost = garbage / (size/2 + size - garbage) = garbage / (3/2 * size - garbage)
+        // To simplify, we define g := garbage / size. Then, benefitToCost = g / (3/2 - g).
+        final double g = (double) garbage / size;
+        return g / (1.5 - g);
     }
 }

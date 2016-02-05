@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
+import static com.hazelcast.spi.hotrestart.impl.gc.StableChunk.BY_BENEFIT_COST_DESC;
 import static com.hazelcast.util.QuickMath.log2;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -29,13 +30,6 @@ final class ChunkSelector {
             final long leftSeq = left.seq;
             final long rightSeq = right.seq;
             return leftSeq > rightSeq ? -1 : leftSeq < rightSeq ? 1 : 0;
-        }
-    };
-    private static final Comparator<StableValChunk> BY_COST_BENEFIT = new Comparator<StableValChunk>() {
-        @Override public int compare(StableValChunk left, StableValChunk right) {
-            final double leftCb = left.cachedCostBenefit();
-            final double rightCb = right.cachedCostBenefit();
-            return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
         }
     };
     private final Collection<StableChunk> allChunks;
@@ -133,7 +127,7 @@ final class ChunkSelector {
             }
             final StableValChunk c = (StableValChunk) chunk;
             if (c.size() == 0 || c.garbage > 0) {
-                c.updateCostBenefit(gcp.currChunkSeq);
+                c.updateBenefitToCost(gcp.currChunkSeq);
                 candidates.add(c);
             }
         }
@@ -143,7 +137,7 @@ final class ChunkSelector {
     private List<StableValChunk> topChunks(Set<StableValChunk> candidates, int limit) {
         if (candidates.size() <= limit) {
             final List<StableValChunk> sortedChunks = new ArrayList<StableValChunk>(candidates);
-            Collections.sort(sortedChunks, BY_COST_BENEFIT);
+            Collections.sort(sortedChunks, BY_BENEFIT_COST_DESC);
             mc.catchupNow();
             return sortedChunks;
         } else {
@@ -185,7 +179,7 @@ final class ChunkSelector {
                 continue;
             }
             final StableValChunk c = (StableValChunk) chunk;
-            c.updateCostBenefit(gcp.currChunkSeq);
+            c.updateBenefitToCost(gcp.currChunkSeq);
             valChunks.add(c);
         }
         Collections.sort(valChunks, BY_SEQ_DESC);
@@ -201,7 +195,7 @@ final class ChunkSelector {
             o.format("%4x %3d %,15.2f    %,7d %s %s%n",
                     c.seq,
                     log2(gcp.currChunkSeq - c.seq),
-                    c.cachedCostBenefit(),
+                    c.cachedBenefitToCost(),
                     c.liveRecordCount,
                     selectedSeqs.contains(c.seq) ? "X" : " ",
                     visualizedChunk(c.garbage, c.size()));
@@ -212,7 +206,7 @@ final class ChunkSelector {
     @SuppressWarnings("checkstyle:magicnumber")
     private static String visualizedChunk(long garbage, long size) {
         final int chunkLimitChars = 16;
-        final int bytesPerChar = (int) Chunk.SIZE_LIMIT / chunkLimitChars;
+        final int bytesPerChar = (int) Chunk.VAL_SIZE_LIMIT / chunkLimitChars;
         final StringBuilder b = new StringBuilder(chunkLimitChars * 3 / 2).append('|');
         final long garbageChars = garbage / bytesPerChar;
         final long sizeChars = size / bytesPerChar;

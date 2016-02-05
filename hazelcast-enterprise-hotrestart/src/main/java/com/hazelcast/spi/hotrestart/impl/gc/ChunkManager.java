@@ -13,11 +13,14 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import com.hazelcast.util.counters.Counter;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.copyLiveRecords;
+import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
+import static com.hazelcast.spi.hotrestart.impl.gc.TombEvacuator.copyLiveTombstones;
 import static com.hazelcast.util.counters.SwCounter.newSwCounter;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -269,7 +272,7 @@ public final class ChunkManager {
     }
 
     @SuppressWarnings("checkstyle:innerassignment")
-    boolean gc(GcParams gcp, GcExecutor.MutatorCatchup mc) {
+    boolean gc(GcParams gcp, MutatorCatchup mc) {
         final long start = System.nanoTime();
         final ChunkSelection selected;
         if (gcp == GcParams.ZERO || (selected = selectChunksToCollect(
@@ -309,6 +312,41 @@ public final class ChunkManager {
         return true;
     }
 
+    boolean tombGc(MutatorCatchup mc) {
+        final long start = System.nanoTime();
+        final Collection<StableTombChunk> srcChunks =
+                selectTombChunksToCollect(chunks.values(), pfixTombstoMgr, mc, logger);
+        if (srcChunks.isEmpty()) {
+            return false;
+        }
+        final long garbageBeforeGc = tombGarbage.get();
+        final long liveBeforeGc = tombOccupancy.get() - garbageBeforeGc;
+        logger.fine("Start TombGC: g/l %2.0f%% (%,d/%,d)",
+                UNIT_PERCENTAGE * garbageBeforeGc / liveBeforeGc, garbageBeforeGc, liveBeforeGc);
+        copyLiveTombstones(srcChunks, this, mc, logger);
+        long sizeBefore = 0;
+        for (StableTombChunk src : srcChunks) {
+            sizeBefore += src.size();
+            disposeAndRemove(src);
+        }
+        long sizeAfter = 0;
+        for (Chunk dest : destChunkMap.values()) {
+            chunks.put(dest.seq, (StableChunk) dest);
+            sizeAfter += dest.size();
+        }
+        this.destChunkMap = null;
+        final long reclaimed = sizeBefore - sizeAfter;
+        final long garbageAfterGc = tombGarbage.inc(-reclaimed);
+        final long liveAfterGc = tombOccupancy.inc(-reclaimed) - garbageAfterGc;
+        logger.info("%nDone TombGC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
+                NANOSECONDS.toMillis(System.nanoTime() - start),
+                (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
+                reclaimed, sizeAfter, garbageAfterGc, liveAfterGc);
+        assert garbageAfterGc >= 0 : String.format("Tombstone garbage went below zero: %,d", garbageAfterGc);
+        assert liveAfterGc >= 0 : String.format("Tombstone live went below zero: %,d", liveAfterGc);
+        return true;
+    }
+
     private void disposeAndRemove(StableChunk chunk) {
         chunk.dispose();
         chunks.remove(chunk.seq);
@@ -338,7 +376,7 @@ public final class ChunkManager {
                 continue;
             }
             final StableValChunk valChunk = (StableValChunk) c;
-            final double cb = valChunk.cachedCostBenefit();
+            final double cb = valChunk.cachedBenefitToCost();
             if (cb < lowestCb) {
                 mostStableChunk = valChunk;
                 lowestCb = cb;

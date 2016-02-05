@@ -1,6 +1,7 @@
 package com.hazelcast;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class DataSerializerHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();
+    private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
     private BufferedReader eeAllInput;
     private URL ossURL;
     private URL wmURL;
@@ -44,7 +46,7 @@ public class DataSerializerHookTest {
         }
 
         ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+                "https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
         );
         ossIn = new BufferedReader(
                 new InputStreamReader(ossURL.openStream()));
@@ -56,7 +58,7 @@ public class DataSerializerHookTest {
         );
 
         wmURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast-wm/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+                "https://raw.githubusercontent.com/hazelcast/hazelcast-wm/master/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
         );
         wmInput = new BufferedReader(
                 new InputStreamReader(wmURL.openStream()));

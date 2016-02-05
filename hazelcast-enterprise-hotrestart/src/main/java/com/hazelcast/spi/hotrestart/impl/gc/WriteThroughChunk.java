@@ -15,7 +15,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream
  */
 public abstract class WriteThroughChunk extends GrowingChunk {
     final DataOutputStream dataOut;
-    private final FileOutputStream fileOut;
+    final FileOutputStream fileOut;
     private final GcHelper gcHelper;
     private boolean needsFsyncBeforeClosing;
 
@@ -63,7 +63,7 @@ public abstract class WriteThroughChunk extends GrowingChunk {
 
     /**
      * Writes a new record to the chunk file and updates the chunk's size.
-     * Called by the mutator thread.
+     * May be called by the mutator thread.
      *
      * @return true if the chunk is now full.
      */

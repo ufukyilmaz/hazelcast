@@ -24,7 +24,7 @@ final class ChunkPriorityQueue {
     }
 
     private static boolean betterThan(StableValChunk left, StableValChunk right) {
-        return left.cachedCostBenefit() > right.cachedCostBenefit();
+        return left.cachedBenefitToCost() > right.cachedBenefitToCost();
     }
 
     /**

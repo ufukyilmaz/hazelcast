@@ -20,13 +20,13 @@ public abstract class Chunk implements Disposable {
      * If system fails during GC, such file should not be considered during restart. */
     public static final String DEST_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".dest";
 
-    /** Chunk file size limit in bytes. */
+    /** Value chunk file size limit in bytes. */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final long SIZE_LIMIT = 8 << 20;
+    public static final long VAL_SIZE_LIMIT = 8 << 20;
 
-    /** Record count limit in a tombstone chunk. */
+    /** Tombstone chunk file size limit in bytes. */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final long TOMB_COUNT_LIMIT = 1 << 9;
+    public static final long TOMB_SIZE_LIMIT = 1 << 20;
 
     /** Name of the base directory for value records. */
     public static final String VAL_BASEDIR = "value";

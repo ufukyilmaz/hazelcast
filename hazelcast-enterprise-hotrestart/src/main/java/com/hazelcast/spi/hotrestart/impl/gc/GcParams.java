@@ -13,7 +13,7 @@ final class GcParams {
     public static final double BOOSTED_BENEFIT_TO_COST = 5.0;
     public static final double BASE_BENEFIT_TO_COST = 0.4;
     public static final double FORCED_MIN_B2C = 1e-2;
-    public static final long MIN_GARBAGE_TO_FORCE_GC = 10 * Chunk.SIZE_LIMIT;
+    public static final long MIN_GARBAGE_TO_FORCE_GC = 10 * Chunk.VAL_SIZE_LIMIT;
     public static final int MAX_COST_CHUNKS = 8;
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int MAX_RECORD_COUNT = 1 << 20;
@@ -31,11 +31,11 @@ final class GcParams {
     private GcParams(long garbage, long liveData, double ratio, long currChunkSeq, boolean forceGc) {
         this.currChunkSeq = currChunkSeq;
         this.forceGc = forceGc;
-        final long costGoalChunks = max(1, min(MAX_COST_CHUNKS, liveData / Chunk.SIZE_LIMIT));
-        final long costGoalBytes = Chunk.SIZE_LIMIT * costGoalChunks;
+        final long costGoalChunks = max(1, min(MAX_COST_CHUNKS, liveData / Chunk.VAL_SIZE_LIMIT));
+        final long costGoalBytes = Chunk.VAL_SIZE_LIMIT * costGoalChunks;
         this.limitSrcChunks = costGoalBytes < liveData;
         this.costGoal = limitSrcChunks ? costGoalBytes : liveData;
-        this.minCost = ratio < HIGH_GARBAGE_RATIO ? Chunk.SIZE_LIMIT / 2 : 0;
+        this.minCost = ratio < HIGH_GARBAGE_RATIO ? Chunk.VAL_SIZE_LIMIT / 2 : 0;
         if (forceGc) {
             this.minBenefitToCost = FORCED_MIN_B2C;
             this.benefitGoal = garbageExceedingThreshold(MAX_GARBAGE_RATIO, garbage, liveData);
@@ -47,7 +47,7 @@ final class GcParams {
             final double highRatio = HIGH_GARBAGE_RATIO;
             this.minBenefitToCost = boostBc - (boostBc - baseBc) * (ratio - minRatio) / (highRatio - minRatio);
             this.benefitGoal = garbageExceedingThreshold(minRatio, garbage, liveData);
-            this.maxCost = MAX_COST_CHUNKS * Chunk.SIZE_LIMIT;
+            this.maxCost = MAX_COST_CHUNKS * Chunk.VAL_SIZE_LIMIT;
         }
     }
 

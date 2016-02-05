@@ -133,12 +133,9 @@ public final class GcExecutor {
 
     boolean runForcedGC(GcParams gcp) {
         backpressure = true;
-        final boolean savedFsyncOften = mc.fsyncOften;
-        mc.fsyncOften = false;
         try {
             return chunkMgr.gc(gcp, mc);
         } finally {
-            mc.fsyncOften = savedFsyncOften;
             backpressure = false;
         }
     }
@@ -217,9 +214,6 @@ public final class GcExecutor {
      * the mutator thread at any point along the GC cycle codepath.
      */
     class MutatorCatchup implements CatchupTestSupport {
-        // Consulted by output streams to decide whether to fsync after each buffer flush.
-        // Perhaps expose this as configuration param (currently it's hardcoded).
-        boolean fsyncOften;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
 

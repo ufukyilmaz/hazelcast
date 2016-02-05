@@ -4,7 +4,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
  * Represents a chunk whose on-disk contents are stable (immutable).
  */
 final class StableValChunk extends StableChunk {
-    private double costBenefit;
+    private double benefitToCost;
 
     StableValChunk(WriteThroughValChunk from, boolean compressed) {
         super(from, compressed);
@@ -19,17 +19,17 @@ final class StableValChunk extends StableChunk {
         return size() - garbage;
     }
 
-    /** Updates the cached value of the cost-benefit factor.
+    /** Updates the cached value of the benefit/cost factor.
      * @return the updated value. */
-    double updateCostBenefit(long currChunkSeq) {
-        return costBenefit = costBenefit(currChunkSeq);
+    double updateBenefitToCost(long currChunkSeq) {
+        return benefitToCost = benefitToCost(currChunkSeq);
     }
 
-    double cachedCostBenefit() {
-        return costBenefit;
+    @Override double cachedBenefitToCost() {
+        return benefitToCost;
     }
 
-    private double costBenefit(long currChunkSeq) {
+    private double benefitToCost(long currChunkSeq) {
         final double benefit = this.garbage;
         final double cost = cost();
         if (cost == 0) {

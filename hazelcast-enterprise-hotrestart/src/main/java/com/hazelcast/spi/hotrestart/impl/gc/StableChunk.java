@@ -1,11 +1,21 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import java.util.Comparator;
+
 import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
 
 /**
  * Represents a tombstone chunk whose on-disk contents are stable (immutable).
  */
-class StableChunk extends Chunk {
+abstract class StableChunk extends Chunk {
+    static final Comparator<StableChunk> BY_BENEFIT_COST_DESC = new Comparator<StableChunk>() {
+        @Override public int compare(StableChunk left, StableChunk right) {
+            final double leftCb = left.cachedBenefitToCost();
+            final double rightCb = right.cachedBenefitToCost();
+            return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
+        }
+    };
+
     boolean compressed;
     long size;
 
@@ -36,4 +46,6 @@ class StableChunk extends Chunk {
     @Override boolean compressed() {
         return compressed;
     }
+
+    abstract double cachedBenefitToCost();
 }

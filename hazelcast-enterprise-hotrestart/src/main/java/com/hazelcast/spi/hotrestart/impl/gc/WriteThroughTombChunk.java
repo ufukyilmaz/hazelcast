@@ -10,7 +10,6 @@ import java.io.IOException;
  * Write-through chunk specialized to contain tombstone records.
  */
 final class WriteThroughTombChunk extends WriteThroughChunk {
-    int tombstoneCount;
 
     WriteThroughTombChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
         super(seq, records, out, gcHelper);
@@ -21,7 +20,6 @@ final class WriteThroughTombChunk extends WriteThroughChunk {
         try {
             writeTombstone(dataOut, recordSeq, keyPrefix, keyBytes);
             size += Record.TOMB_HEADER_SIZE + keyBytes.length;
-            tombstoneCount++;
             return full();
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -37,7 +35,7 @@ final class WriteThroughTombChunk extends WriteThroughChunk {
     }
 
     @Override boolean full() {
-        return tombstoneCount >= TOMB_COUNT_LIMIT;
+        return size() >= TOMB_SIZE_LIMIT;
     }
 
     @Override String base() {

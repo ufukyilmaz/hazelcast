@@ -21,7 +21,6 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.concurrent.Callable;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.delete;
@@ -41,7 +40,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private final long prefix = 1;
     private final long key = 1;
     private final int keySize = 8;
-    private final byte[] value = new byte[(int) Chunk.SIZE_LIMIT];
+    private final byte[] value = new byte[(int) Chunk.VAL_SIZE_LIMIT];
 
     private File testingHome;
     private MockStoreRegistry store;
@@ -113,12 +112,10 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         withGcPaused(new CatchupRunnable() {
             @Override public void run(CatchupTestSupport mc) {
                 final LongGauge tombOccupancy = gauge(".tombOccupancy");
-                for (int i = 0; i < Chunk.TOMB_COUNT_LIMIT; i++) {
-                    store.put(prefix, key, value);
-                    store.remove(prefix, key);
-                    mc.catchupNow();
-                }
-                assertEquals(Chunk.TOMB_COUNT_LIMIT * (TOMB_HEADER_SIZE + keySize), tombOccupancy.read());
+                store.put(prefix, key, value);
+                store.remove(prefix, key);
+                mc.catchupNow();
+                assertEquals(TOMB_HEADER_SIZE + keySize, tombOccupancy.read());
             }
         });
     }
@@ -127,12 +124,12 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         withGcPaused(new CatchupRunnable() {
             @Override public void run(CatchupTestSupport mc) {
                 final LongGauge tombGarbage = gauge(".tombGarbage");
-                for (int i = 0; i < Chunk.TOMB_COUNT_LIMIT + 1; i++) {
-                    store.put(prefix, key, value);
-                    store.remove(prefix, key);
-                    mc.catchupNow();
-                }
-                assertEquals(Chunk.TOMB_COUNT_LIMIT * (TOMB_HEADER_SIZE + keySize), tombGarbage.read());
+                store.put(prefix, key, value);
+                store.remove(prefix, key);
+                store.put(prefix, key, value);
+                store.remove(prefix, key);
+                mc.catchupNow();
+                assertEquals(TOMB_HEADER_SIZE + keySize, tombGarbage.read());
             }
         });
     }

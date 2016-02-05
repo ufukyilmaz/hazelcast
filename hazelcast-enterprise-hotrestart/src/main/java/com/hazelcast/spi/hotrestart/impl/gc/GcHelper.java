@@ -103,9 +103,13 @@ public abstract class GcHelper implements Disposable {
     }
 
     public WriteThroughTombChunk newActiveTombChunk() {
+        return newWriteThroughTombChunk(ACTIVE_CHUNK_SUFFIX);
+    }
+
+    WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
         final long seq = chunkSeq.incrementAndGet();
         return new WriteThroughTombChunk(seq, newRecordMap(),
-                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
                 this);
     }
 

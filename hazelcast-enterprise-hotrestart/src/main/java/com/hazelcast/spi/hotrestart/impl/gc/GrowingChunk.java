@@ -48,7 +48,7 @@ abstract class GrowingChunk extends Chunk {
     }
 
     boolean full() {
-        return size() >= Chunk.SIZE_LIMIT;
+        return size() >= Chunk.VAL_SIZE_LIMIT;
     }
 
     public static void fsync(FileOutputStream out) {

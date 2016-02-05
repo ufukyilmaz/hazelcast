@@ -6,6 +6,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -59,7 +60,7 @@ final class Evacuator {
         // they were not safely propagated. Therefore propagate any needsDismissing
         // flag that a source chunk got to all dest chunks, and dismiss everything
         // that needs to be dismissed.
-        propagateDismissing(preparedDestChunks);
+        propagateDismissing(selected.srcChunks, preparedDestChunks, pfixTombstoMgr, mc);
         logger.fine("GC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
         final List<StableValChunk> destChunks = persistDestChunks(preparedDestChunks);
         dismissEvacuatedFiles();
@@ -67,8 +68,9 @@ final class Evacuator {
         return destChunks;
     }
 
-    private void propagateDismissing(List<GrowingDestChunk> destChunks) {
-        if (!propagationNeeded()) {
+    static void propagateDismissing(Collection<? extends Chunk> srcChunks, Collection<? extends Chunk> destChunks,
+                                    PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc) {
+        if (!propagationNeeded(srcChunks)) {
             return;
         }
         for (Chunk c : destChunks) {
@@ -78,8 +80,8 @@ final class Evacuator {
         }
     }
 
-    private boolean propagationNeeded() {
-        for (Chunk c : selected.srcChunks) {
+    private static boolean propagationNeeded(Collection<? extends Chunk> srcChunks) {
+        for (Chunk c : srcChunks) {
             if (c.needsDismissing) {
                 return true;
             }

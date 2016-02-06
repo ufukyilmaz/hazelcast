@@ -17,7 +17,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author mdogan 02/06/14
  */
-
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryAllocatorTest {
@@ -186,4 +185,5 @@ public class MemoryAllocatorTest {
         assertTrue("Address: " + address + " is not aligned!", modPowerOfTwo(address, 8) == 0);
         memoryAllocator.free(address, size);
     }
+
 }

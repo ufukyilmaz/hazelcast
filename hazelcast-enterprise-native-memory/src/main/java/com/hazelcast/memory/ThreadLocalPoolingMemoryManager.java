@@ -13,6 +13,7 @@ import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
+import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,9 +25,12 @@ public class ThreadLocalPoolingMemoryManager
 
     // Size of the memory block header in bytes
     private static final int HEADER_SIZE = 1;
+    // Using sign bit as block is allocated externally from page allocator (OS) directly.
+    // for allocations bigger than page size.
+    private static final int EXTERNAL_BLOCK_BIT = Byte.SIZE - 1;
     // Using sign bit as available bit, since offset is already positive
     // so the first bit represents that is this memory block is available or not (in use already)
-    private static final int AVAILABLE_BIT = Byte.SIZE - 1;
+    private static final int AVAILABLE_BIT = EXTERNAL_BLOCK_BIT - 1;
     // The second bit represents that is this memory block has offset value to its owner page
     private static final int PAGE_OFFSET_EXIST_BIT = AVAILABLE_BIT - 1;
     // Extra required native memory when page offset is stored.
@@ -34,17 +38,19 @@ public class ThreadLocalPoolingMemoryManager
     private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = Bits.INT_SIZE_IN_BYTES + Bits.INT_SIZE_IN_BYTES;
     private static final int INITIAL_CAPACITY = 1024;
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
+    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     /*
-     * Header Structure: (1 byte = 8 bits)
+     * Internal Memory Block Header Structure: (1 byte = 8 bits)
+     *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      * | Encoded size           |   5 bits             | ==> Size is encoded by logarithm of size
-     * +------------------------+----------------------+
-     * | RESERVED               |   1 bit              |
      * +------------------------+----------------------+
      * | PAGE_OFFSET_EXIST_BIT  |   1 bit              |
      * +------------------------+----------------------+
      * | AVAILABLE_BIT          |   1 bit              |
+     * +------------------------+----------------------+
+     * | EXTERNAL_BLOCK_BIT     |   1 bit              | ==> Set to 0 always
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      * P.S: Size can be encoded by logarithm of size because regarding to buddy allocation algorithm,
@@ -52,30 +58,64 @@ public class ThreadLocalPoolingMemoryManager
      */
 
     /*
-     * Memory Block Structure:
+     * Internal Memory Block Structure:
      *
      * Headers are located at the end of previous record.
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * +                  RECORD N-1                   +
+     * +                    BLOCK N-1                  +
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      * | ...                    |                      |
      * +------------------------+----------------------+
-     * | Header                 |   1 byte (byte)      |
+     * | Header of BLOCK N      |   1 byte (byte)      |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * +                   RECORD N                    +
+     * +                     BLOCK N                   +
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | Used Memory            |   <size>             |
+     * | Usable Memory Region   |   <size>             |
      * +------------------------+----------------------+
      * | Internal Fragmentation |                      |
      * +------------------------+----------------------+
-     * | Page Offset            |   4 bytes (int)      | ==> (If `PAGE_OFFSET_EXIST_BIT` is set in the header)
+     * | Page Offset            |   4 bytes (int)      | ==> If `PAGE_OFFSET_EXIST_BIT` is set in the header
+     * +------------------------+----------------------+
+     * | Padding                |   3 bytes            |
+     * +------------------------+----------------------+
+     * | Header of BLOCK N+1    |   1 byte             |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
      *
      * P.S: If the memory block is the first block in its page,
      *      its header is located at the end of last memory block in the page.
      *      It means at the end of page.
+     */
+
+    /*
+     * External Memory Block Header Structure: (1 byte = 8 bits)
+     *
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | LSB 7 bits of size     |   7 bits             |
+     * +------------------------+----------------------+
+     * | EXTERNAL_BLOCK_BIT     |   1 bit              | ==> Set to 1 always
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * P.S: The least significant 7 bits of the size are embedded into internal block header.
+     */
+
+    /*
+     * External Memory Block Structure:
+     *
+     * Headers are located before the usable memory region.
+     *
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     * | MSB 56 bits of size    |   7 bytes            |
+     * +------------------------+----------------------+
+     * | Header                 |   1 byte (byte)      | ==> Includes LSB 7 bits of size as mentioned above
+     * +------------------------+----------------------+
+     * | Usable Memory Region   |   <size>             |
+     * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *
+     * P.S: The most significant 56 bits of the size are embedded into external block header.
+     *      The remaining most significant 1 bit is not used.
+     *      Because since size is always positive that bit is always 0.
      */
 
     private final String threadName;
@@ -224,6 +264,49 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     @Override
+    protected long allocateExternal(long size) {
+        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
+        long address = pageAllocator.allocate(allocationSize);
+
+        byte x = (byte) (allocationSize & 0x0000007F);
+        long y = (allocationSize << 1) & 0xFFFFFF00;
+
+        if (IS_LITTLE_ENDIAN) {
+            y = Long.reverseBytes(y);
+        }
+
+        long externalHeaderAddress = address;
+        UnsafeHelper.UNSAFE.putLong(null, externalHeaderAddress, y);
+
+        byte header = Bits.setBit(x, EXTERNAL_BLOCK_BIT);
+        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - 1;
+        UnsafeHelper.UNSAFE.putByte(null, internalHeaderAddress, header);
+
+        return address + EXTERNAL_BLOCK_HEADER_SIZE;
+    }
+
+    @Override
+    protected void freeExternal(long address, long size) {
+        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
+        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
+
+        if (ASSERTION_ENABLED) {
+            byte header = getHeader(address);
+            if (!Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
+                throw new AssertionError("Address " + address + " is not an allocated external address!");
+            }
+            long actualSize = findSizeExternal(address, header);
+            if (actualSize != allocationSize) {
+                throw new AssertionError("Invalid size -> actual: " + actualSize
+                        + ", expected: " + allocationSize + " (usable size + EXTERNAL_BLOCK_HEADER_SIZE="
+                        + EXTERNAL_BLOCK_HEADER_SIZE + ") while free address " + address);
+            }
+        }
+
+        pageAllocator.free(allocationAddress, allocationSize);
+    }
+
+    @Override
     protected void markAvailable(long address) {
         assertNotNullPtr(address);
 
@@ -326,9 +409,28 @@ public class ThreadLocalPoolingMemoryManager
         return pageAllocations.contains(address - offset);
     }
 
+    private long findSizeExternal(long address, byte header) {
+        byte x = Bits.clearBit(header, EXTERNAL_BLOCK_BIT);
+        long y = UnsafeHelper.UNSAFE.getLong(null, address - EXTERNAL_BLOCK_HEADER_SIZE);
+        if (IS_LITTLE_ENDIAN) {
+            y = Long.reverseBytes(y);
+        }
+        y = (y & 0xFFFFFF00) >>> 1;
+        return x | y;
+    }
+
+    private long findSize(long address, byte header) {
+        if (Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
+            return findSizeExternal(address, header);
+        } else {
+            return getSizeFromHeader(header);
+        }
+    }
+
     @Override
-    protected int getSizeInternal(long address) {
-        return getSizeFromAddress(address);
+    protected long getSizeInternal(long address) {
+        byte header = getHeader(address);
+        return findSize(address, header);
     }
 
     @Override
@@ -336,15 +438,17 @@ public class ThreadLocalPoolingMemoryManager
         assertNotNullPtr(address);
 
         byte header = getHeader(address);
-        int size = getSizeFromHeader(header);
+        long size = findSize(address, header);
 
-        if (isHeaderAvailable(header) || !QuickMath.isPowerOfTwo(size)
-                || size < minBlockSize || size > pageSize) {
-            return SIZE_INVALID;
+        if (size > pageSize) {
+            return size;
+        } else {
+            if (isHeaderAvailable(header) || !QuickMath.isPowerOfTwo(size) || size < minBlockSize) {
+                return SIZE_INVALID;
+            }
+            long page = getOwningPage(address, header);
+            return page != NULL_ADDRESS && page + pageSize >= address + size ? size : SIZE_INVALID;
         }
-
-        long page = getOwningPage(address, header);
-        return page != NULL_ADDRESS && page + pageSize >= address + size ? size : SIZE_INVALID;
     }
 
     @Override

@@ -12,6 +12,10 @@ import static com.hazelcast.util.QuickMath.log2;
 abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     static final boolean ASSERTION_ENABLED;
+
+    // Size of the memory block header for external allocation when allocation size is bigger than page size
+    protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
+
     static {
         ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
     }
@@ -42,7 +46,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     final PooledNativeMemoryStats memoryStats;
 
     // page allocator, to allocate MAX_SIZE memory block from system
-    private final MemoryAllocator pageAllocator;
+    protected final MemoryAllocator pageAllocator;
 
     // system memory allocator
     // system allocations are not count in quota
@@ -113,11 +117,15 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             memoryStats.addInternalFragmentation(memorySize - size);
             size = memorySize;
         } else {
-            address = pageAllocator.allocate(size);
+            address = allocateExternal(size);
+            memoryStats.addInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
+            size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
         memoryStats.addUsedNativeMemory(size);
         return address;
     }
+
+    protected abstract long allocateExternal(long size);
 
     // TODO: loopify acquireInternal() & splitFromNextQueue() recursion
     protected final long acquireInternal(AddressQueue queue) {
@@ -175,10 +183,14 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             releaseInternal(queue, address);
             size = memorySize;
         } else {
-            pageAllocator.free(address, size);
+            freeExternal(address, size);
+            memoryStats.removeInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
+            size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
         memoryStats.removeUsedNativeMemory(size);
     }
+
+    protected abstract void freeExternal(long address, long size);
 
     private static void zero(long address, long size) {
         assertNotNullPtr(address);
@@ -326,7 +338,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
-        return allocatedSize - getHeaderSize();
+        if (allocatedSize > pageSize) {
+            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+        } else {
+            return allocatedSize - getHeaderSize();
+        }
     }
 
     @Override
@@ -335,7 +351,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
-        return allocatedSize - getHeaderSize();
+        if (allocatedSize > pageSize) {
+            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+        } else {
+            return allocatedSize - getHeaderSize();
+        }
     }
 
     @Override
@@ -361,7 +381,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract boolean isValidAndAvailable(long address, int expectedSize);
 
-    protected abstract int getSizeInternal(long address);
+    protected abstract long getSizeInternal(long address);
 
     protected abstract int getOffset(long address);
 

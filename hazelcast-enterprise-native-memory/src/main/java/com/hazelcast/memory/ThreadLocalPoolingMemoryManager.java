@@ -36,8 +36,12 @@ public class ThreadLocalPoolingMemoryManager
     // Extra required native memory when page offset is stored.
     // Since page offset should be aligned to 4 byte and header is 1 byte, we have 3 byte padding before header.
     private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = Bits.INT_SIZE_IN_BYTES + Bits.INT_SIZE_IN_BYTES;
+
+    // Initial capacity for various internal allocations such as page addresses, address queues, etc ...
     private static final int INITIAL_CAPACITY = 1024;
+    // Time interval in milliseconds to shrink address queues
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
+    // Represents if the underlying platform is "Little-Endian" or not
     private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     /*
@@ -145,7 +149,7 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     private long getHeaderAddress(long address) {
-        if (pageAllocations.contains(address)) {
+        if (lookupPage(address)) {
             // If this is the first block, wrap around
             return address + pageSize - HEADER_SIZE;
         }
@@ -204,6 +208,42 @@ public class ThreadLocalPoolingMemoryManager
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
+    private boolean lookupPage(long address) {
+        if (pageLookupAddress == NULL_ADDRESS) {
+            return pageAllocations.contains(address);
+        }
+        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
+        int idx = (int) (address & PAGE_LOOKUP_MASK) >> 3;
+        // Find the single byte block contains related lookup bit of given address.
+        int lookupIndex = idx >> 3;
+        // Find the bit offset in the found single byte block.
+        byte lookupOffset = (byte) (idx & 0x07);
+        byte lookupValue = UnsafeHelper.UNSAFE.getByte(null, pageLookupAddress + lookupIndex);
+        if (!Bits.isBitSet(lookupValue, lookupOffset))  {
+            // If related bit is not set, this means that the given address cannot be a page address.
+            return false;
+        } else {
+            // Although related bit is set, this doesn't mean that the given address is a page address.
+            // So we must check it from page allocations.
+            return pageAllocations.contains(address);
+        }
+    }
+
+    private void markPageLookup(long pageAddress) {
+        if (pageLookupAddress == NULL_ADDRESS) {
+            return;
+        }
+        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
+        int idx = (int) (pageAddress & PAGE_LOOKUP_MASK) >> 3;
+        // Find the single byte block contains related lookup bit of given address.
+        int lookupIndex = idx >> 3;
+        // Find the bit offset in the found single byte block.
+        byte lookupOffset = (byte) (idx & 0x07);
+        byte currentLookupValue = UnsafeHelper.UNSAFE.getByte(null, pageLookupAddress + lookupIndex);
+        byte newLookupValue = Bits.setBit(currentLookupValue, lookupOffset);
+        UnsafeHelper.UNSAFE.putByte(null, pageLookupAddress + lookupIndex, newLookupValue);
+    }
+
     @Override
     protected AddressQueue createAddressQueue(int index, int size) {
         return new ThreadAddressQueue(index, size);
@@ -225,6 +265,7 @@ public class ThreadLocalPoolingMemoryManager
                 freePage(pageAddress);
                 throw e;
             }
+            markPageLookup(pageAddress);
         }
         assert added : "Duplicate malloc() for page address " + pageAddress;
         lastFullCompaction = 0L;
@@ -406,7 +447,7 @@ public class ThreadLocalPoolingMemoryManager
             return false;
         }
 
-        return pageAllocations.contains(address - offset);
+        return lookupPage(address - offset);
     }
 
     private long findSizeExternal(long address, byte header) {
@@ -495,7 +536,10 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    public void destroy() {
+    protected boolean destroyInternal() {
+        if (isDestroyed()) {
+            return false;
+        }
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];
             if (q != null) {
@@ -512,6 +556,7 @@ public class ThreadLocalPoolingMemoryManager
         }
         pageAllocations.dispose();
         sortedPageAllocations.dispose();
+        return true;
     }
 
     @Override

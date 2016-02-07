@@ -13,6 +13,10 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
  */
 public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner {
 
+    static {
+        System.setProperty("hazelcast.memory.pageLookupLength", String.valueOf(1 << 16));
+    }
+
     public EnterpriseSerialJUnitClassRunner(Class<?> klass) throws InitializationError {
         super(klass);
     }

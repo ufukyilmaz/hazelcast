@@ -35,6 +35,8 @@ final class GlobalPoolingMemoryManager
     private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = HEADER_SIZE + Bits.INT_SIZE_IN_BYTES;
     // We store size as encoded by shifting it 3 bit since it is always multiply of 8.
     private static final int SIZE_SHIFT_COUNT = 3;
+
+    // Initial capacity for various internal allocations such as page addresses, address queues, etc ...
     private static final int INITIAL_CAPACITY = 2048;
 
     /*
@@ -143,7 +145,7 @@ final class GlobalPoolingMemoryManager
     }
 
     private long getHeaderAddress(long address) {
-        if (pageAllocations.containsKey(address)) {
+        if (lookupPage(address)) {
             // If this is the first block, wrap around
             return address + pageSize - HEADER_SIZE;
         }
@@ -203,6 +205,48 @@ final class GlobalPoolingMemoryManager
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
+    private boolean lookupPage(long address) {
+        if (pageLookupAddress == NULL_ADDRESS) {
+            return pageAllocations.containsKey(address);
+        }
+        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
+        int idx = (int) (address & PAGE_LOOKUP_MASK) >> 3;
+        // Find the 4 bytes block contains related lookup bit of given address.
+        int lookupIndex = (idx >> 3) & 0xFFFFFFFC;
+        // Find the bit offset in the found 4 bytes block.
+        byte lookupOffset = (byte) (idx & 0x1F);
+        assert lookupIndex >= 0 && lookupIndex < PAGE_LOOKUP_SIZE;
+        int lookupValue = UnsafeHelper.UNSAFE.getIntVolatile(null, pageLookupAddress + lookupIndex);
+        if (!Bits.isBitSet(lookupValue, lookupOffset))  {
+            // If related bit is not set, this means that the given address cannot be a page address.
+            return false;
+        } else {
+            // Although related bit is set, this doesn't mean that the given address is a page address.
+            // So we must check it from page allocations.
+            return pageAllocations.containsKey(address);
+        }
+    }
+
+    private void markPageLookup(long pageAddress) {
+        if (pageLookupAddress == NULL_ADDRESS) {
+            return;
+        }
+        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
+        int idx = (int) (pageAddress & PAGE_LOOKUP_MASK) >> 3;
+        // Find the 4 bytes block contains related lookup bit of given address.
+        int lookupIndex = (idx >> 3) & 0xFFFFFFFC;
+        // Find the bit offset in the found 4 bytes block.
+        byte lookupOffset = (byte) (idx & 0x1F);
+        for (;;) {
+            int currentLookupValue = UnsafeHelper.UNSAFE.getIntVolatile(null, pageLookupAddress + lookupIndex);
+            int newLookupValue = Bits.setBit(currentLookupValue, lookupOffset);
+            if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, pageLookupAddress + lookupIndex,
+                                                      currentLookupValue, newLookupValue)) {
+                break;
+            }
+        }
+    }
+
     @Override
     protected AddressQueue createAddressQueue(int index, int memorySize) {
         return new GlobalAddressQueue(index, memorySize);
@@ -217,6 +261,9 @@ final class GlobalPoolingMemoryManager
     protected void onMallocPage(long pageAddress) {
         assertNotNullPtr(pageAddress);
         boolean added = pageAllocations.put(pageAddress, Boolean.TRUE) == null;
+        if (added) {
+            markPageLookup(pageAddress);
+        }
         assert added : "Duplicate malloc() for page address: " + pageAddress;
         lastFullCompaction = 0L;
     }
@@ -393,7 +440,7 @@ final class GlobalPoolingMemoryManager
             return false;
         }
 
-        return pageAllocations.containsKey(address - offset);
+        return lookupPage(address - offset);
     }
 
     private long findSizeExternal(long address, int header) {
@@ -457,9 +504,10 @@ final class GlobalPoolingMemoryManager
         }
     }
 
-    public final void destroy() {
+    @Override
+    protected boolean destroyInternal() {
         if (!destroyed.compareAndSet(false, true)) {
-            return;
+            return false;
         }
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];
@@ -474,6 +522,7 @@ final class GlobalPoolingMemoryManager
             }
             pageAllocations.clear();
         }
+        return true;
     }
 
     @Override

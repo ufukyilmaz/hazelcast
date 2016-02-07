@@ -127,37 +127,37 @@ public class MemoryManagerTest {
 
     @Test
     public void testValidateAndGetUsableSize_pooling() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetUsableSize_pooling_withUnallocatedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize_withUnallocatedAddress(memoryManager);
     }
 
     @Test
     public void testValidateAndGetUsableSize_pooling_withFreedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize_withFreedAddress(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_pooling() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_pooling_withUnallocatedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize_withUnallocatedAddress(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_pooling_withFreedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize_withFreedAddress(memoryManager);
     }
 
@@ -223,7 +223,7 @@ public class MemoryManagerTest {
 
     @Test
     public void testNewSequence_pooling() {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testNewSequence(memoryManager);
     }
 

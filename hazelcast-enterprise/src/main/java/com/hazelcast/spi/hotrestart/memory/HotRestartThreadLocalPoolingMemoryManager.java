@@ -28,9 +28,9 @@ public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolin
     }
 
     @Override
-    public void destroy() {
+    protected boolean destroyInternal() {
         synchronized (copyEntryMutex) {
-            super.destroy();
+            return super.destroyInternal();
         }
     }
 

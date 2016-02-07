@@ -1,15 +1,17 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_SIZE_LIMIT;
-import static com.hazelcast.spi.hotrestart.impl.gc.StableChunk.BY_BENEFIT_COST_DESC;
-import static com.hazelcast.spi.hotrestart.impl.gc.StableTombChunk.benefitToCost;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_SIZE_LIMIT;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk.benefitToCost;
 
 final class TombChunkSelector {
     private final Collection<StableChunk> allChunks;

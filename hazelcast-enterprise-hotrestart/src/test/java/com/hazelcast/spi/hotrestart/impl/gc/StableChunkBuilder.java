@@ -1,5 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
+
 class StableChunkBuilder {
     private long seq;
     private RecordMap records = new RecordMapOnHeap();

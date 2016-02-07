@@ -2,7 +2,13 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingDestChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.ArrayList;

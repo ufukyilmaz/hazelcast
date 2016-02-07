@@ -7,6 +7,8 @@ import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -24,7 +26,7 @@ import java.io.File;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.gc.Record.TOMB_HEADER_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
 import static org.junit.Assert.assertEquals;

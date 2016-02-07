@@ -3,6 +3,15 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapBase;
 import com.hazelcast.util.counters.Counter;
 
 import java.util.Map;

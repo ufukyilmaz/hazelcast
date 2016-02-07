@@ -25,13 +25,13 @@ public class OnHeapOffHeapTestBase {
 
     @Parameter public boolean offHeap;
 
-    final int keyPrefix = 1;
-    KeyHandle keyHandle;
+    protected final int keyPrefix = 1;
+    protected KeyHandle keyHandle;
 
-    final int tombstoneKeyPrefix = keyPrefix + 1;
-    KeyHandle tombstoneKeyHandle;
+    protected final int tombstoneKeyPrefix = keyPrefix + 1;
+    protected KeyHandle tombstoneKeyHandle;
 
-    MemoryManager malloc;
+    protected MemoryManager malloc;
 
     @Before public void generalSetup() {
         malloc = new StandardMemoryManager(new MemorySize(32, KILOBYTES));
@@ -43,7 +43,7 @@ public class OnHeapOffHeapTestBase {
         malloc.destroy();
     }
 
-    KeyHandle keyHandle(int mockData) {
+    protected KeyHandle keyHandle(int mockData) {
         return offHeap ? new SimpleHandleOffHeap(mockData, mockData) : new KeyOnHeap(mockData, new byte[1]);
     }
 }

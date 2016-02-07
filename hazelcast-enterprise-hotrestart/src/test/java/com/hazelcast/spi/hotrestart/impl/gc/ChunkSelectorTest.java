@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;

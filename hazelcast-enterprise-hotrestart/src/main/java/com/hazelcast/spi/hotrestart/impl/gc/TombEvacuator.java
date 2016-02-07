@@ -3,13 +3,17 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.io.File;
 import java.util.Collection;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.propagateDismissing;
-import static com.hazelcast.spi.hotrestart.impl.gc.Record.positionInUnitsOfBufsize;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.positionInUnitsOfBufsize;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class TombEvacuator {

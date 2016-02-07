@@ -4,6 +4,8 @@
  */
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;

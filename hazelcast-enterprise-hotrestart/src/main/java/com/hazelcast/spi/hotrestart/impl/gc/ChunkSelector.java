@@ -1,6 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.util.collection.LongHashSet;
 
 import java.io.PrintWriter;
@@ -14,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
-import static com.hazelcast.spi.hotrestart.impl.gc.StableChunk.BY_BENEFIT_COST_DESC;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
 import static com.hazelcast.util.QuickMath.log2;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;

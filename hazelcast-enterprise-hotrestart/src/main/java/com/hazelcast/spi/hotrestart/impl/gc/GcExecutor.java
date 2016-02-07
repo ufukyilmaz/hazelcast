@@ -6,6 +6,9 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -213,7 +216,7 @@ public final class GcExecutor {
      * Instance of this class is passed around to allow catching up with
      * the mutator thread at any point along the GC cycle codepath.
      */
-    class MutatorCatchup implements CatchupTestSupport {
+    public class MutatorCatchup implements CatchupTestSupport {
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
 
@@ -242,15 +245,15 @@ public final class GcExecutor {
             return workCount;
         }
 
-        void dismissGarbage(Chunk c) {
+        public void dismissGarbage(Chunk c) {
             chunkMgr.dismissGarbage(c);
         }
 
-        void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
+        public void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
             chunkMgr.dismissGarbageRecord(c, kh, r);
         }
 
-        boolean shutdownRequested() {
+        public boolean shutdownRequested() {
             return stopped;
         }
     }

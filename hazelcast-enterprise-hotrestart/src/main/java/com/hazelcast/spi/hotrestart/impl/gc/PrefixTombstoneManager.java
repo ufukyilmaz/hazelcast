@@ -2,7 +2,10 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
 import com.hazelcast.util.collection.LongHashSet;
@@ -26,7 +29,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @SuppressFBWarnings(value = "IS", justification =
         "All accesses of the map referred to by mutatorPrefixTombstones are synchronized."
       + " Setter doesn't need synchronization because it is called before GC thread is started.")
-class PrefixTombstoneManager {
+public class PrefixTombstoneManager {
     public static final String NEW_FILE_SUFFIX = ".new";
     public static final int SWEEPING_TIMESLICE_MS = 10;
     private static final long[] EMPTY_LONGS = new long[0];
@@ -67,7 +70,7 @@ class PrefixTombstoneManager {
         persistTombstones(gcHelper, tombstoneSnapshot);
     }
 
-    long tombstoneSeqForPrefix(long prefix) {
+    public long tombstoneSeqForPrefix(long prefix) {
         return collectorPrefixTombstones.get(prefix);
     }
 
@@ -149,7 +152,7 @@ class PrefixTombstoneManager {
      *
      * @return true if the chunk needed dismissing.
      */
-    boolean dismissGarbage(Chunk chunk) {
+    public boolean dismissGarbage(Chunk chunk) {
         if (!chunk.needsDismissing) {
             return false;
         }

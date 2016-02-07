@@ -6,8 +6,8 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Record;
-import com.hazelcast.spi.hotrestart.impl.gc.WriteThroughChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 

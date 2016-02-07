@@ -1,5 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 

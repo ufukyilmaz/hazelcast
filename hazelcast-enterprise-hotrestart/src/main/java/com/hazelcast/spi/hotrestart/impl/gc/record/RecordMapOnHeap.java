@@ -1,6 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -79,8 +81,8 @@ public final class RecordMapOnHeap implements RecordMap {
             return current.getValue();
         }
 
-        @Override public GcRecord toGcRecord(long chunkSeq) {
-            return new GcRecord.WithHeapHandle(asRecord(), chunkSeq, toKeyHandle());
+        @Override public GcRecord toGcRecord(StableValChunk chunk) {
+            return new GcRecord.WithHeapHandle(asRecord(), chunk, (KeyOnHeap) toKeyHandle());
         }
     }
 }

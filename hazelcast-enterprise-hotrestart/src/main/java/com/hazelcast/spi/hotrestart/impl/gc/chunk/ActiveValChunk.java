@@ -2,23 +2,33 @@ package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
- * Write-through chunk specialized to contain value records.
+ * Write-through chunk specialized to contain value records. Used as the active value chunk.
  */
-public final class WriteThroughValChunk extends WriteThroughChunk {
+public final class ActiveValChunk extends WriteThroughChunk implements ActiveChunk {
 
-    public WriteThroughValChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
-        super(seq, ACTIVE_CHUNK_SUFFIX, records, out, gcHelper);
+    public ActiveValChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+        super(seq, suffix, records, out, gcHelper);
     }
 
-    @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] valueBytes) {
+    /**
+     * Writes a new record to the chunk file and updates the chunk's size.
+     * May be called by the mutator thread.
+     *
+     * @return true if the chunk is now full.
+     */
+    public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] valueBytes) {
         assert hasRoom();
         try {
             dataOut.writeLong(recordSeq);

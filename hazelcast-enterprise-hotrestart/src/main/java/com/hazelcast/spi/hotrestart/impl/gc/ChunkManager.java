@@ -8,6 +8,8 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
@@ -15,7 +17,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
@@ -53,7 +55,7 @@ public final class ChunkManager {
     final PrefixTombstoneManager pfixTombstoMgr;
     // temporary storage during GC
     Long2ObjectHashMap<Chunk> destChunkMap;
-    WriteThroughValChunk activeValChunk;
+    ActiveValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
     private final GcLogger logger;
 
@@ -84,11 +86,11 @@ public final class ChunkManager {
     /** Accounts for the active value chunk having been inactivated
      * and replaced with a new one. */
     class ReplaceActiveChunk implements Runnable {
-        private final WriteThroughChunk fresh;
-        private final WriteThroughChunk closed;
+        private final ActiveChunk fresh;
+        private final ActiveChunk closed;
         private final boolean isTombChunk;
 
-        public ReplaceActiveChunk(WriteThroughChunk fresh, WriteThroughChunk closed) {
+        public ReplaceActiveChunk(ActiveChunk fresh, ActiveChunk closed) {
             this.fresh = fresh;
             this.closed = closed;
             this.isTombChunk = fresh instanceof WriteThroughTombChunk;
@@ -98,7 +100,7 @@ public final class ChunkManager {
             if (isTombChunk) {
                 activeTombChunk = (WriteThroughTombChunk) fresh;
             } else {
-                activeValChunk = (WriteThroughValChunk) fresh;
+                activeValChunk = (ActiveValChunk) fresh;
             }
             if (closed == null) {
                 return;
@@ -211,6 +213,9 @@ public final class ChunkManager {
     void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
         final Tracker tr = trackers.get(kh);
         if (r.isAlive()) {
+            if (tr == null || tr.chunkSeq() != chunk.seq) {
+                return;
+            }
             adjustGlobalGarbage(chunk, r);
             chunk.retire(kh, r, false);
             tr.retire(trackers);

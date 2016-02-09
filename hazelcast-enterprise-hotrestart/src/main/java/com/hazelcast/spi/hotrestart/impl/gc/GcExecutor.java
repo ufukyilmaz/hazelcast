@@ -6,8 +6,8 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
@@ -169,7 +169,7 @@ public final class GcExecutor {
         submit(chunkMgr.new AddRecord(key, freshSeq, freshSize, freshIsTombstone));
     }
 
-    public void submitReplaceActiveChunk(final WriteThroughChunk closed, final WriteThroughChunk fresh) {
+    public void submitReplaceActiveChunk(final ActiveChunk closed, final ActiveChunk fresh) {
         submit(chunkMgr.new ReplaceActiveChunk(fresh, closed));
     }
 

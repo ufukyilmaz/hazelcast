@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 
 /**
  * Abstraction for chunk's record map.
@@ -36,6 +37,6 @@ public interface RecordMap extends Disposable {
         boolean advance();
         Record asRecord();
         KeyHandle toKeyHandle();
-        GcRecord toGcRecord(long chunkSeq);
+        GcRecord toGcRecord(StableValChunk chunk);
     }
 }

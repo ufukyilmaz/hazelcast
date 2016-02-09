@@ -7,6 +7,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;
@@ -113,8 +114,8 @@ public final class RecordMapOffHeap implements RecordMap {
             return r;
         }
 
-        @Override public GcRecord toGcRecord(long chunkSeq) {
-            return new GcRecord.WithOffHeapHandle(r, chunkSeq, c.key1(), c.key2());
+        @Override public GcRecord toGcRecord(StableValChunk chunk) {
+            return new GcRecord.WithOffHeapHandle(r, chunk, c.key1(), c.key2());
         }
     }
 }

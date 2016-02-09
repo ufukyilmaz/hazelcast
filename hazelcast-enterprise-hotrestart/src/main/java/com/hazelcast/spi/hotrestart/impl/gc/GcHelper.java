@@ -8,9 +8,9 @@ import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingDestChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
 import com.hazelcast.spi.hotrestart.impl.io.Compressor;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
@@ -112,10 +113,17 @@ public abstract class GcHelper implements Disposable {
         return homeDir == null;
     }
 
-    public final WriteThroughValChunk newActiveValChunk() {
+    public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new WriteThroughValChunk(seq, newRecordMap(),
+        return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(),
                 createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                this);
+    }
+
+    public final DestValChunk newGrowingDestValChunk() {
+        final long seq = chunkSeq.incrementAndGet();
+        return new DestValChunk(seq, new RecordMapOnHeap(),
+                createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
                 this);
     }
 
@@ -128,10 +136,6 @@ public abstract class GcHelper implements Disposable {
         return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
                 createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
                 this);
-    }
-
-    final GrowingDestChunk newDestChunk(PrefixTombstoneManager pfixTombstomgr) {
-        return new GrowingDestChunk(chunkSeq.incrementAndGet(), this, pfixTombstomgr);
     }
 
     public final void initChunkSeq(long seq) {

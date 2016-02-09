@@ -138,7 +138,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     protected boolean entryRemoved(Map.Entry entry, Data key, Object oldValue, long now) {
         final Object value = entry.getValue();
         if (value == null) {
-            recordStore.remove(key);
+            recordStore.delete(key);
             getLocalMapStats().incrementRemoves(getLatencyFrom(now));
             doPostOps(key, oldValue, entry);
             return true;
@@ -149,7 +149,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     protected boolean entryAddedOrUpdated(Map.Entry entry, Data key, Object oldValue, long now) {
         final Object value = entry.getValue();
         if (value != null) {
-            put(key, value);
+            recordStore.set(key, value, DEFAULT_TTL);
             getLocalMapStats().incrementPuts(getLatencyFrom(now));
             doPostOps(key, oldValue, entry);
             return true;
@@ -193,10 +193,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
             return true;
         }
         return false;
-    }
-
-    protected void put(Data key, Object value) {
-        recordStore.put(key, value, DEFAULT_TTL);
     }
 
     protected Data toData(Object obj) {

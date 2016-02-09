@@ -159,7 +159,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     private boolean entryRemoved(Map.Entry entry, long now) {
         final Object value = entry.getValue();
         if (value == null) {
-            recordStore.remove(dataKey);
+            recordStore.delete(dataKey);
             getLocalMapStats().incrementRemoves(getLatencyFrom(now));
             eventType = REMOVED;
             return true;
@@ -172,7 +172,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
      */
     private void entryAddedOrUpdated(Map.Entry entry, long now) {
         dataValue = entry.getValue();
-        recordStore.put(dataKey, dataValue, DEFAULT_TTL);
+        recordStore.set(dataKey, dataValue, DEFAULT_TTL);
         getLocalMapStats().incrementPuts(getLatencyFrom(now));
 
         eventType = oldValue == null ? ADDED : UPDATED;

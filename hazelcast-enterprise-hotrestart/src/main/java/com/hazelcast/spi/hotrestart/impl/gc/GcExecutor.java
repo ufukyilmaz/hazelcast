@@ -182,13 +182,13 @@ public final class GcExecutor {
             throw new HotRestartException("stopped == true", gcThreadFailureCause);
         }
         boolean submitted = false;
-        boolean reportedBlocking = false;
+//        boolean reportedBlocking = false;
         for (long i = 0; !(submitted || (submitted = workQueue.offer(task))) || backpressure; i++) {
             if (mutatorIdler.idle(i)) {
-                if (!reportedBlocking) {
-                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
-                    reportedBlocking = true;
-                }
+//                if (!reportedBlocking) {
+//                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
+//                    reportedBlocking = true;
+//                }
                 if (!gcThread.isAlive()) {
                     if (!started && submitted || task == shutdown) {
                         return;

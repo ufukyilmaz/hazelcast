@@ -3,7 +3,6 @@ package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
@@ -27,7 +26,7 @@ public final class DestValChunk extends WriteThroughChunk {
         insertOrUpdateValue(prefix, kh, seq, size);
     }
 
-    public final void add(GcRecord gcr, KeyHandle kh, RecordDataHolder holder, MutatorCatchup mc) {
+    public void add(GcRecord gcr, KeyHandle kh, RecordDataHolder holder, MutatorCatchup mc) {
         ((RecordMapOnHeap) records).put(kh, gcr);
         liveRecordCount++;
         final long filePosition = size;

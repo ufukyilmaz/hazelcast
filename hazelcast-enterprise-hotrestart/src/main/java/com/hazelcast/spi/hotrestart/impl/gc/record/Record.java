@@ -55,7 +55,7 @@ public abstract class Record {
         return rawSizeValue() < 0;
     }
 
-    public final boolean isAlive() {
+    public boolean isAlive() {
         return rawSeqValue() > 0;
     }
 
@@ -85,29 +85,35 @@ public abstract class Record {
         }
     }
 
-    public final long intoOut(DataOutputStream out, long filePosition, long prefix,
-                              RecordDataHolder bufs, MutatorCatchup mc
+    public final void intoOut(DataOutputStream out, long startFilePosition, KeyHandle kh,
+                              RecordDataHolder holder, MutatorCatchup mc
     ) {
         if (out == null) {
-            return filePosition;
+            return;
         }
         try {
-            final ByteBuffer keyBuf = bufs.keyBuffer;
-            final ByteBuffer valBuf = bufs.valueBuffer;
+            if (startFilePosition == 0) {
+                // A new dest chunk was created just before calling this method.
+                // This involved some I/O calls, so catch up now.
+                mc.catchupNow();
+            }
+            final ByteBuffer keyBuf = holder.keyBuffer;
+            final ByteBuffer valBuf = holder.valueBuffer;
             final int keySize = keyBuf.remaining();
             final int valSize = valBuf.remaining();
-            final long startPos = positionInUnitsOfBufsize(filePosition);
+            assert bufferSizeValid(keySize, valSize);
+            final long startPos = positionInUnitsOfBufsize(startFilePosition);
             out.writeLong(liveSeq());
-            out.writeLong(prefix);
+            out.writeLong(keyPrefix(kh));
             out.writeInt(keySize);
-            out.writeInt(valBuf.remaining());
+            out.writeInt(valSize);
             out.write(keyBuf.array(), keyBuf.position(), keySize);
-            filePosition += VAL_HEADER_SIZE + keySize;
+            long filePosition = startFilePosition + VAL_HEADER_SIZE + keySize;
             if (positionInUnitsOfBufsize(filePosition) > startPos) {
                 mc.catchupNow();
             }
             if (isTombstone() || valSize <= 0) {
-                return filePosition;
+                return;
             }
             do {
                 final int alignedCount = BUFFER_SIZE - (int) (filePosition & BUFFER_SIZE - 1);
@@ -120,10 +126,17 @@ public abstract class Record {
                 valBuf.position(pos + transferredCount);
                 filePosition += transferredCount;
             } while (valBuf.hasRemaining());
-            return filePosition;
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
+    }
+
+    private boolean bufferSizeValid(int keyBufSize, int valBufSize) {
+        assert keyBufSize + valBufSize == payloadSize() : String.format(
+                "Expected record size %,d doesn't match key %,d + value %,d = %,d",
+                payloadSize(), keyBufSize, valBufSize, keyBufSize + valBufSize
+        );
+        return true;
     }
 
     @Override public String toString() {

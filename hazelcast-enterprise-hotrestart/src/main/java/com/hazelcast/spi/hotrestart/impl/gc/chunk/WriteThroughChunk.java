@@ -18,8 +18,8 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream
 public abstract class WriteThroughChunk extends GrowingChunk {
     final DataOutputStream dataOut;
     final FileOutputStream fileOut;
+    final GcHelper gcHelper;
     private final String suffix;
-    private final GcHelper gcHelper;
     private boolean needsFsyncBeforeClosing;
 
     WriteThroughChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
@@ -27,7 +27,7 @@ public abstract class WriteThroughChunk extends GrowingChunk {
         this.suffix = suffix;
         this.fileOut = out;
         this.gcHelper = gcHelper;
-        this.dataOut = new DataOutputStream(bufferedOutputStream(out));
+        this.dataOut = dataOutputStream(out, gcHelper);
     }
 
     public void flagForFsyncOnClose(boolean fsyncOnClose) {
@@ -64,13 +64,9 @@ public abstract class WriteThroughChunk extends GrowingChunk {
         return true;
     }
 
-    /**
-     * Writes a new record to the chunk file and updates the chunk's size.
-     * May be called by the mutator thread.
-     *
-     * @return true if the chunk is now full.
-     */
-    public abstract boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] valBytes);
+    DataOutputStream dataOutputStream(FileOutputStream out, GcHelper gch) {
+        return new DataOutputStream(bufferedOutputStream(out));
+    }
 
     public abstract StableChunk toStableChunk();
 }

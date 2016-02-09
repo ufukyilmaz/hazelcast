@@ -35,15 +35,6 @@ public final class RecordDataHolder implements RecordDataSink {
         valueBuffer.flip();
     }
 
-    public boolean payloadSizeValid(Record r) {
-        assert keyBuffer.remaining() + valueBuffer.remaining() == r.payloadSize() : String.format(
-                "Expected record size %,d doesn't match key %,d + value %,d = %,d",
-                r.payloadSize(), keyBuffer.remaining(), valueBuffer.remaining(),
-                keyBuffer.remaining() + valueBuffer.remaining()
-            );
-        return true;
-    }
-
     private static ByteBuffer ensureBufferCapacity(ByteBuffer buf, int capacity) {
         return buf.capacity() >= capacity ? buf : ByteBuffer.allocate(nextPowerOfTwo(capacity));
     }

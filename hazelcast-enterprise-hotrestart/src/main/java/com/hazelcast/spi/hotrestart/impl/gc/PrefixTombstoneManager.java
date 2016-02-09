@@ -73,10 +73,6 @@ public class PrefixTombstoneManager {
         persistTombstones(gcHelper, tombstoneSnapshot);
     }
 
-    public long tombstoneSeqForPrefix(long prefix) {
-        return collectorPrefixTombstones.get(prefix);
-    }
-
     private Runnable addedPrefixTombstones(final long[] prefixes, final long recordSeq, final long startChunkSeq) {
         return new Runnable() {
             @Override public void run() {

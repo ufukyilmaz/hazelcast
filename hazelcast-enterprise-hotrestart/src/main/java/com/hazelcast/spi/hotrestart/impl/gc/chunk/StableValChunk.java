@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 public final class StableValChunk extends StableChunk {
     private double benefitToCost;
 
-    public StableValChunk(WriteThroughValChunk from, boolean compressed) {
+    public StableValChunk(ActiveValChunk from, boolean compressed) {
         super(from, compressed);
     }
 

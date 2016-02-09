@@ -11,7 +11,6 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.Collection;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.propagateDismissing;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.positionInUnitsOfBufsize;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 

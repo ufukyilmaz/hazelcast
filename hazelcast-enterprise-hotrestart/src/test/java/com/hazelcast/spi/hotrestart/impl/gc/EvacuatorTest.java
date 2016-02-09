@@ -63,6 +63,6 @@ public class EvacuatorTest {
     }
 
     private WithHeapHandle gcRecord(long seq) {
-        return new WithHeapHandle(new RecordOnHeap(seq, 0, false, 0), 1, new KeyOnHeap(1, mockValue));
+        return new WithHeapHandle(new RecordOnHeap(seq, 0, false, 0), null, new KeyOnHeap(1, mockValue));
     }
 }

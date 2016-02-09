@@ -5,7 +5,6 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
 import java.io.DataOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -18,10 +17,10 @@ import static com.hazelcast.spi.hotrestart.impl.BufferingInputStream.LOG_OF_BUFF
  * A record in the chunk file. Represents a single insert/update/delete event.
  */
 public abstract class Record {
-    /** Size of the value record header in a chunk file */
+    /** Size of the value record header in a chunk file: seq, prefix, key size, value size */
     public static final int VAL_HEADER_SIZE =
             LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
-    /** Size of the tombstone record header in a chunk file */
+    /** Size of the tombstone record header in a chunk file: seq, prefix, key size */
     public static final int TOMB_HEADER_SIZE =
             LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES + INT_SIZE_IN_BYTES;
 
@@ -60,8 +59,22 @@ public abstract class Record {
         return rawSeqValue() > 0;
     }
 
-    public final void update(long seq, int size, boolean isTombstone) {
-        setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
+    public final int garbageCount() {
+        return isTombstone() ? 0 : additionalInt();
+    }
+
+    public final int filePosition() {
+        assert isTombstone() : "Attempt to retrieve file position of a value record";
+        return additionalInt();
+    }
+
+    public final void setFilePosition(int filePosition) {
+        assert isTombstone() : "Attempt to set file position on a value record";
+        setAdditionalInt(filePosition);
+    }
+
+    public final void update(long seq, int size) {
+        setRawSeqSize(seq, toRawSizeValue(size, isTombstone()));
     }
 
     public final void retire(boolean mayIncrementGarbageCount) {
@@ -72,8 +85,9 @@ public abstract class Record {
         }
     }
 
-    public final long intoOut(DataOutputStream out, FileOutputStream fileOut, long filePosition, long prefix,
-                              RecordDataHolder bufs, MutatorCatchup mc) {
+    public final long intoOut(DataOutputStream out, long filePosition, long prefix,
+                              RecordDataHolder bufs, MutatorCatchup mc
+    ) {
         if (out == null) {
             return filePosition;
         }
@@ -86,7 +100,7 @@ public abstract class Record {
             out.writeLong(liveSeq());
             out.writeLong(prefix);
             out.writeInt(keySize);
-            out.writeInt(isTombstone() ? -1 : valBuf.remaining());
+            out.writeInt(valBuf.remaining());
             out.write(keyBuf.array(), keyBuf.position(), keySize);
             filePosition += VAL_HEADER_SIZE + keySize;
             if (positionInUnitsOfBufsize(filePosition) > startPos) {
@@ -127,7 +141,7 @@ public abstract class Record {
     // which became garbage during the same GC cycle).
     public abstract int rawSizeValue();
 
-    public abstract int garbageCount();
+    public abstract int additionalInt();
 
     public abstract void negateSeq();
 
@@ -135,7 +149,12 @@ public abstract class Record {
 
     public abstract void incrementGarbageCount();
 
-    public abstract void setGarbageCount(int newCount);
+    public final void setGarbageCount(int newCount) {
+        assert newCount == 0 || !isTombstone() : "Attempt to set non-zero garbage count on a tombstone";
+        setAdditionalInt(newCount);
+    }
+
+    public abstract void setAdditionalInt(int value);
 
     public abstract void setRawSeqSize(long rawSeqValue, int rawSizeValue);
 

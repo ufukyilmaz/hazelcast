@@ -14,6 +14,9 @@ import java.io.IOException;
 public abstract class GrowingChunk extends Chunk {
     public long size;
 
+    // Current chunk file offset from the viewpoint of the addStep2() method.
+    protected int addStep2FileOffset;
+
     protected GrowingChunk(long seq, RecordMap records) {
         super(seq, records);
     }
@@ -37,13 +40,13 @@ public abstract class GrowingChunk extends Chunk {
     /**
      * Adds the record to this chunk's RAM-based index of records. Called by the collector thread.
      */
-    public void addStep2(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
-        final Record existing = records.putIfAbsent(prefix, kh, seq, size, isTombstone, 0);
-        if (existing != null) {
-            existing.update(seq, size, isTombstone);
-        }
+    public final void addStep2(long prefix, KeyHandle kh, long seq, int size) {
+        insertOrUpdate(prefix, kh, seq, size, addStep2FileOffset);
+        addStep2FileOffset += size;
         liveRecordCount++;
     }
+
+    public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset);
 
     @Override public final long size() {
         return size;
@@ -51,6 +54,21 @@ public abstract class GrowingChunk extends Chunk {
 
     public boolean full() {
         return size() >= VAL_SIZE_LIMIT;
+    }
+
+    protected final void insertOrUpdateValue(long prefix, KeyHandle kh, long seq, int size) {
+        final Record existing = records.putIfAbsent(prefix, kh, seq, size, false, 0);
+        if (existing != null) {
+            existing.update(seq, size);
+        }
+    }
+
+    protected final void insertOrUpdateTombstone(long prefix, KeyHandle kh, long seq, int size, int filePosition) {
+        final Record existing = records.putIfAbsent(prefix, kh, seq, size, true, filePosition);
+        if (existing != null) {
+            existing.update(seq, size);
+            existing.setFilePosition(filePosition);
+        }
     }
 
     public static void fsync(FileOutputStream out) {

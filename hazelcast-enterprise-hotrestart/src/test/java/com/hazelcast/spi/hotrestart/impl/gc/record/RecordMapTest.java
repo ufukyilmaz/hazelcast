@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import java.util.HashSet;
 import java.util.Set;
 
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -28,7 +29,7 @@ public class RecordMapTest extends OnHeapOffHeapTestBase {
     private RecordMap m;
 
     @Before public void setup() {
-        m = offHeap ? new RecordMapOffHeap(malloc) : new RecordMapOnHeap();
+        m = offHeap ? newRecordMapOffHeap(malloc) : new RecordMapOnHeap();
     }
 
     @After public void destroy() {

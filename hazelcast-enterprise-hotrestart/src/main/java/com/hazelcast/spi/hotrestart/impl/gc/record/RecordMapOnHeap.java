@@ -32,12 +32,12 @@ public final class RecordMapOnHeap implements RecordMap {
     }
 
     @Override public Record putIfAbsent(
-            long ignored, KeyHandle kh, long seq, int size, boolean isTombstone, int garbageCount) {
+            long ignored, KeyHandle kh, long seq, int size, boolean isTombstone, int additionalInt) {
         final Record rec = records.get(kh);
         if (rec != null) {
             return rec;
         }
-        records.put(kh, new RecordOnHeap(seq, size, isTombstone, garbageCount));
+        records.put(kh, new RecordOnHeap(seq, size, isTombstone, additionalInt));
         return null;
     }
 

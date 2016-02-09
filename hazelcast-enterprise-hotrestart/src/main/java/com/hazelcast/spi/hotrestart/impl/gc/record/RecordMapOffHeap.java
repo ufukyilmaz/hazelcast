@@ -10,6 +10,8 @@ import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.TOMBSTONE_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.VALUE_RECORD_SIZE;
 
 /**
  * Record map backed by off-heap storage.
@@ -17,16 +19,13 @@ import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;
 public final class RecordMapOffHeap implements RecordMap {
     private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
+    private final boolean isTombstoneMap;
 
     private HashSlotArray records;
     private final RecordOffHeap rec = new RecordOffHeap();
 
-    public RecordMapOffHeap(MemoryAllocator malloc, int initialCapacity) {
-        this.records = new HashSlotArrayImpl(malloc, RecordOffHeap.SIZE, initialCapacity, LOAD_FACTOR);
-    }
-
     public RecordMapOffHeap(MemoryAllocator malloc, RecordMap gcRecordMap) {
-        this(malloc, gcRecordMap.size());
+        this(malloc, false, gcRecordMap.size());
         for (Cursor cur = gcRecordMap.cursor(); cur.advance();) {
             final Record r = cur.asRecord();
             if (!r.isAlive() && r.garbageCount() == 0) {
@@ -36,23 +35,35 @@ public final class RecordMapOffHeap implements RecordMap {
             rec.address = records.ensure(ohk.address(), ohk.sequenceId());
             rec.setKeyPrefix(r.keyPrefix(null));
             rec.setRawSeqSize(r.rawSeqValue(), r.rawSizeValue());
-            rec.setGarbageCount(r.garbageCount());
+            rec.setAdditionalInt(r.additionalInt());
         }
     }
 
-    public RecordMapOffHeap(MemoryAllocator malloc) {
-        this(malloc, DEFAULT_INITIAL_CAPACITY);
+    private RecordMapOffHeap(MemoryAllocator malloc, boolean isTombstoneMap, int initialCapacity) {
+        this.isTombstoneMap = isTombstoneMap;
+        this.records = new HashSlotArrayImpl(malloc, isTombstoneMap ? TOMBSTONE_SIZE : VALUE_RECORD_SIZE,
+                initialCapacity, LOAD_FACTOR);
+    }
+
+    public static RecordMapOffHeap newRecordMapOffHeap(MemoryAllocator malloc) {
+        return new RecordMapOffHeap(malloc, false, DEFAULT_INITIAL_CAPACITY);
+    }
+
+    public static RecordMapOffHeap newTombstoneMapOffHeap(MemoryAllocator malloc) {
+        return new RecordMapOffHeap(malloc, true, DEFAULT_INITIAL_CAPACITY);
     }
 
     @Override
-    public Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int garbageCount) {
+    public Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int additionalInt) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
         final long addr = records.ensure(ohk.address(), ohk.sequenceId());
         if (addr > 0) {
             rec.address = addr;
-            rec.setKeyPrefix(prefix);
+            if (!isTombstoneMap) {
+                rec.setKeyPrefix(prefix);
+            }
             rec.setRawSeqSize(seq, toRawSizeValue(size, isTombstone));
-            rec.setGarbageCount(garbageCount);
+            rec.setAdditionalInt(additionalInt);
             return null;
         } else {
             rec.address = -addr;

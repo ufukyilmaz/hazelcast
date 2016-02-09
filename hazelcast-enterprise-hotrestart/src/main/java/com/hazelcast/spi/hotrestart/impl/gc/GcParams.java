@@ -21,6 +21,7 @@ final class GcParams {
     public static final int MAX_RECORD_COUNT = 1 << 20;
     static final GcParams ZERO = new GcParams(0, 0, 0.0, 0, false);
 
+    // These drive the chunk selection logic
     final long costGoal;
     final long minCost;
     final long benefitGoal;
@@ -33,7 +34,7 @@ final class GcParams {
     private GcParams(long garbage, long liveData, double ratio, long currChunkSeq, boolean forceGc) {
         this.currChunkSeq = currChunkSeq;
         this.forceGc = forceGc;
-        final long costGoalChunks = max(1, min(MAX_COST_CHUNKS, liveData / Chunk.VAL_SIZE_LIMIT));
+        final long costGoalChunks = max(1, min(MAX_COST_CHUNKS / 2, liveData / Chunk.VAL_SIZE_LIMIT));
         final long costGoalBytes = Chunk.VAL_SIZE_LIMIT * costGoalChunks;
         this.limitSrcChunks = costGoalBytes < liveData;
         this.costGoal = limitSrcChunks ? costGoalBytes : liveData;

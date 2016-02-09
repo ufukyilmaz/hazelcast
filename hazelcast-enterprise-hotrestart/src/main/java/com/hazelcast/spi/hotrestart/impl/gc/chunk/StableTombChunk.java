@@ -6,6 +6,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
+import java.util.Arrays;
+
 /**
  * Represents a tombstone chunk whose on-disk contents are stable (immutable).
  */
@@ -13,7 +15,7 @@ public final class StableTombChunk extends StableChunk {
 
     private double benefitToCost;
 
-    private Long2ObjectHashMap<KeyHandle> seqToKeyHandle;
+    private Long2ObjectHashMap<KeyHandle> filePosToKeyHandle;
 
     StableTombChunk(WriteThroughTombChunk from, boolean compressed) {
         super(from, compressed);
@@ -28,24 +30,37 @@ public final class StableTombChunk extends StableChunk {
     }
 
     @Override public void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
-        if (seqToKeyHandle != null) {
-            seqToKeyHandle.remove(r.liveSeq());
+        if (filePosToKeyHandle != null) {
+            filePosToKeyHandle.remove(r.filePosition());
         }
         super.retire(kh, r, mayIncrementGarbageCount);
     }
 
-    public void initLiveSeqToKeyHandle() {
-        seqToKeyHandle = new Long2ObjectHashMap<KeyHandle>(liveRecordCount, 0L);
+    @Override public void needsDismissing(boolean needsDismissing) {
+    }
+
+    public int[] initFilePosToKeyHandle() {
+        final int[] filePositions = new int[liveRecordCount];
+        filePosToKeyHandle = new Long2ObjectHashMap<KeyHandle>(liveRecordCount);
+        int i = 0;
         for (Cursor cursor = records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();
             if (r.isAlive()) {
-                seqToKeyHandle.put(r.liveSeq(), cursor.toKeyHandle());
+                filePosToKeyHandle.put(r.filePosition(), cursor.toKeyHandle());
+                filePositions[i++] = r.filePosition();
             }
         }
+        assert i == liveRecordCount;
+        Arrays.sort(filePositions);
+        return filePositions;
     }
 
-    public KeyHandle getLiveKeyHandle(long seq) {
-        return seqToKeyHandle.get(seq);
+    public KeyHandle getLiveKeyHandle(long filePos) {
+        return filePosToKeyHandle.get(filePos);
+    }
+
+    public void disposeFilePosToKeyHandle() {
+        filePosToKeyHandle = null;
     }
 
     public double cachedBenefitToCost() {
@@ -58,11 +73,10 @@ public final class StableTombChunk extends StableChunk {
 
     @SuppressWarnings("checkstyle:magicnumber")
     public static double benefitToCost(long garbage, long size) {
-        // Benefit is the amount of garbage, cost is the sum of read cost and write cost.
-        // We assume a weighted read cost of size/2 and a write cost of size - garbage (i.e., live data size).
-        // benefitToCost = benefit/cost = garbage / (size/2 + size - garbage) = garbage / (3/2 * size - garbage)
-        // To simplify, we define g := garbage / size. Then, benefitToCost = g / (3/2 - g).
+        // Benefit is the amount of garbage to reclaim.
+        // Cost is the I/O cost of copying live data (proportional to the amount of live data).
+        // Benefit-to-cost the ratio of benefit to cost.
         final double g = (double) garbage / size;
-        return g / (1.5 - g);
+        return g / (1 - g);
     }
 }

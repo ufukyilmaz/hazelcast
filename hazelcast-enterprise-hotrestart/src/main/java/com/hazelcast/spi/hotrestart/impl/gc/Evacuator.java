@@ -13,7 +13,6 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
 import static java.lang.Math.min;
@@ -45,12 +44,13 @@ final class Evacuator {
         this.start = start;
     }
 
-    static List<StableValChunk> copyLiveRecords(
-            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
-        return new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
+    static void evacuate(
+            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
+    ) {
+        new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
     }
 
-    private List<StableValChunk> evacuate() {
+    private void evacuate() {
         final List<GcRecord> liveRecords = sortedLiveRecords();
         // Sweep the source chunks just before dest chunks are created.
         // This is the last moment where needsDismissing won't need
@@ -68,10 +68,8 @@ final class Evacuator {
         // that needs to be dismissed.
         propagateDismissing(selected.srcChunks, preparedDestChunks, pfixTombstoMgr, mc);
         logger.fine("GC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        final List<StableValChunk> destChunks = persistDestChunks(preparedDestChunks);
+        persistDestChunks(preparedDestChunks);
         dismissEvacuatedFiles();
-        deleteEmptyDestFiles(destChunks);
-        return destChunks;
     }
 
     static void propagateDismissing(Collection<? extends Chunk> srcChunks, Collection<? extends Chunk> destChunks,
@@ -80,7 +78,7 @@ final class Evacuator {
             return;
         }
         for (Chunk c : destChunks) {
-            c.needsDismissing = true;
+            c.needsDismissing(true);
             pfixTombstoMgr.dismissGarbage(c);
             mc.catchupNow();
         }
@@ -88,7 +86,7 @@ final class Evacuator {
 
     private static boolean propagationNeeded(Collection<? extends Chunk> srcChunks) {
         for (Chunk c : srcChunks) {
-            if (c.needsDismissing) {
+            if (c.needsDismissing()) {
                 return true;
             }
         }
@@ -166,18 +164,6 @@ final class Evacuator {
             // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
             mc.dismissGarbage(evacuated);
             mc.catchupNow();
-        }
-    }
-
-    private void deleteEmptyDestFiles(List<StableValChunk> destChunks) {
-        for (Iterator<StableValChunk> iterator = destChunks.iterator(); iterator.hasNext();) {
-            final StableValChunk c = iterator.next();
-            if (c.size() == c.garbage) {
-                mc.dismissGarbage(c);
-                gcHelper.deleteChunkFile(c);
-                iterator.remove();
-                mc.catchupNow();
-            }
         }
     }
 

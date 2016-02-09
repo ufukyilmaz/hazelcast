@@ -18,11 +18,13 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream
 public abstract class WriteThroughChunk extends GrowingChunk {
     final DataOutputStream dataOut;
     final FileOutputStream fileOut;
+    private final String suffix;
     private final GcHelper gcHelper;
     private boolean needsFsyncBeforeClosing;
 
-    WriteThroughChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+    WriteThroughChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
         super(seq, records);
+        this.suffix = suffix;
         this.fileOut = out;
         this.gcHelper = gcHelper;
         this.dataOut = new DataOutputStream(bufferedOutputStream(out));
@@ -41,7 +43,7 @@ public abstract class WriteThroughChunk extends GrowingChunk {
                 fsync();
             }
             dataOut.close();
-            gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, FNAME_SUFFIX);
+            gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + suffix, FNAME_SUFFIX);
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
@@ -57,10 +59,9 @@ public abstract class WriteThroughChunk extends GrowingChunk {
         needsFsyncBeforeClosing = false;
     }
 
-    final void ensureHasRoom() {
-        if (full()) {
-            throw new HotRestartException(String.format("Attempted to write to a full %s file #%x", base(), seq));
-        }
+    final boolean hasRoom() {
+        assert !full() : String.format("Attempted to write to a full %s file #%x", base(), seq);
+        return true;
     }
 
     /**

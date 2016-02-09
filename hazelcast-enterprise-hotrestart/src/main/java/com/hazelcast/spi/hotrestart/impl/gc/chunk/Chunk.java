@@ -44,7 +44,7 @@ public abstract class Chunk implements Disposable {
     public int liveRecordCount;
     /** Will be true when a new prefix tombstone arrives and this chunk
      * may contain records interred by it. */
-    public boolean needsDismissing;
+    private boolean needsDismissing;
 
     public Chunk(long seq, RecordMap records) {
         this.seq = seq;
@@ -56,7 +56,15 @@ public abstract class Chunk implements Disposable {
         this.records = from.records;
         this.liveRecordCount = from.liveRecordCount;
         this.garbage = from.garbage;
-        this.needsDismissing = from.needsDismissing;
+        this.needsDismissing = from.needsDismissing();
+    }
+
+    public final boolean needsDismissing() {
+        return needsDismissing;
+    }
+
+    public void needsDismissing(boolean needsDismissing) {
+        this.needsDismissing = needsDismissing;
     }
 
     public Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {

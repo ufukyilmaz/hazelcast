@@ -9,13 +9,15 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 public interface RecordMap extends Disposable {
     /**
      * If there is no current mapping for {@code kh}, establishes a mapping from
-     * {@code kh} to a record defined by ({@code seq}, {@code size}, {@code isTombstone})
+     * {@code kh} to a record defined by ({@code seq}, {@code size}, {@code isTombstone}, {@code additionalInt})
      * and returns {@code null}. If a mapping already exists, returns the existing
      * record without updating it.
      * <p><b>Warning! The returned instance is valid only up to the next update operation
      * on this map. The caller should generally not retain it.</b>
+     * @param additionalInt for a value record, this is its garbage count;
+     *                      for tombstone, it is its position in the chunk file.
      */
-    Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int garbageCount);
+    Record putIfAbsent(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone, int additionalInt);
 
     /**
      * Returns the record mapped by the supplied {@code KeyHandle}, if any; otherwise

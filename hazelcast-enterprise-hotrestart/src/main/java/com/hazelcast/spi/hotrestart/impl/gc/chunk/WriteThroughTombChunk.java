@@ -5,6 +5,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.io.TombFileAccessor;
 
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -14,14 +15,13 @@ import java.io.IOException;
  * Write-through chunk specialized to contain tombstone records.
  */
 public final class WriteThroughTombChunk extends WriteThroughChunk {
-    long catchupPosition;
 
-    public WriteThroughTombChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
-        super(seq, records, out, gcHelper);
+    public WriteThroughTombChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+        super(seq, suffix, records, out, gcHelper);
     }
 
     @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] ignored) {
-        ensureHasRoom();
+        assert hasRoom();
         try {
             writeTombstone(dataOut, recordSeq, keyPrefix, keyBytes);
             size += Record.TOMB_HEADER_SIZE + keyBytes.length;
@@ -31,24 +31,34 @@ public final class WriteThroughTombChunk extends WriteThroughChunk {
         }
     }
 
-    @Override public void addStep2(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
-        final Record existing = records.putIfAbsent(prefix, kh, seq, size, isTombstone, 0);
-        if (existing != null) {
-            existing.update(seq, size, isTombstone);
+    public boolean addStep1(TombFileAccessor tfa, int filePos) {
+        assert hasRoom();
+        try {
+            size += tfa.loadAndCopyTombstone(filePos, dataOut);
+            return full();
+        } catch (IOException e) {
+            throw new HotRestartException("Failed to copy tombstone", e);
         }
-        liveRecordCount++;
     }
 
     public static void writeTombstone(DataOutputStream out, long recordSeq, long keyPrefix, byte[] keyBytes)
-            throws IOException {
+            throws IOException
+    {
         out.writeLong(recordSeq);
         out.writeLong(keyPrefix);
         out.writeInt(keyBytes.length);
         out.write(keyBytes);
     }
 
+    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
+        insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
+    }
+
     @Override public boolean full() {
         return size() >= TOMB_SIZE_LIMIT;
+    }
+
+    @Override public void needsDismissing(boolean needsDismissing) {
     }
 
     @Override public String base() {

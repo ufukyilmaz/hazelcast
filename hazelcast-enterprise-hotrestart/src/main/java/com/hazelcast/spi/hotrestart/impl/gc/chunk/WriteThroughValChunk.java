@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
@@ -14,11 +15,11 @@ import java.io.IOException;
 public final class WriteThroughValChunk extends WriteThroughChunk {
 
     public WriteThroughValChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
-        super(seq, records, out, gcHelper);
+        super(seq, ACTIVE_CHUNK_SUFFIX, records, out, gcHelper);
     }
 
     @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] valueBytes) {
-        ensureHasRoom();
+        assert hasRoom();
         try {
             dataOut.writeLong(recordSeq);
             dataOut.writeLong(keyPrefix);
@@ -35,5 +36,9 @@ public final class WriteThroughValChunk extends WriteThroughChunk {
 
     @Override public StableValChunk toStableChunk() {
         return new StableValChunk(this, false);
+    }
+
+    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+        insertOrUpdateValue(prefix, kh, seq, size);
     }
 }

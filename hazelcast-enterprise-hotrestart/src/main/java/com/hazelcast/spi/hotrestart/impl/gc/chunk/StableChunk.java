@@ -4,7 +4,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
 import java.util.Comparator;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 
 /**
  * Represents a tombstone chunk whose on-disk contents are stable (immutable).
@@ -25,7 +25,7 @@ public abstract class StableChunk extends Chunk {
         super(from);
         this.size = from.size();
         this.compressed = compressed;
-        this.needsDismissing = from.needsDismissing;
+        needsDismissing(from.needsDismissing());
     }
 
     StableChunk(long seq, RecordMap records, int liveRecordCount,
@@ -34,7 +34,7 @@ public abstract class StableChunk extends Chunk {
         super(seq, records, liveRecordCount, garbage);
         this.size = size;
         this.compressed = compressed;
-        this.needsDismissing = needsDismissing;
+        needsDismissing(needsDismissing);
     }
 
     @Override public final long size() {

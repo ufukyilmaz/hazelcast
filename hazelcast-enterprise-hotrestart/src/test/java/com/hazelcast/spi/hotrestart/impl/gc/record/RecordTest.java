@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,7 +36,7 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     @Before public void setup() {
         if (offHeap) {
-            containerMap = new RecordMapOffHeap(malloc);
+            containerMap = newRecordMapOffHeap(malloc);
             containerMap.putIfAbsent(keyPrefix, keyHandle, seq, size, false, garbageCount);
             containerMap.putIfAbsent(tombstoneKeyPrefix, tombstoneKeyHandle,
                     tombstoneSeq, tombstoneSize, true, tombstoneGarbageCount);
@@ -99,18 +100,18 @@ public class RecordTest extends OnHeapOffHeapTestBase {
     }
 
     @Test public void update_seq_updatesIt() {
-        record().update(seq + 1, size, true);
+        record().update(seq + 1, size);
         assertEquals(seq + 1, record().liveSeq());
     }
 
     @Test public void update_size_updatesIt() {
-        record().update(seq, size + 1, true);
+        record().update(seq, size + 1);
         assertEquals(size + 1, record().size());
         assertEquals(true, record().isTombstone());
     }
 
     @Test public void update_isTombstone_updatesIt() {
-        record().update(seq, size, true);
+        record().update(seq, size);
         assertEquals(true, record().isTombstone());
     }
 

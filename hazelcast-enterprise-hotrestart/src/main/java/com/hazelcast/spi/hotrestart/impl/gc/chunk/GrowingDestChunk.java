@@ -8,6 +8,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 
@@ -49,6 +50,10 @@ public final class GrowingDestChunk extends GrowingChunk {
         return ret;
     }
 
+    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+        insertOrUpdateValue(prefix, kh, seq, size);
+    }
+
     /**
      * Creates the destination chunk file. Does its best not to
      * write any records which are known to be garbage at the point when
@@ -82,7 +87,7 @@ public final class GrowingDestChunk extends GrowingChunk {
                         holder.flip();
                         assert holder.payloadSizeValid(r);
                         // catches up for each bufferful
-                        fileSize = r.intoOut(out, fileOut, fileSize, prefix, holder, mc);
+                        fileSize = r.intoOut(out, fileSize, prefix, holder, mc);
                         continue;
                     } else {
                         // Our record is alive, but in the in-memory store the corresponding entry
@@ -125,7 +130,7 @@ public final class GrowingDestChunk extends GrowingChunk {
             // catching up occurs before transfer of ownership (otherwise the
             // wrong chunk's garbage field will be updated).
             return new StableValChunk(seq, gch.toPlainRecordMap(records), liveRecordCount, fileSize,
-                    garbage, needsDismissing, gch.compressionEnabled());
+                    garbage, needsDismissing(), gch.compressionEnabled());
         } catch (IOException e) {
             throw new HotRestartException(e);
         } finally {

@@ -4,10 +4,13 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
+import com.hazelcast.util.collection.Long2ObjectHashMap.KeyIterator;
 import com.hazelcast.util.collection.LongHashSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -66,7 +69,7 @@ public class PrefixTombstoneManager {
             multiPut(mutatorPrefixTombstones, prefixes, currRecordSeq);
             tombstoneSnapshot = new Long2LongHashMap(mutatorPrefixTombstones);
         }
-        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.valChunkSeq()));
+        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
         persistTombstones(gcHelper, tombstoneSnapshot);
     }
 
@@ -82,11 +85,11 @@ public class PrefixTombstoneManager {
                 dismissGarbage(activeChunk, prefixes);
                 multiPut(dismissedActiveChunks, prefixes, activeChunk.seq);
                 for (StableChunk c : chunkMgr.chunks.values()) {
-                    c.needsDismissing = true;
+                    c.needsDismissing(true);
                 }
                 if (chunkMgr.destChunkMap != null) {
                     for (Chunk c : chunkMgr.destChunkMap.values()) {
-                        c.needsDismissing = true;
+                        c.needsDismissing(true);
                     }
                 }
                 if (sweeper == null) {
@@ -130,7 +133,10 @@ public class PrefixTombstoneManager {
      * Applies the effects of newly added prefix tombstones to the active chunk.
      * The point is to immediately reset the garbage counts on records in the active chunk so
      * future updates on the same chunk will be distinguished from those that happened before
-     * the clear operation.
+     * the clear operation. This is required to maintain the correct state of {@code garbageCount}s
+     * in the active chunk.
+     *
+     * @param prefixesToDismiss set of key prefixes for which tombstones were added
      */
     void dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
         logger.fine("Dismiss garbage in active chunk #%03x", chunk.seq);
@@ -153,7 +159,7 @@ public class PrefixTombstoneManager {
      * @return true if the chunk needed dismissing.
      */
     public boolean dismissGarbage(Chunk chunk) {
-        if (!chunk.needsDismissing) {
+        if (!chunk.needsDismissing()) {
             return false;
         }
         logger.fine("Dismiss garbage in #%03x", chunk.seq);
@@ -167,7 +173,7 @@ public class PrefixTombstoneManager {
                 chunkMgr.dismissPrefixGarbage(chunk, kh, r);
             }
         }
-        chunk.needsDismissing = false;
+        chunk.needsDismissing(false);
         return true;
     }
 
@@ -234,13 +240,15 @@ public class PrefixTombstoneManager {
 
     private final class Sweeper {
         private final Long2LongHashMap garbageTombstones = new Long2LongHashMap(collectorPrefixTombstones);
-        private long chunkSeq;
+        private final long lowChunkSeq;
         private final long sweptActiveChunkSeq;
+        private long chunkSeq;
 
-        Sweeper(long chunkSeqLimit) {
-            this.chunkSeq = chunkSeqLimit;
+        Sweeper(long highChunkSeq) {
+            this.chunkSeq = highChunkSeq;
+            this.lowChunkSeq = lowChunkSeq();
             final Chunk activeChunk = chunkMgr.activeValChunk;
-            if (activeChunk.seq <= chunkSeqLimit) {
+            if (activeChunk.seq <= highChunkSeq) {
                 markLiveTombstones(activeChunk);
                 sweptActiveChunkSeq = activeChunk.seq;
             } else {
@@ -265,7 +273,7 @@ public class PrefixTombstoneManager {
             return true;
         }
 
-        void markLiveTombstones(Chunk chunk) {
+        private void markLiveTombstones(Chunk chunk) {
             for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
                 final Record r = cursor.asRecord();
                 final KeyHandle kh = cursor.toKeyHandle();
@@ -274,12 +282,20 @@ public class PrefixTombstoneManager {
             }
         }
 
-        private Chunk nextChunkToSweep() {
+        private long lowChunkSeq() {
+            long lowChunkSeq = Long.MAX_VALUE;
+            for (KeyIterator it = chunkMgr.chunks.keySet().iterator(); it.hasNext();) {
+                lowChunkSeq = Math.min(lowChunkSeq, it.nextLong());
+            }
+            return lowChunkSeq;
+        }
+
+        private StableValChunk nextChunkToSweep() {
             final Map<Long, StableChunk> chunkMap = chunkMgr.chunks;
-            while (chunkSeq > 0) {
-                final Chunk c = chunkMap.get(chunkSeq--);
-                if (c != null) {
-                    return c;
+            while (chunkSeq >= lowChunkSeq) {
+                final StableChunk c = chunkMap.get(chunkSeq--);
+                if (c != null && c instanceof StableValChunk) {
+                    return (StableValChunk) c;
                 }
             }
             return null;

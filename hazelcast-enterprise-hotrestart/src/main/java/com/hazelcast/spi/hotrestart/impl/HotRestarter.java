@@ -9,6 +9,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 
 import java.io.EOFException;
@@ -28,12 +30,10 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.gc.io.Compressor.COMPRESSED_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
@@ -47,12 +47,11 @@ import static java.lang.Long.parseLong;
  * </ol>
  */
 class HotRestarter {
-    private static final int HEX_RADIX = 16;
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
         public int compare(File left, File right) {
-            final long leftSeq = seq(left);
-            final long rightSeq = seq(right);
+            final long leftSeq = ChunkFilesetCursor.seq(left);
+            final long rightSeq = ChunkFilesetCursor.seq(right);
             return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
         }
     };
@@ -66,7 +65,7 @@ class HotRestarter {
         public boolean accept(File f) {
             return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX)
                                   || f.getName().endsWith(Chunk.FNAME_SUFFIX + COMPRESSED_SUFFIX)
-                                  || isActiveChunkFile(f));
+                                  || ChunkFilesetCursor.isActiveChunkFile(f));
         }
     };
 
@@ -217,11 +216,4 @@ class HotRestarter {
         return true;
     }
 
-    static long seq(File f) {
-        return parseLong(f.getName().substring(0, CHUNK_FNAME_LENGTH), HEX_RADIX);
-    }
-
-    static boolean isActiveChunkFile(File f) {
-        return f.getName().endsWith(Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX);
-    }
 }

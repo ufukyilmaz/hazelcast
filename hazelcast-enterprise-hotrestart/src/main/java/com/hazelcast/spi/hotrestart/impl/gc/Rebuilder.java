@@ -157,16 +157,14 @@ public final class Rebuilder {
                 trackerMap.removeLiveTombstone(kh);
                 cm.tombGarbage.inc(r.size());
                 chunk.retire(kh, r);
-                cm.submitForDeletionAsNeeded(this.chunk);
                 retiredCount++;
             }
         }
         logger.info("Retired %,d tombstones, left %,d live ones. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
         assert tombstoneCount == trackerMap.liveTombstones.get();
-        cm.deleteGarbageTombChunks(null);
         cm.gcHelper.initRecordSeq(maxSeq);
-        assert validateTombstoneChunks(trackerMap, tombstoneCount);
+//        assert validateTombstoneChunks(trackerMap, tombstoneCount);
     }
 
     private boolean validateTombstoneChunks(TrackerMapBase trackerMap, long tombstoneCount) {
@@ -179,7 +177,7 @@ public final class Rebuilder {
                 final KeyHandle kh = cursor.toKeyHandle();
                 final Tracker tr = trackerMap.get(kh);
                 final Record r = cursor.asRecord();
-                assert r.isAlive() : "Found live tombstone";
+                assert r.isAlive() : "Found a dead tombstone";
                 assert tr.garbageCount() > 0 : "Found orphan tombstone";
                 tombstoneCountTakeTwo++;
             }
@@ -208,12 +206,14 @@ public final class Rebuilder {
 
         abstract StableChunk toStableChunk();
 
-        final void add0(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
+        final void add0(long prefix, KeyHandle kh, long seq, int size) {
             addStep1(size);
-            addStep2(prefix, kh, seq, size, isTombstone);
+            addStep2(prefix, kh, seq, size);
         }
 
-        void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) { }
+        void acceptStale(Tracker ignored1, long ignored2, KeyHandle ignored3, long ignored4, int size) {
+            addStep2FileOffset += size;
+        }
     }
 
     private static final class RebuildingValChunk extends RebuildingChunk {
@@ -222,7 +222,7 @@ public final class Rebuilder {
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            add0(prefix, kh, seq, size, false);
+            add0(prefix, kh, seq, size);
         }
 
         @Override StableChunk toStableChunk() {
@@ -230,25 +230,35 @@ public final class Rebuilder {
         }
 
         @Override void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
+            super.acceptStale(tr, prefix, kh, seq, size);
             final Record sameKeyRecord = records.putIfAbsent(prefix, kh, -seq, size, false, 1);
             if (sameKeyRecord != null) {
                 sameKeyRecord.incrementGarbageCount();
             }
             tr.incrementGarbageCount();
         }
+
+        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+            insertOrUpdateValue(prefix, kh, seq, size);
+        }
     }
 
     private static final class RebuildingTombChunk extends RebuildingChunk {
+
         RebuildingTombChunk(long seq, RecordMap records) {
             super(seq, records, false);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            add0(prefix, kh, seq, size, true);
+            add0(prefix, kh, seq, size);
         }
 
         @Override StableChunk toStableChunk() {
             return new StableTombChunk(seq, records, liveRecordCount, size(), garbage);
+        }
+
+        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
+            insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
         }
     }
 }

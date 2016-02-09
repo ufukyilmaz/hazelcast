@@ -7,12 +7,12 @@ import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 public class RecordOnHeap extends Record {
     private long seq;
     private int size;
-    private int garbageCount;
+    private int additionalInt;
 
-    public RecordOnHeap(long seq, int size, boolean isTombstone, int garbageCount) {
+    public RecordOnHeap(long seq, int size, boolean isTombstone, int additionalInt) {
         this.seq = seq;
         this.size = toRawSizeValue(size, isTombstone);
-        this.garbageCount = garbageCount;
+        this.additionalInt = additionalInt;
     }
 
     public RecordOnHeap(Record r) {
@@ -36,20 +36,22 @@ public class RecordOnHeap extends Record {
         seq = -seq;
     }
 
-    @Override public final int garbageCount() {
-        return garbageCount;
+    @Override public final int additionalInt() {
+        return additionalInt;
     }
 
     @Override public final int decrementGarbageCount() {
-        return --garbageCount;
+        assert !isTombstone() : "Attempt to decrement garbage count on a tombstone";
+        return --additionalInt;
     }
 
     @Override public final void incrementGarbageCount() {
-        ++garbageCount;
+        assert !isTombstone() : "Attempt to increment garbage count on a tombstone";
+        ++additionalInt;
     }
 
-    @Override public final void setGarbageCount(int newCount) {
-        garbageCount = newCount;
+    @Override public final void setAdditionalInt(int newCount) {
+        additionalInt = newCount;
     }
 
     @Override public final void setRawSeqSize(long rawSeqValue, int rawSizeValue) {

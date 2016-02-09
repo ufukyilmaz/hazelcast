@@ -46,14 +46,18 @@ final class TombChunkSelector {
                 candidates.add(c);
             }
         }
+        mc.catchupNow();
         Collections.sort(candidates, BY_BENEFIT_COST_DESC);
+        mc.catchupNow();
         final List<StableTombChunk> selected = new ArrayList<StableTombChunk>();
         final long minSize = TOMB_SIZE_LIMIT / 2;
         long size = 0;
         long garbage = 0;
         for (StableTombChunk c : candidates) {
-            if (benefitToCost(garbage + c.garbage, size + c.size()) < 1) {
-                if (size < minSize) {
+            final double b2c = benefitToCost(garbage + c.garbage, size + c.size());
+            if (b2c < 2) {
+                if (b2c < 1 && size < minSize) {
+                    // Abort GC cycle if benefit/cost is too low
                     selected.clear();
                 }
                 break;

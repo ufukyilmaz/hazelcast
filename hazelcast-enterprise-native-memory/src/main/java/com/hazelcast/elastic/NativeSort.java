@@ -47,7 +47,7 @@ public final class NativeSort {
     private static long partitionInt(long address, long left, long right) {
         long i = left;
         long j = right;
-        long offset = ((left + right) >> 1) * INT_SIZE_IN_BYTES;
+        long offset = ((left + right) >>> 1) * INT_SIZE_IN_BYTES;
         int pivot = UNSAFE.getInt(address + offset);
         int tmp;
 
@@ -83,7 +83,7 @@ public final class NativeSort {
     private static long partitionLong(long address, long left, long right) {
         long i = left;
         long j = right;
-        long offset = ((left + right) >> 1) * LONG_SIZE_IN_BYTES;
+        long offset = ((left + right) >>> 1) * LONG_SIZE_IN_BYTES;
         long pivot = UNSAFE.getLong(address + offset);
         long tmp;
 

@@ -92,6 +92,8 @@ public abstract class Record {
             return;
         }
         try {
+            final long seq = liveSeq();
+            final long prefix = keyPrefix(kh);
             if (startFilePosition == 0) {
                 // A new dest chunk was created just before calling this method.
                 // This involved some I/O calls, so catch up now.
@@ -103,8 +105,8 @@ public abstract class Record {
             final int valSize = valBuf.remaining();
             assert bufferSizeValid(keySize, valSize);
             final long startPos = positionInUnitsOfBufsize(startFilePosition);
-            out.writeLong(liveSeq());
-            out.writeLong(keyPrefix(kh));
+            out.writeLong(seq);
+            out.writeLong(prefix);
             out.writeInt(keySize);
             out.writeInt(valSize);
             out.write(keyBuf.array(), keyBuf.position(), keySize);

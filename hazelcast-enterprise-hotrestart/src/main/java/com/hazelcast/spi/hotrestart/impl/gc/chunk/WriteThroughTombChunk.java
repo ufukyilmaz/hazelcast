@@ -7,7 +7,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.io.TombFileAccessor;
 
-import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -23,7 +22,10 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
     @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] ignored) {
         assert hasRoom();
         try {
-            writeTombstone(dataOut, recordSeq, keyPrefix, keyBytes);
+            dataOut.writeLong(recordSeq);
+            dataOut.writeLong(keyPrefix);
+            dataOut.writeInt(keyBytes.length);
+            dataOut.write(keyBytes);
             size += Record.TOMB_HEADER_SIZE + keyBytes.length;
             return full();
         } catch (IOException e) {
@@ -41,21 +43,12 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
         }
     }
 
-    public static void writeTombstone(DataOutputStream out, long recordSeq, long keyPrefix, byte[] keyBytes)
-            throws IOException
-    {
-        out.writeLong(recordSeq);
-        out.writeLong(keyPrefix);
-        out.writeInt(keyBytes.length);
-        out.write(keyBytes);
-    }
-
     @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
         insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
     }
 
-    @Override public boolean full() {
-        return size() >= TOMB_SIZE_LIMIT;
+    @Override protected int determineSizeLimit() {
+        return tombChunkSizeLimit();
     }
 
     @Override public void needsDismissing(boolean needsDismissing) {

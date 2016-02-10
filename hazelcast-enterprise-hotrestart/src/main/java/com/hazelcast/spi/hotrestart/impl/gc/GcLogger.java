@@ -70,6 +70,7 @@ public class GcLogger {
         }
     }
 
+    @SuppressWarnings("checkstyle:parameternumber")
     public void info(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6,
                      Object arg7, Object arg8) {
         if (logger.isLoggable(Level.INFO)) {

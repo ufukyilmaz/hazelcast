@@ -13,7 +13,7 @@ public final class RecordOffHeap extends Record {
     public static final int TOMBSTONE_SIZE = 0x10;
     private static final int SEQ_OFFSET = 0x0;
     private static final int SIZE_OFFSET = 0x8;
-    static final int ADDITIONAL_INT_OFFSET = 0xc;
+    private static final int ADDITIONAL_INT_OFFSET = 0xc;
     private static final int KEY_PREFIX_OFFSET = 0x10;
 
     long address = NULL_ADDRESS;

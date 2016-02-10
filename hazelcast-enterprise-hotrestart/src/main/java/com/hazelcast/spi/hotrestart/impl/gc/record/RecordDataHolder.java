@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
 import java.nio.ByteBuffer;
 

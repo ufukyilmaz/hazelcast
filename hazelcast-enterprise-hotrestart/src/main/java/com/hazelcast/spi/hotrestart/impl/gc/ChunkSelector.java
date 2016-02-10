@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
 import static com.hazelcast.util.QuickMath.log2;
 import static java.lang.String.format;
@@ -201,15 +202,15 @@ final class ChunkSelector {
                     c.cachedBenefitToCost(),
                     c.liveRecordCount,
                     selectedSeqs.contains(c.seq) ? "X" : " ",
-                    visualizedChunk(c.garbage, c.size()));
+                    visualizedChunk(c.garbage, c.size(), valChunkSizeLimit()));
         }
         logger.finest(sw.toString());
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
-    private static String visualizedChunk(long garbage, long size) {
+    private static String visualizedChunk(long garbage, long size, int chunkSize) {
         final int chunkLimitChars = 16;
-        final int bytesPerChar = (int) Chunk.VAL_SIZE_LIMIT / chunkLimitChars;
+        final int bytesPerChar = chunkSize / chunkLimitChars;
         final StringBuilder b = new StringBuilder(chunkLimitChars * 3 / 2).append('|');
         final long garbageChars = garbage / bytesPerChar;
         final long sizeChars = size / bytesPerChar;

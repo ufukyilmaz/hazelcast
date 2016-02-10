@@ -9,6 +9,20 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  * Represents a chunk file.
  */
 public abstract class Chunk implements Disposable {
+    /** System property that specifies the limit on the value chunk file size */
+    public static final String SYSPROP_VAL_CHUNK_SIZE_LIMIT = "com.hazelcast.spi.hotrestart.valChunkSizeLimit";
+
+    /** System property that specifies the limit on the tombstone chunk file size */
+    public static final String SYSPROP_TOMB_CHUNK_SIZE_LIMIT = "com.hazelcast.spi.hotrestart.tombChunkSizeLimit";
+
+    /** Default value chunk file size limit in bytes. */
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final int VAL_SIZE_LIMIT_DEFAULT = 8 << 20;
+
+    /** Default tombstone chunk file size limit in bytes. */
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final int TOMB_SIZE_LIMIT_DEFAULT = 1 << 20;
+
     /** Chunk filename suffix. */
     public static final String FNAME_SUFFIX = ".chunk";
 
@@ -21,14 +35,6 @@ public abstract class Chunk implements Disposable {
     /** Suffix added to a chunk file while it is being written to during a GC cycle.
      * If system fails during GC, such file should not be considered during restart. */
     public static final String DEST_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".dest";
-
-    /** Value chunk file size limit in bytes. */
-    @SuppressWarnings("checkstyle:magicnumber")
-    public static final long VAL_SIZE_LIMIT = 8 << 20;
-
-    /** Tombstone chunk file size limit in bytes. */
-    @SuppressWarnings("checkstyle:magicnumber")
-    public static final long TOMB_SIZE_LIMIT = 1 << 20;
 
     /** Name of the base directory for value records. */
     public static final String VAL_BASEDIR = "value";
@@ -59,19 +65,19 @@ public abstract class Chunk implements Disposable {
         this.needsDismissing = from.needsDismissing();
     }
 
+    public Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {
+        this.seq = seq;
+        this.records = records;
+        this.liveRecordCount = liveRecordCount;
+        this.garbage = garbage;
+    }
+
     public final boolean needsDismissing() {
         return needsDismissing;
     }
 
     public void needsDismissing(boolean needsDismissing) {
         this.needsDismissing = needsDismissing;
-    }
-
-    public Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {
-        this.seq = seq;
-        this.records = records;
-        this.liveRecordCount = liveRecordCount;
-        this.garbage = garbage;
     }
 
     public abstract long size();
@@ -102,6 +108,14 @@ public abstract class Chunk implements Disposable {
 
     public void dispose() {
         records.dispose();
+    }
+
+    public static int valChunkSizeLimit() {
+        return Integer.getInteger(SYSPROP_VAL_CHUNK_SIZE_LIMIT, VAL_SIZE_LIMIT_DEFAULT);
+    }
+
+    public static int tombChunkSizeLimit() {
+        return Integer.getInteger(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, TOMB_SIZE_LIMIT_DEFAULT);
     }
 
     @Override public String toString() {

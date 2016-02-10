@@ -17,6 +17,8 @@ public abstract class GrowingChunk extends Chunk {
     // Current chunk file offset from the viewpoint of the addStep2() method.
     protected int addStep2FileOffset;
 
+    private final int sizeLimit = determineSizeLimit();
+
     protected GrowingChunk(long seq, RecordMap records) {
         super(seq, records);
     }
@@ -48,12 +50,14 @@ public abstract class GrowingChunk extends Chunk {
 
     public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset);
 
+    protected abstract int determineSizeLimit();
+
     @Override public final long size() {
         return size;
     }
 
-    public boolean full() {
-        return size() >= VAL_SIZE_LIMIT;
+    public final boolean full() {
+        return size() >= sizeLimit;
     }
 
     protected final void insertOrUpdateValue(long prefix, KeyHandle kh, long seq, int size) {

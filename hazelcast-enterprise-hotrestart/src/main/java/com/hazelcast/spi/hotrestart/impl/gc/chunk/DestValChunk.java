@@ -26,6 +26,10 @@ public final class DestValChunk extends WriteThroughChunk {
         insertOrUpdateValue(prefix, kh, seq, size);
     }
 
+    @Override protected int determineSizeLimit() {
+        return valChunkSizeLimit();
+    }
+
     public void add(GcRecord gcr, KeyHandle kh, RecordDataHolder holder, MutatorCatchup mc) {
         ((RecordMapOnHeap) records).put(kh, gcr);
         liveRecordCount++;

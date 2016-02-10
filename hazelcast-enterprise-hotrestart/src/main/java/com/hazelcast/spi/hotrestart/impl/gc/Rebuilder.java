@@ -164,27 +164,6 @@ public final class Rebuilder {
                 retiredCount, tombstoneCount, maxSeq);
         assert tombstoneCount == trackerMap.liveTombstones.get();
         cm.gcHelper.initRecordSeq(maxSeq);
-//        assert validateTombstoneChunks(trackerMap, tombstoneCount);
-    }
-
-    private boolean validateTombstoneChunks(TrackerMapBase trackerMap, long tombstoneCount) {
-        long tombstoneCountTakeTwo = 0;
-        for (StableChunk chunk : cm.chunks.values()) {
-            if (!(chunk instanceof StableTombChunk)) {
-                continue;
-            }
-            for (RecordMap.Cursor cursor = chunk.records.cursor(); cursor.advance();) {
-                final KeyHandle kh = cursor.toKeyHandle();
-                final Tracker tr = trackerMap.get(kh);
-                final Record r = cursor.asRecord();
-                assert r.isAlive() : "Found a dead tombstone";
-                assert tr.garbageCount() > 0 : "Found orphan tombstone";
-                tombstoneCountTakeTwo++;
-            }
-        }
-        assert tombstoneCount == tombstoneCountTakeTwo : String.format(
-                "Tombstone count take one %,d, take two %,d", tombstoneCount, tombstoneCountTakeTwo);
-        return true;
     }
 
     private void finishCurrentChunk() {
@@ -241,6 +220,10 @@ public final class Rebuilder {
         @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
             insertOrUpdateValue(prefix, kh, seq, size);
         }
+
+        @Override protected int determineSizeLimit() {
+            return valChunkSizeLimit();
+        }
     }
 
     private static final class RebuildingTombChunk extends RebuildingChunk {
@@ -259,6 +242,10 @@ public final class Rebuilder {
 
         @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
             insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
+        }
+
+        @Override protected int determineSizeLimit() {
+            return tombChunkSizeLimit();
         }
     }
 }

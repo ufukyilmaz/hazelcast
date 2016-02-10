@@ -26,6 +26,7 @@ import java.io.File;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
@@ -42,13 +43,16 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private final long prefix = 1;
     private final long key = 1;
     private final int keySize = 8;
-    private final byte[] value = new byte[(int) Chunk.VAL_SIZE_LIMIT];
 
+    private byte[] value;
     private File testingHome;
     private MockStoreRegistry store;
     private MetricsRegistry metrics;
 
     @Before public void setup() throws InterruptedException {
+        System.setProperty("com.hazelcast.spi.hotrestart.tombChunkSizeLimit", String.valueOf(8));
+        System.setProperty("com.hazelcast.spi.hotrestart.valChunkSizeLimit", String.valueOf(8));
+        value = new byte[valChunkSizeLimit()];
         testingHome = hotRestartHome(getClass(), testName);
         delete(testingHome);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();

@@ -26,9 +26,12 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class Evacuator {
+    public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
+            "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
     private static final int CATCHUP_INTERVAL_DURING_SORT_LOG2 = 18;
+
     private final int stuckDetectionThreshold =
-            Integer.getInteger("com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold", 1000 * 1000);
+            Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
     private final ChunkSelection selected;
     private final GcLogger logger;
     private final Long2ObjectHashMap<Chunk> destChunkMap;

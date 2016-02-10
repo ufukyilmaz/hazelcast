@@ -47,8 +47,8 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
         insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
     }
 
-    @Override public boolean full() {
-        return size() >= TOMB_SIZE_LIMIT;
+    @Override protected int determineSizeLimit() {
+        return tombChunkSizeLimit();
     }
 
     @Override public void needsDismissing(boolean needsDismissing) {

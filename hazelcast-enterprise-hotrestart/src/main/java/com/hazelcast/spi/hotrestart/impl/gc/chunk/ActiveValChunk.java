@@ -47,4 +47,8 @@ public final class ActiveValChunk extends WriteThroughChunk implements ActiveChu
     @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
         insertOrUpdateValue(prefix, kh, seq, size);
     }
+
+    @Override protected int determineSizeLimit() {
+        return valChunkSizeLimit();
+    }
 }

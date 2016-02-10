@@ -2,24 +2,26 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.concurrent.locks.LockSupport;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Top-level control code of the GC thread. Only thread mechanics are here;
@@ -219,8 +221,10 @@ public final class GcExecutor {
      * the mutator thread at any point along the GC cycle codepath.
      */
     public class MutatorCatchup implements CatchupTestSupport {
+        private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
+        private long lastCaughtUp;
 
         int catchupAsNeeded() {
             return catchupAsNeeded(DEFAULT_CATCHUP_INTERVAL_LOG2);
@@ -237,6 +241,7 @@ public final class GcExecutor {
 
         private int catchUpWithMutator() {
             final int workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY);
+//            reportLateCatchup();
             if (workCount == 0) {
                 return 0;
             }
@@ -247,12 +252,19 @@ public final class GcExecutor {
             return workCount;
         }
 
-        public void dismissGarbage(Chunk c) {
-            chunkMgr.dismissGarbage(c);
-        }
-
-        public void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
-            chunkMgr.dismissGarbageRecord(c, kh, r);
+        private void reportLateCatchup() {
+            final long now = System.nanoTime();
+            final long sinceLastCatchup = now - lastCaughtUp;
+            lastCaughtUp = now;
+            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)) {
+                final StringWriter sw = new StringWriter(512);
+                final PrintWriter w = new PrintWriter(sw);
+                new Exception().printStackTrace(w);
+                final String trace = sw.toString();
+                final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
+                m.find();
+                logger.fine("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+            }
         }
 
         public boolean shutdownRequested() {

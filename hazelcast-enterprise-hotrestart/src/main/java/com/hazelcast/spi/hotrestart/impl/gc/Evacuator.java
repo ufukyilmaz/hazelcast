@@ -28,11 +28,11 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 final class Evacuator {
     public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
             "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
-    private static final int CATCHUP_INTERVAL_DURING_SORT_LOG2 = 18;
 
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
     private final ChunkSelection selected;
+    private final ChunkManager chunkMgr;
     private final GcLogger logger;
     private final Long2ObjectHashMap<Chunk> destChunkMap;
     private final TrackerMap recordTrackers;
@@ -45,6 +45,7 @@ final class Evacuator {
 
     Evacuator(ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
         this.selected = selected;
+        this.chunkMgr = chunkMgr;
         this.firstSrcChunk = selected.srcChunks.iterator().next();
         this.logger = logger;
         this.destChunkMap = chunkMgr.destChunkMap = new Long2ObjectHashMap<Chunk>();
@@ -64,7 +65,7 @@ final class Evacuator {
     private void evacuate() {
         final List<GcRecord> liveRecords = sortedLiveRecords();
         logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        transferToDest(liveRecords);
+        moveToDest(liveRecords);
         // Apply clear operation to any dangling dest chunks. At the time the clear operation
         // is issued, the highest chunk seq is recorded. Dest chunks created after that time
         // will be missed by the Sweeper.
@@ -76,6 +77,7 @@ final class Evacuator {
 
     private List<GcRecord> sortedLiveRecords() {
         final ArrayList<GcRecord> liveGcRecs = new ArrayList<GcRecord>(selected.liveRecordCount);
+        mc.catchupNow();
         for (StableValChunk chunk : selected.srcChunks) {
             for (Cursor cur = chunk.records.cursor(); cur.advance();) {
                 if (cur.asRecord().isAlive()) {
@@ -87,7 +89,7 @@ final class Evacuator {
         return sorted(liveGcRecs);
     }
 
-    private void transferToDest(List<GcRecord> sortedGcRecords) {
+    private void moveToDest(List<GcRecord> sortedGcRecords) {
         final RecordDataHolder holder = gcHelper.recordDataHolder;
         for (GcRecord r : sortedGcRecords) {
             applyClearOperation();
@@ -98,9 +100,9 @@ final class Evacuator {
                 if ((ramStore = gcHelper.ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(null))) != null
                         && ramStore.copyEntry(kh, r.payloadSize(), holder)
                 ) {
-                    // Invariant at this point: r.isAlive() and we have its data. Do not catch up with
-                    // mutator until all metadata is updated. The first catchup can happen within the
-                    // dest.add() call. By the time dest.add() returns, the record may already be dead.
+                    // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
+                    // not catching up with mutator until all metadata are updated. The first catchup can happen
+                    // within the dest.add() call. By the time dest.add() returns, the record may already be dead.
                     holder.flip();
                     ensureDestChunk();
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.
@@ -155,6 +157,7 @@ final class Evacuator {
     }
 
     private void closeDestChunk() {
+        mc.catchupNow();
         dest.close();
         mc.catchupNow();
         logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", dest.seq, dest.size(),
@@ -194,7 +197,7 @@ final class Evacuator {
             gcHelper.deleteChunkFile(evacuated);
             // All garbage records collected from the source chunk in
             // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
-            mc.dismissGarbage(evacuated);
+            chunkMgr.dismissGarbage(evacuated);
             mc.catchupNow();
         }
     }
@@ -223,7 +226,7 @@ final class Evacuator {
             final boolean takeLeft = currLeft < rightStart
                     && (currRight >= rightEnd || from.get(currLeft).liveSeq() <= from.get(currRight).liveSeq());
             to.set(j, from.get(takeLeft ? currLeft++ : currRight++));
-            mc.catchupAsNeeded(CATCHUP_INTERVAL_DURING_SORT_LOG2);
+            mc.catchupAsNeeded();
         }
     }
 }

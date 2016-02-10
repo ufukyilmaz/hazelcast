@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.Probe;
-import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
@@ -16,7 +15,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
@@ -183,24 +181,6 @@ public final class ChunkManager {
         }
     }
 
-    void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
-        assert !r.isTombstone() : "Attempted to dismiss garbage for tombstone record";
-        final int localCount = r.decrementGarbageCount();
-        assert localCount >= 0
-                : String.format("Record.garbageCount went below zero in chunk #%03x, record #%d",
-                    c.seq, r.rawSeqValue());
-        final Tracker tr = trackers.get(kh);
-        final boolean globalCountIsZero = tr.decrementGarbageCount(1);
-        if (globalCountIsZero) {
-            assert localCount == 0 : "Inconsistent zero global garbage count and local count " + localCount;
-            if (tr.isTombstone()) {
-                dismissTombstone(kh, tr.chunkSeq());
-            } else {
-                trackers.removeIfDead(kh, tr);
-            }
-        }
-    }
-
     private void dismissTombstone(KeyHandle kh, long chunkSeq) {
         final Chunk chunk = chunk(chunkSeq);
         final Record r = chunk.records.get(kh);
@@ -351,38 +331,5 @@ public final class ChunkManager {
             }
         }
         return mostStableChunk;
-    }
-
-    private void validateMetadata(KeyHandle kh, Tracker tr) {
-        final int chunkGarbageCount = chunkGarbageCount(kh);
-        if (tr.garbageCount() != chunkGarbageCount) {
-            throw new HotRestartException(String.format(
-                    "Global != local garbage count for %s (live in #%03x): %d != %d",
-                    kh, tr.chunkSeq(), tr.garbageCount(), chunkGarbageCount));
-        }
-        if (tr.isTombstone() != chunk(tr.chunkSeq()).records.get(kh).isTombstone()) {
-            throw new HotRestartException("Tombstone flags mismatch");
-        }
-    }
-
-    private int chunkGarbageCount(KeyHandle kh) {
-        int garbageCount = 0;
-        for (StableChunk c : chunks.values()) {
-            garbageCount += garbageCount(c, kh);
-        }
-        if (destChunkMap != null) {
-            for (Chunk c : destChunkMap.values()) {
-                garbageCount += garbageCount(c, kh);
-            }
-        }
-        return garbageCount + garbageCount(activeValChunk, kh) + garbageCount(activeTombChunk, kh);
-    }
-
-    private static int garbageCount(Chunk c, KeyHandle kh) {
-        if (c == null) {
-            return 0;
-        }
-        final Record r = c.records.get(kh);
-        return r != null ? r.garbageCount() : 0;
     }
 }

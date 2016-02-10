@@ -26,6 +26,12 @@ public class GcLogger {
         }
     }
 
+    public void fine(String template, Object arg1, Object arg2) {
+        if (logger.isFineEnabled()) {
+            fine(String.format(template, arg1, arg2));
+        }
+    }
+
     public void fine(String template, Object arg1, Object arg2, Object arg3) {
         if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3));

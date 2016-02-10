@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.util.collection.LongHashSet;

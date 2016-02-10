@@ -27,7 +27,6 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     private final int tombstoneSeq = 13;
     private final int tombstoneSize = 14;
-    private final int tombstoneGarbageCount = 15;
 
     private Record record;
     private Record tombstone;
@@ -39,10 +38,10 @@ public class RecordTest extends OnHeapOffHeapTestBase {
             containerMap = newRecordMapOffHeap(malloc);
             containerMap.putIfAbsent(keyPrefix, keyHandle, seq, size, false, garbageCount);
             containerMap.putIfAbsent(tombstoneKeyPrefix, tombstoneKeyHandle,
-                    tombstoneSeq, tombstoneSize, true, tombstoneGarbageCount);
+                    tombstoneSeq, tombstoneSize, true, 0);
         } else {
             record = new RecordOnHeap(seq, size, false, garbageCount);
-            tombstone = new RecordOnHeap(tombstoneSeq, tombstoneSize, true, tombstoneGarbageCount);
+            tombstone = new RecordOnHeap(tombstoneSeq, tombstoneSize, true, 0);
         }
     }
 
@@ -96,7 +95,6 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     @Test public void garbageCount_reportsCorrectCount() {
         assertEquals(garbageCount, record().garbageCount());
-        assertEquals(tombstoneGarbageCount, tombstone().garbageCount());
     }
 
     @Test public void update_seq_updatesIt() {
@@ -107,12 +105,7 @@ public class RecordTest extends OnHeapOffHeapTestBase {
     @Test public void update_size_updatesIt() {
         record().update(seq, size + 1);
         assertEquals(size + 1, record().size());
-        assertEquals(true, record().isTombstone());
-    }
-
-    @Test public void update_isTombstone_updatesIt() {
-        record().update(seq, size);
-        assertEquals(true, record().isTombstone());
+        assertFalse(record().isTombstone());
     }
 
     @Test public void retireRecord_makesItDead() {
@@ -136,15 +129,8 @@ public class RecordTest extends OnHeapOffHeapTestBase {
         assertEquals(garbageCount, r.garbageCount());
     }
 
-    @Test public void retireTombstone_incrementingGarbage_doesntIncrementGarbage() {
-        final Record r = tombstone();
-        r.retire(true);
-        assertEquals(tombstoneGarbageCount, r.garbageCount());
-    }
-
     @Test public void keyPrefix_reportsCorrectValue() {
         assertEquals(keyPrefix, record().keyPrefix(keyHandle));
-        assertEquals(tombstoneKeyPrefix, tombstone().keyPrefix(tombstoneKeyHandle));
     }
 
     @Test public void rawSeqValue_afterNegateSeq_reportsCorrectValue() {
@@ -161,24 +147,18 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     @Test public void decrementGarbageCount_decrementsIt() {
         record().decrementGarbageCount();
-        tombstone().decrementGarbageCount();
         assertEquals(garbageCount - 1, record().garbageCount());
-        assertEquals(tombstoneGarbageCount - 1, tombstone().garbageCount());
     }
 
     @Test public void incrementGarbageCount_incrementsIt() {
         record().incrementGarbageCount();
-        tombstone().incrementGarbageCount();
         assertEquals(garbageCount + 1, record().garbageCount());
-        assertEquals(tombstoneGarbageCount + 1, tombstone().garbageCount());
     }
 
     @Test public void setGarbageCount_setsIt() {
         final int newCount = 100;
         record().setGarbageCount(newCount);
-        tombstone().setGarbageCount(newCount);
         assertEquals(newCount, record().garbageCount());
-        assertEquals(newCount, tombstone().garbageCount());
     }
 
     @Test public void setRawSeqSize_setsThem() {

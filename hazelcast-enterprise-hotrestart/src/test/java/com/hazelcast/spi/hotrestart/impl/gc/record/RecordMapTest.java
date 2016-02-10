@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -37,28 +38,28 @@ public class RecordMapTest extends OnHeapOffHeapTestBase {
     }
 
     @Test public void whenPutAbsent_thenCanGetIt() {
-        assertNull(m.putIfAbsent(keyPrefix, keyHandle, 3, 4, true, 5));
+        assertNull(m.putIfAbsent(keyPrefix, keyHandle, 3, 4, false, 5));
         final Record r = m.get(keyHandle);
         assertEquals(keyPrefix, r.keyPrefix(keyHandle));
         assertEquals(3, r.liveSeq());
         assertEquals(4, r.size());
-        assertTrue(r.isTombstone());
+        assertFalse(r.isTombstone());
         assertEquals(5, r.garbageCount());
     }
 
     @Test public void whenPutExistingKey_thenExistingRecordReturned() {
-        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, true, 5);
+        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, false, 5);
         final Record r = m.putIfAbsent(keyPrefix, keyHandle, 13, 14, false, 15);
         assertNotNull(r);
         assertEquals(keyPrefix, r.keyPrefix(keyHandle));
         assertEquals(3, r.liveSeq());
         assertEquals(4, r.size());
-        assertTrue(r.isTombstone());
+        assertFalse(r.isTombstone());
         assertEquals(5, r.garbageCount());
     }
 
     @Test public void getThenUpdate_updatesInMap() {
-        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, true, 5);
+        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, false, 5);
         final Record retrievedBeforeUpdate = m.get(keyHandle);
         retrievedBeforeUpdate.decrementGarbageCount();
         retrievedBeforeUpdate.negateSeq();
@@ -76,7 +77,7 @@ public class RecordMapTest extends OnHeapOffHeapTestBase {
     }
 
     @Test public void cursor_traversesAll() {
-        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, true, 5);
+        m.putIfAbsent(keyPrefix, keyHandle, 3, 4, false, 5);
         final int keyPrefix2 = keyPrefix + 1;
         m.putIfAbsent(keyPrefix2, keyHandle(keyPrefix2), 13, 14, false, 15);
         final Set<Long> seenPrefixes = new HashSet<Long>();

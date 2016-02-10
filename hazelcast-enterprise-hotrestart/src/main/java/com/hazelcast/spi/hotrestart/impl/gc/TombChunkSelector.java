@@ -9,7 +9,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_SIZE_LIMIT;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.tombChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk.benefitToCost;
 
@@ -50,7 +50,7 @@ final class TombChunkSelector {
         Collections.sort(candidates, BY_BENEFIT_COST_DESC);
         mc.catchupNow();
         final List<StableTombChunk> selected = new ArrayList<StableTombChunk>();
-        final long minSize = TOMB_SIZE_LIMIT / 2;
+        final long minSize = tombChunkSizeLimit() / 2;
         long size = 0;
         long garbage = 0;
         for (StableTombChunk c : candidates) {

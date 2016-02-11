@@ -1,7 +1,7 @@
 package com.hazelcast.hidensity;
 
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryBlockProcessor;
+import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**

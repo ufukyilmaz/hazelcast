@@ -8,7 +8,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.memory.MemoryBlockProcessor;
+import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;

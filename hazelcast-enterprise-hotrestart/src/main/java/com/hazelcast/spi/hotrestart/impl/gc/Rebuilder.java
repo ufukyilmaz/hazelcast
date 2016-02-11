@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
-import com.hazelcast.util.counters.Counter;
 
 import java.util.Map;
 

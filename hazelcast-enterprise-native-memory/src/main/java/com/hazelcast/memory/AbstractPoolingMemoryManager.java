@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
-import com.hazelcast.util.counters.Counter;
 
 import static com.hazelcast.util.QuickMath.log2;
 

@@ -17,6 +17,4 @@
 /**
  * <p>Client protocol tasks implementations for map</p>
  */
-@GenerateMessageTaskFactoryProvider package com.hazelcast.client.impl.protocol.task.enterprisemap;
-
-import com.hazelcast.annotation.GenerateMessageTaskFactoryProvider;
+package com.hazelcast.client.impl.protocol.task.enterprisemap;

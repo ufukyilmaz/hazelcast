@@ -2,8 +2,8 @@ package com.hazelcast.cache.hidensity.maxsize;
 
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.hidensity.HiDensityRecordStore;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityRecordStore;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
  * @author sozal 20/11/14

@@ -1,4 +1,4 @@
-package com.hazelcast.hidensity;
+package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
@@ -22,9 +22,9 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  * @param <R> Type of the hi-density record to be accessed
  *
  * @see com.hazelcast.memory.MemoryBlockAccessor
- * @see com.hazelcast.hidensity.HiDensityRecordAccessor
+ * @see com.hazelcast.internal.hidensity.HiDensityRecordAccessor
  * @see NativeMemoryData
- * @see com.hazelcast.hidensity.HiDensityRecord
+ * @see com.hazelcast.internal.hidensity.HiDensityRecord
  *
  * @author sozal 18/02/15
  */
@@ -56,7 +56,7 @@ public interface HiDensityRecordProcessor<R extends HiDensityRecord>
 
     /**
      * Adds given {@link com.hazelcast.memory.MemoryBlock}
-     * to this {@link com.hazelcast.hidensity.HiDensityRecordProcessor} to be disposed later.
+     * to this {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor} to be disposed later.
      * Possibly at the end (succeeded or failed) operation.
      *
      * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to be disposed later

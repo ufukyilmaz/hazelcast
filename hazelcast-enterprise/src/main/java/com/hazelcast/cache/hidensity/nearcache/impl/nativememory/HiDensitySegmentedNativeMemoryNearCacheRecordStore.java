@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.NearCacheStats;

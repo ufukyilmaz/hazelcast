@@ -1,4 +1,4 @@
-package com.hazelcast.hidensity;
+package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.memory.MemoryManager;
 
@@ -10,7 +10,7 @@ import com.hazelcast.memory.MemoryManager;
  *
  * @param <R> Type of the hi-density record to be stored
  *
- * @see com.hazelcast.hidensity.HiDensityRecord
+ * @see com.hazelcast.internal.hidensity.HiDensityRecord
  *
  * @author sozal 18/02/15
  */

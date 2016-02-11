@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.record;
 
-import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -10,7 +10,7 @@ import com.hazelcast.util.Clock;
 
 import java.io.IOException;
 
-import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;

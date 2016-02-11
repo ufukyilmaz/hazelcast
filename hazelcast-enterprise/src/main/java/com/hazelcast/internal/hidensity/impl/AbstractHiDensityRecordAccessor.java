@@ -1,7 +1,7 @@
-package com.hazelcast.hidensity.impl;
+package com.hazelcast.internal.hidensity.impl;
 
-import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;

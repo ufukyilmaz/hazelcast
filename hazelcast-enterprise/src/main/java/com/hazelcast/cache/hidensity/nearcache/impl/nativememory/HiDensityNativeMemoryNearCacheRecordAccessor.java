@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
-import com.hazelcast.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;

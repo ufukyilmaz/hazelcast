@@ -5,7 +5,6 @@ import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
-import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
@@ -238,8 +237,9 @@ public final class ChunkManager {
             return false;
         }
         final long start = System.nanoTime();
-        final ChunkSelection selected = selectChunksToCollect(chunks.values(), gcp, pfixTombstoMgr, mc, logger);
-        if (selected.srcChunks.isEmpty()) {
+        final Collection<StableValChunk> srcChunks =
+                selectChunksToCollect(chunks.values(), gcp, pfixTombstoMgr, mc, logger);
+        if (srcChunks.isEmpty()) {
             return false;
         }
         final long garbage = valGarbage.get();
@@ -250,8 +250,8 @@ public final class ChunkManager {
         if (gcp.forceGc) {
             logger.info("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
         }
-        evacuate(selected, this, mc, logger, start);
-        afterEvacuation("Value", selected.srcChunks, valGarbage, valOccupancy, start);
+        evacuate(srcChunks, this, mc, logger, start);
+        afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start);
         return true;
     }
 

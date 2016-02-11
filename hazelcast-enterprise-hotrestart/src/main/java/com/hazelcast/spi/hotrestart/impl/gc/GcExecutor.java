@@ -226,7 +226,7 @@ public final class GcExecutor {
         private long i;
         private long lastCaughtUp;
 
-        int catchupAsNeeded() {
+        public int catchupAsNeeded() {
             return catchupAsNeeded(DEFAULT_CATCHUP_INTERVAL_LOG2);
         }
 

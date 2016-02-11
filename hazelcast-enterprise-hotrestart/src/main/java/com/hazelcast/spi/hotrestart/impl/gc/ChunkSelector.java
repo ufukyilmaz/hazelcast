@@ -36,7 +36,6 @@ final class ChunkSelector {
         }
     };
     private final Collection<StableChunk> allChunks;
-    private final ChunkSelection cs = new ChunkSelection();
     private final GcParams gcp;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
@@ -51,39 +50,36 @@ final class ChunkSelector {
         this.logger = logger;
     }
 
-    /** Aggregates data returned to the caller of selectChunksToCollect() */
-    static class ChunkSelection {
-        final List<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
-        int liveRecordCount;
-    }
+    final List<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
 
-    static ChunkSelection
+    static Collection<StableValChunk>
     selectChunksToCollect(Collection<StableChunk> allChunks, GcParams gcp,
                           PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger) {
         return new ChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
     }
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
-    private ChunkSelection select() {
+    private Collection<StableValChunk> select() {
         final Set<StableValChunk> candidates = candidateChunks();
         if (candidates.isEmpty()) {
-            return cs;
+            return candidates;
         }
         long benefit = 0;
         long cost = 0;
         final int initialChunksToFind = gcp.limitSrcChunks ? INITIAL_TOP_CHUNKS : candidates.size();
         int chunksToFind = initialChunksToFind;
         final String status;
+        int liveRecordCount = 0;
         done: while (true) {
             for (StableValChunk c : topChunks(candidates, chunksToFind)) {
                 mc.catchupAsNeeded();
                 pfixTombstoMgr.dismissGarbage(c);
                 cost += c.cost();
-                cs.liveRecordCount += c.liveRecordCount;
+                liveRecordCount += c.liveRecordCount;
                 benefit += c.garbage;
-                cs.srcChunks.add(c);
+                srcChunks.add(c);
                 candidates.remove(c);
-                final String statusIfAny = status(benefit, cost);
+                final String statusIfAny = status(benefit, cost, liveRecordCount);
                 if (statusIfAny != null) {
                     status = statusIfAny;
                     break done;
@@ -91,13 +87,13 @@ final class ChunkSelector {
             }
             if (candidates.isEmpty()) {
                 if (cost > 0 && cost < gcp.minCost) {
-                    cs.srcChunks.clear();
-                    return cs;
+                    srcChunks.clear();
+                    return srcChunks;
                 }
                 status = "all candidates chosen, " + (cost == 0 ? "zero cost" : "some goals not reached");
                 break;
             }
-            if (cs.srcChunks.size() == initialChunksToFind) {
+            if (srcChunks.size() == initialChunksToFind) {
                 if (cost == 0) {
                     status = "max candidates chosen, zero cost";
                     break;
@@ -113,13 +109,13 @@ final class ChunkSelector {
             logger.finest("Finding " + chunksToFind + " more top chunks");
         }
         if ((double) benefit / cost < gcp.minBenefitToCost) {
-            cs.srcChunks.clear();
-            return cs;
+            srcChunks.clear();
+            return srcChunks;
         }
-        diagnoseChunks(allChunks, cs.srcChunks, gcp, logger);
+        diagnoseChunks(allChunks, srcChunks, gcp, logger);
         logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
-                status, benefit, cost, cs.srcChunks.size(), allChunks.size());
-        return cs;
+                status, benefit, cost, srcChunks.size(), allChunks.size());
+        return srcChunks;
     }
 
     private Set<StableValChunk> candidateChunks() {
@@ -158,11 +154,11 @@ final class ChunkSelector {
         }
     }
 
-    private String status(long garbage, long cost) {
+    private String status(long garbage, long cost, int liveRecordCount) {
         return cost > gcp.maxCost
                 ? format("max cost exceeded: will output %,d bytes", cost)
-                : cs.liveRecordCount > MAX_RECORD_COUNT
-                ? format("max record count exceeded: will copy %,d records", cs.liveRecordCount)
+                : liveRecordCount > MAX_RECORD_COUNT
+                ? format("max record count exceeded: will copy %,d records", liveRecordCount)
                 : cost >= gcp.costGoal && garbage >= gcp.benefitGoal
                 ? "reached all goals"
                 : null;

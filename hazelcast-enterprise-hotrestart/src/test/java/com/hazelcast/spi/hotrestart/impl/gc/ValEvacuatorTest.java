@@ -23,12 +23,12 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class EvacuatorTest {
+public class ValEvacuatorTest {
 
     @Rule public final TestName testName = new TestName();
 
     private final byte[] mockValue = new byte[1];
-    private Evacuator ev;
+    private ValEvacuator ev;
 
     @Before public void setup() {
         final MutatorCatchup mc = mock(MutatorCatchup.class);
@@ -40,6 +40,6 @@ public class EvacuatorTest {
         final GcHelper.OnHeap gcHelper = new GcHelper.OnHeap(hrConfig);
         final ChunkManager chunkMgr = new ChunkManager(hrConfig, gcHelper, null);
         final Collection<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
-        ev = new Evacuator(srcChunks, chunkMgr, mc, null, 0);
+        ev = new ValEvacuator(srcChunks, chunkMgr, mc, null, 0);
     }
 }

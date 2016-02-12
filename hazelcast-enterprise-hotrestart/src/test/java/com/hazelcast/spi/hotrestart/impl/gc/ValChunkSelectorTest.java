@@ -14,9 +14,9 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.INITIAL_TOP_CHUNKS;
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.diagnoseChunks;
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.INITIAL_TOP_CHUNKS;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.diagnoseChunks;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
 import static com.hazelcast.spi.hotrestart.impl.gc.StableChunkBuilder.chunkBuilder;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.withSettings;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class ChunkSelectorTest {
+public class ValChunkSelectorTest {
 
     private PrefixTombstoneManager pfixTombstoMgr;
     private GcExecutor.MutatorCatchup mc;

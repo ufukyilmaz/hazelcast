@@ -25,7 +25,7 @@ import static java.util.Arrays.asList;
 /**
  * Chooses which chunks to evacuate.
  */
-final class ChunkSelector {
+final class ValChunkSelector {
     @SuppressWarnings("MagicNumber")
     static final int INITIAL_TOP_CHUNKS = 16 * GcParams.MAX_COST_CHUNKS;
     private static final Comparator<StableValChunk> BY_SEQ_DESC = new Comparator<StableValChunk>() {
@@ -41,8 +41,8 @@ final class ChunkSelector {
     private final MutatorCatchup mc;
     private final GcLogger logger;
 
-    private ChunkSelector(Collection<StableChunk> allChunks, GcParams gcp, PrefixTombstoneManager pfixTombstoMgr,
-                          MutatorCatchup mc, GcLogger logger) {
+    private ValChunkSelector(Collection<StableChunk> allChunks, GcParams gcp, PrefixTombstoneManager pfixTombstoMgr,
+                             MutatorCatchup mc, GcLogger logger) {
         this.allChunks = allChunks;
         this.gcp = gcp;
         this.pfixTombstoMgr = pfixTombstoMgr;
@@ -55,7 +55,7 @@ final class ChunkSelector {
     static Collection<StableValChunk>
     selectChunksToCollect(Collection<StableChunk> allChunks, GcParams gcp,
                           PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger) {
-        return new ChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
+        return new ValChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
     }
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })

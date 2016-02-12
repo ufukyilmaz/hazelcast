@@ -14,19 +14,15 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
-import static java.lang.Math.min;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Evacuates source chunks into destination chunks by moving all live records.
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
-final class Evacuator {
+final class ValEvacuator {
     public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
             "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
 
@@ -44,8 +40,8 @@ final class Evacuator {
     private long start;
     private DestValChunk dest;
 
-    Evacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
-              GcLogger logger, long start
+    ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
+                 GcLogger logger, long start
     ) {
         this.srcChunks = srcChunks;
         this.chunkMgr = chunkMgr;
@@ -62,7 +58,7 @@ final class Evacuator {
     static void evacuate(
             Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
     ) {
-        new Evacuator(srcChunks, chunkMgr, mc, logger, start).evacuate();
+        new ValEvacuator(srcChunks, chunkMgr, mc, logger, start).evacuate();
     }
 
     private void evacuate() {
@@ -105,8 +101,8 @@ final class Evacuator {
                 ) {
                     // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
                     // not catching up with mutator until all metadata are updated. The first catchup can happen
-                    // within the r.intoOut() call (inside dest.add()). By the time dest.add() returns, the record
-                    // may already be dead.
+                    // within the r.intoOut() call (which is called from dest.add()). By the time dest.add() returns,
+                    // the record may already be dead.
                     holder.flip();
                     ensureDestChunk();
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.

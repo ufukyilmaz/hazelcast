@@ -24,8 +24,8 @@ import com.hazelcast.internal.util.counters.Counter;
 import java.util.Collection;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
-import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.evacuate;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator.evacuate;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombEvacuator.evacuate;
 import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;

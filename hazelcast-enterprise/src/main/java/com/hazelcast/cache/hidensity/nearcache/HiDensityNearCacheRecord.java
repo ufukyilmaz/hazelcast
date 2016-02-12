@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
-import com.hazelcast.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
@@ -10,7 +10,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  * </p>
  * Record of {@link com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore}.
  *
- * @see com.hazelcast.hidensity.HiDensityRecord
+ * @see com.hazelcast.internal.hidensity.HiDensityRecord
  * @see com.hazelcast.cache.impl.nearcache.NearCacheRecord
  * @see NativeMemoryData
  * @see com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore

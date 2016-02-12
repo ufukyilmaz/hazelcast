@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.record;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
-import com.hazelcast.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;

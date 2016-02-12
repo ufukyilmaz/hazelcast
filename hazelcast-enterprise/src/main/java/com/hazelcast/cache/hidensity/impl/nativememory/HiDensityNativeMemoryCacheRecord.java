@@ -1,10 +1,10 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
-import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 

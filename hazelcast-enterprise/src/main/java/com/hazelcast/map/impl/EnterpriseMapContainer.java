@@ -17,10 +17,10 @@
 package com.hazelcast.map.impl;
 
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
-import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.eviction.EvictionChecker;
 import com.hazelcast.map.impl.eviction.Evictor;

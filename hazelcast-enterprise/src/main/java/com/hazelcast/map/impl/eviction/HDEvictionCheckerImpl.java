@@ -20,7 +20,7 @@ import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;

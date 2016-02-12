@@ -1,4 +1,4 @@
-package com.hazelcast.hidensity;
+package com.hazelcast.internal.hidensity;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
@@ -23,7 +23,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  *
  * @see com.hazelcast.memory.MemoryBlockAccessor
  * @see NativeMemoryData
- * @see com.hazelcast.hidensity.HiDensityRecord
+ * @see com.hazelcast.internal.hidensity.HiDensityRecord
  *
  * @author sozal 18/02/15
  */

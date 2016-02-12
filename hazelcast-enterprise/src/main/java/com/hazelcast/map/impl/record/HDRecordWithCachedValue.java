@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.record;
 
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.serialization.Data;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;

@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.maxsize;
 
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.MemoryUnit;
 
 /**

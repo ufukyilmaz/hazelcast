@@ -35,7 +35,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.memory.NativeOutOfMemoryError;

@@ -7,7 +7,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemorySize;

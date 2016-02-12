@@ -2,10 +2,10 @@ package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
 import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.util.counters.SwCounter;
+import com.hazelcast.internal.util.counters.SwCounter;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
-import static com.hazelcast.util.counters.SwCounter.newSwCounter;
+import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 
 /**
  * Abstract base class for methods common to both tracker map implementations.

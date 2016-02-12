@@ -22,7 +22,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
-import com.hazelcast.util.counters.Counter;
+import com.hazelcast.internal.util.counters.Counter;
 
 import java.util.Collection;
 
@@ -31,7 +31,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToC
 import static com.hazelcast.spi.hotrestart.impl.gc.Evacuator.evacuate;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombEvacuator.evacuate;
-import static com.hazelcast.util.counters.SwCounter.newSwCounter;
+import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**

@@ -3,9 +3,10 @@ package com.hazelcast.memory;
 import java.util.List;
 import java.util.ArrayList;
 
+import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.util.counters.Counter;
-import com.hazelcast.util.counters.MwCounter;
+
 
 public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     private long pointer;

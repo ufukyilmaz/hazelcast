@@ -2,12 +2,12 @@ package com.hazelcast.memory;
 
 import com.hazelcast.elastic.queue.LongLinkedBlockingQueue;
 import com.hazelcast.elastic.queue.LongQueue;
+import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
-import com.hazelcast.util.counters.Counter;
-import com.hazelcast.util.counters.MwCounter;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.concurrent.ConcurrentNavigableMap;

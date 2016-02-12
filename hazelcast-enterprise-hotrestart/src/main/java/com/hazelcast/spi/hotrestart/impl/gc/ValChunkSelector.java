@@ -50,8 +50,6 @@ final class ValChunkSelector {
         this.logger = logger;
     }
 
-    final List<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
-
     static Collection<StableValChunk>
     selectChunksToCollect(Collection<StableChunk> allChunks, GcParams gcp,
                           PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger) {
@@ -64,6 +62,7 @@ final class ValChunkSelector {
         if (candidates.isEmpty()) {
             return candidates;
         }
+        final List<StableValChunk> srcChunks = new ArrayList<StableValChunk>();
         long benefit = 0;
         long cost = 0;
         final int initialChunksToFind = gcp.limitSrcChunks ? INITIAL_TOP_CHUNKS : candidates.size();

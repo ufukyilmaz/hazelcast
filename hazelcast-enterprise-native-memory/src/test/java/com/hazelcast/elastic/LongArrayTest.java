@@ -40,12 +40,12 @@ public class LongArrayTest {
         assertEquals(0L, array.get(0));
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test(expected = AssertionError.class)
     public void testSet_NegativeIndex() throws Exception {
         array.set(-1, 1);
     }
 
-    @Test(expected = ArrayIndexOutOfBoundsException.class)
+    @Test(expected = AssertionError.class)
     public void testSet_GreaterThanLenIndex() throws Exception {
         array.set(INITIAL_LEN, 1);
     }
@@ -61,7 +61,7 @@ public class LongArrayTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = AssertionError.class)
     public void testExpand_SmallerLength() throws Exception {
         array.expand(INITIAL_LEN >> 1);
     }

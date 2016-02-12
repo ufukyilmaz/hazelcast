@@ -16,6 +16,8 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
  */
 public class HashSlotArrayImpl implements HashSlotArray {
 
+    /** Value written to the  {@code key1} field to mark an empty slot.
+     * This is an illegal value to use for {@code key1}. */
     public static final long NULL_KEY = 0L;
 
     private static final int KEY_1_OFFSET = 0;

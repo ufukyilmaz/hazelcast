@@ -7,9 +7,9 @@ import com.hazelcast.test.annotation.RunParallel;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-@RunParallel
-@RunWith(HazelcastTestRunner.class)
-@Category({QuickTest.class, ParallelTest.class})
+//@RunParallel
+//@RunWith(HazelcastTestRunner.class)
+//@Category({QuickTest.class, ParallelTest.class})
 public class SortedBySeqCursorTest {
 
 }

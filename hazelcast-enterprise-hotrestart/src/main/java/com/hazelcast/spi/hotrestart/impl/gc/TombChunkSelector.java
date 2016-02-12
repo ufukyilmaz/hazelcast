@@ -15,23 +15,19 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk.benefit
 
 final class TombChunkSelector {
     private final Collection<StableChunk> allChunks;
-    private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
     private final GcLogger logger;
 
-    private TombChunkSelector(
-            Collection<StableChunk> allChunks, PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger
-    ) {
+    private TombChunkSelector(Collection<StableChunk> allChunks, MutatorCatchup mc, GcLogger logger) {
         this.allChunks = allChunks;
-        this.pfixTombstoMgr = pfixTombstoMgr;
         this.mc = mc;
         this.logger = logger;
     }
 
     static Collection<StableTombChunk> selectTombChunksToCollect(
-            Collection<StableChunk> allChunks, PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger
+            Collection<StableChunk> allChunks, MutatorCatchup mc, GcLogger logger
     ) {
-        return new TombChunkSelector(allChunks, pfixTombstoMgr, mc, logger).select();
+        return new TombChunkSelector(allChunks, mc, logger).select();
     }
 
     private Collection<StableTombChunk> select() {

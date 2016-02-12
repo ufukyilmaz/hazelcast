@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;

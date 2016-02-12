@@ -258,7 +258,7 @@ public final class ChunkManager {
     boolean tombGc(MutatorCatchup mc) {
         final long start = System.nanoTime();
         final Collection<StableTombChunk> srcChunks =
-                selectTombChunksToCollect(chunks.values(), pfixTombstoMgr, mc, logger);
+                selectTombChunksToCollect(chunks.values(), mc, logger);
         if (srcChunks.isEmpty()) {
             return false;
         }

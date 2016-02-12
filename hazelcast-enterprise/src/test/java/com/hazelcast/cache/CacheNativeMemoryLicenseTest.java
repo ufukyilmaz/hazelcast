@@ -71,6 +71,14 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(config);
     }
 
+    @Test
+    public void node_should_join_when_max_memory_does_not_exceed_licensed_value_with_V2_license() {
+        GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(TWO_GB_V2_HD_LICENSE);
+        TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
+        configureCacheWithNativeMemory(factory);
+        factory.newHazelcastInstance(config);
+    }
+
     private void configureCacheWithNativeMemory(TestHazelcastInstanceFactory factory) {
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         provider = HazelcastServerCachingProvider.createCachingProvider(instance);

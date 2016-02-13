@@ -118,7 +118,7 @@ final class ValChunkSelector {
     }
 
     private Set<StableValChunk> candidateChunks() {
-        final Set<StableValChunk> candidates = new HashSet<StableValChunk>();
+        final Set<StableValChunk> candidates = new HashSet<StableValChunk>(allChunks.size());
         for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableValChunk)) {
                 continue;

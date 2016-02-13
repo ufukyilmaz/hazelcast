@@ -195,7 +195,7 @@ public class PrefixTombstoneManager {
     }
 
     private void persistTombstones(GcHelper gcHelper, Long2LongHashMap tombstoneSnapshot) {
-        if (gcHelper.ioDisabled()) {
+        if (GcHelper.ioDisabled()) {
             return;
         }
         final File homeDir = gcHelper.homeDir;

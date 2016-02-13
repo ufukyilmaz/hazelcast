@@ -60,7 +60,6 @@ public final class GcExecutor {
     private final MutatorCatchup mc = new MutatorCatchup();
     private final IdleStrategy mutatorIdler = idler();
     private final GcLogger logger;
-    private final GcHelper gcHelper;
     /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
     private final Object testGcMutex = new Object();
     private volatile boolean backpressure;
@@ -70,7 +69,6 @@ public final class GcExecutor {
     private boolean stopped;
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
-        this.gcHelper = gcHelper;
         this.logger = gcHelper.logger;
         this.gcThread = new Thread(new MainLoop(), "GC thread for " + cfg.storeName());
         this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
@@ -88,7 +86,6 @@ public final class GcExecutor {
             final IdleStrategy idler = idler();
             try {
                 long idleCount = 0;
-                int parkCount = 0;
                 boolean didWork = false;
                 while (!stopped && !interrupted()) {
                     final int workCount;
@@ -110,22 +107,9 @@ public final class GcExecutor {
                     }
                     if (workCount > 0 || didWork) {
                         idleCount = 0;
-                        parkCount = 0;
-                    } else if (idler.idle(idleCount++)) {
-                        parkCount++;
+                    } else {
+                        idler.idle(idleCount++);
                     }
-                    if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
-                        synchronized (testGcMutex) {
-                            didWork = chunkMgr.compressSomeChunk(mc);
-                            parkCount = 0;
-                        }
-                    }
-                }
-                // This should be optional, configurable behavior.
-                // Compression is performed while the rest of the system
-                // is already down, thus contributing to downtime.
-                if (gcHelper.compressionEnabled()) {
-                    chunkMgr.compressAllChunks(mc);
                 }
                 logger.info("GC thread done. ");
             } catch (Throwable t) {
@@ -161,7 +145,6 @@ public final class GcExecutor {
                 LockSupport.unpark(gcThread);
                 Thread.sleep(1);
             }
-            chunkMgr.gcHelper.dispose();
         } catch (InterruptedException e) {
             currentThread().interrupt();
         }

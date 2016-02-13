@@ -13,10 +13,9 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
-import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
 
 /**
  * A cursor over a chunk file's contents.
@@ -35,16 +34,10 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         this.headerBuf = ByteBuffer.allocate(headerSize);
         try {
             final FileInputStream fileIn = new FileInputStream(chunkFile);
-            this.in = isCompressed(chunkFile)
-                    ? gcHelper.compressor.compressedInputStream(fileIn)
-                    : new BufferingInputStream(fileIn);
+            this.in = new BufferingInputStream(fileIn);
         } catch (FileNotFoundException e) {
             throw new HotRestartException("Failed to open chunk file " + chunkFile);
         }
-    }
-
-    public final boolean isCompressed() {
-        return isCompressed(chunkFile);
     }
 
     public final boolean advance() {
@@ -141,10 +134,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         } catch (IOException e) {
             throw new HotRestartException(e);
         }
-    }
-
-    private static boolean isCompressed(File chunkFile) {
-        return chunkFile.getName().endsWith(COMPRESSED_SUFFIX);
     }
 
     private static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {

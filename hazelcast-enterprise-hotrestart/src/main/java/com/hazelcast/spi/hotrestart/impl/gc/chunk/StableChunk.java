@@ -4,8 +4,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
 import java.util.Comparator;
 
-import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
-
 /**
  * Represents a tombstone chunk whose on-disk contents are stable (immutable).
  */
@@ -39,14 +37,6 @@ public abstract class StableChunk extends Chunk {
 
     @Override public final long size() {
         return size;
-    }
-
-    @Override public final String fnameSuffix() {
-        return FNAME_SUFFIX + (compressed ? COMPRESSED_SUFFIX : "");
-    }
-
-    @Override public boolean compressed() {
-        return compressed;
     }
 
     public abstract double cachedBenefitToCost();

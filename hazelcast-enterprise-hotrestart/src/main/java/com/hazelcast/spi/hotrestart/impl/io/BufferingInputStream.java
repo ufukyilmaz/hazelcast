@@ -9,7 +9,7 @@ import java.io.InputStream;
  */
 public class BufferingInputStream extends InputStream {
     /** Base-2 logarithm of buffer size. */
-    public static final int LOG_OF_BUFFER_SIZE = 15;
+    public static final int LOG_OF_BUFFER_SIZE = 16;
     /** Buffer size used for file I/O. Invariant: buffer size is a power of two. **/
     public static final int BUFFER_SIZE = 1 << LOG_OF_BUFFER_SIZE;
     static final int BYTE_MASK = 0xff;

@@ -98,6 +98,7 @@ public final class GcExecutor {
                             didWork = chunkMgr.valueGc(gcp, mc);
                         }
                         if (didWork) {
+                            mc.catchupNow();
                             chunkMgr.tombGc(mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
@@ -205,6 +206,7 @@ public final class GcExecutor {
      */
     public class MutatorCatchup implements CatchupTestSupport {
         private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
+        private static final int LATE_CATCHUP_CUTOFF_MILLIS = 110;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
         private long lastCaughtUp;
@@ -241,7 +243,9 @@ public final class GcExecutor {
             final long now = System.nanoTime();
             final long sinceLastCatchup = now - lastCaughtUp;
             lastCaughtUp = now;
-            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)) {
+            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
+                && sinceLastCatchup < MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
+            ) {
                 final StringWriter sw = new StringWriter(512);
                 final PrintWriter w = new PrintWriter(sw);
                 new Exception().printStackTrace(w);

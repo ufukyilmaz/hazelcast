@@ -17,10 +17,14 @@ import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_S
  * Encapsulates chunk file writing code.
  */
 public final class ChunkFileOut {
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
     private final ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
     private final FileOutputStream fileOut;
     private final FileChannel fileChan;
     private final MutatorCatchup mc;
+    private int flushedDataSize;
+    private int flushedSizeAtLastCatchup;
 
     public ChunkFileOut(File file) throws FileNotFoundException {
         this(file, null);
@@ -43,6 +47,10 @@ public final class ChunkFileOut {
         final int keySize = keyBuf.remaining();
         final int valSize = valBuf.remaining();
         assert bufferSizeValid(r, keySize, valSize);
+        if (flushedDataSize == 0 && buf.position() == 0) {
+            // A new file was created just before calling this method. This involved some I/O, so catch up now.
+            mc.catchupNow();
+        }
         try {
             putValueHeader(seq, keyPrefix, keySize, valSize);
             write(keyBuf);
@@ -53,9 +61,7 @@ public final class ChunkFileOut {
     }
 
     public void writeTombstone(long seq, long prefix, byte[] key) {
-        if (buf.remaining() < Record.TOMB_HEADER_SIZE) {
-            flushLocalBuffer();
-        }
+        ensureRoomForHeader(Record.TOMB_HEADER_SIZE);
         buf.putLong(seq);
         buf.putLong(prefix);
         buf.putInt(key.length);
@@ -63,9 +69,7 @@ public final class ChunkFileOut {
     }
 
     public void writeTombstone(long seq, long prefix, ByteBuffer keyBuf, int keySize) {
-        if (buf.remaining() < Record.TOMB_HEADER_SIZE) {
-            flushLocalBuffer();
-        }
+        ensureRoomForHeader(Record.TOMB_HEADER_SIZE);
         buf.putLong(seq);
         buf.putLong(prefix);
         buf.putInt(keySize);
@@ -74,11 +78,7 @@ public final class ChunkFileOut {
 
     public void fsync() {
         flushLocalBuffer();
-        try {
-            fileOut.getFD().sync();
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
+        fileFsync();
     }
 
     public void close() {
@@ -91,9 +91,7 @@ public final class ChunkFileOut {
     }
 
     private void putValueHeader(long seq, long prefix, int keySize, int valueSize) {
-        if (buf.remaining() < Record.VAL_HEADER_SIZE) {
-            flushLocalBuffer();
-        }
+        ensureRoomForHeader(Record.VAL_HEADER_SIZE);
         buf.putLong(seq);
         buf.putLong(prefix);
         buf.putInt(keySize);
@@ -111,6 +109,7 @@ public final class ChunkFileOut {
             while (remaining > BUFFER_SIZE) {
                 flushLocalBuffer();
                 fileOut.write(b, position, BUFFER_SIZE);
+                flushedDataSize += BUFFER_SIZE;
                 position += BUFFER_SIZE;
                 remaining -= BUFFER_SIZE;
             }
@@ -131,9 +130,11 @@ public final class ChunkFileOut {
         final int localLimit = from.position() + length;
         from.limit(localLimit);
         try {
+            // While remaining data size is larger than local buffer size,
+            // skip the local buffer and transfer data directly to the file channel
             while (from.remaining() > BUFFER_SIZE) {
                 flushLocalBuffer();
-                fileChan.write(from);
+                flushedDataSize += fileChan.write(from);
                 catchup();
             }
             if (from.remaining() > buf.remaining()) {
@@ -150,12 +151,19 @@ public final class ChunkFileOut {
         }
     }
 
+    private void ensureRoomForHeader(int headerSize) {
+        if (buf.remaining() < headerSize) {
+            flushLocalBuffer();
+        }
+    }
+
     private void ensureBufHasRoom() {
         if (buf.position() != BUFFER_SIZE) {
             return;
         }
         try {
             fileOut.write(buf.array());
+            flushedDataSize += BUFFER_SIZE;
             catchup();
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -164,20 +172,37 @@ public final class ChunkFileOut {
     }
 
     private void flushLocalBuffer() {
-        if (buf.position() > 0) {
-            try {
-                fileOut.write(buf.array(), 0, buf.position());
-                catchup();
-            } catch (IOException e) {
-                throw new HotRestartException(e);
-            }
-            buf.position(0);
+        if (buf.position() == 0) {
+            return;
         }
+        buf.flip();
+        try {
+            while (buf.hasRemaining()) {
+                flushedDataSize += fileChan.write(buf);
+                catchup();
+            }
+        } catch (IOException e) {
+            throw new HotRestartException(e);
+        }
+        buf.clear();
     }
 
     private void catchup() {
         if (mc != null) {
             mc.catchupNow();
+            if (flushedDataSize - flushedSizeAtLastCatchup >= FSYNC_INTERVAL_BYTES) {
+                fileFsync();
+                mc.catchupNow();
+                flushedSizeAtLastCatchup = flushedDataSize;
+            }
+        }
+    }
+
+    private void fileFsync() {
+        try {
+            fileOut.getFD().sync();
+        } catch (IOException e) {
+            throw new HotRestartException(e);
         }
     }
 

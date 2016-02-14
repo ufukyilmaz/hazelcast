@@ -103,7 +103,7 @@ public class HotRestartTestUtil {
 //                }
                 final long took = System.nanoTime() - iterStart;
                 if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
-                    logger.info(String.format("Recording outlier: %d ms%n", NANOSECONDS.toMillis(took)));
+                    logger.info(String.format("Recording outlier: %d ms", NANOSECONDS.toMillis(took)));
                 }
                 hist.recordValue(took);
             }

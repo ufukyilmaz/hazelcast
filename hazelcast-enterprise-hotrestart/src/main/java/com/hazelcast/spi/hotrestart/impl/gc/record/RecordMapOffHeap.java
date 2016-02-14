@@ -80,8 +80,9 @@ public final class RecordMapOffHeap implements RecordMap {
             int liveRecordCount, RecordMap[] recordMaps, MutatorCatchup mc
     ) {
         final LongArray seqsAndSlotBases = new LongArray(malloc, 2 * liveRecordCount);
-        int i = 0;
         final RecordOffHeap r = new RecordOffHeap();
+        mc.catchupNow();
+        int i = 0;
         for (RecordMap map : recordMaps) {
             for (HashSlotCursor cursor = ((RecordMapOffHeap) map).records.cursor(); cursor.advance();) {
                 r.address = cursor.valueAddress();
@@ -89,13 +90,10 @@ public final class RecordMapOffHeap implements RecordMap {
                     seqsAndSlotBases.set(i++, r.liveSeq());
                     seqsAndSlotBases.set(i++, valueAddr2slotBase(r.address));
                 }
+                mc.catchupAsNeeded();
             }
         }
-        assert i == 2 * liveRecordCount : String.format(
-                "Mismatch between supplied and actual live record counts: supplied %,d actual %,d",
-                liveRecordCount, i / 2);
-        mc.catchupNow();
-        return new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, malloc, mc);
+        return new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, i, malloc, mc);
     }
 
     @Override public CursorOffHeap cursor() {

@@ -148,7 +148,7 @@ public final class ChunkManager {
         chunk.retire(kh, r);
     }
 
-    void dismissGarbage(Chunk c) {
+    void dismissGarbage(Chunk c, MutatorCatchup mc) {
         for (Cursor cursor = c.records.cursor(); cursor.advance();) {
             final KeyHandle kh = cursor.toKeyHandle();
             final Record r = cursor.asRecord();
@@ -159,6 +159,7 @@ public final class ChunkManager {
                 assert r.garbageCount() == 0
                         : "Inconsistent zero global garbage count and local count " + r.garbageCount();
             }
+            mc.catchupAsNeeded();
         }
         c.garbage = 0;
     }
@@ -242,6 +243,7 @@ public final class ChunkManager {
         if (srcChunks.isEmpty()) {
             return false;
         }
+        logger.fine("ValChunk selection took %,d us", NANOSECONDS.toMicros(System.nanoTime() - start));
         final long garbage = valGarbage.get();
         final long live = valOccupancy.get() - garbage;
         final double garbagePercent = UNIT_PERCENTAGE * garbage / live;
@@ -257,7 +259,7 @@ public final class ChunkManager {
 
     boolean tombGc(MutatorCatchup mc) {
         final long start = System.nanoTime();
-        final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc, logger);
+        final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc);
         if (srcChunks.isEmpty()) {
             return false;
         }

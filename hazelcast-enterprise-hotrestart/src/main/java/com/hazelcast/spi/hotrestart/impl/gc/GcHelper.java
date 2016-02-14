@@ -6,6 +6,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
@@ -101,14 +102,14 @@ public abstract class GcHelper {
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(),
-                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true), null),
                 this);
     }
 
-    public final DestValChunk newDestValChunk() {
+    public final DestValChunk newDestValChunk(MutatorCatchup mc) {
         final long seq = chunkSeq.incrementAndGet();
         return new DestValChunk(seq, newRecordMap(),
-                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true), mc),
                 this);
     }
 
@@ -119,13 +120,13 @@ public abstract class GcHelper {
     final WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
         final long seq = chunkSeq.incrementAndGet();
         return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
-                chunkFileOut(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
+                chunkFileOut(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true), null),
                 this);
     }
 
-    private static ChunkFileOut chunkFileOut(File f) {
+    private static ChunkFileOut chunkFileOut(File f, MutatorCatchup mc) {
         try {
-            return new ChunkFileOut(f);
+            return new ChunkFileOut(f, mc);
         } catch (FileNotFoundException e) {
             throw new HotRestartException(e);
         }

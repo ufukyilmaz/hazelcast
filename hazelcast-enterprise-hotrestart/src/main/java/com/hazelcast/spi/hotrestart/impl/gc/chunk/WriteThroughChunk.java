@@ -10,10 +10,9 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
  * Not thread-safe.
  */
 public abstract class WriteThroughChunk extends GrowingChunk {
-    final ChunkFileOut out;
+    public final ChunkFileOut out;
     final GcHelper gcHelper;
     private final String suffix;
-    private boolean needsFsyncBeforeClosing;
 
     WriteThroughChunk(long seq, String suffix, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, records);
@@ -23,15 +22,12 @@ public abstract class WriteThroughChunk extends GrowingChunk {
     }
 
     public void flagForFsyncOnClose(boolean fsyncOnClose) {
-        this.needsFsyncBeforeClosing |= fsyncOnClose;
+        out.flagForFsyncOnClose(fsyncOnClose);
     }
 
     public void close() {
         if (out == null) {
             return;
-        }
-        if (needsFsyncBeforeClosing) {
-            fsync();
         }
         out.close();
         gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + suffix, FNAME_SUFFIX);
@@ -39,7 +35,6 @@ public abstract class WriteThroughChunk extends GrowingChunk {
 
     public void fsync() {
         out.fsync();
-        needsFsyncBeforeClosing = false;
     }
 
     final boolean hasRoom() {

@@ -19,18 +19,17 @@ import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_S
 public final class ChunkFileOut {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
+    public final File file;
     private final ByteBuffer buf = ByteBuffer.allocate(BUFFER_SIZE);
     private final FileOutputStream fileOut;
     private final FileChannel fileChan;
     private final MutatorCatchup mc;
+    private boolean needsFsyncBeforeClosing;
     private int flushedDataSize;
     private int flushedSizeAtLastCatchup;
 
-    public ChunkFileOut(File file) throws FileNotFoundException {
-        this(file, null);
-    }
-
     public ChunkFileOut(File file, MutatorCatchup mc) throws FileNotFoundException {
+        this.file = file;
         this.fileOut = new FileOutputStream(file);
         this.fileChan = fileOut.getChannel();
         this.mc = mc;
@@ -76,14 +75,22 @@ public final class ChunkFileOut {
         write(keyBuf, keySize);
     }
 
+    public void flagForFsyncOnClose(boolean fsyncOnClose) {
+        this.needsFsyncBeforeClosing |= fsyncOnClose;
+    }
+
     public void fsync() {
         flushLocalBuffer();
         fileFsync();
+        needsFsyncBeforeClosing = false;
     }
 
     public void close() {
         flushLocalBuffer();
         try {
+            if (needsFsyncBeforeClosing) {
+                fileFsync();
+            }
             fileOut.close();
         } catch (IOException e) {
             throw new HotRestartException(e);

@@ -23,7 +23,7 @@ public final class LongArray implements Disposable {
     public LongArray(MemoryAllocator malloc, long length) {
         this.malloc = malloc;
         this.length = length;
-        baseAddress = malloc.allocate(lengthInBytes(length));
+        baseAddress = length > 0 ? malloc.allocate(lengthInBytes(length)) : NULL_ADDRESS;
     }
 
     /**

@@ -4,7 +4,7 @@ import com.hazelcast.nio.Disposable;
 
 public interface ActiveChunk extends Disposable {
 
-    boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] valueBytes);
+    boolean addStep1(long recordSeq, long keyPrefix, byte[] keyBytes, byte[] valueBytes);
 
     long size();
 

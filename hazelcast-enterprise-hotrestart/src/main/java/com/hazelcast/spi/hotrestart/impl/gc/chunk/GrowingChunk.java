@@ -74,14 +74,4 @@ public abstract class GrowingChunk extends Chunk {
             existing.setFilePosition(filePosition);
         }
     }
-
-    public static void fsync(FileOutputStream out) {
-        try {
-            if (out != null) {
-                out.getFD().sync();
-            }
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
-    }
 }

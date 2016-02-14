@@ -56,18 +56,16 @@ public final class Rebuilder {
     /**
      * Called when another chunk file starts being read.
      * @param seq the sequence id of the chunk file
-     * @param compressed whether the file is compressed
      */
-    public void startNewChunk(long seq, boolean compressed) {
+    public void startNewChunk(long seq) {
         finishCurrentChunk();
         if (seq > maxChunkSeq) {
             this.maxChunkSeq = seq;
         }
         if (isLoadingTombstones) {
-            assert !compressed : "Attempt to start a compressed tombstone chunk";
             this.chunk = new RebuildingTombChunk(seq, cm.gcHelper.newRecordMap());
         } else {
-            this.chunk = new RebuildingValChunk(seq, cm.gcHelper.newRecordMap(), compressed);
+            this.chunk = new RebuildingValChunk(seq, cm.gcHelper.newRecordMap());
         }
     }
 
@@ -174,11 +172,9 @@ public final class Rebuilder {
     }
 
     private abstract static class RebuildingChunk extends GrowingChunk {
-        final boolean compressed;
 
-        RebuildingChunk(long seq, RecordMap records, boolean compressed) {
+        RebuildingChunk(long seq, RecordMap records) {
             super(seq, records);
-            this.compressed = compressed;
         }
 
         abstract void add(long prefix, KeyHandle kh, long seq, int size);
@@ -196,8 +192,8 @@ public final class Rebuilder {
     }
 
     private static final class RebuildingValChunk extends RebuildingChunk {
-        RebuildingValChunk(long seq, RecordMap records, boolean compressed) {
-            super(seq, records, compressed);
+        RebuildingValChunk(long seq, RecordMap records) {
+            super(seq, records);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
@@ -205,7 +201,7 @@ public final class Rebuilder {
         }
 
         @Override StableChunk toStableChunk() {
-            return new StableValChunk(seq, records, liveRecordCount, size(), garbage, false, compressed);
+            return new StableValChunk(seq, records, liveRecordCount, size(), garbage, false);
         }
 
         @Override void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
@@ -229,7 +225,7 @@ public final class Rebuilder {
     private static final class RebuildingTombChunk extends RebuildingChunk {
 
         RebuildingTombChunk(long seq, RecordMap records) {
-            super(seq, records, false);
+            super(seq, records);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {

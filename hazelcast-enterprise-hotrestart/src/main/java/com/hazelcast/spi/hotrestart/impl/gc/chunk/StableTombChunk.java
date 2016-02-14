@@ -18,11 +18,11 @@ public final class StableTombChunk extends StableChunk {
     private Long2ObjectHashMap<KeyHandle> filePosToKeyHandle;
 
     StableTombChunk(WriteThroughTombChunk from, boolean compressed) {
-        super(from, compressed);
+        super(from);
     }
 
     public StableTombChunk(long seq, RecordMap records, int liveRecordCount, long size, long garbage) {
-        super(seq, records, liveRecordCount, size, garbage, false, false);
+        super(seq, records, liveRecordCount, size, garbage, false);
     }
 
     @Override public String base() {

@@ -18,15 +18,12 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOnHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOnHeap;
-import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.nio.IOUtil.delete;
@@ -101,22 +98,17 @@ public abstract class GcHelper {
         }
     }
 
-    /** @return whether file I/O is disabled. Should return true only in testing. */
-    public static boolean ioDisabled() {
-        return false;
-    }
-
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(),
-                createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
                 this);
     }
 
     public final DestValChunk newDestValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new DestValChunk(seq, newRecordMap(),
-                createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
                 this);
     }
 
@@ -127,8 +119,16 @@ public abstract class GcHelper {
     final WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
         final long seq = chunkSeq.incrementAndGet();
         return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
-                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
+                chunkFileOut(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
                 this);
+    }
+
+    private static ChunkFileOut chunkFileOut(File f) {
+        try {
+            return new ChunkFileOut(f);
+        } catch (FileNotFoundException e) {
+            throw new HotRestartException(e);
+        }
     }
 
     public final void initChunkSeq(long seq) {
@@ -235,31 +235,5 @@ public abstract class GcHelper {
         @Override public SetOfKeyHandle newSetOfKeyHandle() {
             return new SetOfKeyHandleOffHeap(malloc);
         }
-    }
-
-    public static FileOutputStream createFileOutputStream(File f) {
-        try {
-            return new FileOutputStream(f);
-        } catch (FileNotFoundException e) {
-            throw new HotRestartException(e);
-        }
-    }
-
-    public static FileInputStream createFileInputStream(File f) {
-        try {
-            return new FileInputStream(f);
-        } catch (FileNotFoundException e) {
-            throw new HotRestartException(e);
-        }
-    }
-
-    public static OutputStream bufferedOutputStream(FileOutputStream out) {
-        return out == null ? nullOutputStream() : new BufferedOutputStream(out);
-    }
-
-    static OutputStream nullOutputStream() {
-        return new OutputStream() {
-            @Override public void write(int i) throws IOException { }
-        };
     }
 }

@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 
 import java.io.EOFException;

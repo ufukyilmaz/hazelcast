@@ -73,7 +73,7 @@ public class ChunkPriorityQueueTest {
     }
 
     private static StableValChunk mockChunk(long seq, long size, long garbage) {
-        final StableValChunk c = new StableValChunk(seq, null, 1, size, garbage, false, false);
+        final StableValChunk c = new StableValChunk(seq, null, 1, size, garbage, false);
         c.updateBenefitToCost(3);
         return c;
     }

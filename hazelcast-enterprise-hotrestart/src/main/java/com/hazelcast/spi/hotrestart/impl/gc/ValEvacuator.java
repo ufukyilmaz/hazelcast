@@ -110,7 +110,7 @@ final class ValEvacuator {
                     // will be incremented if the keyHandle receives an update.
                     recordTrackers.get(kh).moveToChunk(dest.seq);
                     // catches up for each bufferful
-                    dest.add(r, kh, holder, mc);
+                    dest.add(r, kh, holder);
                     if (dest.full()) {
                         closeDestChunk();
                     }

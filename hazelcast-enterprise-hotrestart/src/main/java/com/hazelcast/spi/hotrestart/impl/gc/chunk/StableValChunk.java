@@ -9,12 +9,12 @@ public final class StableValChunk extends StableChunk {
     private double benefitToCost;
 
     public StableValChunk(ActiveValChunk from, boolean compressed) {
-        super(from, compressed);
+        super(from);
     }
 
     public StableValChunk(long seq, RecordMap records, int liveRecordCount,
-                   long size, long garbage, boolean needsDismissing, boolean compressed) {
-        super(seq, records, liveRecordCount, size, garbage, needsDismissing, compressed);
+                          long size, long garbage, boolean needsDismissing) {
+        super(seq, records, liveRecordCount, size, garbage, needsDismissing);
     }
 
     public long cost() {

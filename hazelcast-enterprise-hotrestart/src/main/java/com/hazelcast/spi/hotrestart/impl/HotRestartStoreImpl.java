@@ -65,7 +65,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         ActiveChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
         activeChunk.flagForFsyncOnClose(needsFsync);
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
-        final boolean full = activeChunk.addStep1(hrKey.prefix(), seq, hrKey.bytes(), value);
+        final boolean full = activeChunk.addStep1(seq, hrKey.prefix(), hrKey.bytes(), value);
         if (full) {
             activeChunk.close();
             final ActiveChunk inactiveChunk = activeChunk;

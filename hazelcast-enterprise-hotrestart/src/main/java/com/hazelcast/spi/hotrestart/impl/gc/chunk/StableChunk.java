@@ -16,22 +16,17 @@ public abstract class StableChunk extends Chunk {
         }
     };
 
-    public boolean compressed;
     public long size;
 
-    StableChunk(GrowingChunk from, boolean compressed) {
+    StableChunk(GrowingChunk from) {
         super(from);
         this.size = from.size();
-        this.compressed = compressed;
         needsDismissing(from.needsDismissing());
     }
 
-    StableChunk(long seq, RecordMap records, int liveRecordCount,
-                long size, long garbage, boolean needsDismissing, boolean compressed
-    ) {
+    StableChunk(long seq, RecordMap records, int liveRecordCount, long size, long garbage, boolean needsDismissing) {
         super(seq, records, liveRecordCount, garbage);
         this.size = size;
-        this.compressed = compressed;
         needsDismissing(needsDismissing);
     }
 

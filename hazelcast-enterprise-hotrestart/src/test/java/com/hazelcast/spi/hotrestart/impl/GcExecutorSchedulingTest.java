@@ -40,7 +40,7 @@ public class GcExecutorSchedulingTest {
         p.disableIo = true;
         MockStoreRegistry reg = null;
         try {
-            reg = createStoreRegistry(hrStoreConfig(testingHome).setIoDisabled(true), null);
+            reg = createStoreRegistry(hrStoreConfig(testingHome), null);
             final byte[] value = new byte[1];
             for (int i = 0; i < 20; i++) {
                 reg.put(1, 1, value);

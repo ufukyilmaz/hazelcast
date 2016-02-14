@@ -68,7 +68,7 @@ public abstract class ChunkFilesetCursor {
                 return false;
             }
             this.currentChunkCursor = openCursor(chunkFile);
-            rebuilder.startNewChunk(seq(chunkFile), currentChunkCursor.isCompressed());
+            rebuilder.startNewChunk(seq(chunkFile));
             return true;
         } catch (IOException e) {
             throw new HotRestartException(e);

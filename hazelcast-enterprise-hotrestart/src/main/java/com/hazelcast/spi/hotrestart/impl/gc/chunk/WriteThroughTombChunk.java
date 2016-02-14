@@ -5,9 +5,9 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.spi.hotrestart.impl.io.TombFileAccessor;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
@@ -15,28 +15,21 @@ import java.io.IOException;
  */
 public final class WriteThroughTombChunk extends WriteThroughChunk implements ActiveChunk {
 
-    public WriteThroughTombChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+    public WriteThroughTombChunk(long seq, String suffix, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, suffix, records, out, gcHelper);
     }
 
-    @Override public boolean addStep1(long keyPrefix, long recordSeq, byte[] keyBytes, byte[] ignored) {
+    @Override public boolean addStep1(long recordSeq, long keyPrefix, byte[] keyBytes, byte[] ignored) {
         assert hasRoom();
-        try {
-            dataOut.writeLong(recordSeq);
-            dataOut.writeLong(keyPrefix);
-            dataOut.writeInt(keyBytes.length);
-            dataOut.write(keyBytes);
-            size += Record.TOMB_HEADER_SIZE + keyBytes.length;
-            return full();
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
+        out.writeTombstone(recordSeq, keyPrefix, keyBytes);
+        size += Record.TOMB_HEADER_SIZE + keyBytes.length;
+        return full();
     }
 
     public boolean addStep1(TombFileAccessor tfa, int filePos) {
         assert hasRoom();
         try {
-            size += tfa.loadAndCopyTombstone(filePos, dataOut);
+            size += tfa.loadAndCopyTombstone(filePos, out);
             return full();
         } catch (IOException e) {
             throw new HotRestartException("Failed to copy tombstone", e);

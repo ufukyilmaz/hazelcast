@@ -58,8 +58,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setHomeDir(new File(testingHome, storeName))
            .setLoggingService(createLoggingService())
-           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY))
-           .setIoDisabled(true);
+           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
         metrics = cfg.metricsRegistry();
         store = new MockStoreRegistry(cfg, null);
     }

@@ -9,6 +9,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;

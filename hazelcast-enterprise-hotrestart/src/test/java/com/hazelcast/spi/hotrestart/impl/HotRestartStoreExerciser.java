@@ -39,8 +39,7 @@ public class HotRestartStoreExerciser {
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
                 .setHomeDir(new File(testingHome, "hr-store"))
                 .setLoggingService(loggingService)
-                .setMetricsRegistry(metricsRegistry(loggingService))
-                .setIoDisabled(profile.disableIo);
+                .setMetricsRegistry(metricsRegistry(loggingService));
         final int offHeapMb = profile.offHeapMb;
         if (offHeapMb > 0) {
             final PoolingMemoryManager mem = new PoolingMemoryManager(

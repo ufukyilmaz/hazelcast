@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.map.HashSlotArray;
-import com.hazelcast.elastic.map.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.HashSlotCursor;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -11,10 +11,10 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
-    private final HashSlotArray set;
+    private final HashSlotArrayTwinKey set;
 
     public SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayImpl(malloc, 0);
+        this.set = new HashSlotArrayTwinKeyNoValue(0L, malloc);
     }
 
     @Override public void add(KeyHandle kh) {
@@ -36,7 +36,7 @@ public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     }
 
     private final class Cursor implements KhCursor, KeyHandleOffHeap {
-        private final HashSlotCursor c = set.cursor();
+        private final HashSlotCursorTwinKey c = set.cursor();
 
         @Override public boolean advance() {
             return c.advance();

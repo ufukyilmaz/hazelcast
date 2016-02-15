@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
 import com.hazelcast.nio.Disposable;
 
@@ -24,15 +24,13 @@ import com.hazelcast.nio.Disposable;
  * key data.
  * </p>
  */
-public interface HashSlotArray extends Disposable {
+public interface HashSlotArrayTwinKey extends Disposable {
 
     /**
-     * Ensures that there is a mapping from {@code (key1, key2)} to a slot in the map.
+     * Ensures that there is a mapping from {@code (key1, key2)} to a slot in the array.
      * The {@code abs} of the returned integer is the address of the slot's value block.
-     * The returned integer is positive if a new slot had to be mapped and negative
-     * if the slot was already mapped.
-     * <p>
-     * NOTE: {@code key1} must not be zero; zero is used to mark an empty slot in the hashtable.
+     * The returned integer is positive if a new slot had to be assigned and negative
+     * if the slot was already assigned.
      *
      * @param key1 key part 1
      * @param key2 key part 2
@@ -51,11 +49,11 @@ public interface HashSlotArray extends Disposable {
     long get(long key1, long key2);
 
     /**
-     * Removes the mapping for {@code (key1, key2)}.
+     * Removes the mapping for {@code (key1, key2)}, if any.
      *
      * @param key1 key part 1
      * @param key2 key part 2
-     * @return true if an entry was removed, false otherwise
+     * @return true if there was a mapping, false otherwise
      */
     boolean remove(long key1, long key2);
 
@@ -69,9 +67,12 @@ public interface HashSlotArray extends Disposable {
     boolean trimToSize();
 
     /**
-     * Returns the current size of the map.
+     * Returns the number of keys in this hash slot array.
      */
     long size();
 
-    HashSlotCursor cursor();
+    /**
+     * Returns a cursor over all assigned slots in this array.
+     */
+    HashSlotCursorTwinKey cursor();
 }

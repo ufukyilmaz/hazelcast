@@ -7,9 +7,9 @@ import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.addrOfValueAt;
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.key1At;
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.key2At;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl.addrOfValueAt;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key1At;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key2At;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static java.lang.Math.min;
 

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
@@ -99,6 +100,9 @@ public class HotRestartTestUtil {
                 final long took = System.nanoTime() - iterStart;
                 if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
                     logger.info(String.format("Recording outlier: %d ms", NANOSECONDS.toMillis(took)));
+                }
+                if (iterCount % 10 == 0) {
+                    LockSupport.parkNanos(1);
                 }
                 hist.recordValue(took);
             }

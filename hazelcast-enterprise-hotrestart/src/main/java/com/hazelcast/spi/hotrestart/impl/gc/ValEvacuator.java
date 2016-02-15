@@ -41,7 +41,7 @@ final class ValEvacuator {
     private DestValChunk dest;
 
     private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
-                 GcLogger logger, long start
+                         GcLogger logger, long start
     ) {
         this.srcChunks = srcChunks;
         this.chunkMgr = chunkMgr;

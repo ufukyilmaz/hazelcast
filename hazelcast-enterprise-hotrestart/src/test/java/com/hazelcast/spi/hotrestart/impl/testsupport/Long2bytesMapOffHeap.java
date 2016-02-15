@@ -1,23 +1,23 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.elastic.map.HashSlotArray;
-import com.hazelcast.elastic.map.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.HashSlotCursor;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
-    private final HashSlotArray map;
+    private final HashSlotArrayTwinKey map;
     private final ValueBlockAccessor vblockAccessor;
     private boolean isDisposed;
 
     public Long2bytesMapOffHeap(MemoryAllocator malloc) {
         this.vblockAccessor = new ValueBlockAccessor(malloc);
-        this.map = new HashSlotArrayImpl(malloc, 8, 16*1024, 0.6f);
+        this.map = new HashSlotArrayTwinKeyImpl(-1, malloc, 8, 16*1024);
     }
 
     @Override public void put(long key, byte[] value) {
@@ -28,7 +28,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             map.remove(key, 0);
             throw e;
         }
-        UNSAFE.putLong(vSlotAddr, vblockAccessor.address());
+        MEM.putLong(vSlotAddr, vblockAccessor.address());
     }
 
     @Override public void remove(long key) {
@@ -70,7 +70,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public void clear() {
-        for (HashSlotCursor cursor = map.cursor(); cursor.advance();) {
+        for (HashSlotCursorTwinKey cursor = map.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }
@@ -101,16 +101,16 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             vSlotAddr = -vSlotAddr;
             vblockAccessor.reset(vSlotAddr);
             vblockAccessor.delete();
-            UNSAFE.putLong(vSlotAddr, NULL_ADDRESS);
         }
+        MEM.putLong(vSlotAddr, NULL_ADDRESS);
         return vSlotAddr;
     }
 
     private static final class Cursor implements L2bCursor {
         private final ValueBlockAccessor vblockAccessor = new ValueBlockAccessor(null);
-        private final HashSlotCursor cursor;
+        private final HashSlotCursorTwinKey cursor;
 
-        Cursor(HashSlotCursor wrappedCursor) {
+        Cursor(HashSlotCursorTwinKey wrappedCursor) {
             this.cursor = wrappedCursor;
         }
 

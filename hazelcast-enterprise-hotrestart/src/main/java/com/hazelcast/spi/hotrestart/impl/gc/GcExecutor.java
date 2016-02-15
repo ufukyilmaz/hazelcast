@@ -241,7 +241,9 @@ public final class GcExecutor {
 
         private int catchUpWithMutator() {
             final int workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY);
-//            reportLateCatchup();
+            if (logger.isFineEnabled()) {
+                diagnoseLateCatchup();
+            }
             if (workCount == 0) {
                 return 0;
             }
@@ -252,7 +254,7 @@ public final class GcExecutor {
             return workCount;
         }
 
-        private void reportLateCatchup() {
+        private void diagnoseLateCatchup() {
             final long now = System.nanoTime();
             final long sinceLastCatchup = now - lastCaughtUp;
             lastCaughtUp = now;

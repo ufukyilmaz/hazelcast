@@ -92,6 +92,9 @@ public class GcLogger {
         }
     }
 
+    boolean isFineEnabled() {
+        return logger.isFineEnabled();
+    }
     boolean isFinestEnabled() {
         return logger.isFinestEnabled();
     }

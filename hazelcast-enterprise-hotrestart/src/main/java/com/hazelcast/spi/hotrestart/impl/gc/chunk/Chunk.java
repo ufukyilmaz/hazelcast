@@ -10,10 +10,10 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  */
 public abstract class Chunk implements Disposable {
     /** System property that specifies the limit on the value chunk file size */
-    public static final String SYSPROP_VAL_CHUNK_SIZE_LIMIT = "com.hazelcast.spi.hotrestart.valChunkSizeLimit";
+    public static final String SYSPROP_VAL_CHUNK_SIZE_LIMIT = "hazelcast.hotrestart.val.chunk.size.limit";
 
     /** System property that specifies the limit on the tombstone chunk file size */
-    public static final String SYSPROP_TOMB_CHUNK_SIZE_LIMIT = "com.hazelcast.spi.hotrestart.tombChunkSizeLimit";
+    public static final String SYSPROP_TOMB_CHUNK_SIZE_LIMIT = "hazelcast.hotrestart.tomb.chunk.size.limit";
 
     /** Default value chunk file size limit in bytes. */
     @SuppressWarnings("checkstyle:magicnumber")

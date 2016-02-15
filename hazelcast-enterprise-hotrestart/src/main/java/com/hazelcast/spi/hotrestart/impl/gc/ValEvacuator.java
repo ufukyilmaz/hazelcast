@@ -24,7 +24,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 final class ValEvacuator {
     public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
-            "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
+            "hazelcast.hotrestart.gc.stuck.detect.threshold";
 
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);

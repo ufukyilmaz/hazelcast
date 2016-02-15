@@ -7,21 +7,20 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
-import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
-import com.hazelcast.spi.hotrestart.impl.io.Compressor;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
-import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOnHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOnHeap;
+import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
+import com.hazelcast.spi.hotrestart.impl.io.Compressor;
 
 import java.io.Closeable;
 import java.io.File;
@@ -37,9 +36,9 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFF
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newTombstoneMapOffHeap;
+import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -120,9 +119,9 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
-    public final DestValChunk newGrowingDestValChunk() {
+    public final DestValChunk newDestValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new DestValChunk(seq, new RecordMapOnHeap(),
+        return new DestValChunk(seq, newRecordMap(),
                 createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
                 this);
     }
@@ -219,11 +218,6 @@ public abstract class GcHelper implements Disposable {
 
     abstract RecordMap newTombstoneMap();
 
-    /**
-     * Converts a map containing GcRecords to one containing plain Records.
-     */
-    public abstract RecordMap toPlainRecordMap(RecordMap gcRecordMap);
-
     public abstract TrackerMap newTrackerMap();
 
     public abstract SetOfKeyHandle newSetOfKeyHandle();
@@ -241,10 +235,6 @@ public abstract class GcHelper implements Disposable {
 
         @Override RecordMap newTombstoneMap() {
             return newRecordMap();
-        }
-
-        @Override public RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
-            return new RecordMapOnHeap(gcRecordMap);
         }
 
         @Override public TrackerMap newTrackerMap() {
@@ -271,10 +261,6 @@ public abstract class GcHelper implements Disposable {
 
         @Override public RecordMap newTombstoneMap() {
             return newTombstoneMapOffHeap(malloc);
-        }
-
-        @Override public RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
-            return new RecordMapOffHeap(malloc, gcRecordMap);
         }
 
         @Override public TrackerMap newTrackerMap() {

@@ -37,6 +37,7 @@ public final class StableTombChunk extends StableChunk {
     }
 
     @Override public void needsDismissing(boolean needsDismissing) {
+        // A tombstone chunk never needs dismissing. Ignore the request to raise the flag.
     }
 
     public int[] initFilePosToKeyHandle() {

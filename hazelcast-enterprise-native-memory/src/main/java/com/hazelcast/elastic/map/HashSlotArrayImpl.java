@@ -16,6 +16,10 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
  */
 public class HashSlotArrayImpl implements HashSlotArray {
 
+    /** Value written to the  {@code key1} field to mark an empty slot.
+     * This is an illegal value to use for {@code key1}. */
+    public static final long NULL_KEY = 0L;
+
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
     private static final int KEY_LENGTH = 16;
@@ -103,41 +107,36 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     @Override
-    public long ensure(long key1, long key2) {
+    public final long ensure(long key1, long key2) {
+        assert key1 != NULL_KEY : "ensure called with key1 == " + NULL_KEY;
         ensureLive();
-
         // Check if we need to grow. If so, reallocate new data and rehash.
         if (size == expandAt) {
             resizeTo(nextCapacity(capacity));
         }
-
         long slot = hash(key1, key2);
         while (isAssigned(slot)) {
             long slotKey1 = getKey1(slot);
             long slotKey2 = getKey2(slot);
-
             if (slotKey1 == key1 && slotKey2 == key2) {
                 return -getValueAddress(slot);
             }
             slot = (slot + 1) & mask;
         }
-
         size++;
         putKey(slot, key1, key2);
         return getValueAddress(slot);
     }
 
     @Override
-    public long get(long key1, long key2) {
+    public final long get(long key1, long key2) {
+        assert key1 != NULL_KEY : "get called with key1 == " + NULL_KEY;
         ensureLive();
-
         long slot = hash(key1, key2);
         final long wrappedAround = slot;
-
         while (isAssigned(slot)) {
             long slotAddress = getKey1(slot);
             long slotSequence = getKey2(slot);
-
             if (slotAddress == key1 && slotSequence == key2) {
                 return getValueAddress(slot);
             }
@@ -150,14 +149,14 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     @Override
-    public boolean remove(long key1, long key2) {
+    public final boolean remove(long key1, long key2) {
+        assert key1 != NULL_KEY : "remove called with key1 == " + NULL_KEY;
         ensureLive();
         long slot = hash(key1, key2);
         final long wrappedAround = slot;
         while (isAssigned(slot)) {
             long slotKey1 = getKey1(slot);
             long slotKey2 = getKey2(slot);
-
             if (slotKey1 == key1 && slotKey2 == key2) {
                 size--;
                 shiftConflictingKeys(slot);
@@ -176,18 +175,18 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     @Override
-    public long size() {
+    public final long size() {
         return size;
     }
 
     @Override
-    public void clear() {
+    public final void clear() {
         ensureLive();
         UNSAFE.setMemory(baseAddress, capacity * entryLength, (byte) 0);
         size = 0;
     }
 
-    @Override public boolean trimToSize() {
+    @Override public final boolean trimToSize() {
         final long minCapacity = minCapacityForSize(size, loadFactor);
         if (capacity <= minCapacity) {
             return false;
@@ -200,7 +199,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     @Override
-    public void dispose() {
+    public final void dispose() {
         if (baseAddress <= 0L) {
             return;
         }
@@ -212,7 +211,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
         size = 0;
     }
 
-    @Override public HashSlotCursor cursor() {
+    @Override public final HashSlotCursor cursor() {
         return new Cursor();
     }
 
@@ -221,15 +220,15 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     private long getKey1(long slot) {
-        return getKey1(baseAddress, slot);
+        return key1At(slotBase(baseAddress, slot));
     }
 
     private long getKey2(long slot) {
-        return getKey2(baseAddress, slot);
+        return key2At(slotBase(baseAddress, slot));
     }
 
     private long getValueAddress(long slot) {
-        return getValueAddress(baseAddress, slot);
+        return addrOfValueAt(slotBase(baseAddress, slot));
     }
 
     private void putKey(long slot, long key1, long key2) {
@@ -239,19 +238,23 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     private boolean isAssigned(long baseAddr, long slot) {
-        return getKey1(baseAddr, slot) != NULL_ADDRESS;
+        return key1At(slotBase(baseAddr, slot)) != NULL_KEY;
     }
 
-    private long getKey1(long baseAddr, long slot) {
-        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_1_OFFSET);
+    public static long key1At(long slotBaseAddr) {
+        return UNSAFE.getLong(slotBaseAddr + KEY_1_OFFSET);
     }
 
-    private long getKey2(long baseAddr, long slot) {
-        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_2_OFFSET);
+    public static long key2At(long slotBaseAddr) {
+        return UNSAFE.getLong(slotBaseAddr + KEY_2_OFFSET);
     }
 
-    private long getValueAddress(long baseAddr, long slot) {
-        return slotBase(baseAddr, slot) + VALUE_OFFSET;
+    public static long addrOfValueAt(long slotBaseAddr) {
+        return slotBaseAddr + VALUE_OFFSET;
+    }
+
+    public static long valueAddr2slotBase(long valueAddr) {
+        return valueAddr - VALUE_OFFSET;
     }
 
     private long slotBase(long baseAddr, long slot) {
@@ -268,7 +271,6 @@ public class HashSlotArrayImpl implements HashSlotArray {
         long allocatedSize = newCapacity * entryLength;
         baseAddress = malloc.allocate(allocatedSize);
         UNSAFE.setMemory(baseAddress, allocatedSize, (byte) 0);
-
         capacity = newCapacity;
         mask = newCapacity - 1;
         expandAt = maxSizeForCapacity(newCapacity, loadFactor);
@@ -291,10 +293,8 @@ public class HashSlotArrayImpl implements HashSlotArray {
         long slotOther;
         while (true) {
             slotCurr = ((slotPrev = slotCurr) + 1) & mask;
-
             while (isAssigned(slotCurr)) {
                 slotOther = hash(getKey1(slotCurr), getKey2(slotCurr));
-
                 if (slotPrev <= slotCurr) {
                     // we're on the right of the original slot.
                     if (slotPrev >= slotOther || slotOther > slotCurr) {
@@ -308,16 +308,13 @@ public class HashSlotArrayImpl implements HashSlotArray {
                 }
                 slotCurr = (slotCurr + 1) & mask;
             }
-
             if (!isAssigned(slotCurr)) {
                 break;
             }
-
             // Shift key/value pair.
             putKey(slotPrev, getKey1(slotCurr), getKey2(slotCurr));
             UNSAFE.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
         }
-
         putKey(slotPrev, 0L, 0L);
         UNSAFE.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
     }
@@ -332,19 +329,16 @@ public class HashSlotArrayImpl implements HashSlotArray {
         final long oldAddress = baseAddress;
         final long oldCapacity = capacity;
         allocateArrayAndAdjustFields(newCapacity);
-
         // Put the assigned slots into the new array.
         for (long slot = oldCapacity; --slot >= 0;) {
             if (isAssigned(oldAddress, slot)) {
-                long key1 = getKey1(oldAddress, slot);
-                long key2 = getKey2(oldAddress, slot);
-                long valueAddress = getValueAddress(oldAddress, slot);
-
+                long key1 = key1At(slotBase(oldAddress, slot));
+                long key2 = key2At(slotBase(oldAddress, slot));
+                long valueAddress = addrOfValueAt(slotBase(oldAddress, slot));
                 long newSlot = hash(key1, key2);
                 while (isAssigned(newSlot)) {
                     newSlot = (newSlot + 1) & mask;
                 }
-
                 putKey(newSlot, key1, key2);
                 UNSAFE.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
             }
@@ -361,11 +355,9 @@ public class HashSlotArrayImpl implements HashSlotArray {
             if (currentSlot == Long.MIN_VALUE) {
                 throw new IllegalStateException("Cursor is invalid!");
             }
-
             if (tryAdvance()) {
                 return true;
             }
-
             currentSlot = Long.MIN_VALUE;
             return false;
         }
@@ -397,14 +389,10 @@ public class HashSlotArrayImpl implements HashSlotArray {
 
         @Override public void remove() {
             ensureValid();
-
             size--;
             shiftConflictingKeys(currentSlot);
-
-            // if current slot is assigned after
-            // removal and shift
-            // then it means entry in the next slot
-            // is moved to current slot
+            // if the current slot ended up assigned after removal and shift,
+            // it means that the entry in the next slot was moved to the current slot
             if (isAssigned(currentSlot)) {
                 currentSlot--;
             }

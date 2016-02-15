@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -13,9 +14,9 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.INITIAL_TOP_CHUNKS;
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.diagnoseChunks;
-import static com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.selectChunksToCollect;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.INITIAL_TOP_CHUNKS;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.diagnoseChunks;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
 import static com.hazelcast.spi.hotrestart.impl.gc.StableChunkBuilder.chunkBuilder;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.withSettings;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class ChunkSelectorTest {
+public class ValChunkSelectorTest {
 
     private PrefixTombstoneManager pfixTombstoMgr;
     private GcExecutor.MutatorCatchup mc;
@@ -61,7 +62,7 @@ public class ChunkSelectorTest {
                     .garbage(9)
                     .build());
         }
-        assertEquals(chunkCount, selectChunks(allChunks, gcp).srcChunks.size());
+        assertEquals(chunkCount, selectChunks(allChunks, gcp).size());
     }
 
     @Test public void when_tooManyRecords_thenLimitChunks() {
@@ -84,7 +85,7 @@ public class ChunkSelectorTest {
                     .garbage(9)
                     .build());
         }
-        assertEquals(10, selectChunks(allChunks, gcp).srcChunks.size());
+        assertEquals(10, selectChunks(allChunks, gcp).size());
     }
 
     @Test public void when_tooManyEmptyChunks_thenLimitChunks() {
@@ -107,7 +108,7 @@ public class ChunkSelectorTest {
                     .garbage(10)
                     .build());
         }
-        assertEquals(INITIAL_TOP_CHUNKS, selectChunks(allChunks, gcp).srcChunks.size());
+        assertEquals(INITIAL_TOP_CHUNKS, selectChunks(allChunks, gcp).size());
     }
 
     @Test public void when_logFinestEnabled_thenDontFailInDiagnoseChunks() {
@@ -124,7 +125,7 @@ public class ChunkSelectorTest {
         diagnoseChunks(allChunks, allChunks, gcp().currChunkSeq(chunkCount).build(), loggerWithFinestEnabled);
     }
 
-    private ChunkSelector.ChunkSelection selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {
+    private Collection<StableValChunk> selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {
         return selectChunksToCollect(allChunks, gcp, pfixTombstoMgr, mc, logger);
     }
 

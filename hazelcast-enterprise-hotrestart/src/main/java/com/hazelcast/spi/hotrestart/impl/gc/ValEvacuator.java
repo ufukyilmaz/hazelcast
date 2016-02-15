@@ -3,36 +3,33 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
-import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
+import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
-import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
-import static java.lang.Math.min;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Evacuates source chunks into destination chunks by moving all live records.
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
-final class Evacuator {
+final class ValEvacuator {
     public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
             "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
-    private static final int CATCHUP_INTERVAL_DURING_SORT_LOG2 = 18;
 
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
-    private final ChunkSelection selected;
+    private final Collection<StableValChunk> srcChunks;
+    private final ChunkManager chunkMgr;
     private final GcLogger logger;
     private final Long2ObjectHashMap<Chunk> destChunkMap;
     private final TrackerMap recordTrackers;
@@ -43,9 +40,12 @@ final class Evacuator {
     private long start;
     private DestValChunk dest;
 
-    Evacuator(ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
-        this.selected = selected;
-        this.firstSrcChunk = selected.srcChunks.iterator().next();
+    private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
+                 GcLogger logger, long start
+    ) {
+        this.srcChunks = srcChunks;
+        this.chunkMgr = chunkMgr;
+        this.firstSrcChunk = srcChunks.iterator().next();
         this.logger = logger;
         this.destChunkMap = chunkMgr.destChunkMap = new Long2ObjectHashMap<Chunk>();
         this.gcHelper = chunkMgr.gcHelper;
@@ -56,15 +56,16 @@ final class Evacuator {
     }
 
     static void evacuate(
-            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
+            Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
     ) {
-        new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
+        new ValEvacuator(srcChunks, chunkMgr, mc, logger, start).evacuate();
     }
 
     private void evacuate() {
-        final List<GcRecord> liveRecords = sortedLiveRecords();
+        final SortedBySeqRecordCursor liveRecords = sortedLiveRecords();
         logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        transferToDest(liveRecords);
+        moveToDest(liveRecords);
+        liveRecords.dispose();
         // Apply clear operation to any dangling dest chunks. At the time the clear operation
         // is issued, the highest chunk seq is recorded. Dest chunks created after that time
         // will be missed by the Sweeper.
@@ -74,49 +75,48 @@ final class Evacuator {
         dismissEvacuatedFiles();
     }
 
-    private List<GcRecord> sortedLiveRecords() {
-        final ArrayList<GcRecord> liveGcRecs = new ArrayList<GcRecord>(selected.liveRecordCount);
-        for (StableValChunk chunk : selected.srcChunks) {
-            for (Cursor cur = chunk.records.cursor(); cur.advance();) {
-                if (cur.asRecord().isAlive()) {
-                    liveGcRecs.add(cur.toGcRecord(chunk));
-                }
-            }
-            mc.catchupNow();
+    private SortedBySeqRecordCursor sortedLiveRecords() {
+        final RecordMap[] recordMaps = new RecordMap[srcChunks.size()];
+        mc.catchupNow();
+        int i = 0;
+        int liveRecordCount = 0;
+        for (StableValChunk chunk : srcChunks) {
+            recordMaps[i++] = chunk.records;
+            liveRecordCount += chunk.liveRecordCount;
         }
-        return sorted(liveGcRecs);
+        return recordMaps[0].sortedBySeqCursor(liveRecordCount, recordMaps, mc);
     }
 
-    private void transferToDest(List<GcRecord> sortedGcRecords) {
+    private void moveToDest(SortedBySeqRecordCursor sortedCursor) {
         final RecordDataHolder holder = gcHelper.recordDataHolder;
-        for (GcRecord r : sortedGcRecords) {
+        while (sortedCursor.advance()) {
             applyClearOperation();
+            final Record r = sortedCursor.asRecord();
             if (r.isAlive()) {
                 holder.clear();
-                final KeyHandle kh = r.toKeyHandle();
+                final KeyHandle kh = sortedCursor.asKeyHandle();
                 final RamStore ramStore;
-                if ((ramStore = gcHelper.ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(null))) != null
+                if ((ramStore = gcHelper.ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(kh))) != null
                         && ramStore.copyEntry(kh, r.payloadSize(), holder)
                 ) {
-                    // Invariant at this point: r.isAlive() and we have its data. Do not catch up with
-                    // mutator until all metadata is updated. The first catchup can happen within the
-                    // dest.add() call. By the time dest.add() returns, the record may already be dead.
+                    // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
+                    // not catching up with mutator until all metadata are updated. The first catchup can happen
+                    // within the r.intoOut() call (which is called from dest.add()). By the time dest.add() returns,
+                    // the record may already be dead.
                     holder.flip();
                     ensureDestChunk();
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.
-                    // With dest.add() the GcRecord is added to dest. Now its garbage count
+                    // With dest.add() the record is added to dest. Now its garbage count
                     // will be incremented if the keyHandle receives an update.
                     recordTrackers.get(kh).moveToChunk(dest.seq);
-                    // After this call isAlive() will report the status of the record within the dest chunk.
-                    r.movedToDestChunk();
                     // catches up for each bufferful
                     dest.add(r, kh, holder, mc);
                     if (dest.full()) {
                         closeDestChunk();
                     }
                 } else {
-                    // Our record is alive, but in the in-memory store the corresponding entry
-                    // was already updated and a retirement event is on its way. We did not move
+                    // Our record is alive, but in the RAM store the corresponding entry
+                    // was already updated/removed and a retirement event is on its way. We did not move
                     // the record to the dest chunk, so to bring our bookkeeping back in sync we must
                     // keep catching up until we observe the event.
                     if (!catchUpUntilRetired(r, mc)) {
@@ -136,7 +136,7 @@ final class Evacuator {
 
     private void applyClearOperation() {
         while (firstSrcChunk.needsDismissing()) {
-            for (StableValChunk chunk : selected.srcChunks) {
+            for (StableValChunk chunk : srcChunks) {
                 pfixTombstoMgr.dismissGarbage(chunk);
                 mc.catchupNow();
             }
@@ -148,13 +148,14 @@ final class Evacuator {
             return;
         }
         start = System.nanoTime();
-        dest = gcHelper.newGrowingDestValChunk();
+        dest = gcHelper.newDestValChunk();
         dest.flagForFsyncOnClose(true);
         // make the dest chunk available to chunkMgr.chunk()
         destChunkMap.put(dest.seq, dest);
     }
 
     private void closeDestChunk() {
+        mc.catchupNow();
         dest.close();
         mc.catchupNow();
         logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", dest.seq, dest.size(),
@@ -167,7 +168,7 @@ final class Evacuator {
     }
 
     @SuppressWarnings("checkstyle:emptyblock")
-    private boolean catchUpUntilRetired(GcRecord r, MutatorCatchup mc) {
+    private boolean catchUpUntilRetired(Record r, MutatorCatchup mc) {
         for (int eventCount = 0;
              eventCount <= stuckDetectionThreshold && r.isAlive();
              eventCount += catchUpSafely(mc, r)
@@ -175,7 +176,7 @@ final class Evacuator {
         return !r.isAlive();
     }
 
-    private int catchUpSafely(MutatorCatchup mc, GcRecord r) {
+    private int catchUpSafely(MutatorCatchup mc, Record r) {
         int eventCount = mc.catchupNow();
         applyClearOperation();
         if (mc.shutdownRequested()) {
@@ -190,40 +191,12 @@ final class Evacuator {
     }
 
     private void dismissEvacuatedFiles() {
-        for (StableValChunk evacuated : selected.srcChunks) {
+        for (StableValChunk evacuated : srcChunks) {
             gcHelper.deleteChunkFile(evacuated);
             // All garbage records collected from the source chunk in
             // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
-            mc.dismissGarbage(evacuated);
+            chunkMgr.dismissGarbage(evacuated);
             mc.catchupNow();
-        }
-    }
-
-    // gcrs will be random-accessed so insisting on ArrayList
-    @SuppressWarnings("checkstyle:illegaltype")
-    List<GcRecord> sorted(ArrayList<GcRecord> gcrs) {
-        final int size = gcrs.size();
-        List<GcRecord> from = gcrs;
-        List<GcRecord> to = asList(new GcRecord[size]);
-        for (int width = 1; width < size; width *= 2) {
-            for (int i = 0; i < size; i += 2 * width) {
-                bottomUpMerge(from, i, min(i + width, size), min(i + 2 * width, size), to);
-            }
-            final List<GcRecord> fromBackup = from;
-            from = to;
-            to = fromBackup;
-        }
-        return from;
-    }
-
-    private void bottomUpMerge(List<GcRecord> from, int leftStart, int rightStart, int rightEnd, List<GcRecord> to) {
-        int currLeft = leftStart;
-        int currRight = rightStart;
-        for (int j = leftStart; j < rightEnd; j++) {
-            final boolean takeLeft = currLeft < rightStart
-                    && (currRight >= rightEnd || from.get(currLeft).liveSeq() <= from.get(currRight).liveSeq());
-            to.set(j, from.get(takeLeft ? currLeft++ : currRight++));
-            mc.catchupAsNeeded(CATCHUP_INTERVAL_DURING_SORT_LOG2);
         }
     }
 }

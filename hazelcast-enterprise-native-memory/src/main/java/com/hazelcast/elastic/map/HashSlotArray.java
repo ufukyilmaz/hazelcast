@@ -31,6 +31,8 @@ public interface HashSlotArray extends Disposable {
      * The {@code abs} of the returned integer is the address of the slot's value block.
      * The returned integer is positive if a new slot had to be mapped and negative
      * if the slot was already mapped.
+     * <p>
+     * NOTE: {@code key1} must not be zero; zero is used to mark an empty slot in the hashtable.
      *
      * @param key1 key part 1
      * @param key2 key part 2

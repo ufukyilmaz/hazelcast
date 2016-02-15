@@ -2,7 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
+import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
 /**
  * Abstraction for chunk's record map.
@@ -30,6 +31,10 @@ public interface RecordMap extends Disposable {
 
     int size();
 
+    /** Creates a sorted-by-seq cursor over all live records in the provided record maps. The record maps
+     * must be of the same type as this record map. */
+    SortedBySeqRecordCursor sortedBySeqCursor(int liveRecordCount, RecordMap[] recordMaps, MutatorCatchup mc);
+
     Cursor cursor();
 
     /** Cursor over record map's contents */
@@ -37,6 +42,5 @@ public interface RecordMap extends Disposable {
         boolean advance();
         Record asRecord();
         KeyHandle toKeyHandle();
-        GcRecord toGcRecord(StableValChunk chunk);
     }
 }

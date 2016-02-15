@@ -85,7 +85,7 @@ public abstract class Record {
         }
     }
 
-    public final void intoOut(DataOutputStream out, long startFilePosition, KeyHandle kh,
+    public final void intoOut(DataOutputStream out, long startFilePosition, long keyPrefix,
                               RecordDataHolder holder, MutatorCatchup mc
     ) {
         if (out == null) {
@@ -93,7 +93,6 @@ public abstract class Record {
         }
         try {
             final long seq = liveSeq();
-            final long prefix = keyPrefix(kh);
             if (startFilePosition == 0) {
                 // A new dest chunk was created just before calling this method.
                 // This involved some I/O calls, so catch up now.
@@ -106,7 +105,7 @@ public abstract class Record {
             assert bufferSizeValid(keySize, valSize);
             final long startPos = positionInUnitsOfBufsize(startFilePosition);
             out.writeLong(seq);
-            out.writeLong(prefix);
+            out.writeLong(keyPrefix);
             out.writeInt(keySize);
             out.writeInt(valSize);
             out.write(keyBuf.array(), keyBuf.position(), keySize);

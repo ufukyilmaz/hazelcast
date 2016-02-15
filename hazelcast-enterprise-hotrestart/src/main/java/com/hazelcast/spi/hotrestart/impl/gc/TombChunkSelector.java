@@ -15,23 +15,17 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk.benefit
 
 final class TombChunkSelector {
     private final Collection<StableChunk> allChunks;
-    private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
-    private final GcLogger logger;
 
-    private TombChunkSelector(
-            Collection<StableChunk> allChunks, PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger
-    ) {
+    private TombChunkSelector(Collection<StableChunk> allChunks, MutatorCatchup mc) {
         this.allChunks = allChunks;
-        this.pfixTombstoMgr = pfixTombstoMgr;
         this.mc = mc;
-        this.logger = logger;
     }
 
     static Collection<StableTombChunk> selectTombChunksToCollect(
-            Collection<StableChunk> allChunks, PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger
+            Collection<StableChunk> allChunks, MutatorCatchup mc, GcLogger logger
     ) {
-        return new TombChunkSelector(allChunks, pfixTombstoMgr, mc, logger).select();
+        return new TombChunkSelector(allChunks, mc).select();
     }
 
     private Collection<StableTombChunk> select() {
@@ -55,11 +49,12 @@ final class TombChunkSelector {
         long garbage = 0;
         for (StableTombChunk c : candidates) {
             final double b2c = benefitToCost(garbage + c.garbage, size + c.size());
-            if (b2c < 2) {
-                if (b2c < 1 && size < minSize) {
-                    // Abort GC cycle if benefit/cost is too low
-                    selected.clear();
-                }
+            if (b2c < 2 && size > minSize) {
+                break;
+            }
+            if (b2c < 1) {
+                // If benefit/cost is too low and we still don't have enough data to copy, abort GC cycle
+                selected.clear();
                 break;
             }
             selected.add(c);

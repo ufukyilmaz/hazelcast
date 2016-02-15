@@ -1,4 +1,4 @@
 /**
- * Native memory backed Hash-Slot map.
+ * Off-heap hash slot arrays.
  */
 package com.hazelcast.elastic.map.hashslot;

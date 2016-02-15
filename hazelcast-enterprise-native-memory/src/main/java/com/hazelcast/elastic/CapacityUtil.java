@@ -7,12 +7,13 @@ import com.hazelcast.util.QuickMath;
  */
 public final class CapacityUtil {
 
-    /**
-     * Maximum capacity for an array that is of power-of-two size and still
-     * allocatable in Java (not a negative int).
-     */
+    /** Maximum length of a Java array that is a power of two. */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final int MAX_CAPACITY = 0x80000000 >>> 1;
+    public static final int MAX_INT_CAPACITY = 1 << 30;
+
+    /** Maximum length of an off-heap array that is a power of two. */
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final long MAX_LONG_CAPACITY = 1L << 62;
 
     /** Minimum capacity for a hash container. */
     public static final int MIN_CAPACITY = 4;
@@ -27,10 +28,20 @@ public final class CapacityUtil {
     private CapacityUtil() { }
 
     /** Round the capacity to the next allowed value. */
-    public static int roundCapacity(int requestedCapacity) {
-        if (requestedCapacity > MAX_CAPACITY) {
+    public static long roundCapacity(long requestedCapacity) {
+        if (requestedCapacity > MAX_LONG_CAPACITY) {
             throw new IllegalArgumentException(requestedCapacity + " is greater than max allowed capacity["
-                + MAX_CAPACITY + "].");
+                    + MAX_LONG_CAPACITY + "].");
+        }
+
+        return Math.max(MIN_CAPACITY, QuickMath.nextPowerOfTwo(requestedCapacity));
+    }
+
+    /** Round the capacity to the next allowed value. */
+    public static int roundCapacity(int requestedCapacity) {
+        if (requestedCapacity > MAX_INT_CAPACITY) {
+            throw new IllegalArgumentException(requestedCapacity + " is greater than max allowed capacity["
+                + MAX_INT_CAPACITY + "].");
         }
 
         return Math.max(MIN_CAPACITY, QuickMath.nextPowerOfTwo(requestedCapacity));

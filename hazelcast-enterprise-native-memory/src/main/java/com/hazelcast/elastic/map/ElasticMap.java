@@ -18,7 +18,7 @@ public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
     /**
      * @param key
      * @param value
-     * @return true if updated, false if first put
+     * @return true if first put, false if updated
      */
     boolean set(K key, V value);
 

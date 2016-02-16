@@ -5,7 +5,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.ReadonlyOperation;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -41,7 +41,7 @@ public class CacheGetAllOperation
     protected void runInternal() throws Exception {
         if (cache != null) {
             Set<Data> partitionKeySet = new HashSet<Data>();
-            InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+            IPartitionService partitionService = getNodeEngine().getPartitionService();
             for (Data key : keys) {
                 if (partitionId == partitionService.getPartitionId(key)) {
                     partitionKeySet.add(key);

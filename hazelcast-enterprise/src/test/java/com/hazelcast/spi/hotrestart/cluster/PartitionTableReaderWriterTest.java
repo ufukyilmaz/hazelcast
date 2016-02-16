@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.nio.Address;
-import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -12,7 +12,7 @@ import org.junit.runner.RunWith;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import static com.hazelcast.partition.InternalPartition.MAX_REPLICA_COUNT;
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -199,6 +199,11 @@ public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
 
         @Override
         public boolean isOwnerOrBackup(Address address) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getReplicaIndex(Address address) {
             throw new UnsupportedOperationException();
         }
     }

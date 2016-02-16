@@ -21,7 +21,7 @@ import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
-import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.partition.IPartition;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.InvocationBuilder;
 import com.hazelcast.spi.Operation;
@@ -343,7 +343,7 @@ public abstract class AbstractWanReplication
                 boolean offered = false;
 
                 if (!paused) {
-                    for (InternalPartition partition : node.getPartitionService().getPartitions()) {
+                    for (IPartition partition : node.getPartitionService().getPartitions()) {
                         if (!partition.isLocal()) {
                             continue;
                         }

@@ -1,6 +1,8 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.memory.LibMalloc;
+import com.hazelcast.memory.UnsafeMalloc;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -8,7 +10,6 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import sun.misc.Unsafe;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -24,7 +25,9 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class NativeSortTest {
 
-    private static final Unsafe unsafe = UnsafeHelper.UNSAFE;
+    private static final LibMalloc MALLOC = new UnsafeMalloc();
+    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
+
     private static final int LEN = 10000;
 
     private long arrayAddress;
@@ -32,7 +35,7 @@ public class NativeSortTest {
     @After
     public void dispose() {
         if (arrayAddress != NULL_ADDRESS) {
-            unsafe.freeMemory(arrayAddress);
+            MALLOC.free(arrayAddress);
         }
     }
 
@@ -44,8 +47,8 @@ public class NativeSortTest {
         final int[] sorted = Arrays.copyOf(array, length);
         Arrays.sort(sorted);
 
-        arrayAddress = unsafe.allocateMemory(length * INT_SIZE_IN_BYTES);
-        unsafe.copyMemory(array, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, null,
+        arrayAddress = MALLOC.malloc(length * INT_SIZE_IN_BYTES);
+        MEMORY_ACCESSOR.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, null,
                 arrayAddress, length * INT_SIZE_IN_BYTES);
 
         quickSortInt(arrayAddress, length);
@@ -60,9 +63,10 @@ public class NativeSortTest {
         final long[] sorted = Arrays.copyOf(array, length);
         Arrays.sort(sorted);
 
-        arrayAddress = unsafe.allocateMemory(length * LONG_SIZE_IN_BYTES);
-        unsafe.copyMemory(array, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, null,
-                arrayAddress, length * LONG_SIZE_IN_BYTES);
+        arrayAddress = MALLOC.malloc(length * LONG_SIZE_IN_BYTES);
+        MEMORY_ACCESSOR.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET,
+                                   null, arrayAddress,
+                                   length * LONG_SIZE_IN_BYTES);
 
         quickSortLong(arrayAddress, length);
         verify(sorted, arrayAddress, length);
@@ -70,7 +74,7 @@ public class NativeSortTest {
 
     private static void verify(int[] array, long address, int length) {
         for (int i = 0; i < length; i++) {
-            int k = unsafe.getInt(address + i * INT_SIZE_IN_BYTES);
+            int k = MEMORY_ACCESSOR.getInt(address + i * INT_SIZE_IN_BYTES);
             assertEquals(array[i], k);
         }
     }
@@ -86,7 +90,7 @@ public class NativeSortTest {
 
     private static void verify(long[] array, long address, int length) {
         for (int i = 0; i < length; i++) {
-            long k = unsafe.getLong(address + i * LONG_SIZE_IN_BYTES);
+            long k = MEMORY_ACCESSOR.getLong(address + i * LONG_SIZE_IN_BYTES);
             assertEquals(array[i], k);
         }
     }

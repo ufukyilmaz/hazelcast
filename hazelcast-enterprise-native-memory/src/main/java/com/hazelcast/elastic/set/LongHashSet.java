@@ -1,6 +1,9 @@
 package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.util.HashUtil;
 
@@ -12,7 +15,6 @@ import static com.hazelcast.elastic.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**
@@ -26,6 +28,11 @@ import static com.hazelcast.util.HashUtil.computePerturbationValue;
  * </p>
  */
 public class LongHashSet implements LongSet {
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private static final long ENTRY_LENGTH = 8L;
 
@@ -382,17 +389,17 @@ public class LongHashSet implements LongSet {
 
     private static boolean isAssigned(long address, int slot) {
         long offset = slot * ENTRY_LENGTH;
-        return UNSAFE.getLong(address + offset) != 0L;
+        return MEMORY_ACCESSOR.getLong(address + offset) != 0L;
     }
 
     private static long getItem(long address, int slot) {
         long offset = slot * ENTRY_LENGTH;
-        return UNSAFE.getLong(address + offset);
+        return MEMORY_ACCESSOR.getLong(address + offset);
     }
 
     private static void setItem(long address, int slot, long key) {
         long offset = slot * ENTRY_LENGTH;
-        UNSAFE.putLong(address + offset, key);
+        MEMORY_ACCESSOR.putLong(address + offset, key);
     }
 
     private static int rehash(long o, int p) {

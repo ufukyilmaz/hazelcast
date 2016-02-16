@@ -114,7 +114,7 @@
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/map/impl/EnterpriseMapServiceContextImpl"/>
 
     <!-- Client Protocol -->
-    <suppress checks="" files="com/hazelcast/client/impl/protocol/template/"/>
+    <suppress checks="" files="com/hazelcast/client/impl/protocol/EnterpriseMessageTaskFactoryImpl"/>
 
     <!-- WAN Replication -->
     <suppress checks="NestedIfDepth" files="com/hazelcast/enterprise/wan/replication/AbstractWanReplication"/>

@@ -1,10 +1,10 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -26,6 +26,8 @@ import static org.junit.Assert.fail;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class HashSlotArrayImplTest {
+
+    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
 
     private static final int VALUE_LENGTH = 32;
 
@@ -118,8 +120,8 @@ public class HashSlotArrayImplTest {
             long key2 = key1 * factor;
             long valueAddress = map.get(key1, key2);
 
-            assertEquals(key1, UnsafeHelper.UNSAFE.getLong(valueAddress));
-            assertEquals(key2, UnsafeHelper.UNSAFE.getLong(valueAddress + 8L));
+            assertEquals(key1, MEMORY_ACCESSOR.getLong(valueAddress));
+            assertEquals(key2, MEMORY_ACCESSOR.getLong(valueAddress + 8L));
         }
     }
 
@@ -375,13 +377,13 @@ public class HashSlotArrayImplTest {
 
     private void writeValue(long key1, long key2, long valueAddress) {
         // !!! value length should be at least 16 bytes !!!
-        UnsafeHelper.UNSAFE.putLong(valueAddress, key1);
-        UnsafeHelper.UNSAFE.putLong(valueAddress + 8L, key2);
+        MEMORY_ACCESSOR.putLong(valueAddress, key1);
+        MEMORY_ACCESSOR.putLong(valueAddress + 8L, key2);
     }
 
     private void verifyValue(long key1, long key2, long valueAddress) {
         assertNotEquals(NULL_ADDRESS, valueAddress); // pre-check to avoid SIGSEGV
-        assertEquals(key1, UnsafeHelper.UNSAFE.getLong(valueAddress));
-        assertEquals(key2, UnsafeHelper.UNSAFE.getLong(valueAddress + 8L));
+        assertEquals(key1, MEMORY_ACCESSOR.getLong(valueAddress));
+        assertEquals(key2, MEMORY_ACCESSOR.getLong(valueAddress + 8L));
     }
 }

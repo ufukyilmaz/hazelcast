@@ -1,19 +1,18 @@
 package com.hazelcast.elastic.offheapstorage.sorted;
 
-
 import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
 import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
 import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyRedBlackTreeKeysIteratorImpl;
 import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
 import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIteratorImpl;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
-import sun.misc.Unsafe;
 
 import static com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection.ASC;
 import static com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection.DESC;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-
 
 /***
  * This is classical append-only off-Heap Red Black tree implementation
@@ -21,7 +20,11 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  */
 @SuppressWarnings("checkstyle:methodcount")
 public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSortedStorage {
-    protected static final Unsafe UNSAFE = UnsafeHelper.UNSAFE;
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    protected static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     // Tree
     protected static final byte RED = 1;
@@ -92,7 +95,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     //Key Public methods
     @Override
     public long getValueEntryAddress(long keyEntryAddress) {
-        return UNSAFE.getLong(getValueEntryAddressOffset(keyEntryAddress));
+        return MEMORY_ACCESSOR.getLong(getValueEntryAddressOffset(keyEntryAddress));
     }
 
     // Value public methods
@@ -103,26 +106,26 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         if (offset == 0) {
             return 0;
         } else {
-            return UNSAFE.getLong(offset);
+            return MEMORY_ACCESSOR.getLong(offset);
         }
     }
 
     @Override
     public long getValueAddress(long valueEntryAddress) {
         long offset = getValueAddressOffset(valueEntryAddress);
-        return UNSAFE.getLong(offset);
+        return MEMORY_ACCESSOR.getLong(offset);
     }
 
     @Override
     public long getValueWrittenBytes(long valueEntryAddress) {
         long offset = getValueWrittenBytesOffset(valueEntryAddress);
-        return UNSAFE.getLong(offset);
+        return MEMORY_ACCESSOR.getLong(offset);
     }
 
     @Override
     public long getValueAllocatedBytes(long valueEntryAddress) {
         long offset = getValueAllocatedBytesOffset(valueEntryAddress);
-        return UNSAFE.getLong(offset);
+        return MEMORY_ACCESSOR.getLong(offset);
     }
 
     @Override
@@ -140,14 +143,14 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
 
     protected long acquireNewKeyEntry(byte color) {
         long address = this.memoryAllocator.allocate(KEY_ENTRY_SIZE);
-        UNSAFE.setMemory(address, KEY_ENTRY_SIZE, (byte) 0);
-        UNSAFE.putByte(getColorAddressOffset(address), color);
+        MEMORY_ACCESSOR.setMemory(address, KEY_ENTRY_SIZE, (byte) 0);
+        MEMORY_ACCESSOR.putByte(getColorAddressOffset(address), color);
         return address;
     }
 
     protected long allocateNewValueEntry() {
         long address = this.memoryAllocator.allocate(VALUE_ENTRY_SIZE);
-        UNSAFE.setMemory(address, VALUE_ENTRY_SIZE, (byte) 0);
+        MEMORY_ACCESSOR.setMemory(address, VALUE_ENTRY_SIZE, (byte) 0);
         return address;
     }
 
@@ -203,7 +206,6 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         return valueEntryAddress + VALUE_ADDRESS_OFFSET;
     }
 
-
     /***
      * @param direction ASC - 1
      *                  DESC - 0
@@ -235,9 +237,9 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     private void setKey(long address, long keyAddress, long keyLength, long keyAllocatedBytes) {
-        UNSAFE.putLong(getKeyAddressOffset(address), keyAddress);
-        UNSAFE.putLong(getKeyWrittenBytesAddressOffset(address), keyLength);
-        UNSAFE.putLong(getKeyAllocatedBytesAddressOffset(address), keyAllocatedBytes);
+        MEMORY_ACCESSOR.putLong(getKeyAddressOffset(address), keyAddress);
+        MEMORY_ACCESSOR.putLong(getKeyWrittenBytesAddressOffset(address), keyLength);
+        MEMORY_ACCESSOR.putLong(getKeyAllocatedBytesAddressOffset(address), keyAllocatedBytes);
     }
 
     /**
@@ -304,26 +306,26 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long valueEntryOffsetAddress = getValueEntryAddressOffset(keyEntryAddress);
         long newValueEntryAddress = allocateNewValueEntry();
 
-        UNSAFE.putLong(getValueAddressOffset(newValueEntryAddress), valueAddress);
-        UNSAFE.putLong(getValueWrittenBytesOffset(newValueEntryAddress), valueWrittenBytes);
-        UNSAFE.putLong(getValueAllocatedBytesOffset(newValueEntryAddress), valueAllocatedBytes);
+        MEMORY_ACCESSOR.putLong(getValueAddressOffset(newValueEntryAddress), valueAddress);
+        MEMORY_ACCESSOR.putLong(getValueWrittenBytesOffset(newValueEntryAddress), valueWrittenBytes);
+        MEMORY_ACCESSOR.putLong(getValueAllocatedBytesOffset(newValueEntryAddress), valueAllocatedBytes);
 
-        long valueEntryAddress = UNSAFE.getLong(valueEntryOffsetAddress);
+        long valueEntryAddress = MEMORY_ACCESSOR.getLong(valueEntryOffsetAddress);
 
         if (valueEntryAddress == 0L) {
             // It is the first element - setting link to it
-            UNSAFE.putLong(valueEntryOffsetAddress, newValueEntryAddress);
+            MEMORY_ACCESSOR.putLong(valueEntryOffsetAddress, newValueEntryAddress);
             // Set last address
-            UNSAFE.putLong(getLastValueEntryAddressOffset(newValueEntryAddress), newValueEntryAddress);
+            MEMORY_ACCESSOR.putLong(getLastValueEntryAddressOffset(newValueEntryAddress), newValueEntryAddress);
         } else {
-            long lastValueEntryAddress = UNSAFE.getLong(getLastValueEntryAddressOffset(valueEntryAddress));
+            long lastValueEntryAddress = MEMORY_ACCESSOR.getLong(getLastValueEntryAddressOffset(valueEntryAddress));
             if (lastValueEntryAddress > 0L) {
                 // Link old last value with new
-                UNSAFE.putLong(getNextValueEntryOffset(lastValueEntryAddress), newValueEntryAddress);
+                MEMORY_ACCESSOR.putLong(getNextValueEntryOffset(lastValueEntryAddress), newValueEntryAddress);
             }
 
             // Set last address to key
-            UNSAFE.putLong(getLastValueEntryAddressOffset(valueEntryAddress), newValueEntryAddress);
+            MEMORY_ACCESSOR.putLong(getLastValueEntryAddressOffset(valueEntryAddress), newValueEntryAddress);
         }
 
         return newValueEntryAddress;
@@ -384,11 +386,11 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     private long getRootKeyEntry(long rootAddress) {
-        return UNSAFE.getLong(rootAddress);
+        return MEMORY_ACCESSOR.getLong(rootAddress);
     }
 
     private void setRootKeyEntry(long rootAddress, long keyEntryAddress) {
-        UNSAFE.putLong(rootAddress, keyEntryAddress);
+        MEMORY_ACCESSOR.putLong(rootAddress, keyEntryAddress);
     }
 
     protected long getKeyEntry0(long rootAddress,
@@ -423,7 +425,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
             if (compareResult == 1) {
                 //Our key is greater
                 long rightAddress = getRightAddressOffset(address);
-                if (UNSAFE.getLong(rightAddress) == 0) {
+                if (MEMORY_ACCESSOR.getLong(rightAddress) == 0) {
                     if (createIfNotExists) {
                         return assignNewLeaf(rootAddress, keyAddress, keyWrittenBytes, keyAllocatedBytes,
                                 address, rightAddress, RED, RIGHT);
@@ -431,13 +433,13 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                         return 0L;
                     }
                 } else {
-                    address = UNSAFE.getLong(rightAddress);
+                    address = MEMORY_ACCESSOR.getLong(rightAddress);
                 }
             } else if (compareResult == -1) {
                 //Our key is less
                 long leftAddress = getLeftAddressOffset(address);
 
-                if (UNSAFE.getLong(leftAddress) == 0) {
+                if (MEMORY_ACCESSOR.getLong(leftAddress) == 0) {
                     if (createIfNotExists) {
                         return assignNewLeaf(rootAddress, keyAddress, keyWrittenBytes, keyAllocatedBytes,
                                 address, leftAddress, RED, LEFT);
@@ -445,7 +447,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                         return 0L;
                     }
                 } else {
-                    address = UNSAFE.getLong(leftAddress);
+                    address = MEMORY_ACCESSOR.getLong(leftAddress);
                 }
             } else {
                 //Keys are same
@@ -466,13 +468,13 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long address = acquireNewKeyEntry(color);
         setKey(address, keyAddress, keyWrittenBytes, keyAllocatedBytes);
 
-        UNSAFE.putLong(leafAddress, address);
+        MEMORY_ACCESSOR.putLong(leafAddress, address);
 
         long parentAddress = getParentAddressOffset(address);
-        UNSAFE.putLong(parentAddress, entryAddress);
+        MEMORY_ACCESSOR.putLong(parentAddress, entryAddress);
 
         long sideOffset = getSideAddressOffset(address);
-        UNSAFE.putByte(sideOffset, side);
+        MEMORY_ACCESSOR.putByte(sideOffset, side);
 
         checkRedBlackConsistency(rootAddress, entryAddress, address, side);
 
@@ -495,24 +497,24 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long grandFatherOffsetAddress = getParentAddressOffset(fatherAddress);
 
         if (grandFatherOffsetAddress > 0L) {
-            grandFatherAddress = UNSAFE.getLong(grandFatherOffsetAddress);
+            grandFatherAddress = MEMORY_ACCESSOR.getLong(grandFatherOffsetAddress);
         } else {
             return;
         }
 
-        if (UNSAFE.getByte(getColorAddressOffset(fatherAddress)) == BLACK) {
+        if (MEMORY_ACCESSOR.getByte(getColorAddressOffset(fatherAddress)) == BLACK) {
             return;
         }
 
-        byte fathersSide = UNSAFE.getByte(getSideAddressOffset(fatherAddress));
+        byte fathersSide = MEMORY_ACCESSOR.getByte(getSideAddressOffset(fatherAddress));
         long uncleAddress;
 
         if (fathersSide == LEFT) {
             long rightAddress = getRightAddressOffset(grandFatherAddress);
-            uncleAddress = rightAddress > 0L ? UNSAFE.getLong(rightAddress) : 0L;
+            uncleAddress = rightAddress > 0L ? MEMORY_ACCESSOR.getLong(rightAddress) : 0L;
         } else {
             long leftAddress = getLeftAddressOffset(grandFatherAddress);
-            uncleAddress = leftAddress > 0L ? UNSAFE.getLong(leftAddress) : 0L;
+            uncleAddress = leftAddress > 0L ? MEMORY_ACCESSOR.getLong(leftAddress) : 0L;
         }
 
         //Case 1 - red uncle
@@ -531,8 +533,8 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
             fatherAddress = sonAddress;
             sonAddress = tmp;
 
-            sonSide = UNSAFE.getByte(getSideAddressOffset(sonAddress));
-            fathersSide = UNSAFE.getByte(getSideAddressOffset(fatherAddress));
+            sonSide = MEMORY_ACCESSOR.getByte(getSideAddressOffset(sonAddress));
+            fathersSide = MEMORY_ACCESSOR.getByte(getSideAddressOffset(fatherAddress));
         }
 
         //Case 3: Son's and father's side are the same, uncle is black or absent
@@ -555,32 +557,32 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
 
         long parentOffsetAddress = getParentAddressOffset(grandFatherAddress);
-        long grandFathersParentEntry = parentOffsetAddress > 0L ? UNSAFE.getLong(parentOffsetAddress) : 0L;
+        long grandFathersParentEntry = parentOffsetAddress > 0L ? MEMORY_ACCESSOR.getLong(parentOffsetAddress) : 0L;
 
         //Grandfather's migration
         if (grandFathersParentEntry == 0L) {
-            UNSAFE.putLong(rootAddress, fatherAddress);
+            MEMORY_ACCESSOR.putLong(rootAddress, fatherAddress);
 
-            UNSAFE.putLong(
+            MEMORY_ACCESSOR.putLong(
                     getParentAddressOffset(fatherAddress), 0L);
         } else {
-            byte grandFathersSide = UNSAFE.getByte(
+            byte grandFathersSide = MEMORY_ACCESSOR.getByte(
                     getSideAddressOffset(grandFatherAddress));
 
             if (grandFathersSide == LEFT) {
-                UNSAFE.putLong(
+                MEMORY_ACCESSOR.putLong(
                         getLeftAddressOffset(grandFathersParentEntry), fatherAddress);
                 //Set father's side
-                UNSAFE.putByte(getSideAddressOffset(fatherAddress), LEFT);
+                MEMORY_ACCESSOR.putByte(getSideAddressOffset(fatherAddress), LEFT);
                 // Father on grandFather's father
-                UNSAFE.putLong(getParentAddressOffset(fatherAddress), grandFathersParentEntry);
+                MEMORY_ACCESSOR.putLong(getParentAddressOffset(fatherAddress), grandFathersParentEntry);
             } else {
-                UNSAFE.putLong(
+                MEMORY_ACCESSOR.putLong(
                         getRightAddressOffset(grandFathersParentEntry), fatherAddress);
                 //Set father's side
-                UNSAFE.putByte(getSideAddressOffset(fatherAddress), RIGHT);
+                MEMORY_ACCESSOR.putByte(getSideAddressOffset(fatherAddress), RIGHT);
                 // Father on grandFather's father
-                UNSAFE.putLong(getParentAddressOffset(fatherAddress), grandFathersParentEntry);
+                MEMORY_ACCESSOR.putLong(getParentAddressOffset(fatherAddress), grandFathersParentEntry);
             }
         }
 
@@ -595,46 +597,46 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long fathersRightOffset =
                 getRightAddressOffset(fatherAddress);
 
-        long fatherLeftAddress = UNSAFE.getLong(fathersLeftOffset);
-        long fatherRightAddress = UNSAFE.getLong(fathersRightOffset);
+        long fatherLeftAddress = MEMORY_ACCESSOR.getLong(fathersLeftOffset);
+        long fatherRightAddress = MEMORY_ACCESSOR.getLong(fathersRightOffset);
 
         // Father link to grandfather
         // Grandfather links to father's another child
         if (sonSide == LEFT) {
-            UNSAFE.putLong(fathersRightOffset, grandFatherAddress);
-            UNSAFE.putLong(grandFathersLeftOffset, fatherRightAddress);
+            MEMORY_ACCESSOR.putLong(fathersRightOffset, grandFatherAddress);
+            MEMORY_ACCESSOR.putLong(grandFathersLeftOffset, fatherRightAddress);
             //GrandFather on father
-            UNSAFE.putLong(getParentAddressOffset(grandFatherAddress), fatherAddress);
+            MEMORY_ACCESSOR.putLong(getParentAddressOffset(grandFatherAddress), fatherAddress);
 
             if (fatherRightAddress > 0L) {
                 // Set father's child to grandFather
-                UNSAFE.putByte(getSideAddressOffset(fatherRightAddress), LEFT);
-                UNSAFE.putLong(getParentAddressOffset(fatherRightAddress), grandFatherAddress);
+                MEMORY_ACCESSOR.putByte(getSideAddressOffset(fatherRightAddress), LEFT);
+                MEMORY_ACCESSOR.putLong(getParentAddressOffset(fatherRightAddress), grandFatherAddress);
             }
             //Set grandFather's side
-            UNSAFE.putByte(getSideAddressOffset(grandFatherAddress), RIGHT);
+            MEMORY_ACCESSOR.putByte(getSideAddressOffset(grandFatherAddress), RIGHT);
         } else {
-            UNSAFE.putLong(fathersLeftOffset, grandFatherAddress);
-            UNSAFE.putLong(grandFathersRightOffset, fatherLeftAddress);
+            MEMORY_ACCESSOR.putLong(fathersLeftOffset, grandFatherAddress);
+            MEMORY_ACCESSOR.putLong(grandFathersRightOffset, fatherLeftAddress);
             //  GrandFather on father
-            UNSAFE.putLong(getParentAddressOffset(grandFatherAddress), fatherAddress);
+            MEMORY_ACCESSOR.putLong(getParentAddressOffset(grandFatherAddress), fatherAddress);
 
             // Set father's child to grandFather
             if (fatherLeftAddress > 0L) {
-                UNSAFE.putByte(getSideAddressOffset(fatherLeftAddress), RIGHT);
-                UNSAFE.putLong(getParentAddressOffset(fatherLeftAddress), grandFatherAddress);
+                MEMORY_ACCESSOR.putByte(getSideAddressOffset(fatherLeftAddress), RIGHT);
+                MEMORY_ACCESSOR.putLong(getParentAddressOffset(fatherLeftAddress), grandFatherAddress);
             }
             //Set grandFather's side
-            UNSAFE.putByte(getSideAddressOffset(grandFatherAddress), LEFT);
+            MEMORY_ACCESSOR.putByte(getSideAddressOffset(grandFatherAddress), LEFT);
         }
 
         //Changing color
         // GrandFather - red
-        UNSAFE.putByte(getColorAddressOffset(grandFatherAddress), RED);
+        MEMORY_ACCESSOR.putByte(getColorAddressOffset(grandFatherAddress), RED);
         // Father - black
-        UNSAFE.putByte(getColorAddressOffset(fatherAddress), BLACK);
+        MEMORY_ACCESSOR.putByte(getColorAddressOffset(fatherAddress), BLACK);
         //Grandfather's side will become uncle's side
-        UNSAFE.putByte(getSideAddressOffset(grandFatherAddress), fathersSide == LEFT ? RIGHT : LEFT);
+        MEMORY_ACCESSOR.putByte(getSideAddressOffset(grandFatherAddress), fathersSide == LEFT ? RIGHT : LEFT);
         return false;
     }
 
@@ -643,53 +645,53 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long grandFathersOffset = fathersSide == LEFT
                 ? getLeftAddressOffset(grandFatherAddress)
                 : getRightAddressOffset(grandFatherAddress);
-        UNSAFE.putLong(grandFathersOffset, sonAddress);
+        MEMORY_ACCESSOR.putLong(grandFathersOffset, sonAddress);
 
         long sonLeftAddress = getLeftAddressOffset(sonAddress);
         long sonRightAddress = getRightAddressOffset(sonAddress);
-        long sonsChild = sonSide == RIGHT ? UNSAFE.getLong(sonLeftAddress) : UNSAFE.getLong(sonRightAddress);
+        long sonsChild = sonSide == RIGHT ? MEMORY_ACCESSOR.getLong(sonLeftAddress) : MEMORY_ACCESSOR.getLong(sonRightAddress);
 
         //Son's left becomes father's right
-        UNSAFE.putLong(
+        MEMORY_ACCESSOR.putLong(
                 sonSide == RIGHT ? getRightAddressOffset(fatherAddress) : getLeftAddressOffset(fatherAddress),
                 sonsChild);
 
         if (sonsChild > 0L) {
-            UNSAFE.putLong(getParentAddressOffset(sonsChild), fatherAddress);
-            UNSAFE.putByte(getSideAddressOffset(sonsChild), sonSide);
+            MEMORY_ACCESSOR.putLong(getParentAddressOffset(sonsChild), fatherAddress);
+            MEMORY_ACCESSOR.putByte(getSideAddressOffset(sonsChild), sonSide);
         }
 
         // Son becomes parent of father
-        UNSAFE.putLong(sonSide == RIGHT ? sonLeftAddress : sonRightAddress, fatherAddress);
+        MEMORY_ACCESSOR.putLong(sonSide == RIGHT ? sonLeftAddress : sonRightAddress, fatherAddress);
 
         //Set new parents to father and son
-        UNSAFE.putLong(getParentAddressOffset(fatherAddress), sonAddress);
-        UNSAFE.putLong(getParentAddressOffset(sonAddress), grandFatherAddress);
+        MEMORY_ACCESSOR.putLong(getParentAddressOffset(fatherAddress), sonAddress);
+        MEMORY_ACCESSOR.putLong(getParentAddressOffset(sonAddress), grandFatherAddress);
 
         //Change son's side
-        UNSAFE.putByte(getSideAddressOffset(sonAddress), sonSide == LEFT ? RIGHT : LEFT);
+        MEMORY_ACCESSOR.putByte(getSideAddressOffset(sonAddress), sonSide == LEFT ? RIGHT : LEFT);
     }
 
     private boolean case1(long rootAddress, long fatherAddress, long grandFatherAddress, long uncleAddress) {
-        byte uncleColor = UNSAFE.getByte(
+        byte uncleColor = MEMORY_ACCESSOR.getByte(
                 getColorAddressOffset(uncleAddress));
 
         if (uncleColor == RED) {
             //Repaint uncle to black
-            UNSAFE.putByte(getColorAddressOffset(uncleAddress), BLACK);
+            MEMORY_ACCESSOR.putByte(getColorAddressOffset(uncleAddress), BLACK);
             //Repaint father to black
-            UNSAFE.putByte(getColorAddressOffset(fatherAddress), BLACK);
+            MEMORY_ACCESSOR.putByte(getColorAddressOffset(fatherAddress), BLACK);
 
             if (grandFatherAddress > 0L) {
                 //Repaint grand-father to red
-                UNSAFE.putByte(getColorAddressOffset(grandFatherAddress), RED);
+                MEMORY_ACCESSOR.putByte(getColorAddressOffset(grandFatherAddress), RED);
 
-                byte grandFatherSide = UNSAFE.getByte(
+                byte grandFatherSide = MEMORY_ACCESSOR.getByte(
                         getSideAddressOffset(grandFatherAddress));
                 long grandFatherParentOffsetAddress =
                         getParentAddressOffset(grandFatherAddress);
                 long grandFatherParentAddress = grandFatherParentOffsetAddress > 0L
-                        ? UNSAFE.getLong(grandFatherParentOffsetAddress)
+                        ? MEMORY_ACCESSOR.getLong(grandFatherParentOffsetAddress)
                         : 0L;
 
                 // Recursive call
@@ -697,7 +699,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
             } else {
                 long rootKeyEntry = getRootKeyEntry(rootAddress);
                 if (rootKeyEntry > 0L) {
-                    UNSAFE.putByte(getColorAddressOffset(rootKeyEntry), BLACK);
+                    MEMORY_ACCESSOR.putByte(getColorAddressOffset(rootKeyEntry), BLACK);
                 }
             }
 
@@ -710,7 +712,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         long rootEntry = getRootKeyEntry(rootAddress);
 
         if (rootEntry > 0L) {
-            UNSAFE.putByte(getColorAddressOffset(rootEntry), BLACK);
+            MEMORY_ACCESSOR.putByte(getColorAddressOffset(rootEntry), BLACK);
         }
     }
 
@@ -736,10 +738,10 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
             long next;
 
             if (direction == ASC) {
-                next = UNSAFE.getLong(
+                next = MEMORY_ACCESSOR.getLong(
                         getLeftAddressOffset(pointer));
             } else {
-                next = UNSAFE.getLong(
+                next = MEMORY_ACCESSOR.getLong(
                         getRightAddressOffset(pointer));
             }
 
@@ -763,18 +765,18 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                 direction == ASC ? getRightAddressOffset(pointer) : getLeftAddressOffset(pointer);
 
         if (childAddress > 0L) {
-            long child = UNSAFE.getLong(childAddress);
+            long child = MEMORY_ACCESSOR.getLong(childAddress);
 
             if (child > 0L) {
                 return first(direction, child);
             }
         }
 
-        byte side = UNSAFE.getByte(
+        byte side = MEMORY_ACCESSOR.getByte(
                 getSideAddressOffset(pointer));
 
         if (checkSide(side, direction)) {
-            long parentAddress = UNSAFE.getLong(
+            long parentAddress = MEMORY_ACCESSOR.getLong(
                     getParentAddressOffset(pointer));
 
             if (parentAddress > 0L) {
@@ -783,19 +785,19 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
 
         while (!checkSide(side, direction)) {
-            long parentAddress = UNSAFE.getLong(
+            long parentAddress = MEMORY_ACCESSOR.getLong(
                     getParentAddressOffset(pointer));
 
             if (parentAddress == 0) {
                 return 0;
             } else {
                 pointer = parentAddress;
-                side = UNSAFE.getByte(
+                side = MEMORY_ACCESSOR.getByte(
                         getSideAddressOffset(pointer));
             }
         }
 
-        return UNSAFE.getLong(
+        return MEMORY_ACCESSOR.getLong(
                 getParentAddressOffset(pointer));
     }
 
@@ -806,7 +808,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
 
         if (getKeyAddressOffset(keyEntryPointer) > 0L) {
-            return UNSAFE.getLong(
+            return MEMORY_ACCESSOR.getLong(
                     getKeyAddressOffset(keyEntryPointer));
         } else {
             return 0;
@@ -820,7 +822,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
 
         if (getKeyWrittenBytesAddressOffset(keyEntryPointer) > 0L) {
-            return UNSAFE.getLong(
+            return MEMORY_ACCESSOR.getLong(
                     getKeyWrittenBytesAddressOffset(keyEntryPointer));
         } else {
             return 0;
@@ -834,7 +836,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
 
         if (getKeyAllocatedBytesAddressOffset(keyEntryPointer) > 0L) {
-            return UNSAFE.getLong(
+            return MEMORY_ACCESSOR.getLong(
                     getKeyAllocatedBytesAddressOffset(keyEntryPointer));
         } else {
             return 0L;
@@ -844,14 +846,14 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     @Override
     public void markKeyEntry(long keyEntryPointer, byte marker) {
         if (keyEntryPointer != 0L) {
-            UNSAFE.putByte(getMerkerAddressOffset(keyEntryPointer), marker);
+            MEMORY_ACCESSOR.putByte(getMerkerAddressOffset(keyEntryPointer), marker);
         }
     }
 
     @Override
     public byte getKeyEntryMarker(long keyEntryPointer) {
         if (keyEntryPointer != 0L) {
-            return UNSAFE.getByte(getMerkerAddressOffset(keyEntryPointer));
+            return MEMORY_ACCESSOR.getByte(getMerkerAddressOffset(keyEntryPointer));
         } else {
             return 0;
         }
@@ -882,15 +884,15 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                 getParentAddressOffset(pointer);
         long sideOffset =
                 getSideAddressOffset(pointer);
-        long parentAddress = UNSAFE.getLong(parentAddressOffset);
+        long parentAddress = MEMORY_ACCESSOR.getLong(parentAddressOffset);
 
         if (father != parentAddress) {
             return false;
         }
 
         if (parentAddress > 0L) {
-            byte side = UNSAFE.getByte(sideOffset);
-            long childAddress = UNSAFE.getLong(
+            byte side = MEMORY_ACCESSOR.getByte(sideOffset);
+            long childAddress = MEMORY_ACCESSOR.getLong(
                     side == LEFT ? getLeftAddressOffset(parentAddress) : getRightAddressOffset(parentAddress));
 
             if (childAddress != pointer) {
@@ -907,7 +909,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     private boolean validateChild(long pointer, byte side) {
-        long childAddress = UNSAFE.getLong(
+        long childAddress = MEMORY_ACCESSOR.getLong(
                 side == LEFT ? getLeftAddressOffset(pointer) : (getRightAddressOffset(pointer))
         );
 
@@ -925,12 +927,12 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     private long count0(long pointer) {
         long counter = 1;
 
-        if (UNSAFE.getLong(getLeftAddressOffset(pointer)) > 0L) {
-            counter += count0(UNSAFE.getLong(getLeftAddressOffset(pointer)));
+        if (MEMORY_ACCESSOR.getLong(getLeftAddressOffset(pointer)) > 0L) {
+            counter += count0(MEMORY_ACCESSOR.getLong(getLeftAddressOffset(pointer)));
         }
 
-        if (UNSAFE.getLong(getRightAddressOffset(pointer)) > 0L) {
-            counter += count0(UNSAFE.getLong(getRightAddressOffset(pointer)));
+        if (MEMORY_ACCESSOR.getLong(getRightAddressOffset(pointer)) > 0L) {
+            counter += count0(MEMORY_ACCESSOR.getLong(getRightAddressOffset(pointer)));
         }
 
         return counter;
@@ -965,15 +967,15 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     protected void release0(long keyEntryAddress, boolean releasePayLoad) {
-        if (UNSAFE.getLong(
+        if (MEMORY_ACCESSOR.getLong(
                 getLeftAddressOffset(keyEntryAddress)) > 0L) {
-            release0(UNSAFE.getLong(
+            release0(MEMORY_ACCESSOR.getLong(
                     getLeftAddressOffset(keyEntryAddress)), releasePayLoad);
         }
 
-        if (UNSAFE.getLong(
+        if (MEMORY_ACCESSOR.getLong(
                 getRightAddressOffset(keyEntryAddress)) > 0L) {
-            release0(UNSAFE.getLong(
+            release0(MEMORY_ACCESSOR.getLong(
                     getRightAddressOffset(keyEntryAddress)), releasePayLoad);
         }
 
@@ -1008,7 +1010,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     protected void releaseValue(long keyEntryAddress, boolean releasePayLoad) {
         long valueEntryAddressOffset =
                 getValueEntryAddressOffset(keyEntryAddress);
-        long valueEntryAddress = UNSAFE.getLong(valueEntryAddressOffset);
+        long valueEntryAddress = MEMORY_ACCESSOR.getLong(valueEntryAddressOffset);
 
         while (valueEntryAddress > 0L) {
             //Release Value PayLoad
@@ -1018,7 +1020,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
 
             long oldValueEntryAddress = valueEntryAddress;
 
-            valueEntryAddress = UNSAFE.getLong(
+            valueEntryAddress = MEMORY_ACCESSOR.getLong(
                     getNextValueEntryOffset(valueEntryAddress));
 
             if (oldValueEntryAddress > 0L) {
@@ -1033,13 +1035,13 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                 getValueAddressOffset(valueEntryAddress);
 
         if (valueAddressOffset > 0L) {
-            long valueAddress = UNSAFE.getLong(valueAddressOffset);
+            long valueAddress = MEMORY_ACCESSOR.getLong(valueAddressOffset);
 
             if (valueAddress > 0L) {
                 long allocatedBytes = 0;
 
                 if (getValueAllocatedBytesOffset(valueEntryAddress) > 0L) {
-                    allocatedBytes = UNSAFE.getLong(
+                    allocatedBytes = MEMORY_ACCESSOR.getLong(
                             getValueAllocatedBytesOffset(valueEntryAddress));
                 }
 

@@ -1,6 +1,9 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
 import java.util.concurrent.TimeUnit;
@@ -8,10 +11,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
-
 /** Implementation of {@link LongBlockingQueue} with a linked list. */
 public final class LongLinkedBlockingQueue implements LongBlockingQueue {
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private static final long NULL_PTR = 0L;
     private static final int NODE_SIZE = 16;
@@ -54,24 +60,24 @@ public final class LongLinkedBlockingQueue implements LongBlockingQueue {
 
     private long newNode(final long e) {
         long address = malloc.allocate(NODE_SIZE);
-        UNSAFE.putLong(null, address, e);
-        UNSAFE.putLong(null, address + NEXT_OFFSET, NULL_PTR);
+        MEMORY_ACCESSOR.putLong(null, address, e);
+        MEMORY_ACCESSOR.putLong(null, address + NEXT_OFFSET, NULL_PTR);
         return address;
     }
 
     private static long getItem(long node) {
         assert node != NULL_PTR;
-        return UNSAFE.getLong(node);
+        return MEMORY_ACCESSOR.getLong(node);
     }
 
     private static long getNextNode(long node) {
         assert node != NULL_PTR;
-        return UNSAFE.getLong(node + NEXT_OFFSET);
+        return MEMORY_ACCESSOR.getLong(node + NEXT_OFFSET);
     }
 
     private static void setNextNode(long node, long value) {
         assert node != NULL_PTR;
-        UNSAFE.putLong(node + NEXT_OFFSET, value);
+        MEMORY_ACCESSOR.putLong(node + NEXT_OFFSET, value);
     }
 
     @Override

@@ -1,6 +1,9 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.GarbageCollectable;
 import com.hazelcast.memory.MemoryAllocator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -11,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -19,6 +21,11 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * See ABA problem; http://en.wikipedia.org/wiki/ABA_problem
  */
 public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollectable {
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private static final long NULL_PTR = 0L;
     private static final int NODE_SIZE = 16;
@@ -64,23 +71,23 @@ public final class LongConcurrentLinkedQueue implements LongQueue, GarbageCollec
     }
 
     private static void setNode(long address, long e) {
-        UNSAFE.putLongVolatile(null, address, e);
-        UNSAFE.putLongVolatile(null, address + NEXT_OFFSET, NULL_PTR);
+        MEMORY_ACCESSOR.putLongVolatile(null, address, e);
+        MEMORY_ACCESSOR.putLongVolatile(null, address + NEXT_OFFSET, NULL_PTR);
     }
 
     private static long getItem(long node) {
         checkNotNull("Node is null!");
-        return UNSAFE.getLongVolatile(null, node);
+        return MEMORY_ACCESSOR.getLongVolatile(null, node);
     }
 
     private static long getNextNode(long node) {
         checkNotNull("Node is null!");
-        return UNSAFE.getLongVolatile(null, node + NEXT_OFFSET);
+        return MEMORY_ACCESSOR.getLongVolatile(null, node + NEXT_OFFSET);
     }
 
     private static boolean casNextNode(long node, long current, long value) {
         checkNotNull("Node is null!");
-        return UNSAFE.compareAndSwapLong(null, node + NEXT_OFFSET, current, value);
+        return MEMORY_ACCESSOR.compareAndSwapLong(null, node + NEXT_OFFSET, current, value);
     }
 
     @Override

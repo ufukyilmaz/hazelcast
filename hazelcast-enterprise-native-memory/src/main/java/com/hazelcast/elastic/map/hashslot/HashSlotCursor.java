@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
 /**
  * Inline native memory map cursor. Initially the cursor's location is

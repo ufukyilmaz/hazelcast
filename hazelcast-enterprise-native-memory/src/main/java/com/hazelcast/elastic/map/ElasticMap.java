@@ -44,7 +44,7 @@ public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
 
     Collection<V> values();
 
-    Set<Map.Entry<K, V>> entrySet();
+    Set<Entry<K, V>> entrySet();
 
     int size();
 

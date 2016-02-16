@@ -1,14 +1,22 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.nio.UnsafeHelper;
 
 import java.util.NoSuchElementException;
 
 /** Implementation of {@link LongQueue} with an off-heap array. */
 public final class LongArrayQueue implements LongQueue {
+
     static final long ENTRY_SIZE = 8L;
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private final MemoryAllocator malloc;
     private final int capacity;
@@ -45,14 +53,14 @@ public final class LongArrayQueue implements LongQueue {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        return UnsafeHelper.UNSAFE.getLong(address + (index * ENTRY_SIZE));
+        return MEMORY_ACCESSOR.getLong(address + (index * ENTRY_SIZE));
     }
 
     private void set(int index, long value) {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        UnsafeHelper.UNSAFE.putLong(address + (index * ENTRY_SIZE), value);
+        MEMORY_ACCESSOR.putLong(address + (index * ENTRY_SIZE), value);
     }
 
     @Override
@@ -128,7 +136,7 @@ public final class LongArrayQueue implements LongQueue {
     public void clear() {
         ensureMemory();
         for (int i = 0; i < capacity; i++) {
-            UnsafeHelper.UNSAFE.putLong(address + (i * ENTRY_SIZE), nullItem);
+            MEMORY_ACCESSOR.putLong(address + (i * ENTRY_SIZE), nullItem);
         }
         add = 0;
         remove = 0;

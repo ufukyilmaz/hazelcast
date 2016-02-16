@@ -1,11 +1,13 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 
@@ -18,6 +20,11 @@ public class HashSlotArrayImpl implements HashSlotArray {
     public static final int DEFAULT_INITIAL_CAPACITY = 16;
     /** Default load factor of the map */
     public static final float DEFAULT_LOAD_FACTOR = 0.6f;
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
@@ -106,7 +113,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     private void allocate(long capacity) {
         long allocationCapacity = capacity * entryLength;
         baseAddress = malloc.allocate(allocationCapacity);
-        UNSAFE.setMemory(baseAddress, allocationCapacity, (byte) 0);
+        MEMORY_ACCESSOR.setMemory(baseAddress, allocationCapacity, (byte) 0);
 
         allocated = capacity;
         mask = capacity - 1;
@@ -164,7 +171,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
                 }
 
                 putKey(newSlot, key1, key2);
-                UNSAFE.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
+                MEMORY_ACCESSOR.copyMemory(valueAddress, getValueAddress(newSlot), valueLength);
             }
         }
         malloc.free(oldAddress, oldAllocated * entryLength);
@@ -246,11 +253,11 @@ public class HashSlotArrayImpl implements HashSlotArray {
 
             // Shift key/value pair.
             putKey(slotPrev, getKey1(slotCurr), getKey2(slotCurr));
-            UNSAFE.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
+            MEMORY_ACCESSOR.copyMemory(getValueAddress(slotCurr), getValueAddress(slotPrev), valueLength);
         }
 
         putKey(slotPrev, 0L, 0L);
-        UNSAFE.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
+        MEMORY_ACCESSOR.setMemory(getValueAddress(slotPrev), valueLength, (byte) 0);
     }
 
     protected long hash(long key1, long key2) {
@@ -265,7 +272,7 @@ public class HashSlotArrayImpl implements HashSlotArray {
     @Override
     public void clear() {
         ensureLive();
-        UNSAFE.setMemory(baseAddress, allocated * entryLength, (byte) 0);
+        MEMORY_ACCESSOR.setMemory(baseAddress, allocated * entryLength, (byte) 0);
         assigned = 0;
     }
 
@@ -314,8 +321,8 @@ public class HashSlotArrayImpl implements HashSlotArray {
 
     private void putKey(long slot, long key1, long key2) {
         final long slotBase = slotBase(baseAddress, slot);
-        UNSAFE.putLong(slotBase + KEY_1_OFFSET, key1);
-        UNSAFE.putLong(slotBase + KEY_2_OFFSET, key2);
+        MEMORY_ACCESSOR.putLong(slotBase + KEY_1_OFFSET, key1);
+        MEMORY_ACCESSOR.putLong(slotBase + KEY_2_OFFSET, key2);
     }
 
     private boolean isAssigned(long baseAddr, long slot) {
@@ -323,11 +330,11 @@ public class HashSlotArrayImpl implements HashSlotArray {
     }
 
     private long getKey1(long baseAddr, long slot) {
-        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_1_OFFSET);
+        return MEMORY_ACCESSOR.getLong(slotBase(baseAddr, slot) + KEY_1_OFFSET);
     }
 
     private long getKey2(long baseAddr, long slot) {
-        return UNSAFE.getLong(slotBase(baseAddr, slot) + KEY_2_OFFSET);
+        return MEMORY_ACCESSOR.getLong(slotBase(baseAddr, slot) + KEY_2_OFFSET);
     }
 
     private long getValueAddress(long baseAddr, long slot) {

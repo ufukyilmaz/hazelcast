@@ -43,9 +43,9 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
                 true
         );
 
-        if (UNSAFE.getLong(secondaryKeyEntryOffsetAddress) == 0L) {
+        if (MEMORY_ACCESSOR.getLong(secondaryKeyEntryOffsetAddress) == 0L) {
             //Insert rootAddress's address here
-            UNSAFE.putLong(secondaryKeyEntryOffsetAddress, secondaryKeyEntryAddress);
+            MEMORY_ACCESSOR.putLong(secondaryKeyEntryOffsetAddress, secondaryKeyEntryAddress);
         }
 
         return secondaryKeyEntryAddress;
@@ -153,15 +153,15 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
 
     protected void releaseSecondaryKey(long secondaryKeyEntryAddress, boolean releasePayLoad) {
         if (secondaryKeyEntryAddress > 0L) {
-            if (UNSAFE.getLong(
+            if (MEMORY_ACCESSOR.getLong(
                     getLeftAddressOffset(secondaryKeyEntryAddress)) > 0L) {
-                releaseSecondaryKey(UNSAFE.getLong(
+                releaseSecondaryKey(MEMORY_ACCESSOR.getLong(
                         getLeftAddressOffset(secondaryKeyEntryAddress)), releasePayLoad);
             }
 
-            if (UNSAFE.getLong(
+            if (MEMORY_ACCESSOR.getLong(
                     getRightAddressOffset(secondaryKeyEntryAddress)) > 0L) {
-                releaseSecondaryKey(UNSAFE.getLong(
+                releaseSecondaryKey(MEMORY_ACCESSOR.getLong(
                         getRightAddressOffset(secondaryKeyEntryAddress)), releasePayLoad);
             }
 

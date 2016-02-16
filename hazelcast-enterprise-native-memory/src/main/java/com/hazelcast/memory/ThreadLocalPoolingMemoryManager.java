@@ -3,17 +3,19 @@ package com.hazelcast.memory;
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.elastic.NativeSort;
+import com.hazelcast.elastic.map.long2long.Long2LongElasticHashMap;
+import com.hazelcast.elastic.map.long2long.Long2LongElasticMap;
 import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
 import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
-import java.nio.ByteOrder;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,8 +43,6 @@ public class ThreadLocalPoolingMemoryManager
     private static final int INITIAL_CAPACITY = 1024;
     // Time interval in milliseconds to shrink address queues
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
-    // Represents if the underlying platform is "Little-Endian" or not
-    private static final boolean IS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
     /*
      * Internal Memory Block Header Structure: (1 byte = 8 bits)
@@ -96,12 +96,10 @@ public class ThreadLocalPoolingMemoryManager
      * External Memory Block Header Structure: (1 byte = 8 bits)
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | LSB 7 bits of size     |   7 bits             |
+     * | <RESERVED>             |   7 bits             |
      * +------------------------+----------------------+
      * | EXTERNAL_BLOCK_BIT     |   1 bit              | ==> Set to 1 always
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * P.S: The least significant 7 bits of the size are embedded into internal block header.
      */
 
     /*
@@ -110,28 +108,26 @@ public class ThreadLocalPoolingMemoryManager
      * Headers are located before the usable memory region.
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | MSB 56 bits of size    |   7 bytes            |
+     * | <RESERVED>             |   7 bytes            |
      * +------------------------+----------------------+
-     * | Header                 |   1 byte (byte)      | ==> Includes LSB 7 bits of size as mentioned above
+     * | Header                 |   1 byte (byte)      |
      * +------------------------+----------------------+
      * | Usable Memory Region   |   <size>             |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * P.S: The most significant 56 bits of the size are embedded into external block header.
-     *      The remaining most significant 1 bit is not used.
-     *      Because since size is always positive that bit is always 0.
      */
 
     private final String threadName;
     private final LongSet pageAllocations;
     private final LongArray sortedPageAllocations;
+    private final Long2LongElasticMap externalAllocations;
     private long lastFullCompaction;
 
     protected ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
                                               LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
-        pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.91f, systemAllocator, NULL_ADDRESS);
+        pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.60f, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
+        externalAllocations = new Long2LongElasticHashMap(systemAllocator, SIZE_INVALID);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -149,15 +145,7 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     private long getHeaderAddress(long address) {
-        if (lookupPage(address)) {
-            // If this is the first block, wrap around
-            return address + pageSize - HEADER_SIZE;
-        }
-        return address - HEADER_SIZE;
-    }
-
-    private long getHeaderAddressByOffset(long address, int offset) {
-        if (offset == 0) {
+        if (isPageBaseAddress(address)) {
             // If this is the first block, wrap around
             return address + pageSize - HEADER_SIZE;
         }
@@ -166,10 +154,10 @@ public class ThreadLocalPoolingMemoryManager
 
     private byte getHeader(long address) {
         long headerAddress = getHeaderAddress(address);
-        return UnsafeHelper.UNSAFE.getByte(headerAddress);
+        return MEMORY_ACCESSOR.getByte(headerAddress);
     }
 
-    private boolean isHeaderAvailable(byte header) {
+    private static boolean isHeaderAvailable(byte header) {
         return Bits.isBitSet(header, AVAILABLE_BIT);
     }
 
@@ -178,7 +166,7 @@ public class ThreadLocalPoolingMemoryManager
         return isHeaderAvailable(header);
     }
 
-    private int getSizeFromHeader(byte header) {
+    private static int getSizeFromHeader(byte header) {
         header = Bits.clearBit(header, AVAILABLE_BIT);
         header = Bits.clearBit(header, PAGE_OFFSET_EXIST_BIT);
         return decodeSize(header);
@@ -203,45 +191,13 @@ public class ThreadLocalPoolingMemoryManager
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
-    private long getPageOffsetAddressBySize(long address, int size) {
+    private static long getPageOffsetAddressBySize(long address, int size) {
         // We keep the page offset (if there is enough space) at the end of block as aligned
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
-    private boolean lookupPage(long address) {
-        if (pageLookupAddress == NULL_ADDRESS) {
-            return pageAllocations.contains(address);
-        }
-        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
-        int idx = (int) (address & PAGE_LOOKUP_MASK) >> 3;
-        // Find the single byte block contains related lookup bit of given address.
-        int lookupIndex = idx >> 3;
-        // Find the bit offset in the found single byte block.
-        byte lookupOffset = (byte) (idx & 0x07);
-        byte lookupValue = UnsafeHelper.UNSAFE.getByte(null, pageLookupAddress + lookupIndex);
-        if (!Bits.isBitSet(lookupValue, lookupOffset))  {
-            // If related bit is not set, this means that the given address cannot be a page address.
-            return false;
-        } else {
-            // Although related bit is set, this doesn't mean that the given address is a page address.
-            // So we must check it from page allocations.
-            return pageAllocations.contains(address);
-        }
-    }
-
-    private void markPageLookup(long pageAddress) {
-        if (pageLookupAddress == NULL_ADDRESS) {
-            return;
-        }
-        // Get related bits and skip LSB 3 bits because every address is 8 bytes aligned.
-        int idx = (int) (pageAddress & PAGE_LOOKUP_MASK) >> 3;
-        // Find the single byte block contains related lookup bit of given address.
-        int lookupIndex = idx >> 3;
-        // Find the bit offset in the found single byte block.
-        byte lookupOffset = (byte) (idx & 0x07);
-        byte currentLookupValue = UnsafeHelper.UNSAFE.getByte(null, pageLookupAddress + lookupIndex);
-        byte newLookupValue = Bits.setBit(currentLookupValue, lookupOffset);
-        UnsafeHelper.UNSAFE.putByte(null, pageLookupAddress + lookupIndex, newLookupValue);
+    private boolean isPageBaseAddress(long address) {
+        return pageAllocations.contains(address);
     }
 
     @Override
@@ -265,7 +221,6 @@ public class ThreadLocalPoolingMemoryManager
                 freePage(pageAddress);
                 throw e;
             }
-            markPageLookup(pageAddress);
         }
         assert added : "Duplicate malloc() for page address " + pageAddress;
         lastFullCompaction = 0L;
@@ -300,8 +255,8 @@ public class ThreadLocalPoolingMemoryManager
 
         byte header = initHeader(address, size, offset);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        UnsafeHelper.UNSAFE.putByte(headerAddress, header);
-        UnsafeHelper.UNSAFE.putInt(address, offset);
+        MEMORY_ACCESSOR.putByte(headerAddress, header);
+        MEMORY_ACCESSOR.putInt(address, offset);
     }
 
     @Override
@@ -309,19 +264,15 @@ public class ThreadLocalPoolingMemoryManager
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long address = pageAllocator.allocate(allocationSize);
 
-        byte x = (byte) (allocationSize & 0x0000007F);
-        long y = (allocationSize << 1) & 0xFFFFFF00;
-
-        if (IS_LITTLE_ENDIAN) {
-            y = Long.reverseBytes(y);
+        long existingAllocationSize = externalAllocations.putIfAbsent(address, allocationSize);
+        if (existingAllocationSize != SIZE_INVALID) {
+            pageAllocator.free(address, allocationSize);
+            throw new AssertionError("Duplicate malloc() for external address " + address);
         }
 
-        long externalHeaderAddress = address;
-        UnsafeHelper.UNSAFE.putLong(null, externalHeaderAddress, y);
-
-        byte header = Bits.setBit(x, EXTERNAL_BLOCK_BIT);
-        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - 1;
-        UnsafeHelper.UNSAFE.putByte(null, internalHeaderAddress, header);
+        byte header = Bits.setBit((byte) 0, EXTERNAL_BLOCK_BIT);
+        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
+        MEMORY_ACCESSOR.putByte(null, internalHeaderAddress, header);
 
         return address + EXTERNAL_BLOCK_HEADER_SIZE;
     }
@@ -331,20 +282,21 @@ public class ThreadLocalPoolingMemoryManager
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
 
-        if (ASSERTION_ENABLED) {
-            byte header = getHeader(address);
-            if (!Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
-                throw new AssertionError("Address " + address + " is not an allocated external address!");
+        long actualAllocationSize = externalAllocations.remove(allocationAddress);
+        if (actualAllocationSize == SIZE_INVALID) {
+            throw new AssertionError("Double free() -> external address: " + address + ", size: " + size);
+        } else {
+            long actualSize = actualAllocationSize - EXTERNAL_BLOCK_HEADER_SIZE;
+            if (actualSize != size) {
+                // Put it back
+                externalAllocations.put(allocationAddress, actualAllocationSize);
+                throw new AssertionError("Invalid size -> actual: " + actualSize + ", expected: " + size
+                                         + " while free external address " + address);
             }
-            long actualSize = findSizeExternal(address, header);
-            if (actualSize != allocationSize) {
-                throw new AssertionError("Invalid size -> actual: " + actualSize
-                        + ", expected: " + allocationSize + " (usable size + EXTERNAL_BLOCK_HEADER_SIZE="
-                        + EXTERNAL_BLOCK_HEADER_SIZE + ") while free address " + address);
+            else {
+                pageAllocator.free(allocationAddress, allocationSize);
             }
         }
-
-        pageAllocator.free(allocationAddress, allocationSize);
     }
 
     @Override
@@ -352,7 +304,7 @@ public class ThreadLocalPoolingMemoryManager
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        byte header = UnsafeHelper.UNSAFE.getByte(headerAddress);
+        byte header = MEMORY_ACCESSOR.getByte(headerAddress);
         assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
         long pageBase = getOwningPage(address, header);
@@ -371,9 +323,9 @@ public class ThreadLocalPoolingMemoryManager
         byte availableHeader = makeHeaderAvailable(header);
         availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
 
-        UnsafeHelper.UNSAFE.putByte(headerAddress, availableHeader);
-        UnsafeHelper.UNSAFE.putInt(getPageOffsetAddressBySize(address, size), 0);
-        UnsafeHelper.UNSAFE.putInt(address, pageOffset);
+        MEMORY_ACCESSOR.putByte(headerAddress, availableHeader);
+        MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, size), 0);
+        MEMORY_ACCESSOR.putInt(address, pageOffset);
     }
 
     @Override
@@ -382,7 +334,7 @@ public class ThreadLocalPoolingMemoryManager
 
         int offset = getOffset(address);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        byte header = UnsafeHelper.UNSAFE.getByte(headerAddress);
+        byte header = MEMORY_ACCESSOR.getByte(headerAddress);
         byte unavailableHeader = makeHeaderUnavailable(header);
 
         boolean pageOffsetExist = false;
@@ -395,12 +347,12 @@ public class ThreadLocalPoolingMemoryManager
             unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
         }
 
-        UnsafeHelper.UNSAFE.putByte(headerAddress, unavailableHeader);
+        MEMORY_ACCESSOR.putByte(headerAddress, unavailableHeader);
         if (pageOffsetExist) {
             // If page offset will be stored, write it to the unused part of the memory block.
-            UnsafeHelper.UNSAFE.putInt(getPageOffsetAddressBySize(address, internalSize), offset);
+            MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, internalSize), offset);
         }
-        UnsafeHelper.UNSAFE.putInt(address, 0);
+        MEMORY_ACCESSOR.putInt(address, 0);
 
         return true;
     }
@@ -419,9 +371,9 @@ public class ThreadLocalPoolingMemoryManager
                 : "Invalid size -> actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
 
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        UnsafeHelper.UNSAFE.putByte(headerAddress, (byte) 0);
-        UnsafeHelper.UNSAFE.putInt(getPageOffsetAddressBySize(address, expectedSize), 0);
-        UnsafeHelper.UNSAFE.putInt(address, 0);
+        MEMORY_ACCESSOR.putByte(headerAddress, (byte) 0);
+        MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, expectedSize), 0);
+        MEMORY_ACCESSOR.putInt(address, 0);
 
         return true;
     }
@@ -447,22 +399,22 @@ public class ThreadLocalPoolingMemoryManager
             return false;
         }
 
-        return lookupPage(address - offset);
+        return isPageBaseAddress(address - offset);
     }
 
-    private long findSizeExternal(long address, byte header) {
-        byte x = Bits.clearBit(header, EXTERNAL_BLOCK_BIT);
-        long y = UnsafeHelper.UNSAFE.getLong(null, address - EXTERNAL_BLOCK_HEADER_SIZE);
-        if (IS_LITTLE_ENDIAN) {
-            y = Long.reverseBytes(y);
+    private long findSizeExternal(long address) {
+        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
+        long allocationSize = externalAllocations.get(allocationAddress);
+        if (allocationSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        } else {
+            return allocationSize;
         }
-        y = (y & 0xFFFFFF00) >>> 1;
-        return x | y;
     }
 
     private long findSize(long address, byte header) {
         if (Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
-            return findSizeExternal(address, header);
+            return findSizeExternal(address);
         } else {
             return getSizeFromHeader(header);
         }
@@ -494,7 +446,7 @@ public class ThreadLocalPoolingMemoryManager
 
     @Override
     protected int getOffset(long address) {
-        return UnsafeHelper.UNSAFE.getInt(address);
+        return MEMORY_ACCESSOR.getInt(address);
     }
 
     protected long getOwningPage(long address, byte header) {
@@ -502,7 +454,7 @@ public class ThreadLocalPoolingMemoryManager
             // If page offset is stored in the memory block, get the offset directly from there
             // and calculate page address by using this offset.
 
-            int pageOffset = UnsafeHelper.UNSAFE.getInt(getPageOffsetAddressByHeader(address, header));
+            int pageOffset = MEMORY_ACCESSOR.getInt(getPageOffsetAddressByHeader(address, header));
             if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
                 throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
                         + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
@@ -536,9 +488,9 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     @Override
-    protected boolean destroyInternal() {
+    public void destroy() {
         if (isDestroyed()) {
-            return false;
+            return;
         }
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];
@@ -552,11 +504,22 @@ public class ThreadLocalPoolingMemoryManager
             while (iterator.hasNext()) {
                 long address = iterator.next();
                 freePage(address);
+                iterator.remove();
             }
         }
         pageAllocations.dispose();
         sortedPageAllocations.dispose();
-        return true;
+        if (!externalAllocations.isEmpty()) {
+            Iterator<Map.Entry<Long, Long>> iterator = externalAllocations.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Long, Long> entry = iterator.next();
+                long address = entry.getKey();
+                long size = entry.getValue();
+                pageAllocator.free(address, size);
+                iterator.remove();
+            }
+        }
+        externalAllocations.dispose();
     }
 
     @Override

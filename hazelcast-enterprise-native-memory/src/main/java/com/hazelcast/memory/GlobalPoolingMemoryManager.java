@@ -5,11 +5,15 @@ import com.hazelcast.elastic.queue.LongQueue;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.Clock;
+import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.QuickMath;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +42,25 @@ final class GlobalPoolingMemoryManager
 
     // Initial capacity for various internal allocations such as page addresses, address queues, etc ...
     private static final int INITIAL_CAPACITY = 2048;
+
+    // We consider LSB 24 bits (3 bytes)
+    // It is enough to detect non-page addresses.
+    private static final int PAGE_LOOKUP_LENGTH = Integer.getInteger("hazelcast.memory.pageLookupLength", 1 << 24);
+
+    // Size of page lookup allocation (256K)
+    private static final int PAGE_LOOKUP_SIZE =
+                    (
+                        PAGE_LOOKUP_LENGTH
+                        // All addresses are 8 byte aligned
+                        // So no need to consider LSB 3 bits
+                        >> 3
+                    )
+                    // We use bits as flag in each byte to index.
+                    // So we handle 8 index flag for each byte.
+                    >> 3;
+    // Mask to get related bits of address for page lookup.
+    // We consider LSB 24 bits (3 bytes). It is enough to detect non-page addresses.
+    protected static final int PAGE_LOOKUP_MASK = PAGE_LOOKUP_LENGTH - 1;
 
     /*
      * External Memory Block Header Structure: (4 byte = 32 bits)
@@ -91,12 +114,10 @@ final class GlobalPoolingMemoryManager
      * External Memory Block Header Structure: (4 byte = 32 bits)
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | LSB 31 bits of size    |   31 bits            |
+     * | <RESERVED>             |   31 bits            |
      * +------------------------+----------------------+
      * | EXTERNAL_BLOCK_BIT     |   1 bit              | ==> Set to 1 always
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * P.S: The least significant 31 bits of the size are embedded into internal block header.
      */
 
     /*
@@ -105,21 +126,25 @@ final class GlobalPoolingMemoryManager
      * Headers are located before the usable memory region.
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | MSB 32 bits of size    |   4 bytes (int)      |
+     * | <RESERVED>             |   4 bytes (int)      |
      * +------------------------+----------------------+
-     * | Header                 |   4 bytes (int)      | ==> Includes LSB 31 bits of size as mentioned above
+     * | Header                 |   4 bytes (int)      |
      * +------------------------+----------------------+
      * | Usable Memory Region   |   <size>             |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *
-     * P.S: The most significant 32 bits of the size are embedded into external block header.
-     *      The remaining most significant 1 bit is not used.
-     *      Because since size is always positive that bit is always 0.
      */
 
     private final GarbageCollector gc;
     private final ConcurrentNavigableMap<Long, Object> pageAllocations
             = new ConcurrentSkipListMap<Long, Object>();
+    private final ConcurrentMap<Long, Long> externalAllocations
+            = new ConcurrentHashMap<Long, Long>();
+    // We have a lookup to detect non-page addresses.
+    // If an address is not flagged in lookup, this means that it is definitely not a page address.
+    // But if the flag is set, this doesn't mean that it is a page address.
+    // In this case, it must be checked from page allocations.
+    private final long pageLookupAddress;
+
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
     private volatile long lastFullCompaction;
 
@@ -127,7 +152,20 @@ final class GlobalPoolingMemoryManager
             LibMalloc malloc, PooledNativeMemoryStats stats, GarbageCollector gc) {
         super(minBlockSize, pageSize, malloc, stats);
         this.gc = gc;
+        this.pageLookupAddress = initPageLookup();
         initializeAddressQueues();
+    }
+
+    private long initPageLookup() {
+        long pageLookupAddr = NULL_ADDRESS;
+        try {
+            pageLookupAddr = systemAllocator.allocate(PAGE_LOOKUP_SIZE);
+            MEMORY_ACCESSOR.setMemory(pageLookupAddr, PAGE_LOOKUP_SIZE, (byte) 0x00);
+        } catch (NativeOutOfMemoryError oome) {
+            // TODO Should we log this???
+            EmptyStatement.ignore(oome);
+        }
+        return pageLookupAddr;
     }
 
     private static int encodeSize(int size) {
@@ -145,15 +183,7 @@ final class GlobalPoolingMemoryManager
     }
 
     private long getHeaderAddress(long address) {
-        if (lookupPage(address)) {
-            // If this is the first block, wrap around
-            return address + pageSize - HEADER_SIZE;
-        }
-        return address - HEADER_SIZE;
-    }
-
-    private long getHeaderAddressByOffset(long address, int offset) {
-        if (offset == 0) {
+        if (isPageBaseAddress(address)) {
             // If this is the first block, wrap around
             return address + pageSize - HEADER_SIZE;
         }
@@ -162,10 +192,10 @@ final class GlobalPoolingMemoryManager
 
     private int getHeader(long address) {
         long headerAddress = getHeaderAddress(address);
-        return UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
+        return MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
     }
 
-    private boolean isHeaderAvailable(int header) {
+    private static boolean isHeaderAvailable(int header) {
         return Bits.isBitSet(header, AVAILABLE_BIT);
     }
 
@@ -174,7 +204,7 @@ final class GlobalPoolingMemoryManager
         return isHeaderAvailable(header);
     }
 
-    private int getSizeFromHeader(int header) {
+    private static int getSizeFromHeader(int header) {
         int size;
         size = Bits.clearBit(header, AVAILABLE_BIT);
         size = Bits.clearBit(size, PAGE_OFFSET_EXIST_BIT);
@@ -200,12 +230,12 @@ final class GlobalPoolingMemoryManager
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
-    private long getPageOffsetAddressBySize(long address, int size) {
+    private static long getPageOffsetAddressBySize(long address, int size) {
         // We keep the page offset (if there is enough space) at the end of block as aligned
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
-    private boolean lookupPage(long address) {
+    private boolean isPageBaseAddress(long address) {
         if (pageLookupAddress == NULL_ADDRESS) {
             return pageAllocations.containsKey(address);
         }
@@ -216,7 +246,7 @@ final class GlobalPoolingMemoryManager
         // Find the bit offset in the found 4 bytes block.
         byte lookupOffset = (byte) (idx & 0x1F);
         assert lookupIndex >= 0 && lookupIndex < PAGE_LOOKUP_SIZE;
-        int lookupValue = UnsafeHelper.UNSAFE.getIntVolatile(null, pageLookupAddress + lookupIndex);
+        int lookupValue = MEMORY_ACCESSOR.getIntVolatile(null, pageLookupAddress + lookupIndex);
         if (!Bits.isBitSet(lookupValue, lookupOffset))  {
             // If related bit is not set, this means that the given address cannot be a page address.
             return false;
@@ -238,9 +268,9 @@ final class GlobalPoolingMemoryManager
         // Find the bit offset in the found 4 bytes block.
         byte lookupOffset = (byte) (idx & 0x1F);
         for (;;) {
-            int currentLookupValue = UnsafeHelper.UNSAFE.getIntVolatile(null, pageLookupAddress + lookupIndex);
+            int currentLookupValue = MEMORY_ACCESSOR.getIntVolatile(null, pageLookupAddress + lookupIndex);
             int newLookupValue = Bits.setBit(currentLookupValue, lookupOffset);
-            if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, pageLookupAddress + lookupIndex,
+            if (MEMORY_ACCESSOR.compareAndSwapInt(null, pageLookupAddress + lookupIndex,
                                                       currentLookupValue, newLookupValue)) {
                 break;
             }
@@ -290,11 +320,11 @@ final class GlobalPoolingMemoryManager
 
         int header = initHeader(size);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        if (!UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, 0, header)) {
+        if (!MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
                     + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
         }
-        UnsafeHelper.UNSAFE.putIntVolatile(null, address, offset);
+        MEMORY_ACCESSOR.putIntVolatile(null, address, offset);
     }
 
     @Override
@@ -302,15 +332,15 @@ final class GlobalPoolingMemoryManager
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long address = pageAllocator.allocate(allocationSize);
 
-        int x = Bits.extractInt(allocationSize, false);
-        int y = Bits.extractInt(allocationSize, true);
+        Long existingAllocationSize = externalAllocations.putIfAbsent(address, allocationSize);
+        if (existingAllocationSize != null) {
+            pageAllocator.free(address, allocationSize);
+            throw new AssertionError("Duplicate malloc() for external address " + address);
+        }
 
-        long externalHeaderAddress = address;
-        UnsafeHelper.UNSAFE.putIntVolatile(null, externalHeaderAddress, y);
-
-        int header = Bits.setBit(x, EXTERNAL_BLOCK_BIT);
-        long internalHeaderAddress = address + HEADER_SIZE;
-        UnsafeHelper.UNSAFE.putIntVolatile(null, internalHeaderAddress, header);
+        int header = Bits.setBit(0, EXTERNAL_BLOCK_BIT);
+        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
+        MEMORY_ACCESSOR.putIntVolatile(null, internalHeaderAddress, header);
 
         return address + EXTERNAL_BLOCK_HEADER_SIZE;
     }
@@ -320,20 +350,21 @@ final class GlobalPoolingMemoryManager
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
 
-        if (ASSERTION_ENABLED) {
-            int header = getHeader(address);
-            if (!Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
-                throw new AssertionError("Address " + address + " is not an allocated external address!");
+        Long actualAllocationSize = externalAllocations.remove(allocationAddress);
+        if (actualAllocationSize == null) {
+            throw new AssertionError("Double free() -> external address: " + address + ", size: " + size);
+        } else {
+            long actualSize = actualAllocationSize - EXTERNAL_BLOCK_HEADER_SIZE;
+            if (actualSize != size) {
+                // Put it back
+                externalAllocations.put(allocationAddress, actualAllocationSize);
+                throw new AssertionError("Invalid size -> actual: " + actualSize + ", expected: " + size
+                        + " while free external address " + address);
             }
-            long actualSize = findSizeExternal(address, header);
-            if (actualSize != allocationSize) {
-                throw new AssertionError("Invalid size -> actual: " + actualSize
-                        + ", expected: " + allocationSize + " (usable size + EXTERNAL_BLOCK_HEADER_SIZE="
-                        + EXTERNAL_BLOCK_HEADER_SIZE + ") while free address " + address);
+            else {
+                pageAllocator.free(allocationAddress, allocationSize);
             }
         }
-
-        pageAllocator.free(allocationAddress, allocationSize);
     }
 
     @Override
@@ -341,7 +372,7 @@ final class GlobalPoolingMemoryManager
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        int header = UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
+        int header = MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
         assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
         long pageBase = getOwningPage(address, header);
@@ -359,9 +390,9 @@ final class GlobalPoolingMemoryManager
         int availableHeader = makeHeaderAvailable(header);
         availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
 
-        UnsafeHelper.UNSAFE.putIntVolatile(null, headerAddress, availableHeader);
-        UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
-        UnsafeHelper.UNSAFE.putIntVolatile(null, address, pageOffset);
+        MEMORY_ACCESSOR.putIntVolatile(null, headerAddress, availableHeader);
+        MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
+        MEMORY_ACCESSOR.putIntVolatile(null, address, pageOffset);
     }
 
     @Override
@@ -369,7 +400,7 @@ final class GlobalPoolingMemoryManager
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        int header = UnsafeHelper.UNSAFE.getIntVolatile(null, headerAddress);
+        int header = MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
         // This memory address may be merged up (after acquired but not marked as unavailable yet)
         // as buddy by our GarbageCollector thread so its size may be changed.
         // In this case, it must be discarded since it is not served by its current address queue.
@@ -388,13 +419,13 @@ final class GlobalPoolingMemoryManager
         } else {
             unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
         }
-        if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
+        if (MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
             int offset = getOffset(address);
             if (pageOffsetExist) {
                 // If page offset will be stored, write it to the unused part of the memory block.
-                UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
+                MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
             }
-            UnsafeHelper.UNSAFE.putIntVolatile(null, address, 0);
+            MEMORY_ACCESSOR.putIntVolatile(null, address, 0);
             return true;
         }
         return false;
@@ -411,9 +442,9 @@ final class GlobalPoolingMemoryManager
 
         long headerAddress = getHeaderAddress(address);
         int expectedHeader = initHeader(expectedSize);
-        if (UnsafeHelper.UNSAFE.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
-            UnsafeHelper.UNSAFE.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
-            UnsafeHelper.UNSAFE.putIntVolatile(null, address, 0);
+        if (MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
+            MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
+            MEMORY_ACCESSOR.putIntVolatile(null, address, 0);
             return true;
         }
         return false;
@@ -440,18 +471,22 @@ final class GlobalPoolingMemoryManager
             return false;
         }
 
-        return lookupPage(address - offset);
+        return isPageBaseAddress(address - offset);
     }
 
-    private long findSizeExternal(long address, int header) {
-        int x = Bits.clearBit(header, EXTERNAL_BLOCK_BIT);
-        int y = UnsafeHelper.UNSAFE.getIntVolatile(null, address - EXTERNAL_BLOCK_HEADER_SIZE);
-        return Bits.combineToLong(x, y);
+    private long findSizeExternal(long address) {
+        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
+        Long allocationSize = externalAllocations.get(allocationAddress);
+        if (allocationSize == null) {
+            return SIZE_INVALID;
+        } else {
+            return allocationSize;
+        }
     }
 
     private long findSize(long address, int header) {
         if (Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
-            return findSizeExternal(address, header);
+            return findSizeExternal(address);
         } else {
             return getSizeFromHeader(header);
         }
@@ -483,7 +518,7 @@ final class GlobalPoolingMemoryManager
 
     @Override
     protected int getOffset(long address) {
-        return UnsafeHelper.UNSAFE.getIntVolatile(null, address);
+        return MEMORY_ACCESSOR.getIntVolatile(null, address);
     }
 
     private long getOwningPage(long address, int header) {
@@ -491,7 +526,7 @@ final class GlobalPoolingMemoryManager
             // If page offset is stored in the memory block, get the offset directly from there
             // and calculate page address by using this offset.
 
-            int pageOffset = UnsafeHelper.UNSAFE.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
+            int pageOffset = MEMORY_ACCESSOR.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
             if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
                 throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
                         + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
@@ -505,9 +540,9 @@ final class GlobalPoolingMemoryManager
     }
 
     @Override
-    protected boolean destroyInternal() {
+    public void destroy() {
         if (!destroyed.compareAndSet(false, true)) {
-            return false;
+            return;
         }
         for (int i = 0; i < addressQueues.length; i++) {
             AddressQueue q = addressQueues[i];
@@ -522,7 +557,19 @@ final class GlobalPoolingMemoryManager
             }
             pageAllocations.clear();
         }
-        return true;
+        if (!externalAllocations.isEmpty()) {
+            Iterator<Map.Entry<Long, Long>> iterator = externalAllocations.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<Long, Long> entry = iterator.next();
+                long address = entry.getKey();
+                long size = entry.getValue();
+                pageAllocator.free(address, size);
+                iterator.remove();
+            }
+        }
+        if (pageLookupAddress != NULL_ADDRESS) {
+            systemAllocator.free(pageLookupAddress, PAGE_LOOKUP_SIZE);
+        }
     }
 
     @Override

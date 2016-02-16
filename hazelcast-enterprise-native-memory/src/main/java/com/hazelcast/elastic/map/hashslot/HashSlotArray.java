@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
 import com.hazelcast.nio.Disposable;
 

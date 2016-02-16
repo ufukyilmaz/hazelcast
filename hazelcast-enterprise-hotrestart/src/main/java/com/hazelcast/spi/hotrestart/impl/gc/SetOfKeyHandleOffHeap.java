@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.HashSlotArray;
-import com.hazelcast.elastic.map.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.HashSlotCursor;
+import com.hazelcast.elastic.map.hashslot.HashSlotArray;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;

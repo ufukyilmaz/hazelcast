@@ -1,5 +1,8 @@
-package com.hazelcast.elastic.map;
+package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.elastic.map.hashslot.HashSlotArray;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;

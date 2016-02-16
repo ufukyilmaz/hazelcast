@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -51,10 +50,12 @@ public class NativeMemoryStatsTest {
 
     private static final class DummyMalloc implements LibMalloc {
 
+        private final LibMalloc libMalloc;
         private final long address;
 
         private DummyMalloc(long size) {
-            this.address = UnsafeHelper.UNSAFE.allocateMemory(size);
+            this.libMalloc = new UnsafeMalloc();
+            this.address = libMalloc.malloc(size);
         }
 
         @Override
@@ -74,7 +75,7 @@ public class NativeMemoryStatsTest {
 
         private void destroy() {
             if (address != 0) {
-                UnsafeHelper.UNSAFE.freeMemory(address);
+                libMalloc.free(address);
             }
         }
     }

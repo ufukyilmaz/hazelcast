@@ -1,13 +1,12 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import sun.misc.Unsafe;
 
 import static org.junit.Assert.assertEquals;
 
@@ -21,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryAllocatorTest {
 
-    private static final Unsafe UNSAFE = UnsafeHelper.UNSAFE;
+    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
 
     @Test
     public void testMallocFreeStandard() {
@@ -56,18 +55,18 @@ public class MemoryAllocatorTest {
     private void testMallocFree(MemoryAllocator memoryAllocator) {
         long address1 = memoryAllocator.allocate(5);
         checkZero(address1, 5);
-        UNSAFE.putInt(address1, -123);
+        MEMORY_ACCESSOR.putInt(address1, -123);
         memoryAllocator.free(address1, 5);
 
         long address2 = memoryAllocator.allocate(11);
         checkZero(address2, 11);
-        UNSAFE.putLong(address2, -1234567L);
+        MEMORY_ACCESSOR.putLong(address2, -1234567L);
         memoryAllocator.free(address2, 11);
     }
 
     private void checkZero(long address, int len) {
         for (int i = 0; i < len; i++) {
-            byte b = UnsafeHelper.UNSAFE.getByte(address + i);
+            byte b = MEMORY_ACCESSOR.getByte(address + i);
             assertEquals(0, b);
         }
     }
@@ -105,9 +104,9 @@ public class MemoryAllocatorTest {
     private void testReallocExpand(MemoryAllocator memoryAllocator) {
         long address = memoryAllocator.allocate(8);
         long value = -123;
-        UNSAFE.putLong(address, value);
+        MEMORY_ACCESSOR.putLong(address, value);
         address = memoryAllocator.reallocate(address, 8, 16);
-        assertEquals(value, UNSAFE.getLong(address));
+        assertEquals(value, MEMORY_ACCESSOR.getLong(address));
         checkZero(address + 8, 8);
     }
 
@@ -144,9 +143,9 @@ public class MemoryAllocatorTest {
     private void testReallocShrink(MemoryAllocator memoryAllocator) {
         long address1 = memoryAllocator.allocate(8);
         int value = -123;
-        UNSAFE.putInt(address1, value);
+        MEMORY_ACCESSOR.putInt(address1, value);
         address1 = memoryAllocator.reallocate(address1, 8, 4);
-        assertEquals(value, UNSAFE.getInt(address1));
+        assertEquals(value, MEMORY_ACCESSOR.getInt(address1));
     }
 
     @Test

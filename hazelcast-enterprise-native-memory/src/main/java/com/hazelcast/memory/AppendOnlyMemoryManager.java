@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 
@@ -29,7 +30,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     private long acquiredMemorySize;
 
     private MemoryBlock currentMemoryBlock;
-    
+
     private final NativeMemoryStats memoryStats;
 
     private final MemoryAllocator memoryAllocator;

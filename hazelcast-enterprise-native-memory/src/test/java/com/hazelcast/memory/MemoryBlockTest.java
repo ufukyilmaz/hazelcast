@@ -1,6 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;

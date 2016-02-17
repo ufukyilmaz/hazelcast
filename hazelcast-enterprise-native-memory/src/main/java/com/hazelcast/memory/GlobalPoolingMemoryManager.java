@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.elastic.queue.LongLinkedBlockingQueue;
 import com.hazelcast.elastic.queue.LongQueue;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.nio.Bits;
@@ -149,7 +150,7 @@ final class GlobalPoolingMemoryManager
     private volatile long lastFullCompaction;
 
     GlobalPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledNativeMemoryStats stats, GarbageCollector gc) {
+                               LibMalloc malloc, PooledNativeMemoryStats stats, GarbageCollector gc) {
         super(minBlockSize, pageSize, malloc, stats);
         this.gc = gc;
         this.pageLookupAddress = initPageLookup();

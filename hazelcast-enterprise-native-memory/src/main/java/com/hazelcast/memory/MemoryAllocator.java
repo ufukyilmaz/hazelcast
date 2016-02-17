@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+
 /**
  * Memory Allocator allocates/free memory blocks from/to OS like C malloc()/free()
  *

@@ -9,6 +9,7 @@ import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
 import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;

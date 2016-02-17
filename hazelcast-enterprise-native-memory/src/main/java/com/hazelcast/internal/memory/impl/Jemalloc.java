@@ -1,4 +1,4 @@
-package com.hazelcast.memory;
+package com.hazelcast.internal.memory.impl;
 
 /**
  * @author mdogan 03/12/13

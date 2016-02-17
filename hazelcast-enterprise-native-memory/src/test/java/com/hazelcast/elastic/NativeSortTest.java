@@ -1,8 +1,8 @@
 package com.hazelcast.elastic;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.memory.LibMalloc;
-import com.hazelcast.memory.UnsafeMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;

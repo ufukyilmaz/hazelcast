@@ -3,8 +3,9 @@ package com.hazelcast.memory;
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.elastic.NativeSort;
-import com.hazelcast.elastic.map.long2long.Long2LongElasticHashMap;
 import com.hazelcast.elastic.map.long2long.Long2LongElasticMap;
+import com.hazelcast.elastic.map.long2long.Long2LongElasticMapHsa;
+import com.hazelcast.elastic.map.long2long.LongLongCursor;
 import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
@@ -128,7 +129,7 @@ public class ThreadLocalPoolingMemoryManager
         super(minBlockSize, pageSize, malloc, stats);
         pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.60f, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
-        externalAllocations = new Long2LongElasticHashMap(systemAllocator, SIZE_INVALID);
+        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, systemAllocator);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -511,13 +512,10 @@ public class ThreadLocalPoolingMemoryManager
         pageAllocations.dispose();
         sortedPageAllocations.dispose();
         if (!externalAllocations.isEmpty()) {
-            Iterator<Map.Entry<Long, Long>> iterator = externalAllocations.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Long, Long> entry = iterator.next();
-                long address = entry.getKey();
-                long size = entry.getValue();
+            for (LongLongCursor cursor = externalAllocations.cursor(); cursor.advance();) {
+                long address = cursor.key();
+                long size = cursor.value();
                 pageAllocator.free(address, size);
-                iterator.remove();
             }
         }
         externalAllocations.dispose();

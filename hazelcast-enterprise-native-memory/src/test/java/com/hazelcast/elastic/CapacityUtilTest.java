@@ -32,7 +32,7 @@ public class CapacityUtilTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalArgumentException.class)
     public void testRoundCapacity_shouldThrowIfMaximumCapacityIsExceeded() {
-        roundCapacity(CapacityUtil.MAX_CAPACITY + 1);
+        roundCapacity(CapacityUtil.MAX_INT_CAPACITY + 1);
     }
 
     @Test

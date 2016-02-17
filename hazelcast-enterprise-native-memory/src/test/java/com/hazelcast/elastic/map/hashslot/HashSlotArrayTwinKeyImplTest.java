@@ -25,18 +25,19 @@ import static org.junit.Assert.fail;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class HashSlotArrayImplTest {
+public class HashSlotArrayTwinKeyImplTest {
 
+    // Value length must be at least 16 bytes, as required by the test's logic
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
     private MemoryManager malloc;
-    private HashSlotArray hsa;
+    private HashSlotArrayTwinKey hsa;
 
     @Before
     public void setUp() throws Exception {
         malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        hsa = new HashSlotArrayImpl(0L, malloc, VALUE_LENGTH);
+        hsa = new HashSlotArrayTwinKeyImpl(0L, malloc, VALUE_LENGTH);
     }
 
     @After
@@ -47,93 +48,105 @@ public class HashSlotArrayImplTest {
 
     @Test
     public void testPut() throws Exception {
-        final long key = random.nextLong();
-        final long valueAddress = insert(key);
+        final long key1 = randomKey();
+        final long key2 = randomKey();
+        final long valueAddress = insert(key1, key2);
 
-        final long valueAddress2 = hsa.ensure(key);
-        assertEquals(-valueAddress, valueAddress2);
+        assertEquals(-valueAddress, hsa.ensure(key1, key2));
     }
 
     @Test
     public void testGet() throws Exception {
-        final long key = random.nextLong();
-        final long valueAddress = insert(key);
+        final long key1 = randomKey();
+        final long key2 = randomKey();
+        final long valueAddress = insert(key1, key2);
 
-        final long valueAddress2 = hsa.get(key);
+        final long valueAddress2 = hsa.get(key1, key2);
         assertEquals(valueAddress, valueAddress2);
     }
 
     @Test
     public void testRemove() throws Exception {
-        final long key = random.nextLong();
-        insert(key);
+        final long key1 = randomKey();
+        final long key2 = randomKey();
+        insert(key1, key2);
 
-        assertTrue(hsa.remove(key));
-        assertFalse(hsa.remove(key));
+        assertTrue(hsa.remove(key1, key2));
+        assertFalse(hsa.remove(key1, key2));
     }
 
     @Test
     public void testSize() throws Exception {
-        final long key = random.nextLong();
+        final long key1 = randomKey();
+        final long key2 = randomKey();
 
-        insert(key);
+        insert(key1, key2);
         assertEquals(1, hsa.size());
 
-        assertTrue(hsa.remove(key));
+        assertTrue(hsa.remove(key1, key2));
         assertEquals(0, hsa.size());
     }
 
     @Test
     public void testClear() throws Exception {
-        final long key = random.nextLong();
+        final long key1 = randomKey();
+        final long key2 = randomKey();
 
-        insert(key);
+        insert(key1, key2);
         hsa.clear();
 
-        assertEquals(NULL_ADDRESS, hsa.get(key));
+        assertEquals(NULL_ADDRESS, hsa.get(key1, key2));
         assertEquals(0, hsa.size());
     }
 
     @Test
     public void testPutGetMany() {
+        final long factor = 123456;
         final int k = 1000;
 
         for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            insert(key);
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            insert(key1, key2);
         }
 
         for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            long valueAddress = hsa.get(key);
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            long valueAddress = hsa.get(key1, key2);
 
-            assertEquals(key, MEM.getLong(valueAddress));
+            assertEquals(key1, MEM.getLong(valueAddress));
+            assertEquals(key2, MEM.getLong(valueAddress + 8L));
         }
     }
 
     @Test
     public void testPutRemoveGetMany() {
+        final long factor = 123456;
         final int k = 5000;
         final int mod = 100;
 
         for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            insert(key);
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            insert(key1, key2);
         }
 
         for (int i = mod; i <= k ; i += mod) {
-            long key = (long) i;
-            assertTrue(hsa.remove(key));
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            assertTrue(hsa.remove(key1, key2));
         }
 
         for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            long valueAddress = hsa.get(key);
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            long valueAddress = hsa.get(key1, key2);
 
             if (i % mod == 0) {
                 assertEquals(NULL_ADDRESS, valueAddress);
             } else {
-                verifyValue(key, valueAddress);
+                verifyValue(key1, key2, valueAddress);
             }
         }
     }
@@ -141,19 +154,19 @@ public class HashSlotArrayImplTest {
     @Test(expected = IllegalStateException.class)
     public void testPut_whenDisposed() throws Exception {
         hsa.dispose();
-        hsa.ensure(1);
+        hsa.ensure(1, 1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testGet_whenDisposed() throws Exception {
         hsa.dispose();
-        hsa.get(1);
+        hsa.get(1, 1);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testRemove_whenDisposed() throws Exception {
         hsa.dispose();
-        hsa.remove(1);
+        hsa.remove(1, 1);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -163,37 +176,43 @@ public class HashSlotArrayImplTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testCursor_key_withoutAdvance() {
-        HashSlotCursor cursor = hsa.cursor();
-        cursor.key();
+    public void testCursor_key1_withoutAdvance() {
+        HashSlotCursorTwinKey cursor = hsa.cursor();
+        cursor.key1();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCursor_key2_withoutAdvance() {
+        HashSlotCursorTwinKey cursor = hsa.cursor();
+        cursor.key2();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_valueAddress_withoutAdvance() {
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         cursor.valueAddress();
     }
 
     @Test
     public void testCursor_advance_whenEmpty() {
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         assertFalse(cursor.advance());
     }
 
     @Test
     public void testCursor_advance() {
-        insert(random.nextLong());
+        insert(randomKey(), randomKey());
 
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         assertTrue(cursor.advance());
         assertFalse(cursor.advance());
     }
 
     @Test
     public void testCursor_advance_afterAdvanceReturnsFalse() {
-        insert(random.nextLong());
+        insert(randomKey(), randomKey());
 
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         cursor.advance();
         cursor.advance();
 
@@ -205,65 +224,88 @@ public class HashSlotArrayImplTest {
     }
 
     @Test
-    public void testCursor_key() {
-        final long key = random.nextLong();
-        insert(key);
+    public void testCursor_key1() {
+        final long key1 = randomKey();
+        final long key2 = randomKey();
+        insert(key1, key2);
 
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         cursor.advance();
-        assertEquals(key, cursor.key());
+        assertEquals(key1, cursor.key1());
+    }
+
+    @Test
+    public void testCursor_key2() {
+        final long key1 = randomKey();
+        final long key2 = randomKey();
+        insert(key1, key2);
+
+        HashSlotCursorTwinKey cursor = hsa.cursor();
+        cursor.advance();
+        assertEquals(key2, cursor.key2());
     }
 
     @Test
     public void testCursor_valueAddress() {
-        final long valueAddress = insert(random.nextLong());
+        final long valueAddress = insert(randomKey(), randomKey());
 
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         cursor.advance();
         assertEquals(valueAddress, cursor.valueAddress());
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_advance_whenDisposed() {
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         hsa.dispose();
         cursor.advance();
     }
 
     @Test(expected = IllegalStateException.class)
-    public void testCursor_key_whenDisposed() {
-        HashSlotCursor cursor = hsa.cursor();
+    public void testCursor_key1_whenDisposed() {
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         hsa.dispose();
-        cursor.key();
+        cursor.key1();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCursor_key2_whenDisposed() {
+        HashSlotCursorTwinKey cursor = hsa.cursor();
+        hsa.dispose();
+        cursor.key2();
     }
 
     @Test(expected = IllegalStateException.class)
     public void testCursor_valueAddress_whenDisposed() {
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         hsa.dispose();
         cursor.valueAddress();
     }
 
     @Test
     public void testCursor_withManyValues() {
+        final long factor = 123456;
         final int k = 1000;
 
         for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            insert(key);
+            long key1 = (long) i;
+            long key2 = key1 * factor;
+            long valueAddress = insert(key1, key2);
         }
 
         boolean[] verifyKeys = new boolean[k];
         Arrays.fill(verifyKeys, false);
 
-        HashSlotCursor cursor = hsa.cursor();
+        HashSlotCursorTwinKey cursor = hsa.cursor();
         while (cursor.advance()) {
-            long key = cursor.key();
+            long key1 = cursor.key1();
+            long key2 = cursor.key2();
             long valueAddress = cursor.valueAddress();
 
-            verifyValue(key, valueAddress);
+            assertEquals(key1 * factor, key2);
+            verifyValue(key1, key2, valueAddress);
 
-            verifyKeys[((int) key) - 1] = true;
+            verifyKeys[((int) key1) - 1] = true;
         }
 
         for (int i = 0; i < k; i++) {
@@ -271,16 +313,23 @@ public class HashSlotArrayImplTest {
         }
     }
 
-    private long insert(long key) {
-        final long valueAddress = hsa.ensure(key);
+    private long randomKey() {
+        return random.nextInt(Integer.MAX_VALUE) + 1;
+    }
+
+    private long insert(long key1, long key2) {
+        final long valueAddress = hsa.ensure(key1, key2);
         assertTrue(valueAddress > 0);
-        MEM.putLong(valueAddress, key);
+        // Value length must be at least 16 bytes
+        MEM.putLong(valueAddress, key1);
+        MEM.putLong(valueAddress + 8L, key2);
         return valueAddress;
     }
 
-    private static void verifyValue(long key, long valueAddress) {
+    private static void verifyValue(long key1, long key2, long valueAddress) {
         // pre-check to avoid SIGSEGV
         assertNotEquals(NULL_ADDRESS, valueAddress);
-        assertEquals(key, MEM.getLong(valueAddress));
+        assertEquals(key1, MEM.getLong(valueAddress));
+        assertEquals(key2, MEM.getLong(valueAddress + 8L));
     }
 }

@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArray;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -18,11 +18,11 @@ final class RecordMapOffHeap implements RecordMap {
     private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
-    private HashSlotArray records;
+    private HashSlotArrayTwinKey records;
     private final RecordOffHeap rec = new RecordOffHeap();
 
     public RecordMapOffHeap(MemoryAllocator malloc, int initialCapacity) {
-        this.records = new HashSlotArrayImpl(malloc, RecordOffHeap.SIZE, initialCapacity, LOAD_FACTOR);
+        this.records = new HashSlotArrayTwinKeyImpl(0L, malloc, RecordOffHeap.SIZE, initialCapacity);
     }
 
     RecordMapOffHeap(MemoryAllocator malloc, RecordMap gcRecordMap) {
@@ -83,7 +83,7 @@ final class RecordMapOffHeap implements RecordMap {
     }
 
     private final class CursorOffHeap implements Cursor {
-        private final HashSlotCursor c = records.cursor();
+        private final HashSlotCursorTwinKey c = records.cursor();
         private final RecordOffHeap r = new RecordOffHeap();
 
         @Override public boolean advance() {

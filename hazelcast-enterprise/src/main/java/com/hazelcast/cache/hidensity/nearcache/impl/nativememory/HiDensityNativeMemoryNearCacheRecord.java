@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCach
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
@@ -209,7 +209,7 @@ public class HiDensityNativeMemoryNearCacheRecord
     }
 
     public static long getCreationTime(long address) {
-        return UnsafeHelper.UNSAFE.getLong(address + CREATION_TIME_OFFSET);
+        return MEM.getLong(address + CREATION_TIME_OFFSET);
     }
 
     @Override

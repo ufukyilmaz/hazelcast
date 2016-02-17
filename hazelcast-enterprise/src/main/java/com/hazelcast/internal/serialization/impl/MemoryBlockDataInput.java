@@ -19,7 +19,6 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -29,6 +28,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BOOLEAN_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BOOLEAN_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_CHAR_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_CHAR_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_DOUBLE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_DOUBLE_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_FLOAT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_FLOAT_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_INT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_INT_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_LONG_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_LONG_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_SHORT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_SHORT_INDEX_SCALE;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
@@ -101,7 +116,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         if (pos + offset + len > size) {
             len = size - pos;
         }
-        memCopy(b, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + off, len, UnsafeHelper.BYTE_ARRAY_INDEX_SCALE);
+        memCopy(b, ARRAY_BYTE_BASE_OFFSET + off, len, ARRAY_BYTE_INDEX_SCALE);
         return len;
     }
 
@@ -361,7 +376,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             boolean[] values = new boolean[len];
-            memCopy(values, UnsafeHelper.BOOLEAN_ARRAY_BASE_OFFSET, len, UnsafeHelper.BOOLEAN_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_BOOLEAN_BASE_OFFSET, len, ARRAY_BOOLEAN_INDEX_SCALE);
             return values;
         }
         return new boolean[0];
@@ -375,7 +390,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             char[] values = new char[len];
-            memCopy(values, UnsafeHelper.CHAR_ARRAY_BASE_OFFSET, len, UnsafeHelper.CHAR_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_CHAR_BASE_OFFSET, len, ARRAY_CHAR_INDEX_SCALE);
             return values;
         }
         return new char[0];
@@ -389,7 +404,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             int[] values = new int[len];
-            memCopy(values, UnsafeHelper.INT_ARRAY_BASE_OFFSET, len, UnsafeHelper.INT_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_INT_BASE_OFFSET, len, ARRAY_INT_INDEX_SCALE);
             return values;
         }
         return new int[0];
@@ -403,7 +418,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             long[] values = new long[len];
-            memCopy(values, UnsafeHelper.LONG_ARRAY_BASE_OFFSET, len, UnsafeHelper.LONG_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_LONG_BASE_OFFSET, len, ARRAY_LONG_INDEX_SCALE);
             return values;
         }
         return new long[0];
@@ -417,7 +432,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             double[] values = new double[len];
-            memCopy(values, UnsafeHelper.DOUBLE_ARRAY_BASE_OFFSET, len, UnsafeHelper.DOUBLE_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_DOUBLE_BASE_OFFSET, len, ARRAY_DOUBLE_INDEX_SCALE);
             return values;
         }
         return new double[0];
@@ -431,7 +446,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             float[] values = new float[len];
-            memCopy(values, UnsafeHelper.FLOAT_ARRAY_BASE_OFFSET, len, UnsafeHelper.FLOAT_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_FLOAT_BASE_OFFSET, len, ARRAY_FLOAT_INDEX_SCALE);
             return values;
         }
         return new float[0];
@@ -445,7 +460,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         }
         if (len > 0) {
             short[] values = new short[len];
-            memCopy(values, UnsafeHelper.SHORT_ARRAY_BASE_OFFSET, len, UnsafeHelper.SHORT_ARRAY_INDEX_SCALE);
+            memCopy(values, ARRAY_SHORT_BASE_OFFSET, len, ARRAY_SHORT_INDEX_SCALE);
             return values;
         }
         return new short[0];
@@ -467,7 +482,8 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new String[0];
     }
 
-    private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale) throws IOException {
+    private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale)
+    throws IOException {
         if (length < 0) {
             throw new NegativeArraySizeException("Destination length is negative: " + length);
         }

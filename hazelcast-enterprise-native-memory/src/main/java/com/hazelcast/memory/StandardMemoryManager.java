@@ -1,8 +1,10 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
 import com.hazelcast.util.ExceptionUtil;

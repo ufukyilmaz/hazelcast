@@ -1,6 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -24,8 +26,6 @@ import static org.junit.Assert.assertEquals;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryBlockTest {
-
-    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
 
     private static final LibMalloc MALLOC = new UnsafeMalloc();
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();

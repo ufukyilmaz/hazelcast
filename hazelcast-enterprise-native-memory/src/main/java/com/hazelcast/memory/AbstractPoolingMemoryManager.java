@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
@@ -29,7 +30,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     /**
      * Power of two block sizes, using buddy memory allocation;
-     * 
+     *
      * 16, 32, 64, 128, 256, 512, 1024, 2k, .... 32k ... 256k ... 1M
      *
      *  - All blocks are at least 8-byte aligned
@@ -43,7 +44,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
      *    http://psy-lob-saw.blogspot.com.tr/2013/01/direct-memory-alignment-in-java.html
      *    http://psy-lob-saw.blogspot.com.tr/2013/07/atomicity-of-unaligned-memory-access-in.html
      *    http://psy-lob-saw.blogspot.com.tr/2013/09/diving-deeper-into-cache-coherency.html
-     * 
+     *
      */
 
     final int minBlockSize;
@@ -63,7 +64,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     private final Counter sequenceGenerator;
 
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledNativeMemoryStats stats) {
+                                 LibMalloc malloc, PooledNativeMemoryStats stats) {
 
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 

@@ -18,6 +18,7 @@ public class SortedBySeqRecordCursorOnHeap implements SortedBySeqRecordCursor {
     private int position = -1;
 
     SortedBySeqRecordCursorOnHeap(List<KeyHandle> keyHandles, List<Record> records, MutatorCatchup mc) {
+        assert keyHandles.size() == records.size() : "Handles and records sizes mismatch";
         final int size = records.size();
         List<Record> recFrom = records;
         List<Record> recTo = asList(new Record[size]);

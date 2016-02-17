@@ -1,10 +1,10 @@
 package com.hazelcast.offheapstorage.comparator;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
-import sun.misc.Unsafe;
 import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
+import com.hazelcast.internal.memory.MemoryAccessor;
 
 public class NumericComparator implements OffHeapComparator {
+
     private final MemoryAccessor mem;
 
     public NumericComparator(MemoryAccessor mem) {

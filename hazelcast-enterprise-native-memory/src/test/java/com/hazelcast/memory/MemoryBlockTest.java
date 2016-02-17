@@ -25,8 +25,6 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryBlockTest {
 
-    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
-
     private static final LibMalloc MALLOC = new UnsafeMalloc();
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
 

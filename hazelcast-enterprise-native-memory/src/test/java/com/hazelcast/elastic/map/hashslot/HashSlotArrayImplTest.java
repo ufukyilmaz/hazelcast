@@ -1,6 +1,5 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -16,6 +15,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -26,8 +26,6 @@ import static org.junit.Assert.fail;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class HashSlotArrayImplTest {
-
-    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
 
     private static final int VALUE_LENGTH = 32;
 
@@ -120,8 +118,8 @@ public class HashSlotArrayImplTest {
             long key2 = key1 * factor;
             long valueAddress = map.get(key1, key2);
 
-            assertEquals(key1, MEMORY_ACCESSOR.getLong(valueAddress));
-            assertEquals(key2, MEMORY_ACCESSOR.getLong(valueAddress + 8L));
+            assertEquals(key1, MEM.getLong(valueAddress));
+            assertEquals(key2, MEM.getLong(valueAddress + 8L));
         }
     }
 
@@ -377,13 +375,13 @@ public class HashSlotArrayImplTest {
 
     private void writeValue(long key1, long key2, long valueAddress) {
         // !!! value length should be at least 16 bytes !!!
-        MEMORY_ACCESSOR.putLong(valueAddress, key1);
-        MEMORY_ACCESSOR.putLong(valueAddress + 8L, key2);
+        MEM.putLong(valueAddress, key1);
+        MEM.putLong(valueAddress + 8L, key2);
     }
 
     private void verifyValue(long key1, long key2, long valueAddress) {
         assertNotEquals(NULL_ADDRESS, valueAddress); // pre-check to avoid SIGSEGV
-        assertEquals(key1, MEMORY_ACCESSOR.getLong(valueAddress));
-        assertEquals(key2, MEMORY_ACCESSOR.getLong(valueAddress + 8L));
+        assertEquals(key1, MEM.getLong(valueAddress));
+        assertEquals(key2, MEM.getLong(valueAddress + 8L));
     }
 }

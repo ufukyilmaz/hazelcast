@@ -2,7 +2,6 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -10,6 +9,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput implements EnterpriseBufferObjectDataInput {
 
@@ -28,7 +29,7 @@ class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput implem
         if (memory.size() < offset + length) {
             throw new IOException("Cannot write " + length + " bytes to " + memory);
         }
-        memory.copyFrom(offset, data, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + pos, length);
+        memory.copyFrom(offset, data, ARRAY_BYTE_BASE_OFFSET + pos, length);
         pos += length;
     }
 

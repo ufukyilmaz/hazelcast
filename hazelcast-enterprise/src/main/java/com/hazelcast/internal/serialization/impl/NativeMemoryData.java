@@ -23,12 +23,12 @@ import com.hazelcast.util.HashUtil;
 
 import java.nio.ByteOrder;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readDataSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readTotalSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readType;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
 /**
  *
@@ -96,7 +96,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     public byte[] toByteArray() {
         int len = totalSize();
         byte[] buffer = new byte[len];
-        copyTo(NATIVE_MEMORY_DATA_OVERHEAD, buffer, BYTE_ARRAY_BASE_OFFSET, len);
+        copyTo(NATIVE_MEMORY_DATA_OVERHEAD, buffer, ARRAY_BYTE_BASE_OFFSET, len);
         return buffer;
     }
 

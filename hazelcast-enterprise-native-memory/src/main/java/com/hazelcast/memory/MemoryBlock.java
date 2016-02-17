@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
@@ -19,7 +20,7 @@ public class MemoryBlock {
     protected int size;
 
     public MemoryBlock() {
-        this.memoryAccessor = MemoryAccessor.DEFAULT;
+        this.memoryAccessor = MEM;
     }
 
     public MemoryBlock(MemoryAccessor memoryAccessor) {
@@ -27,7 +28,7 @@ public class MemoryBlock {
     }
 
     protected MemoryBlock(long address, int size) {
-        this.memoryAccessor = MemoryAccessor.DEFAULT;
+        this.memoryAccessor = MEM;
         this.address = address;
         this.size = size;
     }

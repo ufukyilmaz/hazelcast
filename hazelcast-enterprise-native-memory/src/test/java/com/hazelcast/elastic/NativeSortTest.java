@@ -16,6 +16,7 @@ import java.util.Random;
 
 import static com.hazelcast.elastic.NativeSort.quickSortInt;
 import static com.hazelcast.elastic.NativeSort.quickSortLong;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
@@ -26,7 +27,6 @@ import static org.junit.Assert.assertEquals;
 public class NativeSortTest {
 
     private static final LibMalloc MALLOC = new UnsafeMalloc();
-    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessor.DEFAULT;
 
     private static final int LEN = 10000;
 
@@ -48,7 +48,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * INT_SIZE_IN_BYTES);
-        MEMORY_ACCESSOR.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, null,
+        MEM.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, null,
                 arrayAddress, length * INT_SIZE_IN_BYTES);
 
         quickSortInt(arrayAddress, length);
@@ -64,7 +64,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * LONG_SIZE_IN_BYTES);
-        MEMORY_ACCESSOR.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET,
+        MEM.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET,
                                    null, arrayAddress,
                                    length * LONG_SIZE_IN_BYTES);
 
@@ -74,7 +74,7 @@ public class NativeSortTest {
 
     private static void verify(int[] array, long address, int length) {
         for (int i = 0; i < length; i++) {
-            int k = MEMORY_ACCESSOR.getInt(address + i * INT_SIZE_IN_BYTES);
+            int k = MEM.getInt(address + i * INT_SIZE_IN_BYTES);
             assertEquals(array[i], k);
         }
     }
@@ -90,7 +90,7 @@ public class NativeSortTest {
 
     private static void verify(long[] array, long address, int length) {
         for (int i = 0; i < length; i++) {
-            long k = MEMORY_ACCESSOR.getLong(address + i * LONG_SIZE_IN_BYTES);
+            long k = MEM.getLong(address + i * LONG_SIZE_IN_BYTES);
             assertEquals(array[i], k);
         }
     }

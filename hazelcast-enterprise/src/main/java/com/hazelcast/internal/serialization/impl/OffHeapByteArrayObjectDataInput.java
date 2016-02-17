@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.EOFException;
 
 import com.hazelcast.nio.OffHeapBits;
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.BufferObjectDataInput;
@@ -69,12 +69,12 @@ public class OffHeapByteArrayObjectDataInput implements OffHeapDataInput, Object
 
     @Override
     public int read() throws IOException {
-        return (this.pos < this.size) ? (UnsafeHelper.UNSAFE.getByte(this.dataAddress + this.pos++) & 0xff) : -1;
+        return (this.pos < this.size) ? (MEM.getByte(this.dataAddress + this.pos++) & 0xff) : -1;
     }
 
     @Override
     public int read(long position) throws IOException {
-        return (position < this.size) ? (UnsafeHelper.UNSAFE.getByte(this.dataAddress + position) & 0xff) : -1;
+        return (position < this.size) ? (MEM.getByte(this.dataAddress + position) & 0xff) : -1;
     }
 
     @Override

@@ -11,9 +11,9 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
 import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
-import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
 /**
  * Enterprise Serialization utility methods
@@ -60,7 +60,7 @@ public final class EnterpriseSerializationUtil {
             } else {
                 byte[] bytes = new byte[size];
                 in.readFully(bytes);
-                data.copyFrom(NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD, bytes, BYTE_ARRAY_BASE_OFFSET, size);
+                data.copyFrom(NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD, bytes, ARRAY_BYTE_BASE_OFFSET, size);
             }
             return data;
         } catch (NativeOutOfMemoryError e) {

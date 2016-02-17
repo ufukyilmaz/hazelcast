@@ -4,7 +4,9 @@ import java.nio.ByteOrder;
 import java.io.IOException;
 
 import com.hazelcast.nio.OffHeapBits;
-import com.hazelcast.nio.UnsafeHelper;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
@@ -38,7 +40,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
     @Override
     public void write(int b) {
         ensureAvailable(1);
-        UnsafeHelper.UNSAFE.putByte(bufferPointer + (pos++), (byte) (b));
+        MEM.putByte(bufferPointer + (pos++), (byte) (b));
     }
 
     @Override
@@ -50,7 +52,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     @Override
     public void write(long position, int b) {
-        UnsafeHelper.UNSAFE.putByte(this.bufferPointer + position, (byte) (b));
+        MEM.putByte(this.bufferPointer + position, (byte) (b));
     }
 
     @Override
@@ -62,7 +64,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
         }
 
         ensureAvailable(len);
-        UnsafeHelper.UNSAFE.copyMemory(b, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + off, null, this.bufferPointer + pos, len);
+        MEM.copyMemory(b, ARRAY_BYTE_BASE_OFFSET + off, null, this.bufferPointer + pos, len);
         pos += len;
     }
 
@@ -98,7 +100,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
         final int len = s.length();
         ensureAvailable(len);
         for (int i = 0; i < len; i++) {
-            UnsafeHelper.UNSAFE.putByte(this.bufferPointer + (pos++), (byte) s.charAt(i));
+            MEM.putByte(this.bufferPointer + (pos++), (byte) s.charAt(i));
         }
     }
 

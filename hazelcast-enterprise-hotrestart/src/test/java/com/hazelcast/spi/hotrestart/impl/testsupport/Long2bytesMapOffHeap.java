@@ -7,7 +7,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
@@ -28,7 +28,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             map.remove(key, 0);
             throw e;
         }
-        UNSAFE.putLong(vSlotAddr, vblockAccessor.address());
+        MEM.putLong(vSlotAddr, vblockAccessor.address());
     }
 
     @Override public void remove(long key) {
@@ -101,7 +101,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             vSlotAddr = -vSlotAddr;
             vblockAccessor.reset(vSlotAddr);
             vblockAccessor.delete();
-            UNSAFE.putLong(vSlotAddr, NULL_ADDRESS);
+            MEM.putLong(vSlotAddr, NULL_ADDRESS);
         }
         return vSlotAddr;
     }

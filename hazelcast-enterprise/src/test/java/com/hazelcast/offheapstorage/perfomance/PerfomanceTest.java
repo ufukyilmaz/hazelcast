@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.MemoryManager;
@@ -38,10 +38,10 @@ public class PerfomanceTest {
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new StringComparator(UnsafeHelper.UNSAFE));
+        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new StringComparator(MEM));
     }
 
-    private NativeMemoryConfig getMemoryConfig() {
+    private static NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(100, MemoryUnit.MEGABYTES);
 
         return

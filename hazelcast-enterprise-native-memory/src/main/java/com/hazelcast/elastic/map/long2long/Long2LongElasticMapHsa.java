@@ -3,17 +3,11 @@ package com.hazelcast.elastic.map.long2long;
 import com.hazelcast.elastic.map.hashslot.HashSlotArray;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static java.util.Collections.emptySet;
 
 /**
  * a {@link Long2LongElasticMap} implemented in terms of a {@link HashSlotArray}.

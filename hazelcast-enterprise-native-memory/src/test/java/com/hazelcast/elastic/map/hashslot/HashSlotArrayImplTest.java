@@ -174,12 +174,6 @@ public class HashSlotArrayImplTest {
         cursor.valueAddress();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testCursor_remove_withoutAdvance() {
-        HashSlotCursor cursor = hsa.cursor();
-        cursor.remove();
-    }
-
     @Test
     public void testCursor_advance_whenEmpty() {
         HashSlotCursor cursor = hsa.cursor();
@@ -229,19 +223,6 @@ public class HashSlotArrayImplTest {
         assertEquals(valueAddress, cursor.valueAddress());
     }
 
-    @Test
-    public void testCursor_remove() {
-        final long key = random.nextLong();
-        insert(key);
-
-        HashSlotCursor cursor = hsa.cursor();
-        cursor.advance();
-        cursor.remove();
-
-        assertEquals(NULL_ADDRESS, hsa.get(key));
-        assertEquals(0, hsa.size());
-    }
-
     @Test(expected = IllegalStateException.class)
     public void testCursor_advance_whenDisposed() {
         HashSlotCursor cursor = hsa.cursor();
@@ -261,13 +242,6 @@ public class HashSlotArrayImplTest {
         HashSlotCursor cursor = hsa.cursor();
         hsa.dispose();
         cursor.valueAddress();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testCursor_remove_whenDisposed() {
-        HashSlotCursor cursor = hsa.cursor();
-        hsa.dispose();
-        cursor.remove();
     }
 
     @Test
@@ -294,27 +268,6 @@ public class HashSlotArrayImplTest {
 
         for (int i = 0; i < k; i++) {
             assertTrue("Haven't read " + k + "th key!", verifyKeys[i]);
-        }
-    }
-
-    @Test
-    public void testCursor_remove_withManyValues() {
-        final int k = 1000;
-
-        for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            insert(key);
-        }
-
-        HashSlotCursor cursor = hsa.cursor();
-        while (cursor.advance()) {
-            cursor.remove();
-        }
-
-        assertEquals(0, hsa.size());
-        for (int i = 1; i <= k; i++) {
-            long key = (long) i;
-            assertEquals(NULL_ADDRESS, hsa.get(key));
         }
     }
 

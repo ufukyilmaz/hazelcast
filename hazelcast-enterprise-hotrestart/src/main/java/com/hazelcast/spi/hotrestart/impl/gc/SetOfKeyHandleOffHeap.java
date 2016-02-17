@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;

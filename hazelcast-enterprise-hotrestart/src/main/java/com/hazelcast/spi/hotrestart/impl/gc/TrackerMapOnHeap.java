@@ -64,9 +64,5 @@ final class TrackerMapOnHeap extends TrackerMapBase {
         @Override public Tracker asTracker() {
             return current.getValue();
         }
-
-        @Override public void remove() {
-            iter.remove();
-        }
     }
 }

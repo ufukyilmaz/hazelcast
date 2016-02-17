@@ -20,12 +20,22 @@ abstract class HashSlotArrayBase {
     private static final int KEY_2_OFFSET = 8;
     private static final int VALUE_LENGTH_GRANULARITY = 8;
 
-    private final MemoryAllocator malloc;
-
     /**
      * Base address of the backing memory region of this hash slot array.
      */
     protected long baseAddress;
+
+    /**
+     * Sentinel value that marks a slot as "unassigned".
+     */
+    protected final long unassignedSentinel;
+
+    /**
+     * Offset (from the slot's base address) where the unassigned sentinel value is to be found.
+     */
+    protected final long offsetOfUnassignedSentinel;
+
+    private final MemoryAllocator malloc;
 
     /**
      * Total length of an array slot in bytes.
@@ -41,16 +51,6 @@ abstract class HashSlotArrayBase {
      * Length of the value block in bytes.
      */
     private final int valueLength;
-
-    /**
-     * Sentinel value that marks a slot as "unassigned".
-     */
-    protected final long unassignedSentinel;
-
-    /**
-     * Offset (from the slot's base address) where the unassigned sentinel value is to be found.
-     */
-    protected final long offsetOfUnassignedSentinel;
 
     /**
      * Capacity (in terms of slots) of the currently allocated memory region.
@@ -401,17 +401,6 @@ abstract class HashSlotArrayBase {
         @Override public long valueAddress() {
             ensureValid();
             return valueAddrOfSlot(currentSlot);
-        }
-
-        @Override public void remove() {
-            ensureValid();
-            size--;
-            shiftConflictingKeys(currentSlot);
-            // if the current slot ended up assigned after removal and shift,
-            // it means that the entry in the next slot was moved to the current slot
-            if (isAssigned(currentSlot)) {
-                currentSlot--;
-            }
         }
 
         private void ensureValid() {

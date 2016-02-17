@@ -2,9 +2,7 @@ package com.hazelcast.elastic.map;
 
 import com.hazelcast.nio.Disposable;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Extension of {@link java.util.Map} which additionally supports {@code set} and {@code delete} operations,

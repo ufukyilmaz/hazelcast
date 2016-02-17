@@ -1,6 +1,5 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -26,8 +25,6 @@ import static org.junit.Assert.fail;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class HashSlotArrayTwinKeyNoValueTest {
-
-    private static final MemoryAccessor MEM = MemoryAccessor.DEFAULT;
 
     private final Random random = new Random();
     private MemoryManager malloc;

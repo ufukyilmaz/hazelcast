@@ -15,7 +15,7 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
  */
 abstract class HashSlotArrayBase {
 
-    protected static final MemoryAccessor MEM = MemoryAccessor.DEFAULT;
+    protected static final MemoryAccessor MEM = MemoryAccessor.MEM;
     protected static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
     private static final int VALUE_LENGTH_GRANULARITY = 8;
@@ -68,7 +68,7 @@ abstract class HashSlotArrayBase {
     private long size;
 
     /**
-     * The maximum load factor ({@link #size} / {@link capacity}) for this hash slot array.
+     * The maximum load factor ({@link #size} / {@link #capacity}) for this hash slot array.
      * The array will be expanded as needed to enforce this limit.
      */
     private final float loadFactor;

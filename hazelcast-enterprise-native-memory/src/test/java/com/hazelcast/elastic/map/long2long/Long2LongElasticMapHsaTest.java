@@ -14,18 +14,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -74,20 +66,10 @@ public class Long2LongElasticMapHsaTest {
     }
 
     @Test
-    public void testSet() {
-        long key = newKey();
-        long value = newValue();
-        assertTrue(map.set(key, value));
-
-        long newValue = newValue();
-        assertFalse(map.set(key, newValue));
-    }
-
-    @Test
     public void testGet() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long currentValue = map.get(key);
         assertEquals(value, currentValue);
@@ -104,7 +86,7 @@ public class Long2LongElasticMapHsaTest {
     public void testPutIfAbsent_fail() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long newValue = newValue();
         assertEquals(value, map.putIfAbsent(key, newValue));
@@ -113,7 +95,7 @@ public class Long2LongElasticMapHsaTest {
     @Test
     public void testPutAll() throws Exception {
         int count = 100;
-        Map<Long, Long> entries = new HashMap<Long, Long>(count);
+        Long2LongElasticMap entries = new Long2LongElasticMapHsa(count, memoryManager);
 
         for (int i = 0; i < count; i++) {
             long key = newKey();
@@ -124,8 +106,8 @@ public class Long2LongElasticMapHsaTest {
         map.putAll(entries);
         assertEquals(count, map.size());
 
-        for (Entry<Long, Long> entry : entries.entrySet()) {
-            assertEquals(entry.getValue(), map.get(entry.getKey()));
+        for (LongLongCursor cursor = map.cursor(); cursor.advance();) {
+            assertEquals(map.get(cursor.key()), cursor.value());
         }
     }
 
@@ -136,7 +118,7 @@ public class Long2LongElasticMapHsaTest {
 
         assertEquals(MISSING_VALUE, map.replace(key, value));
 
-        map.set(key, value);
+        map.put(key, value);
 
         long newValue = newValue();
         assertEquals(value, map.replace(key, newValue));
@@ -146,7 +128,7 @@ public class Long2LongElasticMapHsaTest {
     public void testReplace_if_same_success() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long newValue = newValue();
         assertTrue(map.replace(key, value, newValue));
@@ -164,7 +146,7 @@ public class Long2LongElasticMapHsaTest {
     public void testReplace_if_same_fail() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long wrongValue = value + 1;
         long newValue = newValue();
@@ -177,28 +159,17 @@ public class Long2LongElasticMapHsaTest {
         assertEquals(MISSING_VALUE, map.remove(key));
 
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long oldValue = map.remove(key);
         assertEquals(value, oldValue);
     }
 
     @Test
-    public void testDelete() {
-        long key = newKey();
-        assertFalse(map.delete(key));
-
-        long value = newValue();
-        map.set(key, value);
-
-        assertTrue(map.delete(key));
-    }
-
-    @Test
     public void testRemove_if_same_success() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         assertTrue(map.remove(key, value));
     }
@@ -214,7 +185,7 @@ public class Long2LongElasticMapHsaTest {
     public void testRemove_if_same_fail() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         long wrongValue = value + 1;
         assertFalse(map.remove(key, wrongValue));
@@ -230,24 +201,9 @@ public class Long2LongElasticMapHsaTest {
     public void testContainsKey_success() {
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         assertTrue(map.containsKey(key));
-    }
-
-    @Test
-    public void testContainsValue_fail() {
-        long value = newValue();
-        assertFalse(map.containsValue(value));
-    }
-
-    @Test
-    public void testContainsValue_success() {
-        long key = newKey();
-        long value = newValue();
-        map.set(key, value);
-
-        assertTrue(map.containsValue(value));
     }
 
     @Test
@@ -258,11 +214,6 @@ public class Long2LongElasticMapHsaTest {
 
         long oldValue = map.put(key, value);
         assertEquals(value, oldValue);
-    }
-
-    @Test(expected = AssertionError.class)
-    public void test_containsKey_invalidValue() {
-        map.containsValue(MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
@@ -277,7 +228,7 @@ public class Long2LongElasticMapHsaTest {
 
     @Test(expected = AssertionError.class)
     public void test_set_invalidValue() {
-        map.set(newKey(), MISSING_VALUE);
+        map.put(newKey(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
@@ -308,7 +259,7 @@ public class Long2LongElasticMapHsaTest {
         for (long i = 0; i < expected; i++) {
             long key = i;
             long value = newValue();
-            map.set(key, value);
+            map.put(key, value);
         }
 
         assertEquals(expected, map.size());
@@ -319,7 +270,7 @@ public class Long2LongElasticMapHsaTest {
         for (long i = 0; i < 100; i++) {
             long key = i;
             long value = newValue();
-            map.set(key, value);
+            map.put(key, value);
         }
 
         map.clear();
@@ -333,7 +284,7 @@ public class Long2LongElasticMapHsaTest {
 
         long key = newKey();
         long value = newValue();
-        map.set(key, value);
+        map.put(key, value);
 
         assertFalse(map.isEmpty());
     }
@@ -368,36 +319,12 @@ public class Long2LongElasticMapHsaTest {
         map.containsKey(newKey());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testContainsValue_after_dispose() {
-        map.dispose();
-        map.containsValue(newValue());
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testKeySet_after_dispose() {
-        map.dispose();
-        map.keySet();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testEntrySet_after_dispose() {
-        map.dispose();
-        map.entrySet();
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testValues_after_dispose() {
-        map.dispose();
-        map.values();
-    }
-
     @Test
     public void testMemoryLeak() {
         int keyRange = 100;
 
         for (int i = 0; i < 100000; i++) {
-            int k = random.nextInt(8);
+            int k = random.nextInt(7);
             switch (k) {
                 case 0:
                     _put_(keyRange);
@@ -426,9 +353,6 @@ public class Long2LongElasticMapHsaTest {
                 case 6:
                     _removeIfPresent_(keyRange);
                     break;
-
-                case 7:
-                    _delete_(keyRange);
             }
         }
 
@@ -443,7 +367,7 @@ public class Long2LongElasticMapHsaTest {
     }
 
     private void _set_(int keyRange) {
-        map.set(newKey(keyRange), newValue());
+        map.put(newKey(keyRange), newValue());
     }
 
     private void _putIfAbsent_(int keyRange) {
@@ -475,14 +399,10 @@ public class Long2LongElasticMapHsaTest {
         }
     }
 
-    private void _delete_(int keyRange) {
-        map.delete(newKey(keyRange));
-    }
-
     @Test
     public void testDestroyMemoryLeak() {
         for (int i = 0; i < 100; i++) {
-            map.set(newKey(), newValue());
+            map.put(newKey(), newValue());
         }
 
         map.clear();

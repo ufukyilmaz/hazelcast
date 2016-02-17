@@ -1,6 +1,5 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -16,6 +15,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -26,8 +26,6 @@ import static org.junit.Assert.fail;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class HashSlotArrayTwinKeyImplTest {
-
-    private static final MemoryAccessor MEM = MemoryAccessor.DEFAULT;
 
     // Value length must be at least 16 bytes, as required by the test's logic
     private static final int VALUE_LENGTH = 32;

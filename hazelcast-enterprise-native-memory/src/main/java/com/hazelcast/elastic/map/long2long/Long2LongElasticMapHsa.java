@@ -47,11 +47,6 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         return result;
     }
 
-    @Override public boolean set(long key, long value) {
-        assert value != nullValue : "set() called with null-sentinel value " + nullValue;
-        return put(key, value) == nullValue;
-    }
-
     @Override public long putIfAbsent(long key, long value) {
         assert value != nullValue : "putIfAbsent() called with null-sentinel value " + nullValue;
         long valueAddr = hsa.ensure(key);
@@ -61,6 +56,12 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         } else {
             valueAddr = -valueAddr;
             return MEM.getLong(valueAddr);
+        }
+    }
+
+    @Override public void putAll(Long2LongElasticMap from) {
+        for (LongLongCursor cursor = from.cursor(); cursor.advance();) {
+            put(cursor.key(), cursor.value());
         }
     }
 
@@ -100,10 +101,6 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         return oldValue;
     }
 
-    @Override public boolean delete(long key) {
-        return hsa.remove(key);
-    }
-
     @Override public boolean remove(long key, long value) {
         assert value != nullValue : "remove() called with null-sentinel value " + nullValue;
         final long valueAddr = hsa.get(key);
@@ -122,84 +119,8 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         return hsa.get(key) != NULL_ADDRESS;
     }
 
-    @Override public boolean containsValue(long value) {
-        assert value != nullValue : "containsValue() called with null-sentinel value " + nullValue;
-        for (HashSlotCursor cursor = hsa.cursor(); cursor.advance();) {
-            if (MEM.getLong(cursor.valueAddress()) == value) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Override public Long put(Long key, Long value) {
-        return put((long) key, (long) value);
-    }
-
-    @Override public boolean set(Long key, Long value) {
-        return set((long) key, (long) value);
-    }
-
-    @Override public Long putIfAbsent(Long key, Long value) {
-        return putIfAbsent((long) key, (long) value);
-    }
-
-    @Override public boolean replace(Long key, Long oldValue, Long newValue) {
-        return replace((long) key, (long) oldValue, (long) newValue);
-    }
-
-    @Override public Long replace(Long key, Long value) {
-        return replace((long) key, (long) value);
-    }
-
-    @Override public Long remove(Object key) {
-        return key instanceof Long ? remove((long) (Long) key) : null;
-    }
-
-    @Override public void putAll(Map<? extends Long, ? extends Long> m) {
-        for (Entry<? extends Long, ? extends Long> e : m.entrySet()) {
-            put(e.getKey(), e.getValue());
-        }
-    }
-
-    @Override public boolean delete(Long key) {
-        return delete((long) key);
-    }
-
-    @Override public boolean remove(Object key, Object value) {
-        return (key instanceof Long && value instanceof Long) && remove((long) (Long) key, (long) (Long) value);
-    }
-
-    @Override public Long get(Object key) {
-        return key instanceof Long ? get((long) (Long) key) : null;
-    }
-
-    @Override public boolean containsKey(Object key) {
-        return key instanceof Long && containsKey((long) (Long) key);
-    }
-
-    @Override public boolean containsValue(Object value) {
-        return value instanceof Long && containsValue((long) (Long) value);
-    }
-
-    @Override public Set<Long> keySet() {
-        hsa.get(0);
-        return emptySet();
-    }
-
-    @Override public Collection<Long> values() {
-        hsa.get(0);
-        return emptySet();
-    }
-
-    @Override public Set<Entry<Long, Long>> entrySet() {
-        hsa.get(0);
-        return emptySet();
-    }
-
-    @Override public int size() {
-        final long size = hsa.size();
-        return (int) Math.min(Integer.MAX_VALUE, size);
+    @Override public long size() {
+        return hsa.size();
     }
 
     @Override public boolean isEmpty() {
@@ -212,5 +133,30 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
 
     @Override public void dispose() {
         hsa.dispose();
+    }
+
+    @Override public LongLongCursor cursor() {
+        return new Cursor(hsa);
+    }
+
+    private static final class Cursor implements LongLongCursor {
+
+        private final HashSlotCursor cursor;
+
+        Cursor(HashSlotArray hsa) {
+            this.cursor = hsa.cursor();
+        }
+
+        @Override public boolean advance() {
+            return cursor.advance();
+        }
+
+        @Override public long key() {
+            return cursor.key();
+        }
+
+        @Override public long value() {
+            return MEM.getLong(cursor.valueAddress());
+        }
     }
 }

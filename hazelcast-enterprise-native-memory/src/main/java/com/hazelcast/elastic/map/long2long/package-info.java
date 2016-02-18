@@ -1,4 +1,4 @@
 /**
- * Native memory backed Long2Long map.
+ * Off-heap primitive long-long map.
  */
 package com.hazelcast.elastic.map.long2long;

@@ -1,6 +1,5 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;

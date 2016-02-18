@@ -5,9 +5,6 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 /**
  * Represents a chunk file which is still growing.
  */

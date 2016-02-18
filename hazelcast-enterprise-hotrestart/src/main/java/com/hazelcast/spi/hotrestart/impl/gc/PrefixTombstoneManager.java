@@ -7,7 +7,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
-import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
 import com.hazelcast.util.collection.Long2ObjectHashMap.KeyIterator;
@@ -175,16 +174,16 @@ public class PrefixTombstoneManager {
     }
 
     private void collectGarbageTombstones(Long2LongHashMap garbageTombstones) {
-        boolean collectedSome = false;
+        int collectedCount = 0;
         for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
             if (collectorPrefixTombstones.get(cursor.key()) == cursor.value()) {
                 collectorPrefixTombstones.remove(cursor.key());
                 dismissedActiveChunks.remove(cursor.key());
-                collectedSome = true;
+                collectedCount++;
             }
         }
-        if (collectedSome) {
-            logger.info("Collected some garbage tombstones");
+        if (collectedCount > 0) {
+            logger.info("Collected %,d garbage prefix tombstones", collectedCount);
         }
         synchronized (this) {
             for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {

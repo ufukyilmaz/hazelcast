@@ -41,7 +41,7 @@ public final class ChunkFileOut {
         write(value, 0, value.length);
     }
 
-    public final void writeValueRecord(Record r, long keyPrefix, ByteBuffer keyBuf, ByteBuffer valBuf) {
+    public void writeValueRecord(Record r, long keyPrefix, ByteBuffer keyBuf, ByteBuffer valBuf) {
         final long seq = r.liveSeq();
         final int keySize = keyBuf.remaining();
         final int valSize = valBuf.remaining();

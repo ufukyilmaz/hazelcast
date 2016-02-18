@@ -7,9 +7,12 @@ import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,7 +23,6 @@ import java.util.List;
 
 import static com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl.valueAddr2slotBase;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.atLeast;
@@ -31,11 +33,13 @@ import static org.mockito.Mockito.verify;
 @Category({QuickTest.class, ParallelTest.class})
 public class SortedBySeqRecordCursorOffHeapTest {
 
+    @Rule public final AssertEnabledFilterRule assertEnabledRule = new AssertEnabledFilterRule();
+
     private final MemoryAllocator MALLOC = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
 
     @Test(expected = NullPointerException.class)
     public void seqsAndSlotBasesAreNull() {
-        new SortedBySeqRecordCursorOffHeap(null, 0, MALLOC, mock(MutatorCatchup.class));
+        new SortedBySeqRecordCursorOffHeap(null, 8, MALLOC, mock(MutatorCatchup.class));
     }
 
     @Test
@@ -48,6 +52,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void initialisationDisposeAndIteration() {
         LongArray seqsAndSlotBases = new LongArray(MALLOC, 8);
         SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, MALLOC,

@@ -1,14 +1,15 @@
 package com.hazelcast.offheapstorage.comparator;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import sun.misc.Unsafe;
 import com.hazelcast.nio.OffHeapBits;
 import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
 
 public class StringComparator implements OffHeapComparator {
-    private final Unsafe unsafe;
+    private final MemoryAccessor mem;
 
-    public StringComparator(Unsafe unsafe) {
-        this.unsafe = unsafe;
+    public StringComparator(MemoryAccessor mem) {
+        this.mem = mem;
     }
 
     @Override
@@ -22,8 +23,8 @@ public class StringComparator implements OffHeapComparator {
         long rightStart = 5 + rightAddress;
 
         for (long i = 0; i < minLength; i++) {
-            int leftChar = unsafe.getByte(leftStart + i) & 0xff;
-            int rightChar = unsafe.getByte(rightStart + i) & 0xff;
+            int leftChar = mem.getByte(leftStart + i) & 0xff;
+            int rightChar = mem.getByte(rightStart + i) & 0xff;
 
             if (leftChar > rightChar) {
                 return 1;

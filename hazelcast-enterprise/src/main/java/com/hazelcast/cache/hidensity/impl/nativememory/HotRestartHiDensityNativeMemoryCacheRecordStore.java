@@ -6,7 +6,7 @@ import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.cache.impl.maxsize.impl.CompositeMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.NativeOutOfMemoryError;

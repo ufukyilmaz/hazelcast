@@ -1,14 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
-import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
-
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 /**
  * A growing chunk which immediately writes added entries to the backing file.
@@ -16,56 +10,36 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream
  * Not thread-safe.
  */
 public abstract class WriteThroughChunk extends GrowingChunk {
-    final DataOutputStream dataOut;
-    final FileOutputStream fileOut;
+    public final ChunkFileOut out;
     final GcHelper gcHelper;
     private final String suffix;
-    private boolean needsFsyncBeforeClosing;
 
-    WriteThroughChunk(long seq, String suffix, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+    WriteThroughChunk(long seq, String suffix, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, records);
         this.suffix = suffix;
-        this.fileOut = out;
         this.gcHelper = gcHelper;
-        this.dataOut = dataOutputStream(out, gcHelper);
+        this.out = out;
     }
 
     public void flagForFsyncOnClose(boolean fsyncOnClose) {
-        this.needsFsyncBeforeClosing |= fsyncOnClose;
+        out.flagForFsyncOnClose(fsyncOnClose);
     }
 
     public void close() {
-        if (dataOut == null) {
+        if (out == null) {
             return;
         }
-        try {
-            if (needsFsyncBeforeClosing) {
-                fsync();
-            }
-            dataOut.close();
-            gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + suffix, FNAME_SUFFIX);
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
+        out.close();
+        gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + suffix, FNAME_SUFFIX);
     }
 
     public void fsync() {
-        try {
-            dataOut.flush();
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
-        fsync(fileOut);
-        needsFsyncBeforeClosing = false;
+        out.fsync();
     }
 
     final boolean hasRoom() {
         assert !full() : String.format("Attempted to write to a full %s file #%x", base(), seq);
         return true;
-    }
-
-    DataOutputStream dataOutputStream(FileOutputStream out, GcHelper gch) {
-        return new DataOutputStream(bufferedOutputStream(out));
     }
 
     public abstract StableChunk toStableChunk();

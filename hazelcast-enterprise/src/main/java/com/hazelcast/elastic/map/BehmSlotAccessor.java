@@ -5,7 +5,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
 /** Helper class with logic to access BinaryElasticHashMap's slots */
@@ -46,7 +46,7 @@ public class BehmSlotAccessor {
     }
 
     void clear() {
-        UNSAFE.setMemory(baseAddr, size, (byte) 0);
+        MEM.setMemory(baseAddr, size, (byte) 0);
     }
 
     void delete() {
@@ -60,19 +60,19 @@ public class BehmSlotAccessor {
     }
 
     public long getKey(int slot) {
-        return UNSAFE.getLong(slotBase(slot) + KEY_OFFSET);
+        return MEM.getLong(slotBase(slot) + KEY_OFFSET);
     }
 
     public void setKey(int slot, long key) {
-        UNSAFE.putLong(slotBase(slot) + KEY_OFFSET, key);
+        MEM.putLong(slotBase(slot) + KEY_OFFSET, key);
     }
 
     public long getValue(int slot) {
-        return UNSAFE.getLong(slotBase(slot) + VALUE_OFFSET);
+        return MEM.getLong(slotBase(slot) + VALUE_OFFSET);
     }
 
     public void setValue(int slot, long value) {
-        UNSAFE.putLong(slotBase(slot) + VALUE_OFFSET, value);
+        MEM.putLong(slotBase(slot) + VALUE_OFFSET, value);
     }
 
     public NativeMemoryData keyData(int slot) {

@@ -9,6 +9,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
@@ -35,7 +36,6 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FI
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
 
 /**
@@ -63,7 +63,6 @@ class HotRestarter {
     private static final FileFilter CHUNK_FILES_ONLY = new FileFilter() {
         public boolean accept(File f) {
             return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX)
-                                  || f.getName().endsWith(Chunk.FNAME_SUFFIX + COMPRESSED_SUFFIX)
                                   || ChunkFilesetCursor.isActiveChunkFile(f));
         }
     };

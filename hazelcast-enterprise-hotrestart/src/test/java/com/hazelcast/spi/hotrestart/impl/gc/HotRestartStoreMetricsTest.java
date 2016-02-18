@@ -26,6 +26,8 @@ import java.io.File;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.SYSPROP_TOMB_CHUNK_SIZE_LIMIT;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.SYSPROP_VAL_CHUNK_SIZE_LIMIT;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
@@ -50,16 +52,15 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     private MetricsRegistry metrics;
 
     @Before public void setup() throws InterruptedException {
-        System.setProperty("com.hazelcast.spi.hotrestart.tombChunkSizeLimit", String.valueOf(8));
-        System.setProperty("com.hazelcast.spi.hotrestart.valChunkSizeLimit", String.valueOf(8));
+        System.setProperty(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, String.valueOf(8));
+        System.setProperty(SYSPROP_VAL_CHUNK_SIZE_LIMIT, String.valueOf(8));
         value = new byte[valChunkSizeLimit()];
         testingHome = hotRestartHome(getClass(), testName);
         delete(testingHome);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setHomeDir(new File(testingHome, storeName))
            .setLoggingService(createLoggingService())
-           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY))
-           .setIoDisabled(true);
+           .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
         metrics = cfg.metricsRegistry();
         store = new MockStoreRegistry(cfg, null);
     }

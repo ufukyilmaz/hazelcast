@@ -7,13 +7,13 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
-import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
 import com.hazelcast.util.collection.Long2ObjectHashMap.KeyIterator;
 import com.hazelcast.util.collection.LongHashSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -174,16 +174,16 @@ public class PrefixTombstoneManager {
     }
 
     private void collectGarbageTombstones(Long2LongHashMap garbageTombstones) {
-        boolean collectedSome = false;
+        int collectedCount = 0;
         for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
             if (collectorPrefixTombstones.get(cursor.key()) == cursor.value()) {
                 collectorPrefixTombstones.remove(cursor.key());
                 dismissedActiveChunks.remove(cursor.key());
-                collectedSome = true;
+                collectedCount++;
             }
         }
-        if (collectedSome) {
-            logger.info("Collected some garbage tombstones");
+        if (collectedCount > 0) {
+            logger.info("Collected %,d garbage prefix tombstones", collectedCount);
         }
         synchronized (this) {
             for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
@@ -195,9 +195,6 @@ public class PrefixTombstoneManager {
     }
 
     private void persistTombstones(GcHelper gcHelper, Long2LongHashMap tombstoneSnapshot) {
-        if (gcHelper.ioDisabled()) {
-            return;
-        }
         final File homeDir = gcHelper.homeDir;
         final File newFile = new File(homeDir, PREFIX_TOMBSTONES_FILENAME + NEW_FILE_SUFFIX);
         FileOutputStream fileOut = null;

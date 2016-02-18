@@ -24,7 +24,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  */
 final class ValEvacuator {
     public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
-            "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
+            "hazelcast.hotrestart.gc.stuck.detect.threshold";
 
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
@@ -41,7 +41,7 @@ final class ValEvacuator {
     private DestValChunk dest;
 
     private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
-                 GcLogger logger, long start
+                         GcLogger logger, long start
     ) {
         this.srcChunks = srcChunks;
         this.chunkMgr = chunkMgr;
@@ -84,6 +84,7 @@ final class ValEvacuator {
             recordMaps[i++] = chunk.records;
             liveRecordCount += chunk.liveRecordCount;
         }
+        mc.catchupNow();
         return recordMaps[0].sortedBySeqCursor(liveRecordCount, recordMaps, mc);
     }
 
@@ -101,8 +102,8 @@ final class ValEvacuator {
                 ) {
                     // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
                     // not catching up with mutator until all metadata are updated. The first catchup can happen
-                    // within the r.intoOut() call (which is called from dest.add()). By the time dest.add() returns,
-                    // the record may already be dead.
+                    // within the writeValueRecord() call (which is called from dest.add()).
+                    // By the time dest.add() returns, the record may already be dead.
                     holder.flip();
                     ensureDestChunk();
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.
@@ -110,7 +111,7 @@ final class ValEvacuator {
                     // will be incremented if the keyHandle receives an update.
                     recordTrackers.get(kh).moveToChunk(dest.seq);
                     // catches up for each bufferful
-                    dest.add(r, kh, holder, mc);
+                    dest.add(r, kh, holder);
                     if (dest.full()) {
                         closeDestChunk();
                     }
@@ -148,7 +149,7 @@ final class ValEvacuator {
             return;
         }
         start = System.nanoTime();
-        dest = gcHelper.newDestValChunk();
+        dest = gcHelper.newDestValChunk(mc);
         dest.flagForFsyncOnClose(true);
         // make the dest chunk available to chunkMgr.chunk()
         destChunkMap.put(dest.seq, dest);
@@ -193,9 +194,8 @@ final class ValEvacuator {
     private void dismissEvacuatedFiles() {
         for (StableValChunk evacuated : srcChunks) {
             gcHelper.deleteChunkFile(evacuated);
-            // All garbage records collected from the source chunk in
-            // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
-            chunkMgr.dismissGarbage(evacuated);
+            mc.catchupNow();
+            chunkMgr.dismissGarbage(evacuated, mc);
             mc.catchupNow();
         }
     }

@@ -15,6 +15,10 @@ import org.junit.runners.model.InitializationError;
  */
 public class EnterpriseParameterizedTestRunner extends HazelcastTestRunner {
 
+    static {
+        System.setProperty("hazelcast.memory.pageLookupLength", String.valueOf(1 << 16));
+    }
+
     public EnterpriseParameterizedTestRunner(Class<?> clazz) throws Throwable {
         super(clazz);
     }

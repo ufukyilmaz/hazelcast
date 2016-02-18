@@ -4,7 +4,7 @@ import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseObjectDataInput;

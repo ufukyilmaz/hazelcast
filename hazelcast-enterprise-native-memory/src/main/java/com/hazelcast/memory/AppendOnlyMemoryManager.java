@@ -3,12 +3,20 @@ package com.hazelcast.memory;
 import java.util.List;
 import java.util.ArrayList;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
-import com.hazelcast.nio.UnsafeHelper;
-
 
 public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+
     private long pointer;
 
     private long usedMemorySize;
@@ -22,7 +30,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     private long acquiredMemorySize;
 
     private MemoryBlock currentMemoryBlock;
-    
+
     private final NativeMemoryStats memoryStats;
 
     private final MemoryAllocator memoryAllocator;
@@ -112,7 +120,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
         if (requireNewMemoryBlock(address, newSize)) {
             allocateBlock(newSize);
-            UnsafeHelper.UNSAFE.copyMemory(address, this.pointer, currentSize);
+            MEMORY_ACCESSOR.copyMemory(address, this.pointer, currentSize);
             long pointer = this.pointer;
             this.pointer += newSize;
             return pointer;

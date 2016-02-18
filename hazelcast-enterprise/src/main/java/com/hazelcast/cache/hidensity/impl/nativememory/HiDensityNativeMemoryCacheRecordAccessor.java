@@ -1,9 +1,9 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -15,8 +15,8 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 public class HiDensityNativeMemoryCacheRecordAccessor
         extends AbstractHiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> {
 
-    public HiDensityNativeMemoryCacheRecordAccessor(EnterpriseSerializationService ss,
-                                                    MemoryManager memoryManager) {
+    public HiDensityNativeMemoryCacheRecordAccessor(
+            EnterpriseSerializationService ss, MemoryManager memoryManager) {
         super(ss, memoryManager);
     }
 
@@ -36,8 +36,8 @@ public class HiDensityNativeMemoryCacheRecordAccessor
         if (address2 == NULL_ADDRESS) {
             return false;
         }
-        long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
-        long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+        long valueAddress1 = MEM.getLong(address1 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+        long valueAddress2 = MEM.getLong(address2 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 

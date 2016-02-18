@@ -16,13 +16,12 @@
 
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.HashUtil;
-import sun.misc.Unsafe;
 
 import java.nio.ByteOrder;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -65,7 +64,7 @@ public final class NativeMemoryDataUtil {
         if (address == 0L) {
             return SerializationConstants.CONSTANT_TYPE_NULL;
         }
-        int type = UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.TYPE_OFFSET);
+        int type = MEM.getInt(address + NativeMemoryData.TYPE_OFFSET);
         return BIG_ENDIAN ? type : Integer.reverseBytes(type);
     }
 
@@ -77,7 +76,7 @@ public final class NativeMemoryDataUtil {
         if (address == 0L) {
             return 0;
         }
-        return UnsafeHelper.UNSAFE.getInt(address + NativeMemoryData.SIZE_OFFSET);
+        return MEM.getInt(address + NativeMemoryData.SIZE_OFFSET);
     }
 
     public static boolean equals(long address1, long address2) {
@@ -126,15 +125,15 @@ public final class NativeMemoryDataUtil {
 
         final int lastAddress = NativeMemoryData.DATA_OFFSET + bufferSize - 1;
         for (int i = 0; i < remaining; i++) {
-            byte k1 = UnsafeHelper.UNSAFE.getByte(address1 + lastAddress - i);
-            byte k2 = UnsafeHelper.UNSAFE.getByte(address2 + lastAddress - i);
+            byte k1 = MEM.getByte(address1 + lastAddress - i);
+            byte k2 = MEM.getByte(address2 + lastAddress - i);
             if (k1 != k2) {
                 return false;
             }
         }
         for (int i = 0; i < noOfLongs; i++) {
-            long k1 = UnsafeHelper.UNSAFE.getLong(address1 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
-            long k2 = UnsafeHelper.UNSAFE.getLong(address2 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
+            long k1 = MEM.getLong(address1 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
+            long k2 = MEM.getLong(address2 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
             if (k1 != k2) {
                 return false;
             }
@@ -148,9 +147,8 @@ public final class NativeMemoryDataUtil {
             return false;
         }
         int bufferOffset = NativeMemoryData.DATA_OFFSET;
-        Unsafe unsafe = UnsafeHelper.UNSAFE;
         for (int i = 0; i < bufferSize; i++) {
-            byte b = unsafe.getByte(address + bufferOffset + i);
+            byte b = MEM.getByte(address + bufferOffset + i);
             if (b != bytes[i + HeapData.DATA_OFFSET]) {
                 return false;
             }

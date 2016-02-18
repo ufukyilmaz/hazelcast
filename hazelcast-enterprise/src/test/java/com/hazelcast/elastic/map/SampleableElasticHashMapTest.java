@@ -12,7 +12,7 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -268,8 +268,8 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
         @Override
         public boolean isEqual(long address1, long address2) {
-            long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + SimpleNativeMemoryData.VALUE_OFFSET);
-            long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + SimpleNativeMemoryData.VALUE_OFFSET);
+            long valueAddress1 = MEM.getLong(address1 + SimpleNativeMemoryData.VALUE_OFFSET);
+            long valueAddress2 = MEM.getLong(address2 + SimpleNativeMemoryData.VALUE_OFFSET);
             return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
         }
 

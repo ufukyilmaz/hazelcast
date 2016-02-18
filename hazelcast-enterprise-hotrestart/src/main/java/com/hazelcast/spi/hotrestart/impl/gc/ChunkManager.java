@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.Probe;
+import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
@@ -19,16 +20,15 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
-import com.hazelcast.internal.util.counters.Counter;
 
 import java.util.Collection;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator.evacuate;
+import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombEvacuator.evacuate;
-import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator.evacuate;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
@@ -148,7 +148,7 @@ public final class ChunkManager {
         chunk.retire(kh, r);
     }
 
-    void dismissGarbage(Chunk c) {
+    void dismissGarbage(Chunk c, MutatorCatchup mc) {
         for (Cursor cursor = c.records.cursor(); cursor.advance();) {
             final KeyHandle kh = cursor.toKeyHandle();
             final Record r = cursor.asRecord();
@@ -159,6 +159,7 @@ public final class ChunkManager {
                 assert r.garbageCount() == 0
                         : "Inconsistent zero global garbage count and local count " + r.garbageCount();
             }
+            mc.catchupAsNeeded();
         }
         c.garbage = 0;
     }
@@ -242,6 +243,7 @@ public final class ChunkManager {
         if (srcChunks.isEmpty()) {
             return false;
         }
+        logger.fine("ValChunk selection took %,d us", NANOSECONDS.toMicros(System.nanoTime() - start));
         final long garbage = valGarbage.get();
         final long live = valOccupancy.get() - garbage;
         final double garbagePercent = UNIT_PERCENTAGE * garbage / live;
@@ -257,7 +259,7 @@ public final class ChunkManager {
 
     boolean tombGc(MutatorCatchup mc) {
         final long start = System.nanoTime();
-        final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc, logger);
+        final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc);
         if (srcChunks.isEmpty()) {
             return false;
         }
@@ -297,38 +299,5 @@ public final class ChunkManager {
     private void disposeAndRemove(StableChunk chunk) {
         chunk.dispose();
         chunks.remove(chunk.seq);
-    }
-
-
-
-    boolean compressAllChunks(MutatorCatchup mc) {
-        boolean didCatchUp = false;
-        for (StableChunk c : chunks.values()) {
-            if (!c.compressed) {
-                didCatchUp |= gcHelper.compressor.lz4Compress(c, gcHelper, mc, logger);
-            }
-        }
-        return didCatchUp;
-    }
-
-    boolean compressSomeChunk(MutatorCatchup mc) {
-        return gcHelper.compressor.lz4Compress(selectChunkToCompress(), gcHelper, mc, logger);
-    }
-
-    private StableValChunk selectChunkToCompress() {
-        double lowestCb = Double.MAX_VALUE;
-        StableValChunk mostStableChunk = null;
-        for (StableChunk c : chunks.values()) {
-            if (!(c instanceof StableValChunk) || c.compressed || c.size() < MIN_SIZE_TO_COMPRESS) {
-                continue;
-            }
-            final StableValChunk valChunk = (StableValChunk) c;
-            final double cb = valChunk.cachedBenefitToCost();
-            if (cb < lowestCb) {
-                mostStableChunk = valChunk;
-                lowestCb = cb;
-            }
-        }
-        return mostStableChunk;
     }
 }

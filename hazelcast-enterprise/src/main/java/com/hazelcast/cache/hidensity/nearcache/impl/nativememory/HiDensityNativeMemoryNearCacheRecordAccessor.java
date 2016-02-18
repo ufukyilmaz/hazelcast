@@ -1,8 +1,8 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
-import com.hazelcast.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 
@@ -25,8 +25,8 @@ public class HiDensityNativeMemoryNearCacheRecordAccessor
 
     @Override
     public boolean isEqual(long address1, long address2) {
-        long valueAddress1 = UnsafeHelper.UNSAFE.getLong(address1 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
-        long valueAddress2 = UnsafeHelper.UNSAFE.getLong(address2 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
+        long valueAddress1 = MEM.getLong(address1 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
+        long valueAddress2 = MEM.getLong(address2 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 

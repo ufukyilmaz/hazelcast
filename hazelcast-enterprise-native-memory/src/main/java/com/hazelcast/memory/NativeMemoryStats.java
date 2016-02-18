@@ -78,6 +78,12 @@ public class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats
         }
     }
 
+    final void removeInternalFragmentation(long size) {
+        if (ASSERTS_ENABLED) {
+            internalFragmentation.addAndGet(-size);
+        }
+    }
+
     @Override
     public final String toString() {
         StringBuilder sb = new StringBuilder();

@@ -1,17 +1,10 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.spi.hotrestart.impl.BufferingInputStream.BUFFER_SIZE;
-import static com.hazelcast.spi.hotrestart.impl.BufferingInputStream.LOG_OF_BUFFER_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.LOG_OF_BUFFER_SIZE;
 
 /**
  * A record in the chunk file. Represents a single insert/update/delete event.
@@ -85,60 +78,6 @@ public abstract class Record {
         }
     }
 
-    public final void intoOut(DataOutputStream out, long startFilePosition, long keyPrefix,
-                              RecordDataHolder holder, MutatorCatchup mc
-    ) {
-        if (out == null) {
-            return;
-        }
-        try {
-            final long seq = liveSeq();
-            if (startFilePosition == 0) {
-                // A new dest chunk was created just before calling this method.
-                // This involved some I/O calls, so catch up now.
-                mc.catchupNow();
-            }
-            final ByteBuffer keyBuf = holder.keyBuffer;
-            final ByteBuffer valBuf = holder.valueBuffer;
-            final int keySize = keyBuf.remaining();
-            final int valSize = valBuf.remaining();
-            assert bufferSizeValid(keySize, valSize);
-            final long startPos = positionInUnitsOfBufsize(startFilePosition);
-            out.writeLong(seq);
-            out.writeLong(keyPrefix);
-            out.writeInt(keySize);
-            out.writeInt(valSize);
-            out.write(keyBuf.array(), keyBuf.position(), keySize);
-            long filePosition = startFilePosition + VAL_HEADER_SIZE + keySize;
-            if (positionInUnitsOfBufsize(filePosition) > startPos) {
-                mc.catchupNow();
-            }
-            if (isTombstone() || valSize <= 0) {
-                return;
-            }
-            do {
-                final int alignedCount = BUFFER_SIZE - (int) (filePosition & BUFFER_SIZE - 1);
-                final int transferredCount = Math.min(valBuf.remaining(), alignedCount);
-                final int pos = valBuf.position();
-                out.write(valBuf.array(), pos, transferredCount);
-                if (transferredCount == alignedCount) {
-                    mc.catchupNow();
-                }
-                valBuf.position(pos + transferredCount);
-                filePosition += transferredCount;
-            } while (valBuf.hasRemaining());
-        } catch (IOException e) {
-            throw new HotRestartException(e);
-        }
-    }
-
-    private boolean bufferSizeValid(int keyBufSize, int valBufSize) {
-        assert keyBufSize + valBufSize == payloadSize() : String.format(
-                "Expected record size %,d doesn't match key %,d + value %,d = %,d",
-                payloadSize(), keyBufSize, valBufSize, keyBufSize + valBufSize
-        );
-        return true;
-    }
 
     @Override public String toString() {
         return String.format("%s(%03x)", getClass().getSimpleName(), liveSeq());

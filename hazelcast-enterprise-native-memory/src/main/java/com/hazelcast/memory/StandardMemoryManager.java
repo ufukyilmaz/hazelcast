@@ -1,8 +1,12 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
@@ -15,6 +19,11 @@ import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 public final class StandardMemoryManager implements MemoryManager {
 
     public static final String PROPERTY_DEBUG_ENABLED = "hazelcast.memory.manager.debug.enabled";
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private final boolean DEBUG;
 
@@ -70,7 +79,7 @@ public final class StandardMemoryManager implements MemoryManager {
                 traceAllocation(address, size);
             }
 
-            UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+            MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
 
             return address;
         } catch (Throwable t) {
@@ -100,7 +109,7 @@ public final class StandardMemoryManager implements MemoryManager {
 
             if (diff > 0) {
                 long startAddress = newAddress + currentSize;
-                UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
+                MEMORY_ACCESSOR.setMemory(startAddress, diff, (byte) 0);
             }
 
             return newAddress;

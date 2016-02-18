@@ -18,11 +18,12 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         implements EnterpriseBufferObjectDataOutput {
@@ -41,7 +42,7 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         if (memory.size() < offset + length) {
             throw new IOException("Cannot read " + length + " bytes from " + memory);
         }
-        memory.copyTo(offset, buffer, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + pos, length);
+        memory.copyTo(offset, buffer, ARRAY_BYTE_BASE_OFFSET + pos, length);
         pos += length;
     }
 
@@ -53,7 +54,7 @@ final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         if (memory.size() < offset + length) {
             throw new IOException("Cannot write " + length + " bytes to " + memory);
         }
-        memory.copyFrom(offset, buffer, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, length);
+        memory.copyFrom(offset, buffer, ARRAY_BYTE_BASE_OFFSET, length);
     }
 
     @Override

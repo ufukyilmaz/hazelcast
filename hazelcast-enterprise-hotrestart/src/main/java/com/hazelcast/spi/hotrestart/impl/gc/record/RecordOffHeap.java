@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 /**
  * Flyweight object around a pointer to a native-memory record structure.
@@ -19,33 +19,33 @@ public final class RecordOffHeap extends Record {
     long address = NULL_ADDRESS;
 
     @Override public long rawSeqValue() {
-        return UNSAFE.getLong(address + SEQ_OFFSET);
+        return AMEM.getLong(address + SEQ_OFFSET);
     }
 
     @Override public int rawSizeValue() {
-        return UNSAFE.getInt(address + SIZE_OFFSET);
+        return AMEM.getInt(address + SIZE_OFFSET);
     }
 
     @Override public long keyPrefix(KeyHandle ignored) {
         assert !isTombstone() : "Attempt to access key prefix of a tombstone";
-        return UNSAFE.getLong(address + KEY_PREFIX_OFFSET);
+        return AMEM.getLong(address + KEY_PREFIX_OFFSET);
     }
 
     void setKeyPrefix(long prefix) {
         assert !isTombstone() : "Attempt to set key prefix on a tombstone";
-        UNSAFE.putLong(address + KEY_PREFIX_OFFSET, prefix);
+        AMEM.putLong(address + KEY_PREFIX_OFFSET, prefix);
     }
 
     @Override public int additionalInt() {
-        return UNSAFE.getInt(address + ADDITIONAL_INT_OFFSET);
+        return AMEM.getInt(address + ADDITIONAL_INT_OFFSET);
     }
 
     @Override public void setAdditionalInt(int value) {
-        UNSAFE.putInt(address + ADDITIONAL_INT_OFFSET, value);
+        AMEM.putInt(address + ADDITIONAL_INT_OFFSET, value);
     }
 
     @Override public void negateSeq() {
-        UNSAFE.putLong(address + SEQ_OFFSET, -UNSAFE.getLong(address + SEQ_OFFSET));
+        AMEM.putLong(address + SEQ_OFFSET, -AMEM.getLong(address + SEQ_OFFSET));
     }
 
     @Override public int decrementGarbageCount() {
@@ -59,7 +59,7 @@ public final class RecordOffHeap extends Record {
     }
 
     @Override public void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
-        UNSAFE.putLong(address + SEQ_OFFSET, rawSeqValue);
-        UNSAFE.putInt(address + SIZE_OFFSET, rawSizeValue);
+        AMEM.putLong(address + SEQ_OFFSET, rawSeqValue);
+        AMEM.putInt(address + SIZE_OFFSET, rawSizeValue);
     }
 }

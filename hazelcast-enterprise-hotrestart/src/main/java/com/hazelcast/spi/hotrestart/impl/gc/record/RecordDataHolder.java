@@ -14,12 +14,13 @@ public final class RecordDataHolder implements RecordDataSink {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int INITIAL_BUFSIZE = 1 << 6;
 
-    ByteBuffer keyBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
-    ByteBuffer valueBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
+    public ByteBuffer keyBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
+    public ByteBuffer valueBuffer = ByteBuffer.allocate(INITIAL_BUFSIZE);
 
     @Override public ByteBuffer getKeyBuffer(int keySize) {
         return keyBuffer = ensureBufferCapacity(keyBuffer, keySize);
     }
+
     @Override public ByteBuffer getValueBuffer(int valueSize) {
         return valueBuffer = ensureBufferCapacity(valueBuffer, valueSize);
     }

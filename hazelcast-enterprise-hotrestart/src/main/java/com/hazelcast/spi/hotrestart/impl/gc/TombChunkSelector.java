@@ -14,21 +14,17 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk.benefitToCost;
 
 final class TombChunkSelector {
-    private final Collection<StableChunk> allChunks;
     private final MutatorCatchup mc;
 
-    private TombChunkSelector(Collection<StableChunk> allChunks, MutatorCatchup mc) {
-        this.allChunks = allChunks;
+    private TombChunkSelector(MutatorCatchup mc) {
         this.mc = mc;
     }
 
-    static Collection<StableTombChunk> selectTombChunksToCollect(
-            Collection<StableChunk> allChunks, MutatorCatchup mc, GcLogger logger
-    ) {
-        return new TombChunkSelector(allChunks, mc).select();
+    static Collection<StableTombChunk> selectTombChunksToCollect(Collection<StableChunk> allChunks, MutatorCatchup mc) {
+        return new TombChunkSelector(mc).select(allChunks);
     }
 
-    private Collection<StableTombChunk> select() {
+    private Collection<StableTombChunk> select(Collection<StableChunk> allChunks) {
         final List<StableTombChunk> candidates = new ArrayList<StableTombChunk>();
         for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableTombChunk)) {

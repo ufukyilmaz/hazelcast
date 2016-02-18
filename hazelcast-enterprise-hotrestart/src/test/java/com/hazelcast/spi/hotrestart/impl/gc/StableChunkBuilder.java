@@ -21,7 +21,7 @@ class StableChunkBuilder {
 
     StableValChunk build() {
         return new StableValChunk(
-                seq, records, liveRecordCount, size, garbage, needsDismissing, compressed);
+                seq, records, liveRecordCount, size, garbage, needsDismissing);
     }
 
     StableChunkBuilder compressed(boolean compressed) {

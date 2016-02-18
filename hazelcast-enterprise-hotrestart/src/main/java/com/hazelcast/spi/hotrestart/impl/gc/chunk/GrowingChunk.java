@@ -5,9 +5,6 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 /**
  * Represents a chunk file which is still growing.
  */
@@ -72,16 +69,6 @@ public abstract class GrowingChunk extends Chunk {
         if (existing != null) {
             existing.update(seq, size);
             existing.setFilePosition(filePosition);
-        }
-    }
-
-    public static void fsync(FileOutputStream out) {
-        try {
-            if (out != null) {
-                out.getFD().sync();
-            }
-        } catch (IOException e) {
-            throw new HotRestartException(e);
         }
     }
 }

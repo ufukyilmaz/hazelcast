@@ -1,6 +1,9 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
 import java.util.NoSuchElementException;
@@ -8,10 +11,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 /** Implementation of {@link LongBlockingQueue} with an off-heap array. */
 public final class LongArrayBlockingQueue implements LongBlockingQueue {
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    private static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+
     private static final long ENTRY_SIZE = 8L;
 
     private final MemoryAllocator malloc;
@@ -39,14 +47,14 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        return UNSAFE.getLong(address + (index * ENTRY_SIZE));
+        return MEMORY_ACCESSOR.getLong(address + (index * ENTRY_SIZE));
     }
 
     private void set(int index, long value) {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        UNSAFE.putLong(address + (index * ENTRY_SIZE), value);
+        MEMORY_ACCESSOR.putLong(address + (index * ENTRY_SIZE), value);
     }
 
     @Override public boolean offer(long value) {
@@ -266,7 +274,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            UNSAFE.setMemory(address, capacity * ENTRY_SIZE, (byte) 0);
+            MEMORY_ACCESSOR.setMemory(address, capacity * ENTRY_SIZE, (byte) 0);
             add = 0;
             remove = 0;
             size = 0;

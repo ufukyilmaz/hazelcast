@@ -1,23 +1,18 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
-
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.bufferedOutputStream;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 /**
  * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.Evacuator}.
  */
 public final class DestValChunk extends WriteThroughChunk {
 
-    public DestValChunk(long seq, RecordMap records, FileOutputStream out, GcHelper gcHelper) {
+    public DestValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
     }
 
@@ -29,23 +24,15 @@ public final class DestValChunk extends WriteThroughChunk {
         return valChunkSizeLimit();
     }
 
-    public void add(Record r, KeyHandle kh, RecordDataHolder holder, MutatorCatchup mc) {
+    public void add(Record r, KeyHandle kh, RecordDataHolder holder) {
         final long prefix = r.keyPrefix(kh);
         records.putIfAbsent(prefix, kh, r.liveSeq(), r.size(), false, 0);
         liveRecordCount++;
-        final long filePosition = size;
         size += r.size();
-        r.intoOut(dataOut, filePosition, prefix, holder, mc);
-    }
-
-    @Override DataOutputStream dataOutputStream(FileOutputStream fileOut, GcHelper gch) {
-        return new DataOutputStream(gch.compressionEnabled()
-                ? gch.compressor.compressedOutputStream(fileOut)
-                : bufferedOutputStream(fileOut));
+        out.writeValueRecord(r, prefix, holder.keyBuffer, holder.valueBuffer);
     }
 
     @Override public StableValChunk toStableChunk() {
-        return new StableValChunk(seq, records, liveRecordCount, size(),
-                garbage, needsDismissing(), gcHelper.compressionEnabled());
+        return new StableValChunk(seq, records, liveRecordCount, size(), garbage, needsDismissing());
     }
 }

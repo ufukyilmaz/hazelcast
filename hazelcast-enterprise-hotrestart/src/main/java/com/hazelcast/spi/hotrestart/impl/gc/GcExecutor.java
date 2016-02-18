@@ -60,7 +60,6 @@ public final class GcExecutor {
     private final MutatorCatchup mc = new MutatorCatchup();
     private final IdleStrategy mutatorIdler = idler();
     private final GcLogger logger;
-    private final GcHelper gcHelper;
     /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
     private final Object testGcMutex = new Object();
     private volatile boolean backpressure;
@@ -70,7 +69,6 @@ public final class GcExecutor {
     private boolean stopped;
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
-        this.gcHelper = gcHelper;
         this.logger = gcHelper.logger;
         this.gcThread = new Thread(new MainLoop(), "GC thread for " + cfg.storeName());
         this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
@@ -88,7 +86,6 @@ public final class GcExecutor {
             final IdleStrategy idler = idler();
             try {
                 long idleCount = 0;
-                int parkCount = 0;
                 boolean didWork = false;
                 while (!stopped && !interrupted()) {
                     final int workCount;
@@ -101,6 +98,7 @@ public final class GcExecutor {
                             didWork = chunkMgr.valueGc(gcp, mc);
                         }
                         if (didWork) {
+                            mc.catchupNow();
                             chunkMgr.tombGc(mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
@@ -110,22 +108,9 @@ public final class GcExecutor {
                     }
                     if (workCount > 0 || didWork) {
                         idleCount = 0;
-                        parkCount = 0;
-                    } else if (idler.idle(idleCount++)) {
-                        parkCount++;
+                    } else {
+                        idler.idle(idleCount++);
                     }
-                    if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
-                        synchronized (testGcMutex) {
-                            didWork = chunkMgr.compressSomeChunk(mc);
-                            parkCount = 0;
-                        }
-                    }
-                }
-                // This should be optional, configurable behavior.
-                // Compression is performed while the rest of the system
-                // is already down, thus contributing to downtime.
-                if (gcHelper.compressionEnabled()) {
-                    chunkMgr.compressAllChunks(mc);
                 }
                 logger.info("GC thread done. ");
             } catch (Throwable t) {
@@ -161,7 +146,6 @@ public final class GcExecutor {
                 LockSupport.unpark(gcThread);
                 Thread.sleep(1);
             }
-            chunkMgr.gcHelper.dispose();
         } catch (InterruptedException e) {
             currentThread().interrupt();
         }
@@ -222,6 +206,7 @@ public final class GcExecutor {
      */
     public class MutatorCatchup implements CatchupTestSupport {
         private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
+        private static final int LATE_CATCHUP_CUTOFF_MILLIS = 110;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
         private long lastCaughtUp;
@@ -258,7 +243,9 @@ public final class GcExecutor {
             final long now = System.nanoTime();
             final long sinceLastCatchup = now - lastCaughtUp;
             lastCaughtUp = now;
-            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)) {
+            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
+                && sinceLastCatchup < MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
+            ) {
                 final StringWriter sw = new StringWriter(512);
                 final PrintWriter w = new PrintWriter(sw);
                 new Exception().printStackTrace(w);

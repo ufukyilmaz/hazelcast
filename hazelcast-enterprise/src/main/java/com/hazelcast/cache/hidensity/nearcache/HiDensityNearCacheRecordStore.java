@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
-import com.hazelcast.hidensity.HiDensityRecordStore;
+import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.memory.MemoryManager;
 
 /**

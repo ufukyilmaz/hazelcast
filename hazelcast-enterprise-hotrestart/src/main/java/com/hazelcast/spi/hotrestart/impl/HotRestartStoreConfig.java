@@ -22,8 +22,6 @@ public class HotRestartStoreConfig {
     private ILogger logger;
     private MetricsRegistry metricsRegistry;
     private MemoryAllocator malloc;
-    private boolean ioDisabled;
-    private boolean compression;
 
     public HotRestartStoreConfig setHomeDir(File homeDir) {
         this.homeDir = homeDir;
@@ -50,16 +48,6 @@ public class HotRestartStoreConfig {
         return this;
     }
 
-    public HotRestartStoreConfig setIoDisabled(boolean ioDisabled) {
-        this.ioDisabled = ioDisabled;
-        return this;
-    }
-
-    public HotRestartStoreConfig setCompression(boolean compression) {
-        this.compression = compression;
-        return this;
-    }
-
     public HotRestartStoreConfig validateAndCreateHomeDir() {
         checkNotNull(homeDir, "homeDir is null");
         try {
@@ -78,14 +66,6 @@ public class HotRestartStoreConfig {
 
     public String storeName() {
         return homeDir.getName();
-    }
-
-    public boolean compression() {
-        return compression;
-    }
-
-    public boolean ioDisabled() {
-        return ioDisabled;
     }
 
     public File homeDir() {

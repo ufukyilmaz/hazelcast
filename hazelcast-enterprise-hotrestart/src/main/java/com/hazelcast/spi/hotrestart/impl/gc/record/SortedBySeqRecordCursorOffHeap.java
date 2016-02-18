@@ -7,9 +7,9 @@ import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.addrOfValueAt;
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.key1At;
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.key2At;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl.addrOfValueAt;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key1At;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key2At;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static java.lang.Math.min;
 
@@ -18,15 +18,17 @@ import static java.lang.Math.min;
  */
 final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, KeyHandleOffHeap {
     private final LongArray seqsAndSlotBases;
+    private final int size;
     private final RecordOffHeap r = new RecordOffHeap();
     private int position = -1;
 
-    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, MemoryAllocator malloc, MutatorCatchup mc) {
-        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, malloc, mc);
+    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, int size, MemoryAllocator malloc, MutatorCatchup mc) {
+        this.size = size;
+        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, malloc, mc);
     }
 
     @Override public boolean advance() {
-        if (position != seqsAndSlotBases.length() - 1) {
+        if (position != size - 1) {
             position += 2;
             r.address = addrOfValueAt(seqsAndSlotBases.get(position));
             return true;
@@ -55,10 +57,16 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         return key2At(seqsAndSlotBases.get(position));
     }
 
-    private static LongArray sortedByRecordSeq(LongArray seqsAndSlotBases, MemoryAllocator malloc, MutatorCatchup mc) {
-        final int size = (int) seqsAndSlotBases.length();
+    @Override public void dispose() {
+        seqsAndSlotBases.dispose();
+    }
+
+    private static LongArray sortedByRecordSeq(
+            LongArray seqsAndSlotBases, int size, MemoryAllocator malloc, MutatorCatchup mc
+    ) {
         LongArray from = seqsAndSlotBases;
         LongArray to = new LongArray(malloc, size);
+        mc.catchupNow();
         for (int width = 2; width < size; width *= 2) {
             for (int i = 0; i < size; i += 2 * width) {
                 bottomUpMerge(from, i, min(i + width, size), min(i + 2 * width, size), to, mc);
@@ -71,8 +79,8 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         return from;
     }
 
-    private static void bottomUpMerge(LongArray from, int leftStart, int rightStart, int rightEnd, LongArray to,
-                                      MutatorCatchup mc
+    private static void bottomUpMerge(
+            LongArray from, int leftStart, int rightStart, int rightEnd, LongArray to, MutatorCatchup mc
     ) {
         int currLeft = leftStart;
         int currRight = rightStart;
@@ -88,9 +96,5 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
             }
             mc.catchupAsNeeded();
         }
-    }
-
-    @Override public void dispose() {
-        seqsAndSlotBases.dispose();
     }
 }

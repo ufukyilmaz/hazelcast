@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import com.hazelcast.elastic.map.HashSlotArray;
-import com.hazelcast.elastic.map.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.HashSlotCursor;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -14,14 +14,12 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  * Off-heap implementation of record tracker map.
  */
 public final class TrackerMapOffHeap extends TrackerMapBase {
-    private static final float LOAD_FACTOR = 0.6f;
-    private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
-    private HashSlotArray trackers;
+    private HashSlotArrayTwinKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
     public TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new HashSlotArrayImpl(malloc, TrackerOffHeap.SIZE);
+        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, malloc, TrackerOffHeap.SIZE);
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
@@ -67,7 +65,7 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
     }
 
     private class CursorOffHeap implements Cursor, KeyHandleOffHeap {
-        private final HashSlotCursor c = trackers.cursor();
+        private final HashSlotCursorTwinKey c = trackers.cursor();
         private final TrackerOffHeap r = new TrackerOffHeap();
 
         @Override public boolean advance() {
@@ -88,10 +86,6 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
 
         @Override public Tracker asTracker() {
             return r;
-        }
-
-        @Override public void remove() {
-            c.remove();
         }
 
         @Override public long address() {

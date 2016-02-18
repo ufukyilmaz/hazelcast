@@ -4,13 +4,17 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
@@ -20,6 +24,9 @@ import static org.junit.Assert.assertEquals;
 public class LongArrayTest {
 
     private static final int INITIAL_LEN = 32;
+
+    @Rule
+    public final TestRule assertEnabledFilter = new AssertEnabledFilterRule();
 
     private MemoryManager malloc;
     private LongArray array;
@@ -41,11 +48,13 @@ public class LongArrayTest {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testSet_NegativeIndex() throws Exception {
         array.set(-1, 1);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testSet_GreaterThanLenIndex() throws Exception {
         array.set(INITIAL_LEN, 1);
     }
@@ -62,6 +71,7 @@ public class LongArrayTest {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testExpand_SmallerLength() throws Exception {
         array.expand(INITIAL_LEN >> 1);
     }

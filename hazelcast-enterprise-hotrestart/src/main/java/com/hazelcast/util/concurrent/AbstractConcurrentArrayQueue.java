@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_OBJECT_BASE_OFFSET;
 import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_OBJECT_INDEX_SCALE;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 /**
  * Pad out a cacheline to the left of a tail to prevent false sharing.
@@ -84,8 +84,8 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
     static {
         try {
             SHIFT_FOR_SCALE = calculateShiftForScale(ARRAY_OBJECT_INDEX_SCALE);
-            TAIL_OFFSET = MEM.objectFieldOffset(Tail.class.getDeclaredField("tail"));
-            HEAD_OFFSET = MEM.objectFieldOffset(Head.class.getDeclaredField("head"));
+            TAIL_OFFSET = AMEM.objectFieldOffset(Tail.class.getDeclaredField("tail"));
+            HEAD_OFFSET = AMEM.objectFieldOffset(Head.class.getDeclaredField("head"));
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -124,7 +124,7 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
 
     @SuppressWarnings("unchecked")
     public E peek() {
-        return (E) MEM.getObjectVolatile(buffer, sequenceToOffset(head, mask));
+        return (E) AMEM.getObjectVolatile(buffer, sequenceToOffset(head, mask));
     }
 
     public boolean add(final E e) {
@@ -165,7 +165,7 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
         final Object[] buffer = this.buffer;
 
         for (long i = head, limit = tail; i < limit; i++) {
-            final Object e = MEM.getObjectVolatile(buffer, sequenceToOffset(i, mask));
+            final Object e = AMEM.getObjectVolatile(buffer, sequenceToOffset(i, mask));
             if (o.equals(e)) {
                 return true;
             }

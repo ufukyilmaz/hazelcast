@@ -5,9 +5,8 @@ import com.hazelcast.memory.MemoryBlock;
 
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.TOMBSTONE_SEQ_SIZE;
 
 public class ValueBlockAccessor extends MemoryBlock {
     public static final int HEADER_SIZE = 4;
@@ -21,7 +20,7 @@ public class ValueBlockAccessor extends MemoryBlock {
 
     final void reset(long vSlotAddr) {
         assert vSlotAddr > NULL_ADDRESS : "Attempt to reset to invalid address: " + vSlotAddr;
-        final long address = MEM.getLong(vSlotAddr);
+        final long address = AMEM.getLong(vSlotAddr);
         assert address > NULL_ADDRESS : "Read an invalid address from value slot: " + address;
         setAddress(address);
         final int sizeFromHeader = readInt(0);

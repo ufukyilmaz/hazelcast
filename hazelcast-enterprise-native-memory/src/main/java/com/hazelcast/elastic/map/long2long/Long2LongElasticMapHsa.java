@@ -5,7 +5,7 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -24,7 +24,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
 
     @Override public long get(long key) {
         final long valueAddr = hsa.get(key);
-        return valueAddr != NULL_ADDRESS ? MEM.getLong(valueAddr) : nullValue;
+        return valueAddr != NULL_ADDRESS ? AMEM.getLong(valueAddr) : nullValue;
     }
 
     @Override public long put(long key, long value) {
@@ -33,11 +33,11 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         long result;
         if (valueAddr < 0) {
             valueAddr = -valueAddr;
-            result = MEM.getLong(valueAddr);
+            result = AMEM.getLong(valueAddr);
         } else {
             result = nullValue;
         }
-        MEM.putLong(valueAddr, value);
+        AMEM.putLong(valueAddr, value);
         return result;
     }
 
@@ -45,11 +45,11 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         assert value != nullValue : "putIfAbsent() called with null-sentinel value " + nullValue;
         long valueAddr = hsa.ensure(key);
         if (valueAddr > 0) {
-            MEM.putLong(valueAddr, value);
+            AMEM.putLong(valueAddr, value);
             return nullValue;
         } else {
             valueAddr = -valueAddr;
-            return MEM.getLong(valueAddr);
+            return AMEM.getLong(valueAddr);
         }
     }
 
@@ -66,11 +66,11 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         if (valueAddr == NULL_ADDRESS) {
             return false;
         }
-        final long actualValue = MEM.getLong(valueAddr);
+        final long actualValue = AMEM.getLong(valueAddr);
         if (actualValue != oldValue) {
             return false;
         }
-        MEM.putLong(valueAddr, newValue);
+        AMEM.putLong(valueAddr, newValue);
         return true;
     }
 
@@ -80,8 +80,8 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         if (valueAddr == NULL_ADDRESS) {
             return nullValue;
         }
-        final long oldValue = MEM.getLong(valueAddr);
-        MEM.putLong(valueAddr, value);
+        final long oldValue = AMEM.getLong(valueAddr);
+        AMEM.putLong(valueAddr, value);
         return oldValue;
     }
 
@@ -90,7 +90,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         if (valueAddr == NULL_ADDRESS) {
             return nullValue;
         }
-        final long oldValue = MEM.getLong(valueAddr);
+        final long oldValue = AMEM.getLong(valueAddr);
         hsa.remove(key);
         return oldValue;
     }
@@ -101,7 +101,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         if (valueAddr == NULL_ADDRESS) {
             return false;
         }
-        final long actualValue = MEM.getLong(valueAddr);
+        final long actualValue = AMEM.getLong(valueAddr);
         if (actualValue == value) {
             hsa.remove(key);
             return true;
@@ -150,7 +150,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
         }
 
         @Override public long value() {
-            return MEM.getLong(cursor.valueAddress());
+            return AMEM.getLong(cursor.valueAddress());
         }
     }
 }

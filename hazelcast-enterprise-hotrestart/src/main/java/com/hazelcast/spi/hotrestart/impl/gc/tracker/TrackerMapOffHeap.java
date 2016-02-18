@@ -14,8 +14,6 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  * Off-heap implementation of record tracker map.
  */
 public final class TrackerMapOffHeap extends TrackerMapBase {
-    private static final float LOAD_FACTOR = 0.6f;
-    private static final int DEFAULT_INITIAL_CAPACITY = 16;
 
     private HashSlotArrayTwinKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();

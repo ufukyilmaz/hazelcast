@@ -1,5 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
@@ -400,17 +401,6 @@ abstract class HashSlotArrayBase {
         @Override public long valueAddress() {
             ensureValid();
             return valueAddrOfSlot(currentSlot);
-        }
-
-        @Override public void remove() {
-            ensureValid();
-            size--;
-            shiftConflictingKeys(currentSlot);
-            // if the current slot ended up assigned after removal and shift,
-            // it means that the entry in the next slot was moved to the current slot
-            if (isAssigned(currentSlot)) {
-                currentSlot--;
-            }
         }
 
         private void ensureValid() {

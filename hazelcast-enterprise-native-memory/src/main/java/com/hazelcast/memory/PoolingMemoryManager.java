@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;
@@ -159,7 +161,7 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
         gc.abort();
 
         Collection<MemoryManager> managers = threadLocalManagers.values();
-        if (managers.size() > 0) {
+        if (!managers.isEmpty()) {
             Iterator<MemoryManager> iterator = managers.iterator();
             while (iterator.hasNext()) {
                 MemoryManager pool = iterator.next();

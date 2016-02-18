@@ -1,7 +1,10 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessorProvider;
+import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.util.QuickMath.log2;
@@ -12,13 +15,22 @@ import static com.hazelcast.util.QuickMath.log2;
 abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     static final boolean ASSERTION_ENABLED;
+
+    // We are using `STANDARD` memory accessor because we internally guarantee that
+    // every memory access is aligned.
+    protected static final MemoryAccessor MEMORY_ACCESSOR =
+            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+
+    // Size of the memory block header for external allocation when allocation size is bigger than page size
+    protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
+
     static {
         ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
     }
 
     /**
      * Power of two block sizes, using buddy memory allocation;
-     * 
+     *
      * 16, 32, 64, 128, 256, 512, 1024, 2k, .... 32k ... 256k ... 1M
      *
      *  - All blocks are at least 8-byte aligned
@@ -32,7 +44,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
      *    http://psy-lob-saw.blogspot.com.tr/2013/01/direct-memory-alignment-in-java.html
      *    http://psy-lob-saw.blogspot.com.tr/2013/07/atomicity-of-unaligned-memory-access-in.html
      *    http://psy-lob-saw.blogspot.com.tr/2013/09/diving-deeper-into-cache-coherency.html
-     * 
+     *
      */
 
     final int minBlockSize;
@@ -42,7 +54,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     final PooledNativeMemoryStats memoryStats;
 
     // page allocator, to allocate MAX_SIZE memory block from system
-    private final MemoryAllocator pageAllocator;
+    protected final MemoryAllocator pageAllocator;
 
     // system memory allocator
     // system allocations are not count in quota
@@ -52,7 +64,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     private final Counter sequenceGenerator;
 
     AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
-            LibMalloc malloc, PooledNativeMemoryStats stats) {
+                                 LibMalloc malloc, PooledNativeMemoryStats stats) {
 
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 
@@ -82,7 +94,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected final AddressQueue getAddressQueue(long size) {
         if (size <= 0) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Size must be positive: " + size);
         }
         size += getHeaderSize();
         if (size > pageSize) {
@@ -98,6 +110,14 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         assert address != NULL_ADDRESS : "Illegal memory address: " + address;
     }
 
+    protected long getHeaderAddressByOffset(long address, int offset) {
+        if (offset == 0) {
+            // If this is the first block, wrap around
+            return address + pageSize - getHeaderSize();
+        }
+        return address - getHeaderSize();
+    }
+
     @Override
     public final long allocate(long size) {
         AddressQueue queue = getAddressQueue(size);
@@ -107,18 +127,30 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             do {
                 address = acquireInternal(queue);
                 assertNotNullPtr(address);
-            } while (!markUnavailable(address, memorySize));
+            } while (!markUnavailable(address, (int) size, memorySize));
 
             assert !isAvailable(address);
-            address += getHeaderSize();
-            memoryStats.addInternalFragmentation(queue.getMemorySize() - size);
-            size = queue.getMemorySize();
+            memoryStats.addInternalFragmentation(memorySize - size);
+            size = memorySize;
         } else {
-            address = pageAllocator.allocate(size);
+            address = allocateExternal(size);
+            memoryStats.addInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
+            size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
         memoryStats.addUsedNativeMemory(size);
         return address;
     }
+
+    /**
+     * Allocates memory block, which is bigger than page size,
+     * through page allocator directly from OS.
+     *
+     * @param size memory size to be allocated which is bigger than page size
+     * @return the address of usable memory region
+     *         which doesn't contain external header size.
+     *         So it is `<allocated_memory_address + external_header_size>`.
+     */
+    protected abstract long allocateExternal(long size);
 
     // TODO: loopify acquireInternal() & splitFromNextQueue() recursion
     protected final long acquireInternal(AddressQueue queue) {
@@ -147,11 +179,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         long newAddress = allocate(newSize);
 
         long size = Math.min(currentSize, newSize);
-        UnsafeHelper.UNSAFE.copyMemory(address, newAddress, size);
+        MEMORY_ACCESSOR.copyMemory(address, newAddress, size);
 
         if (newSize > currentSize) {
             long startAddress = newAddress + currentSize;
-            UnsafeHelper.UNSAFE.setMemory(startAddress, (newSize - currentSize), (byte) 0);
+            MEMORY_ACCESSOR.setMemory(startAddress, (newSize - currentSize), (byte) 0);
         }
         free(address, currentSize);
         return newAddress;
@@ -162,30 +194,43 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         assertNotNullPtr(address);
         final AddressQueue queue = getAddressQueue(size);
         if (queue != null) {
+            int memorySize = queue.getMemorySize();
             zero(address, size);
-            address -= getHeaderSize();
             if (isAvailable(address)) {
-                throw new AssertionError("Double free(): " + address);
+                throw new AssertionError("Double free() -> address: " + address + ", size: " + size);
             }
 
-            assert queue.getMemorySize() == getSizeInternal(address)
-                    : "Size mismatch -> header: " + getSizeInternal(address) + ", param: " + queue.getMemorySize();
+            assert memorySize == getSizeInternal(address)
+                    : "Size mismatch -> header: " + getSizeInternal(address) + ", param: " + memorySize;
 
-            memoryStats.addInternalFragmentation(size - queue.getMemorySize());
+            memoryStats.removeInternalFragmentation(memorySize - size);
             markAvailable(address);
             releaseInternal(queue, address);
-            size = queue.getMemorySize();
+            size = memorySize;
         } else {
-            pageAllocator.free(address, size);
+            freeExternal(address, size);
+            memoryStats.removeInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
+            size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
-        memoryStats.addUsedNativeMemory(-size);
+        memoryStats.removeUsedNativeMemory(size);
     }
+
+    /**
+     * Free memory block which is external.
+     * External memory block means that its size is bigger than page size
+     * and it was allocated through page allocator directly from OS.
+     *
+     * @param address the address (address of usable memory region)
+     *                of the external memory block to be free
+     * @param size    the size of the external memory block to be free
+     */
+    protected abstract void freeExternal(long address, long size);
 
     private static void zero(long address, long size) {
         assertNotNullPtr(address);
         assert size > 0 : "Invalid size: " + size;
 
-        UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+        MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
     }
 
     private void releaseInternal(AddressQueue queue, long address) {
@@ -216,14 +261,14 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             return false;
         }
 
-        if (!markInvalid(address, memorySize)) {
+        if (!markInvalid(address, memorySize, offset)) {
             // happens if memory manager is accessed by multiple threads
             return false;
         }
 
         // need to read offset before invalidation
         int buddyOffset = getOffset(buddyAddress);
-        if (!markInvalid(buddyAddress, memorySize)) {
+        if (!markInvalid(buddyAddress, memorySize, buddyOffset)) {
             // restore status of other buddy back..
             initialize(address, memorySize, offset);
             return false;
@@ -297,7 +342,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
                 }
 
                 offset = getOffset(address);
-            } while (!markInvalid(address, nextQ.getMemorySize()));
+            } while (!markInvalid(address, nextQ.getMemorySize(), offset));
 
             int offset2 = offset + memorySize;
             long address2 = address + memorySize;
@@ -315,7 +360,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (ASSERTION_ENABLED) {
             return validateAndGetAllocatedSize(address);
         }
-        return getSizeInternal(address - getHeaderSize());
+        return getSizeInternal(address);
     }
 
     @Override
@@ -327,7 +372,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
-        return allocatedSize - getHeaderSize();
+        if (allocatedSize > pageSize) {
+            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+        } else {
+            return allocatedSize - getHeaderSize();
+        }
     }
 
     @Override
@@ -336,7 +385,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
-        return allocatedSize - getHeaderSize();
+        if (allocatedSize > pageSize) {
+            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+        } else {
+            return allocatedSize - getHeaderSize();
+        }
     }
 
     @Override
@@ -354,15 +407,15 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract void markAvailable(long address);
 
-    protected abstract boolean markUnavailable(long address, int expectedSize);
+    protected abstract boolean markUnavailable(long address, int usedSize, int internalSize);
 
     protected abstract boolean isAvailable(long address);
 
-    protected abstract boolean markInvalid(long address, int expectedSize);
+    protected abstract boolean markInvalid(long address, int expectedSize, int offset);
 
     protected abstract boolean isValidAndAvailable(long address, int expectedSize);
 
-    protected abstract int getSizeInternal(long address);
+    protected abstract long getSizeInternal(long address);
 
     protected abstract int getOffset(long address);
 
@@ -438,7 +491,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             checkSize(size);
             long address = malloc.malloc(size);
             checkAddress(address, size);
-            UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+            MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
             memoryStats.addMetadataUsage(size);
             return address;
         }
@@ -457,7 +510,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         @Override
         public void free(long address, long size) {
             malloc.free(address);
-            memoryStats.addMetadataUsage(-size);
+            memoryStats.removeMetadataUsage(size);
         }
 
         @Override
@@ -471,7 +524,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
             if (diff > 0) {
                 long startAddress = newAddress + currentSize;
-                UnsafeHelper.UNSAFE.setMemory(startAddress, diff, (byte) 0);
+                MEMORY_ACCESSOR.setMemory(startAddress, diff, (byte) 0);
             }
 
             memoryStats.addMetadataUsage(diff);

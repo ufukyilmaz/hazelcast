@@ -66,5 +66,4 @@ public class HashSlotArrayTwinKeyImpl extends HashSlotArrayBase implements HashS
     public static long addrOfValueAt(long slotBase) {
         return slotBase + KEY_LENGTH;
     }
-
 }

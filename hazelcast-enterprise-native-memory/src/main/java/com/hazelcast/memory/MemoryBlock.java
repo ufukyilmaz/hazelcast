@@ -1,7 +1,8 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.nio.UnsafeHelper;
+import com.hazelcast.internal.memory.MemoryAccessor;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
@@ -12,16 +13,28 @@ import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 /**
  * @author mdogan 12/10/13
  */
-
 public class MemoryBlock {
 
+    protected final MemoryAccessor memoryAccessor;
     protected long address = MemoryManager.NULL_ADDRESS;
     protected int size;
 
     public MemoryBlock() {
+        this.memoryAccessor = MEM;
+    }
+
+    public MemoryBlock(MemoryAccessor memoryAccessor) {
+        this.memoryAccessor = memoryAccessor;
     }
 
     protected MemoryBlock(long address, int size) {
+        this.memoryAccessor = MEM;
+        this.address = address;
+        this.size = size;
+    }
+
+    protected MemoryBlock(MemoryAccessor memoryAccessor, long address, int size) {
+        this.memoryAccessor = memoryAccessor;
         this.address = address;
         this.size = size;
     }
@@ -30,14 +43,14 @@ public class MemoryBlock {
         if (offset >= size || offset < 0) { // offset + 1 > size
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + 1);
         }
-        return UnsafeHelper.UNSAFE.getByte(address + offset);
+        return memoryAccessor.getByte(address + offset);
     }
 
     public final void writeByte(long offset, byte value) {
         if (offset >= size || offset < 0) { // offset + 1 > size
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + 1);
         }
-        UnsafeHelper.UNSAFE.putByte(address + offset, value);
+        memoryAccessor.putByte(address + offset, value);
     }
 
     public final int readInt(long offset) {
@@ -45,7 +58,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + INT_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getInt(address + offset);
+        return memoryAccessor.getInt(address + offset);
     }
 
     public final void writeInt(long offset, int value) {
@@ -53,7 +66,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + INT_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putInt(address + offset, value);
+        memoryAccessor.putInt(address + offset, value);
     }
 
     public final long readLong(long offset) {
@@ -61,7 +74,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + LONG_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getLong(address + offset);
+        return memoryAccessor.getLong(address + offset);
     }
 
     public final void writeLong(long offset, long value) {
@@ -69,7 +82,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + LONG_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putLong(address + offset, value);
+        memoryAccessor.putLong(address + offset, value);
     }
 
     public final char readChar(long offset) {
@@ -77,7 +90,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + CHAR_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getChar(address + offset);
+        return memoryAccessor.getChar(address + offset);
     }
 
     public final void writeChar(long offset, char value) {
@@ -85,7 +98,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + CHAR_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putChar(address + offset, value);
+        memoryAccessor.putChar(address + offset, value);
     }
 
     public final double readDouble(long offset) {
@@ -93,7 +106,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + DOUBLE_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getDouble(address + offset);
+        return memoryAccessor.getDouble(address + offset);
     }
 
     public final void writeDouble(long offset, double value) {
@@ -101,7 +114,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + DOUBLE_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putDouble(address + offset, value);
+        memoryAccessor.putDouble(address + offset, value);
     }
 
     public final float readFloat(long offset) {
@@ -109,7 +122,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + FLOAT_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getFloat(address + offset);
+        return memoryAccessor.getFloat(address + offset);
     }
 
     public final void writeFloat(long offset, float value) {
@@ -117,7 +130,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + FLOAT_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putFloat(address + offset, value);
+        memoryAccessor.putFloat(address + offset, value);
     }
 
     public final short readShort(long offset) {
@@ -125,7 +138,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
                     + ", Length: " + SHORT_SIZE_IN_BYTES);
         }
-        return UnsafeHelper.UNSAFE.getShort(address + offset);
+        return memoryAccessor.getShort(address + offset);
     }
 
     public final void writeShort(long offset, short value) {
@@ -133,7 +146,7 @@ public class MemoryBlock {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: "
                     + offset + ", Length: " + SHORT_SIZE_IN_BYTES);
         }
-        UnsafeHelper.UNSAFE.putShort(address + offset, value);
+        memoryAccessor.putShort(address + offset, value);
     }
 
     /**
@@ -146,7 +159,7 @@ public class MemoryBlock {
      * @throws IndexOutOfBoundsException
      */
     public final void copyFromByteArray(long destinationOffset, byte[] source, int offset, int length) {
-        copyFrom(destinationOffset, source, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, length);
+        copyFrom(destinationOffset, source, memoryAccessor.ARRAY_BYTE_BASE_OFFSET + offset, length);
     }
 
     /**
@@ -166,8 +179,8 @@ public class MemoryBlock {
 
         long realAddress = address + destinationOffset;
         while (length > 0) {
-            int chunk = (length > UnsafeHelper.MEM_COPY_THRESHOLD) ? UnsafeHelper.MEM_COPY_THRESHOLD : length;
-            UnsafeHelper.UNSAFE.copyMemory(source, offset, null, realAddress, chunk);
+            int chunk = (length > memoryAccessor.MEM_COPY_THRESHOLD) ? memoryAccessor.MEM_COPY_THRESHOLD : length;
+            memoryAccessor.copyMemory(source, offset, null, realAddress, chunk);
             length -= chunk;
             offset += chunk;
             realAddress += chunk;
@@ -184,7 +197,7 @@ public class MemoryBlock {
      * @throws IndexOutOfBoundsException
      */
     public final void copyToByteArray(long sourceOffset, byte[] destination, int offset, int length) {
-        copyTo(sourceOffset, destination, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET + offset, length);
+        copyTo(sourceOffset, destination, memoryAccessor.ARRAY_BYTE_BASE_OFFSET + offset, length);
     }
 
     /**
@@ -204,8 +217,8 @@ public class MemoryBlock {
 
         long realAddress = address + sourceOffset;
         while (length > 0) {
-            int chunk = (length > UnsafeHelper.MEM_COPY_THRESHOLD) ? UnsafeHelper.MEM_COPY_THRESHOLD : length;
-            UnsafeHelper.UNSAFE.copyMemory(null, realAddress, destination, offset, chunk);
+            int chunk = (length > memoryAccessor.MEM_COPY_THRESHOLD) ? memoryAccessor.MEM_COPY_THRESHOLD : length;
+            memoryAccessor.copyMemory(null, realAddress, destination, offset, chunk);
             length -= chunk;
             offset += chunk;
             realAddress += chunk;
@@ -213,7 +226,7 @@ public class MemoryBlock {
     }
 
     public final void zero() {
-        UnsafeHelper.UNSAFE.setMemory(address, size, (byte) 0);
+        memoryAccessor.setMemory(address, size, (byte) 0);
     }
 
     public final long address() {

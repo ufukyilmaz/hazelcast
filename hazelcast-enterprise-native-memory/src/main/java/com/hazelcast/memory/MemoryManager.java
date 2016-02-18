@@ -64,13 +64,16 @@ public interface MemoryManager extends MemoryAllocator {
     void destroy();
 
     /**
-     * Returns true if this MemoryManager is destroyed, false otherwise.
-     * @return true if this MemoryManager is destroyed, false otherwise.
+     * Gets the destroyed state of this memory manager.
+     *
+     * @return <tt>true</tt> if this memory manager is destroyed, <tt>false</tt> otherwise.
      */
     boolean isDestroyed();
 
     /**
-     * @return memory statistics
+     * Gets the memory statistics of this memory manager.
+     *
+     * @return the memory statistics
      */
     MemoryStats getMemoryStats();
 

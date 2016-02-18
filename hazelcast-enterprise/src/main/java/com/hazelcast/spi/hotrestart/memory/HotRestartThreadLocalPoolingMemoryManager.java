@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.memory;
 
-import com.hazelcast.memory.LibMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.ThreadLocalPoolingMemoryManager;
 
@@ -24,13 +24,6 @@ public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolin
     protected void onMallocPage(long pageAddress) {
         synchronized (copyEntryMutex) {
             super.onMallocPage(pageAddress);
-        }
-    }
-
-    @Override
-    protected long getOwningPage(long blockBase, int blockSize) {
-        synchronized (copyEntryMutex) {
-            return super.getOwningPage(blockBase, blockSize);
         }
     }
 

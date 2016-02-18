@@ -9,7 +9,7 @@ import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
 
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.MemoryManager;
@@ -41,7 +41,7 @@ public class SortedStorageIntegerTest {
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new NumericComparator(UnsafeHelper.UNSAFE));
+        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new NumericComparator(MEM));
     }
 
     private NativeMemoryConfig getMemoryConfig() {

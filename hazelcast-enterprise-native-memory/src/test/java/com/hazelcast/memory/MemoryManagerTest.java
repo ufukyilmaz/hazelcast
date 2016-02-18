@@ -1,5 +1,7 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -15,6 +17,8 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryManagerTest {
+
+    private static final int DEFAULT_PAGE_SIZE = 1 << 10;
 
     private MemoryManager memoryManager;
     private final LibMalloc malloc = new UnsafeMalloc();
@@ -62,12 +66,6 @@ public class MemoryManagerTest {
     }
 
     @Test
-    public void testValidateAndGetUsableSize_threadLocalPooled_withForeignAddress() throws Exception {
-        memoryManager = newThreadLocalPoolingMemoryManager();
-        testValidateAndGetUsableSize_withForeignAddress(memoryManager);
-    }
-
-    @Test
     public void testValidateAndGetAllocatedSize_threadLocalPooled() throws Exception {
         memoryManager = newThreadLocalPoolingMemoryManager();
         testValidateAndGetAllocatedSize(memoryManager);
@@ -85,14 +83,8 @@ public class MemoryManagerTest {
         testValidateAndGetAllocatedSize_withFreedAddress(memoryManager);
     }
 
-    @Test
-    public void testValidateAndGetAllocatedSize_threadLocalPooled_withForeignAddress() throws Exception {
-        memoryManager = newThreadLocalPoolingMemoryManager();
-        testValidateAndGetAllocatedSize_withForeignAddress(memoryManager);
-    }
-
     private ThreadLocalPoolingMemoryManager newThreadLocalPoolingMemoryManager() {
-        return new ThreadLocalPoolingMemoryManager(16, 1 << 10, malloc, stats);
+        return new ThreadLocalPoolingMemoryManager(16, DEFAULT_PAGE_SIZE, malloc, stats);
     }
 
     @Test
@@ -114,12 +106,6 @@ public class MemoryManagerTest {
     }
 
     @Test
-    public void testValidateAndGetUsableSize_globalPooled_withForeignAddress() throws Exception {
-        memoryManager = newGlobalPoolingMemoryManager();
-        testValidateAndGetUsableSize_withForeignAddress(memoryManager);
-    }
-
-    @Test
     public void testValidateAndGetAllocatedSize_globalPooled() throws Exception {
         memoryManager = newGlobalPoolingMemoryManager();
         testValidateAndGetAllocatedSize(memoryManager);
@@ -137,62 +123,44 @@ public class MemoryManagerTest {
         testValidateAndGetAllocatedSize_withFreedAddress(memoryManager);
     }
 
-    @Test
-    public void testValidateAndGetAllocatedSize_globalPooled_withForeignAddress() throws Exception {
-        memoryManager = newGlobalPoolingMemoryManager();
-        testValidateAndGetAllocatedSize_withForeignAddress(memoryManager);
-    }
-
     private GlobalPoolingMemoryManager newGlobalPoolingMemoryManager() {
-        return new GlobalPoolingMemoryManager(16, 1 << 10, malloc, stats, new SimpleGarbageCollector());
+        return new GlobalPoolingMemoryManager(16, DEFAULT_PAGE_SIZE, malloc, stats, new SimpleGarbageCollector());
     }
 
     @Test
     public void testValidateAndGetUsableSize_pooling() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetUsableSize_pooling_withUnallocatedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize_withUnallocatedAddress(memoryManager);
     }
 
     @Test
     public void testValidateAndGetUsableSize_pooling_withFreedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetUsableSize_withFreedAddress(memoryManager);
     }
 
     @Test
-    public void testValidateAndGetUsableSize_pooling_withForeignAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testValidateAndGetUsableSize_withForeignAddress(memoryManager);
-    }
-
-    @Test
     public void testValidateAndGetAllocatedSize_pooling() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_pooling_withUnallocatedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize_withUnallocatedAddress(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_pooling_withFreedAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testValidateAndGetAllocatedSize_withFreedAddress(memoryManager);
-    }
-
-    @Test
-    public void testValidateAndGetAllocatedSize_pooling_withForeignAddress() throws Exception {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testValidateAndGetAllocatedSize_withForeignAddress(memoryManager);
     }
 
     private void testValidateAndGetUsableSize(MemoryManager memoryManager) throws Exception {
@@ -216,10 +184,6 @@ public class MemoryManagerTest {
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetUsableSize(address));
     }
 
-    private void testValidateAndGetUsableSize_withForeignAddress(MemoryManager memoryManager) throws Exception {
-        assertEquals(SIZE_INVALID, memoryManager.validateAndGetUsableSize(malloc.malloc(8)));
-    }
-
     private void testValidateAndGetAllocatedSize(MemoryManager memoryManager) throws Exception {
         int size = 31;
         long address = memoryManager.allocate(size);
@@ -239,10 +203,6 @@ public class MemoryManagerTest {
         long address = memoryManager.allocate(size);
         memoryManager.free(address, size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetAllocatedSize(address));
-    }
-
-    private void testValidateAndGetAllocatedSize_withForeignAddress(MemoryManager memoryManager) throws Exception {
-        assertEquals(SIZE_INVALID, memoryManager.validateAndGetAllocatedSize(malloc.malloc(8)));
     }
 
     @Test
@@ -265,7 +225,7 @@ public class MemoryManagerTest {
 
     @Test
     public void testNewSequence_pooling() {
-        memoryManager = new PoolingMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         testNewSequence(memoryManager);
     }
 
@@ -274,6 +234,56 @@ public class MemoryManagerTest {
         for (int k = 0; k < 1000; k++) {
             assertEquals(++initialSeq, memoryManager.newSequence());
         }
+    }
+
+    @Test
+    public void testValidateAndGetUsableSize_threadLocalPooled_withBiggerThanPageSize() {
+        MemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
+        testValidateAndGetUsableSize_withBiggerThanPageSize(memoryManager);
+    }
+
+    @Test
+    public void testValidateAndGetUsableSize_globalPooled_withBiggerThanPageSize() {
+        MemoryManager memoryManager = newGlobalPoolingMemoryManager();
+        testValidateAndGetUsableSize_withBiggerThanPageSize(memoryManager);
+    }
+
+    private void testValidateAndGetUsableSize_withBiggerThanPageSize(MemoryManager memoryManager) {
+        final int allocationSize = 2 * DEFAULT_PAGE_SIZE + 3;
+
+        long address = memoryManager.allocate(allocationSize);
+
+        long validatedSize = memoryManager.validateAndGetUsableSize(address);
+        assertEquals("Size= " + allocationSize + ", Validated-size= " + validatedSize, allocationSize, validatedSize);
+
+        memoryManager.free(address, allocationSize);
+
+        memoryManager.destroy();
+    }
+
+    @Test
+    public void testValidateAndGetAllocatedSize_threadLocalPooled_withBiggerThanPageSize() {
+        MemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
+        testValidateAndGetAllocatedSize_withBiggerThanPageSize(memoryManager);
+    }
+
+    @Test
+    public void testValidateAndGetAllocatedSize_globalPooled_withBiggerThanPageSize() {
+        MemoryManager memoryManager = newGlobalPoolingMemoryManager();
+        testValidateAndGetAllocatedSize_withBiggerThanPageSize(memoryManager);
+    }
+
+    private void testValidateAndGetAllocatedSize_withBiggerThanPageSize(MemoryManager memoryManager) {
+        final int allocationSize = 2 * DEFAULT_PAGE_SIZE + 3;
+
+        long address = memoryManager.allocate(allocationSize);
+
+        long validatedSize = memoryManager.validateAndGetAllocatedSize(address);
+        assertTrue("Size= " + allocationSize + ", Validated-size= " + validatedSize, allocationSize <= validatedSize);
+
+        memoryManager.free(address, allocationSize);
+
+        memoryManager.destroy();
     }
 
 }

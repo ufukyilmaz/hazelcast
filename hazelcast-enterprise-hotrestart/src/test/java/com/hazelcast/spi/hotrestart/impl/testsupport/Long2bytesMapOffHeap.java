@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.elastic.map.hashslot.HashSlotArray;
+import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
+import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
@@ -11,13 +11,13 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
-    private final HashSlotArrayTwinKey map;
+    private final HashSlotArray hsa;
     private final ValueBlockAccessor vblockAccessor;
     private boolean isDisposed;
 
     public Long2bytesMapOffHeap(MemoryAllocator malloc) {
         this.vblockAccessor = new ValueBlockAccessor(malloc);
-        this.map = new HashSlotArrayTwinKeyImpl(-1, malloc, 8, 16*1024);
+        this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, malloc, 8, 16*1024);
     }
 
     @Override public void put(long key, byte[] value) {
@@ -25,37 +25,37 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         try {
             vblockAccessor.allocate(value);
         } catch (Error e) {
-            map.remove(key, 0);
+            hsa.remove(key);
             throw e;
         }
         MEM.putLong(vSlotAddr, vblockAccessor.address());
     }
 
     @Override public void remove(long key) {
-        final long vSlotAddr = map.get(key, 0);
+        final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return;
         }
         vblockAccessor.reset(vSlotAddr);
         vblockAccessor.delete();
-        map.remove(key, 0);
+        hsa.remove(key);
     }
 
     @Override public boolean containsKey(long key) {
-        final long vSlotAddr = map.get(key, 0);
+        final long vSlotAddr = hsa.get(key);
         return vSlotAddr != NULL_ADDRESS;
     }
 
     @Override public int size() {
-        return (int) map.size();
+        return (int) hsa.size();
     }
 
     @Override public L2bCursor cursor() {
-        return new Cursor(map.cursor());
+        return new Cursor(hsa.cursor());
     }
 
     @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
-        final long vSlotAddr = map.get(key, 0);
+        final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return false;
         }
@@ -70,15 +70,15 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public void clear() {
-        for (HashSlotCursorTwinKey cursor = map.cursor(); cursor.advance();) {
+        for (HashSlotCursor cursor = hsa.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }
-        map.clear();
+        hsa.clear();
     }
 
     @Override public int valueSize(long key) {
-        final long vSlotAddr = map.get(key, 0);
+        final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return -1;
         }
@@ -91,12 +91,12 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             return;
         }
         clear();
-        map.dispose();
+        hsa.dispose();
         isDisposed = true;
     }
 
     private long vacateSlot(long key) {
-        long vSlotAddr = map.ensure(key, 0);
+        long vSlotAddr = hsa.ensure(key);
         if (vSlotAddr < 0) {
             vSlotAddr = -vSlotAddr;
             vblockAccessor.reset(vSlotAddr);
@@ -108,9 +108,9 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
 
     private static final class Cursor implements L2bCursor {
         private final ValueBlockAccessor vblockAccessor = new ValueBlockAccessor(null);
-        private final HashSlotCursorTwinKey cursor;
+        private final HashSlotCursor cursor;
 
-        Cursor(HashSlotCursorTwinKey wrappedCursor) {
+        Cursor(HashSlotCursor wrappedCursor) {
             this.cursor = wrappedCursor;
         }
 
@@ -123,7 +123,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         }
 
         @Override public long key() {
-            return cursor.key1();
+            return cursor.key();
         }
 
         @Override public int valueSize() {

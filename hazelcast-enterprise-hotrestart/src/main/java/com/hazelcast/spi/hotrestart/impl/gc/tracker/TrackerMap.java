@@ -51,7 +51,5 @@ public interface TrackerMap extends Disposable {
         KeyHandle toKeyHandle();
 
         Tracker asTracker();
-
-        void remove();
     }
 }

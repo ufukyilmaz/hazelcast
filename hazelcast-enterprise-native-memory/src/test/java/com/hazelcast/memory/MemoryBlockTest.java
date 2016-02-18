@@ -1,7 +1,9 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.impl.LibMalloc;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.nio.UnsafeHelper;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -89,7 +91,7 @@ public class MemoryBlockTest {
         }
 
         byte[] buffer = new byte[block.size()];
-        block.copyTo(0, buffer, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, count * 8);
+        block.copyTo(0, buffer, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, count * 8);
 
         Assert.assertArrayEquals(reference, buffer);
     }
@@ -121,7 +123,7 @@ public class MemoryBlockTest {
         byte[] reference = new byte[block.size()];
         rand.nextBytes(reference);
 
-        block.copyFrom(0, reference, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, reference.length);
+        block.copyFrom(0, reference, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, reference.length);
 
         int count = block.size() / 8;
         for (int i = 0; i < count; i++) {

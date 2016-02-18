@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hazelcast.hidensity;
+package com.hazelcast.internal.hidensity;
 
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -23,10 +23,4 @@ public interface HashSlotCursor {
      * @throws IllegalStateException if the cursor is invalid.
      */
     long valueAddress();
-
-    /**
-     * Unassigns the current slot.
-     * @throws IllegalStateException if the cursor is invalid.
-     */
-    void remove();
 }

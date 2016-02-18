@@ -33,9 +33,9 @@ import com.hazelcast.nio.serialization.PortableFactory;
 import java.nio.ByteOrder;
 import java.util.Map;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
-import static com.hazelcast.nio.UnsafeHelper.BYTE_ARRAY_BASE_OFFSET;
 
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
     private final boolean allowSerializeOffHeap;
@@ -160,7 +160,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
                     long address = memoryManager.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
                     nativeData.writeInt(NativeMemoryData.SIZE_OFFSET, size);
-                    nativeData.copyFrom(NATIVE_MEMORY_DATA_OVERHEAD, data.toByteArray(), BYTE_ARRAY_BASE_OFFSET, size);
+                    nativeData.copyFrom(NATIVE_MEMORY_DATA_OVERHEAD, data.toByteArray(), ARRAY_BYTE_BASE_OFFSET, size);
 
                     return nativeData;
                 }

@@ -4,8 +4,8 @@ import com.hazelcast.cache.EnterpriseCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.elastic.SlottableIterator;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.HiDensityRecordStore;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.nio.serialization.Data;
 
 import javax.cache.expiry.ExpiryPolicy;

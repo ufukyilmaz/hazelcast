@@ -3,9 +3,9 @@ package com.hazelcast.elastic;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.Disposable;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
 
 /**
  *  Native long array.
@@ -32,7 +32,7 @@ public final class LongArray implements Disposable {
      * @return array element at specified index.
      */
     public long get(long index) {
-        return UNSAFE.getLong(addressOfElement(index));
+        return AMEM.getLong(addressOfElement(index));
     }
 
     /**
@@ -41,7 +41,7 @@ public final class LongArray implements Disposable {
      * @param value value
      */
     public void set(long index, long value) {
-        UNSAFE.putLong(addressOfElement(index), value);
+        AMEM.putLong(addressOfElement(index), value);
     }
 
     /**

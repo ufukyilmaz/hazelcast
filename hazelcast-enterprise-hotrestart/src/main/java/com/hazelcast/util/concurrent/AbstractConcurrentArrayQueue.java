@@ -24,7 +24,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_OBJECT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_OBJECT_INDEX_SCALE;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 /**
  * Pad out a cacheline to the left of a tail to prevent false sharing.
@@ -77,15 +79,13 @@ class Padding3 extends Head {
 public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implements java.util.Queue<E> {
     protected static final long TAIL_OFFSET;
     protected static final long HEAD_OFFSET;
-    protected static final int ARRAY_BASE;
     protected static final int SHIFT_FOR_SCALE;
 
     static {
         try {
-            ARRAY_BASE = UNSAFE.arrayBaseOffset(Object[].class);
-            SHIFT_FOR_SCALE = calculateShiftForScale(UNSAFE.arrayIndexScale(Object[].class));
-            TAIL_OFFSET = UNSAFE.objectFieldOffset(Tail.class.getDeclaredField("tail"));
-            HEAD_OFFSET = UNSAFE.objectFieldOffset(Head.class.getDeclaredField("head"));
+            SHIFT_FOR_SCALE = calculateShiftForScale(ARRAY_OBJECT_INDEX_SCALE);
+            TAIL_OFFSET = MEM.objectFieldOffset(Tail.class.getDeclaredField("tail"));
+            HEAD_OFFSET = MEM.objectFieldOffset(Head.class.getDeclaredField("head"));
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -124,7 +124,7 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
 
     @SuppressWarnings("unchecked")
     public E peek() {
-        return (E) UNSAFE.getObjectVolatile(buffer, sequenceToOffset(head, mask));
+        return (E) MEM.getObjectVolatile(buffer, sequenceToOffset(head, mask));
     }
 
     public boolean add(final E e) {
@@ -165,7 +165,7 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
         final Object[] buffer = this.buffer;
 
         for (long i = head, limit = tail; i < limit; i++) {
-            final Object e = UNSAFE.getObjectVolatile(buffer, sequenceToOffset(i, mask));
+            final Object e = MEM.getObjectVolatile(buffer, sequenceToOffset(i, mask));
             if (o.equals(e)) {
                 return true;
             }
@@ -239,7 +239,7 @@ public abstract class AbstractConcurrentArrayQueue<E> extends Padding3 implement
     }
 
     public static long sequenceToOffset(final long sequence, final long mask) {
-        return ARRAY_BASE + ((sequence & mask) << SHIFT_FOR_SCALE);
+        return ARRAY_OBJECT_BASE_OFFSET + ((sequence & mask) << SHIFT_FOR_SCALE);
     }
 
     /**

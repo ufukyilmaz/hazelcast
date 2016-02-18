@@ -1,6 +1,6 @@
-package com.hazelcast.memory;
+package com.hazelcast.internal.memory.impl;
 
-import com.hazelcast.nio.UnsafeHelper;
+import static com.hazelcast.internal.memory.impl.UnsafeUtil.UNSAFE;
 
 /**
  * @author mdogan 03/12/13
@@ -10,7 +10,7 @@ public final class UnsafeMalloc implements LibMalloc {
     @Override
     public long malloc(long size) {
         try {
-            return UnsafeHelper.UNSAFE.allocateMemory(size);
+            return UNSAFE.allocateMemory(size);
         } catch (OutOfMemoryError e) {
             return NULL_ADDRESS;
         }
@@ -19,7 +19,7 @@ public final class UnsafeMalloc implements LibMalloc {
     @Override
     public long realloc(long address, long size) {
         try {
-            return UnsafeHelper.UNSAFE.reallocateMemory(address, size);
+            return UNSAFE.reallocateMemory(address, size);
         } catch (OutOfMemoryError e) {
             return NULL_ADDRESS;
         }
@@ -27,7 +27,7 @@ public final class UnsafeMalloc implements LibMalloc {
 
     @Override
     public void free(long address) {
-        UnsafeHelper.UNSAFE.freeMemory(address);
+        UNSAFE.freeMemory(address);
     }
 
     @Override

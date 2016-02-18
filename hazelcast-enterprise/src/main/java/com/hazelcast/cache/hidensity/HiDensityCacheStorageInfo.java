@@ -17,7 +17,7 @@
 package com.hazelcast.cache.hidensity;
 
 import com.hazelcast.cache.impl.CacheContext;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
  * Holds information about Hi-Density cache storage such as entry count, used memory, etc ...

@@ -1,11 +1,11 @@
-package com.hazelcast.hidensity.impl;
+package com.hazelcast.internal.hidensity.impl;
 
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
-import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.hidensity.HiDensityRecordMap;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecordMap;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 

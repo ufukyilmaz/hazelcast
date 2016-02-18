@@ -188,12 +188,6 @@ public class HashSlotArrayTwinKeyNoValueTest {
         cursor.valueAddress();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testCursor_remove_withoutAdvance() {
-        HashSlotCursorTwinKey cursor = map.cursor();
-        cursor.remove();
-    }
-
     @Test
     public void testCursor_advance_whenEmpty() {
         HashSlotCursorTwinKey cursor = map.cursor();
@@ -255,20 +249,6 @@ public class HashSlotArrayTwinKeyNoValueTest {
         assertEquals(valueAddress, cursor.valueAddress());
     }
 
-    @Test
-    public void testCursor_remove() {
-        final long key1 = randomKey();
-        final long key2 = randomKey();
-        map.ensure(key1, key2);
-
-        HashSlotCursorTwinKey cursor = map.cursor();
-        cursor.advance();
-        cursor.remove();
-
-        assertEquals(NULL_ADDRESS, map.get(key1, key2));
-        assertEquals(0, map.size());
-    }
-
     @Test(expected = IllegalStateException.class)
     public void testCursor_advance_whenDisposed() {
         HashSlotCursorTwinKey cursor = map.cursor();
@@ -297,13 +277,6 @@ public class HashSlotArrayTwinKeyNoValueTest {
         cursor.valueAddress();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testCursor_remove_whenDisposed() {
-        HashSlotCursorTwinKey cursor = map.cursor();
-        map.dispose();
-        cursor.remove();
-    }
-
     @Test
     public void testCursor_withManyValues() {
         final long factor = 123456;
@@ -329,30 +302,6 @@ public class HashSlotArrayTwinKeyNoValueTest {
 
         for (int i = 0; i < k; i++) {
             assertTrue("Haven't read " + k + "th key!", verifyKeys[i]);
-        }
-    }
-
-    @Test
-    public void testCursor_remove_withManyValues() {
-        final long factor = 123456;
-        final int k = 1000;
-
-        for (int i = 1; i <= k; i++) {
-            long key1 = (long) i;
-            long key2 = key1 * factor;
-            map.ensure(key1, key2);
-        }
-
-        HashSlotCursorTwinKey cursor = map.cursor();
-        while (cursor.advance()) {
-            cursor.remove();
-        }
-
-        assertEquals(0, map.size());
-        for (int i = 1; i <= k; i++) {
-            long key1 = (long) i;
-            long key2 = key1 * factor;
-            assertEquals(NULL_ADDRESS, map.get(key1, key2));
         }
     }
 

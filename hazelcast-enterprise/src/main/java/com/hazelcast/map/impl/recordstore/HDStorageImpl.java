@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.SizeEstimator;

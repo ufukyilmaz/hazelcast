@@ -20,7 +20,7 @@ import com.hazelcast.util.function.Consumer;
 
 import java.util.Collection;
 
-import static com.hazelcast.nio.UnsafeHelper.UNSAFE;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 
 /**
@@ -43,9 +43,9 @@ public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueu
         final long currentTail = tail;
         final long elementOffset = sequenceToOffset(currentTail, mask);
 
-        if (null == UNSAFE.getObjectVolatile(buffer, elementOffset)) {
-            UNSAFE.putOrderedObject(buffer, elementOffset, e);
-            UNSAFE.putOrderedLong(this, TAIL_OFFSET, currentTail + 1);
+        if (null == MEM.getObjectVolatile(buffer, elementOffset)) {
+            MEM.putOrderedObject(buffer, elementOffset, e);
+            MEM.putOrderedLong(this, TAIL_OFFSET, currentTail + 1);
 
             return true;
         }
@@ -59,10 +59,10 @@ public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueu
         final long currentHead = head;
         final long elementOffset = sequenceToOffset(currentHead, mask);
 
-        final Object e = UNSAFE.getObjectVolatile(buffer, elementOffset);
+        final Object e = MEM.getObjectVolatile(buffer, elementOffset);
         if (null != e) {
-            UNSAFE.putOrderedObject(buffer, elementOffset, null);
-            UNSAFE.putOrderedLong(this, HEAD_OFFSET, currentHead + 1);
+            MEM.putOrderedObject(buffer, elementOffset, null);
+            MEM.putOrderedLong(this, HEAD_OFFSET, currentHead + 1);
         }
 
         return (E) e;
@@ -78,17 +78,17 @@ public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueu
         try {
             do {
                 final long elementOffset = sequenceToOffset(nextSequence, mask);
-                final E item = (E) UNSAFE.getObjectVolatile(buffer, elementOffset);
+                final E item = (E) MEM.getObjectVolatile(buffer, elementOffset);
                 if (null == item) {
                     break;
                 }
 
-                UNSAFE.putOrderedObject(buffer, elementOffset, null);
+                MEM.putOrderedObject(buffer, elementOffset, null);
                 nextSequence++;
                 elementHandler.accept(item);
             } while (true);
         } finally {
-            UNSAFE.putOrderedLong(this, HEAD_OFFSET, nextSequence);
+            MEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
         }
 
         return (int) (nextSequence - currentHead);
@@ -103,18 +103,18 @@ public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueu
 
         while (count < limit) {
             final long elementOffset = sequenceToOffset(nextSequence, mask);
-            final Object item = UNSAFE.getObjectVolatile(buffer, elementOffset);
+            final Object item = MEM.getObjectVolatile(buffer, elementOffset);
             if (null == item) {
                 break;
             }
 
-            UNSAFE.putOrderedObject(buffer, elementOffset, null);
+            MEM.putOrderedObject(buffer, elementOffset, null);
             nextSequence++;
             count++;
             target.add((E) item);
         }
 
-        UNSAFE.putOrderedLong(this, HEAD_OFFSET, nextSequence);
+        MEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
 
         return count;
     }

@@ -16,10 +16,10 @@
 
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.hidensity.HiDensityRecord;
-import com.hazelcast.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
-import com.hazelcast.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryManager;
@@ -28,7 +28,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * {@link com.hazelcast.hidensity.HiDensityRecordProcessor HiDensityRecordProcessor} for hi-density cache implementation.
+ * {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor HiDensityRecordProcessor} for hi-density cache implementation.
  * Only difference from a {@link DefaultHiDensityRecordProcessor} is, the method {@link #disposeDeferredBlocks}
  * doesn't touch {@link #storageInfo} during dispose.
  *

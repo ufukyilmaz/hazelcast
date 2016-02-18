@@ -20,7 +20,7 @@ import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
  * @param <V> value type
  * @author mdogan 07/01/14
 */
-public class ConcurrentElasticHashMap<K, V> implements ConcurrentElasticMap<K, V> {
+public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.util.concurrent.ConcurrentMap<K, V> {
 
     /**
      * The default concurrency level for this table, used when not

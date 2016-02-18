@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart;
 
-import com.hazelcast.hidensity.HiDensityRecord;
+import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.Data;

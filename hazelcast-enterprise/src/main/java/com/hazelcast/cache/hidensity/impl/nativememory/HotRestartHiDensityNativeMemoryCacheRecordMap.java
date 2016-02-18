@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.hazelcast.hidensity.HiDensityRecordStore.NULL_PTR;
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 
 /**
  * Hot-restart variant of HiDensityNativeMemoryCacheRecordMap.

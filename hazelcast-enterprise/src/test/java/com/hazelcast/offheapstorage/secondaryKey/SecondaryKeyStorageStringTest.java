@@ -1,38 +1,37 @@
 package com.hazelcast.offheapstorage.secondaryKey;
 
-import java.util.Map;
-import java.util.TreeMap;
-import java.io.IOException;
-
-import com.hazelcast.nio.UnsafeHelper;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.offheapstorage.comparator.StringComparator;
+import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
+import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
+import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
+import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueSortedStorage;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
-import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueSortedStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueRedBlackTreeStorage;
-
-import org.junit.Test;
+import com.hazelcast.offheapstorage.comparator.StringComparator;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertTrue;
+import java.io.IOException;
+import java.util.Map;
+import java.util.TreeMap;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -47,12 +46,12 @@ public class SecondaryKeyStorageStringTest {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.offHeapBlobMap = new OffHeapSecondaryKeyValueRedBlackTreeStorage(
                 this.malloc,
-                new StringComparator(UnsafeHelper.UNSAFE),
-                new StringComparator(UnsafeHelper.UNSAFE)
+                new StringComparator(MEM),
+                new StringComparator(MEM)
         );
     }
 
-    private NativeMemoryConfig getMemoryConfig() {
+    private static NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(100, MemoryUnit.MEGABYTES);
 
         return
@@ -152,7 +151,7 @@ public class SecondaryKeyStorageStringTest {
         }
     }
 
-    private int valueShuffle(int value) {
+    private static int valueShuffle(int value) {
         if (value == 5) {
             return 5;
         }

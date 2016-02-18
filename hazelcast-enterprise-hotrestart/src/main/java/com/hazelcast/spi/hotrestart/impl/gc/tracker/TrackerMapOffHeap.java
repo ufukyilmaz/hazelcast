@@ -90,10 +90,6 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
             return r;
         }
 
-        @Override public void remove() {
-            c.remove();
-        }
-
         @Override public long address() {
             return c.key1();
         }

@@ -270,9 +270,8 @@ public class Long2LongElasticMapHsaTest {
 
         int expected = 100;
         for (long i = 0; i < expected; i++) {
-            long key = i;
             long value = newValue();
-            map.put(key, value);
+            map.put(i, value);
         }
 
         assertEquals(expected, map.size());
@@ -281,9 +280,8 @@ public class Long2LongElasticMapHsaTest {
     @Test
     public void testClear() {
         for (long i = 0; i < 100; i++) {
-            long key = i;
             long value = newValue();
-            map.put(key, value);
+            map.put(i, value);
         }
 
         map.clear();

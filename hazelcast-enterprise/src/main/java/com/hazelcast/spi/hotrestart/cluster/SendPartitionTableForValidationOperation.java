@@ -10,7 +10,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
-import static com.hazelcast.partition.InternalPartition.MAX_REPLICA_COUNT;
+import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 
 /**
  * Operation, which is used to send local partition table to master member

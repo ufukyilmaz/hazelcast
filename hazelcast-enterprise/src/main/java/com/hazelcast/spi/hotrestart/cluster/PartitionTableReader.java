@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.nio.Address;
-import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.internal.partition.InternalPartition;
 
 import java.io.DataInputStream;
 import java.io.File;

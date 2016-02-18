@@ -17,7 +17,7 @@ import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.MapUtil;
@@ -416,7 +416,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         //Entry operations
 
-        InternalPartitionService partitionService = getPartitionService(clusterA[0]);
+        IPartitionService partitionService = getPartitionService(clusterA[0]);
 
         MapOperation updatingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(), serializationService.toData(10), new UpdatingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, updatingEntryOperation, partitionService.getPartitionId(10));

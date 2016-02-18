@@ -5,7 +5,7 @@ package com.hazelcast.client.security;
 import com.hazelcast.core.DistributedObjectListener;
 import com.hazelcast.core.PartitionService;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.partition.PartitionLostListener;
 import com.hazelcast.spi.impl.proxyservice.impl.ProxyServiceImpl;
 import com.hazelcast.test.annotation.QuickTest;
@@ -22,7 +22,7 @@ public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSuppor
     @Test
     public void addPartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
-        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "addPartitionLostListener");
+        interceptor.setExpectation(IPartitionService.SERVICE_NAME, null, "addPartitionLostListener");
         partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
     }
 
@@ -30,7 +30,7 @@ public class ClientInstanceSecurityInterceptorTest extends InterceptorTestSuppor
     public void removePartitionLostListener() {
         PartitionService partitionService = client.getPartitionService();
         String registrationID = partitionService.addPartitionLostListener(mock(PartitionLostListener.class));
-        interceptor.setExpectation(InternalPartitionService.SERVICE_NAME, null, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
+        interceptor.setExpectation(IPartitionService.SERVICE_NAME, null, "removePartitionLostListener", SKIP_COMPARISON_OBJECT);
         partitionService.removePartitionLostListener(registrationID);
     }
 

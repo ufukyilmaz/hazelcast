@@ -20,7 +20,7 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
@@ -64,7 +64,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
 
     private List<Data> selectThisPartitionsKeys(Collection<Data> keys) {
         final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final InternalPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
+        final IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
         final int partitionId = getPartitionId();
         List<Data> dataKeys = null;
         for (Data key : keys) {

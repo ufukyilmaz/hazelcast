@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static com.hazelcast.elastic.map.HashSlotArrayImpl.valueAddr2slotBase;
+import static com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl.valueAddr2slotBase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -35,27 +35,27 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
     @Test(expected = NullPointerException.class)
     public void seqsAndSlotBasesAreNull() {
-        new SortedBySeqRecordCursorOffHeap(null, MALLOC, mock(MutatorCatchup.class));
+        new SortedBySeqRecordCursorOffHeap(null, 0, MALLOC, mock(MutatorCatchup.class));
     }
 
     @Test
     public void initialisationAndIteration() {
         LongArray seqsAndSlotBases = new LongArray(MALLOC, 8);
-        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, MALLOC,
+        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, MALLOC,
                 mock(MutatorCatchup.class));
 
         assertTrue(cursor.advance());
     }
 
-    @Test
+    @Test(expected = AssertionError.class)
     public void initialisationDisposeAndIteration() {
         LongArray seqsAndSlotBases = new LongArray(MALLOC, 8);
-        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, MALLOC,
+        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, MALLOC,
                 mock(MutatorCatchup.class));
 
         cursor.dispose();
 
-        assertFalse(cursor.advance());
+        cursor.advance();
     }
 
     @Test
@@ -67,7 +67,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
         // WHEN
         SortedBySeqRecordCursorOffHeap cursorOffHeap = new SortedBySeqRecordCursorOffHeap(
-                seqsAndSlotBases, MALLOC, mc);
+                seqsAndSlotBases, 2 * count, MALLOC, mc);
 
         // THEN
         int actualCount = 0;
@@ -87,7 +87,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
         // WHEN
         SortedBySeqRecordCursorOffHeap cursorOffHeap = new SortedBySeqRecordCursorOffHeap(
-                seqsAndSlotBases, MALLOC, mc);
+                seqsAndSlotBases, 2 * count, MALLOC, mc);
 
         // THEN
         assertNotNull(cursorOffHeap);

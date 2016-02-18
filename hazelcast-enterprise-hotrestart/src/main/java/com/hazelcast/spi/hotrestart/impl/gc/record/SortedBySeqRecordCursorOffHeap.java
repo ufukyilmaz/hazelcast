@@ -57,6 +57,10 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         return key2At(seqsAndSlotBases.get(position));
     }
 
+    @Override public void dispose() {
+        seqsAndSlotBases.dispose();
+    }
+
     private static LongArray sortedByRecordSeq(
             LongArray seqsAndSlotBases, int size, MemoryAllocator malloc, MutatorCatchup mc
     ) {
@@ -92,9 +96,5 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
             }
             mc.catchupAsNeeded();
         }
-    }
-
-    @Override public void dispose() {
-        seqsAndSlotBases.dispose();
     }
 }

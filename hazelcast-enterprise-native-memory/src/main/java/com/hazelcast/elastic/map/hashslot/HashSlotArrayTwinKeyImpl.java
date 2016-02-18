@@ -59,7 +59,6 @@ public class HashSlotArrayTwinKeyImpl extends HashSlotArrayBase implements HashS
         return valueLength > 0;
     }
 
-
     public static long valueAddr2slotBase(long valueAddr) {
         return valueAddr - KEY_LENGTH;
     }

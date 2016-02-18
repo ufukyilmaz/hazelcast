@@ -6,12 +6,16 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
@@ -25,6 +29,9 @@ import static org.junit.Assert.assertTrue;
 public class Long2LongElasticMapHsaTest {
 
     private static final long MISSING_VALUE = -1L;
+
+    @Rule
+    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final Random random = new Random();
     private MemoryManager memoryManager;
@@ -217,36 +224,43 @@ public class Long2LongElasticMapHsaTest {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_put_invalidValue() {
         map.put(newKey(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_putIfAbsent_invalidValue() {
         map.putIfAbsent(newKey(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_set_invalidValue() {
         map.put(newKey(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_replace_invalidValue() {
         map.replace(newKey(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_replaceIfEquals_invalidOldValue() {
         map.replace(newKey(), MISSING_VALUE, newValue());
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_replaceIfEquals_invalidNewValue() {
         map.replace(newKey(), newValue(), MISSING_VALUE);
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void test_removeIfEquals_Value() {
         map.remove(newKey(), MISSING_VALUE);
     }

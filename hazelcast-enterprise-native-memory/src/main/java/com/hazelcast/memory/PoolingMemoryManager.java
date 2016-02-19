@@ -18,13 +18,15 @@ import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 /**
  * {@link MemoryManager} implementation which allocates native memory in fixed-size pages and
  * then internally manages application-level allocation within the pages.
- *
- * @author mdogan 17/12/13
  */
 public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
 
+    @SuppressWarnings("checkstyle:magicnumber")
     static final int MIN_MIN_BLOCK_SIZE = 1 << 3;
+    @SuppressWarnings("checkstyle:magicnumber")
     static final int MAX_PAGE_SIZE = 1 << 30;
+
+    private static final int PERCENTAGE_FACTOR = 100;
 
     private final LibMalloc malloc = new UnsafeMalloc();
     private final PooledNativeMemoryStats memoryStats;
@@ -50,7 +52,7 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
 
         checkFreeMemory(totalSize);
         checkBlockAndPageSize(minBlockSize, pageSize);
-        long maxMetadata = (long) (totalSize * metadataSpacePercentage / 100);
+        long maxMetadata = (long) (totalSize * metadataSpacePercentage / PERCENTAGE_FACTOR);
         long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);
 
         memoryStats = new PooledNativeMemoryStats(maxNative, maxMetadata);
@@ -66,8 +68,7 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
         }
 
         if (minBlockSize < MIN_MIN_BLOCK_SIZE) {
-            throw new IllegalArgumentException(
-                    "Minimum block size must be greater than or equal to: " + MIN_MIN_BLOCK_SIZE);
+            throw new IllegalArgumentException("Minimum block size must be greater than or equal to: " + MIN_MIN_BLOCK_SIZE);
         }
 
         if (!isPowerOfTwo(pageSize)) {
@@ -75,8 +76,8 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
         }
 
         if (pageSize < minBlockSize) {
-            throw new IllegalArgumentException("Page size must be bigger than min block size! "
-                    + pageSize + " VS " + minBlockSize);
+            throw new IllegalArgumentException("Page size must be bigger than min block size! " + pageSize
+                    + " vs. " + minBlockSize);
         }
 
         if (pageSize > MAX_PAGE_SIZE) {

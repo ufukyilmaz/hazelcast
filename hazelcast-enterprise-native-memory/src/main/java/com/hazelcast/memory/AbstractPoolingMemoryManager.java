@@ -1,20 +1,16 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.util.QuickMath.log2;
 
-/**
- * @author mdogan 03/12/13
- */
+@SuppressWarnings("checkstyle:methodcount")
 abstract class AbstractPoolingMemoryManager implements MemoryManager {
-
-    static final boolean ASSERTION_ENABLED;
 
     // We are using `STANDARD` memory accessor because we internally guarantee that
     // every memory access is aligned.
@@ -24,37 +20,36 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     // Size of the memory block header for external allocation when allocation size is bigger than page size
     protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
 
-    static {
-        ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
-    }
+    static final boolean ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
+
+    private static final int STRING_BUILDER_DEFAULT_CAPACITY = 1024;
 
     /**
      * Power of two block sizes, using buddy memory allocation;
      *
      * 16, 32, 64, 128, 256, 512, 1024, 2k, .... 32k ... 256k ... 1M
      *
-     *  - All blocks are at least 8-byte aligned
-     *  - If cache line is 64 bytes; except these sizes (16, 32), all blocks are cache line aligned.
-     *  - If cache line is 128 bytes; except these sizes (16, 32, 64), all blocks are cache line aligned.
-     *  - Block sizes lower than cache line size can cause un-aligned cache line access (access that spans 2 cache lines)
-     *    Memory access that spans 2 cache lines has very bad performance characteristics.
-     *    We have a trade-off here, between better memory usage vs performance...
+     * - All blocks are at least 8-byte aligned
+     * - If cache line is 64 bytes; except these sizes (16, 32), all blocks are cache line aligned.
+     * - If cache line is 128 bytes; except these sizes (16, 32, 64), all blocks are cache line aligned.
+     * - Block sizes lower than cache line size can cause un-aligned cache line access (access that spans 2 cache lines)
+     * Memory access that spans 2 cache lines has very bad performance characteristics.
+     * We have a trade-off here, between better memory usage vs performance...
      *
-     *  - See following blog series for more info about aligned/unaligned memory access:
-     *    http://psy-lob-saw.blogspot.com.tr/2013/01/direct-memory-alignment-in-java.html
-     *    http://psy-lob-saw.blogspot.com.tr/2013/07/atomicity-of-unaligned-memory-access-in.html
-     *    http://psy-lob-saw.blogspot.com.tr/2013/09/diving-deeper-into-cache-coherency.html
-     *
+     * - See following blog series for more info about aligned/unaligned memory access:
+     * http://psy-lob-saw.blogspot.com.tr/2013/01/direct-memory-alignment-in-java.html
+     * http://psy-lob-saw.blogspot.com.tr/2013/07/atomicity-of-unaligned-memory-access-in.html
+     * http://psy-lob-saw.blogspot.com.tr/2013/09/diving-deeper-into-cache-coherency.html
      */
+
+    // page allocator, to allocate MAX_SIZE memory block from system
+    protected final MemoryAllocator pageAllocator;
 
     final int minBlockSize;
     final int pageSize;
     final int minBlockSizePower;
     final AddressQueue[] addressQueues;
     final PooledNativeMemoryStats memoryStats;
-
-    // page allocator, to allocate MAX_SIZE memory block from system
-    protected final MemoryAllocator pageAllocator;
 
     // system memory allocator
     // system allocations are not count in quota
@@ -147,8 +142,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
      *
      * @param size memory size to be allocated which is bigger than page size
      * @return the address of usable memory region
-     *         which doesn't contain external header size.
-     *         So it is `<allocated_memory_address + external_header_size>`.
+     * which doesn't contain external header size.
+     * So it is `<allocated_memory_address + external_header_size>`.
      */
     protected abstract long allocateExternal(long size);
 
@@ -245,15 +240,15 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     protected abstract int getQueueMergeThreshold(AddressQueue queue);
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private boolean tryMergeBuddies(AddressQueue queue, long address) {
-        final int memorySize = queue.getMemorySize();
+        int memorySize = queue.getMemorySize();
         if (memorySize == pageSize) {
             return false;
         }
 
         int offset = getOffset(address);
-        assert QuickMath.modPowerOfTwo(offset, memorySize) == 0
-                : "Offset: " + offset + " must be factor of " + memorySize;
+        assert QuickMath.modPowerOfTwo(offset, memorySize) == 0 : "Offset: " + offset + " must be factor of " + memorySize;
         int buddyIndex = offset / memorySize;
         long buddyAddress = buddyIndex % 2 == 0 ? (address + memorySize) : (address - memorySize);
 
@@ -337,8 +332,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             do {
                 address = acquireInternal(nextQ);
                 if (address == NULL_ADDRESS) {
-                    throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
-                            "Cannot acquire " + MemorySize.toPrettyString(memorySize) + "!");
+                    throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
+                            + " Cannot acquire " + MemorySize.toPrettyString(memorySize) + "!");
                 }
 
                 offset = getOffset(address);
@@ -368,7 +363,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (ASSERTION_ENABLED) {
             return validateAndGetUsableSize(address);
         }
-        final long allocatedSize = getAllocatedSize(address);
+        long allocatedSize = getAllocatedSize(address);
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
@@ -381,7 +376,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
     @Override
     public final long validateAndGetUsableSize(long address) {
-        final long allocatedSize = validateAndGetAllocatedSize(address);
+        long allocatedSize = validateAndGetAllocatedSize(address);
         if (allocatedSize == SIZE_INVALID) {
             return SIZE_INVALID;
         }
@@ -444,10 +439,10 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     }
 
     public final String dump() {
-        StringBuilder s = new StringBuilder(1024);
-        s.append(memoryStats);
+        StringBuilder sb = new StringBuilder(STRING_BUILDER_DEFAULT_CAPACITY);
+        sb.append(memoryStats);
 
-        s.append(":: PoolingMemoryManager ::").append('\n');
+        sb.append(":: PoolingMemoryManager ::").append('\n');
         boolean hasQueue = false;
         for (AddressQueue queue : addressQueues) {
             int remaining = queue.remaining();
@@ -460,15 +455,15 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
                 }
                 if (queue.remaining() > 0) {
                     hasQueue = true;
-                    s.append("\tQueue[").append(MemorySize.toPrettyString(queue.getMemorySize()))
+                    sb.append("\tQueue[").append(MemorySize.toPrettyString(queue.getMemorySize()))
                             .append("]: ").append(queue.remaining()).append('\n');
                 }
             }
         }
         if (!hasQueue) {
-            s.append(" ALL QUEUES ARE EMPTY!").append('\n');
+            sb.append(" ALL QUEUES ARE EMPTY!").append('\n');
         }
-        return s.toString();
+        return sb.toString();
     }
 
     @Override
@@ -500,8 +495,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             long limit = memoryStats.getMaxMetadata();
             long usage = memoryStats.getUsedMetadata();
             if (usage + size > limit) {
-                throw new NativeOutOfMemoryError("System allocations limit exceeded! " +
-                        "Limit: " + MemorySize.toPrettyString(limit)
+                throw new NativeOutOfMemoryError("System allocations limit exceeded!"
+                        + " Limit: " + MemorySize.toPrettyString(limit)
                         + ", usage: " + MemorySize.toPrettyString(usage)
                         + ", requested: " + MemorySize.toPrettyString(size));
             }
@@ -533,8 +528,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
         private void checkAddress(long address, long size) {
             if (address == NULL_ADDRESS) {
-                throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
-                        "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+                throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
+                        + "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
             }
         }
     }

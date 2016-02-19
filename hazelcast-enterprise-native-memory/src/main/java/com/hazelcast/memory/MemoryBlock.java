@@ -10,14 +10,12 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
-/**
- * @author mdogan 12/10/13
- */
 public class MemoryBlock {
 
-    protected final MemoryAccessor memoryAccessor;
     protected long address = MemoryManager.NULL_ADDRESS;
     protected int size;
+
+    private final MemoryAccessor memoryAccessor;
 
     public MemoryBlock() {
         this.memoryAccessor = MEM;
@@ -40,14 +38,16 @@ public class MemoryBlock {
     }
 
     public final byte readByte(long offset) {
-        if (offset >= size || offset < 0) { // offset + 1 > size
+        // offset + 1 > size
+        if (offset >= size || offset < 0) {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + 1);
         }
         return memoryAccessor.getByte(address + offset);
     }
 
     public final void writeByte(long offset, byte value) {
-        if (offset >= size || offset < 0) { // offset + 1 > size
+        // offset + 1 > size
+        if (offset >= size || offset < 0) {
             throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + 1);
         }
         memoryAccessor.putByte(address + offset, value);
@@ -55,96 +55,84 @@ public class MemoryBlock {
 
     public final int readInt(long offset) {
         if ((offset + INT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + INT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + INT_SIZE_IN_BYTES);
         }
         return memoryAccessor.getInt(address + offset);
     }
 
     public final void writeInt(long offset, int value) {
         if ((offset + INT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + INT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + INT_SIZE_IN_BYTES);
         }
         memoryAccessor.putInt(address + offset, value);
     }
 
     public final long readLong(long offset) {
         if ((offset + LONG_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + LONG_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + LONG_SIZE_IN_BYTES);
         }
         return memoryAccessor.getLong(address + offset);
     }
 
     public final void writeLong(long offset, long value) {
         if ((offset + LONG_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + LONG_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + LONG_SIZE_IN_BYTES);
         }
         memoryAccessor.putLong(address + offset, value);
     }
 
     public final char readChar(long offset) {
         if ((offset + CHAR_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + CHAR_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + CHAR_SIZE_IN_BYTES);
         }
         return memoryAccessor.getChar(address + offset);
     }
 
     public final void writeChar(long offset, char value) {
         if ((offset + CHAR_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + CHAR_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + CHAR_SIZE_IN_BYTES);
         }
         memoryAccessor.putChar(address + offset, value);
     }
 
     public final double readDouble(long offset) {
         if ((offset + DOUBLE_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + DOUBLE_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + DOUBLE_SIZE_IN_BYTES);
         }
         return memoryAccessor.getDouble(address + offset);
     }
 
     public final void writeDouble(long offset, double value) {
         if ((offset + DOUBLE_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + DOUBLE_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + DOUBLE_SIZE_IN_BYTES);
         }
         memoryAccessor.putDouble(address + offset, value);
     }
 
     public final float readFloat(long offset) {
         if ((offset + FLOAT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + FLOAT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + FLOAT_SIZE_IN_BYTES);
         }
         return memoryAccessor.getFloat(address + offset);
     }
 
     public final void writeFloat(long offset, float value) {
         if ((offset + FLOAT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + FLOAT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + FLOAT_SIZE_IN_BYTES);
         }
         memoryAccessor.putFloat(address + offset, value);
     }
 
     public final short readShort(long offset) {
         if ((offset + SHORT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset
-                    + ", Length: " + SHORT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + SHORT_SIZE_IN_BYTES);
         }
         return memoryAccessor.getShort(address + offset);
     }
 
     public final void writeShort(long offset, short value) {
         if ((offset + SHORT_SIZE_IN_BYTES) > size || offset < 0) {
-            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: "
-                    + offset + ", Length: " + SHORT_SIZE_IN_BYTES);
+            throw new IndexOutOfBoundsException("Size: " + size + ", Offset: " + offset + ", Length: " + SHORT_SIZE_IN_BYTES);
         }
         memoryAccessor.putShort(address + offset, value);
     }
@@ -153,9 +141,9 @@ public class MemoryBlock {
      * Copies bytes from source byte-array to this MemoryBlock.
      *
      * @param destinationOffset offset in this MemoryBlock
-     * @param source source byte-array to copy from
-     * @param offset offset in source byte-array
-     * @param length number of bytes to copy
+     * @param source            source byte-array to copy from
+     * @param offset            offset in source byte-array
+     * @param length            number of bytes to copy
      * @throws IndexOutOfBoundsException
      */
     public final void copyFromByteArray(long destinationOffset, byte[] source, int offset, int length) {
@@ -166,15 +154,15 @@ public class MemoryBlock {
      * Copies bytes from source object to this MemoryBlock.
      *
      * @param destinationOffset offset in this MemoryBlock
-     * @param source source object to copy from
-     * @param offset offset in source object
-     * @param length number of bytes to copy
+     * @param source            source object to copy from
+     * @param offset            offset in source object
+     * @param length            number of bytes to copy
      * @throws IndexOutOfBoundsException
      */
     public final void copyFrom(long destinationOffset, Object source, long offset, int length) {
         if ((destinationOffset + length) > size || destinationOffset < 0 || offset < 0) {
-            throw new IndexOutOfBoundsException("Destination offset: " + destinationOffset
-                    + ", length: " + length + ", size: " + size);
+            throw new IndexOutOfBoundsException("Destination offset: " + destinationOffset + ", length: " + length
+                    + ", size: " + size);
         }
 
         long realAddress = address + destinationOffset;
@@ -191,9 +179,9 @@ public class MemoryBlock {
      * Copies bytes from this MemoryBlock to given byte-array.
      *
      * @param sourceOffset offset in this MemoryBlock
-     * @param destination destination byte-array to copy to
-     * @param offset offset in destination byte-array
-     * @param length number of bytes to copy
+     * @param destination  destination byte-array to copy to
+     * @param offset       offset in destination byte-array
+     * @param length       number of bytes to copy
      * @throws IndexOutOfBoundsException
      */
     public final void copyToByteArray(long sourceOffset, byte[] destination, int offset, int length) {
@@ -204,15 +192,14 @@ public class MemoryBlock {
      * Copies bytes from this MemoryBlock to given destination object.
      *
      * @param sourceOffset offset in this MemoryBlock
-     * @param destination destination object to copy to
-     * @param offset offset in destination object
-     * @param length number of bytes to copy
+     * @param destination  destination object to copy to
+     * @param offset       offset in destination object
+     * @param length       number of bytes to copy
      * @throws IndexOutOfBoundsException
      */
     public final void copyTo(long sourceOffset, Object destination, long offset, int length) {
-        if ((sourceOffset + length) > size || sourceOffset < 0  || offset < 0) {
-            throw new IndexOutOfBoundsException("Source offset: " + sourceOffset
-                    + ", length: " + length + ", size: " + size);
+        if ((sourceOffset + length) > size || sourceOffset < 0 || offset < 0) {
+            throw new IndexOutOfBoundsException("Source offset: " + sourceOffset + ", length: " + length + ", size: " + size);
         }
 
         long realAddress = address + sourceOffset;
@@ -275,10 +262,6 @@ public class MemoryBlock {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("MemoryBlock{");
-        sb.append("address=").append(address);
-        sb.append(", size=").append(size);
-        sb.append('}');
-        return sb.toString();
+        return "MemoryBlock{" + "address=" + address + ", size=" + size + '}';
     }
 }

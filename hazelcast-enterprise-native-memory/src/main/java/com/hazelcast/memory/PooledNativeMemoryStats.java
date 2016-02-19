@@ -2,16 +2,12 @@ package com.hazelcast.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author mdogan 10/02/14
- */
 public class PooledNativeMemoryStats extends NativeMemoryStats implements MemoryStats {
 
-    private final long maxMetadata;
-
+    private final AtomicLong usedNative = new AtomicLong();
     private final AtomicLong usedMetadata = new AtomicLong();
 
-    private final AtomicLong usedNative = new AtomicLong();
+    private final long maxMetadata;
 
     public PooledNativeMemoryStats(long maxNative, long maxMetadata) {
         super(maxNative);

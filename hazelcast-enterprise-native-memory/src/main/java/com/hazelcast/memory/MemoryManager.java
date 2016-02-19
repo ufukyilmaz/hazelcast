@@ -5,8 +5,6 @@ package com.hazelcast.memory;
  *
  * Additionally a Memory Manager implementation may keep created memory blocks in its own pool
  * instead of giving back to OS.
- *
- * @author mdogan 03/12/13
  */
 public interface MemoryManager extends MemoryAllocator {
 
@@ -132,5 +130,4 @@ public interface MemoryManager extends MemoryAllocator {
      * @return new sequence
      */
     long newSequence();
-
 }

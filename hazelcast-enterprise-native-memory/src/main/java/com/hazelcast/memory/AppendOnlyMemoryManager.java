@@ -12,10 +12,8 @@ import java.util.List;
 
 public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
-    // We are using `STANDARD` memory accessor because we internally guarantee that
-    // every memory access is aligned.
-    private static final MemoryAccessor MEMORY_ACCESSOR =
-            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+    // We are using `STANDARD` memory accessor because we internally guarantee that every memory access is aligned
+    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private long pointer;
 

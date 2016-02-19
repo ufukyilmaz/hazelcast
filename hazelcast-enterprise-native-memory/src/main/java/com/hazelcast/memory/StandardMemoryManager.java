@@ -1,9 +1,9 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -13,11 +13,11 @@ import com.hazelcast.util.function.LongLongConsumer;
 
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
-/**
- * @author mdogan 03/12/13
- */
 public final class StandardMemoryManager implements MemoryManager {
 
+    /**
+     * System property to enable debug mode of {@link StandardMemoryManager}.
+     */
     public static final String PROPERTY_DEBUG_ENABLED = "hazelcast.memory.manager.debug.enabled";
 
     // We are using `STANDARD` memory accessor because we internally guarantee that
@@ -25,7 +25,7 @@ public final class StandardMemoryManager implements MemoryManager {
     private static final MemoryAccessor MEMORY_ACCESSOR =
             MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
-    private final boolean DEBUG;
+    private final boolean isDebugEnabled;
 
     private final LibMalloc malloc;
     private final NativeMemoryStats memoryStats;
@@ -34,7 +34,7 @@ public final class StandardMemoryManager implements MemoryManager {
     private final Long2LongHashMap allocatedBlocks;
 
     public StandardMemoryManager(MemorySize cap) {
-        DEBUG = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
+        isDebugEnabled = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
 
         long size = cap.bytes();
         checkFreeMemory(size);
@@ -45,7 +45,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     StandardMemoryManager(LibMalloc malloc, NativeMemoryStats memoryStats) {
-        DEBUG = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
+        isDebugEnabled = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
 
         this.malloc = malloc;
         this.memoryStats = memoryStats;
@@ -54,7 +54,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     private Long2LongHashMap initAllocatedBlocks() {
-        if (DEBUG) {
+        if (isDebugEnabled) {
             return new Long2LongHashMap(NULL_ADDRESS);
         }
         return null;
@@ -66,7 +66,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public final long allocate(long size) {
+    public long allocate(long size) {
         assert size > 0 : "Size must be positive: " + size;
 
         memoryStats.checkAndAddCommittedNative(size);
@@ -75,7 +75,7 @@ public final class StandardMemoryManager implements MemoryManager {
             long address = malloc.malloc(size);
             checkNotNull(address, size);
 
-            if (DEBUG) {
+            if (isDebugEnabled) {
                 traceAllocation(address, size);
             }
 
@@ -102,7 +102,7 @@ public final class StandardMemoryManager implements MemoryManager {
             long newAddress = malloc.realloc(address, newSize);
             checkNotNull(newAddress, newSize);
 
-            if (DEBUG) {
+            if (isDebugEnabled) {
                 traceRelease(address, currentSize);
                 traceAllocation(newAddress, newSize);
             }
@@ -123,8 +123,8 @@ public final class StandardMemoryManager implements MemoryManager {
 
     protected static void checkNotNull(long address, long size) {
         if (address == NULL_ADDRESS) {
-            throw new NativeOutOfMemoryError("Not enough contiguous memory available! " +
-                    "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+            throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
+                    + " Cannot acquire " + MemorySize.toPrettyString(size) + "!");
         }
     }
 
@@ -136,11 +136,11 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public final void free(long address, long size) {
+    public void free(long address, long size) {
         assert address != NULL_ADDRESS : "Invalid address: " + address + ", size: " + size;
         assert size > 0 : "Invalid memory size: " + size + ", address: " + address;
 
-        if (DEBUG) {
+        if (isDebugEnabled) {
             traceRelease(address, size);
         }
 
@@ -176,7 +176,7 @@ public final class StandardMemoryManager implements MemoryManager {
 
     @Override
     public void destroy() {
-        if (DEBUG) {
+        if (isDebugEnabled) {
             allocatedBlocks.clear();
         }
     }
@@ -202,7 +202,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     public synchronized void forEachAllocatedBlock(LongLongConsumer consumer) {
-        if (DEBUG) {
+        if (isDebugEnabled) {
             allocatedBlocks.longForEach(consumer);
             return;
         }

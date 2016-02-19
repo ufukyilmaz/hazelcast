@@ -3,10 +3,7 @@ package com.hazelcast.memory;
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
-/**
- * @author mdogan 21/11/14
- */
-public final class FreeMemoryChecker {
+final class FreeMemoryChecker {
 
     private static final boolean ENABLED;
 

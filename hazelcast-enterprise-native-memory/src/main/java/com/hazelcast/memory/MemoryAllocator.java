@@ -4,8 +4,6 @@ import com.hazelcast.internal.memory.impl.LibMalloc;
 
 /**
  * Memory Allocator allocates/free memory blocks from/to OS like C malloc()/free()
- *
- * @author mdogan 03/12/13
  */
 public interface MemoryAllocator {
 
@@ -41,9 +39,9 @@ public interface MemoryAllocator {
      * If new size is greater than current size then contents
      * of the new part will be initialized to zero.
      *
-     * @param address address of memory block
+     * @param address     address of memory block
      * @param currentSize current size of memory block
-     * @param newSize requested size of memory block
+     * @param newSize     requested size of memory block
      * @return address of memory block
      * @throws NativeOutOfMemoryError if not enough memory is available
      */
@@ -56,8 +54,7 @@ public interface MemoryAllocator {
      * Complement of {@link #allocate(long)}.
      *
      * @param address address of memory block
-     * @param size size of memory block
+     * @param size    size of memory block
      */
     void free(long address, long size);
-
 }

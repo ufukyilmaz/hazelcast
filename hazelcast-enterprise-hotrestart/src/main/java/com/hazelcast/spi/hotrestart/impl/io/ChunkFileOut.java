@@ -16,7 +16,7 @@ import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_S
 /**
  * Encapsulates chunk file writing code.
  */
-public final class ChunkFileOut {
+public class ChunkFileOut {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
     public final File file;

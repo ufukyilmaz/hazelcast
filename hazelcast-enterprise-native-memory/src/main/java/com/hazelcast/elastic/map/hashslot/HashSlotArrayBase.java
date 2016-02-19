@@ -1,11 +1,11 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
@@ -15,7 +15,6 @@ import static com.hazelcast.util.QuickMath.modPowerOfTwo;
  */
 abstract class HashSlotArrayBase {
 
-    protected static final MemoryAccessor MEM = MemoryAccessor.MEM;
     protected static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
     private static final int VALUE_LENGTH_GRANULARITY = 8;
@@ -236,11 +235,11 @@ abstract class HashSlotArrayBase {
             }
             // Shift key/value pair.
             putKey(slotPrev, key1OfSlot(slotCurr), key2OfSlot(slotCurr));
-            MEM.copyMemory(valueAddrOfSlot(slotCurr), valueAddrOfSlot(slotPrev), valueLength);
+            AMEM.copyMemory(valueAddrOfSlot(slotCurr), valueAddrOfSlot(slotPrev), valueLength);
         }
         final long slotBase = slotBase(slotPrev);
-        MEM.setMemory(slotBase, slotLength, (byte) 0);
-        MEM.putLong(slotBase + offsetOfUnassignedSentinel, unassignedSentinel);
+        AMEM.setMemory(slotBase, slotLength, (byte) 0);
+        AMEM.putLong(slotBase + offsetOfUnassignedSentinel, unassignedSentinel);
     }
 
     protected final void ensureLive() {
@@ -270,8 +269,8 @@ abstract class HashSlotArrayBase {
 
     protected void putKey(long slot, long key1, long key2) {
         final long slotBase = slotBase(baseAddress, slot);
-        MEM.putLong(slotBase + KEY_1_OFFSET, key1);
-        MEM.putLong(slotBase + KEY_2_OFFSET, key2);
+        AMEM.putLong(slotBase + KEY_1_OFFSET, key1);
+        AMEM.putLong(slotBase + KEY_2_OFFSET, key2);
     }
 
 
@@ -282,7 +281,7 @@ abstract class HashSlotArrayBase {
     }
 
     private boolean isAssigned(long baseAddr, long slot) {
-        return MEM.getLong(slotBase(baseAddr, slot) + offsetOfUnassignedSentinel) != unassignedSentinel;
+        return AMEM.getLong(slotBase(baseAddr, slot) + offsetOfUnassignedSentinel) != unassignedSentinel;
     }
 
     private boolean isAssigned(long slot) {
@@ -310,14 +309,14 @@ abstract class HashSlotArrayBase {
     }
 
     private void markAllUnassigned() {
-        MEM.setMemory(baseAddress, capacity * slotLength, (byte) 0);
+        AMEM.setMemory(baseAddress, capacity * slotLength, (byte) 0);
         if (unassignedSentinel == 0) {
             return;
         }
         final long addrOfFirstSentinel = baseAddress + offsetOfUnassignedSentinel;
         final int stride = slotLength;
         for (long i = 0; i < capacity; i++) {
-            MEM.putLong(addrOfFirstSentinel + stride * i, unassignedSentinel);
+            AMEM.putLong(addrOfFirstSentinel + stride * i, unassignedSentinel);
         }
     }
 
@@ -342,7 +341,7 @@ abstract class HashSlotArrayBase {
                     newSlot = (newSlot + 1) & mask;
                 }
                 putKey(newSlot, key1, key2);
-                MEM.copyMemory(valueAddress, valueAddrOfSlot(newSlot), valueLength);
+                AMEM.copyMemory(valueAddress, valueAddrOfSlot(newSlot), valueLength);
             }
         }
         malloc.free(oldAddress, oldCapacity * slotLength);
@@ -352,11 +351,11 @@ abstract class HashSlotArrayBase {
     // These public static methods are used by subclasses and also by Hot Restart code
 
     public static long key1At(long slotBaseAddr) {
-        return MEM.getLong(slotBaseAddr + KEY_1_OFFSET);
+        return AMEM.getLong(slotBaseAddr + KEY_1_OFFSET);
     }
 
     public static long key2At(long slotBaseAddr) {
-        return MEM.getLong(slotBaseAddr + KEY_2_OFFSET);
+        return AMEM.getLong(slotBaseAddr + KEY_2_OFFSET);
     }
 
 

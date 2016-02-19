@@ -8,6 +8,7 @@ import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
  * Represents API for sorted off-heap key-value storage
  */
 public interface OffHeapKeyValueSortedStorage extends OffHeapKeyValueStorage {
+
     /**
      * @param direction -
      *                  ASC - 1;

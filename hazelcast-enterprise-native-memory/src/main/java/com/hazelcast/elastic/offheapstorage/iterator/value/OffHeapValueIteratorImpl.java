@@ -1,13 +1,14 @@
 package com.hazelcast.elastic.offheapstorage.iterator.value;
 
-import java.util.NoSuchElementException;
-
 import com.hazelcast.elastic.offheapstorage.OffHeapKeyValueStorage;
+
+import java.util.NoSuchElementException;
 
 /**
  * Iterator over values in off-heap storage.
  */
 public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
+
     private final OffHeapKeyValueStorage offHeapRedBlackTree;
 
     private long nextValueEntryPointer;
@@ -18,11 +19,11 @@ public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
 
     @Override
     public boolean hasNext() {
-        if (this.offHeapRedBlackTree == null) {
+        if (offHeapRedBlackTree == null) {
             return false;
         }
 
-        return this.nextValueEntryPointer != 0L;
+        return nextValueEntryPointer != 0L;
     }
 
     @Override
@@ -31,22 +32,22 @@ public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
             throw new NoSuchElementException("No next element for iteration");
         }
 
-        long nextPointer = this.nextValueEntryPointer;
-        this.nextValueEntryPointer = this.offHeapRedBlackTree.getNextValueEntryAddress(this.nextValueEntryPointer);
+        long nextPointer = nextValueEntryPointer;
+        nextValueEntryPointer = offHeapRedBlackTree.getNextValueEntryAddress(nextValueEntryPointer);
         return nextPointer;
     }
 
     @Override
     public void reset(long keyEntryPointer) {
-        if (this.offHeapRedBlackTree == null) {
-            this.nextValueEntryPointer = 0L;
+        if (offHeapRedBlackTree == null) {
+            nextValueEntryPointer = 0L;
             return;
         }
 
         if (keyEntryPointer == 0L) {
-            this.nextValueEntryPointer = 0L;
+            nextValueEntryPointer = 0L;
         } else {
-            this.nextValueEntryPointer = this.offHeapRedBlackTree.getValueEntryAddress(keyEntryPointer);
+            nextValueEntryPointer = offHeapRedBlackTree.getValueEntryAddress(keyEntryPointer);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.hazelcast.elastic.map.hashslot;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 /**
@@ -71,6 +72,6 @@ public class HashSlotArrayImpl extends HashSlotArrayBase implements HashSlotArra
     }
 
     @Override protected void putKey(long slot, long key, long ignored) {
-        MEM.putLong(slotBase(slot) + KEY_1_OFFSET, key);
+        AMEM.putLong(slotBase(slot) + KEY_1_OFFSET, key);
     }
 }

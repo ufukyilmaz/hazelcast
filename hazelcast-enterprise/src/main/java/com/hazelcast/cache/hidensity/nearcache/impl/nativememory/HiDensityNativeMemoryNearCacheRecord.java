@@ -3,9 +3,10 @@ package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
-import com.hazelcast.nio.Bits;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.nio.Bits;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 /**
  * @author sozal 26/10/14
@@ -14,17 +15,17 @@ public class HiDensityNativeMemoryNearCacheRecord
         extends HiDensityNearCacheRecord {
 
     /**
-     * Header size of native memory based near-cache record
+     * Size of a HD near-cache record
+     */
+    public static final int SIZE;
+    /**
+     * Size of a HD near-cache record's header
      */
     public static final int HEADER_SIZE = 8;
     /**
-     * Value offset of native memory based near-cache record
+     * Location of the value pointer in a HD near-cache record
      */
     public static final int VALUE_OFFSET;
-    /**
-     * Size of native memory based near-cache record
-     */
-    public static final int SIZE;
 
     static final int CREATION_TIME_OFFSET = 0;
     static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
@@ -228,14 +229,8 @@ public class HiDensityNativeMemoryNearCacheRecord
 
         HiDensityNativeMemoryNearCacheRecord record = (HiDensityNativeMemoryNearCacheRecord) o;
 
-        if (address != record.address) {
-            return false;
-        }
-        if (size != record.size) {
-            return false;
-        }
+        return address == record.address && size == record.size;
 
-        return true;
     }
 
     @Override

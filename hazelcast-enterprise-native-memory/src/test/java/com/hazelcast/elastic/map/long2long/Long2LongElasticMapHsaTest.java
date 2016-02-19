@@ -11,6 +11,7 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,27 +50,15 @@ public class Long2LongElasticMapHsaTest {
         memoryManager.destroy();
     }
 
-    private long newKey() {
-        return random.nextLong();
-    }
-
-    private long newKey(int keyRange) {
-        return (long) random.nextInt(keyRange);
-    }
-
-    private long newValue() {
-        return random.nextInt(Integer.MAX_VALUE) + 1;
-    }
-
     @Test
     public void testPut() {
         long key = newKey();
         long value = newValue();
-        assertEquals(MISSING_VALUE, map.put(key, value));
+        assertEqualsKV(MISSING_VALUE, map.put(key, value), key, value);
 
         long newValue = newValue();
         long oldValue = map.put(key, newValue);
-        assertEquals(value, oldValue);
+        assertEqualsKV(value, oldValue, key, value);
     }
 
     @Test
@@ -79,14 +68,14 @@ public class Long2LongElasticMapHsaTest {
         map.put(key, value);
 
         long currentValue = map.get(key);
-        assertEquals(value, currentValue);
+        assertEqualsKV(value, currentValue, key, value);
     }
 
     @Test
     public void testPutIfAbsent_success() {
         long key = newKey();
         long value = newValue();
-        assertEquals(MISSING_VALUE, map.putIfAbsent(key, value));
+        assertEqualsKV(MISSING_VALUE, map.putIfAbsent(key, value), key, value);
     }
 
     @Test
@@ -96,7 +85,7 @@ public class Long2LongElasticMapHsaTest {
         map.put(key, value);
 
         long newValue = newValue();
-        assertEquals(value, map.putIfAbsent(key, newValue));
+        assertEqualsKV(value, map.putIfAbsent(key, newValue), key, value);
     }
 
     @Test
@@ -123,12 +112,12 @@ public class Long2LongElasticMapHsaTest {
         long key = newKey();
         long value = newValue();
 
-        assertEquals(MISSING_VALUE, map.replace(key, value));
+        assertEqualsKV(MISSING_VALUE, map.replace(key, value), key, value);
 
         map.put(key, value);
 
         long newValue = newValue();
-        assertEquals(value, map.replace(key, newValue));
+        assertEqualsKV(value, map.replace(key, newValue), key, value);
     }
 
     @Test
@@ -137,16 +126,16 @@ public class Long2LongElasticMapHsaTest {
         long value = newValue();
         map.put(key, value);
 
-        long newValue = newValue();
-        assertTrue(map.replace(key, value, newValue));
+        long newValue = value + 1;
+        assertTrueKV(map.replace(key, value, newValue), key, value);
     }
 
     @Test
     public void testReplace_if_same_not_exist() {
         long key = newKey();
         long value = newValue();
-        long newValue = newValue();
-        assertFalse(map.replace(key, value, newValue));
+        long newValue = value + 1;
+        assertFalseKV(map.replace(key, value, newValue), key, value);
     }
 
     @Test
@@ -156,20 +145,20 @@ public class Long2LongElasticMapHsaTest {
         map.put(key, value);
 
         long wrongValue = value + 1;
-        long newValue = newValue();
-        assertFalse(map.replace(key, wrongValue, newValue));
+        long newValue = value + 2;
+        assertFalseKV(map.replace(key, wrongValue, newValue), key, newValue);
     }
 
     @Test
     public void testRemove() {
         long key = newKey();
-        assertEquals(MISSING_VALUE, map.remove(key));
+        assertEqualsKV(MISSING_VALUE, map.remove(key), key, 0);
 
         long value = newValue();
         map.put(key, value);
 
         long oldValue = map.remove(key);
-        assertEquals(value, oldValue);
+        assertEqualsKV(value, oldValue, key, value);
     }
 
     @Test
@@ -178,14 +167,14 @@ public class Long2LongElasticMapHsaTest {
         long value = newValue();
         map.put(key, value);
 
-        assertTrue(map.remove(key, value));
+        assertTrueKV(map.remove(key, value), key, value);
     }
 
     @Test
     public void testRemove_if_same_not_exist() {
         long key = newKey();
         long value = newValue();
-        assertFalse(map.remove(key, value));
+        assertFalseKV(map.remove(key, value), key, value);
     }
 
     @Test
@@ -195,13 +184,13 @@ public class Long2LongElasticMapHsaTest {
         map.put(key, value);
 
         long wrongValue = value + 1;
-        assertFalse(map.remove(key, wrongValue));
+        assertFalseKV(map.remove(key, wrongValue), key, value);
     }
 
     @Test
     public void testContainsKey_fail() throws Exception {
         long key = newKey();
-        assertFalse(map.containsKey(key));
+        assertFalseKV(map.containsKey(key), key, 0);
     }
 
     @Test
@@ -210,7 +199,7 @@ public class Long2LongElasticMapHsaTest {
         long value = newValue();
         map.put(key, value);
 
-        assertTrue(map.containsKey(key));
+        assertTrueKV(map.containsKey(key), key, value);
     }
 
     @Test
@@ -220,7 +209,7 @@ public class Long2LongElasticMapHsaTest {
         map.put(key, value);
 
         long oldValue = map.put(key, value);
-        assertEquals(value, oldValue);
+        assertEqualsKV(value, oldValue, key, value);
     }
 
     @Test(expected = AssertionError.class)
@@ -271,25 +260,23 @@ public class Long2LongElasticMapHsaTest {
 
         int expected = 100;
         for (long i = 0; i < expected; i++) {
-            long key = i;
             long value = newValue();
-            map.put(key, value);
+            map.put(i, value);
         }
 
-        assertEquals(expected, map.size());
+        assertEquals(map.toString(), expected, map.size());
     }
 
     @Test
     public void testClear() {
         for (long i = 0; i < 100; i++) {
-            long key = i;
             long value = newValue();
-            map.put(key, value);
+            map.put(i, value);
         }
 
         map.clear();
         assertEquals(0, map.size());
-        assertTrue(map.isEmpty());
+        assertTrue(map.toString(), map.isEmpty());
     }
 
     @Test
@@ -300,7 +287,7 @@ public class Long2LongElasticMapHsaTest {
         long value = newValue();
         map.put(key, value);
 
-        assertFalse(map.isEmpty());
+        assertFalseKV(map.isEmpty(), key, value);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -428,7 +415,6 @@ public class Long2LongElasticMapHsaTest {
     @Test
     public void testMemoryLeak_whenCapacityExpandFails() {
         while (true) {
-            // key is on-heap
             long key = newKey();
             long value = newValue();
             try {
@@ -444,4 +430,27 @@ public class Long2LongElasticMapHsaTest {
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
     }
 
+    private long newKey() {
+        return random.nextLong();
+    }
+
+    private long newKey(int keyRange) {
+        return (long) random.nextInt(keyRange);
+    }
+
+    private long newValue() {
+        return random.nextInt(Integer.MAX_VALUE) + 1L;
+    }
+
+    private static void assertEqualsKV(long expected, long actual, long key, long value) {
+        Assert.assertEquals(String.format("key %d value %d", key, value), expected, actual);
+    }
+
+    private static void assertTrueKV(boolean actual, long key, long value) {
+        Assert.assertTrue(String.format("key %d value %d", key, value), actual);
+    }
+
+    private static void assertFalseKV(boolean actual, long key, long value) {
+        Assert.assertFalse(String.format("key %d value %d", key, value), actual);
+    }
 }

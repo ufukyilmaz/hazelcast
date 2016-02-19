@@ -20,7 +20,7 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
@@ -45,7 +45,7 @@ public class HDLocalMapStatsOperation extends HDMapOperation implements Partitio
 
     @Override
     protected void runInternal() {
-        InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+        IPartitionService partitionService = getNodeEngine().getPartitionService();
         boolean local = partitionService.getPartition(getPartitionId()).isLocal();
 
         if (recordStore == null || recordStore.size() == 0) {

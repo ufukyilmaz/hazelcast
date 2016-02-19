@@ -21,7 +21,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.map.impl.operation.HDLocalMapStatsOperation;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.Address;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -48,7 +48,7 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
 
     private final NodeEngine nodeEngine;
     private final OperationService operationService;
-    private final InternalPartitionService partitionService;
+    private final IPartitionService partitionService;
     private final Address thisAddress;
     private final int partitionCount;
 

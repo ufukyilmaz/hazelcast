@@ -14,8 +14,8 @@ import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PublisherAccumulatorHandler;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
-import com.hazelcast.partition.InternalPartition;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartition;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.PartitionAwareOperation;
@@ -93,8 +93,8 @@ public class AccumulatorConsumerOperation extends AbstractOperation implements P
 
     private boolean isLocal() {
         NodeEngine nodeEngine = getNodeEngine();
-        InternalPartitionService partitionService = nodeEngine.getPartitionService();
-        InternalPartition partition = partitionService.getPartition(getPartitionId());
+        IPartitionService partitionService = nodeEngine.getPartitionService();
+        IPartition partition = partitionService.getPartition(getPartitionId());
         return partition.isLocal();
     }
 

@@ -31,8 +31,10 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.SlowTest;
@@ -40,8 +42,10 @@ import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import javax.cache.Cache;
@@ -81,6 +85,9 @@ import static org.junit.Assert.fail;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
+
+    @Rule
+    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private static final int KEY_RANGE = 10000000;
     private static final int MAX_VALUE_SIZE = 1 << 12; // Up to 4K
@@ -134,11 +141,13 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     @Test
+    @RequireAssertEnabled
     public void testNativeMemoryLeakWithoutExpiryPolicy() throws InterruptedException {
         testNativeMemoryLeakInternal(null);
     }
 
     @Test
+    @RequireAssertEnabled
     public void testNativeMemoryLeakWithExpiryPolicy() throws InterruptedException {
         testNativeMemoryLeakInternal(new CacheExpiryPolicyFactory());
     }
@@ -147,7 +156,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         final Config config = new Config();
         // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
         // Due to a race condition in object destruction, it can happen that the sync operation takes place
-        // while a cache is being destroyed which can result in a memory leak. 
+        // while a cache is being destroyed which can result in a memory leak.
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, String.valueOf(Integer.MAX_VALUE));
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig
@@ -158,7 +167,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
-        
+
         warmUpPartitions(hz, hz2);
 
         CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
@@ -558,7 +567,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         }
 
     }
-    
+
     private static class CacheMemorySizeAssertTask extends AssertTask {
 
         private final HazelcastInstance instance;
@@ -570,7 +579,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         private CacheMemorySizeAssertTask(HazelcastInstance instance, String cacheNameWithPrefix) {
             this.instance = instance;
             this.cacheNameWithPrefix = cacheNameWithPrefix;
-            
+
             NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);
             this.partitionCount = nodeEngine.getPartitionService().getPartitionCount();
             this.operationService = nodeEngine.getOperationService();
@@ -583,13 +592,13 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
             final CountDownLatch latch = new CountDownLatch(partitionCount);
 
             for (int i = 0; i < partitionCount; i++) {
-                PartitionedCacheMemorySizeTask cacheMemorySizeTask = 
+                PartitionedCacheMemorySizeTask cacheMemorySizeTask =
                     new PartitionedCacheMemorySizeTask(cacheService, cacheNameWithPrefix, i, actualMemorySize, latch);
                 operationService.execute(cacheMemorySizeTask);
             }
 
             assertTrue(latch.await(30, TimeUnit.SECONDS));
-            
+
             final long expectedMemorySize = cacheService.getOrCreateHiDensityCacheInfo(cacheNameWithPrefix).getUsedMemory();
             assertEquals("Expected and actual memory usage sizes are not equal on " + instance,
                          expectedMemorySize, actualMemorySize.get());
@@ -681,7 +690,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
             public void accept(long key, long value) {
                 if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
                     HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println((++k) + ". Record Address: " + key 
+                    System.err.println((++k) + ". Record Address: " + key
                                         + " (Value Address: " + record.getValueAddress() + ")");
                 } else if (value == 13) {
                     System.err.println((++k) + ". Key Address: " + key);
@@ -689,7 +698,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                     System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
                 }
             }
-            
+
         });
     }
 

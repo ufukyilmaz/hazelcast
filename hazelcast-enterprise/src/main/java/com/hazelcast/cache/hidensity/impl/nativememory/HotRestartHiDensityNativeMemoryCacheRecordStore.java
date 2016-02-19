@@ -26,9 +26,9 @@ import com.hazelcast.util.Clock;
 
 import java.util.Iterator;
 
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
-import static java.lang.Math.max;
 
 /**
  * NativeMemory cache record store with Hot Restart support.
@@ -54,15 +54,18 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     private HiDensityNativeMemoryCacheRecord fetchedRecordDuringRestart;
 
-    public HotRestartHiDensityNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
-                                                           NodeEngine nodeEngine, boolean fsync, long keyPrefix) {
+    public HotRestartHiDensityNativeMemoryCacheRecordStore(
+            int partitionId, String name, EnterpriseCacheService cacheService,
+            NodeEngine nodeEngine, boolean fsync, long keyPrefix
+    ) {
         super(partitionId, name, cacheService, nodeEngine);
         this.fsync = fsync;
         this.prefix = keyPrefix;
         this.hotRestartStore = cacheService.offHeapHotRestartStoreForCurrentThread();
         assert hotRestartStore != null;
 
-        HotRestartHiDensityNativeMemoryCacheRecordMap recordMap = (HotRestartHiDensityNativeMemoryCacheRecordMap) records;
+        HotRestartHiDensityNativeMemoryCacheRecordMap recordMap =
+                (HotRestartHiDensityNativeMemoryCacheRecordMap) records;
         recordMapMutex = recordMap.getMutex();
         initMap(recordMap);
     }
@@ -85,50 +88,36 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         // since there is no allocated native memory yet,
         // there is no need to free allocated memory.
 
-        int minFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
-        boolean skipConfiguredMaxSizeChecker = false;
-
+        long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+        int hotRestartMinFreePercentage = getHotRestartFreeNativeMemoryPercentage();
         if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
-            // TODO
-            // Check is done while creating cache record store.
-            // Should we do it while creating cache (proxy) or somewhere else?
-
-            if (size < minFreeNativeMemoryPercentage) {
-                throw new IllegalArgumentException("Free native memory percentage cannot be less than "
-                        + minFreeNativeMemoryPercentage + "%");
+            if (size < hotRestartMinFreePercentage) {
+                throw new IllegalArgumentException(String.format(
+                    "There is a global limit on the minimum free native memory, settable by the system property"
+                  + " %s, whose value is currently %d percent. The cache %s has Hot Restart enabled, but is configured"
+                  + " with %d percent, lower than the allowed minimum.",
+                    SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreePercentage,
+                    getConfig().getNameWithPrefix(), size)
+                );
             }
-
-            /*
-             * We will also apply `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
-             * with size `minFreeNativeMemoryPercentage (20%)` and
-             * configuring `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy must be bigger than
-             * `minFreeNativeMemoryPercentage (20%)`. So no need to two different
-             * `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy here.
-             * Therefore skipping configured `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy and
-             * using default `FREE_NATIVE_MEMORY_PERCENTAGE` based max-size policy
-             * with size `minFreeNativeMemoryPercentage (20%)`.
-             */
-            skipConfiguredMaxSizeChecker = true;
-            minFreeNativeMemoryPercentage = max(minFreeNativeMemoryPercentage, size);
-
-            // TODO Should we log here about skipping the configured one.
-            // But since this log is printed for every partition of cache, it might cause lots of log message.
-        }
-
-        final long maxNativeMemory =
-                ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                        .getMemoryManager().getMemoryStats().getMaxNativeMemory();
-        MaxSizeChecker freeNativeMemoryMaxSizeChecker =
-                new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
-                        memoryManager, minFreeNativeMemoryPercentage, maxNativeMemory);
-        if (skipConfiguredMaxSizeChecker) {
-            return freeNativeMemoryMaxSizeChecker;
+             // Invariants at this point:
+             //
+             // - this cache is configured with the FREE_NATIVE_MEMORY_PERCENTAGE policy;
+             // - this cache's configured percentage is at least as high as the global setting
+             //   imposed by the Hot Restart configuration.
+             //
+             // Therefore no need to set up a composite policy checker, only the local one is enough.
+            return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
         } else {
-            MaxSizeChecker maxSizeChecker = super.createCacheMaxSizeChecker(size, maxSizePolicy);
+            // The configured policy is other than FREE_NATIVE_MEMORY_PERCENTAGE,
+            // we must additionally apply the free memory check that meets Hot Restart's demands.
+            // Therefore create a composite checker with both checks.
             return CompositeMaxSizeChecker.newCompositeMaxSizeChecker(
                     CompositeMaxSizeChecker.CompositionOperator.OR,
-                    maxSizeChecker,
-                    freeNativeMemoryMaxSizeChecker);
+                    super.createCacheMaxSizeChecker(size, maxSizePolicy),
+                    new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
+                            memoryManager, hotRestartMinFreePercentage, maxNativeMemory));
         }
     }
 

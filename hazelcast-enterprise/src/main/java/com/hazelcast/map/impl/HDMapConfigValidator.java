@@ -23,6 +23,7 @@ import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static java.util.EnumSet.complementOf;
 
@@ -112,11 +113,17 @@ public final class HDMapConfigValidator {
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
 
         int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
+        final int localSizeConfig = maxSizeConfig.getSize();
         if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
-                && maxSizeConfig.getSize() < hotRestartMinFreeNativeMemoryPercentage) {
-            throw new IllegalArgumentException(FREE_NATIVE_MEMORY_PERCENTAGE + " maximum size policy cannot be smaller than "
-                    + hotRestartMinFreeNativeMemoryPercentage + " when hot-restart is enabled for map "
-                    + mapConfig.getName());
+                && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage
+        ) {
+            throw new IllegalArgumentException(String.format(
+                    "There is a global limit on the minimum free native memory, settable by the system property"
+                  + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
+                  + " with %d percent, lower than the allowed minimum.",
+                    SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreeNativeMemoryPercentage,
+                    mapConfig.getName(), localSizeConfig)
+            );
         }
     }
 

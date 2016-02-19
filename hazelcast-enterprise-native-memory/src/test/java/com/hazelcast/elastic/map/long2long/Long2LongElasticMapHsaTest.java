@@ -15,6 +15,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
@@ -30,7 +31,7 @@ public class Long2LongElasticMapHsaTest {
     private static final long MISSING_VALUE = -1L;
 
     @Rule
-    public final AssertEnabledFilterRule assertEnabledRule = new AssertEnabledFilterRule();
+    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final Random random = new Random();
     private MemoryManager memoryManager;
@@ -270,8 +271,9 @@ public class Long2LongElasticMapHsaTest {
 
         int expected = 100;
         for (long i = 0; i < expected; i++) {
+            long key = i;
             long value = newValue();
-            map.put(i, value);
+            map.put(key, value);
         }
 
         assertEquals(expected, map.size());
@@ -280,8 +282,9 @@ public class Long2LongElasticMapHsaTest {
     @Test
     public void testClear() {
         for (long i = 0; i < 100; i++) {
+            long key = i;
             long value = newValue();
-            map.put(i, value);
+            map.put(key, value);
         }
 
         map.clear();

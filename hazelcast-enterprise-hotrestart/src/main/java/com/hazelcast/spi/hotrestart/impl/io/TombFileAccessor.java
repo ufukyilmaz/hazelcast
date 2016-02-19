@@ -12,7 +12,7 @@ import java.nio.channels.FileChannel;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 public final class TombFileAccessor implements Closeable {
-    private final MappedByteBuffer buf;
+    private MappedByteBuffer buf;
 
     private long recordSeq;
     private long keyPrefix;
@@ -22,7 +22,8 @@ public final class TombFileAccessor implements Closeable {
     public TombFileAccessor(File tombFile) {
         try {
             final FileChannel chan = new FileInputStream(tombFile).getChannel();
-            this.buf = chan.map(READ_ONLY, 0, chan.size());
+            long size = chan.size();
+            this.buf = size > 0 ? chan.map(READ_ONLY, 0, size) : null;
             chan.close();
         } catch (IOException e) {
             throw new HotRestartException("Failed to create tombstone file accessor", e);
@@ -30,6 +31,7 @@ public final class TombFileAccessor implements Closeable {
     }
 
     public int loadAndCopyTombstone(int pos, ChunkFileOut out) throws IOException {
+        assert buf != null : "tombstone chunk is empty or accessor has been closed";
         buf.position(pos);
         recordSeq = buf.getLong();
         keyPrefix = buf.getLong();
@@ -52,6 +54,9 @@ public final class TombFileAccessor implements Closeable {
     }
 
     public void close() {
-        ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
+        if (buf != null) {
+            ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
+        }
+        buf = null;
     }
 }

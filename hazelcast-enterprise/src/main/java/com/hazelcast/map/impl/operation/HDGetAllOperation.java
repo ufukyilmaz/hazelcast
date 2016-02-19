@@ -21,7 +21,7 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.ReadonlyOperation;
 
@@ -47,7 +47,7 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
 
     @Override
     protected void runInternal() {
-        InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+        IPartitionService partitionService = getNodeEngine().getPartitionService();
         int partitionId = getPartitionId();
         recordStore = mapService.getMapServiceContext().getRecordStore(partitionId, name);
         Set<Data> partitionKeySet = new HashSet<Data>(keys.size());

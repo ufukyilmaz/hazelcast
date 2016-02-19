@@ -1,11 +1,15 @@
 package com.hazelcast.elastic;
 
+import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
@@ -15,6 +19,9 @@ import static org.junit.Assert.assertEquals;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class CapacityUtilTest extends HazelcastTestSupport {
+
+    @Rule
+    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     @Test
     public void testConstructor() throws Exception {
@@ -61,6 +68,7 @@ public class CapacityUtilTest extends HazelcastTestSupport {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testNextCapacity_withInt_shouldThrowIfCapacityNoPowerOfTwo() {
         int capacity = 23;
 
@@ -93,6 +101,7 @@ public class CapacityUtilTest extends HazelcastTestSupport {
     }
 
     @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testNextCapacity_withLong_shouldThrowIfCapacityNoPowerOfTwo() {
         long capacity = 23;
 

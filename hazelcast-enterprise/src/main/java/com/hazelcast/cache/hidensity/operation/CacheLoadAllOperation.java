@@ -5,7 +5,7 @@ import com.hazelcast.cache.impl.CacheClearResponse;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.InternalPartitionService;
+import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
@@ -40,7 +40,7 @@ public class CacheLoadAllOperation
 
     @Override
     protected void runInternal() throws Exception {
-        final InternalPartitionService partitionService = getNodeEngine().getPartitionService();
+        final IPartitionService partitionService = getNodeEngine().getPartitionService();
 
         Set<Data> filteredKeys = new HashSet<Data>();
         if (keys != null) {

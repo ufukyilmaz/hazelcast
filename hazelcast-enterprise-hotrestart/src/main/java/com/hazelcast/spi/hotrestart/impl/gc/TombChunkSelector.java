@@ -25,6 +25,12 @@ final class TombChunkSelector {
     }
 
     private Collection<StableTombChunk> select(Collection<StableChunk> allChunks) {
+        final List<StableTombChunk> candidates = preselectCandidates(allChunks);
+        sortCandidates(candidates);
+        return selectChunksForCollection(candidates);
+    }
+
+    private List<StableTombChunk> preselectCandidates(Collection<StableChunk> allChunks) {
         final List<StableTombChunk> candidates = new ArrayList<StableTombChunk>();
         for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableTombChunk)) {
@@ -37,8 +43,15 @@ final class TombChunkSelector {
             }
         }
         mc.catchupNow();
+        return candidates;
+    }
+
+    private void sortCandidates(List<StableTombChunk> candidates) {
         Collections.sort(candidates, BY_BENEFIT_COST_DESC);
         mc.catchupNow();
+    }
+
+    private Collection<StableTombChunk> selectChunksForCollection(List<StableTombChunk> candidates) {
         final List<StableTombChunk> selected = new ArrayList<StableTombChunk>();
         final long minSize = tombChunkSizeLimit() / 2;
         long size = 0;

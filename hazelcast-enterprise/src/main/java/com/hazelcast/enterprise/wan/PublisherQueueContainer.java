@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
-import com.hazelcast.partition.InternalPartition;
+import com.hazelcast.partition.IPartition;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ public class PublisherQueueContainer {
             = new ConcurrentHashMap<Integer, PartitionWanEventContainer>();
 
     public PublisherQueueContainer(Node node) {
-        for (InternalPartition partition : node.getPartitionService().getPartitions()) {
+        for (IPartition partition : node.getPartitionService().getPartitions()) {
             publisherEventQueueMap.put(partition.getPartitionId(), new PartitionWanEventContainer());
         }
     }

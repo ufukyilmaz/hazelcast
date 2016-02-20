@@ -8,7 +8,7 @@ import static java.lang.Integer.getInteger;
  */
 public final class HotRestartEvictionHelper {
 
-    private static final int DEFAULT_HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE = 30;
+    private static final int DEFAULT_HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE = 15;
 
     private HotRestartEvictionHelper() {
     }

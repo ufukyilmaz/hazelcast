@@ -59,19 +59,19 @@ public abstract class Chunk implements Disposable {
         this.needsDismissing = from.needsDismissing();
     }
 
+    public Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {
+        this.seq = seq;
+        this.records = records;
+        this.liveRecordCount = liveRecordCount;
+        this.garbage = garbage;
+    }
+
     public final boolean needsDismissing() {
         return needsDismissing;
     }
 
     public void needsDismissing(boolean needsDismissing) {
         this.needsDismissing = needsDismissing;
-    }
-
-    public Chunk(long seq, RecordMap records, int liveRecordCount, long garbage) {
-        this.seq = seq;
-        this.records = records;
-        this.liveRecordCount = liveRecordCount;
-        this.garbage = garbage;
     }
 
     public abstract long size();

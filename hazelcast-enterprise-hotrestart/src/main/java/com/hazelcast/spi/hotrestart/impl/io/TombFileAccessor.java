@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.Closeable;
 import java.io.DataOutputStream;
@@ -59,7 +58,7 @@ public final class TombFileAccessor implements Closeable {
     }
 
     public void close() {
-        ((DirectBuffer) buf).cleaner().clean();
+        ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
         try {
             chan.close();
         } catch (IOException e) {

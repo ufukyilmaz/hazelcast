@@ -219,7 +219,7 @@ final class Evacuator {
             final boolean takeLeft = currLeft < rightStart
                     && (currRight >= rightEnd || from.get(currLeft).liveSeq() <= from.get(currRight).liveSeq());
             to.set(j, from.get(takeLeft ? currLeft++ : currRight++));
-            mc.catchupAsNeeded(1 << 18);
+            mc.catchupAsNeeded();
         }
     }
 }

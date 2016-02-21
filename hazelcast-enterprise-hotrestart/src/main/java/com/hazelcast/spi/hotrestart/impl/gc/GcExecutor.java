@@ -2,13 +2,11 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -182,13 +180,13 @@ public final class GcExecutor {
             throw new HotRestartException("stopped == true", gcThreadFailureCause);
         }
         boolean submitted = false;
-        boolean reportedBlocking = false;
+//        boolean reportedBlocking = false;
         for (long i = 0; !(submitted || (submitted = workQueue.offer(task))) || backpressure; i++) {
             if (mutatorIdler.idle(i)) {
-                if (!reportedBlocking) {
-                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
-                    reportedBlocking = true;
-                }
+//                if (!reportedBlocking) {
+//                    System.out.println(submitted ? "Backpressure" : "Blocking to submit");
+//                    reportedBlocking = true;
+//                }
                 if (!gcThread.isAlive()) {
                     if (!started && submitted || task == shutdown) {
                         return;
@@ -249,10 +247,6 @@ public final class GcExecutor {
 
         public void dismissGarbage(Chunk c) {
             chunkMgr.dismissGarbage(c);
-        }
-
-        public void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
-            chunkMgr.dismissGarbageRecord(c, kh, r);
         }
 
         public boolean shutdownRequested() {

@@ -42,8 +42,7 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
     }
 
     public static void writeTombstone(DataOutputStream out, long recordSeq, long keyPrefix, byte[] keyBytes)
-            throws IOException
-    {
+    throws IOException {
         out.writeLong(recordSeq);
         out.writeLong(keyPrefix);
         out.writeInt(keyBytes.length);

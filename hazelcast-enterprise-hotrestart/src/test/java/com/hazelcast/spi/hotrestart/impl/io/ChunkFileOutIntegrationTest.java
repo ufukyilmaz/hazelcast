@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordOnHeap;
+import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -22,9 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.spi.hotrestart.TestUtils.TestRecord;
-import static com.hazelcast.spi.hotrestart.TestUtils.assertRecordEquals;
-import static com.hazelcast.spi.hotrestart.TestUtils.temporaryFile;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.temporaryFile;
 import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -40,7 +40,7 @@ public class ChunkFileOutIntegrationTest {
     public void testWriteValueRecord() throws IOException {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
 
         // WHEN
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
@@ -56,7 +56,7 @@ public class ChunkFileOutIntegrationTest {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
         RecordOnHeap hrRec = new RecordOnHeap(rec.recordSeq, rec.keyBytes.length + rec.valueBytes.length + 24, false, 10);
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
 
         // WHEN
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
@@ -72,7 +72,7 @@ public class ChunkFileOutIntegrationTest {
     public void testWriteMultipleValueRecords_fsyncAfterEach() throws IOException {
         // GIVEN
         List<TestRecord> recs = new ArrayList<TestRecord>();
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
 
         // WHEN
@@ -94,7 +94,7 @@ public class ChunkFileOutIntegrationTest {
     public void testWriteTombRecord() throws IOException {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
 
         // WHEN
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
@@ -109,7 +109,7 @@ public class ChunkFileOutIntegrationTest {
     public void testWriteTombRecord_withBuffers() throws IOException {
         // GIVEN
         TestRecord rec = new TestRecord(counter);
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
 
         // WHEN
         ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));

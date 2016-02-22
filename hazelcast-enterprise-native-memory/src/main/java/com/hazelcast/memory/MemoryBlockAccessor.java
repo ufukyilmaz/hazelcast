@@ -2,8 +2,6 @@ package com.hazelcast.memory;
 
 /**
  * TODO: need refactoring & cleanup!
- *
- * @author mdogan 11/02/14
  */
 public interface MemoryBlockAccessor<V extends MemoryBlock> {
 
@@ -16,5 +14,4 @@ public interface MemoryBlockAccessor<V extends MemoryBlock> {
     long dispose(V block);
 
     long dispose(long address);
-
 }

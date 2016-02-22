@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-public interface Resetable {
+interface Resetable {
 
     void reset();
 }

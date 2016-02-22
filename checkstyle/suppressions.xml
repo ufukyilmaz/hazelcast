@@ -20,8 +20,9 @@
 
     <!-- TODO: these wildcard suppressions need to be fixed -->
     <suppress checks="" files="com/hazelcast/security/"/>
-    <suppress checks="" files="com/hazelcast/memory/"/>
-    <!--suppress checks="" files="com/hazelcast/elastic/"/-->
+
+    <!-- com.hazelcast.memory -->
+    <suppress checks="JavadocType" files="com/hazelcast/memory"/>
 
     <!-- com.hazelcast.elastic -->
     <suppress checks="IllegalImport" files="com/hazelcast/elastic/"/>

@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.map.impl.operation.HDMapReplicationOperation;
+import com.hazelcast.map.impl.operation.EnterpriseMapReplicationOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.partition.MigrationEndpoint;
@@ -27,9 +27,13 @@ public class EnterpriseMapMigrationAwareService extends MapMigrationAwareService
 
     @Override
     public Operation prepareReplicationOperation(PartitionReplicationEvent event) {
-        HDMapReplicationOperation operation
-                = new HDMapReplicationOperation(event.getPartitionId(), event.getReplicaIndex(), mapServiceContext);
+        int partitionId = event.getPartitionId();
+        PartitionContainer container = mapServiceContext.getPartitionContainer(partitionId);
+
+        EnterpriseMapReplicationOperation operation
+                = new EnterpriseMapReplicationOperation(container, partitionId, event.getReplicaIndex());
         operation.setService(mapServiceContext.getService());
+
         return operation;
     }
 

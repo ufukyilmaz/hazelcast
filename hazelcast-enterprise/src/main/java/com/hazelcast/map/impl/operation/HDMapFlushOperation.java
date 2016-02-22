@@ -1,11 +1,18 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.core.IMap;
+import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
+/**
+ * Flushes dirty entries upon call of {@link IMap#flush()}
+ */
 public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOperation, MutatingOperation {
+
+    private transient long sequence;
 
     public HDMapFlushOperation() {
     }
@@ -16,12 +23,13 @@ public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOp
 
     @Override
     protected void runInternal() {
-        recordStore.softFlush();
+        RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
+        sequence = recordStore.softFlush();
     }
 
     @Override
     public Object getResponse() {
-        return true;
+        return sequence;
     }
 
     @Override
@@ -46,5 +54,4 @@ public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOp
     public Operation getBackupOperation() {
         return new HDMapFlushBackupOperation(name);
     }
-
 }

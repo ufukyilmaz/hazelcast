@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 /**
- * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.Evacuator}.
+ * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}.
  */
 public final class DestValChunk extends WriteThroughChunk {
 

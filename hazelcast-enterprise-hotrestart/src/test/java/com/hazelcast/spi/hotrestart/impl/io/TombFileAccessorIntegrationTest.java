@@ -1,8 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
@@ -24,8 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.spi.hotrestart.TestUtils.TestRecord;
-import static com.hazelcast.spi.hotrestart.TestUtils.temporaryFile;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateTombRecordFile;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.temporaryFile;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -59,9 +57,9 @@ public class TombFileAccessorIntegrationTest {
     @RequireAssertEnabled
     public void channelClosedCannotBeReused() throws IOException {
         // GIVEN
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
         List<TestRecord> records = asList(new TestRecord(counter), new TestRecord(counter), new TestRecord(counter));
-        TombFileAccessor accessor = new TombFileAccessor(prepareRecordFile(file, records));
+        TombFileAccessor accessor = new TombFileAccessor(populateTombRecordFile(file, records));
         ChunkFileOut out = mock(ChunkFileOut.class);
 
         // WHEN
@@ -77,9 +75,9 @@ public class TombFileAccessorIntegrationTest {
     @RequireAssertEnabled
     public void canCloseAccessorOfEmptyFile() throws IOException {
         // GIVEN
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
         List<TestRecord> records = new ArrayList<TestRecord>();
-        TombFileAccessor accessor = new TombFileAccessor(prepareRecordFile(file, records));
+        TombFileAccessor accessor = new TombFileAccessor(populateTombRecordFile(file, records));
 
         // THEN
         accessor.close();
@@ -87,9 +85,9 @@ public class TombFileAccessorIntegrationTest {
 
     @Test
     public void correctRecordsRead() throws IOException {
-        File file = temporaryFile();
+        File file = temporaryFile(counter);
         List<TestRecord> records = asList(new TestRecord(counter), new TestRecord(counter), new TestRecord(counter));
-        TombFileAccessor accessor = new TombFileAccessor(prepareRecordFile(file, records));
+        TombFileAccessor accessor = new TombFileAccessor(populateTombRecordFile(file, records));
 
         for (int pos = 0, recordSize, index = 0; index < records.size(); index++) {
             // GIVEN
@@ -127,17 +125,6 @@ public class TombFileAccessorIntegrationTest {
         assertEquals(msg, expected.recordSeq, actual.recordSeq());
         assertEquals(msg, expected.keyPrefix, actual.keyPrefix());
         assertEquals(msg, expected.keyBytes.length + 20, actual.recordSize());
-    }
-
-    public File prepareRecordFile(File file, List<TestRecord> records) throws IOException {
-        WriteThroughTombChunk chunk = new WriteThroughTombChunk(0, "testsuffix", null,
-                new ChunkFileOut(file, mock(GcExecutor.MutatorCatchup.class)), mock(GcHelper.class));
-        for (TestRecord record : records) {
-            chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, null);
-        }
-        chunk.fsync();
-        file.deleteOnExit();
-        return file;
     }
 
 }

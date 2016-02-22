@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
@@ -12,7 +13,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapBase;
-import com.hazelcast.internal.util.counters.Counter;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,7 +24,7 @@ import java.util.Map.Entry;
  * doesn't matter for correctness, but for efficiency it is preferred that
  * newer records are encountered first.
  */
-public final class Rebuilder {
+public class Rebuilder {
     private final ChunkManager cm;
     private final GcLogger logger;
     private boolean isLoadingTombstones = true;

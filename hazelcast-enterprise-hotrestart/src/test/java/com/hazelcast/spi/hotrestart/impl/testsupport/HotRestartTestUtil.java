@@ -11,22 +11,34 @@ import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
+import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
 
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
@@ -35,7 +47,10 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class HotRestartTestUtil {
     public static ILogger logger;
@@ -54,8 +69,7 @@ public class HotRestartTestUtil {
     }
 
     public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc)
-            throws InterruptedException
-    {
+            throws InterruptedException {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
         final MockStoreRegistry cs = new MockStoreRegistry(cfg, malloc);
@@ -78,8 +92,7 @@ public class HotRestartTestUtil {
     }
 
     public static void exercise(MockStoreRegistry reg, HotRestartStoreConfig cfg, TestProfile profile)
-            throws Exception
-    {
+            throws Exception {
         final Histogram hist = new Histogram(3);
         try {
             logger.info("Updating db");
@@ -126,7 +139,8 @@ public class HotRestartTestUtil {
         logger.info("Waiting to start summarizing record stores");
         final Map<Long, Long2LongHashMap>[] summary = new Map[1];
         ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
-            @Override public void run(CatchupTestSupport mc) {
+            @Override
+            public void run(CatchupTestSupport mc) {
                 logger.info("Summarizing record stores");
                 summary[0] = summarize0(reg);
             }
@@ -151,7 +165,8 @@ public class HotRestartTestUtil {
     public static void verifyRestartedStore(final Map<Long, Long2LongHashMap> summaries, final MockStoreRegistry reg) {
         logger.info("Waiting to start verification");
         ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
-            @Override public void run(CatchupTestSupport mc) {
+            @Override
+            public void run(CatchupTestSupport mc) {
                 logger.info("Verifying restarted store");
                 verify0(summaries, reg.recordStores);
             }
@@ -177,7 +192,7 @@ public class HotRestartTestUtil {
             int missingEntryCount = 0;
             int mismatchedEntryCount = 0;
             final Long2LongHashMap prefixSummary = summaries.get(prefix);
-            for (LongLongCursor cursor = prefixSummary.cursor(); cursor.advance();) {
+            for (LongLongCursor cursor = prefixSummary.cursor(); cursor.advance(); ) {
                 final int reloadedRecordSize = ramStore.valueSize(cursor.key());
                 if (reloadedRecordSize < 0) {
                     missingEntryCount++;
@@ -215,10 +230,105 @@ public class HotRestartTestUtil {
     }
 
     public static LoggingService createLoggingService() {
-        return new LoggingServiceImpl("group", "log4j", new BuildInfo("0", "0", "0", 0, true, (byte)0));
+        return new LoggingServiceImpl("group", "log4j", new BuildInfo("0", "0", "0", 0, true, (byte) 0));
     }
 
     public static MetricsRegistry metricsRegistry(LoggingService loggingService) {
         return new MetricsRegistryImpl(loggingService.getLogger("metrics"), MANDATORY);
     }
+
+    public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws IOException {
+        assertRecordEquals("", expected, actual, valueChunk);
+    }
+
+    public static void assertRecordEquals(String msg, TestRecord expected, DataInputStream actual, boolean valueChunk) throws IOException {
+        assertEquals(msg, expected.recordSeq, actual.readLong());
+        assertEquals(msg, expected.keyPrefix, actual.readLong());
+        assertEquals(msg, expected.keyBytes.length, actual.readInt());
+        if (valueChunk) {
+            assertEquals(msg, expected.valueBytes.length, actual.readInt());
+        }
+
+        byte[] actualKeyBytes = new byte[expected.keyBytes.length];
+        actual.read(actualKeyBytes, 0, expected.keyBytes.length);
+        assertArrayEquals(msg, expected.keyBytes, actualKeyBytes);
+        if (valueChunk) {
+            byte[] actualValueBytes = new byte[expected.valueBytes.length];
+            actual.read(actualValueBytes, 0, expected.valueBytes.length);
+            assertArrayEquals(msg, expected.valueBytes, actualValueBytes);
+        }
+    }
+
+    public static void assertRecordEquals(String msg, TestRecord expected, ChunkFileRecord actual, boolean valueChunk) {
+        assertEquals(msg, expected.recordSeq, actual.recordSeq());
+        assertEquals(msg, expected.keyPrefix, actual.prefix());
+        assertArrayEquals(msg, expected.keyBytes, actual.key());
+        if (valueChunk) {
+            assertArrayEquals(msg, expected.valueBytes, actual.value());
+        }
+    }
+
+    public static void assertRecordEquals(TestRecord expected, ChunkFileRecord actual, boolean valueChunk) {
+        assertRecordEquals("", expected, actual, valueChunk);
+    }
+
+    public static File temporaryFile(AtomicInteger counter) {
+        try {
+            File file = File.createTempFile(String.format("%016d", counter.incrementAndGet()), "hot-restart");
+            file.deleteOnExit();
+            return file;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static File populateRecordFile(File file, List<TestRecord> records, boolean valueRecords) {
+        try {
+            ChunkFileOut out = new ChunkFileOut(file, mock(GcExecutor.MutatorCatchup.class));
+            ActiveChunk chunk = valueRecords ? new ActiveValChunk(0, "testsuffix", null, out, mock(GcHelper.class)) :
+                    new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
+            for (TestRecord record : records) {
+                chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, record.valueBytes);
+            }
+            chunk.fsync();
+            return file;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static File populateValueRecordFile(File file, List<TestRecord> records) {
+        return populateRecordFile(file, records, true);
+    }
+
+    public static File populateTombRecordFile(File file, List<TestRecord> records) {
+        return populateRecordFile(file, records, false);
+    }
+
+    public static List<TestRecord> generateRandomRecords(AtomicInteger counter, int count) {
+        List<TestRecord> recs = new ArrayList<TestRecord>();
+        for (int i = 0; i < count; i++) {
+            recs.add(new TestRecord(counter));
+        }
+        return recs;
+    }
+
+    public static class TestRecord {
+        public final long recordSeq;
+        public final long keyPrefix;
+        public final byte[] keyBytes;
+        public final byte[] valueBytes;
+
+        public TestRecord(AtomicInteger counter) {
+            this.keyPrefix = counter.incrementAndGet();
+            this.recordSeq = counter.incrementAndGet();
+            this.keyBytes = new byte[8];
+            this.valueBytes = new byte[8];
+            for (int i = 0; i < 8; i++) {
+                this.keyBytes[i] = (byte) counter.incrementAndGet();
+                this.valueBytes[i] = (byte) counter.incrementAndGet();
+            }
+        }
+    }
+
 }

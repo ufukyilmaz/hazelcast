@@ -48,7 +48,7 @@ public final class CompressorIncubator implements Disposable {
         return new NativeLZ4BlockInputStream(in.getChannel(), decompressedBuffer, compressedBuffer);
     }
 
-    @SuppressWarnings({ "checkstyle:innerassignment", "checkstyle:npathcomplexity" })
+    @SuppressWarnings({"checkstyle:innerassignment", "checkstyle:npathcomplexity"})
     public boolean lz4Compress(StableValChunk chunk, GcHelper gcHelper, MutatorCatchup mc, GcLogger logger) {
         final long start = System.nanoTime();
         if (chunk == null) {

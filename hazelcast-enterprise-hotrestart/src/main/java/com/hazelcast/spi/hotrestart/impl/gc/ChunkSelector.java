@@ -35,7 +35,7 @@ final class ChunkSelector {
         @Override public int compare(StableValChunk left, StableValChunk right) {
             final double leftCb = left.cachedCostBenefit();
             final double rightCb = right.cachedCostBenefit();
-            return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
+            return Double.compare(rightCb, leftCb);
         }
     };
     private final Collection<StableChunk> allChunks;
@@ -66,7 +66,7 @@ final class ChunkSelector {
         return new ChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
     }
 
-    @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
+    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
     private ChunkSelection select() {
         final Set<StableValChunk> candidates = candidateChunks();
         if (candidates.isEmpty()) {

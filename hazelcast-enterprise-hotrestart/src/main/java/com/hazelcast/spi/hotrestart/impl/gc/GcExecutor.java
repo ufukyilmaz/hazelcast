@@ -78,7 +78,7 @@ public final class GcExecutor {
     }
 
     private class MainLoop implements Runnable {
-        @SuppressWarnings({ "checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity" })
+        @SuppressWarnings({"checkstyle:npathcomplexity", "checkstyle:cyclomaticcomplexity"})
         @Override public void run() {
             final IdleStrategy idler = idler();
             try {

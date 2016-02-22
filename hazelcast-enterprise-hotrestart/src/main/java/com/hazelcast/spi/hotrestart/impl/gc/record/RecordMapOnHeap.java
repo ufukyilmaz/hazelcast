@@ -63,6 +63,10 @@ public final class RecordMapOnHeap implements RecordMap {
         return new HeapCursor();
     }
 
+    @Override public RecordMap toStable() {
+        return this;
+    }
+
     @Override public void dispose() { }
 
     private final class HeapCursor implements Cursor {

@@ -37,6 +37,8 @@ public interface RecordMap extends Disposable {
 
     Cursor cursor();
 
+    RecordMap toStable();
+
     /** Cursor over record map's contents */
     interface Cursor {
         boolean advance();

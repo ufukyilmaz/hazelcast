@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
@@ -11,6 +12,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMalloc;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
@@ -25,6 +27,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.nio.IOUtil.delete;
@@ -40,7 +43,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * Contains common services needed across the hot restart codebase. Passed
  * around a lot due to the lack of proper DI support in current HZ.
  */
-public abstract class GcHelper {
+public abstract class GcHelper implements Disposable {
     /** Name of the file that contains prefix tombstones */
     public static final String PREFIX_TOMBSTONES_FILENAME = "prefix-tombstones";
 
@@ -99,16 +102,20 @@ public abstract class GcHelper {
         }
     }
 
+    public static void disposeMappedBuffer(MappedByteBuffer buf) {
+        ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
+    }
+
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(),
+        return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(false),
                 chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true), null),
                 this);
     }
 
     public final DestValChunk newDestValChunk(MutatorCatchup mc) {
         final long seq = chunkSeq.incrementAndGet();
-        return new DestValChunk(seq, newRecordMap(),
+        return new DestValChunk(seq, newRecordMap(true),
                 chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true), mc),
                 this);
     }
@@ -180,7 +187,7 @@ public abstract class GcHelper {
         return new File(bucketDir, chunkFilename);
     }
 
-    abstract RecordMap newRecordMap();
+    abstract RecordMap newRecordMap(boolean isForDestValChunk);
 
     abstract RecordMap newTombstoneMap();
 
@@ -195,12 +202,12 @@ public abstract class GcHelper {
             super(cfg);
         }
 
-        @Override public RecordMap newRecordMap() {
+        @Override public RecordMap newRecordMap(boolean ignored) {
             return new RecordMapOnHeap();
         }
 
         @Override RecordMap newTombstoneMap() {
-            return newRecordMap();
+            return newRecordMap(false);
         }
 
         @Override public TrackerMap newTrackerMap() {
@@ -210,31 +217,43 @@ public abstract class GcHelper {
         @Override public SetOfKeyHandle newSetOfKeyHandle() {
             return new SetOfKeyHandleOnHeap();
         }
+
+        @Override public void dispose() {
+        }
     }
 
     /** The GC helper specialization for off-heap Hot Restart store */
     public static class OffHeap extends GcHelper {
-
-        private final MemoryAllocator malloc;
+        private final MemoryAllocator ramMalloc;
+        private final MmapMalloc mmapMalloc;
+        private final MmapMalloc mmapMallocWithCompaction;
         public OffHeap(HotRestartStoreConfig cfg) {
             super(cfg);
-            this.malloc = cfg.malloc();
+            this.ramMalloc = cfg.malloc();
+            this.mmapMalloc = new MmapMalloc(new File(cfg.homeDir(), "mmap"), false);
+            this.mmapMallocWithCompaction = new MmapMalloc(new File(cfg.homeDir(), "mmap-with-compaction"), true);
         }
 
-        @Override public RecordMap newRecordMap() {
-            return newRecordMapOffHeap(malloc);
+        @Override public RecordMap newRecordMap(boolean isForGrowingSurvivor) {
+            return isForGrowingSurvivor
+                    ? newRecordMapOffHeap(mmapMalloc, ramMalloc) : newRecordMapOffHeap(ramMalloc, null);
         }
 
         @Override public RecordMap newTombstoneMap() {
-            return newTombstoneMapOffHeap(malloc);
+            return newTombstoneMapOffHeap(ramMalloc);
         }
 
         @Override public TrackerMap newTrackerMap() {
-            return new TrackerMapOffHeap(malloc);
+            return new TrackerMapOffHeap(ramMalloc, mmapMallocWithCompaction);
         }
 
         @Override public SetOfKeyHandle newSetOfKeyHandle() {
-            return new SetOfKeyHandleOffHeap(malloc);
+            return new SetOfKeyHandleOffHeap(ramMalloc);
+        }
+
+        @Override public void dispose() {
+            mmapMallocWithCompaction.dispose();
+            mmapMalloc.dispose();
         }
     }
 }

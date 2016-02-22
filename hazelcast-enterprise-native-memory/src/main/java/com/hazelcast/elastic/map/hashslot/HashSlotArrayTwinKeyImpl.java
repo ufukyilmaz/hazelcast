@@ -18,8 +18,14 @@ public class HashSlotArrayTwinKeyImpl extends HashSlotArrayBase implements HashS
 
     private static final int KEY_LENGTH = 16;
 
+    public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryAllocator malloc, MemoryAllocator auxMalloc,
+                                    int valueLength, int initialCapacity) {
+        this(nullSentinel, KEY_LENGTH, malloc, auxMalloc, valueLength, initialCapacity);
+        assert valueLengthValid(valueLength) : "Invalid value length: " + valueLength;
+    }
+
     public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryAllocator malloc, int valueLength, int initialCapacity) {
-        this(nullSentinel, KEY_LENGTH, malloc, valueLength, initialCapacity);
+        this(nullSentinel, malloc, null, valueLength, initialCapacity);
         assert valueLengthValid(valueLength) : "Invalid value length: " + valueLength;
     }
 
@@ -27,10 +33,15 @@ public class HashSlotArrayTwinKeyImpl extends HashSlotArrayBase implements HashS
         this(nullSentinel, malloc, valueLength, DEFAULT_CAPACITY);
     }
 
-    protected HashSlotArrayTwinKeyImpl(long nullSentinel, long offsetOfNullSentinel, MemoryAllocator malloc,
-                                       int valueLength, int initialCapacity
+    public HashSlotArrayTwinKeyImpl(HashSlotArrayTwinKeyImpl that, MemoryAllocator malloc) {
+        super(that, malloc, null);
+    }
+
+    protected HashSlotArrayTwinKeyImpl(
+            long nullSentinel, long offsetOfNullSentinel, MemoryAllocator malloc, MemoryAllocator auxMalloc,
+            int valueLength, int initialCapacity
     ) {
-        super(nullSentinel, offsetOfNullSentinel, malloc, KEY_LENGTH, valueLength, initialCapacity);
+        super(nullSentinel, offsetOfNullSentinel, malloc, auxMalloc, KEY_LENGTH, valueLength, initialCapacity);
     }
 
     /**

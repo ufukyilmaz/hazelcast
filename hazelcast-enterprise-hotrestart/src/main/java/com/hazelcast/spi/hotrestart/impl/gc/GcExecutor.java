@@ -57,7 +57,7 @@ public final class GcExecutor {
             new OneToOneConcurrentArrayQueue<Runnable>(WORK_QUEUE_CAPACITY);
     private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(WORK_QUEUE_CAPACITY);
     private final Thread gcThread;
-    private final MutatorCatchup mc = new MutatorCatchup();
+    private final MutatorCatchup mc;
     private final IdleStrategy mutatorIdler = idler();
     private final GcLogger logger;
     /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
@@ -70,6 +70,7 @@ public final class GcExecutor {
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.logger = gcHelper.logger;
+        this.mc = new MutatorCatchup();
         this.gcThread = new Thread(new MainLoop(), "GC thread for " + cfg.storeName());
         this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
         this.chunkMgr = new ChunkManager(cfg, gcHelper, pfixTombstoMgr);
@@ -118,7 +119,7 @@ public final class GcExecutor {
                 logger.severe("GC thread terminated by exception", t);
                 gcThreadFailureCause = t;
             } finally {
-                chunkMgr.close();
+                chunkMgr.dispose();
             }
         }
     }
@@ -209,7 +210,8 @@ public final class GcExecutor {
         private static final int LATE_CATCHUP_CUTOFF_MILLIS = 110;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
-        private long lastCaughtUp;
+        private long lastCaughtUp = -1;
+//        private long lastCaughtUp = logger.isFineEnabled() ? 0 : -1;
 
         public int catchupAsNeeded() {
             return catchupAsNeeded(DEFAULT_CATCHUP_INTERVAL_LOG2);
@@ -226,7 +228,7 @@ public final class GcExecutor {
 
         private int catchUpWithMutator() {
             final int workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY);
-            if (logger.isFineEnabled()) {
+            if (lastCaughtUp >= 0) {
                 diagnoseLateCatchup();
             }
             if (workCount == 0) {

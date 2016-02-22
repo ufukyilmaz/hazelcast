@@ -28,7 +28,7 @@ public class TrackerMapTest extends OnHeapOffHeapTestBase {
     private TrackerMapBase m;
 
     @Before public void setup() {
-        m = offHeap ? new TrackerMapOffHeap(malloc) : new TrackerMapOnHeap();
+        m = offHeap ? new TrackerMapOffHeap(malloc, null) : new TrackerMapOnHeap();
     }
 
     @After public void destroy() {

@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.map.hashslot;
 
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.NativeOutOfMemoryError;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
@@ -35,6 +36,10 @@ abstract class HashSlotArrayBase {
     protected final long offsetOfUnassignedSentinel;
 
     private final MemoryAllocator malloc;
+
+    // For temporary storage during resizing. Should allocate from a different memory pool
+    // than the main allocator.
+    private final MemoryAllocator auxMalloc;
 
     /**
      * Total length of an array slot in bytes.
@@ -88,7 +93,8 @@ abstract class HashSlotArrayBase {
      * @param valueLength length of value in bytes
      * @param initialCapacity Initial capacity of map (will be rounded to closest power of 2, if not already)
      */
-    protected HashSlotArrayBase(long unassignedSentinel, long offsetOfUnassignedSentinel, MemoryAllocator malloc,
+    protected HashSlotArrayBase(long unassignedSentinel, long offsetOfUnassignedSentinel,
+                                MemoryAllocator malloc, MemoryAllocator auxMalloc,
                                 int keyLength, int valueLength, int initialCapacity
     ) {
         assert modPowerOfTwo(valueLength, VALUE_LENGTH_GRANULARITY) == 0
@@ -96,14 +102,30 @@ abstract class HashSlotArrayBase {
         this.unassignedSentinel = unassignedSentinel;
         this.offsetOfUnassignedSentinel = offsetOfUnassignedSentinel;
         this.malloc = malloc;
+        this.auxMalloc = auxMalloc;
         this.valueOffset = keyLength;
         this.valueLength = valueLength;
         this.slotLength = keyLength + valueLength;
         this.loadFactor = DEFAULT_LOAD_FACTOR;
-
         allocateArrayAndAdjustFields(roundCapacity((int) (initialCapacity / loadFactor)));
     }
 
+    protected HashSlotArrayBase(HashSlotArrayBase that, MemoryAllocator malloc, MemoryAllocator auxMalloc) {
+        this.unassignedSentinel = that.unassignedSentinel;
+        this.offsetOfUnassignedSentinel = that.offsetOfUnassignedSentinel;
+        this.malloc = malloc;
+        this.auxMalloc = auxMalloc;
+        this.valueOffset = that.valueOffset;
+        this.valueLength = that.valueLength;
+        this.slotLength = that.slotLength;
+        this.loadFactor = that.loadFactor;
+        this.capacity = that.capacity;
+        this.mask = that.mask;
+        this.expandAt = that.expandAt;
+        final long allocatedSize = capacity * slotLength;
+        this.baseAddress = malloc.allocate(allocatedSize);
+        AMEM.copyMemory(that.baseAddress, this.baseAddress, allocatedSize);
+    }
 
     // These public final methods will automatically fit as interface implementation in subclasses
 
@@ -308,6 +330,22 @@ abstract class HashSlotArrayBase {
         markAllUnassigned();
     }
 
+    private void auxAllocateAndAdjustFields(long oldAddress, long oldSize, long newCapacity) {
+        try {
+            allocateArrayAndAdjustFields(newCapacity);
+        } catch (NativeOutOfMemoryError e) {
+            try {
+                // Try to restore state prior to allocation failure
+                baseAddress = malloc.allocate(oldSize);
+                AMEM.copyMemory(oldAddress, baseAddress, oldSize);
+                auxMalloc.free(oldAddress, oldSize);
+            } catch (NativeOutOfMemoryError e1) {
+                baseAddress = NULL_ADDRESS;
+            }
+            throw e;
+        }
+    }
+
     private void markAllUnassigned() {
         AMEM.setMemory(baseAddress, capacity * slotLength, (byte) 0);
         if (unassignedSentinel == 0) {
@@ -325,12 +363,21 @@ abstract class HashSlotArrayBase {
      * assigned slots from the current array into the new one.
      */
     private void resizeTo(long newCapacity) {
-        // Allocate new array first, ensuring that the possible OOME
-        // does not ruin the consistency of the existing data structure.
-        final long oldAddress = baseAddress;
         final long oldCapacity = capacity;
-        allocateArrayAndAdjustFields(newCapacity);
-        // Put the assigned slots into the new array.
+        final long oldSize = oldCapacity * slotLength;
+        final MemoryAllocator oldMalloc;
+        final long oldAddress;
+        if (auxMalloc != null) {
+            oldAddress = auxMalloc.allocate(oldSize);
+            AMEM.copyMemory(baseAddress, oldAddress, oldSize);
+            malloc.free(baseAddress, oldSize);
+            oldMalloc = auxMalloc;
+            auxAllocateAndAdjustFields(oldAddress, oldSize, newCapacity);
+        } else {
+            oldMalloc = malloc;
+            oldAddress = baseAddress;
+            allocateArrayAndAdjustFields(newCapacity);
+        }
         for (long slot = oldCapacity; --slot >= 0;) {
             if (isAssigned(oldAddress, slot)) {
                 long key1 = key1OfSlot(oldAddress, slot);
@@ -344,8 +391,9 @@ abstract class HashSlotArrayBase {
                 AMEM.copyMemory(valueAddress, valueAddrOfSlot(newSlot), valueLength);
             }
         }
-        malloc.free(oldAddress, oldCapacity * slotLength);
+        oldMalloc.free(oldAddress, oldSize);
     }
+
 
 
     // These public static methods are used by subclasses and also by Hot Restart code

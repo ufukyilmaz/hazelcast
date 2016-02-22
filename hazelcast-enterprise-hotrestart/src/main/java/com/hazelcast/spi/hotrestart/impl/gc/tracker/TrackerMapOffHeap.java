@@ -15,11 +15,14 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public final class TrackerMapOffHeap extends TrackerMapBase {
 
+    @SuppressWarnings("checkstyle:magicnumber")
+    private static final int INITIAL_CAPACITY = 1 << 9;
     private HashSlotArrayTwinKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
-    public TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, malloc, TrackerOffHeap.SIZE);
+    public TrackerMapOffHeap(MemoryAllocator malloc, MemoryAllocator auxMalloc) {
+        this.trackers = new HashSlotArrayTwinKeyImpl(
+                Long.MIN_VALUE, malloc, auxMalloc, TrackerOffHeap.SIZE, INITIAL_CAPACITY);
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {

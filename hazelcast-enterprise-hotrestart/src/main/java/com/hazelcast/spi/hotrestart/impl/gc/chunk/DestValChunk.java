@@ -33,6 +33,6 @@ public final class DestValChunk extends WriteThroughChunk {
     }
 
     @Override public StableValChunk toStableChunk() {
-        return new StableValChunk(seq, records, liveRecordCount, size(), garbage, needsDismissing());
+        return new StableValChunk(seq, records.toStable(), liveRecordCount, size(), garbage, needsDismissing());
     }
 }

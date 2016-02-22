@@ -34,7 +34,7 @@ public class HashSlotArrayImpl extends HashSlotArrayBase implements HashSlotArra
     protected HashSlotArrayImpl(long unassignedSentinel, long offsetOfUnassignedSentinel,
                                 MemoryAllocator malloc, int valueLength, int initialCapacity
     ) {
-        super(unassignedSentinel, offsetOfUnassignedSentinel, malloc, KEY_LENGTH, valueLength, initialCapacity);
+        super(unassignedSentinel, offsetOfUnassignedSentinel, malloc, null, KEY_LENGTH, valueLength, initialCapacity);
     }
 
     /**

@@ -8,6 +8,7 @@ import java.io.UTFDataFormatException;
 import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 public final class OffHeapBits {
+
     private OffHeapBits() {
     }
 
@@ -203,8 +204,7 @@ public final class OffHeapBits {
         }
     }
 
-    public static char readUtf8Char(OffHeapDataInput in, byte firstByte)
-            throws IOException {
+    public static char readUtf8Char(OffHeapDataInput in, byte firstByte) throws IOException {
         int b = firstByte & 0xFF;
         switch (b >> 4) {
             case 0:

@@ -71,7 +71,7 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
     }
 
     public Operation getBackupOperation() {
-        return new HDRemoveBackupOperation(name, dataKey);
+        return new HDEvictBackupOperation(name, dataKey);
     }
 
     @Override

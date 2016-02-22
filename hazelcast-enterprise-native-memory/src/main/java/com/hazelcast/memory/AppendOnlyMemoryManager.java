@@ -1,14 +1,14 @@
 package com.hazelcast.memory;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorProvider;
 import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
@@ -39,75 +39,68 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
     private final Counter sequenceGenerator = MwCounter.newMwCounter();
 
-    public AppendOnlyMemoryManager(MemorySize cap,
-                                   int minBlockSize) {
+    public AppendOnlyMemoryManager(MemorySize cap, int minBlockSize) {
         this.minBlockSize = minBlockSize;
         this.memoryStats = new NativeMemoryStats(cap.bytes());
-        this.memoryAllocator = new StandardMemoryManager(
-                new UnsafeMalloc(),
-                this.memoryStats
-        );
+        this.memoryAllocator = new StandardMemoryManager(new UnsafeMalloc(), memoryStats);
     }
 
     private void allocateBlock(long desiredBlockSize) {
-        long blockSize = Math.max(desiredBlockSize, this.minBlockSize);
-        this.acquiredMemorySize += blockSize;
+        long blockSize = Math.max(desiredBlockSize, minBlockSize);
+        acquiredMemorySize += blockSize;
 
-        if (this.currentBlockIndex < this.memoryBlockList.size() - 1) {
-            this.currentBlockIndex++;
-            MemoryBlock block = this.memoryBlockList.get(this.currentBlockIndex);
+        if (currentBlockIndex < memoryBlockList.size() - 1) {
+            currentBlockIndex++;
+            MemoryBlock block = memoryBlockList.get(currentBlockIndex);
 
             if (blockSize > block.size) {
-                while ((this.memoryBlockList.size() - 1 >= this.currentBlockIndex)) {
-                    block = this.memoryBlockList.get(this.currentBlockIndex);
+                while ((memoryBlockList.size() - 1 >= currentBlockIndex)) {
+                    block = memoryBlockList.get(currentBlockIndex);
 
                     if (blockSize > block.size) {
-                        this.memoryAllocator.free(block.address, block.size);
-                        this.memoryBlockList.remove(this.currentBlockIndex);
+                        memoryAllocator.free(block.address, block.size);
+                        memoryBlockList.remove(currentBlockIndex);
                     } else {
-                        this.currentMemoryBlock = block;
-                        this.pointer = block.address;
+                        currentMemoryBlock = block;
+                        pointer = block.address;
                         return;
                     }
                 }
             } else {
-                this.currentMemoryBlock = block;
-                this.pointer = block.address;
+                currentMemoryBlock = block;
+                pointer = block.address;
                 return;
             }
         }
 
-        this.pointer = this.memoryAllocator.allocate(blockSize);
+        pointer = memoryAllocator.allocate(blockSize);
 
-        this.currentMemoryBlock = new MemoryBlock(
-                this.pointer,
-                blockSize
-        );
-        this.memoryBlockList.add(this.currentMemoryBlock);
-        this.currentBlockIndex = this.memoryBlockList.size() - 1;
+        currentMemoryBlock = new MemoryBlock(pointer, blockSize);
+        memoryBlockList.add(currentMemoryBlock);
+        currentBlockIndex = memoryBlockList.size() - 1;
     }
 
     @Override
     public long allocate(long size) {
-        this.usedMemorySize += size;
+        usedMemorySize += size;
 
-        if (requireNewMemoryBlock(this.pointer, size)) {
-            allocateBlock(this.usedMemorySize - this.acquiredMemorySize);
+        if (requireNewMemoryBlock(pointer, size)) {
+            allocateBlock(usedMemorySize - acquiredMemorySize);
         }
 
-        long pointer = this.pointer;
-        this.pointer += size;
-        return pointer;
+        long oldPointer = pointer;
+        pointer += size;
+        return oldPointer;
     }
 
     @Override
     public long reallocate(long address, long currentSize, long newSize) {
-        if (this.pointer - currentSize != address) {
+        if (pointer - currentSize != address) {
             throw new IllegalStateException(
-                    "Can't re-allocate not last allocated memory currentSize=" + currentSize +
-                            " newSize=" + newSize +
-                            " usedMemorySize=" + this.usedMemorySize +
-                            " delta=" + (this.pointer - address)
+                    "Can't re-allocate not last allocated memory currentSize=" + currentSize
+                            + " newSize=" + newSize
+                            + " usedMemorySize=" + usedMemorySize
+                            + " delta=" + (pointer - address)
             );
         }
 
@@ -116,22 +109,22 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
         }
 
         long size = newSize - currentSize;
-        this.usedMemorySize += size;
+        usedMemorySize += size;
 
         if (requireNewMemoryBlock(address, newSize)) {
             allocateBlock(newSize);
-            MEMORY_ACCESSOR.copyMemory(address, this.pointer, currentSize);
-            long pointer = this.pointer;
-            this.pointer += newSize;
-            return pointer;
+            MEMORY_ACCESSOR.copyMemory(address, pointer, currentSize);
+            long oldPointer = pointer;
+            pointer += newSize;
+            return oldPointer;
         } else {
-            this.pointer += size;
+            pointer += size;
             return address;
         }
     }
 
     private boolean requireNewMemoryBlock(long address, long size) {
-        return (this.currentMemoryBlock == null) || (this.currentMemoryBlock.address + this.currentMemoryBlock.size < address + size);
+        return (currentMemoryBlock == null) || (currentMemoryBlock.address + currentMemoryBlock.size < address + size);
     }
 
     @Override
@@ -141,7 +134,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
     @Override
     public MemoryAllocator unwrapMemoryAllocator() {
-        return this.memoryAllocator;
+        return memoryAllocator;
     }
 
     @Override
@@ -151,31 +144,31 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
     @Override
     public void destroy() {
-        if (!this.isDestroyed) {
+        if (!isDestroyed) {
             try {
-                for (MemoryBlock memoryBlock : this.memoryBlockList) {
-                    this.memoryAllocator.free(
+                for (MemoryBlock memoryBlock : memoryBlockList) {
+                    memoryAllocator.free(
                             memoryBlock.address,
                             memoryBlock.size
                     );
                 }
             } finally {
                 reset();
-                this.memoryBlockList.clear();
-                this.acquiredMemorySize = 0L;
-                this.isDestroyed = true;
+                memoryBlockList.clear();
+                acquiredMemorySize = 0L;
+                isDestroyed = true;
             }
         }
     }
 
     @Override
     public boolean isDestroyed() {
-        return this.isDestroyed;
+        return isDestroyed;
     }
 
     @Override
     public MemoryStats getMemoryStats() {
-        return this.memoryStats;
+        return memoryStats;
     }
 
     @Override
@@ -200,19 +193,20 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
     @Override
     public long newSequence() {
-        return this.sequenceGenerator.inc();
+        return sequenceGenerator.inc();
     }
 
     @Override
     public void reset() {
-        this.pointer = 0L;
-        this.usedMemorySize = 0L;
-        this.currentBlockIndex = 0;
-        this.acquiredMemorySize = 0L;
-        this.currentMemoryBlock = null;
+        pointer = 0L;
+        usedMemorySize = 0L;
+        currentBlockIndex = 0;
+        acquiredMemorySize = 0L;
+        currentMemoryBlock = null;
     }
 
     private static class MemoryBlock {
+
         private final long size;
         private final long address;
 

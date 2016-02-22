@@ -1,34 +1,33 @@
 package com.hazelcast.internal.serialization.impl;
 
-import java.util.Arrays;
-import java.nio.ByteOrder;
-import java.io.IOException;
-import java.io.EOFException;
-
-import com.hazelcast.nio.OffHeapBits;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.BufferObjectDataInput;
 import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.nio.BufferObjectDataInput;
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.OffHeapBits;
+import com.hazelcast.nio.serialization.Data;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
-/***
+/**
  * Provides methods which let to de-serialize data directly from the off-heap
  * <p/>
  * It consumes pointer and address and lets to read objects from the off-heap
  * It doesn't release memory, memory-releasing is responsibility of the external environment
  */
 public class OffHeapByteArrayObjectDataInput implements OffHeapDataInput, ObjectDataInput {
+
     long dataAddress;
-
     long size;
-
     long pos;
 
     final SerializationService service;
@@ -51,30 +50,30 @@ public class OffHeapByteArrayObjectDataInput implements OffHeapDataInput, Object
         this.size = size;
         this.dataAddress = pointer;
 
-        if (this.charBuffer != null && this.charBuffer.length > BufferObjectDataInput.UTF_BUFFER_SIZE * 8) {
-            Arrays.fill(this.charBuffer, (char) 0);
+        if (charBuffer != null && charBuffer.length > BufferObjectDataInput.UTF_BUFFER_SIZE * 8) {
+            Arrays.fill(charBuffer, (char) 0);
         }
     }
 
     @Override
     public void clear() {
-        this.pos = 0;
-        this.size = 0;
-        this.dataAddress = 0;
+        pos = 0;
+        size = 0;
+        dataAddress = 0;
 
-        if (this.charBuffer != null && this.charBuffer.length > BufferObjectDataInput.UTF_BUFFER_SIZE * 8) {
-            this.charBuffer = new char[BufferObjectDataInput.UTF_BUFFER_SIZE * 8];
+        if (charBuffer != null && charBuffer.length > BufferObjectDataInput.UTF_BUFFER_SIZE * 8) {
+            charBuffer = new char[BufferObjectDataInput.UTF_BUFFER_SIZE * 8];
         }
     }
 
     @Override
     public int read() throws IOException {
-        return (this.pos < this.size) ? (MEM.getByte(this.dataAddress + this.pos++) & 0xff) : -1;
+        return (pos < size) ? (MEM.getByte(dataAddress + pos++) & 0xff) : -1;
     }
 
     @Override
     public int read(long position) throws IOException {
-        return (position < this.size) ? (MEM.getByte(this.dataAddress + position) & 0xff) : -1;
+        return (position < size) ? (MEM.getByte(dataAddress + position) & 0xff) : -1;
     }
 
     @Override
@@ -612,8 +611,8 @@ public class OffHeapByteArrayObjectDataInput implements OffHeapDataInput, Object
 
     @Override
     public final void close() {
-        this.dataAddress = 0;
-        this.pos = 0;
+        dataAddress = 0;
+        pos = 0;
     }
 
     @Override

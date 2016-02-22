@@ -1,29 +1,29 @@
 package com.hazelcast.internal.serialization.impl;
 
+import com.hazelcast.nio.ObjectDataOutput;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import com.hazelcast.nio.ObjectDataOutput;
-
-/***
+/**
  * Provides methods which let to access to serialized data located in off-heap
  * <p/>
  * It works like a factory for the memory-blocks creating and returning pointer and sizes
  * It doesn't release memory, memory-releasing is responsibility of the external environment
  */
 public interface OffHeapDataOutput extends ObjectDataOutput {
-    /***
+
+    /**
      * @return address of the dataBlock in off-heap
      */
     long getPointer();
 
-    /***
+    /**
      * @return written bytes into the dataBlock
      */
     long getWrittenSize();
 
-    /***
+    /**
      * @return real allocated size in bytes of the dataBlock
      */
     long getAllocatedSize();

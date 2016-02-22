@@ -1,54 +1,51 @@
 package com.hazelcast.offheapstorage.perfomance;
 
-
+import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.offheapstorage.comparator.StringComparator;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-
 import java.io.IOException;
 
 import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class PerfomanceTest {
+public class PerformanceTest {
+
     private MemoryManager malloc;
     private OffHeapKeyValueSortedStorage offHeapBlobMap;
 
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new StringComparator(MEM));
+        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
     }
 
     private static NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(100, MemoryUnit.MEGABYTES);
 
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
-                        .setSize(memorySize).setEnabled(true)
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
+                .setSize(memorySize).setEnabled(true)
+                .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     private EnterpriseSerializationService getSerializationService() {
@@ -64,7 +61,7 @@ public class PerfomanceTest {
                 .setMemoryManager(memoryManager)
                 .setAllowUnsafe(true)
                 .setUseNativeByteOrder(true)
-                .setMemoryManager(this.malloc)
+                .setMemoryManager(malloc)
                 .setAllowSerializeOffHeap(true).build();
     }
 
@@ -84,12 +81,11 @@ public class PerfomanceTest {
         long valueWrittenSize = output.getWrittenSize();
         long valueAllocatedSize = output.getAllocatedSize();
 
-        this.offHeapBlobMap.put(
+        offHeapBlobMap.put(
                 keyPointer, keyWrittenSize, keyAllocatedSize,
                 valuePointer, valueWrittenSize, valueAllocatedSize
         );
     }
-
 
     @Test
     public void test() throws IOException {
@@ -104,24 +100,22 @@ public class PerfomanceTest {
             putEntry(idx, output);
         }
 
-        assertEquals(CNT, this.offHeapBlobMap.count());
-        assertTrue(this.offHeapBlobMap.validate());
+        assertEquals(CNT, offHeapBlobMap.count());
+        assertTrue(offHeapBlobMap.validate());
 
-        System.out.println(
-                "Time=" + (System.currentTimeMillis() - t)
-        );
+        System.out.println("Time=" + (System.currentTimeMillis() - t));
     }
 
     @After
     public void tearDown() throws Exception {
-        if (this.offHeapBlobMap != null) {
-            this.offHeapBlobMap.dispose();
+        if (offHeapBlobMap != null) {
+            offHeapBlobMap.dispose();
         }
 
         assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
 
-        if (this.malloc != null) {
-            this.malloc.destroy();
+        if (malloc != null) {
+            malloc.destroy();
         }
     }
 }

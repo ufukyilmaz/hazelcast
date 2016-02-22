@@ -1,10 +1,9 @@
 package com.hazelcast.elastic.offheapstorage.sorted.secondarykey;
 
-
 import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
 
 /**
  * Provides key-value storage functionality with 2-layer keys structure
@@ -41,6 +40,7 @@ import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSeconda
  * RedBlack structure is used in both keys levels.
  */
 public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSortedStorage {
+
     /**
      * Looking for key equal to buffer by address;
      * keyAddress with params keyWrittenBytes and  keyAllocatedBytes;
@@ -59,7 +59,6 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      */
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes);
-
 
     /**
      * Looking for key equal to buffer by address;
@@ -109,7 +108,6 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes
     );
 
-
     /**
      * Looking for key equal to buffer by address;
      * keyAddress with params keyWrittenBytes and  keyAllocatedBytes;
@@ -142,16 +140,14 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
              OffHeapComparator primaryKeyComparator, OffHeapComparator secondaryKeyComparator
     );
 
-    /***
+    /**
      * @param keyEntryPointer   - address of the key entry
      * @param orderingDirection - direction of the sorting
      * @return secondary key iterator for the specified key
      */
-    OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer,
-                                                     OrderingDirection orderingDirection);
+    OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection);
 
-
-    /***
+    /**
      * @param direction -
      *                  ASC - 1
      *                  DESC - 0
@@ -159,12 +155,12 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      */
     long firstSecondaryKeyEntry(OrderingDirection direction, long keyEntryAddress);
 
-    /***
+    /**
      * @return address of the last inserted secondary key entry
      */
     long getLastInsertedSecondaryKeyEntry();
 
-    /***
+    /**
      * @param direction         -
      *                          ASC - 1
      *                          DESC - 0
@@ -172,7 +168,5 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      * @param secondaryKeyEntry - secondary keys entry address to start from
      * @return address of the first key entry in accordance with direction
      */
-    long firstSecondaryKeyEntry(OrderingDirection direction,
-                                long keyEntryAddress,
-                                long secondaryKeyEntry);
+    long firstSecondaryKeyEntry(OrderingDirection direction, long keyEntryAddress, long secondaryKeyEntry);
 }

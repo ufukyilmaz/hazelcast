@@ -1,57 +1,56 @@
 package com.hazelcast.offheapstorage;
 
 
-import org.junit.Test;
+import com.hazelcast.config.NativeMemoryConfig;
+import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
+import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
+import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.offheapstorage.comparator.NumericComparator;
+import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
 import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.test.HazelcastSerialClassRunner;
-import com.hazelcast.offheapstorage.comparator.NumericComparator;
-import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
-import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class SortedStorageIntegerTest {
+
     private MemoryManager malloc;
     private OffHeapKeyValueSortedStorage offHeapBlobMap;
 
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new NumericComparator(MEM));
+        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(malloc, new NumericComparator(MEM));
     }
 
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(100, MemoryUnit.MEGABYTES);
 
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
-                        .setSize(memorySize).setEnabled(true)
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
+                .setSize(memorySize).setEnabled(true)
+                .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     private EnterpriseSerializationService getSerializationService() {
@@ -60,8 +59,7 @@ public class SortedStorageIntegerTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager =
-                new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        MemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
@@ -91,12 +89,12 @@ public class SortedStorageIntegerTest {
             long valueWrittenSize = output.getWrittenSize();
             long valueAllocatedSize = output.getAllocatedSize();
 
-            long keyEntry = this.offHeapBlobMap.put(
+            long keyEntry = offHeapBlobMap.put(
                     keyPointer, keyWrittenSize, keyAllocatedSize,
                     valuePointer, valueWrittenSize, valueAllocatedSize
             );
 
-            if ((this.offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (first)) {
+            if ((offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (first)) {
                 keyExists = true;
             }
 
@@ -104,7 +102,7 @@ public class SortedStorageIntegerTest {
         }
 
         if (keyExists) {
-            this.malloc.free(keyPointer, keyAllocatedSize);
+            malloc.free(keyPointer, keyAllocatedSize);
         }
     }
 
@@ -131,45 +129,45 @@ public class SortedStorageIntegerTest {
         put(1, CNT, output);
         put(2 * CNT, CNT + 1, output);
 
-        OffHeapKeyIterator iterator = this.offHeapBlobMap.keyIterator(OrderingDirection.ASC);
+        OffHeapKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
 
         int idx = 1;
 
         while (iterator.hasNext()) {
             long keyEntryPointer = iterator.next();
-            input.reset(this.offHeapBlobMap.getKeyAddress(keyEntryPointer), this.offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer));
+            input.reset(offHeapBlobMap.getKeyAddress(keyEntryPointer), offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer));
             int key = input.readInt();
 
             assertEquals(idx, key);
             idx++;
 
-            OffHeapValueIterator valueIterator = this.offHeapBlobMap.valueIterator(keyEntryPointer);
+            OffHeapValueIterator valueIterator = offHeapBlobMap.valueIterator(keyEntryPointer);
             assertTrue(valueIterator.hasNext());
-
 
             int valueIndex = 1;
             while (valueIterator.hasNext()) {
                 long valueEntryPointer = valueIterator.next();
-                input.reset(this.offHeapBlobMap.getValueAddress(valueEntryPointer), this.offHeapBlobMap.getValueWrittenBytes(valueEntryPointer));
+                input.reset(offHeapBlobMap.getValueAddress(valueEntryPointer),
+                        offHeapBlobMap.getValueWrittenBytes(valueEntryPointer));
                 assertEquals(input.readInt(), valueIndex);
                 valueIndex++;
             }
         }
 
-        assertEquals(this.offHeapBlobMap.count(), CNT * 2);
-        assertTrue(this.offHeapBlobMap.validate());
+        assertEquals(offHeapBlobMap.count(), CNT * 2);
+        assertTrue(offHeapBlobMap.validate());
     }
 
     @After
     public void tearDown() throws Exception {
-        if (this.offHeapBlobMap != null) {
-            this.offHeapBlobMap.dispose();
+        if (offHeapBlobMap != null) {
+            offHeapBlobMap.dispose();
         }
 
         assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
 
-        if (this.malloc != null) {
-            this.malloc.destroy();
+        if (malloc != null) {
+            malloc.destroy();
         }
     }
 }

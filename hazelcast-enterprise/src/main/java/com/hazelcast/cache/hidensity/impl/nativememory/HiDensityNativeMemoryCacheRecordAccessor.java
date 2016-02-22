@@ -3,7 +3,7 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryManager;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -30,14 +30,11 @@ public class HiDensityNativeMemoryCacheRecordAccessor
         if (address1 == address2) {
             return true;
         }
-        if (address1 == NULL_ADDRESS) {
+        if (address1 == NULL_ADDRESS || address2 == NULL_ADDRESS) {
             return false;
         }
-        if (address2 == NULL_ADDRESS) {
-            return false;
-        }
-        long valueAddress1 = MEM.getLong(address1 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
-        long valueAddress2 = MEM.getLong(address2 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+        long valueAddress1 = AMEM.getLong(address1 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
+        long valueAddress2 = AMEM.getLong(address2 + HiDensityNativeMemoryCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 

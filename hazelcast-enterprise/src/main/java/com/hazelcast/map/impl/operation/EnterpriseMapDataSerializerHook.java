@@ -72,6 +72,11 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
      */
     public static final int GET = CONSTRUCTOR_ARRAY_INDEX.value++;
 
+    /**
+     * Id of "EVICT BACKUP" operation
+     */
+    public static final int EVICT_BACKUP = CONSTRUCTOR_ARRAY_INDEX.value++;
+
 
     @Override
     public int getFactoryId() {
@@ -93,6 +98,7 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                 constructors[REMOVE] = newRemoveOperation();
                 constructors[REMOVE_BACKUP] = newRemoveBackupOperation();
                 constructors[GET] = newGetOperation();
+                constructors[EVICT_BACKUP] = newEvictBackupOperation();
             }
 
             private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveBackupOperation() {
@@ -100,6 +106,15 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                     @Override
                     public IdentifiedDataSerializable createNew(Integer arg) {
                         return new HDRemoveBackupOperation();
+                    }
+                };
+            }
+
+            private ConstructorFunction<Integer, IdentifiedDataSerializable> newEvictBackupOperation() {
+                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                    @Override
+                    public IdentifiedDataSerializable createNew(Integer arg) {
+                        return new HDEvictBackupOperation();
                     }
                 };
             }

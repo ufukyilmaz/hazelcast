@@ -37,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class SecondaryKeyStorageStringTest {
+
     private static final int VALUE_COUNT = 10;
     private MemoryManager malloc;
     private OffHeapSecondaryKeyValueSortedStorage offHeapBlobMap;
@@ -45,7 +46,7 @@ public class SecondaryKeyStorageStringTest {
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
         this.offHeapBlobMap = new OffHeapSecondaryKeyValueRedBlackTreeStorage(
-                this.malloc,
+                malloc,
                 new StringComparator(MEM),
                 new StringComparator(MEM)
         );
@@ -54,11 +55,10 @@ public class SecondaryKeyStorageStringTest {
     private static NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(100, MemoryUnit.MEGABYTES);
 
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
-                        .setSize(memorySize).setEnabled(true)
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
+                .setSize(memorySize).setEnabled(true)
+                .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     private EnterpriseSerializationService getSerializationService() {
@@ -108,7 +108,6 @@ public class SecondaryKeyStorageStringTest {
             long secondaryKeyWrittenSize = output.getWrittenSize();
             long secondaryKeyAllocatedSize = output.getAllocatedSize();
 
-
             boolean secondaryKeyExists = false;
             boolean firstValue = true;
 
@@ -120,19 +119,19 @@ public class SecondaryKeyStorageStringTest {
                 long valueWrittenSize = output.getWrittenSize();
                 long valueAllocatedSize = output.getAllocatedSize();
 
-                long keyEntry = this.offHeapBlobMap.put(
+                long keyEntry = offHeapBlobMap.put(
                         keyPointer, keyWrittenSize, keyAllocatedSize,
                         secondaryKeyPointer, secondaryKeyWrittenSize, secondaryKeyAllocatedSize,
                         valuePointer, valueWrittenSize, valueAllocatedSize
                 );
 
-                long secondaryKeyEntry = this.offHeapBlobMap.getLastInsertedSecondaryKeyEntry();
+                long secondaryKeyEntry = offHeapBlobMap.getLastInsertedSecondaryKeyEntry();
 
-                if ((this.offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (firstSecondaryKey)) {
+                if ((offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (firstSecondaryKey)) {
                     keyExists = true;
                 }
 
-                if ((this.offHeapBlobMap.getKeyAddress(secondaryKeyEntry) != secondaryKeyPointer) && (firstValue)) {
+                if ((offHeapBlobMap.getKeyAddress(secondaryKeyEntry) != secondaryKeyPointer) && (firstValue)) {
                     secondaryKeyExists = true;
                 }
 
@@ -140,14 +139,14 @@ public class SecondaryKeyStorageStringTest {
             }
 
             if (secondaryKeyExists) {
-                this.malloc.free(secondaryKeyPointer, secondaryKeyAllocatedSize);
+                malloc.free(secondaryKeyPointer, secondaryKeyAllocatedSize);
             }
 
             firstSecondaryKey = false;
         }
 
         if (keyExists) {
-            this.malloc.free(keyPointer, keyAllocatedSize);
+            malloc.free(keyPointer, keyAllocatedSize);
         }
     }
 
@@ -186,7 +185,7 @@ public class SecondaryKeyStorageStringTest {
         put(1, CNT, output);
         put(2 * CNT, CNT + 1, output);
 
-        OffHeapKeyIterator iterator = this.offHeapBlobMap.keyIterator(OrderingDirection.ASC);
+        OffHeapKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
 
         Map<String, String> map = new TreeMap<String, String>();
 
@@ -202,8 +201,8 @@ public class SecondaryKeyStorageStringTest {
             long keyEntryPointer = iterator.next();
 
             input.reset(
-                    this.offHeapBlobMap.getKeyAddress(keyEntryPointer),
-                    this.offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer)
+                    offHeapBlobMap.getKeyAddress(keyEntryPointer),
+                    offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer)
             );
 
             input.readByte();//Skip Type
@@ -215,7 +214,7 @@ public class SecondaryKeyStorageStringTest {
             String key = new String(bytes, "UTF-8");
 
             OffHeapSecondaryKeyIterator secondaryKeyIterator =
-                    this.offHeapBlobMap.secondaryKeyIterator(keyEntryPointer, OrderingDirection.ASC);
+                    offHeapBlobMap.secondaryKeyIterator(keyEntryPointer, OrderingDirection.ASC);
 
             assertEquals(sortedStrings[idx - 1], key);
             assertTrue(secondaryKeyIterator.hasNext());
@@ -227,8 +226,8 @@ public class SecondaryKeyStorageStringTest {
                 long secondaryKeyEntry = secondaryKeyIterator.next();
 
                 input.reset(
-                        this.offHeapBlobMap.getKeyAddress(secondaryKeyEntry),
-                        this.offHeapBlobMap.getKeyWrittenBytes(secondaryKeyEntry)
+                        offHeapBlobMap.getKeyAddress(secondaryKeyEntry),
+                        offHeapBlobMap.getKeyWrittenBytes(secondaryKeyEntry)
                 );
 
                 input.readByte();//Skip Type
@@ -241,14 +240,14 @@ public class SecondaryKeyStorageStringTest {
 
                 secondaryKey++;
 
-                OffHeapValueIterator valueIterator = this.offHeapBlobMap.valueIterator(secondaryKeyEntry);
+                OffHeapValueIterator valueIterator = offHeapBlobMap.valueIterator(secondaryKeyEntry);
                 int value = 1;
 
                 while (valueIterator.hasNext()) {
                     long valueEntryAddress = valueIterator.next();
 
-                    long valueAddress = this.offHeapBlobMap.getValueAddress(valueEntryAddress);
-                    long valueWrittenSize = this.offHeapBlobMap.getValueWrittenBytes(valueEntryAddress);
+                    long valueAddress = offHeapBlobMap.getValueAddress(valueEntryAddress);
+                    long valueWrittenSize = offHeapBlobMap.getValueWrittenBytes(valueEntryAddress);
 
                     input.reset(
                             valueAddress,
@@ -261,20 +260,20 @@ public class SecondaryKeyStorageStringTest {
             }
         }
 
-        assertEquals(this.offHeapBlobMap.count(), 2 * CNT);
-        assertTrue(this.offHeapBlobMap.validate());
+        assertEquals(offHeapBlobMap.count(), 2 * CNT);
+        assertTrue(offHeapBlobMap.validate());
     }
 
     @After
     public void tearDown() throws Exception {
-        if (this.offHeapBlobMap != null) {
-            this.offHeapBlobMap.dispose();
+        if (offHeapBlobMap != null) {
+            offHeapBlobMap.dispose();
         }
 
         assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
 
-        if (this.malloc != null) {
-            this.malloc.destroy();
+        if (malloc != null) {
+            malloc.destroy();
         }
     }
 }

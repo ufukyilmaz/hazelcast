@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.IMap;
+import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
@@ -17,7 +18,8 @@ public class HDMapFlushBackupOperation extends HDMapOperation implements BackupO
     }
 
     @Override
-    public void runInternal() {
+    protected void runInternal() {
+        RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
         recordStore.softFlush();
     }
 }

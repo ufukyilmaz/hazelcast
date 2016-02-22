@@ -31,10 +31,10 @@ import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class SortedStorageStringTest {
+
     private MemoryManager malloc;
     private OffHeapKeyValueSortedStorage offHeapBlobMap;
 
@@ -42,29 +42,27 @@ public class SortedStorageStringTest {
     public void setUp() throws Exception {
         NativeMemoryConfig nativeMemoryConfig = getMemoryConfig();
         this.malloc = new StandardMemoryManager(nativeMemoryConfig.getSize());
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(this.malloc, new StringComparator(MEM));
+        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
     }
 
     private static NativeMemoryConfig getMemoryConfig() {
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
-                        .setEnabled(true)
-                        .setSize(new MemorySize(2, MemoryUnit.GIGABYTES))
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD)
+                .setEnabled(true)
+                .setSize(new MemorySize(2, MemoryUnit.GIGABYTES))
+                .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     private EnterpriseSerializationService getSerializationService() {
         NativeMemoryConfig memoryConfig = getMemoryConfig();
 
-        MemoryManager memoryManager =
-                new StandardMemoryManager(memoryConfig.getSize());
+        MemoryManager memoryManager = new StandardMemoryManager(memoryConfig.getSize());
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .setAllowUnsafe(true)
                 .setUseNativeByteOrder(true)
-                .setMemoryManager(this.malloc)
+                .setMemoryManager(malloc)
                 .setAllowSerializeOffHeap(true).build();
     }
 
@@ -93,12 +91,12 @@ public class SortedStorageStringTest {
             long valueWrittenSize = output.getWrittenSize();
             long valueAllocatedSize = output.getAllocatedSize();
 
-            long keyEntry = this.offHeapBlobMap.put(
+            long keyEntry = offHeapBlobMap.put(
                     keyPointer, keyWrittenSize, keyAllocatedSize,
                     valuePointer, valueWrittenSize, valueAllocatedSize
             );
 
-            if ((this.offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (first)) {
+            if ((offHeapBlobMap.getKeyAddress(keyEntry) != keyPointer) && (first)) {
                 keyExists = true;
             }
 
@@ -106,7 +104,7 @@ public class SortedStorageStringTest {
         }
 
         if (keyExists) {
-            this.malloc.free(keyPointer, keyAllocatedSize);
+            malloc.free(keyPointer, keyAllocatedSize);
         }
     }
 
@@ -141,7 +139,7 @@ public class SortedStorageStringTest {
 
         System.out.println("put.2.finish=" + (System.currentTimeMillis() - t));
 
-        OffHeapKeyIterator iterator = this.offHeapBlobMap.keyIterator(OrderingDirection.ASC);
+        OffHeapKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
 
         Map<String, String> map = new TreeMap<String, String>();
 
@@ -155,7 +153,7 @@ public class SortedStorageStringTest {
 
         while (iterator.hasNext()) {
             long keyEntryPointer = iterator.next();
-            input.reset(this.offHeapBlobMap.getKeyAddress(keyEntryPointer), this.offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer));
+            input.reset(offHeapBlobMap.getKeyAddress(keyEntryPointer), offHeapBlobMap.getKeyWrittenBytes(keyEntryPointer));
             input.readByte();//Skip Type
 
             int length = input.readInt();
@@ -163,7 +161,7 @@ public class SortedStorageStringTest {
             input.readFully(bytes);
             String key = new String(bytes, "UTF-8");
 
-            OffHeapValueIterator valueIterator = this.offHeapBlobMap.valueIterator(keyEntryPointer);
+            OffHeapValueIterator valueIterator = offHeapBlobMap.valueIterator(keyEntryPointer);
 
             assertTrue(valueIterator.hasNext());
             assertEquals(key, sortedStrings[idx - 1]);
@@ -172,27 +170,28 @@ public class SortedStorageStringTest {
             int value = 1;
             while (valueIterator.hasNext()) {
                 long valueEntryPointer = valueIterator.next();
-                input.reset(this.offHeapBlobMap.getValueAddress(valueEntryPointer), this.offHeapBlobMap.getValueWrittenBytes(valueEntryPointer));
+                input.reset(offHeapBlobMap.getValueAddress(valueEntryPointer),
+                        offHeapBlobMap.getValueWrittenBytes(valueEntryPointer));
                 assertEquals(input.readInt(), value);
                 value++;
             }
         }
 
-        assertEquals(this.offHeapBlobMap.count(), 2 * CNT);
-        assertTrue(this.offHeapBlobMap.validate());
+        assertEquals(offHeapBlobMap.count(), 2 * CNT);
+        assertTrue(offHeapBlobMap.validate());
     }
 
     @After
     public void tearDown() throws Exception {
         System.out.println("tearDown");
-        if (this.offHeapBlobMap != null) {
-            this.offHeapBlobMap.dispose();
+        if (offHeapBlobMap != null) {
+            offHeapBlobMap.dispose();
         }
 
         assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
 
-        if (this.malloc != null) {
-            this.malloc.destroy();
+        if (malloc != null) {
+            malloc.destroy();
         }
     }
 }

@@ -1,42 +1,36 @@
 package com.hazelcast.elastic.offheapstorage.sorted.secondarykey;
 
-import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
 import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIteratorImpl;
+import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.memory.MemoryAllocator;
 
 /**
  * Specialization of off-heap red-black tree to secondary key storage
  */
 public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValueRedBlackTreeStorage
         implements OffHeapSecondaryKeyValueSortedStorage {
+
     private long lastInsertedSecondaryKeyEntry;
     private final OffHeapComparator offHeapSecondaryKeyComparator;
     private final OffHeapSecondaryKeyIterator offHeapSecondaryKeyIterator;
 
-
-    public OffHeapSecondaryKeyValueRedBlackTreeStorage(
-            MemoryAllocator memoryAllocator,
-            OffHeapComparator offHeapKeyComparator,
-            OffHeapComparator offHeapSecondaryKeyComparator
-    ) {
+    public OffHeapSecondaryKeyValueRedBlackTreeStorage(MemoryAllocator memoryAllocator, OffHeapComparator offHeapKeyComparator,
+                                                       OffHeapComparator offHeapSecondaryKeyComparator) {
         super(memoryAllocator, offHeapKeyComparator);
         this.offHeapSecondaryKeyComparator = offHeapSecondaryKeyComparator;
         this.offHeapSecondaryKeyIterator = new OffHeapSecondaryKeyIteratorImpl(this);
     }
 
-    protected long insertSecondaryKey(long secondaryKeyAddress,
-                                      long secondaryKeyWrittenBytes,
-                                      long secondaryKeyAllocatedBytes,
-                                      long keyEntryAddress,
-                                      OffHeapComparator secondaryKeyComparator) {
+    protected long insertSecondaryKey(long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
+                                      long keyEntryAddress, OffHeapComparator secondaryKeyComparator) {
         long secondaryKeyEntryOffsetAddress = getValueEntryAddressOffset(keyEntryAddress);
 
         long secondaryKeyEntryAddress = getKeyEntry0(
                 secondaryKeyEntryOffsetAddress,
-                secondaryKeyComparator == null ? this.offHeapSecondaryKeyComparator : secondaryKeyComparator,
+                secondaryKeyComparator == null ? offHeapSecondaryKeyComparator : secondaryKeyComparator,
                 secondaryKeyAddress,
                 secondaryKeyWrittenBytes,
                 secondaryKeyAllocatedBytes,
@@ -44,7 +38,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
         );
 
         if (MEMORY_ACCESSOR.getLong(secondaryKeyEntryOffsetAddress) == 0L) {
-            //Insert rootAddress's address here
+            // Insert rootAddress's address here
             MEMORY_ACCESSOR.putLong(secondaryKeyEntryOffsetAddress, secondaryKeyEntryAddress);
         }
 
@@ -76,12 +70,11 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
     @SuppressWarnings("checkstyle:parameternumber")
     public long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
                     long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
-                    long valueAddress, long valueWrittenBytes, long valueAllocatedBytes
-    ) {
-        return this.put(keyAddress, keyWrittenBytes, keyAllocatedBytes,
+                    long valueAddress, long valueWrittenBytes, long valueAllocatedBytes) {
+        return put(keyAddress, keyWrittenBytes, keyAllocatedBytes,
                 secondaryKeyAddress, secondaryKeyWrittenBytes, secondaryKeyAllocatedBytes,
                 valueAddress, valueWrittenBytes, valueAllocatedBytes,
-                this.offHeapKeyComparator, this.offHeapSecondaryKeyComparator
+                offHeapKeyComparator, offHeapSecondaryKeyComparator
         );
     }
 
@@ -135,7 +128,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
             );
         }
 
-        this.lastInsertedSecondaryKeyEntry = secondaryKeyEntry;
+        lastInsertedSecondaryKeyEntry = secondaryKeyEntry;
         return keyEntryAddress;
     }
 
@@ -145,7 +138,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
 
     protected void releaseKeyEntry(long keyEntryAddress, boolean releasePayLoad) {
         if (keyEntryAddress > 0L) {
-            //Release Secondary key
+            // Release Secondary key
             releaseSecondaryKey(getSecondaryKeyAddress(keyEntryAddress), releasePayLoad);
             releaseKeyEntry(keyEntryAddress, releasePayLoad, false);
         }
@@ -170,29 +163,24 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
     }
 
     @Override
-    public OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer,
-                                                            OrderingDirection orderingDirection) {
-        this.offHeapSecondaryKeyIterator.setKeyEntry(keyEntryPointer);
-        this.offHeapSecondaryKeyIterator.setDirection(orderingDirection);
-        return this.offHeapSecondaryKeyIterator;
+    public OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection) {
+        offHeapSecondaryKeyIterator.setKeyEntry(keyEntryPointer);
+        offHeapSecondaryKeyIterator.setDirection(orderingDirection);
+        return offHeapSecondaryKeyIterator;
     }
 
     @Override
-    public long firstSecondaryKeyEntry(OrderingDirection direction,
-                                       long keyEntryAddress) {
-        return this.first(direction, getSecondaryKeyAddress(keyEntryAddress));
+    public long firstSecondaryKeyEntry(OrderingDirection direction, long keyEntryAddress) {
+        return first(direction, getSecondaryKeyAddress(keyEntryAddress));
     }
 
     @Override
     public long getLastInsertedSecondaryKeyEntry() {
-        return this.lastInsertedSecondaryKeyEntry;
+        return lastInsertedSecondaryKeyEntry;
     }
 
     @Override
-    public long firstSecondaryKeyEntry(OrderingDirection direction,
-                                       long keyEntryAddress,
-                                       long secondaryKeyEntry) {
-        return this.first(direction, secondaryKeyEntry);
+    public long firstSecondaryKeyEntry(OrderingDirection direction, long keyEntryAddress, long secondaryKeyEntry) {
+        return first(direction, secondaryKeyEntry);
     }
 }
-

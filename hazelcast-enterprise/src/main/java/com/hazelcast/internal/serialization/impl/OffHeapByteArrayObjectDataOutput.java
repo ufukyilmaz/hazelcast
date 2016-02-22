@@ -1,31 +1,32 @@
 package com.hazelcast.internal.serialization.impl;
 
-import java.nio.ByteOrder;
-import java.io.IOException;
-
 import com.hazelcast.nio.OffHeapBits;
-
-import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
-import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
+import java.io.IOException;
+import java.nio.ByteOrder;
+
+import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
-/***
+/**
  * Provides methods which let to serialize data directly to the  off-heap
  * <p/>
  * It works like a factory for the memory-blocks creating and returning pointer and sizes
  * It doesn't release memory, memory-releasing is responsibility of the external environment
  */
 class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
+
     protected long pos;
     protected long bufferSize;
     protected long bufferPointer;
+
     private final long initialSize;
     private final boolean isBigEndian;
     private final EnterpriseSerializationService service;
@@ -33,7 +34,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
     OffHeapByteArrayObjectDataOutput(long size, EnterpriseSerializationService service, ByteOrder byteOrder) {
         this.service = service;
         this.initialSize = size;
-        this.bufferSize = this.initialSize;
+        this.bufferSize = initialSize;
         this.isBigEndian = byteOrder == ByteOrder.BIG_ENDIAN;
     }
 
@@ -52,7 +53,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     @Override
     public void write(long position, int b) {
-        MEM.putByte(this.bufferPointer + position, (byte) (b));
+        MEM.putByte(bufferPointer + position, (byte) (b));
     }
 
     @Override
@@ -64,7 +65,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
         }
 
         ensureAvailable(len);
-        MEM.copyMemory(b, ARRAY_BYTE_BASE_OFFSET + off, null, this.bufferPointer + pos, len);
+        MEM.copyMemory(b, ARRAY_BYTE_BASE_OFFSET + off, null, bufferPointer + pos, len);
         pos += len;
     }
 
@@ -100,7 +101,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
         final int len = s.length();
         ensureAvailable(len);
         for (int i = 0; i < len; i++) {
-            MEM.putByte(this.bufferPointer + (pos++), (byte) s.charAt(i));
+            MEM.putByte(bufferPointer + (pos++), (byte) s.charAt(i));
         }
     }
 
@@ -108,7 +109,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
     public void writeChar(final int v) throws IOException {
         ensureAvailable(CHAR_SIZE_IN_BYTES);
         OffHeapBits.writeChar(bufferPointer, pos, (char) v, isBigEndian);
-        this.pos += CHAR_SIZE_IN_BYTES;
+        pos += CHAR_SIZE_IN_BYTES;
     }
 
     @Override
@@ -350,20 +351,20 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     final void ensureAvailable(long len) {
         if (available() < len) {
-            if (this.bufferPointer != 0) {
-                long newCap = Math.max(this.bufferSize << 1, this.bufferSize + len);
-                this.bufferPointer = this.service.getMemoryManager().reallocate(this.bufferPointer, this.bufferSize, newCap);
-                this.bufferSize = newCap;
+            if (bufferPointer != 0) {
+                long newCap = Math.max(bufferSize << 1, bufferSize + len);
+                bufferPointer = service.getMemoryManager().reallocate(bufferPointer, bufferSize, newCap);
+                bufferSize = newCap;
             } else {
-                this.bufferSize = len > this.initialSize / 2 ? len * 2 : this.initialSize;
-                this.bufferPointer = this.service.getMemoryManager().allocate(this.bufferSize);
+                bufferSize = len > initialSize / 2 ? len * 2 : initialSize;
+                bufferPointer = service.getMemoryManager().allocate(bufferSize);
             }
         }
     }
 
     @Override
     public void writeObject(Object object) throws IOException {
-        this.service.writeObject(this, object);
+        service.writeObject(this, object);
     }
 
     @Override
@@ -390,7 +391,7 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
     }
 
     public long available() {
-        return this.bufferPointer != 0 ? this.bufferSize - this.pos : 0;
+        return bufferPointer != 0 ? bufferSize - pos : 0;
     }
 
     @Override
@@ -400,21 +401,21 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     @Override
     public void clear() {
-        this.pos = 0;
-        this.bufferSize = 0;
-        this.bufferPointer = 0;
+        pos = 0;
+        bufferSize = 0;
+        bufferPointer = 0;
     }
 
     @Override
     public void close() {
-        this.pos = 0;
+        pos = 0;
 
-        if (this.bufferPointer > 0L) {
-            this.service.getMemoryManager().free(this.bufferPointer, this.bufferSize);
+        if (bufferPointer > 0L) {
+            service.getMemoryManager().free(bufferPointer, bufferSize);
         }
 
-        this.bufferSize = 0;
-        this.bufferPointer = 0;
+        bufferSize = 0;
+        bufferPointer = 0;
     }
 
     @Override
@@ -432,16 +433,16 @@ class OffHeapByteArrayObjectDataOutput implements OffHeapDataOutput {
 
     @Override
     public long getPointer() {
-        return this.bufferPointer;
+        return bufferPointer;
     }
 
     @Override
     public long getWrittenSize() {
-        return this.pos;
+        return pos;
     }
 
     @Override
     public long getAllocatedSize() {
-        return this.bufferSize;
+        return bufferSize;
     }
 }

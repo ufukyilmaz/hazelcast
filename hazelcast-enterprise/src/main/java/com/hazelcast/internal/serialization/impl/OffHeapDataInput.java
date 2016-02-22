@@ -1,15 +1,16 @@
 package com.hazelcast.internal.serialization.impl;
 
-import java.nio.ByteOrder;
-import java.io.IOException;
-
 import com.hazelcast.nio.ObjectDataInput;
 
-/***
+import java.io.IOException;
+import java.nio.ByteOrder;
+
+/**
  * Provides serialization methods for arrays of primitive types which are located in off-heap
  * Let us to work with long pointers
  */
 public interface OffHeapDataInput extends ObjectDataInput {
+
     int read() throws IOException;
 
     int read(long position) throws IOException;

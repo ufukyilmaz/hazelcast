@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;
@@ -29,8 +29,8 @@ public class HDRecordAccessor
 
     @Override
     public boolean isEqual(long address1, long address2) {
-        long valueAddress1 = MEM.getLong(address1 + VALUE_OFFSET);
-        long valueAddress2 = MEM.getLong(address2 + VALUE_OFFSET);
+        long valueAddress1 = AMEM.getLong(address1 + VALUE_OFFSET);
+        long valueAddress2 = AMEM.getLong(address2 + VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
 

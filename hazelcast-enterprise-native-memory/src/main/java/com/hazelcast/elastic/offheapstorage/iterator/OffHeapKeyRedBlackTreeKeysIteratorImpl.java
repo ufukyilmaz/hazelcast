@@ -1,14 +1,15 @@
 package com.hazelcast.elastic.offheapstorage.iterator;
 
-import java.util.NoSuchElementException;
-
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
 import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
+import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+
+import java.util.NoSuchElementException;
 
 /**
  * Key iterator over the red-black tree.
  */
 public class OffHeapKeyRedBlackTreeKeysIteratorImpl implements OffHeapKeyIterator {
+
     private long pointer;
     private OrderingDirection direction;
     private final OffHeapKeyValueSortedStorage storage;
@@ -20,22 +21,23 @@ public class OffHeapKeyRedBlackTreeKeysIteratorImpl implements OffHeapKeyIterato
     @Override
     public void setDirection(OrderingDirection direction) {
         this.direction = direction;
-        this.pointer = this.storage.first(direction);
+
+        pointer = storage.first(direction);
     }
 
     @Override
     public boolean hasNext() {
-        return this.pointer != 0L;
+        return pointer != 0L;
     }
 
     @Override
     public long next() {
-        if (!this.hasNext()) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
         long result = pointer;
-        this.pointer = this.storage.getNext(this.pointer, this.direction);
+        pointer = storage.getNext(pointer, direction);
         return result;
     }
 }

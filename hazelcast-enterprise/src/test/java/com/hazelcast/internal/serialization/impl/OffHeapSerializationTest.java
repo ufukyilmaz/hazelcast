@@ -1,17 +1,20 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.memory.*;
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.ParallelTest;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-
+import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.test.annotation.ParallelTest;
+import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
@@ -21,22 +24,21 @@ import static org.junit.Assert.assertEquals;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class OffHeapSerializationTest {
+
     private MemoryManager malloc;
 
     @Before
     public void setUp() throws Exception {
-        this.malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
     }
-
 
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(512, MemoryUnit.MEGABYTES);
 
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                        .setSize(memorySize).setEnabled(true)
-                        .setMinBlockSize(16).setPageSize(1 << 20);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                .setSize(memorySize).setEnabled(true)
+                .setMinBlockSize(16).setPageSize(1 << 20);
     }
 
     private EnterpriseSerializationService getSerializationService() {
@@ -45,8 +47,7 @@ public class OffHeapSerializationTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager =
-                new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        MemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
@@ -75,7 +76,6 @@ public class OffHeapSerializationTest {
         output.writeBooleanArray(new boolean[]{true});
         output.writeIntArray(new int[]{1});
 
-
         long address = output.getPointer();
         long size = output.getWrittenSize();
         long allocatedSize = output.getAllocatedSize();
@@ -103,6 +103,6 @@ public class OffHeapSerializationTest {
 
     @After
     public void tearDown() throws Exception {
-        this.malloc.destroy();
+        malloc.destroy();
     }
 }

@@ -7,7 +7,8 @@ import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
  * sort key.
  */
 public interface OffHeapSecondaryKeyIterator extends OffHeapKeyIterator {
-    /***
+
+    /**
      * Sets address of rootAddress to iterate over its keys.
      *
      * @param keyEntryAddress - address of the corresponding key address;

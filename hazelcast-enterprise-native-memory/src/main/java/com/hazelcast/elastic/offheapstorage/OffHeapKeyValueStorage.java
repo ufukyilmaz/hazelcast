@@ -3,11 +3,12 @@ package com.hazelcast.elastic.offheapstorage;
 import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
 import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
 
-/***
+/**
  * Represents abstract API for the OffHeap append-only key value storage
  */
 public interface OffHeapKeyValueStorage {
-    /***
+
+    /**
      * Return first value entry address for the corresponding key entry
      *
      * @param keyEntryAddress - key entry address
@@ -15,32 +16,32 @@ public interface OffHeapKeyValueStorage {
      */
     long getValueEntryAddress(long keyEntryAddress);
 
-    /***
+    /**
      * @param valueEntryAddress - value entry address
      * @return address of the next value address
      * 0 - if there is no next address
      */
     long getNextValueEntryAddress(long valueEntryAddress);
 
-    /***
+    /**
      * @param valueEntryAddress - value entry address
      * @return address of the value's content
      */
     long getValueAddress(long valueEntryAddress);
 
-    /***
+    /**
      * @param valueEntryAddress - value entry address
      * @return actually written bytes to the value's buffer
      */
     long getValueWrittenBytes(long valueEntryAddress);
 
-    /***
+    /**
      * @param valueEntryAddress - value entry address
      * @return actually allocated bytes to the value's buffer
      */
     long getValueAllocatedBytes(long valueEntryAddress);
 
-    /***
+    /**
      * @return iterator over keys of the storage
      */
     OffHeapKeyIterator keyIterator();
@@ -51,7 +52,7 @@ public interface OffHeapKeyValueStorage {
      */
     OffHeapValueIterator valueIterator(long keyEntryPointer);
 
-    /***
+    /**
      * Looking for key equal to buffer by address;
      * keyAddress with params keyWrittenBytes and  keyAllocatedBytes;
      * In case if found - append value represented by;
@@ -71,7 +72,7 @@ public interface OffHeapKeyValueStorage {
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes);
 
-    /***
+    /**
      * Looking for key equal to buffer by address;
      * keyAddress with params keyWrittenBytes and keyAllocatedBytes;
      * <p/>
@@ -86,7 +87,7 @@ public interface OffHeapKeyValueStorage {
      */
     long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes, boolean createIfNotExists);
 
-    /***
+    /**
      * Looking for key equal to buffer by address;
      * keyAddress with params keyWrittenBytes and keyAllocatedBytes;
      * <p/>
@@ -103,25 +104,25 @@ public interface OffHeapKeyValueStorage {
     long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
                      OffHeapComparator comparator, boolean createIfNotExists);
 
-    /***
+    /**
      * @param keyEntryPointer - address of the key entry
      * @return address of the key buffer in corresponding key entry
      */
     long getKeyAddress(long keyEntryPointer);
 
-    /***
+    /**
      * @param keyEntryPointer - address of the key entry
      * @return amount of written bytes of the key
      */
     long getKeyWrittenBytes(long keyEntryPointer);
 
-    /***
+    /**
      * @param keyEntryPointer - address of the key entry
      * @return amount of allocated bytes of the key
      */
     long getKeyAllocatedBytes(long keyEntryPointer);
 
-    /***
+    /**
      * Marks key with specified keyEntry address with value marker.
      *
      * @param keyEntryPointer - address of the keyEntry
@@ -129,7 +130,7 @@ public interface OffHeapKeyValueStorage {
      */
     void markKeyEntry(long keyEntryPointer, byte marker);
 
-    /***
+    /**
      * Return marker's value for the specified keyEntry
      *
      * @param keyEntryPointer - address of the keyEntry
@@ -137,12 +138,12 @@ public interface OffHeapKeyValueStorage {
      */
     byte getKeyEntryMarker(long keyEntryPointer);
 
-    /***
+    /**
      * @return amount of elements in the tree
      */
     long count();
 
-    /***
+    /**
      * Validate if storage is in consistent state
      *
      * @return true - in case of storage is in consistent state
@@ -150,12 +151,12 @@ public interface OffHeapKeyValueStorage {
      */
     boolean validate();
 
-    /***
+    /**
      * Release of memory (of all keys,values and entries) associated with storage
      */
     void dispose();
 
-    /***
+    /**
      * Release just memory associated with tree (doesn't release keys and values)
      */
     void disposeEntries();

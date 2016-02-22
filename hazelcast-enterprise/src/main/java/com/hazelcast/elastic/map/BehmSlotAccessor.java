@@ -5,16 +5,16 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
 /** Helper class with logic to access BinaryElasticHashMap's slots */
 public class BehmSlotAccessor {
-    /** An entry consists only a key pointer (8 bytes) and a value pointer (8 bytes) */
-    static final long ENTRY_LENGTH = 16L;
-    /** Position of key pointer in an entry */
+    /** An slot consists of a key pointer (8 bytes) and a value pointer (8 bytes) */
+    static final long SLOT_LENGTH = 16L;
+    /** Location of the key pointer in a slot */
     static final int KEY_OFFSET = 0;
-    /** Position of value pointer in an entry */
+    /** Location of the value pointer in a slot */
     static final int VALUE_OFFSET = 8;
 
     private final MemoryAllocator malloc;
@@ -40,13 +40,13 @@ public class BehmSlotAccessor {
     }
 
     BehmSlotAccessor allocate(int slotCapacity) {
-        this.size = slotCapacity * ENTRY_LENGTH;
+        this.size = slotCapacity * SLOT_LENGTH;
         this.baseAddr = malloc.allocate(size);
         return this;
     }
 
     void clear() {
-        MEM.setMemory(baseAddr, size, (byte) 0);
+        AMEM.setMemory(baseAddr, size, (byte) 0);
     }
 
     void delete() {
@@ -60,19 +60,19 @@ public class BehmSlotAccessor {
     }
 
     public long getKey(int slot) {
-        return MEM.getLong(slotBase(slot) + KEY_OFFSET);
+        return AMEM.getLong(slotBase(slot) + KEY_OFFSET);
     }
 
     public void setKey(int slot, long key) {
-        MEM.putLong(slotBase(slot) + KEY_OFFSET, key);
+        AMEM.putLong(slotBase(slot) + KEY_OFFSET, key);
     }
 
     public long getValue(int slot) {
-        return MEM.getLong(slotBase(slot) + VALUE_OFFSET);
+        return AMEM.getLong(slotBase(slot) + VALUE_OFFSET);
     }
 
     public void setValue(int slot, long value) {
-        MEM.putLong(slotBase(slot) + VALUE_OFFSET, value);
+        AMEM.putLong(slotBase(slot) + VALUE_OFFSET, value);
     }
 
     public NativeMemoryData keyData(int slot) {
@@ -84,7 +84,7 @@ public class BehmSlotAccessor {
     }
 
     private long slotBase(int slot) {
-        return baseAddr + slot * ENTRY_LENGTH;
+        return baseAddr + slot * SLOT_LENGTH;
     }
 
     @Override public String toString() {

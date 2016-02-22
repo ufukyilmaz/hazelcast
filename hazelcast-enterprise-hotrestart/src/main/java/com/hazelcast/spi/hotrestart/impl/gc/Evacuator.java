@@ -1,12 +1,20 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkSelector.ChunkSelection;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.GcRecord;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static java.lang.Math.min;
@@ -18,6 +26,11 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class Evacuator {
+    public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
+            "com.hazelcast.spi.hotrestart.gc.stuckDetectThreshold";
+
+    private final int stuckDetectionThreshold =
+            Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
     private final ChunkSelection selected;
     private final GcLogger logger;
     private final Long2ObjectHashMap<Chunk> destChunkMap;
@@ -25,10 +38,13 @@ final class Evacuator {
     private final GcHelper gcHelper;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
-    private final long start;
+    private final StableValChunk firstSrcChunk;
+    private long start;
+    private DestValChunk dest;
 
     Evacuator(ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
         this.selected = selected;
+        this.firstSrcChunk = selected.srcChunks.iterator().next();
         this.logger = logger;
         this.destChunkMap = chunkMgr.destChunkMap = new Long2ObjectHashMap<Chunk>();
         this.gcHelper = chunkMgr.gcHelper;
@@ -38,53 +54,23 @@ final class Evacuator {
         this.start = start;
     }
 
-    static List<StableValChunk> copyLiveRecords(
-            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start) {
-        return new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
+    static void evacuate(
+            ChunkSelection selected, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
+    ) {
+        new Evacuator(selected, chunkMgr, mc, logger, start).evacuate();
     }
 
-    private List<StableValChunk> evacuate() {
+    private void evacuate() {
         final List<GcRecord> liveRecords = sortedLiveRecords();
-        // Sweep the source chunks just before dest chunks are created.
-        // This is the last moment where needsDismissing won't need
-        // manual propagation to dest chunks.
-        for (Chunk c : selected.srcChunks) {
-            if (pfixTombstoMgr.dismissGarbage(c)) {
-                mc.catchupNow();
-            }
-        }
-        final List<GrowingDestChunk> preparedDestChunks = transferToDest(liveRecords);
-        // At this point any further prefix tombstone events will properly
-        // raise the needsDismissing flag in all dest chunks, but before it
-        // they were not safely propagated. Therefore propagate any needsDismissing
-        // flag that a source chunk got to all dest chunks, and dismiss everything
-        // that needs to be dismissed.
-        propagateDismissing(preparedDestChunks);
-        logger.fine("GC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        final List<StableValChunk> destChunks = persistDestChunks(preparedDestChunks);
-        dismissEvacuatedFiles();
-        deleteEmptyDestFiles(destChunks);
-        return destChunks;
-    }
-
-    private void propagateDismissing(List<GrowingDestChunk> destChunks) {
-        if (!propagationNeeded()) {
-            return;
-        }
-        for (Chunk c : destChunks) {
-            c.needsDismissing = true;
+        logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
+        transferToDest(liveRecords);
+        // Apply clear operation to any dangling dest chunks. At the time the clear operation
+        // is issued, the highest chunk seq is recorded. Dest chunks created after that time
+        // will be missed by the Sweeper.
+        for (Chunk c : destChunkMap.values()) {
             pfixTombstoMgr.dismissGarbage(c);
-            mc.catchupNow();
         }
-    }
-
-    private boolean propagationNeeded() {
-        for (Chunk c : selected.srcChunks) {
-            if (c.needsDismissing) {
-                return true;
-            }
-        }
-        return false;
+        dismissEvacuatedFiles();
     }
 
     private List<GcRecord> sortedLiveRecords() {
@@ -92,9 +78,7 @@ final class Evacuator {
         for (StableValChunk chunk : selected.srcChunks) {
             for (Cursor cur = chunk.records.cursor(); cur.advance();) {
                 if (cur.asRecord().isAlive()) {
-                    // Here copies of records are made. The copies will not reflect
-                    // new retirements until they are added to the dest chunk in transferToDest.
-                    liveGcRecs.add(cur.toGcRecord(chunk.seq));
+                    liveGcRecs.add(cur.toGcRecord(chunk));
                 }
             }
             mc.catchupNow();
@@ -102,53 +86,106 @@ final class Evacuator {
         return sorted(liveGcRecs);
     }
 
-    private List<GrowingDestChunk> transferToDest(List<GcRecord> sortedGcRecords) {
-        final List<GrowingDestChunk> destChunks = new ArrayList<GrowingDestChunk>();
-        GrowingDestChunk dest = null;
-        for (GcRecord gcr : sortedGcRecords) {
-            if (dest == null) {
-                dest = newDestChunk(destChunks);
-            }
-            mc.catchupAsNeeded();
-            final Tracker tr = recordTrackers.get(gcr.toKeyHandle());
-            // This check failing means that the record is now stale. Don't copy it to dest.
-            // We cannot use gcr.isAlive as explained in sortedLiveRecords().
-            // We might use chunks.get(tr.chunkSeq()).get(gcr.keyHandle).isAlive(),
-            // but that would just be needlessly expensive
-            if (tr != null && gcr.chunkSeq == tr.chunkSeq()) {
-                // With moveToChunk() the keyHandle's ownership is transferred to dest.
-                // With dest.add() the GcRecord is added to dest. Now its garbage count
-                // will be incremented if the keyHandle receives an update and its isAlive()
-                // method will correctly report the status of the record within the dest chunk.
-                tr.moveToChunk(dest.seq);
-                if (dest.add(gcr)) {
-                    dest = null;
+    private void transferToDest(List<GcRecord> sortedGcRecords) {
+        final RecordDataHolder holder = gcHelper.recordDataHolder;
+        for (GcRecord r : sortedGcRecords) {
+            applyClearOperation();
+            if (r.isAlive()) {
+                holder.clear();
+                final KeyHandle kh = r.toKeyHandle();
+                final RamStore ramStore;
+                if ((ramStore = gcHelper.ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(null))) != null
+                        && ramStore.copyEntry(kh, r.payloadSize(), holder)
+                ) {
+                    // Invariant at this point: r.isAlive() and we have its data. Do not catch up with
+                    // mutator until all metadata is updated. The first catchup can happen within the
+                    // dest.add() call. By the time dest.add() returns, the record may already be dead.
+                    holder.flip();
+                    ensureDestChunk();
+                    // With moveToChunk() the keyHandle's ownership is transferred to dest.
+                    // With dest.add() the GcRecord is added to dest. Now its garbage count
+                    // will be incremented if the keyHandle receives an update.
+                    recordTrackers.get(kh).moveToChunk(dest.seq);
+                    // After this call isAlive() will report the status of the record within the dest chunk.
+                    r.movedToDestChunk();
+                    // catches up for each bufferful
+                    dest.add(r, kh, holder, mc);
+                    if (dest.full()) {
+                        closeDestChunk();
+                    }
+                } else {
+                    // Our record is alive, but in the in-memory store the corresponding entry
+                    // was already updated and a retirement event is on its way. We did not move
+                    // the record to the dest chunk, so to bring our bookkeeping back in sync we must
+                    // keep catching up until we observe the event.
+                    if (!catchUpUntilRetired(r, mc)) {
+                        final String ramStoreName = ramStore != null ? ramStore.getClass().getSimpleName() : "null";
+                        throw new HotRestartException(String.format(
+                                "Stuck while waiting for a record to be retired."
+                              + " Chunk #%03x, record #%03x, size %,d, RAM store was %s",
+                                dest.seq, r.liveSeq(), r.size(), ramStoreName));
+                    }
                 }
             }
         }
-        return destChunks;
+        if (dest != null) {
+            closeDestChunk();
+        }
     }
 
-    private GrowingDestChunk newDestChunk(List<GrowingDestChunk> destChunks) {
-        final GrowingDestChunk dest = gcHelper.newDestChunk(pfixTombstoMgr);
-        destChunks.add(dest);
+    private void applyClearOperation() {
+        while (firstSrcChunk.needsDismissing()) {
+            for (StableValChunk chunk : selected.srcChunks) {
+                pfixTombstoMgr.dismissGarbage(chunk);
+                mc.catchupNow();
+            }
+        }
+    }
+
+    private void ensureDestChunk() {
+        if (dest != null) {
+            return;
+        }
+        start = System.nanoTime();
+        dest = gcHelper.newGrowingDestValChunk();
+        dest.flagForFsyncOnClose(true);
         // make the dest chunk available to chunkMgr.chunk()
         destChunkMap.put(dest.seq, dest);
-        return dest;
     }
 
-    private List<StableValChunk> persistDestChunks(List<GrowingDestChunk> preparedDestChunks) {
-        final List<StableValChunk> compactedChunks = new ArrayList<StableValChunk>();
-        for (GrowingDestChunk destChunk : preparedDestChunks) {
-            final StableValChunk stableChunk = destChunk.flushAndClose(mc, logger);
-            compactedChunks.add(stableChunk);
-            // This call transfers ownership of records from destChunk to stableChunk.
-            // After this point retirements will be addressed at stableChunk.
-            destChunkMap.put(stableChunk.seq, stableChunk);
-            mc.catchupNow();
+    private void closeDestChunk() {
+        dest.close();
+        mc.catchupNow();
+        logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", dest.seq, dest.size(),
+                NANOSECONDS.toMillis(System.nanoTime() - start));
+        final StableValChunk stable = dest.toStableChunk();
+        // Transfers record ownership from the growing to the stable chunk
+        destChunkMap.put(stable.seq, stable);
+        dest = null;
+        mc.catchupNow();
+    }
+
+    @SuppressWarnings("checkstyle:emptyblock")
+    private boolean catchUpUntilRetired(GcRecord r, MutatorCatchup mc) {
+        for (int eventCount = 0;
+             eventCount <= stuckDetectionThreshold && r.isAlive();
+             eventCount += catchUpSafely(mc, r)
+        ) { }
+        return !r.isAlive();
+    }
+
+    private int catchUpSafely(MutatorCatchup mc, GcRecord r) {
+        int eventCount = mc.catchupNow();
+        applyClearOperation();
+        if (mc.shutdownRequested()) {
+            eventCount += mc.catchupNow();
+            applyClearOperation();
+            if (r.isAlive()) {
+                throw new HotRestartException(
+                        "Record not available, retirement event not received, shutdown requested");
+            }
         }
-        preparedDestChunks.clear();
-        return compactedChunks;
+        return eventCount;
     }
 
     private void dismissEvacuatedFiles() {
@@ -158,18 +195,6 @@ final class Evacuator {
             // sortedLiveRecords() and transferToDest() are summarily dismissed by this call
             mc.dismissGarbage(evacuated);
             mc.catchupNow();
-        }
-    }
-
-    private void deleteEmptyDestFiles(List<StableValChunk> destChunks) {
-        for (Iterator<StableValChunk> iterator = destChunks.iterator(); iterator.hasNext();) {
-            final StableValChunk c = iterator.next();
-            if (c.size() == c.garbage) {
-                mc.dismissGarbage(c);
-                gcHelper.deleteChunkFile(c);
-                iterator.remove();
-                mc.catchupNow();
-            }
         }
     }
 

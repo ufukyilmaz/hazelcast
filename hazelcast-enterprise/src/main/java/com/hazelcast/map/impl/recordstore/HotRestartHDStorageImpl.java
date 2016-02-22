@@ -56,7 +56,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
         synchronized (mutex) {
             storage.removeRecord(record);
         }
-        hotRestartStore.remove(createHotRestartKey(record));
+        hotRestartStore.remove(createHotRestartKey(record), fsync);
         fsyncIfRequired();
     }
 

@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -22,14 +23,14 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferOneChunk_thenPopOneChunk() {
-        q.offer(mockChunk(1, 10, 10, 9));
+        q.offer(mockChunk(1, 10, 9));
         Assert.assertNotNull(q.pop());
         assertNull(q.pop());
     }
 
     @Test public void whenOfferWorseBetter_thenPopWorseBetter() {
-        final StableValChunk worse = mockChunk(1, 1000, 10, 9);
-        final StableValChunk better = mockChunk(2, 10, 10, 9);
+        final StableValChunk worse = mockChunk(2, 10, 9);
+        final StableValChunk better = mockChunk(1, 10, 9);
         q.offer(worse);
         q.offer(better);
         assertSame(worse, q.pop());
@@ -38,8 +39,8 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferBetterWorse_thenPopWorseBetter() {
-        final StableValChunk worse = mockChunk(1, 1000, 10, 9);
-        final StableValChunk better = mockChunk(2, 10, 10, 9);
+        final StableValChunk worse = mockChunk(2, 10, 9);
+        final StableValChunk better = mockChunk(1, 10, 9);
         q.offer(better);
         q.offer(worse);
         assertSame(worse, q.pop());
@@ -48,9 +49,9 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferWorstMiddleBest_thenPopMiddleBest() {
-        final StableValChunk worst = mockChunk(1, 1000, 10, 9);
-        final StableValChunk middle = mockChunk(1, 100, 10, 9);
-        final StableValChunk best = mockChunk(2, 10, 10, 9);
+        final StableValChunk worst = mockChunk(3, 10, 9);
+        final StableValChunk middle = mockChunk(2, 10, 9);
+        final StableValChunk best = mockChunk(1, 10, 9);
         q.offer(worst);
         q.offer(middle);
         q.offer(best);
@@ -60,9 +61,9 @@ public class ChunkPriorityQueueTest {
     }
 
     @Test public void whenOfferBestMiddleWorst_thenPopMiddleBest() {
-        final StableValChunk worst = mockChunk(1, 1000, 10, 9);
-        final StableValChunk middle = mockChunk(1, 100, 10, 9);
-        final StableValChunk best = mockChunk(2, 10, 10, 9);
+        final StableValChunk worst = mockChunk(3, 10, 9);
+        final StableValChunk middle = mockChunk(2, 10, 9);
+        final StableValChunk best = mockChunk(1, 10, 9);
         q.offer(best);
         q.offer(middle);
         q.offer(worst);
@@ -71,9 +72,9 @@ public class ChunkPriorityQueueTest {
         assertNull(q.pop());
     }
 
-    private static StableValChunk mockChunk(long seq, long youngestRecordSeq, long size, long garbage) {
-        final StableValChunk c = new StableValChunk(seq, null, 1, youngestRecordSeq, size, garbage, false, false);
-        c.updateCostBenefit(1000);
+    private static StableValChunk mockChunk(long seq, long size, long garbage) {
+        final StableValChunk c = new StableValChunk(seq, null, 1, size, garbage, false, false);
+        c.updateBenefitToCost(3);
         return c;
     }
 }

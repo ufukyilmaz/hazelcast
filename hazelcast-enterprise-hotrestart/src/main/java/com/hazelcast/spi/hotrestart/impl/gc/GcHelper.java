@@ -7,6 +7,21 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
+import com.hazelcast.spi.hotrestart.impl.io.BufferedOutputStream;
+import com.hazelcast.spi.hotrestart.impl.io.Compressor;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOffHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOnHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOffHeap;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOnHeap;
 
 import java.io.Closeable;
 import java.io.File;
@@ -18,9 +33,13 @@ import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.ACTIVE_CHUNK_SUFFIX;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.VAL_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.io.Compressor.COMPRESSED_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
+import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newTombstoneMapOffHeap;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -30,10 +49,6 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public abstract class GcHelper implements Disposable {
     /** Name of the file that contains prefix tombstones */
     public static final String PREFIX_TOMBSTONES_FILENAME = "prefix-tombstones";
-
-    /** Sequence number of records increases by amount proportional to record size.
-     * This constant defines the proportion's ratio. */
-    public static final long BYTES_PER_RECORD_SEQ_INCREMENT = 32;
 
     /** A hex digit represents this many bits. */
     public static final int BITS_PER_HEX_DIGIT = 4;
@@ -94,37 +109,56 @@ public abstract class GcHelper implements Disposable {
     }
 
     /** @return whether file I/O is disabled. Should return true only in testing. */
-    public boolean ioDisabled() {
+    public final boolean ioDisabled() {
         return homeDir == null;
     }
 
-    public WriteThroughValChunk newActiveValChunk() {
+    public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new WriteThroughValChunk(seq, newRecordMap(),
+        return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(),
                 createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
                 this);
     }
 
-    public WriteThroughTombChunk newActiveTombChunk() {
+    public final DestValChunk newGrowingDestValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new WriteThroughTombChunk(seq, newRecordMap(),
-                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true)),
+        return new DestValChunk(seq, new RecordMapOnHeap(),
+                createFileOutputStream(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true)),
                 this);
     }
 
-    public void initChunkSeq(long seq) {
+    public final WriteThroughTombChunk newActiveTombChunk() {
+        return newWriteThroughTombChunk(ACTIVE_CHUNK_SUFFIX);
+    }
+
+    final WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
+        final long seq = chunkSeq.incrementAndGet();
+        return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
+                createFileOutputStream(chunkFile(TOMB_BASEDIR, seq, Chunk.FNAME_SUFFIX + suffix, true)),
+                this);
+    }
+
+    public final void initChunkSeq(long seq) {
         chunkSeq.set(seq);
     }
 
-    public long recordSeq() {
+    public final long chunkSeq() {
+        return chunkSeq.get();
+    }
+
+    final void initRecordSeq(long seq) {
+        recordSeq = seq;
+    }
+
+    public final long recordSeq() {
         return recordSeq;
     }
 
-    public long nextRecordSeq(long size) {
-        return recordSeq += 1 + size / BYTES_PER_RECORD_SEQ_INCREMENT;
+    public final long nextRecordSeq() {
+        return ++recordSeq;
     }
 
-    public void deleteChunkFile(Chunk chunk) {
+    public final void deleteChunkFile(Chunk chunk) {
         if (ioDisabled()) {
             return;
         }
@@ -133,19 +167,11 @@ public abstract class GcHelper implements Disposable {
         delete(toDelete);
     }
 
-    long valChunkSeq() {
-        return chunkSeq.get();
-    }
-
-    void initRecordSeq(long seq) {
-        recordSeq = seq;
-    }
-
-    boolean compressionEnabled() {
+    public final boolean compressionEnabled() {
         return compressor != null;
     }
 
-    void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
+    public final void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
         if (ioDisabled()) {
             return;
         }
@@ -156,23 +182,17 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
-    GrowingDestChunk newDestChunk(PrefixTombstoneManager pfixTombstomgr) {
-        return new GrowingDestChunk(chunkSeq.incrementAndGet(), this, pfixTombstomgr);
-    }
-
-    FileOutputStream createFileOutputStream(String base, long seq, String suffix) {
+    public final FileOutputStream createFileOutputStream(String base, long seq, String suffix) {
         return createFileOutputStream(chunkFile(base, seq, suffix, true));
     }
 
-    OutputStream compressedOutputStream(FileOutputStream out) {
-        return out == null ? nullOutputStream() : compressor.compressedOutputStream(out);
+    public final File chunkFile(Chunk chunk, boolean mkdirs) {
+        return chunkFile(chunk.base(), chunk.seq,
+                chunk.fnameSuffix() + (chunk.compressed() ? COMPRESSED_SUFFIX : ""),
+                mkdirs);
     }
 
-    File chunkFile(Chunk chunk, boolean mkdirs) {
-        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
-    }
-
-    File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
+    public final File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
         if (ioDisabled()) {
             return null;
         }
@@ -191,12 +211,18 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
+    final OutputStream compressedOutputStream(FileOutputStream out) {
+        return out == null ? nullOutputStream() : compressor.compressedOutputStream(out);
+    }
+
     abstract RecordMap newRecordMap();
+
+    abstract RecordMap newTombstoneMap();
 
     /**
      * Converts a map containing GcRecords to one containing plain Records.
      */
-    abstract RecordMap toPlainRecordMap(RecordMap gcRecordMap);
+    public abstract RecordMap toPlainRecordMap(RecordMap gcRecordMap);
 
     public abstract TrackerMap newTrackerMap();
 
@@ -208,11 +234,16 @@ public abstract class GcHelper implements Disposable {
         public OnHeap(HotRestartStoreConfig cfg) {
             super(cfg);
         }
+
         @Override public RecordMap newRecordMap() {
             return new RecordMapOnHeap();
         }
 
-        @Override RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
+        @Override RecordMap newTombstoneMap() {
+            return newRecordMap();
+        }
+
+        @Override public RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
             return new RecordMapOnHeap(gcRecordMap);
         }
 
@@ -235,10 +266,14 @@ public abstract class GcHelper implements Disposable {
         }
 
         @Override public RecordMap newRecordMap() {
-            return new RecordMapOffHeap(malloc);
+            return newRecordMapOffHeap(malloc);
         }
 
-        @Override RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
+        @Override public RecordMap newTombstoneMap() {
+            return newTombstoneMapOffHeap(malloc);
+        }
+
+        @Override public RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
             return new RecordMapOffHeap(malloc, gcRecordMap);
         }
 
@@ -251,7 +286,7 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
-    FileOutputStream createFileOutputStream(File f) {
+    public FileOutputStream createFileOutputStream(File f) {
         if (ioDisabled()) {
             return null;
         }
@@ -262,7 +297,7 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
-    FileInputStream createFileInputStream(File f) {
+    public FileInputStream createFileInputStream(File f) {
         if (ioDisabled()) {
             return null;
         }
@@ -281,7 +316,7 @@ public abstract class GcHelper implements Disposable {
 //        }
 //    }
 
-    static OutputStream bufferedOutputStream(FileOutputStream out) {
+    public static OutputStream bufferedOutputStream(FileOutputStream out) {
         return out == null ? nullOutputStream() : new BufferedOutputStream(out);
     }
 
@@ -291,7 +326,7 @@ public abstract class GcHelper implements Disposable {
         };
     }
 
-    String newStableChunkSuffix() {
-        return Chunk.FNAME_SUFFIX + (compressionEnabled() ? Compressor.COMPRESSED_SUFFIX : "");
+    public String newStableChunkSuffix() {
+        return Chunk.FNAME_SUFFIX + (compressionEnabled() ? COMPRESSED_SUFFIX : "");
     }
 }

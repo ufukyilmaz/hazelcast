@@ -4,6 +4,8 @@
  */
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +26,7 @@ final class ChunkPriorityQueue {
     }
 
     private static boolean betterThan(StableValChunk left, StableValChunk right) {
-        return left.cachedCostBenefit() > right.cachedCostBenefit();
+        return left.cachedBenefitToCost() > right.cachedBenefitToCost();
     }
 
     /**

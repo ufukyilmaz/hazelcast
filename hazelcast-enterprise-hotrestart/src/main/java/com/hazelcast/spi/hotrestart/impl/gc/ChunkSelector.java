@@ -1,6 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.util.collection.LongHashSet;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -13,7 +16,8 @@ import java.util.List;
 import java.util.Set;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.SRC_CHUNKS_GOAL;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk.BY_BENEFIT_COST_DESC;
 import static com.hazelcast.util.QuickMath.log2;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -23,12 +27,12 @@ import static java.util.Arrays.asList;
  */
 final class ChunkSelector {
     @SuppressWarnings("MagicNumber")
-    static final int INITIAL_TOP_CHUNKS = 32 * GcParams.COST_GOAL_CHUNKS;
-    private static final Comparator<StableValChunk> BY_COST_BENEFIT = new Comparator<StableValChunk>() {
+    static final int INITIAL_TOP_CHUNKS = 16 * GcParams.MAX_COST_CHUNKS;
+    private static final Comparator<StableValChunk> BY_SEQ_DESC = new Comparator<StableValChunk>() {
         @Override public int compare(StableValChunk left, StableValChunk right) {
-            final double leftCb = left.cachedCostBenefit();
-            final double rightCb = right.cachedCostBenefit();
-            return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
+            final long leftSeq = left.seq;
+            final long rightSeq = right.seq;
+            return leftSeq > rightSeq ? -1 : leftSeq < rightSeq ? 1 : 0;
         }
     };
     private final Collection<StableChunk> allChunks;
@@ -65,7 +69,7 @@ final class ChunkSelector {
         if (candidates.isEmpty()) {
             return cs;
         }
-        long garbage = 0;
+        long benefit = 0;
         long cost = 0;
         final int initialChunksToFind = gcp.limitSrcChunks ? INITIAL_TOP_CHUNKS : candidates.size();
         int chunksToFind = initialChunksToFind;
@@ -76,17 +80,17 @@ final class ChunkSelector {
                 pfixTombstoMgr.dismissGarbage(c);
                 cost += c.cost();
                 cs.liveRecordCount += c.liveRecordCount;
-                garbage += c.garbage;
+                benefit += c.garbage;
                 cs.srcChunks.add(c);
                 candidates.remove(c);
-                final String statusIfAny = status(garbage, cost);
+                final String statusIfAny = status(benefit, cost);
                 if (statusIfAny != null) {
                     status = statusIfAny;
                     break done;
                 }
             }
             if (candidates.isEmpty()) {
-                if (cost > 0 && cost < gcp.costGoal && !gcp.forceGc) {
+                if (cost > 0 && cost < gcp.minCost) {
                     cs.srcChunks.clear();
                     return cs;
                 }
@@ -108,9 +112,13 @@ final class ChunkSelector {
             }
             logger.finest("Finding " + chunksToFind + " more top chunks");
         }
-        diagnoseChunks(allChunks, gcp, logger);
+        if ((double) benefit / cost < gcp.minBenefitToCost) {
+            cs.srcChunks.clear();
+            return cs;
+        }
+        diagnoseChunks(allChunks, cs.srcChunks, gcp, logger);
         logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
-                status, garbage, cost, cs.srcChunks.size(), allChunks.size());
+                status, benefit, cost, cs.srcChunks.size(), allChunks.size());
         return cs;
     }
 
@@ -121,10 +129,10 @@ final class ChunkSelector {
                 continue;
             }
             final StableValChunk c = (StableValChunk) chunk;
-            if (c.size() > 0 && c.garbage == 0 || c.updateCostBenefit(gcp.currRecordSeq) < gcp.minCostBenefit) {
-                continue;
+            if (c.size() == 0 || c.garbage > 0) {
+                c.updateBenefitToCost(gcp.currChunkSeq);
+                candidates.add(c);
             }
-            candidates.add(c);
         }
         return candidates;
     }
@@ -132,7 +140,7 @@ final class ChunkSelector {
     private List<StableValChunk> topChunks(Set<StableValChunk> candidates, int limit) {
         if (candidates.size() <= limit) {
             final List<StableValChunk> sortedChunks = new ArrayList<StableValChunk>(candidates);
-            Collections.sort(sortedChunks, BY_COST_BENEFIT);
+            Collections.sort(sortedChunks, BY_BENEFIT_COST_DESC);
             mc.catchupNow();
             return sortedChunks;
         } else {
@@ -155,52 +163,53 @@ final class ChunkSelector {
                 ? format("max cost exceeded: will output %,d bytes", cost)
                 : cs.liveRecordCount > MAX_RECORD_COUNT
                 ? format("max record count exceeded: will copy %,d records", cs.liveRecordCount)
-                : cost >= gcp.costGoal && garbage >= gcp.reclamationGoal && cs.srcChunks.size() >= SRC_CHUNKS_GOAL
+                : cost >= gcp.costGoal && garbage >= gcp.benefitGoal
                 ? "reached all goals"
                 : null;
     }
 
-    static void diagnoseChunks(Collection<StableChunk> chunks, GcParams gcp, GcLogger logger) {
+    static void diagnoseChunks(Collection<StableChunk> allChunks, Collection<? extends StableChunk> selectedChunks,
+                               GcParams gcp, GcLogger logger
+    ) {
         if (!logger.isFinestEnabled()) {
             return;
         }
-        final List<StableValChunk> valChunks = new ArrayList<StableValChunk>(chunks.size());
+        final List<StableValChunk> valChunks = new ArrayList<StableValChunk>(allChunks.size());
         int tombChunkCount = 0;
-        for (StableChunk chunk : chunks) {
+        for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableValChunk)) {
                 tombChunkCount++;
                 continue;
             }
             final StableValChunk c = (StableValChunk) chunk;
-            c.updateCostBenefit(gcp.currRecordSeq);
+            c.updateBenefitToCost(gcp.currChunkSeq);
             valChunks.add(c);
         }
-        Collections.sort(valChunks, BY_COST_BENEFIT);
+        Collections.sort(valChunks, BY_SEQ_DESC);
+        final LongHashSet selectedSeqs = new LongHashSet(selectedChunks.size(), -1);
+        for (StableChunk c : selectedChunks) {
+            selectedSeqs.add(c.seq);
+        }
         final StringWriter sw = new StringWriter(512);
         final PrintWriter o = new PrintWriter(sw);
         o.format("%nValue chunks %,d Tombstone chunks: %,d", valChunks.size(), tombChunkCount);
-        o.println("\n seq age        CB factor  recCount");
-        boolean cbThresholdCrossed = false;
+        o.format("%n seq age        CB factor  recCount%n");
         for (StableValChunk c : valChunks) {
-            if (!cbThresholdCrossed && c.cachedCostBenefit() < gcp.minCostBenefit) {
-                cbThresholdCrossed = true;
-                o.println("/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\"
-                +         "/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\/\\");
-            }
-            o.format("%4x %3d %,15.2f    %,7d %s%n",
+            o.format("%4x %3d %,15.2f    %,7d %s %s%n",
                     c.seq,
-                    log2(gcp.currRecordSeq - c.youngestRecordSeq),
-                    c.cachedCostBenefit(),
+                    log2(gcp.currChunkSeq - c.seq),
+                    c.cachedBenefitToCost(),
                     c.liveRecordCount,
-                    visualizedChunk(c.garbage, c.size()));
+                    selectedSeqs.contains(c.seq) ? "X" : " ",
+                    visualizedChunk(c.garbage, c.size(), valChunkSizeLimit()));
         }
         logger.finest(sw.toString());
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
-    private static String visualizedChunk(long garbage, long size) {
+    private static String visualizedChunk(long garbage, long size, int chunkSize) {
         final int chunkLimitChars = 16;
-        final int bytesPerChar = (int) Chunk.SIZE_LIMIT / chunkLimitChars;
+        final int bytesPerChar = chunkSize / chunkLimitChars;
         final StringBuilder b = new StringBuilder(chunkLimitChars * 3 / 2).append('|');
         final long garbageChars = garbage / bytesPerChar;
         final long sizeChars = size / bytesPerChar;

@@ -2,9 +2,20 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
+import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
+import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapBase;
 import com.hazelcast.util.counters.Counter;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Rebuilds the runtime metadata of the chunk manager when the system
@@ -128,33 +139,30 @@ public final class Rebuilder {
      */
     public void done() {
         finishCurrentChunk();
+        final TrackerMapBase trackerMap = (TrackerMapBase) cm.trackers;
         long tombstoneCount = 0;
         long retiredCount = 0;
-        for (StableChunk chunk : cm.chunks.values()) {
-            if (!(chunk instanceof StableTombChunk)) {
-                continue;
-            }
-            for (RecordMap.Cursor cursor = chunk.records.cursor(); cursor.advance();) {
-                final KeyHandle kh = cursor.toKeyHandle();
-                final Tracker tr = cm.trackers.get(kh);
-                final Record r = cursor.asRecord();
-                if (!r.isAlive()) {
-                    continue;
-                }
+        for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
+            for (KhCursor cursor = e.getValue().cursor(); cursor.advance();) {
+                final KeyHandle kh = cursor.asKeyHandle();
+                final Tracker tr = trackerMap.get(kh);
+                assert tr.isAlive() : "tr is dead";
+                assert tr.isTombstone() : "tr is not a tombstone";
                 if (tr.garbageCount() > 0) {
                     tombstoneCount++;
                     continue;
                 }
-                retiredCount++;
+                final StableChunk chunk = cm.chunks.get(tr.chunkSeq());
+                final Record r = chunk.records.get(kh);
+                trackerMap.removeLiveTombstone(kh);
                 cm.tombGarbage.inc(r.size());
                 chunk.retire(kh, r);
-                cm.trackers.removeLiveTombstone(kh);
-                cm.submitForDeletionAsNeeded(chunk);
+                retiredCount++;
             }
         }
-        logger.fine("Retired %,d tombstones. There are %,d left. Record seq is %x",
+        logger.info("Retired %,d tombstones, left %,d live ones. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
-        cm.deleteGarbageTombChunks(null);
+        assert tombstoneCount == trackerMap.liveTombstones.get();
         cm.gcHelper.initRecordSeq(maxSeq);
     }
 
@@ -177,50 +185,67 @@ public final class Rebuilder {
 
         abstract StableChunk toStableChunk();
 
-        final void add0(long prefix, KeyHandle kh, long seq, int size, boolean isTombstone) {
+        final void add0(long prefix, KeyHandle kh, long seq, int size) {
             addStep1(size);
-            addStep2(prefix, kh, seq, size, isTombstone);
+            addStep2(prefix, kh, seq, size);
         }
 
-        void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) { }
+        void acceptStale(Tracker ignored1, long ignored2, KeyHandle ignored3, long ignored4, int size) {
+            addStep2FileOffset += size;
+        }
     }
 
     private static final class RebuildingValChunk extends RebuildingChunk {
-        private long youngestSeq;
-
         RebuildingValChunk(long seq, RecordMap records, boolean compressed) {
             super(seq, records, compressed);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            youngestSeq = seq;
-            add0(prefix, kh, seq, size, false);
+            add0(prefix, kh, seq, size);
         }
 
         @Override StableChunk toStableChunk() {
-            return new StableValChunk(seq, records, liveRecordCount, youngestSeq, size(), garbage, false, compressed);
+            return new StableValChunk(seq, records, liveRecordCount, size(), garbage, false, compressed);
         }
 
         @Override void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
+            super.acceptStale(tr, prefix, kh, seq, size);
             final Record sameKeyRecord = records.putIfAbsent(prefix, kh, -seq, size, false, 1);
             if (sameKeyRecord != null) {
                 sameKeyRecord.incrementGarbageCount();
             }
             tr.incrementGarbageCount();
         }
+
+        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+            insertOrUpdateValue(prefix, kh, seq, size);
+        }
+
+        @Override protected int determineSizeLimit() {
+            return valChunkSizeLimit();
+        }
     }
 
     private static final class RebuildingTombChunk extends RebuildingChunk {
+
         RebuildingTombChunk(long seq, RecordMap records) {
             super(seq, records, false);
         }
 
         @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            add0(prefix, kh, seq, size, true);
+            add0(prefix, kh, seq, size);
         }
 
         @Override StableChunk toStableChunk() {
             return new StableTombChunk(seq, records, liveRecordCount, size(), garbage);
+        }
+
+        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
+            insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
+        }
+
+        @Override protected int determineSizeLimit() {
+            return tombChunkSizeLimit();
         }
     }
 }

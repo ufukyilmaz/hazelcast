@@ -6,8 +6,9 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Record;
-import com.hazelcast.spi.hotrestart.impl.gc.WriteThroughChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
@@ -16,13 +17,12 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * <i>happens-before</i> relationship between any two operations on this object.
  */
 public final class HotRestartStoreImpl implements HotRestartStore {
-    private boolean autoFsync;
     private final String name;
     private final ILogger logger;
     private final GcExecutor gcExec;
     private final GcHelper gcHelper;
-    private WriteThroughChunk activeValChunk;
-    private WriteThroughChunk activeTombChunk;
+    private ActiveChunk activeValChunk;
+    private ActiveChunk activeTombChunk;
 
     private HotRestartStoreImpl(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
@@ -48,43 +48,34 @@ public final class HotRestartStoreImpl implements HotRestartStore {
                 cfg, cfg.malloc() != null ? new GcHelper.OffHeap(cfg) : new GcHelper.OnHeap(cfg));
     }
 
-    @Override public void put(HotRestartKey kh, byte[] value) {
-        put0(kh, value);
+    @Override public void put(HotRestartKey kh, byte[] value, boolean needsFsync) {
+        put0(kh, value, needsFsync);
     }
 
-    @Override public void remove(HotRestartKey key) {
-        put0(key, null);
+    @Override public void remove(HotRestartKey key, boolean needsFsync) {
+        put0(key, null, needsFsync);
     }
 
     @SuppressWarnings("checkstyle:innerassignment")
-    private void put0(HotRestartKey hrKey, byte[] value) {
+    private void put0(HotRestartKey hrKey, byte[] value, boolean needsFsync) {
         validateStatus();
         final int size = Record.size(hrKey.bytes(), value);
-        final long seq = gcHelper.nextRecordSeq(size);
+        final long seq = gcHelper.nextRecordSeq();
         final boolean isTombstone = value == null;
-        WriteThroughChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
+        ActiveChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
+        activeChunk.flagForFsyncOnClose(needsFsync);
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
         final boolean full = activeChunk.addStep1(hrKey.prefix(), seq, hrKey.bytes(), value);
         if (full) {
             activeChunk.close();
-            final WriteThroughChunk inactiveChunk = activeChunk;
+            final ActiveChunk inactiveChunk = activeChunk;
             if (isTombstone) {
                 activeChunk = activeTombChunk = gcHelper.newActiveTombChunk();
             } else {
                 activeChunk = activeValChunk = gcHelper.newActiveValChunk();
             }
             gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
-        } else if (autoFsync) {
-            activeChunk.fsync();
         }
-    }
-
-    @Override public void setAutoFsync(boolean fsync) {
-        this.autoFsync = fsync;
-    }
-
-    @Override public boolean isAutoFsync() {
-        return autoFsync;
     }
 
     @Override public void fsync() {
@@ -103,7 +94,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.submitReplaceActiveChunk(null, activeTombChunk);
         gcExec.start();
         logger.info(String.format("%s reloaded %,d keys; chunk seq %03x",
-                name, gcExec.chunkMgr.trackedKeyCount(), activeValChunk.seq));
+                name, gcExec.chunkMgr.trackedKeyCount(), ((Chunk) activeValChunk).seq));
     }
 
     @Override public boolean isEmpty() {
@@ -129,11 +120,11 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.shutdown();
     }
 
-    private void closeAndDeleteIfEmpty(WriteThroughChunk cuhnk) {
-        if (cuhnk != null) {
-            cuhnk.close();
-            if (cuhnk.size() == 0) {
-                gcHelper.deleteChunkFile(cuhnk);
+    private void closeAndDeleteIfEmpty(ActiveChunk chunk) {
+        if (chunk != null) {
+            chunk.close();
+            if (chunk.size() == 0) {
+                gcHelper.deleteChunkFile((Chunk) chunk);
             }
         }
 

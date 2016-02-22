@@ -83,8 +83,9 @@ public class HotRestartTestUtil {
         try {
             logger.info("Updating db");
             final long testStart = System.nanoTime();
-//            final long outlierThresholdNanos = MILLISECONDS.toNanos(20);
-            long lastFsynced = testStart;
+            final long outlierThresholdNanos = MILLISECONDS.toNanos(15);
+            final long outlierCutoffNanos = MILLISECONDS.toNanos(1500);
+//            long lastFsynced = testStart;
             long lastCleared = testStart;
             long iterCount = 0;
             final long deadline = testStart + SECONDS.toNanos(profile.exerciseTimeSeconds);
@@ -96,14 +97,14 @@ public class HotRestartTestUtil {
                     reg.clear(prefixesToClear);
                     lastCleared = iterStart;
                 }
-                if (!reg.hrStore.isAutoFsync() && iterStart - lastFsynced > MILLISECONDS.toNanos(10)) {
-                    reg.hrStore.fsync();
-                    lastFsynced = iterStart;
-                }
-                final long took = System.nanoTime() - iterStart;
-//                if (took > outlierThresholdNanos) {
-//                    logger.info(String.format("Recording outlier: %d ms%n", NANOSECONDS.toMillis(took)));
+//                if (iterStart - lastFsynced > MILLISECONDS.toNanos(10)) {
+//                    reg.hrStore.fsync();
+//                    lastFsynced = iterStart;
 //                }
+                final long took = System.nanoTime() - iterStart;
+                if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
+                    logger.info(String.format("Recording outlier: %d ms%n", NANOSECONDS.toMillis(took)));
+                }
                 hist.recordValue(took);
             }
             final float runtimeSeconds = (float) (System.nanoTime() - testStart) / SECONDS.toNanos(1);

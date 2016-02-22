@@ -17,8 +17,8 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.CompressorIncubator.BLOCK_SIZE;
-import static com.hazelcast.spi.hotrestart.impl.gc.CompressorIncubator.directBuffer;
+import static com.hazelcast.spi.hotrestart.impl.io.CompressorIncubator.BLOCK_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.io.CompressorIncubator.directBuffer;
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -2,10 +2,11 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -93,10 +94,12 @@ public final class GcExecutor {
                         if (gcp.forceGc) {
                             didWork = runForcedGC(gcp);
                         } else {
-                            didWork = chunkMgr.gc(gcp, mc);
+                            didWork = chunkMgr.valueGc(gcp, mc);
+                        }
+                        if (didWork) {
+                            chunkMgr.tombGc(mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
-                        didWork |= chunkMgr.deleteGarbageTombChunks(mc);
                     }
                     if (didWork) {
                         Thread.yield();
@@ -133,12 +136,9 @@ public final class GcExecutor {
 
     boolean runForcedGC(GcParams gcp) {
         backpressure = true;
-        final boolean savedFsyncOften = mc.fsyncOften;
-        mc.fsyncOften = false;
         try {
-            return chunkMgr.gc(gcp, mc);
+            return chunkMgr.valueGc(gcp, mc);
         } finally {
-            mc.fsyncOften = savedFsyncOften;
             backpressure = false;
         }
     }
@@ -167,7 +167,7 @@ public final class GcExecutor {
         submit(chunkMgr.new AddRecord(key, freshSeq, freshSize, freshIsTombstone));
     }
 
-    public void submitReplaceActiveChunk(final WriteThroughChunk closed, final WriteThroughChunk fresh) {
+    public void submitReplaceActiveChunk(final ActiveChunk closed, final ActiveChunk fresh) {
         submit(chunkMgr.new ReplaceActiveChunk(fresh, closed));
     }
 
@@ -184,7 +184,7 @@ public final class GcExecutor {
         for (long i = 0; !(submitted || (submitted = workQueue.offer(task))) || backpressure; i++) {
             if (mutatorIdler.idle(i)) {
 //                if (!reportedBlocking) {
-//                    System.out.println(submitted? "Backpressure" : "Blocking to submit");
+//                    System.out.println(submitted ? "Backpressure" : "Blocking to submit");
 //                    reportedBlocking = true;
 //                }
                 if (!gcThread.isAlive()) {
@@ -216,10 +216,7 @@ public final class GcExecutor {
      * Instance of this class is passed around to allow catching up with
      * the mutator thread at any point along the GC cycle codepath.
      */
-    class MutatorCatchup implements CatchupTestSupport {
-        // Consulted by output streams to decide whether to fsync after each buffer flush.
-        // Perhaps expose this as configuration param (currently it's hardcoded).
-        boolean fsyncOften;
+    public class MutatorCatchup implements CatchupTestSupport {
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
 
@@ -248,15 +245,11 @@ public final class GcExecutor {
             return workCount;
         }
 
-        void dismissGarbage(Chunk c) {
+        public void dismissGarbage(Chunk c) {
             chunkMgr.dismissGarbage(c);
         }
 
-        void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
-            chunkMgr.dismissGarbageRecord(c, kh, r);
-        }
-
-        boolean shutdownRequested() {
+        public boolean shutdownRequested() {
             return stopped;
         }
     }

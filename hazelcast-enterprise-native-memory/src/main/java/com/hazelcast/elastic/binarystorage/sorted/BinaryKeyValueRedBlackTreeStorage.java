@@ -1,16 +1,16 @@
-package com.hazelcast.elastic.offheapstorage.sorted;
+package com.hazelcast.elastic.binarystorage.sorted;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyRedBlackTreeKeysIteratorImpl;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIteratorImpl;
+import com.hazelcast.elastic.binarystorage.BinaryComparator;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyRedBlackTreeKeysIteratorImpl;
+import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIterator;
+import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIteratorImpl;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
-import static com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection.ASC;
-import static com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection.DESC;
+import static com.hazelcast.elastic.binarystorage.sorted.OrderingDirection.ASC;
+import static com.hazelcast.elastic.binarystorage.sorted.OrderingDirection.DESC;
 import static com.hazelcast.internal.memory.MemoryAccessorProvider.getMemoryAccessor;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -19,7 +19,7 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  * MultiValue for key is available functionality
  */
 @SuppressWarnings("checkstyle:methodcount")
-public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSortedStorage {
+public class BinaryKeyValueRedBlackTreeStorage implements BinaryKeyValueSortedStorage {
 
     // We are using `STANDARD` memory accessor because we internally guarantee that
     // every memory access is aligned.
@@ -75,17 +75,17 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     //// Class
     protected final MemoryAllocator memoryAllocator;
 
-    protected final OffHeapComparator offHeapKeyComparator;
+    protected final BinaryComparator binaryKeyComparator;
 
-    protected final OffHeapValueIterator offHeapValueEntryIterator;
+    protected final BinaryValueIterator binaryValueEntryIterator;
 
-    protected final OffHeapKeyIterator offHeapKeyIterator;
+    protected final BinaryKeyIterator binaryKeyIterator;
 
-    public OffHeapKeyValueRedBlackTreeStorage(MemoryAllocator memoryAllocator, OffHeapComparator offHeapKeyComparator) {
+    public BinaryKeyValueRedBlackTreeStorage(MemoryAllocator memoryAllocator, BinaryComparator binaryKeyComparator) {
         this.memoryAllocator = memoryAllocator;
-        this.offHeapKeyComparator = offHeapKeyComparator;
-        this.offHeapValueEntryIterator = new OffHeapValueIteratorImpl(this);
-        this.offHeapKeyIterator = new OffHeapKeyRedBlackTreeKeysIteratorImpl(this);
+        this.binaryKeyComparator = binaryKeyComparator;
+        this.binaryValueEntryIterator = new BinaryValueIteratorImpl(this);
+        this.binaryKeyIterator = new BinaryKeyRedBlackTreeKeysIteratorImpl(this);
     }
 
     // Key Public methods
@@ -125,7 +125,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     @Override
-    public OffHeapKeyIterator keyIterator() {
+    public BinaryKeyIterator keyIterator() {
         return keyIterator(ASC);
     }
 
@@ -208,9 +208,9 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
      * @return iterator over keys for the specified direction
      */
     @Override
-    public OffHeapKeyIterator keyIterator(OrderingDirection direction) {
-        offHeapKeyIterator.setDirection(direction);
-        return offHeapKeyIterator;
+    public BinaryKeyIterator keyIterator(OrderingDirection direction) {
+        binaryKeyIterator.setDirection(direction);
+        return binaryKeyIterator;
     }
 
     /**
@@ -218,12 +218,12 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
      * @return iterator over values for the specified direction
      */
     @Override
-    public OffHeapValueIterator valueIterator(long keyEntryPointer) {
-        offHeapValueEntryIterator.reset(keyEntryPointer);
-        return offHeapValueEntryIterator;
+    public BinaryValueIterator valueIterator(long keyEntryPointer) {
+        binaryValueEntryIterator.reset(keyEntryPointer);
+        return binaryValueEntryIterator;
     }
 
-    private int compareKeys(OffHeapComparator comparator, long keyAddress, long keySize, long entryAddress) {
+    private int compareKeys(BinaryComparator comparator, long keyAddress, long keySize, long entryAddress) {
         return comparator.compare(
                 keyAddress,
                 keySize,
@@ -259,7 +259,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
                     long valueAddress, long valueWrittenBytes, long valueAllocatedBytes) {
         return put(keyAddress, keyWrittenBytes, keyAllocatedBytes,
                 valueAddress, valueWrittenBytes, valueAllocatedBytes,
-                offHeapKeyComparator
+                binaryKeyComparator
         );
     }
 
@@ -282,7 +282,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
      */
     @Override
     public long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
-                    long valueAddress, long valueWrittenBytes, long valueAllocatedBytes, OffHeapComparator comparator) {
+                    long valueAddress, long valueWrittenBytes, long valueAllocatedBytes, BinaryComparator comparator) {
         long keyEntryAddress = getKeyEntry(keyAddress, keyWrittenBytes, keyAllocatedBytes, comparator, true);
 
         insertValue(
@@ -343,7 +343,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     @Override
     public long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes, boolean createIfNotExists) {
         return getKeyEntry(keyAddress, keyWrittenBytes, keyAllocatedBytes,
-                offHeapKeyComparator, createIfNotExists);
+                binaryKeyComparator, createIfNotExists);
     }
 
     /**
@@ -362,7 +362,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
      */
     @Override
     public long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
-                            OffHeapComparator comparator, boolean createIfNotExists) {
+                            BinaryComparator comparator, boolean createIfNotExists) {
         if (rootAddress == 0L) {
             if (createIfNotExists) {
                 rootAddress = memoryAllocator.allocate(LONG_SIZE_IN_BYTES);
@@ -372,7 +372,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
         }
         return getKeyEntry0(
                 rootAddress,
-                comparator == null ? offHeapKeyComparator : comparator,
+                comparator == null ? binaryKeyComparator : comparator,
                 keyAddress,
                 keyWrittenBytes,
                 keyAllocatedBytes,
@@ -389,7 +389,7 @@ public class OffHeapKeyValueRedBlackTreeStorage implements OffHeapKeyValueSorted
     }
 
     protected long getKeyEntry0(long rootAddress,
-                                OffHeapComparator comparator,
+                                BinaryComparator comparator,
                                 long keyAddress,
                                 long keyWrittenBytes,
                                 long keyAllocatedBytes,

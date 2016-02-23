@@ -1,12 +1,12 @@
 package com.hazelcast.offheapstorage.secondaryKey;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
-import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueRedBlackTreeStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.secondarykey.BinarySecondaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIterator;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.sorted.secondarykey.BinarySecondaryKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.binarystorage.sorted.secondarykey.BinarySecondaryKeyValueSortedStorage;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
@@ -40,12 +40,12 @@ public class SecondaryKeyStorageStringTest {
 
     private static final int VALUE_COUNT = 10;
     private MemoryManager malloc;
-    private OffHeapSecondaryKeyValueSortedStorage offHeapBlobMap;
+    private BinarySecondaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapSecondaryKeyValueRedBlackTreeStorage(
+        this.offHeapBlobMap = new BinarySecondaryKeyValueRedBlackTreeStorage(
                 malloc,
                 new StringComparator(MEM),
                 new StringComparator(MEM)
@@ -185,7 +185,7 @@ public class SecondaryKeyStorageStringTest {
         put(1, CNT, output);
         put(2 * CNT, CNT + 1, output);
 
-        OffHeapKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
+        BinaryKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
 
         Map<String, String> map = new TreeMap<String, String>();
 
@@ -213,7 +213,7 @@ public class SecondaryKeyStorageStringTest {
 
             String key = new String(bytes, "UTF-8");
 
-            OffHeapSecondaryKeyIterator secondaryKeyIterator =
+            BinarySecondaryKeyIterator secondaryKeyIterator =
                     offHeapBlobMap.secondaryKeyIterator(keyEntryPointer, OrderingDirection.ASC);
 
             assertEquals(sortedStrings[idx - 1], key);
@@ -240,7 +240,7 @@ public class SecondaryKeyStorageStringTest {
 
                 secondaryKey++;
 
-                OffHeapValueIterator valueIterator = offHeapBlobMap.valueIterator(secondaryKeyEntry);
+                BinaryValueIterator valueIterator = offHeapBlobMap.valueIterator(secondaryKeyEntry);
                 int value = 1;
 
                 while (valueIterator.hasNext()) {

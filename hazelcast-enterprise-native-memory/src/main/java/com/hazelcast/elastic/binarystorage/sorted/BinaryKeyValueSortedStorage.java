@@ -1,13 +1,13 @@
-package com.hazelcast.elastic.offheapstorage.sorted;
+package com.hazelcast.elastic.binarystorage.sorted;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.OffHeapKeyValueStorage;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
+import com.hazelcast.elastic.binarystorage.BinaryComparator;
+import com.hazelcast.elastic.binarystorage.BinaryKeyValueStorage;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
 
 /**
  * Represents API for sorted off-heap key-value storage
  */
-public interface OffHeapKeyValueSortedStorage extends OffHeapKeyValueStorage {
+public interface BinaryKeyValueSortedStorage extends BinaryKeyValueStorage {
 
     /**
      * @param direction -
@@ -42,7 +42,7 @@ public interface OffHeapKeyValueSortedStorage extends OffHeapKeyValueStorage {
      *                  DESC - 0
      * @return iterator with iterating direction corresponding to direction
      */
-    OffHeapKeyIterator keyIterator(OrderingDirection direction);
+    BinaryKeyIterator keyIterator(OrderingDirection direction);
 
     /**
      * Looking for key equal to buffer by address;
@@ -82,5 +82,5 @@ public interface OffHeapKeyValueSortedStorage extends OffHeapKeyValueStorage {
      */
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes,
-             OffHeapComparator comparator);
+             BinaryComparator comparator);
 }

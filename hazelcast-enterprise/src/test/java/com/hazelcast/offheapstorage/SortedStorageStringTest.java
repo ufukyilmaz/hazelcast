@@ -1,11 +1,11 @@
 package com.hazelcast.offheapstorage;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIterator;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
@@ -36,13 +36,13 @@ import static org.junit.Assert.assertTrue;
 public class SortedStorageStringTest {
 
     private MemoryManager malloc;
-    private OffHeapKeyValueSortedStorage offHeapBlobMap;
+    private BinaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
     public void setUp() throws Exception {
         NativeMemoryConfig nativeMemoryConfig = getMemoryConfig();
         this.malloc = new StandardMemoryManager(nativeMemoryConfig.getSize());
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
+        this.offHeapBlobMap = new BinaryKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
     }
 
     private static NativeMemoryConfig getMemoryConfig() {
@@ -139,7 +139,7 @@ public class SortedStorageStringTest {
 
         System.out.println("put.2.finish=" + (System.currentTimeMillis() - t));
 
-        OffHeapKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
+        BinaryKeyIterator iterator = offHeapBlobMap.keyIterator(OrderingDirection.ASC);
 
         Map<String, String> map = new TreeMap<String, String>();
 
@@ -161,7 +161,7 @@ public class SortedStorageStringTest {
             input.readFully(bytes);
             String key = new String(bytes, "UTF-8");
 
-            OffHeapValueIterator valueIterator = offHeapBlobMap.valueIterator(keyEntryPointer);
+            BinaryValueIterator valueIterator = offHeapBlobMap.valueIterator(keyEntryPointer);
 
             assertTrue(valueIterator.hasNext());
             assertEquals(key, sortedStrings[idx - 1]);

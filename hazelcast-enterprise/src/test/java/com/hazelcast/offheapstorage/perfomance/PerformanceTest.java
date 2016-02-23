@@ -1,8 +1,8 @@
 package com.hazelcast.offheapstorage.perfomance;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueSortedStorage;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
 import com.hazelcast.memory.MemoryManager;
@@ -31,12 +31,12 @@ import static org.junit.Assert.assertTrue;
 public class PerformanceTest {
 
     private MemoryManager malloc;
-    private OffHeapKeyValueSortedStorage offHeapBlobMap;
+    private BinaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
     public void setUp() throws Exception {
         this.malloc = new StandardMemoryManager(new MemorySize(200, MemoryUnit.MEGABYTES));
-        this.offHeapBlobMap = new OffHeapKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
+        this.offHeapBlobMap = new BinaryKeyValueRedBlackTreeStorage(malloc, new StringComparator(MEM));
     }
 
     private static NativeMemoryConfig getMemoryConfig() {

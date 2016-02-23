@@ -1,9 +1,9 @@
-package com.hazelcast.elastic.offheapstorage.sorted.secondarykey;
+package com.hazelcast.elastic.binarystorage.sorted.secondarykey;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.BinaryComparator;
+import com.hazelcast.elastic.binarystorage.iterator.secondarykey.BinarySecondaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 
 /**
  * Provides key-value storage functionality with 2-layer keys structure
@@ -39,7 +39,7 @@ import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
  * Keys are sorted on 1-st level and on each branch of the 2-nd level.
  * RedBlack structure is used in both keys levels.
  */
-public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSortedStorage {
+public interface BinarySecondaryKeyValueSortedStorage extends BinaryKeyValueSortedStorage {
 
     /**
      * Looking for key equal to buffer by address;
@@ -79,7 +79,7 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      */
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
-             OffHeapComparator comparator);
+             BinaryComparator comparator);
 
     /**
      * Looking for key equal to buffer by address;
@@ -137,7 +137,7 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
     long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
              long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
              long valueAddress, long valueWrittenBytes, long valueAllocatedBytes,
-             OffHeapComparator primaryKeyComparator, OffHeapComparator secondaryKeyComparator
+             BinaryComparator primaryKeyComparator, BinaryComparator secondaryKeyComparator
     );
 
     /**
@@ -145,7 +145,7 @@ public interface OffHeapSecondaryKeyValueSortedStorage extends OffHeapKeyValueSo
      * @param orderingDirection - direction of the sorting
      * @return secondary key iterator for the specified key
      */
-    OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection);
+    BinarySecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection);
 
     /**
      * @param direction -

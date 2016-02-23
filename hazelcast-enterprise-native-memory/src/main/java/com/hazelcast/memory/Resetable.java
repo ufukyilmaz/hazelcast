@@ -1,6 +1,11 @@
 package com.hazelcast.memory;
 
-interface Resetable {
-
+/**
+ * Resets  the state of  object
+ */
+public interface Resetable {
+    /**
+     * Resets the state
+     */
     void reset();
 }

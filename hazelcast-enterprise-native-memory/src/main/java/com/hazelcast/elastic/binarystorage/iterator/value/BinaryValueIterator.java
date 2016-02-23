@@ -1,9 +1,9 @@
-package com.hazelcast.elastic.offheapstorage.iterator.value;
+package com.hazelcast.elastic.binarystorage.iterator.value;
 
 /**
  * API to iterate over values in off-heap storage
  */
-public interface OffHeapValueIterator {
+public interface BinaryValueIterator {
 
     /**
      * @return true if there are more elements to fetch, false otherwise

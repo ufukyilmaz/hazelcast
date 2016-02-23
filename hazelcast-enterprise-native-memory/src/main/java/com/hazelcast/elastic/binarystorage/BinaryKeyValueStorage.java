@@ -1,12 +1,12 @@
-package com.hazelcast.elastic.offheapstorage;
+package com.hazelcast.elastic.binarystorage;
 
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.value.OffHeapValueIterator;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIterator;
 
 /**
- * Represents abstract API for the OffHeap append-only key value storage
+ * Represents abstract API for the Binary append-only key value storage
  */
-public interface OffHeapKeyValueStorage {
+public interface BinaryKeyValueStorage {
 
     /**
      * Return first value entry address for the corresponding key entry
@@ -44,13 +44,13 @@ public interface OffHeapKeyValueStorage {
     /**
      * @return iterator over keys of the storage
      */
-    OffHeapKeyIterator keyIterator();
+    BinaryKeyIterator keyIterator();
 
     /**
      * @param keyEntryPointer - address of the corresponding keyEntry
      * @return iterator over values of the corresponding key
      */
-    OffHeapValueIterator valueIterator(long keyEntryPointer);
+    BinaryValueIterator valueIterator(long keyEntryPointer);
 
     /**
      * Looking for key equal to buffer by address;
@@ -102,7 +102,7 @@ public interface OffHeapKeyValueStorage {
      * @return address of the key entry
      */
     long getKeyEntry(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
-                     OffHeapComparator comparator, boolean createIfNotExists);
+                     BinaryComparator comparator, boolean createIfNotExists);
 
     /**
      * @param keyEntryPointer - address of the key entry

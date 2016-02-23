@@ -1,9 +1,9 @@
 package com.hazelcast.offheapstorage.comparator;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
+import com.hazelcast.elastic.binarystorage.BinaryComparator;
 import com.hazelcast.internal.memory.MemoryAccessor;
 
-public class NumericComparator implements OffHeapComparator {
+public class NumericComparator implements BinaryComparator {
 
     private final MemoryAccessor mem;
 

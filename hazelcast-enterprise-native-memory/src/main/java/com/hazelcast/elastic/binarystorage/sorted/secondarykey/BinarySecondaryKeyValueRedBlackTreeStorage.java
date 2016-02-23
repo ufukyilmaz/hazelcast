@@ -1,36 +1,36 @@
-package com.hazelcast.elastic.offheapstorage.sorted.secondarykey;
+package com.hazelcast.elastic.binarystorage.sorted.secondarykey;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapComparator;
-import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIterator;
-import com.hazelcast.elastic.offheapstorage.iterator.secondarykey.OffHeapSecondaryKeyIteratorImpl;
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueRedBlackTreeStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.BinaryComparator;
+import com.hazelcast.elastic.binarystorage.iterator.secondarykey.BinarySecondaryKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.secondarykey.BinarySecondaryKeyIteratorImpl;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueRedBlackTreeStorage;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 import com.hazelcast.memory.MemoryAllocator;
 
 /**
  * Specialization of off-heap red-black tree to secondary key storage
  */
-public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValueRedBlackTreeStorage
-        implements OffHeapSecondaryKeyValueSortedStorage {
+public class BinarySecondaryKeyValueRedBlackTreeStorage extends BinaryKeyValueRedBlackTreeStorage
+        implements BinarySecondaryKeyValueSortedStorage {
 
     private long lastInsertedSecondaryKeyEntry;
-    private final OffHeapComparator offHeapSecondaryKeyComparator;
-    private final OffHeapSecondaryKeyIterator offHeapSecondaryKeyIterator;
+    private final BinaryComparator binarySecondaryKeyComparator;
+    private final BinarySecondaryKeyIterator binarySecondaryKeyIterator;
 
-    public OffHeapSecondaryKeyValueRedBlackTreeStorage(MemoryAllocator memoryAllocator, OffHeapComparator offHeapKeyComparator,
-                                                       OffHeapComparator offHeapSecondaryKeyComparator) {
-        super(memoryAllocator, offHeapKeyComparator);
-        this.offHeapSecondaryKeyComparator = offHeapSecondaryKeyComparator;
-        this.offHeapSecondaryKeyIterator = new OffHeapSecondaryKeyIteratorImpl(this);
+    public BinarySecondaryKeyValueRedBlackTreeStorage(MemoryAllocator memoryAllocator, BinaryComparator binaryKeyComparator,
+                                                      BinaryComparator binarySecondaryKeyComparator) {
+        super(memoryAllocator, binaryKeyComparator);
+        this.binarySecondaryKeyComparator = binarySecondaryKeyComparator;
+        this.binarySecondaryKeyIterator = new BinarySecondaryKeyIteratorImpl(this);
     }
 
     protected long insertSecondaryKey(long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
-                                      long keyEntryAddress, OffHeapComparator secondaryKeyComparator) {
+                                      long keyEntryAddress, BinaryComparator secondaryKeyComparator) {
         long secondaryKeyEntryOffsetAddress = getValueEntryAddressOffset(keyEntryAddress);
 
         long secondaryKeyEntryAddress = getKeyEntry0(
                 secondaryKeyEntryOffsetAddress,
-                secondaryKeyComparator == null ? offHeapSecondaryKeyComparator : secondaryKeyComparator,
+                secondaryKeyComparator == null ? binarySecondaryKeyComparator : secondaryKeyComparator,
                 secondaryKeyAddress,
                 secondaryKeyWrittenBytes,
                 secondaryKeyAllocatedBytes,
@@ -74,7 +74,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
         return put(keyAddress, keyWrittenBytes, keyAllocatedBytes,
                 secondaryKeyAddress, secondaryKeyWrittenBytes, secondaryKeyAllocatedBytes,
                 valueAddress, valueWrittenBytes, valueAllocatedBytes,
-                offHeapKeyComparator, offHeapSecondaryKeyComparator
+                binaryKeyComparator, binarySecondaryKeyComparator
         );
     }
 
@@ -108,7 +108,7 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
     public long put(long keyAddress, long keyWrittenBytes, long keyAllocatedBytes,
                     long secondaryKeyAddress, long secondaryKeyWrittenBytes, long secondaryKeyAllocatedBytes,
                     long valueAddress, long valueWrittenBytes, long valueAllocatedBytes,
-                    OffHeapComparator primaryKeyComparator, OffHeapComparator secondaryKeyComparator) {
+                    BinaryComparator primaryKeyComparator, BinaryComparator secondaryKeyComparator) {
         long keyEntryAddress = getKeyEntry(keyAddress, keyWrittenBytes, keyAllocatedBytes, primaryKeyComparator, true);
 
         long secondaryKeyEntry = insertSecondaryKey(
@@ -163,10 +163,10 @@ public class OffHeapSecondaryKeyValueRedBlackTreeStorage extends OffHeapKeyValue
     }
 
     @Override
-    public OffHeapSecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection) {
-        offHeapSecondaryKeyIterator.setKeyEntry(keyEntryPointer);
-        offHeapSecondaryKeyIterator.setDirection(orderingDirection);
-        return offHeapSecondaryKeyIterator;
+    public BinarySecondaryKeyIterator secondaryKeyIterator(long keyEntryPointer, OrderingDirection orderingDirection) {
+        binarySecondaryKeyIterator.setKeyEntry(keyEntryPointer);
+        binarySecondaryKeyIterator.setDirection(orderingDirection);
+        return binarySecondaryKeyIterator;
     }
 
     @Override

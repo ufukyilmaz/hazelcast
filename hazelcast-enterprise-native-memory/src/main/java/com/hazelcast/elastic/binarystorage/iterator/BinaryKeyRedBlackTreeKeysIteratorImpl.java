@@ -1,20 +1,20 @@
-package com.hazelcast.elastic.offheapstorage.iterator;
+package com.hazelcast.elastic.binarystorage.iterator;
 
-import com.hazelcast.elastic.offheapstorage.sorted.OffHeapKeyValueSortedStorage;
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 
 import java.util.NoSuchElementException;
 
 /**
  * Key iterator over the red-black tree.
  */
-public class OffHeapKeyRedBlackTreeKeysIteratorImpl implements OffHeapKeyIterator {
+public class BinaryKeyRedBlackTreeKeysIteratorImpl implements BinaryKeyIterator {
 
     private long pointer;
     private OrderingDirection direction;
-    private final OffHeapKeyValueSortedStorage storage;
+    private final BinaryKeyValueSortedStorage storage;
 
-    public OffHeapKeyRedBlackTreeKeysIteratorImpl(OffHeapKeyValueSortedStorage storage) {
+    public BinaryKeyRedBlackTreeKeysIteratorImpl(BinaryKeyValueSortedStorage storage) {
         this.storage = storage;
     }
 

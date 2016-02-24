@@ -48,7 +48,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * INT_SIZE_IN_BYTES);
-        MEM.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET, null,
+        MEM.copyMemory(array, MemoryAccessor.ARRAY_INT_BASE_OFFSET, null,
                 arrayAddress, length * INT_SIZE_IN_BYTES);
 
         quickSortInt(arrayAddress, length);
@@ -64,7 +64,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * LONG_SIZE_IN_BYTES);
-        MEM.copyMemory(array, MemoryAccessor.ARRAY_BYTE_BASE_OFFSET,
+        MEM.copyMemory(array, MemoryAccessor.ARRAY_LONG_BASE_OFFSET,
                                    null, arrayAddress,
                                    length * LONG_SIZE_IN_BYTES);
 

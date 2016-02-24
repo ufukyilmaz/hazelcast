@@ -45,7 +45,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = unsafe.allocateMemory(length * INT_SIZE_IN_BYTES);
-        unsafe.copyMemory(array, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, null,
+        unsafe.copyMemory(array, UnsafeHelper.INT_ARRAY_BASE_OFFSET, null,
                 arrayAddress, length * INT_SIZE_IN_BYTES);
 
         quickSortInt(arrayAddress, length);
@@ -61,7 +61,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = unsafe.allocateMemory(length * LONG_SIZE_IN_BYTES);
-        unsafe.copyMemory(array, UnsafeHelper.BYTE_ARRAY_BASE_OFFSET, null,
+        unsafe.copyMemory(array, UnsafeHelper.LONG_ARRAY_BASE_OFFSET, null,
                 arrayAddress, length * LONG_SIZE_IN_BYTES);
 
         quickSortLong(arrayAddress, length);

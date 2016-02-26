@@ -1,6 +1,7 @@
 package com.hazelcast;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 public class PortableHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();
+    private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
+    private final String eeAllPath = "src/main/resources/META-INF/services/com.hazelcast.PortableHook";
     private BufferedReader eeAllInput;
     private URL ossURL;
     private BufferedReader ossIn;
@@ -30,9 +33,7 @@ public class PortableHookTest {
     @Before
     public void loadResources() throws IOException {
         eeAllInput = new BufferedReader(
-                new FileReader(
-                        "src/main/resources/META-INF/services/com.hazelcast.PortableHook"
-                )
+                new FileReader(eeAllPath)
         );
 
         for (String line = eeAllInput.readLine(); line != null; line = eeAllInput.readLine()) {
@@ -42,7 +43,7 @@ public class PortableHookTest {
         }
 
         ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
+                "https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
         );
         ossIn = new BufferedReader(
                 new InputStreamReader(ossURL.openStream()));
@@ -58,7 +59,7 @@ public class PortableHookTest {
     public void testMergedCorrectly() throws IOException {
         for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
             if (line.startsWith("com")) {
-                assertTrue("Class in OSS: " + line + " is missing!", enterpriseAllSet.contains(line));
+                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath, enterpriseAllSet.contains(line));
             }
         }
 

@@ -13,7 +13,7 @@ com.hazelcast.web.WebDataSerializerHook
 # oss hooks
 com.hazelcast.internal.cluster.impl.ClusterDataSerializerHook
 com.hazelcast.spi.impl.SpiDataSerializerHook
-com.hazelcast.partition.PartitionDataSerializerHook
+com.hazelcast.internal.partition.impl.PartitionDataSerializerHook
 com.hazelcast.client.impl.ClientDataSerializerHook
 com.hazelcast.map.impl.MapDataSerializerHook
 com.hazelcast.collection.impl.queue.QueueDataSerializerHook

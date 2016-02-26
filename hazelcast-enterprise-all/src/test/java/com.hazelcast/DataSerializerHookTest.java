@@ -24,6 +24,7 @@ public class DataSerializerHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();
     private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
+    private final String eeAllPath = "src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook";
     private BufferedReader eeAllInput;
     private URL ossURL;
     private URL wmURL;
@@ -34,9 +35,7 @@ public class DataSerializerHookTest {
     @Before
     public void loadResources() throws IOException {
         eeAllInput = new BufferedReader(
-                new FileReader(
-                        "src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
-                )
+                new FileReader(eeAllPath)
         );
 
         for (String line = eeAllInput.readLine(); line != null; line = eeAllInput.readLine()) {
@@ -68,7 +67,7 @@ public class DataSerializerHookTest {
     public void testMergedCorrectly() throws IOException {
         for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
             if (line.startsWith("com")) {
-                assertTrue("Class in OSS: " + line + " is missing!", enterpriseAllSet.contains(line));
+                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath, enterpriseAllSet.contains(line));
             }
         }
 

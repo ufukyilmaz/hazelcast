@@ -15,6 +15,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.nio.ByteOrder;
+
 import static com.hazelcast.internal.serialization.impl.EnterpriseSerializationUtil.allocateNativeData;
 import static com.hazelcast.internal.serialization.impl.EnterpriseSerializationUtil.readDataInternal;
 import static com.hazelcast.internal.serialization.impl.EnterpriseSerializationUtil.readNativeData;
@@ -47,32 +49,33 @@ public class EnterpriseSerializationUtilTest extends AbstractEnterpriseSerializa
 
     @Test
     public void testReadDataInternal_shouldReturnPayloadFromNativeEnterpriseByteArrayObjectDataInput() throws Exception {
-        EnterpriseObjectDataInput input = getEnterpriseObjectDataInput(DEFAULT_PAYLOAD);
+        EnterpriseObjectDataInput input = getEnterpriseObjectDataInput(getDefaultPayload(ByteOrder.LITTLE_ENDIAN));
 
         Data output = readDataInternal(input, DataType.NATIVE, memoryManager, false);
 
         assertNotNull(output);
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, output);
+        assertDataLengthAndContent(getDefaultPayload(ByteOrder.LITTLE_ENDIAN), output);
     }
 
     @Test
     public void testReadDataInternal_shouldReturnPayloadFromNativeEnterpriseUnsafeObjectDataInput() throws Exception {
-        EnterpriseObjectDataInput input = new EnterpriseUnsafeObjectDataInput(DEFAULT_PAYLOAD, 0, serializationService);
+        EnterpriseObjectDataInput input
+                = new EnterpriseUnsafeObjectDataInput(getDefaultPayload(ByteOrder.nativeOrder()), 0, serializationService);
 
         Data output = readDataInternal(input, DataType.NATIVE, memoryManager, false);
 
         assertNotNull(output);
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, output);
+        assertDataLengthAndContent(getDefaultPayload(ByteOrder.nativeOrder()), output);
     }
 
     @Test
     public void testReadDataInternal_shouldReturnPayloadFromHeapEnterpriseByteArrayObjectDataInput() throws Exception {
-        EnterpriseObjectDataInput input = getEnterpriseObjectDataInput(DEFAULT_PAYLOAD);
+        EnterpriseObjectDataInput input = getEnterpriseObjectDataInput(getDefaultPayload(ByteOrder.LITTLE_ENDIAN));
 
         Data output = readDataInternal(input, DataType.HEAP, memoryManager, false);
 
         assertNotNull(output);
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, output);
+        assertDataLengthAndContent(getDefaultPayload(ByteOrder.LITTLE_ENDIAN), output);
     }
 
     @Test

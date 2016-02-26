@@ -10,9 +10,6 @@
 
     <!-- all these issues below need to be resolved in 3.3-->
     <Match>
-        <Package name="com.hazelcast.session" />
-    </Match>
-    <Match>
         <Package name="com.hazelcast.security" />
     </Match>
     <Match>

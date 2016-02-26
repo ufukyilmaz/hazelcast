@@ -5,48 +5,6 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>hazelcast-enterprise-sessions/jetty7/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-jetty7-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>hazelcast-enterprise-sessions/jetty8/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-jetty8-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>hazelcast-enterprise-sessions/jetty9/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-jetty9-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>hazelcast-enterprise-sessions/tomcat6/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-tomcat6-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>hazelcast-enterprise-sessions/tomcat7/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-tomcat7-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>hazelcast-enterprise-sessions/tomcat8/target/</directory>
-            <outputDirectory>/lib/</outputDirectory>
-            <includes>
-                <include>hazelcast-enterprise-tomcat8-${project.version}.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>hazelcast-enterprise/target/</directory>
             <outputDirectory>/lib/</outputDirectory>
             <includes>

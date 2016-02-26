@@ -60,12 +60,6 @@
     <!-- Instance -->
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/instance/EnterpriseNodeExtension"/>
 
-    <!-- Sessions -->
-    <suppress checks="JavadocMethod" files="com/hazelcast/session/"/>
-    <suppress checks="JavadocType" files="com/hazelcast/session/"/>
-    <suppress checks="JavadocVariable" files="com/hazelcast/session/"/>
-    <suppress checks="MethodCountCheck" files="com/hazelcast/session/HazelcastSessionManager"/>
-
     <!-- SSL -->
     <suppress checks="MagicNumber|MethodLength|MagicNumber|CyclomaticComplexity|EmptyBlock|NPathComplexity"
               files="com/hazelcast/nio/ssl/SSLSocketChannelWrapper"/>

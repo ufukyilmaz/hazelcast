@@ -1,8 +1,5 @@
 package com.hazelcast.memory;
 
-/**
- * @author mdogan 07/01/14
- */
 interface AddressQueue {
 
     long INVALID_ADDRESS = MemoryManager.NULL_ADDRESS;
@@ -24,5 +21,4 @@ interface AddressQueue {
     void afterCompaction();
 
     void destroy();
-
 }

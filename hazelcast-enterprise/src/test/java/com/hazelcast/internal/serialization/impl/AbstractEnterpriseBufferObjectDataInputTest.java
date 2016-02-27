@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -26,6 +27,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputTest extends Abstra
     }
 
     protected abstract EnterpriseBufferObjectDataInput getEnterpriseBufferObjectDataInput();
+    protected abstract ByteOrder getByteOrder();
 
     @After
     public void tearDown() {
@@ -56,7 +58,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputTest extends Abstra
         Data output = input.readData(DataType.NATIVE);
 
         assertNotNull(output);
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, output);
+        assertDataLengthAndContent(getDefaultPayload(getByteOrder()), output);
     }
 
     @Test
@@ -64,6 +66,6 @@ public abstract class AbstractEnterpriseBufferObjectDataInputTest extends Abstra
         Data output = input.tryReadData(DataType.NATIVE);
 
         assertNotNull(output);
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, output);
+        assertDataLengthAndContent(getDefaultPayload(getByteOrder()), output);
     }
 }

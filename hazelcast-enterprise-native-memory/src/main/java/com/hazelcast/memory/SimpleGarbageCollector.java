@@ -5,10 +5,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.newSetFromMap;
 
-/**
- * @author mdogan 17/04/14
- */
 final class SimpleGarbageCollector extends Thread implements GarbageCollector {
+
+    private static final int JOIN_MILLIS = 10000;
 
     private final Set<GarbageCollectable> garbageCollectables =
             newSetFromMap(new ConcurrentHashMap<GarbageCollectable, Boolean>());
@@ -65,7 +64,7 @@ final class SimpleGarbageCollector extends Thread implements GarbageCollector {
         if (isAlive()) {
             interrupt();
             try {
-                join(10000);
+                join(JOIN_MILLIS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

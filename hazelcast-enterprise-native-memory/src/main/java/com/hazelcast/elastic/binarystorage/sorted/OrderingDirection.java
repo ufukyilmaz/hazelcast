@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.offheapstorage.sorted;
+package com.hazelcast.elastic.binarystorage.sorted;
 
 /**
  * Specifies ordering direction to iterate over sorted off-heap storage

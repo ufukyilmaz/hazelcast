@@ -16,16 +16,10 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
-import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-/**
- * @author mdogan 03/12/13
- */
-public class ThreadLocalPoolingMemoryManager
-        extends AbstractPoolingMemoryManager
-        implements MemoryManager {
+@SuppressWarnings("checkstyle:methodcount")
+public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements MemoryManager {
 
     // Size of the memory block header in bytes
     private static final int HEADER_SIZE = 1;
@@ -43,6 +37,8 @@ public class ThreadLocalPoolingMemoryManager
 
     // Initial capacity for various internal allocations such as page addresses, address queues, etc ...
     private static final int INITIAL_CAPACITY = 1024;
+    // Load factor for the page allocation hash set
+    private static final float LOAD_FACTOR = 0.60f;
     // Time interval in milliseconds to shrink address queues
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
@@ -127,7 +123,7 @@ public class ThreadLocalPoolingMemoryManager
     protected ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
                                               LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
-        pageAllocations = new LongHashSet(INITIAL_CAPACITY, 0.60f, systemAllocator, NULL_ADDRESS);
+        pageAllocations = new LongHashSet(INITIAL_CAPACITY, LOAD_FACTOR, systemAllocator, NULL_ADDRESS);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
         externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, systemAllocator);
         initializeAddressQueues();
@@ -293,9 +289,8 @@ public class ThreadLocalPoolingMemoryManager
                 // Put it back
                 externalAllocations.put(allocationAddress, actualAllocationSize);
                 throw new AssertionError("Invalid size -> actual: " + actualSize + ", expected: " + size
-                                         + " while free external address " + address);
-            }
-            else {
+                        + " while free external address " + address);
+            } else {
                 pageAllocator.free(allocationAddress, allocationSize);
             }
         }
@@ -316,8 +311,8 @@ public class ThreadLocalPoolingMemoryManager
         int size = getSizeFromHeader(header);
         assert pageBase <= address && pageBase + pageSize >= address + size
                 : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
-                                address, address + size - 1,
-                                pageBase, pageBase + pageSize - 1);
+                address, address + size - 1,
+                pageBase, pageBase + pageSize - 1);
 
         int pageOffset = (int) (address - pageBase);
         assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
@@ -469,9 +464,9 @@ public class ThreadLocalPoolingMemoryManager
             int high = pageAllocations.size() - 1;
 
             while (low <= high) {
-                final int middle = (low + high) >>> 1;
-                final long pageBase = sortedPageAllocations.get(middle);
-                final long pageEnd = pageBase + pageSize - 1;
+                int middle = (low + high) >>> 1;
+                long pageBase = sortedPageAllocations.get(middle);
+                long pageEnd = pageBase + pageSize - 1;
                 if (address > pageEnd) {
                     low = middle + 1;
                 } else if (address < pageBase) {
@@ -501,6 +496,12 @@ public class ThreadLocalPoolingMemoryManager
                 addressQueues[i] = null;
             }
         }
+        disposePageAllocations();
+        sortedPageAllocations.dispose();
+        disposeExternalAllocations();
+    }
+
+    private void disposePageAllocations() {
         if (!pageAllocations.isEmpty()) {
             LongIterator iterator = pageAllocations.iterator();
             while (iterator.hasNext()) {
@@ -510,9 +511,11 @@ public class ThreadLocalPoolingMemoryManager
             }
         }
         pageAllocations.dispose();
-        sortedPageAllocations.dispose();
+    }
+
+    private void disposeExternalAllocations() {
         if (!externalAllocations.isEmpty()) {
-            for (LongLongCursor cursor = externalAllocations.cursor(); cursor.advance();) {
+            for (LongLongCursor cursor = externalAllocations.cursor(); cursor.advance(); ) {
                 long address = cursor.key();
                 long size = cursor.value();
                 pageAllocator.free(address, size);
@@ -532,6 +535,8 @@ public class ThreadLocalPoolingMemoryManager
     }
 
     private final class ThreadAddressQueue implements AddressQueue {
+
+        private static final float RESIZE_CAPACITY_THRESHOLD = .75f;
 
         private final int index;
         private final int memorySize;
@@ -557,7 +562,7 @@ public class ThreadLocalPoolingMemoryManager
         }
 
         @Override
-        public final long acquire() {
+        public long acquire() {
             if (queue != null) {
                 shrink(false);
                 return queue.poll();
@@ -567,7 +572,7 @@ public class ThreadLocalPoolingMemoryManager
 
         private void shrink(boolean force) {
             int capacity = queue.capacity();
-            if (capacity > INITIAL_CAPACITY && queue.remainingCapacity() > capacity * .75f) {
+            if (capacity > INITIAL_CAPACITY && queue.remainingCapacity() > capacity * RESIZE_CAPACITY_THRESHOLD) {
                 long now = Clock.currentTimeMillis();
                 if (force || now > lastResize + SHRINK_INTERVAL) {
                     queue = resizeQueue(queue, queue.capacity() >> 1, true);
@@ -577,7 +582,7 @@ public class ThreadLocalPoolingMemoryManager
         }
 
         @Override
-        public final boolean release(long address) {
+        public boolean release(long address) {
             if (address == INVALID_ADDRESS) {
                 throw new IllegalArgumentException("Illegal memory address: " + address);
             }
@@ -682,12 +687,11 @@ public class ThreadLocalPoolingMemoryManager
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("ThreadAddressQueue{");
-            sb.append("name=").append(threadName);
-            sb.append(", memorySize=").append(MemorySize.toPrettyString(memorySize));
-            sb.append(", queue=").append(queue);
-            sb.append('}');
-            return sb.toString();
+            return "ThreadAddressQueue{"
+                    + "name=" + threadName
+                    + ", memorySize=" + MemorySize.toPrettyString(memorySize)
+                    + ", queue=" + queue
+                    + '}';
         }
 
         public int getMemorySize() {

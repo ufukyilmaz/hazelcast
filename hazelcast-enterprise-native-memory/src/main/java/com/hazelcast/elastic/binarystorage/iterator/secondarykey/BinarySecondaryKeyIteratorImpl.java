@@ -1,21 +1,21 @@
-package com.hazelcast.elastic.offheapstorage.iterator.secondarykey;
+package com.hazelcast.elastic.binarystorage.iterator.secondarykey;
 
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
-import com.hazelcast.elastic.offheapstorage.sorted.secondarykey.OffHeapSecondaryKeyValueSortedStorage;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.sorted.secondarykey.BinarySecondaryKeyValueSortedStorage;
 
 import java.util.NoSuchElementException;
 
 /**
  * Iterator over secondary keys stored in a red-black tree.
  */
-public class OffHeapSecondaryKeyIteratorImpl implements OffHeapSecondaryKeyIterator {
+public class BinarySecondaryKeyIteratorImpl implements BinarySecondaryKeyIterator {
 
     private long pointer;
     private long keyEntryAddress;
     private OrderingDirection direction;
-    private final OffHeapSecondaryKeyValueSortedStorage storage;
+    private final BinarySecondaryKeyValueSortedStorage storage;
 
-    public OffHeapSecondaryKeyIteratorImpl(OffHeapSecondaryKeyValueSortedStorage storage) {
+    public BinarySecondaryKeyIteratorImpl(BinarySecondaryKeyValueSortedStorage storage) {
         this.storage = storage;
     }
 

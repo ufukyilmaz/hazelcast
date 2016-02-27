@@ -1,11 +1,11 @@
-package com.hazelcast.elastic.offheapstorage.iterator;
+package com.hazelcast.elastic.binarystorage.iterator;
 
-import com.hazelcast.elastic.offheapstorage.sorted.OrderingDirection;
+import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 
 /**
  * Represents API to iterate over keys of the off-heap storage structure;
  */
-public interface OffHeapKeyIterator {
+public interface BinaryKeyIterator {
 
     /**
      * @return true if there are also elements to fetch, false in opposite;

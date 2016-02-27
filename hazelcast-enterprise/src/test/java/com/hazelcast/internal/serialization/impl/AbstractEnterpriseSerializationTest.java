@@ -9,6 +9,8 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.HazelcastTestSupport;
 
+import java.nio.ByteOrder;
+
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.junit.Assert.assertEquals;
@@ -18,7 +20,8 @@ import static org.mockito.Mockito.when;
 
 public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestSupport {
 
-    protected static final byte[] DEFAULT_PAYLOAD = new byte[]{8, 0, 0, 0, 23, 42, 47, 11, 0, 8, 1, 5};
+    protected static final byte[] DEFAULT_PAYLOAD_LE = new byte[]{8, 0, 0, 0, 23, 42, 47, 11, 0, 8, 1, 5};
+    protected static final byte[] DEFAULT_PAYLOAD_BE = new byte[]{0, 0, 0, 8, 23, 42, 47, 11, 0, 8, 1, 5};
     protected static final byte[] NULL_ARRAY_LENGTH_PAYLOAD = new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
 
     protected MemoryManager outOfMemoryMemoryManager;
@@ -36,6 +39,14 @@ public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestS
                 .setAllowUnsafe(true)
                 .setUseNativeByteOrder(isUseNativeByteOrder())
                 .build();
+    }
+
+    protected byte[] getDefaultPayload(ByteOrder byteOrder) {
+        if (byteOrder == LITTLE_ENDIAN) {
+            return DEFAULT_PAYLOAD_LE;
+        } else {
+            return DEFAULT_PAYLOAD_BE;
+        }
     }
 
     protected boolean isUseNativeByteOrder() {

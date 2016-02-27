@@ -172,7 +172,7 @@ public class MemoryManagerTest {
     }
 
     private void testValidateAndGetUsableSize_withUnallocatedAddress(MemoryManager memoryManager) throws Exception {
-        int size = 31;
+        int size = 32;
         long address = memoryManager.allocate(size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetUsableSize(address + size));
     }
@@ -193,7 +193,7 @@ public class MemoryManagerTest {
     }
 
     private void testValidateAndGetAllocatedSize_withUnallocatedAddress(MemoryManager memoryManager) throws Exception {
-        int size = 31;
+        int size = 32;
         long address = memoryManager.allocate(size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetAllocatedSize(address + size));
     }

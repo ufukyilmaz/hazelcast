@@ -1,12 +1,12 @@
-package com.hazelcast.elastic.offheapstorage.iterator.secondarykey;
+package com.hazelcast.elastic.binarystorage.iterator.secondarykey;
 
-import com.hazelcast.elastic.offheapstorage.iterator.OffHeapKeyIterator;
+import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyIterator;
 
 /**
  * Iterator over secondary keys in off-heap storage sorted using primary and secondary
  * sort key.
  */
-public interface OffHeapSecondaryKeyIterator extends OffHeapKeyIterator {
+public interface BinarySecondaryKeyIterator extends BinaryKeyIterator {
 
     /**
      * Sets address of rootAddress to iterate over its keys.

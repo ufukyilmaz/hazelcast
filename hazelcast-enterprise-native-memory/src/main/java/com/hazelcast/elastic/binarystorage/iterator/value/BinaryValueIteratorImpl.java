@@ -1,25 +1,25 @@
-package com.hazelcast.elastic.offheapstorage.iterator.value;
+package com.hazelcast.elastic.binarystorage.iterator.value;
 
-import com.hazelcast.elastic.offheapstorage.OffHeapKeyValueStorage;
+import com.hazelcast.elastic.binarystorage.BinaryKeyValueStorage;
 
 import java.util.NoSuchElementException;
 
 /**
  * Iterator over values in off-heap storage.
  */
-public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
+public class BinaryValueIteratorImpl implements BinaryValueIterator {
 
-    private final OffHeapKeyValueStorage offHeapRedBlackTree;
+    private final BinaryKeyValueStorage binaryRedBlackTree;
 
     private long nextValueEntryPointer;
 
-    public OffHeapValueIteratorImpl(OffHeapKeyValueStorage offHeapRedBlackTree) {
-        this.offHeapRedBlackTree = offHeapRedBlackTree;
+    public BinaryValueIteratorImpl(BinaryKeyValueStorage binaryRedBlackTree) {
+        this.binaryRedBlackTree = binaryRedBlackTree;
     }
 
     @Override
     public boolean hasNext() {
-        if (offHeapRedBlackTree == null) {
+        if (binaryRedBlackTree == null) {
             return false;
         }
 
@@ -33,13 +33,13 @@ public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
         }
 
         long nextPointer = nextValueEntryPointer;
-        nextValueEntryPointer = offHeapRedBlackTree.getNextValueEntryAddress(nextValueEntryPointer);
+        nextValueEntryPointer = binaryRedBlackTree.getNextValueEntryAddress(nextValueEntryPointer);
         return nextPointer;
     }
 
     @Override
     public void reset(long keyEntryPointer) {
-        if (offHeapRedBlackTree == null) {
+        if (binaryRedBlackTree == null) {
             nextValueEntryPointer = 0L;
             return;
         }
@@ -47,7 +47,7 @@ public class OffHeapValueIteratorImpl implements OffHeapValueIterator {
         if (keyEntryPointer == 0L) {
             nextValueEntryPointer = 0L;
         } else {
-            nextValueEntryPointer = offHeapRedBlackTree.getValueEntryAddress(keyEntryPointer);
+            nextValueEntryPointer = binaryRedBlackTree.getValueEntryAddress(keyEntryPointer);
         }
     }
 }

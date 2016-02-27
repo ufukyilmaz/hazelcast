@@ -10,7 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -26,10 +27,16 @@ public abstract class AbstractEnterpriseBufferObjectDataInputFactoryTest extends
     }
 
     protected abstract InputOutputFactory getFactory();
+    protected abstract ByteOrder getByteOrder();
 
     @After
     public void tearDown() {
         shutdownMemoryManagerAndSerializationService();
+    }
+
+    @Test
+    public void testGetByteOrder() {
+        assertEquals(getByteOrder(), factory.getByteOrder());
     }
 
     @Test
@@ -39,7 +46,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputFactoryTest extends
         BufferObjectDataInput input = factory.createInput(nativeData, serializationService);
 
         assertNotNull(input);
-        assertEquals(LITTLE_ENDIAN, input.getByteOrder());
+        assertEquals(getByteOrder(), input.getByteOrder());
     }
 
     @Test
@@ -49,16 +56,17 @@ public abstract class AbstractEnterpriseBufferObjectDataInputFactoryTest extends
         BufferObjectDataInput input = factory.createInput(nativeData, serializationService);
 
         assertNotNull(input);
-        assertEquals(LITTLE_ENDIAN, input.getByteOrder());
+        assertEquals(getByteOrder(), input.getByteOrder());
     }
 
     @Test
     public void testCreateInput_fromByte() throws Exception {
-        BufferObjectDataInput input = factory.createInput(DEFAULT_PAYLOAD, serializationService);
+        BufferObjectDataInput input = factory.createInput(getDefaultPayload(getByteOrder()), serializationService);
 
         assertNotNull(input);
-        assertEquals(LITTLE_ENDIAN, input.getByteOrder());
-        assertDataLengthAndContent(DEFAULT_PAYLOAD, ((EnterpriseBufferObjectDataInput) input).readData(DataType.NATIVE));
+        assertEquals(getByteOrder(), input.getByteOrder());
+        assertDataLengthAndContent(getDefaultPayload(getByteOrder()),
+                ((EnterpriseBufferObjectDataInput) input).readData(DataType.NATIVE));
     }
 
     @Test
@@ -66,7 +74,7 @@ public abstract class AbstractEnterpriseBufferObjectDataInputFactoryTest extends
         BufferObjectDataOutput output = factory.createOutput(1024, serializationService);
 
         assertNotNull(output);
-        assertEquals(LITTLE_ENDIAN, output.getByteOrder());
+        assertEquals(getByteOrder(), output.getByteOrder());
 
         output.close();
     }

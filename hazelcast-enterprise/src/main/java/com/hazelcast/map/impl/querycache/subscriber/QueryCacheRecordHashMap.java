@@ -48,7 +48,7 @@ public class QueryCacheRecordHashMap extends SampleableConcurrentHashMap<Data, Q
 
         @Override
         public Evictable getEvictable() {
-            return getValue();
+            return (Evictable) getValue();
         }
 
     }

@@ -65,7 +65,7 @@ public class HDLocalMapStatsOperation extends HDMapOperation implements Partitio
                 Record record = iterator.next();
                 Data key = record.getKey();
 
-                hits += record.getStatistics().getHits();
+                hits += record.getHits();
                 lockedEntryCount += recordStore.isLocked(key) ? 1 : 0;
                 lastAccessTime = Math.max(lastAccessTime, record.getLastAccessTime());
                 lastUpdateTime = Math.max(lastUpdateTime, record.getLastUpdateTime());

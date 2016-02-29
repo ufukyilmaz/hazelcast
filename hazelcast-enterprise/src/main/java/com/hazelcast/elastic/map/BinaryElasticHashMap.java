@@ -770,7 +770,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /** {@code Map.Entry} implementation for this map. */
-    protected class MapEntry implements Map.Entry<Data, V> {
+    protected class MapEntry implements Map.Entry {
 
         private final int slot;
 
@@ -779,20 +779,20 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
 
         @Override
-        public Data getKey() {
+        public Object getKey() {
             return accessor.keyData(slot);
         }
 
         @Override
-        public V getValue() {
+        public Object getValue() {
             final long value = accessor.getValue(slot);
             return readV(value);
         }
 
         @Override
-        public V setValue(MemoryBlock value) {
-            V current = getValue();
-            accessor.setValue(slot, value.address());
+        public Object setValue(Object value) {
+            Object current = getValue();
+            accessor.setValue(slot, ((MemoryBlock) value).address());
             return current;
         }
     }

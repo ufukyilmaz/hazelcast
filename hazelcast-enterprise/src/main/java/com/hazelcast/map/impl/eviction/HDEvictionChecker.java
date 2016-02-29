@@ -36,19 +36,17 @@ import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRes
  * to start eviction process.
  * <p/>
  * Created one per map-container.
- *
- * @see EvictionCheckerImpl#checkEvictionPossible(RecordStore)
  */
-public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
+public class HDEvictionChecker extends EvictionChecker {
 
     private final int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
 
-    public HDEvictionCheckerImpl(MapServiceContext mapServiceContext) {
+    public HDEvictionChecker(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
     }
 
     @Override
-    public boolean checkEvictionPossible(RecordStore recordStore) {
+    public boolean checkEvictable(RecordStore recordStore) {
         EnterpriseMapContainer mapContainer = ((EnterpriseMapContainer) recordStore.getMapContainer());
         HiDensityStorageInfo storageInfo = mapContainer.getStorageInfo();
         MapConfig mapConfig = mapContainer.getMapConfig();
@@ -74,7 +72,7 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
                 evictable = checkMaxUsedNativeMemorySize(maxSize, storageInfo);
                 break;
             default:
-                evictable = super.checkEvictionPossible(recordStore);
+                evictable = super.checkEvictable(recordStore);
                 break;
         }
 

@@ -26,12 +26,12 @@ import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
+import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 /**
@@ -249,13 +249,17 @@ public abstract class HDMapOperation extends MapOperation {
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
         int mod = getPartitionId() % threadCount;
+
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+
             if (partitionId % threadCount == mod) {
-                ConcurrentMap<String, RecordStore> maps
-                        = mapServiceContext.getPartitionContainer(partitionId).getMaps();
+
+                ConcurrentMap<String, RecordStore> maps = mapServiceContext.getPartitionContainer(partitionId).getMaps();
+
                 for (RecordStore recordStore : maps.values()) {
                     MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
-                    if (recordStore.isEvictionEnabled() && NATIVE == mapConfig.getInMemoryFormat()) {
+
+                    if (NONE != mapConfig.getEvictionPolicy() && NATIVE == mapConfig.getInMemoryFormat()) {
                         recordStore.evictAll(backup);
                     }
                 }
@@ -286,7 +290,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     protected final void evict() {
         if (recordStore != null) {
-            recordStore.evictEntries(Clock.currentTimeMillis());
+            recordStore.evictEntries();
             disposeDeferredBlocks();
         }
     }

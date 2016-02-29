@@ -12,7 +12,6 @@ import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -30,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 
+import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -83,7 +83,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         Map<Data, SimpleNativeMemoryData> map = new HashMap<Data, SimpleNativeMemoryData>();
         for (SampleableElasticHashMap<SimpleNativeMemoryData>.SamplingEntry sample : samples) {
             // Because of maven compile error, explicit "SimpleNativeMemoryData" casting was added
-            map.put(sample.getKey(), (SimpleNativeMemoryData) sample.getValue());
+            map.put((Data) sample.getKey(), (SimpleNativeMemoryData) sample.getValue());
             sampleCount++;
         }
         // Sure that there is enough sample as we expected

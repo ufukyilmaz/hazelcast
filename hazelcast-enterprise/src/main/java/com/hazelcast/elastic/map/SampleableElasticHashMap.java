@@ -67,7 +67,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
         }
 
         @Override
-        public V setValue(MemoryBlock value) {
+        public V setValue(Object value) {
             throw new UnsupportedOperationException("Setting value is not supported");
         }
 

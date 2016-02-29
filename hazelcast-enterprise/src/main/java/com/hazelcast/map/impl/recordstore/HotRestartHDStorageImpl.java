@@ -1,6 +1,8 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -19,7 +21,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
     private final Object mutex = new Object();
 
     public HotRestartHDStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory recordFactory,
-            InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
+                                   InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
         super(mapServiceContext, recordFactory, inMemoryFormat, fsync, prefix);
     }
 
@@ -30,7 +32,10 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
 
     @Override
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
-        return new HDStorageImpl(((HDRecordFactory) recordFactory).getRecordProcessor());
+        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
+        HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
+
+        return new HDStorageImpl(recordProcessor, serializationService);
     }
 
     public void put(Data key, HDRecord record) {

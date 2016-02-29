@@ -130,24 +130,23 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public void setStatistics(RecordStatistics recordStatistics) {
-        setHits(recordStatistics.getHits());
         setLastStoredTime(recordStatistics.getLastStoredTime());
         setExpirationTime(recordStatistics.getExpirationTime());
     }
 
     @Override
-    public void onAccess() {
-        access();
-    }
-
-    @Override
-    public void access() {
+    public void onAccess(long now) {
         setHits(getHits() + 1);
+
+        setLastAccessTime(now);
     }
 
     @Override
-    public void onUpdate() {
+    public void onUpdate(long now) {
+        onAccess(now);
+
         setVersion(getVersion() + 1L);
+        setLastUpdateTime(now);
     }
 
     @Override
@@ -180,15 +179,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     @Override
     public void setSequence(long sequence) {
         writeInt(SEQUENCE_OFFSET, (int) sequence);
-    }
-
-    @Override
-    public long getEvictionCriteriaNumber() {
-        return 0;
-    }
-
-    @Override
-    public void setEvictionCriteriaNumber(long evictionCriteriaNumber) {
     }
 
     @Override
@@ -301,12 +291,14 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
         setWithCreationTime(LAST_UPDATE_TIME_OFFSET, lastUpdatedTime);
     }
 
-    public int getHits() {
+    @Override
+    public long getHits() {
         return readInt(HITS);
     }
 
-    public void setHits(int hits) {
-        writeInt(HITS, hits);
+    @Override
+    public void setHits(long hits) {
+        writeInt(HITS, (int) hits);
     }
 
     @Override
@@ -331,14 +323,12 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeInt(getHits());
         out.writeLong(getLastStoredTime());
         out.writeLong(getExpirationTime());
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-        setHits(in.readInt());
         setLastStoredTime(in.readLong());
         setExpirationTime(in.readLong());
     }

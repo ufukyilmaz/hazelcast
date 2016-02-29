@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.recordstore;
 
-import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.SizeEstimator;
@@ -24,28 +24,16 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public class HDStorageImpl implements Storage<Data, HDRecord> {
 
-    /**
-     * Default capacity for a hash container.
-     */
-    public static final int DEFAULT_CAPACITY = 128;
-
-    /**
-     * Default load factor.
-     */
-    public static final float DEFAULT_LOAD_FACTOR = 0.6f;
-
-    private final SampleableElasticHashMap<HDRecord> map;
+    private final HDStorageSCHM map;
     private final HiDensityRecordProcessor recordProcessor;
     private final SizeEstimator sizeEstimator;
 
-    public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor) {
-        this(DEFAULT_CAPACITY, DEFAULT_LOAD_FACTOR, recordProcessor);
-    }
-
-    HDStorageImpl(int initialCapacity, float loadFactor, HiDensityRecordProcessor<HDRecord> recordProcessor) {
+    public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.sizeEstimator = createMapSizeEstimator(NATIVE);
-        this.map = new SampleableElasticHashMap(initialCapacity, loadFactor, recordProcessor);
+
+
+        this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
 
     public HiDensityRecordProcessor getRecordProcessor() {

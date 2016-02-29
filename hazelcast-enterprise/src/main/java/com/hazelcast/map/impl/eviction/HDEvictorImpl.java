@@ -16,90 +16,47 @@
 
 package com.hazelcast.map.impl.eviction;
 
-import com.hazelcast.config.EvictionPolicy;
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.elastic.map.SampleableElasticHashMap;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.record.HDRecord;
+import com.hazelcast.core.EntryView;
+import com.hazelcast.map.impl.eviction.policies.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.HDStorageImpl;
+import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.util.Clock;
+import com.hazelcast.partition.IPartitionService;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.hazelcast.map.impl.eviction.EvictionChecker.isEvictionEnabled;
+
 /**
  * {@link Evictor} for maps which has {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
- * <p/>
+ *
  * This evictor is sampling based evictor. So independent of the size of record-store, eviction works in constant time.
  */
 public class HDEvictorImpl extends EvictorImpl {
 
-    private static final int SAMPLE_COUNT = 15;
-    private static final int MAX_EVICTED_ENTRY_COUNT_IN_ONE_ROUND = 1;
     private static final int ONE_HUNDRED_PERCENT = 100;
     private static final int FORCED_EVICTION_PERCENTAGE = 20;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
-    public HDEvictorImpl(EvictionChecker evictionChecker, MapServiceContext mapServiceContext) {
-        super(evictionChecker, mapServiceContext);
+    public HDEvictorImpl(EvictionChecker evictionChecker, MapEvictionPolicy evictionPolicy, IPartitionService partitionService) {
+        super(evictionChecker, evictionPolicy, partitionService);
     }
 
     @Override
-    public void removeSize(int removalSize, RecordStore recordStore) {
-        if (!isEvictable(recordStore)) {
-            return;
-        }
-
-        boolean backup = isBackup(recordStore);
-        MapConfig mapConfig = recordStore.getMapContainer().getMapConfig();
-        EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
-
-        Iterable<SampleableElasticHashMap.SamplingEntry> samples = getSamples(recordStore);
-
-        long prevCriteriaValue = -1;
-        SampleableElasticHashMap.SamplingEntry entry = null;
-        for (SampleableElasticHashMap.SamplingEntry sample : samples) {
-            // evictor does not remove locked keys.
-            if (recordStore.isLocked(sample.getKey())) {
-                continue;
-            }
-
-            // This `criteriaValue` represents the criteria value for evictions like LFU, LRU.
-            // By using this value we are trying to select most appropriate entry to evict.
-            long criteriaValue = getEvictionCriteriaValue((HDRecord) sample.getValue(), evictionPolicy);
-            if (prevCriteriaValue == -1) {
-                prevCriteriaValue = criteriaValue;
-                entry = sample;
-            } else if (criteriaValue < prevCriteriaValue) {
-                prevCriteriaValue = criteriaValue;
-                entry = sample;
-            }
-        }
-
-        if (entry != null) {
-            Record record = (HDRecord) entry.getValue();
-            fireEvent(record, recordStore, backup, getNow());
-
-            recordStore.evict(record.getKey(), backup);
-        }
-    }
-
-    @Override
-    public int findRemovalSize(RecordStore recordStore) {
-        return MAX_EVICTED_ENTRY_COUNT_IN_ONE_ROUND;
+    protected Record getRecordFromEntryView(EntryView selectedEntry) {
+        return ((HDStorageSCHM.LazyEntryViewFromRecord) selectedEntry).getRecord();
     }
 
     public void forceEvict(RecordStore recordStore) {
-        if (!isEvictable(recordStore)) {
+        if (recordStore.size() == 0 || !isEvictionEnabled(recordStore)) {
             return;
         }
 
-        long now = getNow();
         boolean backup = isBackup(recordStore);
 
         int removalSize = calculateRemovalSize(recordStore);
@@ -117,8 +74,11 @@ public class HDEvictorImpl extends EvictorImpl {
                 break;
             }
         }
+
         for (Record record : recordsToEvict) {
-            fireEvent(record, recordStore, backup, now);
+            if (!backup) {
+                recordStore.doPostEvictionOperations(record, backup);
+            }
             recordStore.evict(record.getKey(), backup);
         }
 
@@ -126,43 +86,20 @@ public class HDEvictorImpl extends EvictorImpl {
     }
 
     @Override
-    protected long getEvictionCriteriaValue(Record record, EvictionPolicy evictionPolicy) {
-        switch (evictionPolicy) {
-            case LRU:
-                return record.getLastAccessTime();
-            case LFU:
-                return ((HDRecord) record).getHits();
-            default:
-                throw new IllegalArgumentException("Not an appropriate eviction policy [" + evictionPolicy + ']');
-        }
-    }
-
-    private static Iterable<SampleableElasticHashMap.SamplingEntry> getSamples(RecordStore recordStore) {
+    protected Iterable<EntryView> getSamples(RecordStore recordStore) {
+        int sampleCount = evictionPolicy.getSampleCount();
         Storage storage = recordStore.getStorage();
+
         if (storage instanceof HotRestartHDStorageImpl) {
-            return ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
+            return (Iterable<EntryView>) ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(sampleCount);
         }
-        return ((HDStorageImpl) storage).getRandomSamples(SAMPLE_COUNT);
-    }
 
-    private static void fireEvent(Record record, RecordStore recordStore, boolean backup, long now) {
-        if (!backup) {
-            boolean expired = recordStore.isExpired(record, now, false);
-            recordStore.doPostEvictionOperations(record.getKey(), record.getValue(), expired);
-        }
-    }
-
-    private static boolean isEvictable(RecordStore recordStore) {
-        return recordStore.isEvictionEnabled() && recordStore.size() > 0;
+        return (Iterable<EntryView>) ((HDStorageImpl) storage).getRandomSamples(sampleCount);
     }
 
     private static int calculateRemovalSize(RecordStore recordStore) {
         int size = recordStore.size();
         int removalSize = (int) (size * (long) FORCED_EVICTION_PERCENTAGE / ONE_HUNDRED_PERCENT);
         return Math.max(removalSize, MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT);
-    }
-
-    private static long getNow() {
-        return Clock.currentTimeMillis();
     }
 }

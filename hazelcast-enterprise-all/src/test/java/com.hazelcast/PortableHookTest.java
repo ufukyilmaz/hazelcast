@@ -1,6 +1,7 @@
 package com.hazelcast;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class PortableHookTest {
 
     private final Set<String> enterpriseAllSet = new HashSet<String>();
+    private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
     private BufferedReader eeAllInput;
     private URL ossURL;
     private BufferedReader ossIn;
@@ -42,7 +44,7 @@ public class PortableHookTest {
         }
 
         ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/master/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
+                "https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
         );
         ossIn = new BufferedReader(
                 new InputStreamReader(ossURL.openStream()));

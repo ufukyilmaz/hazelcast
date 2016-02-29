@@ -10,7 +10,7 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMalloc;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
@@ -113,9 +113,9 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
-    public final DestValChunk newDestValChunk(MutatorCatchup mc) {
+    public final SurvivorValChunk newSurvivorValChunk(MutatorCatchup mc) {
         final long seq = chunkSeq.incrementAndGet();
-        return new DestValChunk(seq, newRecordMap(true),
+        return new SurvivorValChunk(seq, newRecordMap(true),
                 chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true), mc),
                 this);
     }

@@ -6,7 +6,7 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
@@ -38,7 +38,7 @@ final class ValEvacuator {
     private final MutatorCatchup mc;
     private final StableValChunk firstSrcChunk;
     private long start;
-    private DestValChunk survivor;
+    private SurvivorValChunk survivor;
 
     private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
                          GcLogger logger, long start
@@ -147,7 +147,7 @@ final class ValEvacuator {
             return;
         }
         start = System.nanoTime();
-        survivor = gcHelper.newDestValChunk(mc);
+        survivor = gcHelper.newSurvivorValChunk(mc);
         survivor.flagForFsyncOnClose(true);
         // make the dest chunk available to chunkMgr.chunk()
         survivorMap.put(survivor.seq, survivor);

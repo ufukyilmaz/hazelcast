@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
@@ -100,11 +101,14 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             assert serializationService.getMemoryManager() != null : "MemoryManager is null";
 
             if (hotRestartConfig.isEnabled()) {
-                return new HotRestartHDStorageImpl(mapServiceContext, recordFactory, inMemoryFormat,
-                        hotRestartConfig.isFsync(), prefix);
+                return new HotRestartHDStorageImpl(mapServiceContext, recordFactory,
+                        inMemoryFormat, hotRestartConfig.isFsync(), prefix);
             }
-            return new HDStorageImpl(((HDRecordFactory) recordFactory).getRecordProcessor());
+
+            HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
+            return new HDStorageImpl(recordProcessor, serializationService);
         }
+
         if (hotRestartConfig.isEnabled()) {
             return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat, hotRestartConfig.isFsync(), prefix);
         }

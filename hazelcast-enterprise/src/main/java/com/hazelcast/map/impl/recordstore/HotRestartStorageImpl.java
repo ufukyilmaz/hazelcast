@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.SizeEstimator;
 import com.hazelcast.map.impl.record.Record;
@@ -20,17 +21,13 @@ import java.util.Collection;
 public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>, HotRestartStorage<R> {
 
     protected final EnterpriseMapServiceContext mapServiceContext;
-
     protected final HotRestartStore hotRestartStore;
-
     protected final Storage<Data, R> storage;
-
     protected final boolean fsync;
-
     protected final long prefix;
 
     HotRestartStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory<R> recordFactory,
-            InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
+                          InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
         this.mapServiceContext = mapServiceContext;
         this.fsync = fsync;
         this.hotRestartStore = getHotRestartStore();
@@ -43,7 +40,8 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {
-        return new StorageImpl<R>(recordFactory, inMemoryFormat);
+        SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
+        return new StorageImpl<R>(recordFactory, inMemoryFormat, serializationService);
     }
 
     @Override

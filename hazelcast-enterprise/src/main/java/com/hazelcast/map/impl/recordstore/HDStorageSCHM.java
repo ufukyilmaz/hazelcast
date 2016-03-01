@@ -6,7 +6,6 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.record.RecordStatistics;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 
 /**
@@ -90,8 +89,9 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public long getExpirationTime() {
-            RecordStatistics statistics = record.getStatistics();
-            return statistics == null ? -1L : statistics.getExpirationTime();
+            assert record.getStatistics() != null : "Stats cannot be null";
+
+            return record.getStatistics().getExpirationTime();
         }
 
         @Override
@@ -106,8 +106,9 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public long getLastStoredTime() {
-            RecordStatistics statistics = record.getStatistics();
-            return statistics == null ? -1L : statistics.getLastStoredTime();
+            assert record.getStatistics() != null : "Stats cannot be null";
+
+            return record.getStatistics().getLastStoredTime();
         }
 
         @Override
@@ -127,6 +128,77 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         public Record getRecord() {
             return record;
+        }
+
+        //CHECKSTYLE:OFF
+        @Override
+        public boolean equals(Object o) {
+            if (this != o) {
+                return true;
+            }
+
+            if (!(o instanceof EntryView)) {
+                return false;
+            }
+
+            EntryView that = (EntryView) o;
+
+            return getKey().equals(that.getKey())
+                    && getValue().equals(that.getValue())
+                    && getVersion() == that.getVersion()
+                    && getCost() == that.getCost()
+                    && getCreationTime() == that.getCreationTime()
+                    && getExpirationTime() == that.getExpirationTime()
+                    && getHits() == that.getHits()
+                    && getLastAccessTime() == that.getLastAccessTime()
+                    && getLastStoredTime() == that.getLastStoredTime()
+                    && getLastUpdateTime() == that.getLastUpdateTime()
+                    && getTtl() == that.getTtl();
+        }
+        // CHECKSTYLE:ON
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + getKey().hashCode();
+            result = 31 * result + getValue().hashCode();
+
+            long cost = getCost();
+            long creationTime = getCreationTime();
+            long expirationTime = getExpirationTime();
+            long hits = getHits();
+            long lastAccessTime = getLastAccessTime();
+            long lastStoredTime = getLastStoredTime();
+            long lastUpdateTime = getLastUpdateTime();
+            long version = getVersion();
+            long ttl = getTtl();
+
+            result = 31 * result + (int) (cost ^ (cost >>> 32));
+            result = 31 * result + (int) (creationTime ^ (creationTime >>> 32));
+            result = 31 * result + (int) (expirationTime ^ (expirationTime >>> 32));
+            result = 31 * result + (int) (hits ^ (hits >>> 32));
+            result = 31 * result + (int) (lastAccessTime ^ (lastAccessTime >>> 32));
+            result = 31 * result + (int) (lastStoredTime ^ (lastStoredTime >>> 32));
+            result = 31 * result + (int) (lastUpdateTime ^ (lastUpdateTime >>> 32));
+            result = 31 * result + (int) (version ^ (version >>> 32));
+            result = 31 * result + (int) (ttl ^ (ttl >>> 32));
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "EntryView{key=" + getKey()
+                    + ", value=" + getValue()
+                    + ", cost=" + getCost()
+                    + ", version=" + getVersion()
+                    + ", creationTime=" + getCreationTime()
+                    + ", expirationTime=" + getExpirationTime()
+                    + ", hits=" + getHits()
+                    + ", lastAccessTime=" + getLastAccessTime()
+                    + ", lastStoredTime=" + getLastStoredTime()
+                    + ", lastUpdateTime=" + getLastUpdateTime()
+                    + ", ttl=" + getTtl()
+                    + '}';
         }
     }
 

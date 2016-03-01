@@ -108,6 +108,7 @@
     <suppress checks="ClassDataAbstractionCoupling" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/map/impl/operation/HDMapOperationProvider"/>
     <suppress checks="ClassFanOutComplexityCheck" files="com/hazelcast/map/impl/EnterpriseMapServiceContextImpl"/>
+    <suppress checks="CyclomaticComplexity" files="com/hazelcast/map/impl/recordstore/LazyEntryViewFromRecord"/>
 
     <!-- Client Protocol -->
     <suppress checks="" files="com/hazelcast/client/impl/protocol/EnterpriseMessageTaskFactoryProvider"/>

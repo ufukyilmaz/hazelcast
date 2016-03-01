@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.Probe;
 import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
@@ -14,6 +15,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap.Cursor;
@@ -34,7 +36,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Manages chunk files and contains top-level code of the GC algorithm.
  */
-public final class ChunkManager {
+public final class ChunkManager implements Disposable {
     /** Minimum chunk file size to compress. */
     private static final int MIN_SIZE_TO_COMPRESS = 64 * 1024;
     /** Batch size while releasing tombstones. Between batches we catch up and Thread.yield */
@@ -49,7 +51,7 @@ public final class ChunkManager {
     final GcHelper gcHelper;
     final PrefixTombstoneManager pfixTombstoMgr;
     // temporary storage during GC
-    Long2ObjectHashMap<Chunk> destChunkMap;
+    Long2ObjectHashMap<WriteThroughChunk> survivors;
     ActiveValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
     private final GcLogger logger;
@@ -69,13 +71,14 @@ public final class ChunkManager {
         return trackers.size();
     }
 
-    public void close() {
+    @Override public void dispose() {
         activeValChunk.dispose();
         activeTombChunk.dispose();
         for (Chunk c : chunks.values()) {
             c.dispose();
         }
         trackers.dispose();
+        gcHelper.dispose();
     }
 
     /** Accounts for the active value chunk having been inactivated
@@ -148,7 +151,31 @@ public final class ChunkManager {
         chunk.retire(kh, r);
     }
 
-    void dismissGarbage(Chunk c, MutatorCatchup mc) {
+    void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
+        final Tracker tr = trackers.get(kh);
+        if (r.isAlive()) {
+            if (tr == null || tr.chunkSeq() != chunk.seq) {
+                return;
+            }
+            adjustGlobalGarbage(chunk, r);
+            chunk.retire(kh, r, false);
+            tr.retire(trackers);
+        }
+        if (tr != null) {
+            tr.decrementGarbageCount(r.garbageCount());
+            if (tr.garbageCount() == 0) {
+                trackers.removeIfDead(kh, tr);
+            }
+        } else {
+            assert r.garbageCount() == 0 : "Inconsistent global zero garbage count vs. local " + r.garbageCount();
+        }
+        r.setGarbageCount(0);
+    }
+
+    private void dismissGarbage(Chunk c, MutatorCatchup mc) {
+        if (!(c instanceof StableValChunk)) {
+            return;
+        }
         for (Cursor cursor = c.records.cursor(); cursor.advance();) {
             final KeyHandle kh = cursor.toKeyHandle();
             final Record r = cursor.asRecord();
@@ -162,6 +189,7 @@ public final class ChunkManager {
             mc.catchupAsNeeded();
         }
         c.garbage = 0;
+        mc.catchupNow();
     }
 
     private void dismissChunkGarbageForKey(KeyHandle kh, Record r, Tracker tr) {
@@ -188,27 +216,6 @@ public final class ChunkManager {
         trackers.removeLiveTombstone(kh);
     }
 
-    void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
-        final Tracker tr = trackers.get(kh);
-        if (r.isAlive()) {
-            if (tr == null || tr.chunkSeq() != chunk.seq) {
-                return;
-            }
-            adjustGlobalGarbage(chunk, r);
-            chunk.retire(kh, r, false);
-            tr.retire(trackers);
-        }
-        if (tr != null) {
-            tr.decrementGarbageCount(r.garbageCount());
-            if (tr.garbageCount() == 0) {
-                trackers.removeIfDead(kh, tr);
-            }
-        } else {
-            assert r.garbageCount() == 0 : "Inconsistent global zero garbage count vs. local " + r.garbageCount();
-        }
-        r.setGarbageCount(0);
-    }
-
     private void adjustGlobalGarbage(Chunk chunk, Record r) {
         if (chunk != activeValChunk && chunk != activeTombChunk) {
             // Garbage in the active chunk will be accounted for upon deactivation
@@ -223,7 +230,7 @@ public final class ChunkManager {
             return activeTombChunk;
         } else {
             final StableChunk c = chunks.get(chunkSeq);
-            final Chunk chunk = c != null ? c : destChunkMap != null ? destChunkMap.get(chunkSeq) : null;
+            final Chunk chunk = c != null ? c : survivors != null ? survivors.get(chunkSeq) : null;
             assert chunk != null : String.format("Failed to fetch the chunk #%03x", chunkSeq);
             return chunk;
         }
@@ -253,7 +260,7 @@ public final class ChunkManager {
             logger.info("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
         }
         evacuate(srcChunks, this, mc, logger, start);
-        afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start);
+        afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start, mc);
         return true;
     }
 
@@ -267,24 +274,31 @@ public final class ChunkManager {
         final long live = tombOccupancy.get() - garbage;
         logger.fine("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
         evacuate(srcChunks, this, mc, logger);
-        afterEvacuation("Tomb", srcChunks, tombGarbage, tombOccupancy, start);
+        afterEvacuation("Tomb", srcChunks, tombGarbage, tombOccupancy, start, mc);
         return true;
     }
 
     private void afterEvacuation(
-            String gcKind, Collection<? extends StableChunk> srcChunks, Counter garbage, Counter occupancy, long start
+            String gcKind, Collection<? extends StableChunk> evacuatedChunks, Counter garbage, Counter occupancy,
+            long start, MutatorCatchup mc
     ) {
         long sizeBefore = 0;
-        for (StableChunk src : srcChunks) {
-            sizeBefore += src.size();
-            disposeAndRemove(src);
+        for (StableChunk evacuated : evacuatedChunks) {
+            sizeBefore += evacuated.size();
+            gcHelper.deleteChunkFile(evacuated);
+            mc.catchupNow();
+            dismissGarbage(evacuated, mc);
+            evacuated.dispose();
+            chunks.remove(evacuated.seq);
         }
         long sizeAfter = 0;
-        for (Chunk dest : destChunkMap.values()) {
-            chunks.put(dest.seq, (StableChunk) dest);
-            sizeAfter += dest.size();
+        for (WriteThroughChunk survivor : survivors.values()) {
+            sizeAfter += survivor.size();
+            // Transfers record ownership from the growing to the stable chunk
+            chunks.put(survivor.seq, survivor.toStableChunk());
+            mc.catchupNow();
         }
-        this.destChunkMap = null;
+        this.survivors = null;
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = garbage.inc(-reclaimed);
         final long liveAfterGc = occupancy.inc(-reclaimed) - garbageAfterGc;
@@ -296,8 +310,4 @@ public final class ChunkManager {
         assert liveAfterGc >= 0 : String.format("%s live went below zero: %,d", gcKind, liveAfterGc);
     }
 
-    private void disposeAndRemove(StableChunk chunk) {
-        chunk.dispose();
-        chunks.remove(chunk.seq);
-    }
 }

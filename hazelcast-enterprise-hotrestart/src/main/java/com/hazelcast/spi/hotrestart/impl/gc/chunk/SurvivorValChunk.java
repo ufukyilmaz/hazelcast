@@ -10,9 +10,9 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 /**
  * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}.
  */
-public final class DestValChunk extends WriteThroughChunk {
+public final class SurvivorValChunk extends WriteThroughChunk {
 
-    public DestValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
+    public SurvivorValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
     }
 
@@ -33,6 +33,6 @@ public final class DestValChunk extends WriteThroughChunk {
     }
 
     @Override public StableValChunk toStableChunk() {
-        return new StableValChunk(seq, records, liveRecordCount, size(), garbage, needsDismissing());
+        return new StableValChunk(seq, records.toStable(), liveRecordCount, size(), garbage, needsDismissing());
     }
 }

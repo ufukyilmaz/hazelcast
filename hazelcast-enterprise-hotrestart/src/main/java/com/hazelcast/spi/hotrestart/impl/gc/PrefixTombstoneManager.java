@@ -83,8 +83,8 @@ public class PrefixTombstoneManager {
                 for (StableChunk c : chunkMgr.chunks.values()) {
                     c.needsDismissing(true);
                 }
-                if (chunkMgr.destChunkMap != null) {
-                    for (Chunk c : chunkMgr.destChunkMap.values()) {
+                if (chunkMgr.survivors != null) {
+                    for (Chunk c : chunkMgr.survivors.values()) {
                         c.needsDismissing(true);
                     }
                 }

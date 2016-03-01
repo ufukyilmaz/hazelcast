@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 
 import java.io.Closeable;
 import java.io.File;
@@ -55,8 +56,9 @@ public final class TombFileAccessor implements Closeable {
 
     public void close() {
         if (buf != null) {
-            ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
+            GcHelper.disposeMappedBuffer(buf);
         }
         buf = null;
     }
+
 }

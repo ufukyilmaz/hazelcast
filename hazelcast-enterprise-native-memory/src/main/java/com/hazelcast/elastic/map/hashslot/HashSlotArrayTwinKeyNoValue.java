@@ -15,7 +15,7 @@ public class HashSlotArrayTwinKeyNoValue extends HashSlotArrayTwinKeyImpl {
      * @param nullKey1 the null-sentinel value checked against the {@code key1} field.
      */
     public HashSlotArrayTwinKeyNoValue(long nullKey1, MemoryAllocator malloc, int initialCapacity) {
-        super(nullKey1, 0L, malloc, 0, initialCapacity);
+        super(nullKey1, 0L, malloc, null, 0, initialCapacity);
     }
 
     /**

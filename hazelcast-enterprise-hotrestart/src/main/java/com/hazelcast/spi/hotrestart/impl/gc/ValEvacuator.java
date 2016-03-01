@@ -6,8 +6,9 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.DestValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
@@ -29,25 +30,23 @@ final class ValEvacuator {
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
     private final Collection<StableValChunk> srcChunks;
-    private final ChunkManager chunkMgr;
     private final GcLogger logger;
-    private final Long2ObjectHashMap<Chunk> destChunkMap;
+    private final Long2ObjectHashMap<WriteThroughChunk> survivorMap;
     private final TrackerMap recordTrackers;
     private final GcHelper gcHelper;
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final MutatorCatchup mc;
     private final StableValChunk firstSrcChunk;
     private long start;
-    private DestValChunk dest;
+    private SurvivorValChunk survivor;
 
     private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
                          GcLogger logger, long start
     ) {
         this.srcChunks = srcChunks;
-        this.chunkMgr = chunkMgr;
         this.firstSrcChunk = srcChunks.iterator().next();
         this.logger = logger;
-        this.destChunkMap = chunkMgr.destChunkMap = new Long2ObjectHashMap<Chunk>();
+        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
         this.gcHelper = chunkMgr.gcHelper;
         this.pfixTombstoMgr = chunkMgr.pfixTombstoMgr;
         this.recordTrackers = chunkMgr.trackers;
@@ -64,15 +63,14 @@ final class ValEvacuator {
     private void evacuate() {
         final SortedBySeqRecordCursor liveRecords = sortedLiveRecords();
         logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        moveToDest(liveRecords);
+        moveToSurvivor(liveRecords);
         liveRecords.dispose();
         // Apply clear operation to any dangling dest chunks. At the time the clear operation
         // is issued, the highest chunk seq is recorded. Dest chunks created after that time
         // will be missed by the Sweeper.
-        for (Chunk c : destChunkMap.values()) {
+        for (Chunk c : survivorMap.values()) {
             pfixTombstoMgr.dismissGarbage(c);
         }
-        dismissEvacuatedFiles();
     }
 
     private SortedBySeqRecordCursor sortedLiveRecords() {
@@ -88,7 +86,7 @@ final class ValEvacuator {
         return recordMaps[0].sortedBySeqCursor(liveRecordCount, recordMaps, mc);
     }
 
-    private void moveToDest(SortedBySeqRecordCursor sortedCursor) {
+    private void moveToSurvivor(SortedBySeqRecordCursor sortedCursor) {
         final RecordDataHolder holder = gcHelper.recordDataHolder;
         while (sortedCursor.advance()) {
             applyClearOperation();
@@ -105,15 +103,15 @@ final class ValEvacuator {
                     // within the writeValueRecord() call (which is called from dest.add()).
                     // By the time dest.add() returns, the record may already be dead.
                     holder.flip();
-                    ensureDestChunk();
+                    ensureSurvivor();
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.
                     // With dest.add() the record is added to dest. Now its garbage count
                     // will be incremented if the keyHandle receives an update.
-                    recordTrackers.get(kh).moveToChunk(dest.seq);
+                    recordTrackers.get(kh).moveToChunk(survivor.seq);
                     // catches up for each bufferful
-                    dest.add(r, kh, holder);
-                    if (dest.full()) {
-                        closeDestChunk();
+                    survivor.add(r, kh, holder);
+                    if (survivor.full()) {
+                        closeSurvivor();
                     }
                 } else {
                     // Our record is alive, but in the RAM store the corresponding entry
@@ -125,13 +123,13 @@ final class ValEvacuator {
                         throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired."
                               + " Chunk #%03x, record #%03x, size %,d, RAM store was %s",
-                                dest.seq, r.liveSeq(), r.size(), ramStoreName));
+                                survivor.seq, r.liveSeq(), r.size(), ramStoreName));
                     }
                 }
             }
         }
-        if (dest != null) {
-            closeDestChunk();
+        if (survivor != null) {
+            closeSurvivor();
         }
     }
 
@@ -144,27 +142,24 @@ final class ValEvacuator {
         }
     }
 
-    private void ensureDestChunk() {
-        if (dest != null) {
+    private void ensureSurvivor() {
+        if (survivor != null) {
             return;
         }
         start = System.nanoTime();
-        dest = gcHelper.newDestValChunk(mc);
-        dest.flagForFsyncOnClose(true);
+        survivor = gcHelper.newSurvivorValChunk(mc);
+        survivor.flagForFsyncOnClose(true);
         // make the dest chunk available to chunkMgr.chunk()
-        destChunkMap.put(dest.seq, dest);
+        survivorMap.put(survivor.seq, survivor);
     }
 
-    private void closeDestChunk() {
+    private void closeSurvivor() {
         mc.catchupNow();
-        dest.close();
+        survivor.close();
         mc.catchupNow();
-        logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", dest.seq, dest.size(),
+        logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", survivor.seq, survivor.size(),
                 NANOSECONDS.toMillis(System.nanoTime() - start));
-        final StableValChunk stable = dest.toStableChunk();
-        // Transfers record ownership from the growing to the stable chunk
-        destChunkMap.put(stable.seq, stable);
-        dest = null;
+        survivor = null;
         mc.catchupNow();
     }
 
@@ -189,14 +184,5 @@ final class ValEvacuator {
             }
         }
         return eventCount;
-    }
-
-    private void dismissEvacuatedFiles() {
-        for (StableValChunk evacuated : srcChunks) {
-            gcHelper.deleteChunkFile(evacuated);
-            mc.catchupNow();
-            chunkMgr.dismissGarbage(evacuated, mc);
-            mc.catchupNow();
-        }
     }
 }

@@ -63,9 +63,9 @@ public class Rebuilder {
             this.maxChunkSeq = seq;
         }
         if (isLoadingTombstones) {
-            this.chunk = new RebuildingTombChunk(seq, cm.gcHelper.newRecordMap());
+            this.chunk = new RebuildingTombChunk(seq, cm.gcHelper.newRecordMap(false));
         } else {
-            this.chunk = new RebuildingValChunk(seq, cm.gcHelper.newRecordMap());
+            this.chunk = new RebuildingValChunk(seq, cm.gcHelper.newRecordMap(false));
         }
     }
 

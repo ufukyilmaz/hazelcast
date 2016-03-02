@@ -605,6 +605,12 @@
             <id>cloudbees-private-repository</id>
             <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
         </repository>
+        <snapshotRepository>
+            <id>cloudbees-snapshot-repository</id>
+            <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/snapshot/</url>
+        </snapshotRepository>
     </distributionManagement>
 
 </project>
+
+

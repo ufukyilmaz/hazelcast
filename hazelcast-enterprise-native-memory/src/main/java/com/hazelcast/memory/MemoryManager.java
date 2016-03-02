@@ -73,7 +73,7 @@ public interface MemoryManager extends MemoryAllocator {
      *
      * @return the memory statistics
      */
-    MemoryStats getMemoryStats();
+    JVMMemoryStats getMemoryStats();
 
     /**
      * Returns size of memory block as if it belongs to and is allocated by this memory manager.

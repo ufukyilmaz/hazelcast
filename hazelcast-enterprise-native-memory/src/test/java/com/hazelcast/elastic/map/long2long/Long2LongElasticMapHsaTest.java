@@ -22,7 +22,6 @@ import org.junit.runner.RunWith;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -359,8 +358,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
+        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
     }
 
     private void _put_(int keyRange) {
@@ -408,8 +407,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
+        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
     }
 
     @Test
@@ -426,8 +425,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
+        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
     }
 
     private long newKey() {

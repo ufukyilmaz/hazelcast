@@ -18,6 +18,8 @@ import com.hazelcast.util.QuickMath;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+
 @SuppressWarnings("checkstyle:methodcount")
 public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements MemoryManager {
 
@@ -152,7 +154,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
     private byte getHeader(long address) {
         long headerAddress = getHeaderAddress(address);
-        return MEMORY_ACCESSOR.getByte(headerAddress);
+        return AMEM.getByte(headerAddress);
     }
 
     private static boolean isHeaderAvailable(byte header) {
@@ -253,8 +255,8 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
         byte header = initHeader(address, size, offset);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        MEMORY_ACCESSOR.putByte(headerAddress, header);
-        MEMORY_ACCESSOR.putInt(address, offset);
+        AMEM.putByte(headerAddress, header);
+        AMEM.putInt(address, offset);
     }
 
     @Override
@@ -270,7 +272,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
         byte header = Bits.setBit((byte) 0, EXTERNAL_BLOCK_BIT);
         long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
-        MEMORY_ACCESSOR.putByte(null, internalHeaderAddress, header);
+        AMEM.putByte(null, internalHeaderAddress, header);
 
         return address + EXTERNAL_BLOCK_HEADER_SIZE;
     }
@@ -301,7 +303,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        byte header = MEMORY_ACCESSOR.getByte(headerAddress);
+        byte header = AMEM.getByte(headerAddress);
         assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
         long pageBase = getOwningPage(address, header);
@@ -320,9 +322,9 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         byte availableHeader = makeHeaderAvailable(header);
         availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
 
-        MEMORY_ACCESSOR.putByte(headerAddress, availableHeader);
-        MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, size), 0);
-        MEMORY_ACCESSOR.putInt(address, pageOffset);
+        AMEM.putByte(headerAddress, availableHeader);
+        AMEM.putInt(getPageOffsetAddressBySize(address, size), 0);
+        AMEM.putInt(address, pageOffset);
     }
 
     @Override
@@ -331,7 +333,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
         int offset = getOffset(address);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        byte header = MEMORY_ACCESSOR.getByte(headerAddress);
+        byte header = AMEM.getByte(headerAddress);
         byte unavailableHeader = makeHeaderUnavailable(header);
 
         boolean pageOffsetExist = false;
@@ -344,12 +346,12 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
         }
 
-        MEMORY_ACCESSOR.putByte(headerAddress, unavailableHeader);
+        AMEM.putByte(headerAddress, unavailableHeader);
         if (pageOffsetExist) {
             // If page offset will be stored, write it to the unused part of the memory block.
-            MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, internalSize), offset);
+            AMEM.putInt(getPageOffsetAddressBySize(address, internalSize), offset);
         }
-        MEMORY_ACCESSOR.putInt(address, 0);
+        AMEM.putInt(address, 0);
 
         return true;
     }
@@ -368,9 +370,9 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
                 : "Invalid size -> actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
 
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        MEMORY_ACCESSOR.putByte(headerAddress, (byte) 0);
-        MEMORY_ACCESSOR.putInt(getPageOffsetAddressBySize(address, expectedSize), 0);
-        MEMORY_ACCESSOR.putInt(address, 0);
+        AMEM.putByte(headerAddress, (byte) 0);
+        AMEM.putInt(getPageOffsetAddressBySize(address, expectedSize), 0);
+        AMEM.putInt(address, 0);
 
         return true;
     }
@@ -443,7 +445,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
     @Override
     protected int getOffset(long address) {
-        return MEMORY_ACCESSOR.getInt(address);
+        return AMEM.getInt(address);
     }
 
     protected long getOwningPage(long address, byte header) {
@@ -451,7 +453,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             // If page offset is stored in the memory block, get the offset directly from there
             // and calculate page address by using this offset.
 
-            int pageOffset = MEMORY_ACCESSOR.getInt(getPageOffsetAddressByHeader(address, header));
+            int pageOffset = AMEM.getInt(getPageOffsetAddressByHeader(address, header));
             if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
                 throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
                         + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"

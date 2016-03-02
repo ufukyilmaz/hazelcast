@@ -10,6 +10,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
+import com.hazelcast.memory.JVMMemoryStats;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -185,11 +186,11 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
             int partitionCount = node.getPartitionService().getPartitionCount();
             EnterpriseSerializationService ss =
                     (EnterpriseSerializationService) node.getSerializationService();
-            MemoryStats memoryStats = ss.getMemoryManager().getMemoryStats();
+            JVMMemoryStats memoryStats = ss.getMemoryManager().getMemoryStats();
             EnterpriseCacheService cacheService = node.nodeEngine.getService(ICacheService.SERVICE_NAME);
             HiDensityStorageInfo cacheInfo = cacheService.getOrCreateHiDensityCacheInfo("/hz/" + cache.getName());
 
-            long maxNativeMemory = memoryStats.getMaxNativeMemory();
+            long maxNativeMemory = memoryStats.getNativeMemoryStats().getMax();
             long minFreeNativeMemory = (long) (maxNativeMemory
                     * freeNativeMemoryPercentage / 100f);
             int entrySize = 1024 * 1024; // 1MB
@@ -207,7 +208,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
                 long forceEvictionCountBefore = cacheInfo.getForceEvictionCount();
                 int sizeBefore = cache.size();
 
-                long actualMinFreeNativeMemory = memoryStats.getFreeNativeMemory();
+                long actualMinFreeNativeMemory = memoryStats.getNativeMemoryStats().getFree();
                 boolean evictionShouldBeTriggeredBecauseOfMinFreeMemory = actualMinFreeNativeMemory < minFreeNativeMemory;
 
                 int j = i % partitionCount;

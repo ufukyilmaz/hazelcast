@@ -2,7 +2,7 @@ package com.hazelcast.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
+class NativeMemoryStats extends DefaultMemoryStats {
 
     private static final boolean ASSERTS_ENABLED;
 
@@ -21,23 +21,23 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
     }
 
     @Override
-    public final long getMaxNativeMemory() {
+    public final long getMax() {
         return maxNative;
     }
 
     @Override
-    public final long getCommittedNativeMemory() {
+    public final long getCommitted() {
         return committedNative.get();
     }
 
     @Override
-    public long getUsedNativeMemory() {
-        return getCommittedNativeMemory();
+    public long getUsed() {
+        return getCommitted();
     }
 
     @Override
-    public final long getFreeNativeMemory() {
-        long free = maxNative - getUsedNativeMemory();
+    public final long getFree() {
+        long free = maxNative - getUsed();
         return (free > 0 ? free : 0L);
     }
 
@@ -48,10 +48,10 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
                 long memoryAfterAllocation = currentAllocated + size;
                 if (maxNative < memoryAfterAllocation) {
                     throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
-                            + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
-                            + " Max Native Memory: " + MemorySize.toPrettyString(maxNative)
+                            + " Cannot allocate " + MemorySize.toPrettyString(size)
+                            + ". Max Native Memory: " + MemorySize.toPrettyString(maxNative)
                             + ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated)
-                            + ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
+                            + ", Used Native Memory: " + MemorySize.toPrettyString(getUsed())
                     );
                 }
                 if (committedNative.compareAndSet(currentAllocated, memoryAfterAllocation)) {
@@ -86,16 +86,10 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
         StringBuilder sb = new StringBuilder();
         sb.append("NativeMemoryStats {");
 
-        sb.append("Total Physical: ").append(MemorySize.toPrettyString(getTotalPhysical()));
-        sb.append(", Free Physical: ").append(MemorySize.toPrettyString(getFreePhysical()));
-        sb.append(", Max Heap: ").append(MemorySize.toPrettyString(getMaxHeap()));
-        sb.append(", Committed Heap: ").append(MemorySize.toPrettyString(getCommittedHeap()));
-        sb.append(", Used Heap: ").append(MemorySize.toPrettyString(getUsedHeap()));
-        sb.append(", Free Heap: ").append(MemorySize.toPrettyString(getFreeHeap()));
-        sb.append(", Max Native Memory: ").append(MemorySize.toPrettyString(getMaxNativeMemory()));
-        sb.append(", Committed Native Memory: ").append(MemorySize.toPrettyString(getCommittedNativeMemory()));
-        sb.append(", Used Native Memory: ").append(MemorySize.toPrettyString(getUsedNativeMemory()));
-        sb.append(", Free Native Memory: ").append(MemorySize.toPrettyString(getFreeNativeMemory()));
+        sb.append(", Max ").append(MemorySize.toPrettyString(getMax()));
+        sb.append(", Committed ").append(MemorySize.toPrettyString(getCommitted()));
+        sb.append(", Used ").append(MemorySize.toPrettyString(getUsed()));
+        sb.append(", Free ").append(MemorySize.toPrettyString(getFree()));
         appendAdditionalToString(sb);
         if (ASSERTS_ENABLED) {
             sb.append(", Internal Fragmentation: ").append(MemorySize.toPrettyString(internalFragmentation.get()));

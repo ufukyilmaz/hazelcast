@@ -26,6 +26,7 @@ import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
@@ -103,7 +104,7 @@ public class HDEvictionChecker extends EvictionChecker {
 
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
-        long maxUsableSize = memoryManager.getMemoryStats().getMaxNativeMemory();
+        long maxUsableSize = memoryManager.getMemoryStats().getNativeMemoryStats().getMax();
 
         return maxUsedPercentage < (1D * ONE_HUNDRED_PERCENT * currentUsedSize / maxUsableSize);
     }
@@ -112,8 +113,9 @@ public class HDEvictionChecker extends EvictionChecker {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        long maxUsableSize = memoryManager.getMemoryStats().getMaxNativeMemory();
-        long currentFreeSize = memoryManager.getMemoryStats().getFreeNativeMemory();
+        final MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
+        long maxUsableSize = nativeStats.getMax();
+        long currentFreeSize = nativeStats.getFree();
 
         return minFreePercentage > (1D * ONE_HUNDRED_PERCENT * currentFreeSize / maxUsableSize);
     }
@@ -122,7 +124,7 @@ public class HDEvictionChecker extends EvictionChecker {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        long currentFreeSize = memoryManager.getMemoryStats().getFreeNativeMemory();
+        long currentFreeSize = memoryManager.getMemoryStats().getNativeMemoryStats().getFree();
 
         return minFreeSize > (1D * currentFreeSize / ONE_MEGABYTE);
     }

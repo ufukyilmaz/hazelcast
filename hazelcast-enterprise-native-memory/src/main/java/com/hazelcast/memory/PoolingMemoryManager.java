@@ -229,7 +229,7 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
+    public JVMMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

@@ -19,7 +19,7 @@ public class HiDensityFreeNativeMemorySizeMaxSizeChecker implements MaxSizeCheck
 
     @Override
     public boolean isReachedToMaxSize() {
-        return memoryManager.getMemoryStats().getFreeNativeMemory() < minFreeMemorySize;
+        return memoryManager.getMemoryStats().getNativeMemoryStats().getFree() < minFreeMemorySize;
     }
 
 }

@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorProvider;
-import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
@@ -23,7 +23,7 @@ public final class StandardMemoryManager implements MemoryManager {
     // We are using `STANDARD` memory accessor because we internally guarantee that
     // every memory access is aligned.
     private static final MemoryAccessor MEMORY_ACCESSOR =
-            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+            GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
 
     private final boolean isDebugEnabled;
 
@@ -61,7 +61,7 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
+    public JVMMemoryStats getMemoryStats() {
         return memoryStats;
     }
 

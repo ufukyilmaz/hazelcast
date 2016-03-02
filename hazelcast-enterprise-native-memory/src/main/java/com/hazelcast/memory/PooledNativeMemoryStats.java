@@ -2,7 +2,7 @@ package com.hazelcast.memory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class PooledNativeMemoryStats extends NativeMemoryStats implements MemoryStats {
+public class PooledNativeMemoryStats extends NativeMemoryStats {
 
     private final AtomicLong usedNative = new AtomicLong();
     private final AtomicLong usedMetadata = new AtomicLong();
@@ -19,7 +19,7 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
     }
 
     @Override
-    public long getUsedNativeMemory() {
+    public long getUsed() {
         return usedNative.get();
     }
 

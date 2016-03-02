@@ -81,7 +81,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
         final long maxNativeMemory =
                 ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                        .getMemoryManager().getMemoryStats().getMaxNativeMemory();
+                        .getMemoryManager().getMemoryStats().getNativeMemoryStats().getMax();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
                 return new HiDensityUsedNativeMemorySizeMaxSizeChecker(cacheInfo, size);

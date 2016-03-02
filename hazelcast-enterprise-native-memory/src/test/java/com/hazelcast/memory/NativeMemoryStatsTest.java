@@ -46,8 +46,8 @@ public class NativeMemoryStatsTest {
         }
 
         assertTrue("Committed native memory should be " + MAX_NATIVE_MEMORY_SIZE + " at most, " +
-                        "but it is " + nativeMemoryStats.getCommittedNativeMemory(),
-                nativeMemoryStats.getCommittedNativeMemory() <= MAX_NATIVE_MEMORY_SIZE);
+                        "but it is " + nativeMemoryStats.getCommitted(),
+                nativeMemoryStats.getCommitted() <= MAX_NATIVE_MEMORY_SIZE);
     }
 
     private static final class DummyMalloc implements LibMalloc {

@@ -23,6 +23,7 @@ import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.memory.JVMMemoryStats;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -183,8 +184,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (memoryManager != null) {
             // (<native_memory_size> * <node_count>) / (2 * <partition_count>)
             // `2` comes from default backup count is `1` so by default there are primary and backup partitions.
-            final MemoryStats memoryStats = memoryManager.getMemoryStats();
-            final int maxNativeMemorySizeInMegaBytes = (int) MemoryUnit.BYTES.toMegaBytes(memoryStats.getMaxNativeMemory());
+            final JVMMemoryStats memoryStats = memoryManager.getMemoryStats();
+            final int maxNativeMemorySizeInMegaBytes =
+                    (int) MemoryUnit.BYTES.toMegaBytes(memoryStats.getNativeMemoryStats().getMax());
             final int partitionCount = node.getPartitionService().getPartitionCount();
             final int nativeMemorySizePerPartition = (maxNativeMemorySizeInMegaBytes * nodeCount) / (2 * partitionCount);
             if (nativeMemorySizePerPartition > SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB) {
@@ -408,7 +410,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
+    public JVMMemoryStats getMemoryStats() {
         MemoryManager mm = memoryManager;
         return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }

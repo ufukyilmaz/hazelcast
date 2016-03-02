@@ -15,7 +15,6 @@ import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
  * Record map backed by off-heap storage.
  */
 final class RecordMapOffHeap implements RecordMap {
-    private static final float LOAD_FACTOR = 0.6f;
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
     private HashSlotArrayTwinKey records;

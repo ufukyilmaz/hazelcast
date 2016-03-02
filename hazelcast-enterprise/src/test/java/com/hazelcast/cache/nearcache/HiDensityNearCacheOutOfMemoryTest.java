@@ -87,9 +87,9 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         byte[] bigValue = new byte[NativeMemoryConfig.DEFAULT_PAGE_SIZE / 2]; // 2 MB = Smaller than page size (4 MB)
 
         int smallValuePutCount =
-                (int) ((memoryManager.getMemoryStats().getMaxNativeMemory() / smallValue.length) * 2);
+                (int) ((memoryManager.getMemoryStats().getNativeMemoryStats().getMax() / smallValue.length) * 2);
         int bigValuePutCount =
-                (int) ((memoryManager.getMemoryStats().getMaxNativeMemory() / bigValue.length) * 2);
+                (int) ((memoryManager.getMemoryStats().getNativeMemoryStats().getMax() / bigValue.length) * 2);
 
         // Fill up memory with Near-Cache-1
         for (int i = 0; i < smallValuePutCount; i++) {

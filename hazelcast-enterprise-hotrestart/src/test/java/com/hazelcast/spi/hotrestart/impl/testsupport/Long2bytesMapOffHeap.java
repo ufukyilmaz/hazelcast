@@ -6,7 +6,7 @@ import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
@@ -28,7 +28,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             hsa.remove(key);
             throw e;
         }
-        MEM.putLong(vSlotAddr, vblockAccessor.address());
+        AMEM.putLong(vSlotAddr, vblockAccessor.address());
     }
 
     @Override public void remove(long key) {
@@ -102,7 +102,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             vblockAccessor.reset(vSlotAddr);
             vblockAccessor.delete();
         }
-        MEM.putLong(vSlotAddr, NULL_ADDRESS);
+        AMEM.putLong(vSlotAddr, NULL_ADDRESS);
         return vSlotAddr;
     }
 

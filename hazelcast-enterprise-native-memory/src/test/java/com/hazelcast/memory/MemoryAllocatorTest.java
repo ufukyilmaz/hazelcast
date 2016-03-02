@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;

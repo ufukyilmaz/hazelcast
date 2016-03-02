@@ -1,8 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -10,10 +7,9 @@ import com.hazelcast.internal.util.counters.MwCounter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
-    // We are using `STANDARD` memory accessor because we internally guarantee that every memory access is aligned
-    private static final MemoryAccessor MEMORY_ACCESSOR = GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
+public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
     private long pointer;
 
@@ -111,7 +107,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
         if (requireNewMemoryBlock(address, newSize)) {
             allocateBlock(newSize);
-            MEMORY_ACCESSOR.copyMemory(address, pointer, currentSize);
+            AMEM.copyMemory(address, pointer, currentSize);
             long oldPointer = pointer;
             pointer += newSize;
             return oldPointer;

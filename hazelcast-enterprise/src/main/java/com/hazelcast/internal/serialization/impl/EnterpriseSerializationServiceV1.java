@@ -33,7 +33,7 @@ import com.hazelcast.nio.serialization.PortableFactory;
 import java.nio.ByteOrder;
 import java.util.Map;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
 

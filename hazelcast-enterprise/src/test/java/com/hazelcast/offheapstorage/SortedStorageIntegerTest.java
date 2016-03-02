@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -164,7 +164,7 @@ public class SortedStorageIntegerTest {
             offHeapBlobMap.dispose();
         }
 
-        assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
+        assertEquals(0, malloc.getMemoryStats().getNativeMemoryStats().getUsed());
 
         if (malloc != null) {
             malloc.destroy();

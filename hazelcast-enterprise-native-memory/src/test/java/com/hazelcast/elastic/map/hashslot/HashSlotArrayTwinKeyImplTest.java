@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -115,8 +115,8 @@ public class HashSlotArrayTwinKeyImplTest {
             long key2 = key1 * factor;
             long valueAddress = hsa.get(key1, key2);
 
-            assertEquals(key1, MEM.getLong(valueAddress));
-            assertEquals(key2, MEM.getLong(valueAddress + 8L));
+            assertEquals(key1, AMEM.getLong(valueAddress));
+            assertEquals(key2, AMEM.getLong(valueAddress + 8L));
         }
     }
 
@@ -321,15 +321,15 @@ public class HashSlotArrayTwinKeyImplTest {
         final long valueAddress = hsa.ensure(key1, key2);
         assertTrue(valueAddress > 0);
         // Value length must be at least 16 bytes
-        MEM.putLong(valueAddress, key1);
-        MEM.putLong(valueAddress + 8L, key2);
+        AMEM.putLong(valueAddress, key1);
+        AMEM.putLong(valueAddress + 8L, key2);
         return valueAddress;
     }
 
     private static void verifyValue(long key1, long key2, long valueAddress) {
         // pre-check to avoid SIGSEGV
         assertNotEquals(NULL_ADDRESS, valueAddress);
-        assertEquals(key1, MEM.getLong(valueAddress));
-        assertEquals(key2, MEM.getLong(valueAddress + 8L));
+        assertEquals(key1, AMEM.getLong(valueAddress));
+        assertEquals(key2, AMEM.getLong(valueAddress + 8L));
     }
 }

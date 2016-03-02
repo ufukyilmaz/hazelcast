@@ -5,6 +5,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.memory.JVMMemoryStats;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
@@ -34,14 +35,14 @@ public class HDMapPartitionClearOperationTest extends HazelcastTestSupport {
         }
 
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(node).getNodeExtension();
-        MemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
+        JVMMemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
 
         long minUsedMemory = count * 8L; // int key + int value
-        assertThat(memoryStats.getUsedNativeMemory(), greaterThanOrEqualTo(minUsedMemory));
+        assertThat(memoryStats.getNativeMemoryStats().getUsed(), greaterThanOrEqualTo(minUsedMemory));
 
         node.shutdown();
 
-        assertEquals(0, memoryStats.getUsedNativeMemory());
+        assertEquals(0, memoryStats.getNativeMemoryStats().getUsed());
     }
 
     @Override

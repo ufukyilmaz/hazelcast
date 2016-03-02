@@ -13,6 +13,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
+import com.hazelcast.memory.JVMMemoryStats;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -88,11 +89,11 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
             map.put(i, i);
         }
 
-        MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
+        JVMMemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
         hz.shutdown();
 
-        assertEquals(0, memoryStats.getUsedNativeMemory());
-        assertEquals(0, memoryStats.getCommittedNativeMemory());
+        assertEquals(0, memoryStats.getNativeMemoryStats().getUsed());
+        assertEquals(0, memoryStats.getNativeMemoryStats().getCommitted());
         if (memoryStats instanceof PooledNativeMemoryStats) {
             assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
         }
@@ -384,8 +385,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     private static class AssertFreeMemoryTask extends AssertTask {
-        final MemoryStats memoryStats;
-        final MemoryStats memoryStats2;
+        final JVMMemoryStats memoryStats;
+        final JVMMemoryStats memoryStats2;
 
         public AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
             memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
@@ -395,11 +396,11 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         @Override
         public void run() throws Exception {
             String message =
-                    "Node1: " + toPrettyString(memoryStats.getUsedNativeMemory())
-                            + ", Node2: " + toPrettyString(memoryStats2.getUsedNativeMemory());
+                    "Node1: " + toPrettyString(memoryStats.getNativeMemoryStats().getUsed())
+                            + ", Node2: " + toPrettyString(memoryStats2.getNativeMemoryStats().getUsed());
 
-            assertEquals(message, 0, memoryStats.getUsedNativeMemory());
-            assertEquals(message, 0, memoryStats2.getUsedNativeMemory());
+            assertEquals(message, 0, memoryStats.getNativeMemoryStats().getUsed());
+            assertEquals(message, 0, memoryStats2.getNativeMemoryStats().getUsed());
         }
     }
 

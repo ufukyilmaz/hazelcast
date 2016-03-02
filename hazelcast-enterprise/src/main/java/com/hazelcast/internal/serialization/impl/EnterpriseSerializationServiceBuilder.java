@@ -4,7 +4,7 @@ import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
@@ -150,7 +150,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         if (useNativeByteOrder || byteOrder == ByteOrder.nativeOrder()) {
             byteOrder = ByteOrder.nativeOrder();
 
-            if (allowUnsafe && MemoryAccessor.MEM_AVAILABLE) {
+            if (allowUnsafe && GlobalMemoryAccessorRegistry.MEM_AVAILABLE) {
                 if (allowSerializeOffHeap) {
                     return new EnterpriseOffHeapInputOutputFactory();
                 } else {

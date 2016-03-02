@@ -26,7 +26,6 @@ import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.JVMMemoryStats;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;

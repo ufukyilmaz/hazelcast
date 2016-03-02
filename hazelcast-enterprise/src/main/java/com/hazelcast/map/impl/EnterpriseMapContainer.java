@@ -37,6 +37,8 @@ import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.MemoryInfoAccessor;
+import com.hazelcast.util.RuntimeMemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.policies.MapEvictionPolicies.getMapEvictionPolicy;
@@ -56,7 +58,8 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     Evictor createEvictor(MapConfig mapConfig, MapServiceContext mapServiceContext) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            HDEvictionChecker hdEvictionChecker = new HDEvictionChecker(mapServiceContext);
+            MemoryInfoAccessor memoryInfoAccessor = new RuntimeMemoryInfoAccessor();
+            HDEvictionChecker hdEvictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
             MapEvictionPolicy evictionPolicy = getMapEvictionPolicy(mapConfig.getEvictionPolicy());
             IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
 

@@ -27,6 +27,7 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 
@@ -41,8 +42,8 @@ public class HDEvictionChecker extends EvictionChecker {
 
     private final int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
 
-    public HDEvictionChecker(MapServiceContext mapServiceContext) {
-        super(mapServiceContext);
+    public HDEvictionChecker(MemoryInfoAccessor memoryInfoAccessor, MapServiceContext mapServiceContext) {
+        super(memoryInfoAccessor, mapServiceContext);
     }
 
     @Override

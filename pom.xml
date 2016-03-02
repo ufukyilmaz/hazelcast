@@ -306,17 +306,6 @@
                         </executions>
                     </plugin>
 
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.3</version>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>release-repository</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                        </configuration>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -606,7 +595,7 @@
             <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
         </repository>
         <snapshotRepository>
-            <id>cloudbees-snapshot-repository</id>
+            <id>cloudbees-private-repository</id>
             <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/snapshot/</url>
         </snapshotRepository>
     </distributionManagement>

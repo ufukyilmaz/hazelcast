@@ -17,8 +17,8 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
-import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
@@ -71,6 +71,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile MemberSocketInterceptor memberSocketInterceptor;
     private volatile MemoryManager memoryManager;
 
+    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+
     public EnterpriseNodeExtension(Node node) {
         super(node);
         hotRestartService = createHotRestartService(node);
@@ -89,9 +91,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
-        final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-        license = LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
-                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_HD, LicenseType.ENTERPRISE_SECURITY_ONLY);
+        license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
         logger.log(Level.INFO, license.toString());
 
         createSecurityContext(node);
@@ -102,6 +102,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private void createSecurityContext(Node node) {
         boolean securityEnabled = node.getConfig().getSecurityConfig().isEnabled();
         if (securityEnabled) {
+            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
+                    Feature.SECURITY);
             securityContext = new SecurityContextImpl(node);
         }
     }
@@ -136,15 +138,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public void beforeJoin() {
         if (hotRestartService != null) {
-            final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-            LicenseHelper.checkLicenseKey(license.getKey(), buildInfo.getVersion(), LicenseType.ENTERPRISE_HD);
+            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
+                    Feature.HOT_RESTART);
             hotRestartService.prepare();
         }
     }
 
     @Override
     public void printNodeInfo() {
-        BuildInfo buildInfo = node.getBuildInfo();
         String build = buildInfo.getBuild();
         String revision = buildInfo.getRevision();
         if (!revision.isEmpty()) {
@@ -354,6 +355,18 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return hotRestartService != null;
     }
 
+    public boolean isFeatureEnabledForLicenseKey(Feature feature) {
+        boolean enabled = true;
+        try {
+            LicenseHelper.checkLicenseKeyPerFeature(license.getKey(),
+                    buildInfo.getVersion(), feature);
+        } catch (InvalidLicenseException e) {
+            enabled = false;
+            logger.warning(e.getMessage());
+        }
+        return enabled;
+    }
+
     @Override
     public void beforeShutdown() {
         super.beforeShutdown();
@@ -371,23 +384,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public <T> T createService(Class<T> clazz) {
         if (WanReplicationService.class.isAssignableFrom(clazz)) {
-            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
+            try {
+                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(),
+                        buildInfo.getVersion(), Feature.WAN);
                 return (T) new EnterpriseWanReplicationService(node);
-            } else {
+            } catch (InvalidLicenseException e) {
                 return (T) new WanReplicationServiceImpl(node);
             }
         } else if (ICacheService.class.isAssignableFrom(clazz)) {
-            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
-                return (T) new EnterpriseCacheService();
-            } else {
-                return super.createService(clazz);
-            }
+            return (T) new EnterpriseCacheService();
         } else if (MapService.class.isAssignableFrom(clazz)) {
-            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD) {
-                return (T) getEnterpriseMapServiceConstructor().createNew(node.getNodeEngine());
-            } else {
-                return super.createService(clazz);
-            }
+            return (T) getEnterpriseMapServiceConstructor().createNew(node.getNodeEngine());
         }
         throw new IllegalArgumentException("Unknown service class: " + clazz);
     }
@@ -419,6 +426,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (!memoryConfig.isEnabled()) {
             return;
         }
+        //3.5 license keys have limited HD so we check available hd memory.
         if (license.getVersion() == LicenseVersion.V2) {
             long totalNativeMemorySize = node.getClusterService().getSize()
                     * memoryConfig.getSize().bytes();
@@ -427,11 +435,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 throw new InvalidLicenseException("Total native memory of cluster exceeds licensed native memory. "
                         + "Please contact sales@hazelcast.com");
             }
-        } else {
-            final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-            license = LicenseHelper.checkLicenseKey(license.getKey(), buildInfo.getVersion(),
-                    LicenseType.ENTERPRISE_HD);
         }
+        license = LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
+                Feature.HD_MEMORY);
     }
 
     @Override

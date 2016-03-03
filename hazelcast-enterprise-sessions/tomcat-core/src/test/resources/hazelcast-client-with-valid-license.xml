@@ -15,11 +15,11 @@
   ~ limitations under the License.
   -->
 
-<hazelcast-client xsi:schemaLocation="http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.5.xsd"
+<hazelcast-client xsi:schemaLocation="http://www.hazelcast.com/schema/client-config hazelcast-client-config-3.6.xsd"
                   xmlns="http://www.hazelcast.com/schema/client-config"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <properties>
-        <property name="hazelcast.enterprise.license.key">HazelcastEnterprise#9999Nodes#HDMemory:99999999GB#KSiwIuRj6EBfcUF13HkNaJ84tt92999D0o9o1Lt11q2909n9999P99QG9L99</property>
+        <property name="hazelcast.enterprise.license.key">WEB_SESSION_ENABLED#10Nodes#m1uNK7AFl6OEUVr0JjfkSITw5ayHb1612190192011000191015010019110</property>
     </properties>
 
 </hazelcast-client>

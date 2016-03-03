@@ -11,7 +11,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.license.domain.LicenseType;
+import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.util.LicenseHelper;
 
 import java.io.IOException;
@@ -50,8 +50,8 @@ public final class JettySessionUtils {
                 licenseKey = config.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
             }
             BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-            LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
-                    LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_HD);
+            LicenseHelper.checkLicenseKeyPerFeature(licenseKey, buildInfo.getVersion(),
+                    Feature.WEB_SESSION);
         } catch (IOException e) {
             throw new RuntimeException("failed to load config", e);
         }
@@ -72,7 +72,8 @@ public final class JettySessionUtils {
             String licenseKey = config.getLicenseKey();
 
             BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-            LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(), LicenseType.ENTERPRISE);
+            LicenseHelper.checkLicenseKeyPerFeature(licenseKey, buildInfo.getVersion(),
+                    Feature.WEB_SESSION);
         } catch (IOException e) {
             throw new RuntimeException("failed to load config", e);
         }

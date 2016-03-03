@@ -9,7 +9,7 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
-import com.hazelcast.instance.HazelcastInstanceManager;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.memory.MemorySize;
@@ -43,7 +43,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     @After
     public void cleanup() {
-        HazelcastInstanceManager.shutdownAll();
+        HazelcastInstanceFactory.shutdownAll();
     }
 
     public abstract String getReplicationImpl();
@@ -87,7 +87,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     protected void initCluster(HazelcastInstance[] cluster, Config config) {
         for (int i = 0; i < cluster.length; i++) {
             config.setInstanceName(config.getInstanceName() + i);
-            cluster[i] = HazelcastInstanceManager.newHazelcastInstance(config);
+            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(config);
         }
     }
 

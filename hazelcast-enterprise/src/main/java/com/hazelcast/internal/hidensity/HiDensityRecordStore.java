@@ -1,6 +1,6 @@
 package com.hazelcast.internal.hidensity;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 
 /**
  * <p>
@@ -34,7 +34,7 @@ public interface HiDensityRecordStore<R extends HiDensityRecord> {
     /**
      * Constant value for representing the empty address
      */
-    long NULL_PTR = MemoryManager.NULL_ADDRESS;
+    long NULL_PTR = JvmMemoryManager.NULL_ADDRESS;
 
     /**
      * Forcefully evict records.

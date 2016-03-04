@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.PartitionContainer;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -35,8 +35,8 @@ public final class EnterpriseMapPartitionClearOperation
         try {
             EnterpriseSerializationService serializationService
                     = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
-            MemoryManager memoryManager = serializationService.getMemoryManager();
-            if (memoryManager == null || memoryManager.isDestroyed()) {
+            JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+            if (memoryManager == null || memoryManager.isDisposed()) {
                 // otherwise will cause a SIGSEGV
                 return;
             }

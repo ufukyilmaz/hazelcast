@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -24,13 +24,13 @@ public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestS
     protected static final byte[] DEFAULT_PAYLOAD_BE = new byte[]{0, 0, 0, 8, 23, 42, 47, 11, 0, 8, 1, 5};
     protected static final byte[] NULL_ARRAY_LENGTH_PAYLOAD = new byte[]{(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF};
 
-    protected MemoryManager outOfMemoryMemoryManager;
-    protected MemoryManager memoryManager;
+    protected JvmMemoryManager outOfMemoryMemoryManager;
+    protected JvmMemoryManager memoryManager;
 
     protected EnterpriseSerializationService serializationService;
 
     protected void initMemoryManagerAndSerializationService() {
-        outOfMemoryMemoryManager = mock(MemoryManager.class);
+        outOfMemoryMemoryManager = mock(JvmMemoryManager.class);
         when(outOfMemoryMemoryManager.allocate(anyLong())).thenThrow(new NativeOutOfMemoryError());
 
         memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
@@ -55,7 +55,7 @@ public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestS
 
     protected void shutdownMemoryManagerAndSerializationService() {
         serializationService.destroy();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     protected EnterpriseByteArrayObjectDataInput getEnterpriseObjectDataInput(byte[] payload) {

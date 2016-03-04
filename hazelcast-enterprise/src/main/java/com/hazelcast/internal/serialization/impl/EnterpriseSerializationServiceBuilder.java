@@ -8,7 +8,7 @@ import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -20,10 +20,10 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         implements SerializationServiceBuilder {
 
     protected boolean allowSerializeOffHeap;
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
     private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
 
-    public EnterpriseSerializationServiceBuilder setMemoryManager(MemoryManager memoryManager) {
+    public EnterpriseSerializationServiceBuilder setMemoryManager(JvmMemoryManager memoryManager) {
         this.memoryManager = memoryManager;
         return this;
     }

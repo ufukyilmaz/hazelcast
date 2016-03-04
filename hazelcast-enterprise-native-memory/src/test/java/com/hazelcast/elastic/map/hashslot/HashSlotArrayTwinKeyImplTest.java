@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -31,7 +31,7 @@ public class HashSlotArrayTwinKeyImplTest {
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
-    private MemoryManager malloc;
+    private JvmMemoryManager malloc;
     private HashSlotArrayTwinKey hsa;
 
     @Before
@@ -43,7 +43,7 @@ public class HashSlotArrayTwinKeyImplTest {
     @After
     public void tearDown() throws Exception {
         hsa.dispose();
-        malloc.destroy();
+        malloc.dispose();
     }
 
     @Test

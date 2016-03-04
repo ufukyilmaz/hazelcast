@@ -7,7 +7,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
@@ -305,7 +305,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         logger.info("Force start completed.");
     }
 
-    private void createThreadLocalHotRestartStores(Thread thread, MemoryManager memoryManager) {
+    private void createThreadLocalHotRestartStores(Thread thread, JvmMemoryManager memoryManager) {
         if (!(thread instanceof PartitionOperationThread)) {
             throw new IllegalArgumentException("PartitionOperationThread is required! -> " + thread);
         }
@@ -329,7 +329,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     private void createHotRestartStores() {
-        final MemoryManager memoryManager = ((EnterpriseNodeExtension) node.getNodeExtension())
+        final JvmMemoryManager memoryManager = ((EnterpriseNodeExtension) node.getNodeExtension())
                 .getMemoryManager();
         OperationExecutor operationExecutor = getOperationExecutor();
         CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
@@ -442,9 +442,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private class CreateHotRestartStoresTask extends PartitionedTask {
 
-        private final MemoryManager memoryManager;
+        private final JvmMemoryManager memoryManager;
 
-        CreateHotRestartStoresTask(CountDownLatch latch, MemoryManager memoryManager) {
+        CreateHotRestartStoresTask(CountDownLatch latch, JvmMemoryManager memoryManager) {
             super(latch);
             this.memoryManager = memoryManager;
         }

@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -34,7 +34,7 @@ public class Long2LongElasticMapHsaTest {
     public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final Random random = new Random();
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
     private Long2LongElasticMapHsa map;
 
     @Before
@@ -46,7 +46,7 @@ public class Long2LongElasticMapHsaTest {
     @After
     public void tearDown() throws Exception {
         map.dispose();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test

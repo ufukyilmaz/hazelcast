@@ -44,7 +44,7 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
             nearCacheManager.destroyAllNearCaches();
         }
         if (memoryManager != null) {
-            memoryManager.destroy();
+            memoryManager.dispose();
         }
     }
 

@@ -24,7 +24,7 @@ import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.JVMMemoryStats;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -69,7 +69,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
-    private volatile MemoryManager memoryManager;
+    private volatile JvmMemoryManager memoryManager;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -323,7 +323,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) node.getSerializationService();
 
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             ((PoolingMemoryManager) memoryManager).registerThread(thread);
         }
@@ -338,7 +338,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) node.getSerializationService();
 
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             ((PoolingMemoryManager) memoryManager).deregisterThread(thread);
         }
@@ -410,7 +410,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public JVMMemoryStats getMemoryStats() {
-        MemoryManager mm = memoryManager;
+        JvmMemoryManager mm = memoryManager;
         return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 
@@ -458,7 +458,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return false;
     }
 
-    public MemoryManager getMemoryManager() {
+    public JvmMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

@@ -8,7 +8,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.SizeEstimator;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 
@@ -106,8 +106,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
 
     @Override
     public void clear() {
-        MemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
+        JvmMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
+        if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
         }
@@ -132,8 +132,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     @Override
     public void destroy() {
 
-        MemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
+        JvmMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
+        if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
         }

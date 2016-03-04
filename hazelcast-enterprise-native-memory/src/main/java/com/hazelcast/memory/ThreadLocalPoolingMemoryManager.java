@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 @SuppressWarnings("checkstyle:methodcount")
-public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements MemoryManager {
+public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements JvmMemoryManager {
 
     // Size of the memory block header in bytes
     private static final int HEADER_SIZE = 1;
@@ -482,13 +482,13 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     }
 
     @Override
-    public boolean isDestroyed() {
+    public boolean isDisposed() {
         return addressQueues[0] == null;
     }
 
     @Override
-    public void destroy() {
-        if (isDestroyed()) {
+    public void dispose() {
+        if (isDisposed()) {
             return;
         }
         for (int i = 0; i < addressQueues.length; i++) {

@@ -20,7 +20,7 @@ import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
@@ -44,7 +44,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
     private HiDensityNativeMemoryNearCacheRecordAccessor recordAccessor;
     private HiDensityStorageInfo storageInfo;
     private HiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord> recordProcessor;
@@ -75,7 +75,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                 (EnterpriseSerializationService) nearCacheContext.getSerializationService();
 
         if (memoryManager == null) {
-            MemoryManager mm = serializationService.getMemoryManager();
+            JvmMemoryManager mm = serializationService.getMemoryManager();
             if (mm instanceof PoolingMemoryManager) {
                 this.memoryManager = ((PoolingMemoryManager) mm).getGlobalMemoryManager();
             } else {
@@ -169,7 +169,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     private boolean isMemoryBlockValid(MemoryBlock memoryBlock) {
-        return memoryBlock != null && memoryBlock.address() != MemoryManager.NULL_ADDRESS;
+        return memoryBlock != null && memoryBlock.address() != JvmMemoryManager.NULL_ADDRESS;
     }
 
     private HiDensityNativeMemoryNearCacheRecord createRecord(Object value, long creationTime,
@@ -186,7 +186,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
         NativeMemoryData data = null;
         HiDensityNativeMemoryNearCacheRecord record;
-        long recordAddress = MemoryManager.NULL_ADDRESS;
+        long recordAddress = JvmMemoryManager.NULL_ADDRESS;
 
         try {
             recordAddress = recordProcessor.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
@@ -203,13 +203,13 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                 data = toNativeMemoryData(value);
                 record.setValueAddress(data.address());
             } else {
-                record.setValueAddress(MemoryManager.NULL_ADDRESS);
+                record.setValueAddress(JvmMemoryManager.NULL_ADDRESS);
             }
 
             return record;
         } catch (NativeOutOfMemoryError e) {
             // If any memory region is allocated for record, dispose it
-            if (recordAddress != MemoryManager.NULL_ADDRESS) {
+            if (recordAddress != JvmMemoryManager.NULL_ADDRESS) {
                 recordProcessor.dispose(recordAddress);
             }
             // If any data is allocated for record, dispose it
@@ -382,7 +382,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public MemoryManager getMemoryManager() {
+    public JvmMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

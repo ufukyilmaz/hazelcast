@@ -25,8 +25,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_OBJECT_BASE_OFFSET;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_OBJECT_INDEX_SCALE;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_OBJECT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_OBJECT_INDEX_SCALE;
 
 /**
  * Pad out a cacheline to the left of a tail to prevent false sharing.

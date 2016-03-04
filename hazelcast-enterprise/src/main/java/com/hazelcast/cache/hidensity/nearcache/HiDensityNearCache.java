@@ -10,7 +10,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.util.EmptyStatement;
 
@@ -29,7 +29,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
     private final NearCacheManager nearCacheManager;
     private final ILogger logger = Logger.getLogger(getClass());
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
 
     public HiDensityNearCache(String s, NearCacheConfig nearCacheConfig,
                               NearCacheContext nearCacheContext) {

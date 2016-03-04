@@ -2,7 +2,7 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -33,7 +33,7 @@ abstract class AbstractElasticQueue<E> extends AbstractQueue<E> implements Elast
         if (data == null) {
             return;
         }
-        data.reset(MemoryManager.NULL_ADDRESS);
+        data.reset(JvmMemoryManager.NULL_ADDRESS);
         localBinaryQ.offer(data);
     }
 

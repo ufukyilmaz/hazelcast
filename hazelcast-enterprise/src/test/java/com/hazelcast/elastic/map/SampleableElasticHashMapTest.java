@@ -8,7 +8,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class SampleableElasticHashMapTest extends HazelcastTestSupport {
 
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
     private SimpleNativeMemoryDataAccessor memoryBlockAccessor;
     private SampleableElasticHashMap<SimpleNativeMemoryData> map;
@@ -166,7 +166,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         int blockSize = memoryConfig.getMinBlockSize();
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-        MemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        JvmMemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
         return new EnterpriseSerializationServiceBuilder()
                 .setConfig(serializationConfig)
                 .setMemoryManager(memoryManager)
@@ -252,7 +252,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
     static class SimpleNativeMemoryDataAccessor implements MemoryBlockAccessor<SimpleNativeMemoryData> {
 
         final EnterpriseSerializationService ss;
-        final MemoryManager memoryManager;
+        final JvmMemoryManager memoryManager;
         final Queue<SimpleNativeMemoryData> recordQ = new ArrayDeque<SimpleNativeMemoryData>(1024);
         final Queue<NativeMemoryData> dataQ = new ArrayDeque<NativeMemoryData>(1024);
 
@@ -351,7 +351,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
                 return  0;
             }
             long size = memoryManager.getUsableSize(data.address());
-            if (size == MemoryManager.SIZE_INVALID) {
+            if (size == JvmMemoryManager.SIZE_INVALID) {
                 size = data.size();
             }
 

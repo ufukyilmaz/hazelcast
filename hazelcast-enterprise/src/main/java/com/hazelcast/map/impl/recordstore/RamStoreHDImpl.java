@@ -4,7 +4,7 @@ import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -24,13 +24,13 @@ public class RamStoreHDImpl implements RamStore {
 
     private final EnterpriseRecordStore recordStore;
 
-    private final MemoryManager memoryManager;
+    private final JvmMemoryManager memoryManager;
 
     private final HotRestartHDStorageImpl storage;
 
     private final Object mutex;
 
-    public RamStoreHDImpl(EnterpriseRecordStore recordStore, MemoryManager memoryManager) {
+    public RamStoreHDImpl(EnterpriseRecordStore recordStore, JvmMemoryManager memoryManager) {
         this.recordStore = recordStore;
         this.memoryManager = memoryManager;
         this.storage = (HotRestartHDStorageImpl) recordStore.getStorage();

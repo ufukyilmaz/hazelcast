@@ -11,9 +11,10 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
-public final class StandardMemoryManager implements MemoryManager {
+public final class StandardMemoryManager implements JvmMemoryManager, MemoryAllocator {
 
     /**
      * System property to enable debug mode of {@link StandardMemoryManager}.
@@ -58,6 +59,16 @@ public final class StandardMemoryManager implements MemoryManager {
             return new Long2LongHashMap(NULL_ADDRESS);
         }
         return null;
+    }
+
+    @Override
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
     }
 
     @Override
@@ -170,12 +181,12 @@ public final class StandardMemoryManager implements MemoryManager {
     }
 
     @Override
-    public boolean isDestroyed() {
+    public boolean isDisposed() {
         return false;
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         if (isDebugEnabled) {
             allocatedBlocks.clear();
         }

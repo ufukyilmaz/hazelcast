@@ -2,7 +2,7 @@ package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 
 /**
  * {@link HiDensityNearCacheRecordStore} is the contract point to store keys and values as
@@ -22,6 +22,6 @@ public interface HiDensityNearCacheRecordStore<K, V, R extends HiDensityNearCach
      *
      * @return the underlying {@link MemoryManager} implementation
      */
-    MemoryManager getMemoryManager();
+    JvmMemoryManager getMemoryManager();
 
 }

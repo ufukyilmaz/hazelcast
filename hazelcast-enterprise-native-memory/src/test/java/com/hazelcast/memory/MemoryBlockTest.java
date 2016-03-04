@@ -1,8 +1,6 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastSerialClassRunner;
@@ -18,7 +16,7 @@ import org.junit.runner.RunWith;
 import java.nio.ByteOrder;
 import java.util.Random;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static org.junit.Assert.assertEquals;
 
 /**

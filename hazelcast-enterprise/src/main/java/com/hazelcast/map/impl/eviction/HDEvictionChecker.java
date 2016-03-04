@@ -25,7 +25,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
@@ -103,7 +103,7 @@ public class HDEvictionChecker extends EvictionChecker {
         long currentUsedSize = storageInfo.getUsedMemory();
 
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
         long maxUsableSize = memoryManager.getMemoryStats().getNativeMemoryStats().getMax();
 
         return maxUsedPercentage < (1D * ONE_HUNDRED_PERCENT * currentUsedSize / maxUsableSize);
@@ -111,7 +111,7 @@ public class HDEvictionChecker extends EvictionChecker {
 
     protected boolean checkMinFreeNativeMemoryPercentage(double minFreePercentage) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
         final MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
         long maxUsableSize = nativeStats.getMax();
@@ -122,7 +122,7 @@ public class HDEvictionChecker extends EvictionChecker {
 
     protected boolean checkMinFreeNativeMemorySize(double minFreeSize) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
         long currentFreeSize = memoryManager.getMemoryStats().getNativeMemoryStats().getFree();
 

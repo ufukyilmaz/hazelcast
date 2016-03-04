@@ -2,7 +2,7 @@ package com.hazelcast.memory;
 
 interface AddressQueue {
 
-    long INVALID_ADDRESS = MemoryManager.NULL_ADDRESS;
+    long INVALID_ADDRESS = JvmMemoryManager.NULL_ADDRESS;
 
     int getIndex();
 

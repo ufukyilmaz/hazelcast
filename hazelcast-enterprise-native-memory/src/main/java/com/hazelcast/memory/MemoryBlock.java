@@ -2,9 +2,8 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.MEM_COPY_THRESHOLD;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
@@ -14,7 +13,7 @@ import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 public class MemoryBlock {
 
-    protected long address = MemoryManager.NULL_ADDRESS;
+    protected long address = MemoryAllocator.NULL_ADDRESS;
     protected int size;
 
     private final GlobalMemoryAccessor memoryAccessor;
@@ -169,7 +168,7 @@ public class MemoryBlock {
 
         long realAddress = address + destinationOffset;
         while (length > 0) {
-            int chunk = Math.min(length, MEM_COPY_THRESHOLD);
+            int chunk = Math.min(length, GlobalMemoryAccessor.MEM_COPY_THRESHOLD);
             memoryAccessor.copyMemory(source, offset, null, realAddress, chunk);
             length -= chunk;
             offset += chunk;
@@ -206,7 +205,7 @@ public class MemoryBlock {
 
         long realAddress = address + sourceOffset;
         while (length > 0) {
-            int chunk = Math.min(length, MEM_COPY_THRESHOLD);
+            int chunk = Math.min(length, GlobalMemoryAccessor.MEM_COPY_THRESHOLD);
             memoryAccessor.copyMemory(null, realAddress, destination, offset, chunk);
             length -= chunk;
             offset += chunk;

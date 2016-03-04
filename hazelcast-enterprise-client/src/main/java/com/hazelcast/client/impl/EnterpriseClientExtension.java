@@ -20,7 +20,7 @@ import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseType;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -78,7 +78,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         return ss;
     }
 
-    private MemoryManager getMemoryManager(ClientConfig config) {
+    private JvmMemoryManager getMemoryManager(ClientConfig config) {
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();

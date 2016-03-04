@@ -11,9 +11,8 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.JVMMemoryStats;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -55,7 +54,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
     public void tearDown() {
         super.tearDown();
         if (memoryManager != null) {
-            memoryManager.destroy();
+            memoryManager.dispose();
             memoryManager = null;
         }
     }
@@ -235,7 +234,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             NearCacheContext nearCacheContext = createNearCacheContext();
             EnterpriseSerializationService serializationService =
                     (EnterpriseSerializationService) nearCacheContext.getSerializationService();
-            MemoryManager memoryManager = serializationService.getMemoryManager();
+            JvmMemoryManager memoryManager = serializationService.getMemoryManager();
 
             NearCacheRecordStore<Integer, String> nearCacheRecordStore =
                     createNearCacheRecordStore(

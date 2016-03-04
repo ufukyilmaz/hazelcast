@@ -19,7 +19,7 @@ package com.hazelcast.nio.serialization;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.internal.serialization.PortableContext;
 import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -289,43 +289,43 @@ public class EnterprisePortableTest {
 
     @Test
     public void testClassDefinitionLookupBigEndianOffHeapData() throws IOException {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
                 .setMemoryManager(memoryManager)
                 .build();
 
         testClassDefinitionLookup(ss, DataType.NATIVE);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testClassDefinitionLookupLittleEndianOffHeapData() throws IOException {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
                 .setMemoryManager(memoryManager)
                 .build();
 
         testClassDefinitionLookup(ss, DataType.NATIVE);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testClassDefinitionLookupNativeOrderOffHeapData() throws IOException {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .setMemoryManager(memoryManager)
                 .build();
 
         testClassDefinitionLookup(ss, DataType.NATIVE);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() throws IOException {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .setAllowUnsafe(true)
@@ -333,7 +333,7 @@ public class EnterprisePortableTest {
                 .build();
 
         testClassDefinitionLookup(ss, DataType.NATIVE);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) throws IOException {

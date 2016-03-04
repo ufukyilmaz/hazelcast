@@ -43,7 +43,7 @@ public class PoolingMemoryManagerTest {
 
     @After
     public void destroy() {
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test

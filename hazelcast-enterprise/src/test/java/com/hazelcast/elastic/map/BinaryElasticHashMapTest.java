@@ -5,9 +5,8 @@ import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.JVMMemoryStats;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -44,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 public class BinaryElasticHashMapTest {
 
     private final Random random = new Random();
-    private MemoryManager memoryManager;
+    private JvmMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
     private BinaryElasticHashMap<NativeMemoryData> map;
 
@@ -69,7 +68,7 @@ public class BinaryElasticHashMapTest {
         }
         map.dispose();
         serializationService.destroy();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test

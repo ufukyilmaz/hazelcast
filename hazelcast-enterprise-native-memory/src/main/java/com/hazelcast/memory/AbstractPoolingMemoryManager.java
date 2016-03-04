@@ -1,14 +1,16 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.util.QuickMath.log2;
 
 @SuppressWarnings("checkstyle:methodcount")
-abstract class AbstractPoolingMemoryManager implements MemoryManager {
+abstract class AbstractPoolingMemoryManager implements JvmMemoryManager, MemoryAllocator {
 
     // Size of the memory block header for external allocation when allocation size is bigger than page size
     protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
@@ -408,7 +410,17 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     protected abstract int getOffset(long address);
 
     @Override
-    public final JVMMemoryStats getMemoryStats() {
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
+    }
+
+    @Override
+    public final JvmMemoryStats getMemoryStats() {
         return memoryStats;
     }
 
@@ -522,7 +534,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         private void checkAddress(long address, long size) {
             if (address == NULL_ADDRESS) {
                 throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
-                        + "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+                        + "Cannot acquire " + MemorySize.toPrettyString(size) + '!');
             }
         }
     }

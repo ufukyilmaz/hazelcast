@@ -18,7 +18,7 @@ package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitionAware;
 import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -87,7 +87,7 @@ public class EnterpriseDataTest {
     }
 
     private void testHeapAndNativeDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
-        MemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
                     .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
@@ -125,7 +125,7 @@ public class EnterpriseDataTest {
             }
 
         } finally {
-            memPool.destroy();
+            memPool.dispose();
         }
     }
 
@@ -140,7 +140,7 @@ public class EnterpriseDataTest {
     }
 
     private void testDataConversion(Object object) {
-        MemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
+        JvmMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
                     .setUseNativeByteOrder(true).setAllowUnsafe(true).build();
@@ -177,7 +177,7 @@ public class EnterpriseDataTest {
             ss.disposeData(offheap1);
             ss.disposeData(offheap2);
         } finally {
-            memPool.destroy();
+            memPool.dispose();
         }
     }
 

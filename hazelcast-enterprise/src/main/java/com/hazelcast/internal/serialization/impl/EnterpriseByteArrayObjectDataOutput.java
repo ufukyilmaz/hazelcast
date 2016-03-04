@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 class EnterpriseByteArrayObjectDataOutput extends ByteArrayObjectDataOutput implements EnterpriseBufferObjectDataOutput {
 

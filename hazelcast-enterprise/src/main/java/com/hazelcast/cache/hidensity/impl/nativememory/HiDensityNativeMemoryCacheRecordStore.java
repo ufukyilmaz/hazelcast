@@ -22,7 +22,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
@@ -52,7 +52,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected EnterpriseSerializationService serializationService;
     protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
     protected HiDensityStorageInfo cacheInfo;
-    protected MemoryManager memoryManager;
+    protected JvmMemoryManager memoryManager;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
                                                  EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
@@ -832,8 +832,8 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void clear() {
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
+        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
         }
@@ -862,8 +862,8 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void destroy() {
-        MemoryManager memoryManager = serializationService.getMemoryManager();
-        if (memoryManager == null || memoryManager.isDestroyed()) {
+        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
         }

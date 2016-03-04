@@ -1,7 +1,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.config.NativeMemoryConfig;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.JvmMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class OffHeapSerializationTest {
 
-    private MemoryManager malloc;
+    private JvmMemoryManager malloc;
 
     @Before
     public void setUp() throws Exception {
@@ -47,7 +47,7 @@ public class OffHeapSerializationTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        JvmMemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
@@ -103,6 +103,6 @@ public class OffHeapSerializationTest {
 
     @After
     public void tearDown() throws Exception {
-        malloc.destroy();
+        malloc.dispose();
     }
 }

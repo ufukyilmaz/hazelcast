@@ -22,7 +22,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
@@ -52,7 +52,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected EnterpriseSerializationService serializationService;
     protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
     protected HiDensityStorageInfo cacheInfo;
-    protected JvmMemoryManager memoryManager;
+    protected HazelcastMemoryManager memoryManager;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
                                                  EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
@@ -81,7 +81,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
         final long maxNativeMemory =
                 ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                        .getMemoryManager().getMemoryStats().getNativeMemoryStats().getMax();
+                        .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
                 return new HiDensityUsedNativeMemorySizeMaxSizeChecker(cacheInfo, size);
@@ -97,7 +97,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                     return null;
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
-                            + "(" + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                            + '(' + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
                             + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
@@ -832,7 +832,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void clear() {
-        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;
@@ -862,7 +862,7 @@ public class HiDensityNativeMemoryCacheRecordStore
 
     @Override
     public void destroy() {
-        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
             return;

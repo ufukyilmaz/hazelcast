@@ -1,7 +1,7 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -20,7 +20,7 @@ public abstract class LongQueueTestSupport {
     static final int CAPACITY = 1000;
     static final long NULL = -1;
 
-    private JvmMemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private final Random random = new Random();
     protected LongQueue queue;
 
@@ -30,7 +30,7 @@ public abstract class LongQueueTestSupport {
         queue = createQueue(memoryManager);
     }
 
-    protected abstract LongQueue createQueue(JvmMemoryManager memoryManager);
+    protected abstract LongQueue createQueue(HazelcastMemoryManager memoryManager);
 
     @After
     public void tearDown() throws Exception {

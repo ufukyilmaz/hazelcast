@@ -1,12 +1,11 @@
 package com.hazelcast.memory;
 
 /**
- * Memory Manager allocates/frees memory blocks from/to OS like C malloc()/free()
- *
- * Additionally a Memory Manager implementation may keep created memory blocks in its own pool
- * instead of giving back to OS.
+ * Specialization of {@link MemoryManager} to CPU's native address space.
+ * Also includes methods specific to Hazelcast's pooling memory managers.
+ * Also behaves as a {@link MemoryAllocator}.
  */
-public interface JvmMemoryManager extends MemoryManager {
+public interface HazelcastMemoryManager extends MemoryManager, MemoryAllocator {
 
     /**
      * Indicates that size of a memory block is not known by this memory manager.
@@ -44,10 +43,7 @@ public interface JvmMemoryManager extends MemoryManager {
     void free(long address, long size);
 
     /**
-     * Unwraps internal system memory allocator to allocate memory directly from system
-     * instead of pooling.
-     *
-     * @return unwrapped memory allocator
+     * @return the internally used native system memory allocator.
      */
     MemoryAllocator unwrapMemoryAllocator();
 
@@ -57,23 +53,13 @@ public interface JvmMemoryManager extends MemoryManager {
     void compact();
 
     /**
-     * Destroys this Memory Manager and releases all allocated resources.
-     */
-    void dispose();
-
-    /**
-     * Gets the destroyed state of this memory manager.
+     * Gets the disposed state of this memory manager.
      *
      * @return <tt>true</tt> if this memory manager is destroyed, <tt>false</tt> otherwise.
      */
     boolean isDisposed();
 
-    /**
-     * Gets the memory statistics of this memory manager.
-     *
-     * @return the memory statistics
-     */
-    JVMMemoryStats getMemoryStats();
+    MemoryStats getMemoryStats();
 
     /**
      * Returns size of memory block as if it belongs to and is allocated by this memory manager.

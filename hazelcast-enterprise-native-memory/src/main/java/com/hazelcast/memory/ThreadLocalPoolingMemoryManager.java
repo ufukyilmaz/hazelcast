@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 @SuppressWarnings("checkstyle:methodcount")
-public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements JvmMemoryManager {
+public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements HazelcastMemoryManager {
 
     // Size of the memory block header in bytes
     private static final int HEADER_SIZE = 1;

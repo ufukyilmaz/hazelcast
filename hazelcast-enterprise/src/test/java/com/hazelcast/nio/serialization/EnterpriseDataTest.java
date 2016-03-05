@@ -18,7 +18,7 @@ package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitionAware;
 import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -87,7 +87,7 @@ public class EnterpriseDataTest {
     }
 
     private void testHeapAndNativeDataEquality(ByteOrder byteOrder, boolean allowUnsafe) {
-        JvmMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
                     .setUseNativeByteOrder(false).setAllowUnsafe(allowUnsafe).setByteOrder(byteOrder)
@@ -140,7 +140,7 @@ public class EnterpriseDataTest {
     }
 
     private void testDataConversion(Object object) {
-        JvmMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memPool = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES));
         try {
             EnterpriseSerializationService ss = createSerializationServiceBuilder().setMemoryManager(memPool)
                     .setUseNativeByteOrder(true).setAllowUnsafe(true).build();

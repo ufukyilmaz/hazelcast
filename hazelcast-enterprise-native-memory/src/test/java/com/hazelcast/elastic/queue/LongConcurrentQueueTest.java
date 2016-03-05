@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.queue;
 
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -30,7 +30,7 @@ public class LongConcurrentQueueTest {
     private static final long NULL = 0L;
     private static final int WORKER_COUNT = 8;
 
-    private JvmMemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private LongQueue queue;
 
     @Before

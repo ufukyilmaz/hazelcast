@@ -11,7 +11,7 @@ import java.util.List;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 
-public class AppendOnlyMemoryManager implements JvmMemoryManager, MemoryAllocator, Resetable {
+public class AppendOnlyMemoryManager implements HazelcastMemoryManager, MemoryAllocator, Resetable {
 
     private long pointer;
 
@@ -172,8 +172,7 @@ public class AppendOnlyMemoryManager implements JvmMemoryManager, MemoryAllocato
         return MEM;
     }
 
-    @Override
-    public JVMMemoryStats getMemoryStats() {
+    public MemoryStats getMemoryStats() {
         return memoryStats;
     }
 

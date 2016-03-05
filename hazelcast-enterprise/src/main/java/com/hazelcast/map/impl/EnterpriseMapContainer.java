@@ -30,7 +30,7 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.IPartitionService;
@@ -92,7 +92,7 @@ public class EnterpriseMapContainer extends MapContainer {
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         HiDensityRecordAccessor<HDRecord> recordAccessor
                 = new HDRecordAccessor(serializationService, optimizeQueries);
-        JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         return new DefaultHiDensityRecordProcessor(serializationService, recordAccessor,
                 memoryManager, storageInfo);
     }

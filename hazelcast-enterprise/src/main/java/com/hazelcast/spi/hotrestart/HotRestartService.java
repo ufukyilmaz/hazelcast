@@ -7,7 +7,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
@@ -305,7 +305,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         logger.info("Force start completed.");
     }
 
-    private void createThreadLocalHotRestartStores(Thread thread, JvmMemoryManager memoryManager) {
+    private void createThreadLocalHotRestartStores(Thread thread, HazelcastMemoryManager memoryManager) {
         if (!(thread instanceof PartitionOperationThread)) {
             throw new IllegalArgumentException("PartitionOperationThread is required! -> " + thread);
         }
@@ -329,7 +329,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     private void createHotRestartStores() {
-        final JvmMemoryManager memoryManager = ((EnterpriseNodeExtension) node.getNodeExtension())
+        final HazelcastMemoryManager memoryManager = ((EnterpriseNodeExtension) node.getNodeExtension())
                 .getMemoryManager();
         OperationExecutor operationExecutor = getOperationExecutor();
         CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
@@ -442,9 +442,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private class CreateHotRestartStoresTask extends PartitionedTask {
 
-        private final JvmMemoryManager memoryManager;
+        private final HazelcastMemoryManager memoryManager;
 
-        CreateHotRestartStoresTask(CountDownLatch latch, JvmMemoryManager memoryManager) {
+        CreateHotRestartStoresTask(CountDownLatch latch, HazelcastMemoryManager memoryManager) {
             super(latch);
             this.memoryManager = memoryManager;
         }

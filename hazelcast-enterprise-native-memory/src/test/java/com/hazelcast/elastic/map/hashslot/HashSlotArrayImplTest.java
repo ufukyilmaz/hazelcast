@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -30,7 +30,7 @@ public class HashSlotArrayImplTest {
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
-    private JvmMemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private HashSlotArray hsa;
 
     @Before

@@ -10,7 +10,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.util.QuickMath.log2;
 
 @SuppressWarnings("checkstyle:methodcount")
-abstract class AbstractPoolingMemoryManager implements JvmMemoryManager, MemoryAllocator {
+abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, MemoryAllocator {
 
     // Size of the memory block header for external allocation when allocation size is bigger than page size
     protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
@@ -420,7 +420,7 @@ abstract class AbstractPoolingMemoryManager implements JvmMemoryManager, MemoryA
     }
 
     @Override
-    public final JvmMemoryStats getMemoryStats() {
+    public final MemoryStats getMemoryStats() {
         return memoryStats;
     }
 
@@ -428,7 +428,7 @@ abstract class AbstractPoolingMemoryManager implements JvmMemoryManager, MemoryA
         if (size <= 0 || size > pageSize) {
             return 0;
         }
-        long free = memoryStats.getNativeMemoryStats().getFree();
+        long free = memoryStats.getFreeNative();
         if (free == 0) {
             return 0;
         }

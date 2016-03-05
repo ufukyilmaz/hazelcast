@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -34,7 +34,7 @@ public class Long2LongElasticMapHsaTest {
     public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final Random random = new Random();
-    private JvmMemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private Long2LongElasticMapHsa map;
 
     @Before
@@ -358,8 +358,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
-        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     private void _put_(int keyRange) {
@@ -407,8 +407,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
-        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -425,8 +425,8 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
-        assertEquals(nativeStats.toString(), 0, nativeStats.getUsed());
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     private long newKey() {

@@ -3,17 +3,17 @@ package com.hazelcast.cache.hidensity.maxsize;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 
 /**
  * @author sozal 20/11/14
  */
 public class HiDensityFreeNativeMemoryPercentageMaxSizeChecker implements MaxSizeChecker {
 
-    private final JvmMemoryManager memoryManager;
+    private final HazelcastMemoryManager memoryManager;
     private final long minFreeMemorySize;
 
-    public HiDensityFreeNativeMemoryPercentageMaxSizeChecker(JvmMemoryManager memoryManager,
+    public HiDensityFreeNativeMemoryPercentageMaxSizeChecker(HazelcastMemoryManager memoryManager,
                                                              int size, long maxNativeMemory) {
         this.memoryManager = memoryManager;
         final int maxSizePercentage = size;
@@ -27,7 +27,7 @@ public class HiDensityFreeNativeMemoryPercentageMaxSizeChecker implements MaxSiz
 
     @Override
     public boolean isReachedToMaxSize() {
-        return memoryManager.getMemoryStats().getNativeMemoryStats().getFree() < minFreeMemorySize;
+        return memoryManager.getMemoryStats().getFreeNative() < minFreeMemorySize;
     }
 
 }

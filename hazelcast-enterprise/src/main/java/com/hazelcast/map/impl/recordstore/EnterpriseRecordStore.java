@@ -11,7 +11,7 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -48,7 +48,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
     private final long prefix;
     private final HotRestartConfig hotRestartConfig;
-    private final JvmMemoryManager memoryManager;
+    private final HazelcastMemoryManager memoryManager;
 
     private RamStore ramStore;
 
@@ -57,7 +57,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         super(mapContainer, partitionId, keyLoader, logger);
         this.prefix = prefix;
         this.hotRestartConfig = hotRestartConfig;
-        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
         }

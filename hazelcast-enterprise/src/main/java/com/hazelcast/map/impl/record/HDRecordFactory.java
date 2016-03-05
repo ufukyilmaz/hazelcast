@@ -20,7 +20,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
@@ -41,7 +41,7 @@ public class HDRecordFactory implements RecordFactory<Data> {
 
     private final HiDensityRecordProcessor<HDRecord> recordProcessor;
     private final EnterpriseSerializationService serializationService;
-    private final JvmMemoryManager memoryManager;
+    private final HazelcastMemoryManager memoryManager;
 
     public HDRecordFactory(HiDensityRecordProcessor<HDRecord> recordProcessor,
                            SerializationService serializationService) {

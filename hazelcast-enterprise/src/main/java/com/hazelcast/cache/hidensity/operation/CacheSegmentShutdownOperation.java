@@ -2,7 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -28,7 +28,7 @@ public final class CacheSegmentShutdownOperation
         try {
             EnterpriseSerializationService serializationService
                     = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
-            JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+            HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
             if (memoryManager == null || memoryManager.isDisposed()) {
                 // otherwise will cause a SIGSEGV
                 return;

@@ -21,7 +21,7 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
@@ -40,14 +40,16 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.handle
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
     private final boolean allowSerializeOffHeap;
 
-    private final JvmMemoryManager memoryManager;
-    private final ThreadLocal<JvmMemoryManager> memoryManagerThreadLocal = new ThreadLocal<JvmMemoryManager>();
+    private final HazelcastMemoryManager memoryManager;
+    private final ThreadLocal<HazelcastMemoryManager> memoryManagerThreadLocal = new ThreadLocal<HazelcastMemoryManager>();
 
-    public EnterpriseSerializationServiceV1(InputOutputFactory inputOutputFactory, byte version, int portableVersion,
-                                            ClassLoader classLoader, Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
-                                            Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
-                                            PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-                                            JvmMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject, boolean allowSerializeOffHeap) {
+    public EnterpriseSerializationServiceV1(
+            InputOutputFactory inputOutputFactory, byte version, int portableVersion, ClassLoader classLoader,
+            Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
+            Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
+            PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
+            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject,
+            boolean allowSerializeOffHeap) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
                 enableSharedObject);
@@ -57,8 +59,8 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public JvmMemoryManager getMemoryManagerToUse() {
-        JvmMemoryManager mm = memoryManagerThreadLocal.get();
+    public HazelcastMemoryManager getMemoryManagerToUse() {
+        HazelcastMemoryManager mm = memoryManagerThreadLocal.get();
         if (mm != null) {
             return mm;
         } else {
@@ -72,7 +74,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public Data toNativeData(Object obj, JvmMemoryManager memoryManager) {
+    public Data toNativeData(Object obj, HazelcastMemoryManager memoryManager) {
         return toDataInternal(obj, DataType.NATIVE, globalPartitioningStrategy, memoryManager);
     }
 
@@ -81,7 +83,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         return toDataInternal(obj, type, strategy, getMemoryManagerToUse());
     }
 
-    private Data toDataInternal(Object obj, DataType type, PartitioningStrategy strategy, JvmMemoryManager memoryManager) {
+    private Data toDataInternal(Object obj, DataType type, PartitioningStrategy strategy, HazelcastMemoryManager memoryManager) {
         if (obj == null) {
             return null;
         }
@@ -97,7 +99,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private Data toNativeDataInternal(Object obj, PartitioningStrategy strategy, JvmMemoryManager memoryManager) {
+    private Data toNativeDataInternal(Object obj, PartitioningStrategy strategy, HazelcastMemoryManager memoryManager) {
         if (obj == null) {
             return null;
         }
@@ -120,7 +122,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             int size = out.position();
             int memSize = size + NATIVE_MEMORY_DATA_OVERHEAD;
             long address = memoryManager.allocate(memSize);
-            assert address != JvmMemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
+            assert address != HazelcastMemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
@@ -139,11 +141,11 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public Data convertToNativeData(Data data, JvmMemoryManager memoryManager) {
+    public Data convertToNativeData(Data data, HazelcastMemoryManager memoryManager) {
         return convertDataInternal(data, DataType.NATIVE, memoryManager);
     }
 
-    private Data convertDataInternal(Data data, DataType type, JvmMemoryManager memoryManager) {
+    private Data convertDataInternal(Data data, DataType type, HazelcastMemoryManager memoryManager) {
         if (data == null) {
             return null;
         }
@@ -184,19 +186,19 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public void disposeData(Data data, JvmMemoryManager memoryManager) {
+    public void disposeData(Data data, HazelcastMemoryManager memoryManager) {
         disposeDataInternal(data, memoryManager);
     }
 
-    private void disposeDataInternal(Data data, JvmMemoryManager memoryManager) {
+    private void disposeDataInternal(Data data, HazelcastMemoryManager memoryManager) {
         if (data instanceof NativeMemoryData) {
             if (memoryManager == null) {
                 throw new HazelcastSerializationException("MemoryManager is required!");
             }
             NativeMemoryData memoryBlock = (NativeMemoryData) data;
-            if (memoryBlock.address() != JvmMemoryManager.NULL_ADDRESS) {
+            if (memoryBlock.address() != HazelcastMemoryManager.NULL_ADDRESS) {
                 memoryManager.free(memoryBlock.address(), memoryBlock.size());
-                memoryBlock.reset(JvmMemoryManager.NULL_ADDRESS);
+                memoryBlock.reset(HazelcastMemoryManager.NULL_ADDRESS);
             }
         } else {
             super.disposeData(data);
@@ -204,7 +206,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public <T> T toObject(Object data, JvmMemoryManager memoryManager) {
+    public <T> T toObject(Object data, HazelcastMemoryManager memoryManager) {
         try {
             memoryManagerThreadLocal.set(memoryManager);
             return super.toObject(data);
@@ -214,7 +216,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public JvmMemoryManager getMemoryManager() {
+    public HazelcastMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

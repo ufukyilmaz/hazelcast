@@ -89,7 +89,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         // there is no need to free allocated memory.
 
         long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                .getMemoryManager().getMemoryStats().getNativeMemoryStats().getMax();
+                .getMemoryManager().getMemoryStats().getMaxNative();
         int hotRestartMinFreePercentage = getHotRestartFreeNativeMemoryPercentage();
         if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
             if (size < hotRestartMinFreePercentage) {

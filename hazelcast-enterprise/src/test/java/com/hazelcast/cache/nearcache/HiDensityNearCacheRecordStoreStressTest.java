@@ -10,9 +10,9 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.memory.JVMMemoryStats;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -234,7 +234,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             NearCacheContext nearCacheContext = createNearCacheContext();
             EnterpriseSerializationService serializationService =
                     (EnterpriseSerializationService) nearCacheContext.getSerializationService();
-            JvmMemoryManager memoryManager = serializationService.getMemoryManager();
+            HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
 
             NearCacheRecordStore<Integer, String> nearCacheRecordStore =
                     createNearCacheRecordStore(
@@ -255,22 +255,22 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
 
                 nearCacheRecordStore.doEvictionIfRequired();
 
-                JVMMemoryStats memoryStats = memoryManager.getMemoryStats();
+                MemoryStats memoryStats = memoryManager.getMemoryStats();
                 if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE) {
-                    long usedNativeMemory = memoryStats.getNativeMemoryStats().getUsed();
+                    long usedNativeMemory = memoryStats.getUsedNative();
                     long maxAllowedNativeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
                     assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
                 } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE) {
-                    long usedNativeMemory = memoryStats.getNativeMemoryStats().getUsed();
-                    long maxAllowedNativeMemory = (memoryStats.getNativeMemoryStats().getMax() * DEFAULT_PERCENTAGE) / 100;
+                    long usedNativeMemory = memoryStats.getUsedNative();
+                    long maxAllowedNativeMemory = (memoryStats.getMaxNative() * DEFAULT_PERCENTAGE) / 100;
                     assertTrue(maxAllowedNativeMemory >= usedNativeMemory);
                 } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE) {
-                    long freeNativeMemory = memoryStats.getNativeMemoryStats().getFree();
+                    long freeNativeMemory = memoryStats.getFreeNative();
                     long minAllowedFreeMemory = MemoryUnit.MEGABYTES.toBytes(DEFAULT_SIZE);
                     assertTrue(freeNativeMemory >= minAllowedFreeMemory);
                 } else if (maxSizePolicy == EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE) {
-                    long freeNativeMemory = memoryStats.getNativeMemoryStats().getFree();
-                    long minAllowedFreeMemory = (memoryStats.getNativeMemoryStats().getMax() * DEFAULT_PERCENTAGE) / 100;
+                    long freeNativeMemory = memoryStats.getFreeNative();
+                    long minAllowedFreeMemory = (memoryStats.getMaxNative() * DEFAULT_PERCENTAGE) / 100;
                     assertTrue(freeNativeMemory >= minAllowedFreeMemory);
                 }
             }

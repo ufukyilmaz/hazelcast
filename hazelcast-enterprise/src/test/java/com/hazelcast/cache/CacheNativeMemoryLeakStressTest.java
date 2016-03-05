@@ -18,9 +18,9 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.JVMMemoryStats;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PooledNativeMemoryStats;
@@ -130,11 +130,11 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
             cache.put(i, i);
         }
 
-        JVMMemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
+        MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
         hz.shutdown();
 
-        assertEquals(0, memoryStats.getNativeMemoryStats().getUsed());
-        assertEquals(0, memoryStats.getNativeMemoryStats().getCommitted());
+        assertEquals(0, memoryStats.getUsedNative());
+        assertEquals(0, memoryStats.getCommittedNative());
         if (memoryStats instanceof PooledNativeMemoryStats) {
             assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
         }
@@ -652,8 +652,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     private static class AssertFreeMemoryTask extends AssertTask {
 
-        private final JVMMemoryStats memoryStats;
-        private final JVMMemoryStats memoryStats2;
+        private final MemoryStats memoryStats;
+        private final MemoryStats memoryStats2;
 
         private AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
             memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
@@ -662,11 +662,11 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
         @Override
         public void run() throws Exception {
-            String message = "Node1: " + toPrettyString(memoryStats.getNativeMemoryStats().getUsed())
-                             + ", Node2: " + toPrettyString(memoryStats2.getNativeMemoryStats().getUsed());
+            String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
+                             + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
 
-            assertEquals(message, 0, memoryStats.getNativeMemoryStats().getUsed());
-            assertEquals(message, 0, memoryStats2.getNativeMemoryStats().getUsed());
+            assertEquals(message, 0, memoryStats.getUsedNative());
+            assertEquals(message, 0, memoryStats2.getUsedNative());
         }
 
     }
@@ -674,7 +674,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
     private static void dumpNativeMemory(HazelcastInstance hz) {
         Node node = getNode(hz);
         EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-        JvmMemoryManager memoryManager = ss.getMemoryManager();
+        MemoryManager memoryManager = ss.getMemoryManager();
 
         if (!(memoryManager instanceof StandardMemoryManager)) {
             System.err.println("Cannot dump memory for " + memoryManager);

@@ -19,7 +19,7 @@ package com.hazelcast.nio.serialization;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.internal.serialization.PortableContext;
 import com.hazelcast.internal.serialization.SerializationService;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -289,7 +289,7 @@ public class EnterprisePortableTest {
 
     @Test
     public void testClassDefinitionLookupBigEndianOffHeapData() throws IOException {
-        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
                 .setMemoryManager(memoryManager)
@@ -301,7 +301,7 @@ public class EnterprisePortableTest {
 
     @Test
     public void testClassDefinitionLookupLittleEndianOffHeapData() throws IOException {
-        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
                 .setMemoryManager(memoryManager)
@@ -313,7 +313,7 @@ public class EnterprisePortableTest {
 
     @Test
     public void testClassDefinitionLookupNativeOrderOffHeapData() throws IOException {
-        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .setMemoryManager(memoryManager)
@@ -325,7 +325,7 @@ public class EnterprisePortableTest {
 
     @Test
     public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() throws IOException {
-        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .setAllowUnsafe(true)

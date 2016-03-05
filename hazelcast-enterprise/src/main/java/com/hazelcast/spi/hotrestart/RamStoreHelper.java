@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 
@@ -77,7 +77,7 @@ public final class RamStoreHelper {
      * @param memoryManager memory manager key handle address belongs to
      * @return native key
      */
-    public static NativeMemoryData validateAndGetKey(KeyHandleOffHeap kh, JvmMemoryManager memoryManager) {
+    public static NativeMemoryData validateAndGetKey(KeyHandleOffHeap kh, HazelcastMemoryManager memoryManager) {
         int size = (int) memoryManager.validateAndGetUsableSize(kh.address());
         if (size < 0) {
             return null;

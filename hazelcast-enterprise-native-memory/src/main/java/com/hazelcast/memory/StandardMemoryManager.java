@@ -14,7 +14,7 @@ import com.hazelcast.util.function.LongLongConsumer;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
-public final class StandardMemoryManager implements JvmMemoryManager, MemoryAllocator {
+public final class StandardMemoryManager implements HazelcastMemoryManager {
 
     /**
      * System property to enable debug mode of {@link StandardMemoryManager}.
@@ -72,7 +72,7 @@ public final class StandardMemoryManager implements JvmMemoryManager, MemoryAllo
     }
 
     @Override
-    public JVMMemoryStats getMemoryStats() {
+    public MemoryStats getMemoryStats() {
         return memoryStats;
     }
 

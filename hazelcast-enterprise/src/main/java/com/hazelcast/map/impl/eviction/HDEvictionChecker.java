@@ -25,8 +25,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.EnterpriseMapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
-import com.hazelcast.memory.JvmMemoryManager;
-import com.hazelcast.memory.MemoryStats;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
@@ -103,28 +102,27 @@ public class HDEvictionChecker extends EvictionChecker {
         long currentUsedSize = storageInfo.getUsedMemory();
 
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
-        long maxUsableSize = memoryManager.getMemoryStats().getNativeMemoryStats().getMax();
+        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        long maxUsableSize = memoryManager.getMemoryStats().getMaxNative();
 
         return maxUsedPercentage < (1D * ONE_HUNDRED_PERCENT * currentUsedSize / maxUsableSize);
     }
 
     protected boolean checkMinFreeNativeMemoryPercentage(double minFreePercentage) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        final MemoryStats nativeStats = memoryManager.getMemoryStats().getNativeMemoryStats();
-        long maxUsableSize = nativeStats.getMax();
-        long currentFreeSize = nativeStats.getFree();
+        long maxUsableSize = memoryManager.getMemoryStats().getMaxNative();
+        long currentFreeSize = memoryManager.getMemoryStats().getFreeNative();
 
         return minFreePercentage > (1D * ONE_HUNDRED_PERCENT * currentFreeSize / maxUsableSize);
     }
 
     protected boolean checkMinFreeNativeMemorySize(double minFreeSize) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
-        JvmMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
+        HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        long currentFreeSize = memoryManager.getMemoryStats().getNativeMemoryStats().getFree();
+        long currentFreeSize = memoryManager.getMemoryStats().getFreeNative();
 
         return minFreeSize > (1D * currentFreeSize / ONE_MEGABYTE);
     }

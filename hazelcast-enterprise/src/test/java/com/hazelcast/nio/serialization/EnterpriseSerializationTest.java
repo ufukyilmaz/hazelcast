@@ -29,7 +29,7 @@ import com.hazelcast.instance.SimpleMemberImpl;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -240,7 +240,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testPartitionHash() {
-        JvmMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         PartitioningStrategy partitionStrategy = new PartitioningStrategy() {
             @Override
             public Object getPartitionKey(Object key) {

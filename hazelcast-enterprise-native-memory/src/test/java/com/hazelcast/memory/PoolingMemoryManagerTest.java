@@ -59,7 +59,7 @@ public class PoolingMemoryManagerTest {
 
     private void testCompaction(PoolingMemoryManager memoryManager) {
         int maxBlockSize = pageSize / 8;
-        JVMMemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = memoryManager.getMemoryStats();
         Random rand = new Random();
         Set<MemoryBlock> blocks = new HashSet<MemoryBlock>();
         while (true) {
@@ -74,27 +74,26 @@ public class PoolingMemoryManagerTest {
                 break;
             }
         }
-        final MemoryStats nativeStats = memoryStats.getNativeMemoryStats();
-        int minBlockCount = (int) (nativeStats.getMax() / maxBlockSize);
+        int minBlockCount = (int) (memoryStats.getMaxNative() / maxBlockSize);
         assertTrue(blocks.size() >= minBlockCount);
-        assertTrue("committed: " + nativeStats.getCommitted() + ", used: " + nativeStats.getUsed(),
-                nativeStats.getCommitted() >= nativeStats.getUsed());
-        assertTrue("used: " + nativeStats.getUsed() + ", blocks: " + (blocks.size() * maxBlockSize),
-                nativeStats.getUsed() <= (maxBlockSize * blocks.size()));
+        assertTrue("committed: " + memoryStats.getCommittedHeap() + ", used: " + memoryStats.getUsedNative(),
+                memoryStats.getCommittedHeap() >= memoryStats.getUsedNative());
+        assertTrue("used: " + memoryStats.getUsedNative() + ", blocks: " + (blocks.size() * maxBlockSize),
+                memoryStats.getUsedNative() <= (maxBlockSize * blocks.size()));
 
         for (MemoryBlock block : blocks) {
             memoryManager.free(block.address(), block.size());
         }
-        assertEquals(0, nativeStats.getUsed());
+        assertEquals(0, memoryStats.getUsedNative());
         memoryManager.compact();
 
         int headerLength = memoryManager.getHeaderSize();
         for (int i = 7; i >= 0; i--) {
             int size = pageSize / (1 << i) - headerLength;
             long address = memoryManager.allocate(size);
-            assertEquals(size + headerLength, nativeStats.getUsed());
+            assertEquals(size + headerLength, memoryStats.getUsedNative());
             memoryManager.free(address, size);
-            assertEquals(0, nativeStats.getUsed());
+            assertEquals(0, memoryStats.getUsedNative());
         }
     }
 

@@ -4,7 +4,7 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
@@ -27,7 +27,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final NearCacheConfig nearCacheConfig;
     private final NearCacheStatsImpl nearCacheStats;
     private final HiDensityStorageInfo storageInfo;
-    private final JvmMemoryManager memoryManager;
+    private final HazelcastMemoryManager memoryManager;
 
     private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final int hashSeed;
@@ -65,7 +65,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) nearCacheContext.getSerializationService();
 
-        JvmMemoryManager mm = serializationService.getMemoryManager();
+        HazelcastMemoryManager mm = serializationService.getMemoryManager();
         if (mm instanceof PoolingMemoryManager) {
             this.memoryManager = ((PoolingMemoryManager) mm).getGlobalMemoryManager();
         } else {
@@ -254,7 +254,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public JvmMemoryManager getMemoryManager() {
+    public HazelcastMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

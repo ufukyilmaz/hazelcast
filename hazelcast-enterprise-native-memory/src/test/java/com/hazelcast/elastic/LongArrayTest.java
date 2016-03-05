@@ -1,6 +1,6 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.memory.JvmMemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -21,7 +21,7 @@ public class LongArrayTest {
 
     private static final int INITIAL_LEN = 32;
 
-    private JvmMemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private LongArray array;
 
     @Before

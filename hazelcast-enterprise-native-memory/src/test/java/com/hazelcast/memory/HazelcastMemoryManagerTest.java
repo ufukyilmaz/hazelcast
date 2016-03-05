@@ -10,17 +10,17 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.memory.JvmMemoryManager.SIZE_INVALID;
+import static com.hazelcast.memory.HazelcastMemoryManager.SIZE_INVALID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class JvmMemoryManagerTest {
+public class HazelcastMemoryManagerTest {
 
     private static final int DEFAULT_PAGE_SIZE = 1 << 10;
 
-    private JvmMemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private final LibMalloc malloc = new UnsafeMalloc();
     private final PooledNativeMemoryStats stats = new PooledNativeMemoryStats(MemoryUnit.MEGABYTES.toBytes(1),
             MemoryUnit.MEGABYTES.toBytes(1));
@@ -163,7 +163,7 @@ public class JvmMemoryManagerTest {
         testValidateAndGetAllocatedSize_withFreedAddress(memoryManager);
     }
 
-    private void testValidateAndGetUsableSize(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetUsableSize(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 31;
         long address = memoryManager.allocate(size);
 
@@ -171,20 +171,20 @@ public class JvmMemoryManagerTest {
         assertTrue("Size= " + size + ", Validated-size= " + validatedSize, size <= validatedSize);
     }
 
-    private void testValidateAndGetUsableSize_withUnallocatedAddress(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetUsableSize_withUnallocatedAddress(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 32;
         long address = memoryManager.allocate(size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetUsableSize(address + size));
     }
 
-    private void testValidateAndGetUsableSize_withFreedAddress(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetUsableSize_withFreedAddress(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 31;
         long address = memoryManager.allocate(size);
         memoryManager.free(address, size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetUsableSize(address));
     }
 
-    private void testValidateAndGetAllocatedSize(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetAllocatedSize(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 31;
         long address = memoryManager.allocate(size);
 
@@ -192,13 +192,13 @@ public class JvmMemoryManagerTest {
         assertTrue("Size= " + size + ", Validated-size= " + validatedSize, size < validatedSize);
     }
 
-    private void testValidateAndGetAllocatedSize_withUnallocatedAddress(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetAllocatedSize_withUnallocatedAddress(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 32;
         long address = memoryManager.allocate(size);
         assertEquals(SIZE_INVALID, memoryManager.validateAndGetAllocatedSize(address + size));
     }
 
-    private void testValidateAndGetAllocatedSize_withFreedAddress(JvmMemoryManager memoryManager) throws Exception {
+    private void testValidateAndGetAllocatedSize_withFreedAddress(HazelcastMemoryManager memoryManager) throws Exception {
         int size = 31;
         long address = memoryManager.allocate(size);
         memoryManager.free(address, size);
@@ -229,7 +229,7 @@ public class JvmMemoryManagerTest {
         testNewSequence(memoryManager);
     }
 
-    private void testNewSequence(JvmMemoryManager memoryManager) {
+    private void testNewSequence(HazelcastMemoryManager memoryManager) {
         long initialSeq = memoryManager.newSequence();
         for (int k = 0; k < 1000; k++) {
             assertEquals(++initialSeq, memoryManager.newSequence());
@@ -238,17 +238,17 @@ public class JvmMemoryManagerTest {
 
     @Test
     public void testValidateAndGetUsableSize_threadLocalPooled_withBiggerThanPageSize() {
-        JvmMemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
+        HazelcastMemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
         testValidateAndGetUsableSize_withBiggerThanPageSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetUsableSize_globalPooled_withBiggerThanPageSize() {
-        JvmMemoryManager memoryManager = newGlobalPoolingMemoryManager();
+        HazelcastMemoryManager memoryManager = newGlobalPoolingMemoryManager();
         testValidateAndGetUsableSize_withBiggerThanPageSize(memoryManager);
     }
 
-    private void testValidateAndGetUsableSize_withBiggerThanPageSize(JvmMemoryManager memoryManager) {
+    private void testValidateAndGetUsableSize_withBiggerThanPageSize(HazelcastMemoryManager memoryManager) {
         final int allocationSize = 2 * DEFAULT_PAGE_SIZE + 3;
 
         long address = memoryManager.allocate(allocationSize);
@@ -263,17 +263,17 @@ public class JvmMemoryManagerTest {
 
     @Test
     public void testValidateAndGetAllocatedSize_threadLocalPooled_withBiggerThanPageSize() {
-        JvmMemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
+        HazelcastMemoryManager memoryManager = newThreadLocalPoolingMemoryManager();
         testValidateAndGetAllocatedSize_withBiggerThanPageSize(memoryManager);
     }
 
     @Test
     public void testValidateAndGetAllocatedSize_globalPooled_withBiggerThanPageSize() {
-        JvmMemoryManager memoryManager = newGlobalPoolingMemoryManager();
+        HazelcastMemoryManager memoryManager = newGlobalPoolingMemoryManager();
         testValidateAndGetAllocatedSize_withBiggerThanPageSize(memoryManager);
     }
 
-    private void testValidateAndGetAllocatedSize_withBiggerThanPageSize(JvmMemoryManager memoryManager) {
+    private void testValidateAndGetAllocatedSize_withBiggerThanPageSize(HazelcastMemoryManager memoryManager) {
         final int allocationSize = 2 * DEFAULT_PAGE_SIZE + 3;
 
         long address = memoryManager.allocate(allocationSize);

@@ -67,7 +67,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         final int SAMPLE_COUNT = 15;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.unwrapMemoryAllocator());
+                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
 
         for (int i = 0; i < ENTRY_COUNT; i++) {
             Data key = newKey(i);
@@ -109,7 +109,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         final int SAMPLE_COUNT = 1;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.unwrapMemoryAllocator()) {
+                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator()) {
 
             @Override
             // overridden to prevent returning Collections#emptyList() when map is empty
@@ -130,7 +130,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
         final int SAMPLE_COUNT = 100;
 
         map = new SampleableElasticHashMap<SimpleNativeMemoryData>(
-                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.unwrapMemoryAllocator());
+                ENTRY_COUNT, serializationService, memoryBlockAccessor, memoryManager.getSystemAllocator());
 
         // put single entry
         Data key = serializationService.toData(randomString());

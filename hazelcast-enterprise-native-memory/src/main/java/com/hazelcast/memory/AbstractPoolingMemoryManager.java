@@ -472,7 +472,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
     }
 
     @Override
-    public final MemoryAllocator unwrapMemoryAllocator() {
+    public final MemoryAllocator getSystemAllocator() {
         return systemAllocator;
     }
 

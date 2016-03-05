@@ -323,7 +323,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         if (memoryManager != null) {
             final HotRestartStore offHeapStore =
                     newOffHeapHotRestartStore(cfg.setHomeDir(getStoreDir(threadId, false))
-                            .setMalloc(memoryManager.unwrapMemoryAllocator()));
+                            .setMalloc(memoryManager.getSystemAllocator()));
             offHeapStoreHolder.set(offHeapStore);
         }
     }

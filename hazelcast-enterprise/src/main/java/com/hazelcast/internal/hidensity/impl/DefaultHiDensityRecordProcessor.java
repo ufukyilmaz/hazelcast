@@ -196,7 +196,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
 
     @Override
     public MemoryAllocator unwrapMemoryAllocator() {
-        return memoryManager.unwrapMemoryAllocator();
+        return memoryManager.getSystemAllocator();
     }
 
     @Override

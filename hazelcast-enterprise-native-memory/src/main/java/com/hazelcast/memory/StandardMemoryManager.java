@@ -176,7 +176,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
     }
 
     @Override
-    public MemoryAllocator unwrapMemoryAllocator() {
+    public MemoryAllocator getSystemAllocator() {
         return this;
     }
 

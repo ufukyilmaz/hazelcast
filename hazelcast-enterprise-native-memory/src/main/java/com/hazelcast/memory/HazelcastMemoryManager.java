@@ -45,7 +45,7 @@ public interface HazelcastMemoryManager extends MemoryManager, MemoryAllocator {
     /**
      * @return the internally used native system memory allocator.
      */
-    MemoryAllocator unwrapMemoryAllocator();
+    MemoryAllocator getSystemAllocator();
 
     /**
      * Compacts the memory region

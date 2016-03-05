@@ -257,8 +257,8 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     }
 
     @Override
-    public MemoryAllocator unwrapMemoryAllocator() {
-        return globalMemoryManager.unwrapMemoryAllocator();
+    public MemoryAllocator getSystemAllocator() {
+        return globalMemoryManager.getSystemAllocator();
     }
 
     @Override

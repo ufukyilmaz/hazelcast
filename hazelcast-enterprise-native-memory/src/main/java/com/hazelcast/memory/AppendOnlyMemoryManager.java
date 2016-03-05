@@ -129,7 +129,7 @@ public class AppendOnlyMemoryManager implements HazelcastMemoryManager, MemoryAl
     }
 
     @Override
-    public MemoryAllocator unwrapMemoryAllocator() {
+    public MemoryAllocator getSystemAllocator() {
         return memoryAllocator;
     }
 

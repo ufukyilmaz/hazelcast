@@ -46,7 +46,7 @@ public class MemoryAllocatorTest {
     @Test
     public void testMallocFreePooledSystem() {
         HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testMallocFree(memoryManager.unwrapMemoryAllocator());
+        testMallocFree(memoryManager.getSystemAllocator());
         memoryManager.dispose();
     }
 
@@ -95,7 +95,7 @@ public class MemoryAllocatorTest {
     @Test
     public void testReallocExpandPooledSystem() {
         HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocExpand(memoryManager.unwrapMemoryAllocator());
+        testReallocExpand(memoryManager.getSystemAllocator());
         memoryManager.dispose();
     }
 
@@ -134,7 +134,7 @@ public class MemoryAllocatorTest {
     @Test
     public void testReallocShrinkPooledSystem() {
         HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocShrink(memoryManager.unwrapMemoryAllocator());
+        testReallocShrink(memoryManager.getSystemAllocator());
         memoryManager.dispose();
     }
 

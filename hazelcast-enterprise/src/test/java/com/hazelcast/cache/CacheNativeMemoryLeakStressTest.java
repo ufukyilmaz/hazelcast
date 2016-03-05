@@ -133,8 +133,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         MemoryStats memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
         hz.shutdown();
 
-        assertEquals(0, memoryStats.getUsedNativeMemory());
-        assertEquals(0, memoryStats.getCommittedNativeMemory());
+        assertEquals(0, memoryStats.getUsedNative());
+        assertEquals(0, memoryStats.getCommittedNative());
         if (memoryStats instanceof PooledNativeMemoryStats) {
             assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
         }
@@ -662,11 +662,11 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
         @Override
         public void run() throws Exception {
-            String message = "Node1: " + toPrettyString(memoryStats.getUsedNativeMemory())
-                             + ", Node2: " + toPrettyString(memoryStats2.getUsedNativeMemory());
+            String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
+                             + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
 
-            assertEquals(message, 0, memoryStats.getUsedNativeMemory());
-            assertEquals(message, 0, memoryStats2.getUsedNativeMemory());
+            assertEquals(message, 0, memoryStats.getUsedNative());
+            assertEquals(message, 0, memoryStats2.getUsedNative());
         }
 
     }

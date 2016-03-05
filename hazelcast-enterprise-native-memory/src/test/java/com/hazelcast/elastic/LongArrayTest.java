@@ -1,6 +1,6 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -21,7 +21,7 @@ public class LongArrayTest {
 
     private static final int INITIAL_LEN = 32;
 
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private LongArray array;
 
     @Before
@@ -32,7 +32,7 @@ public class LongArrayTest {
 
     @After
     public void tearDown() throws Exception {
-        malloc.destroy();
+        malloc.dispose();
     }
 
     @Test

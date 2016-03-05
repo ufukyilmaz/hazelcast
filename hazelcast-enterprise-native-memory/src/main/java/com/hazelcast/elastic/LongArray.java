@@ -1,10 +1,8 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorProvider;
-import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -12,11 +10,6 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
  *  Native long array.
  */
 public class LongArray {
-
-    // We are using `STANDARD` memory accessor because we internally guarantee that
-    // every memory access is aligned.
-    private static final MemoryAccessor MEMORY_ACCESSOR =
-            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
 
     private final MemoryAllocator malloc;
     private long baseAddress;
@@ -43,7 +36,7 @@ public class LongArray {
      * @throws ArrayIndexOutOfBoundsException if given index is out of bounds
      */
     public long get(long index) {
-        return MEMORY_ACCESSOR.getLong(baseAddress + offset(index));
+        return AMEM.getLong(baseAddress + offset(index));
     }
 
     /**
@@ -53,7 +46,7 @@ public class LongArray {
      * @throws ArrayIndexOutOfBoundsException if given index is out of bounds
      */
     public void set(long index, long value) {
-        MEMORY_ACCESSOR.putLong(baseAddress + offset(index), value);
+        AMEM.putLong(baseAddress + offset(index), value);
     }
 
     private long offset(long index) {

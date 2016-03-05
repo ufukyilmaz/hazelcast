@@ -1,6 +1,5 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -16,7 +15,9 @@ import java.util.Random;
 
 import static com.hazelcast.elastic.NativeSort.quickSortInt;
 import static com.hazelcast.elastic.NativeSort.quickSortLong;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_INT_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_LONG_BASE_OFFSET;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
@@ -48,7 +49,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * INT_SIZE_IN_BYTES);
-        MEM.copyMemory(array, MemoryAccessor.ARRAY_INT_BASE_OFFSET, null,
+        MEM.copyMemory(array, ARRAY_INT_BASE_OFFSET, null,
                 arrayAddress, length * INT_SIZE_IN_BYTES);
 
         quickSortInt(arrayAddress, length);
@@ -64,7 +65,7 @@ public class NativeSortTest {
         Arrays.sort(sorted);
 
         arrayAddress = MALLOC.malloc(length * LONG_SIZE_IN_BYTES);
-        MEM.copyMemory(array, MemoryAccessor.ARRAY_LONG_BASE_OFFSET,
+        MEM.copyMemory(array, ARRAY_LONG_BASE_OFFSET,
                                    null, arrayAddress,
                                    length * LONG_SIZE_IN_BYTES);
 

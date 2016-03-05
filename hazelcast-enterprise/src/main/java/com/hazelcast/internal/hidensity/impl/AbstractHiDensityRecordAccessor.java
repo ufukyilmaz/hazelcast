@@ -3,7 +3,7 @@ package com.hazelcast.internal.hidensity.impl;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
@@ -16,10 +16,10 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         implements HiDensityRecordAccessor<R> {
 
     protected final EnterpriseSerializationService ss;
-    protected final MemoryManager memoryManager;
+    protected final HazelcastMemoryManager memoryManager;
 
     public AbstractHiDensityRecordAccessor(EnterpriseSerializationService ss,
-                                           MemoryManager memoryManager) {
+                                           HazelcastMemoryManager memoryManager) {
         this.ss = ss;
         this.memoryManager = memoryManager;
     }
@@ -39,7 +39,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public R read(long address) {
-        if (address == MemoryManager.NULL_ADDRESS) {
+        if (address == HazelcastMemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + address);
         }
         R record = newRecord();
@@ -49,7 +49,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long dispose(R record) {
-        if (record.address() == MemoryManager.NULL_ADDRESS) {
+        if (record.address() == HazelcastMemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + record.address());
         }
         long size = 0L;
@@ -57,7 +57,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         record.clear();
         size += getSize(record);
         memoryManager.free(record.address(), record.size());
-        record.reset(MemoryManager.NULL_ADDRESS);
+        record.reset(HazelcastMemoryManager.NULL_ADDRESS);
         return size;
     }
 
@@ -68,7 +68,7 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public NativeMemoryData readData(long valueAddress) {
-        if (valueAddress == MemoryManager.NULL_ADDRESS) {
+        if (valueAddress == HazelcastMemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + valueAddress);
         }
         return new NativeMemoryData().reset(valueAddress);
@@ -84,16 +84,16 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
     public long disposeValue(R record) {
         long valueAddress = record.getValueAddress();
         long size = 0L;
-        if (valueAddress != MemoryManager.NULL_ADDRESS) {
+        if (valueAddress != HazelcastMemoryManager.NULL_ADDRESS) {
             size = disposeData(valueAddress);
-            record.setValueAddress(MemoryManager.NULL_ADDRESS);
+            record.setValueAddress(HazelcastMemoryManager.NULL_ADDRESS);
         }
         return size;
     }
 
     @Override
     public long disposeData(NativeMemoryData value) {
-        if (value.address() == MemoryManager.NULL_ADDRESS) {
+        if (value.address() == HazelcastMemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + value.address());
         }
         long size = getSize(value);
@@ -108,11 +108,11 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long getSize(MemoryBlock memoryBlock) {
-        if (memoryBlock == null || memoryBlock.address() == MemoryManager.NULL_ADDRESS) {
+        if (memoryBlock == null || memoryBlock.address() == HazelcastMemoryManager.NULL_ADDRESS) {
             return  0;
         }
         long size = memoryManager.getAllocatedSize(memoryBlock.address());
-        if (size == MemoryManager.SIZE_INVALID) {
+        if (size == HazelcastMemoryManager.SIZE_INVALID) {
             size = memoryBlock.size();
         }
 
@@ -121,11 +121,11 @@ public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
 
     @Override
     public long getSize(long address, long expectedSize) {
-        if (address == MemoryManager.NULL_ADDRESS) {
+        if (address == HazelcastMemoryManager.NULL_ADDRESS) {
             throw new IllegalArgumentException("Illegal memory address: " + address);
         }
         long size = memoryManager.getAllocatedSize(address);
-        if (size == MemoryManager.SIZE_INVALID) {
+        if (size == HazelcastMemoryManager.SIZE_INVALID) {
             size = expectedSize;
         }
         return size;

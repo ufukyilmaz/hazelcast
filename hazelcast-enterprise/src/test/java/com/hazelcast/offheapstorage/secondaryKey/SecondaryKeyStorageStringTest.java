@@ -10,7 +10,7 @@ import com.hazelcast.elastic.binarystorage.sorted.secondarykey.BinarySecondaryKe
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 public class SecondaryKeyStorageStringTest {
 
     private static final int VALUE_COUNT = 10;
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private BinarySecondaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
@@ -67,7 +67,7 @@ public class SecondaryKeyStorageStringTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager =
+        HazelcastMemoryManager memoryManager =
                 new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
@@ -270,10 +270,10 @@ public class SecondaryKeyStorageStringTest {
             offHeapBlobMap.dispose();
         }
 
-        assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
 
         if (malloc != null) {
-            malloc.destroy();
+            malloc.dispose();
         }
     }
 }

@@ -4,7 +4,7 @@ import com.hazelcast.elastic.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 public class BinaryElasticHashMapTest {
 
     private final Random random = new Random();
-    private MemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private EnterpriseSerializationService serializationService;
     private BinaryElasticHashMap<NativeMemoryData> map;
 
@@ -68,7 +68,7 @@ public class BinaryElasticHashMapTest {
         }
         map.dispose();
         serializationService.destroy();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -578,7 +578,7 @@ public class BinaryElasticHashMapTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     private void _put_(int keyRange) {
@@ -682,7 +682,7 @@ public class BinaryElasticHashMapTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -700,7 +700,7 @@ public class BinaryElasticHashMapTest {
 
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -718,7 +718,7 @@ public class BinaryElasticHashMapTest {
 
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -736,7 +736,7 @@ public class BinaryElasticHashMapTest {
 
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -759,7 +759,7 @@ public class BinaryElasticHashMapTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test

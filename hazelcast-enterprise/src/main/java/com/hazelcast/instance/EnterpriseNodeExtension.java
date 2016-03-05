@@ -23,6 +23,7 @@ import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -69,7 +70,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
-    private volatile MemoryManager memoryManager;
+    private volatile HazelcastMemoryManager memoryManager;
 
     public EnterpriseNodeExtension(Node node) {
         super(node);
@@ -184,7 +185,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             // (<native_memory_size> * <node_count>) / (2 * <partition_count>)
             // `2` comes from default backup count is `1` so by default there are primary and backup partitions.
             final MemoryStats memoryStats = memoryManager.getMemoryStats();
-            final int maxNativeMemorySizeInMegaBytes = (int) MemoryUnit.BYTES.toMegaBytes(memoryStats.getMaxNativeMemory());
+            final int maxNativeMemorySizeInMegaBytes = (int) MemoryUnit.BYTES.toMegaBytes(memoryStats.getMaxNative());
             final int partitionCount = node.getPartitionService().getPartitionCount();
             final int nativeMemorySizePerPartition = (maxNativeMemorySizeInMegaBytes * nodeCount) / (2 * partitionCount);
             if (nativeMemorySizePerPartition > SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB) {
@@ -409,7 +410,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public MemoryStats getMemoryStats() {
-        MemoryManager mm = memoryManager;
+        HazelcastMemoryManager mm = memoryManager;
         return mm != null ? mm.getMemoryStats() : super.getMemoryStats();
     }
 
@@ -457,7 +458,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return false;
     }
 
-    public MemoryManager getMemoryManager() {
+    public HazelcastMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

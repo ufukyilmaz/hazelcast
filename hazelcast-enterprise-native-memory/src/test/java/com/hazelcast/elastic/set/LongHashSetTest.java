@@ -1,7 +1,7 @@
 package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -26,7 +26,7 @@ import static org.junit.Assert.assertTrue;
 public class LongHashSetTest {
 
     private final Random random = new Random();
-    private MemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private LongHashSet set;
 
     @Before
@@ -38,7 +38,7 @@ public class LongHashSetTest {
     @After
     public void tearDown() throws Exception {
         set.dispose();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test

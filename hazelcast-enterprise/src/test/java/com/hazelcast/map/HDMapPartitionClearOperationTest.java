@@ -37,11 +37,11 @@ public class HDMapPartitionClearOperationTest extends HazelcastTestSupport {
         MemoryStats memoryStats = nodeExtension.getMemoryManager().getMemoryStats();
 
         long minUsedMemory = count * 8L; // int key + int value
-        assertThat(memoryStats.getUsedNativeMemory(), greaterThanOrEqualTo(minUsedMemory));
+        assertThat(memoryStats.getUsedNative(), greaterThanOrEqualTo(minUsedMemory));
 
         node.shutdown();
 
-        assertEquals(0, memoryStats.getUsedNativeMemory());
+        assertEquals(0, memoryStats.getUsedNative());
     }
 
     @Override

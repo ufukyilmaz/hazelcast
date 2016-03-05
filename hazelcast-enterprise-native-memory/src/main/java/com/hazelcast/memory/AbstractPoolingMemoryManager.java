@@ -1,21 +1,16 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorProvider;
-import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.util.QuickMath;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.util.QuickMath.log2;
 
 @SuppressWarnings("checkstyle:methodcount")
-abstract class AbstractPoolingMemoryManager implements MemoryManager {
-
-    // We are using `STANDARD` memory accessor because we internally guarantee that
-    // every memory access is aligned.
-    protected static final MemoryAccessor MEMORY_ACCESSOR =
-            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, MemoryAllocator {
 
     // Size of the memory block header for external allocation when allocation size is bigger than page size
     protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
@@ -174,11 +169,11 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         long newAddress = allocate(newSize);
 
         long size = Math.min(currentSize, newSize);
-        MEMORY_ACCESSOR.copyMemory(address, newAddress, size);
+        AMEM.copyMemory(address, newAddress, size);
 
         if (newSize > currentSize) {
             long startAddress = newAddress + currentSize;
-            MEMORY_ACCESSOR.setMemory(startAddress, (newSize - currentSize), (byte) 0);
+            AMEM.setMemory(startAddress, (newSize - currentSize), (byte) 0);
         }
         free(address, currentSize);
         return newAddress;
@@ -225,7 +220,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         assertNotNullPtr(address);
         assert size > 0 : "Invalid size: " + size;
 
-        MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
+        AMEM.setMemory(address, size, (byte) 0);
     }
 
     private void releaseInternal(AddressQueue queue, long address) {
@@ -332,8 +327,8 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             do {
                 address = acquireInternal(nextQ);
                 if (address == NULL_ADDRESS) {
-                    throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
-                            + " Cannot acquire " + MemorySize.toPrettyString(memorySize) + "!");
+                    throw new NativeOutOfMemoryError("Not enough contiguous memory available,"
+                            + " cannot acquire " + MemorySize.toPrettyString(memorySize));
                 }
 
                 offset = getOffset(address);
@@ -415,6 +410,16 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     protected abstract int getOffset(long address);
 
     @Override
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
+    }
+
+    @Override
     public final MemoryStats getMemoryStats() {
         return memoryStats;
     }
@@ -423,7 +428,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         if (size <= 0 || size > pageSize) {
             return 0;
         }
-        long free = memoryStats.getFreeNativeMemory();
+        long free = memoryStats.getFreeNative();
         if (free == 0) {
             return 0;
         }
@@ -467,7 +472,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
     }
 
     @Override
-    public final MemoryAllocator unwrapMemoryAllocator() {
+    public final MemoryAllocator getSystemAllocator() {
         return systemAllocator;
     }
 
@@ -486,7 +491,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
             checkSize(size);
             long address = malloc.malloc(size);
             checkAddress(address, size);
-            MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
+            AMEM.setMemory(address, size, (byte) 0);
             memoryStats.addMetadataUsage(size);
             return address;
         }
@@ -519,7 +524,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
 
             if (diff > 0) {
                 long startAddress = newAddress + currentSize;
-                MEMORY_ACCESSOR.setMemory(startAddress, diff, (byte) 0);
+                AMEM.setMemory(startAddress, diff, (byte) 0);
             }
 
             memoryStats.addMetadataUsage(diff);
@@ -529,7 +534,7 @@ abstract class AbstractPoolingMemoryManager implements MemoryManager {
         private void checkAddress(long address, long size) {
             if (address == NULL_ADDRESS) {
                 throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
-                        + "Cannot acquire " + MemorySize.toPrettyString(size) + "!");
+                        + "Cannot acquire " + MemorySize.toPrettyString(size) + '!');
             }
         }
     }

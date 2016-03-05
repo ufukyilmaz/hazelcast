@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
 
 /**
  * Flyweight object around a pointer to a native-memory record structure.
@@ -18,27 +18,27 @@ final class RecordOffHeap extends Record {
     long address = NULL_ADDRESS;
 
     @Override long rawSeqValue() {
-        return MEM.getLong(address + SEQ_OFFSET);
+        return AMEM.getLong(address + SEQ_OFFSET);
     }
 
     @Override int rawSizeValue() {
-        return MEM.getInt(address + SIZE_OFFSET);
+        return AMEM.getInt(address + SIZE_OFFSET);
     }
 
     @Override long keyPrefix(KeyHandle ignored) {
-        return MEM.getLong(address + KEY_PREFIX_OFFSET);
+        return AMEM.getLong(address + KEY_PREFIX_OFFSET);
     }
 
     void setKeyPrefix(long prefix) {
-        MEM.putLong(address + KEY_PREFIX_OFFSET, prefix);
+        AMEM.putLong(address + KEY_PREFIX_OFFSET, prefix);
     }
 
     @Override int garbageCount() {
-        return MEM.getInt(address + GARBAGE_COUNT_OFFSET);
+        return AMEM.getInt(address + GARBAGE_COUNT_OFFSET);
     }
 
     @Override void negateSeq() {
-        MEM.putLong(address + SEQ_OFFSET, -MEM.getLong(address + SEQ_OFFSET));
+        AMEM.putLong(address + SEQ_OFFSET, -AMEM.getLong(address + SEQ_OFFSET));
     }
 
     @Override int decrementGarbageCount() {
@@ -52,11 +52,11 @@ final class RecordOffHeap extends Record {
     }
 
     @Override public void setGarbageCount(int count) {
-        MEM.putInt(address + GARBAGE_COUNT_OFFSET, count);
+        AMEM.putInt(address + GARBAGE_COUNT_OFFSET, count);
     }
 
     @Override void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
-        MEM.putLong(address + SEQ_OFFSET, rawSeqValue);
-        MEM.putInt(address + SIZE_OFFSET, rawSizeValue);
+        AMEM.putLong(address + SEQ_OFFSET, rawSeqValue);
+        AMEM.putInt(address + SIZE_OFFSET, rawSizeValue);
     }
 }

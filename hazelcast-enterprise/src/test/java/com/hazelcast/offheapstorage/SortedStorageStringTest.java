@@ -9,7 +9,7 @@ import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class SortedStorageStringTest {
 
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private BinaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
@@ -56,7 +56,7 @@ public class SortedStorageStringTest {
     private EnterpriseSerializationService getSerializationService() {
         NativeMemoryConfig memoryConfig = getMemoryConfig();
 
-        MemoryManager memoryManager = new StandardMemoryManager(memoryConfig.getSize());
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(memoryConfig.getSize());
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
@@ -188,10 +188,10 @@ public class SortedStorageStringTest {
             offHeapBlobMap.dispose();
         }
 
-        assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
 
         if (malloc != null) {
-            malloc.destroy();
+            malloc.dispose();
         }
     }
 }

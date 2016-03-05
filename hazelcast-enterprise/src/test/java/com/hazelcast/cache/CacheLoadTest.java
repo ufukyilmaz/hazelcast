@@ -11,7 +11,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -128,7 +128,7 @@ public class CacheLoadTest extends AbstractCacheTest {
         Node node = TestUtil.getNode(instance);
         EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) node.getSerializationService();
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
 
         long now = System.currentTimeMillis();
@@ -155,7 +155,7 @@ public class CacheLoadTest extends AbstractCacheTest {
         Node node = TestUtil.getNode(instance);
         EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) node.getSerializationService();
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
 
         Random rand = new Random();

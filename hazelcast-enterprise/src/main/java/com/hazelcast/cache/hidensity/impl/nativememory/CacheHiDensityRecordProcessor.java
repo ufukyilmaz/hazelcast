@@ -22,7 +22,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -38,7 +38,7 @@ public class CacheHiDensityRecordProcessor<R extends HiDensityRecord> extends De
 
     public CacheHiDensityRecordProcessor(EnterpriseSerializationService serializationService,
                                          HiDensityRecordAccessor<R> recordAccessor,
-                                         MemoryManager memoryManager,
+                                         HazelcastMemoryManager memoryManager,
                                          HiDensityStorageInfo storageInfo) {
         super(serializationService, recordAccessor, memoryManager, storageInfo);
     }

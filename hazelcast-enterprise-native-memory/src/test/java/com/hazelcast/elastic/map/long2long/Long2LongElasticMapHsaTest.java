@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -22,7 +22,6 @@ import org.junit.runner.RunWith;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -35,7 +34,7 @@ public class Long2LongElasticMapHsaTest {
     public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
 
     private final Random random = new Random();
-    private MemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
     private Long2LongElasticMapHsa map;
 
     @Before
@@ -47,7 +46,7 @@ public class Long2LongElasticMapHsaTest {
     @After
     public void tearDown() throws Exception {
         map.dispose();
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -360,7 +359,7 @@ public class Long2LongElasticMapHsaTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     private void _put_(int keyRange) {
@@ -409,7 +408,7 @@ public class Long2LongElasticMapHsaTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     @Test
@@ -427,7 +426,7 @@ public class Long2LongElasticMapHsaTest {
         map.clear();
         map.dispose();
         MemoryStats memoryStats = memoryManager.getMemoryStats();
-        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNativeMemory());
+        assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
     private long newKey() {

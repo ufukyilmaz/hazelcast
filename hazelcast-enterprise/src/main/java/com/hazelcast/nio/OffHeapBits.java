@@ -5,7 +5,7 @@ import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import java.io.IOException;
 import java.io.UTFDataFormatException;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 
 public final class OffHeapBits {
 

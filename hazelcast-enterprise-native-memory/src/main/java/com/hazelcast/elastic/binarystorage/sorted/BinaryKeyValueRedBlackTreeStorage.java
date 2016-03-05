@@ -6,12 +6,12 @@ import com.hazelcast.elastic.binarystorage.iterator.BinaryKeyRedBlackTreeKeysIte
 import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIterator;
 import com.hazelcast.elastic.binarystorage.iterator.value.BinaryValueIteratorImpl;
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.elastic.binarystorage.sorted.OrderingDirection.ASC;
 import static com.hazelcast.elastic.binarystorage.sorted.OrderingDirection.DESC;
-import static com.hazelcast.internal.memory.MemoryAccessorProvider.getMemoryAccessor;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
@@ -23,7 +23,7 @@ public class BinaryKeyValueRedBlackTreeStorage implements BinaryKeyValueSortedSt
 
     // We are using `STANDARD` memory accessor because we internally guarantee that
     // every memory access is aligned.
-    protected static final MemoryAccessor MEMORY_ACCESSOR = getMemoryAccessor(MemoryAccessorType.STANDARD);
+    protected static final MemoryAccessor MEMORY_ACCESSOR = getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
 
     // Tree
     protected static final byte RED = 1;

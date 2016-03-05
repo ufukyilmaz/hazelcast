@@ -43,7 +43,7 @@ public class PoolingMemoryManagerTest {
 
     @After
     public void destroy() {
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -74,26 +74,26 @@ public class PoolingMemoryManagerTest {
                 break;
             }
         }
-        int minBlockCount = (int) (memoryStats.getMaxNativeMemory() / maxBlockSize);
+        int minBlockCount = (int) (memoryStats.getMaxNative() / maxBlockSize);
         assertTrue(blocks.size() >= minBlockCount);
-        assertTrue("committed: " + memoryStats.getCommittedHeap() + ", used: " + memoryStats.getUsedNativeMemory(),
-                memoryStats.getCommittedHeap() >= memoryStats.getUsedNativeMemory());
-        assertTrue("used: " + memoryStats.getUsedNativeMemory() + ", blocks: " + (blocks.size() * maxBlockSize),
-                memoryStats.getUsedNativeMemory() <= (maxBlockSize * blocks.size()));
+        assertTrue("committed: " + memoryStats.getCommittedHeap() + ", used: " + memoryStats.getUsedNative(),
+                memoryStats.getCommittedHeap() >= memoryStats.getUsedNative());
+        assertTrue("used: " + memoryStats.getUsedNative() + ", blocks: " + (blocks.size() * maxBlockSize),
+                memoryStats.getUsedNative() <= (maxBlockSize * blocks.size()));
 
         for (MemoryBlock block : blocks) {
             memoryManager.free(block.address(), block.size());
         }
-        assertEquals(0, memoryStats.getUsedNativeMemory());
+        assertEquals(0, memoryStats.getUsedNative());
         memoryManager.compact();
 
         int headerLength = memoryManager.getHeaderSize();
         for (int i = 7; i >= 0; i--) {
             int size = pageSize / (1 << i) - headerLength;
             long address = memoryManager.allocate(size);
-            assertEquals(size + headerLength, memoryStats.getUsedNativeMemory());
+            assertEquals(size + headerLength, memoryStats.getUsedNative());
             memoryManager.free(address, size);
-            assertEquals(0, memoryStats.getUsedNativeMemory());
+            assertEquals(0, memoryStats.getUsedNative());
         }
     }
 

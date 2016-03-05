@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,7 +30,7 @@ public class HashSlotArrayImplTest {
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private HashSlotArray hsa;
 
     @Before
@@ -42,7 +42,7 @@ public class HashSlotArrayImplTest {
     @After
     public void tearDown() throws Exception {
         hsa.dispose();
-        malloc.destroy();
+        malloc.dispose();
     }
 
     @Test
@@ -107,7 +107,7 @@ public class HashSlotArrayImplTest {
             long key = (long) i;
             long valueAddress = hsa.get(key);
 
-            assertEquals(key, MEM.getLong(valueAddress));
+            assertEquals(key, AMEM.getLong(valueAddress));
         }
     }
 
@@ -274,13 +274,13 @@ public class HashSlotArrayImplTest {
     private long insert(long key) {
         final long valueAddress = hsa.ensure(key);
         assertTrue(valueAddress > 0);
-        MEM.putLong(valueAddress, key);
+        AMEM.putLong(valueAddress, key);
         return valueAddress;
     }
 
     private static void verifyValue(long key, long valueAddress) {
         // pre-check to avoid SIGSEGV
         assertNotEquals(NULL_ADDRESS, valueAddress);
-        assertEquals(key, MEM.getLong(valueAddress));
+        assertEquals(key, AMEM.getLong(valueAddress));
     }
 }

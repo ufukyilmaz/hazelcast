@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
@@ -22,16 +22,16 @@ public class MemoryAllocatorTest {
 
     @Test
     public void testMallocFreeStandard() {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         testMallocFree(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testMallocFreeGlobalPooled() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         testMallocFree(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -40,14 +40,14 @@ public class MemoryAllocatorTest {
                 new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         memoryManager.registerThread(Thread.currentThread());
         testMallocFree(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testMallocFreePooledSystem() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testMallocFree(memoryManager.unwrapMemoryAllocator());
-        memoryManager.destroy();
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        testMallocFree(memoryManager.getSystemAllocator());
+        memoryManager.dispose();
     }
 
     private static void testMallocFree(MemoryAllocator memoryAllocator) {
@@ -71,16 +71,16 @@ public class MemoryAllocatorTest {
 
     @Test
     public void testReallocExpandStandard() {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         testReallocExpand(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testReallocExpandGlobalPooled() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         testReallocExpand(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -89,14 +89,14 @@ public class MemoryAllocatorTest {
                 new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         memoryManager.registerThread(Thread.currentThread());
         testReallocExpand(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testReallocExpandPooledSystem() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocExpand(memoryManager.unwrapMemoryAllocator());
-        memoryManager.destroy();
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        testReallocExpand(memoryManager.getSystemAllocator());
+        memoryManager.dispose();
     }
 
     private static void testReallocExpand(MemoryAllocator memoryAllocator) {
@@ -110,16 +110,16 @@ public class MemoryAllocatorTest {
 
     @Test
     public void testReallocShrinkStandard() {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         testReallocShrink(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testReallocShrinkGlobalPooled() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         testReallocShrink(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -128,14 +128,14 @@ public class MemoryAllocatorTest {
                 new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         memoryManager.registerThread(Thread.currentThread());
         testReallocShrink(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testReallocShrinkPooledSystem() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocShrink(memoryManager.unwrapMemoryAllocator());
-        memoryManager.destroy();
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        testReallocShrink(memoryManager.getSystemAllocator());
+        memoryManager.dispose();
     }
 
     private static void testReallocShrink(MemoryAllocator memoryAllocator) {
@@ -148,16 +148,16 @@ public class MemoryAllocatorTest {
 
     @Test
     public void testMalloc_8bytes_Aligned_Standard() {
-        MemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
+        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
     public void testMalloc_8bytes_Aligned_GlobalPooled() {
-        MemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     @Test
@@ -166,7 +166,7 @@ public class MemoryAllocatorTest {
                 new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
         memoryManager.registerThread(Thread.currentThread());
         testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.destroy();
+        memoryManager.dispose();
     }
 
     private static void testMalloc_8bytes_Aligned(MemoryAllocator memoryAllocator) {

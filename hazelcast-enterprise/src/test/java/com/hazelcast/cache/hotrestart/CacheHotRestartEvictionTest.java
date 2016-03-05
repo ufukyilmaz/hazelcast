@@ -189,7 +189,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
             EnterpriseCacheService cacheService = node.nodeEngine.getService(ICacheService.SERVICE_NAME);
             HiDensityStorageInfo cacheInfo = cacheService.getOrCreateHiDensityCacheInfo("/hz/" + cache.getName());
 
-            long maxNativeMemory = memoryStats.getMaxNativeMemory();
+            long maxNativeMemory = memoryStats.getMaxNative();
             long minFreeNativeMemory = (long) (maxNativeMemory
                     * freeNativeMemoryPercentage / 100f);
             int entrySize = 1024 * 1024; // 1MB
@@ -207,7 +207,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
                 long forceEvictionCountBefore = cacheInfo.getForceEvictionCount();
                 int sizeBefore = cache.size();
 
-                long actualMinFreeNativeMemory = memoryStats.getFreeNativeMemory();
+                long actualMinFreeNativeMemory = memoryStats.getFreeNative();
                 boolean evictionShouldBeTriggeredBecauseOfMinFreeMemory = actualMinFreeNativeMemory < minFreeNativeMemory;
 
                 int j = i % partitionCount;

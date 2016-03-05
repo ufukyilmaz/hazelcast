@@ -1,8 +1,9 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;
@@ -12,16 +13,16 @@ import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 public class MemoryBlock {
 
-    protected long address = MemoryManager.NULL_ADDRESS;
+    protected long address = MemoryAllocator.NULL_ADDRESS;
     protected int size;
 
-    private final MemoryAccessor memoryAccessor;
+    private final GlobalMemoryAccessor memoryAccessor;
 
     public MemoryBlock() {
         this.memoryAccessor = MEM;
     }
 
-    public MemoryBlock(MemoryAccessor memoryAccessor) {
+    public MemoryBlock(GlobalMemoryAccessor memoryAccessor) {
         this.memoryAccessor = memoryAccessor;
     }
 
@@ -31,7 +32,7 @@ public class MemoryBlock {
         this.size = size;
     }
 
-    protected MemoryBlock(MemoryAccessor memoryAccessor, long address, int size) {
+    protected MemoryBlock(GlobalMemoryAccessor memoryAccessor, long address, int size) {
         this.memoryAccessor = memoryAccessor;
         this.address = address;
         this.size = size;
@@ -147,7 +148,7 @@ public class MemoryBlock {
      * @throws IndexOutOfBoundsException
      */
     public final void copyFromByteArray(long destinationOffset, byte[] source, int offset, int length) {
-        copyFrom(destinationOffset, source, memoryAccessor.ARRAY_BYTE_BASE_OFFSET + offset, length);
+        copyFrom(destinationOffset, source, ARRAY_BYTE_BASE_OFFSET + offset, length);
     }
 
     /**
@@ -167,7 +168,7 @@ public class MemoryBlock {
 
         long realAddress = address + destinationOffset;
         while (length > 0) {
-            int chunk = (length > memoryAccessor.MEM_COPY_THRESHOLD) ? memoryAccessor.MEM_COPY_THRESHOLD : length;
+            int chunk = Math.min(length, GlobalMemoryAccessor.MEM_COPY_THRESHOLD);
             memoryAccessor.copyMemory(source, offset, null, realAddress, chunk);
             length -= chunk;
             offset += chunk;
@@ -185,7 +186,7 @@ public class MemoryBlock {
      * @throws IndexOutOfBoundsException
      */
     public final void copyToByteArray(long sourceOffset, byte[] destination, int offset, int length) {
-        copyTo(sourceOffset, destination, memoryAccessor.ARRAY_BYTE_BASE_OFFSET + offset, length);
+        copyTo(sourceOffset, destination, ARRAY_BYTE_BASE_OFFSET + offset, length);
     }
 
     /**
@@ -204,7 +205,7 @@ public class MemoryBlock {
 
         long realAddress = address + sourceOffset;
         while (length > 0) {
-            int chunk = (length > memoryAccessor.MEM_COPY_THRESHOLD) ? memoryAccessor.MEM_COPY_THRESHOLD : length;
+            int chunk = Math.min(length, GlobalMemoryAccessor.MEM_COPY_THRESHOLD);
             memoryAccessor.copyMemory(null, realAddress, destination, offset, chunk);
             length -= chunk;
             offset += chunk;
@@ -242,15 +243,7 @@ public class MemoryBlock {
         }
 
         MemoryBlock block = (MemoryBlock) o;
-
-        if (address != block.address) {
-            return false;
-        }
-        if (size != block.size) {
-            return false;
-        }
-
-        return true;
+        return address == block.address && size == block.size;
     }
 
     @Override

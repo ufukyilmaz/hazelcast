@@ -20,7 +20,7 @@ import com.hazelcast.util.function.Consumer;
 
 import java.util.Collection;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 /**
  * Many producer to one consumer concurrent queue that is array backed. The algorithm is a variation of Fast Flow
@@ -47,9 +47,9 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
             if (currentTail >= bufferLimit) {
                 return false;
             }
-        } while (!MEM.compareAndSwapLong(this, TAIL_OFFSET, currentTail, currentTail + 1));
+        } while (!AMEM.compareAndSwapLong(this, TAIL_OFFSET, currentTail, currentTail + 1));
 
-        MEM.putOrderedObject(buffer, sequenceToOffset(currentTail, mask), e);
+        AMEM.putOrderedObject(buffer, sequenceToOffset(currentTail, mask), e);
 
         return true;
     }
@@ -59,11 +59,11 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
         final long currentHead = head;
         final long elementOffset = sequenceToOffset(currentHead, mask);
         final Object[] buffer = this.buffer;
-        final E item = (E) MEM.getObjectVolatile(buffer, elementOffset);
+        final E item = (E) AMEM.getObjectVolatile(buffer, elementOffset);
 
         if (null != item) {
-            MEM.putObject(buffer, elementOffset, null);
-            MEM.putOrderedLong(this, HEAD_OFFSET, currentHead + 1);
+            AMEM.putObject(buffer, elementOffset, null);
+            AMEM.putOrderedLong(this, HEAD_OFFSET, currentHead + 1);
         }
 
         return item;
@@ -79,17 +79,17 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
         try {
             do {
                 final long elementOffset = sequenceToOffset(nextSequence, mask);
-                final Object item = MEM.getObjectVolatile(buffer, elementOffset);
+                final Object item = AMEM.getObjectVolatile(buffer, elementOffset);
                 if (null == item) {
                     break;
                 }
 
-                MEM.putObject(buffer, elementOffset, null);
+                AMEM.putObject(buffer, elementOffset, null);
                 nextSequence++;
                 elementHandler.accept((E) item);
             } while (true);
         } finally {
-            MEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
+            AMEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
         }
 
         return (int) (nextSequence - currentHead);
@@ -104,18 +104,18 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
 
         while (count < limit) {
             final long elementOffset = sequenceToOffset(nextSequence, mask);
-            final Object item = MEM.getObjectVolatile(buffer, elementOffset);
+            final Object item = AMEM.getObjectVolatile(buffer, elementOffset);
             if (null == item) {
                 break;
             }
 
-            MEM.putObject(buffer, elementOffset, null);
+            AMEM.putObject(buffer, elementOffset, null);
             nextSequence++;
             count++;
             target.add((E) item);
         }
 
-        MEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
+        AMEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
 
         return count;
     }

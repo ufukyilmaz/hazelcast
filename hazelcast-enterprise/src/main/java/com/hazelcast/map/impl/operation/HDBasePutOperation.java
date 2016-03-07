@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.EntryViews;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
 import com.hazelcast.nio.serialization.Data;
@@ -27,6 +26,8 @@ import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
+import static com.hazelcast.core.EntryEventType.ADDED;
+import static com.hazelcast.core.EntryEventType.UPDATED;
 import static com.hazelcast.map.impl.record.Records.buildRecordInfo;
 
 public abstract class HDBasePutOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
@@ -48,7 +49,6 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
 
     @Override
     public void afterRun() throws Exception {
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapServiceContext.interceptAfterPut(name, dataValue);
         Object value = isPostProcessing(recordStore) ? recordStore.getRecord(dataKey).getValue() : dataValue;
         mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(), dataKey, dataOldValue, value);
@@ -69,13 +69,12 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         }
         final Data valueConvertedData = mapServiceContext.toData(value);
         final EntryView entryView = EntryViews.createSimpleEntryView(dataKey, valueConvertedData, record);
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.publishWanReplicationUpdate(name, entryView);
     }
 
     private EntryEventType getEventType() {
         if (eventType == null) {
-            eventType = dataOldValue == null ? EntryEventType.ADDED : EntryEventType.UPDATED;
+            eventType = dataOldValue == null ? ADDED : UPDATED;
         }
         return eventType;
     }

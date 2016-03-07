@@ -16,9 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -56,10 +53,6 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
         if (keyValueSequence == null || keyValueSequence.isEmpty()) {
             return;
         }
-        final int partitionId = getPartitionId();
-        final MapService mapService = this.mapService;
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final RecordStore recordStore = mapServiceContext.getRecordStore(partitionId, name);
         for (int i = 0; i < keyValueSequence.size(); i += 2) {
             final Data key = keyValueSequence.get(i);
             final Data value = keyValueSequence.get(i + 1);

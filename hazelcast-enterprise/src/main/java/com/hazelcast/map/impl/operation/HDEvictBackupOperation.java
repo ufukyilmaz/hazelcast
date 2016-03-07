@@ -1,6 +1,5 @@
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -37,7 +36,6 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     @Override
     protected void runInternal() {
-        RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
         recordStore.evict(dataKey, true);
         if (unlockKey) {
             recordStore.forceUnlock(dataKey);

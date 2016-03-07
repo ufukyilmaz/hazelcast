@@ -19,10 +19,8 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.MapEntries;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordInfo;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -50,7 +48,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     private boolean initialLoad;
     private List<Map.Entry<Data, Data>> backupEntries;
     private List<RecordInfo> backupRecordInfos;
-    private transient RecordStore recordStore;
     private List<Data> invalidationKeys;
 
     public HDPutAllOperation() {
@@ -88,7 +85,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         }
         mapServiceContext.interceptAfterPut(name, dataValue);
         EntryEventType eventType = oldValue == null ? ADDED : UPDATED;
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         dataValue = getValueOrPostProcessedValue(dataKey, dataValue);
         mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, oldValue, dataValue);
 

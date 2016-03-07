@@ -18,7 +18,6 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
@@ -60,8 +59,6 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
     }
 
     private void hintMapEvent() {
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.hintMapEvent(getCallerAddress(), name, EntryEventType.CLEAR_ALL,
                 numberOfClearedEntries, getPartitionId());
     }

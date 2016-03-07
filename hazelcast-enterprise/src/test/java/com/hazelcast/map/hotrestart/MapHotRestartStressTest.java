@@ -9,7 +9,7 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
@@ -145,12 +145,12 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         Config config = new XmlConfigBuilder()
                 .build()
                 .setInstanceName("hr-test-" + instanceId);
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
         HotRestartPersistenceConfig hrConfig = config.getHotRestartPersistenceConfig();
         hrConfig.setBaseDir(homeDir).setEnabled(true);
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES))
                 .setMetadataSpacePercentage(50);
-        config.setProperty(GroupProperty.PARTITION_COUNT, "20");
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "20");
         config.getMapConfig("default").getHotRestartConfig().setEnabled(true);
         MapConfig mapConfig = config.getMapConfig("native*");
         mapConfig.setInMemoryFormat(NATIVE);

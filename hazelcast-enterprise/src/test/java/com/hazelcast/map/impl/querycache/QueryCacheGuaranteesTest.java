@@ -7,7 +7,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.test.AssertTask;
@@ -37,7 +37,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
         Config config = new Config();
-        config.setProperty(GroupProperty.PARTITION_COUNT, "271");
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "271");
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);
         queryCacheConfig.setBatchSize(100);

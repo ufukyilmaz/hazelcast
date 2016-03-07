@@ -25,7 +25,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.map.nearcache.NearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -164,7 +164,7 @@ public class HDNearCacheTest extends NearCacheTest {
         memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, UNLIMITED_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
         config.addMapConfig(mapConfig);
         config.setNativeMemoryConfig(memoryConfig);
         return config;

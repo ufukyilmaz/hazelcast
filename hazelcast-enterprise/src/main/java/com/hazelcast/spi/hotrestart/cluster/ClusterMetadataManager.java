@@ -1,18 +1,18 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.nio.Address;
+import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
-import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.internal.partition.PartitionListener;
+import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.internal.partition.impl.PartitionReplicaChangeEvent;
+import com.hazelcast.internal.properties.GroupProperty;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.Address;
 import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;

@@ -7,7 +7,7 @@ import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.mapreduce.helpers.Employee;
@@ -64,7 +64,7 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
     @Test
     public void testQueryCache_withLocalListener() throws Exception {
         String cacheName = randomString();
-        config = new Config().setProperty(GroupProperty.PARTITION_COUNT, "1");
+        config = new Config().setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
 
         for (int i = 0; i < 30; i++) {
             map.put(i, i);

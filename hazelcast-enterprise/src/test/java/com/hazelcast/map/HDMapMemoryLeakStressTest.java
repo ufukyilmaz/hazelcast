@@ -11,8 +11,8 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -149,7 +149,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     protected Config createConfig() {
         Config config = new Config();
 
-        config.setProperty(GroupProperty.PARTITION_COUNT, String.valueOf(PARTITION_COUNT));
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT));
 
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig.setEnabled(true).setAllocatorType(ALLOCATOR_TYPE).setSize(MEMORY_SIZE);

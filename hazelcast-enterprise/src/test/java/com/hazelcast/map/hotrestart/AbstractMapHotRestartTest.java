@@ -9,7 +9,7 @@ import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
@@ -140,11 +140,11 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             return instance.getConfig();
         }
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.UNLIMITED_LICENSE);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
+        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
 
         // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, "4");
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         hotRestartPersistenceConfig.setEnabled(true);

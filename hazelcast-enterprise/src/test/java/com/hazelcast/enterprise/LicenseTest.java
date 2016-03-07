@@ -5,9 +5,9 @@ import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryXmlConfig;
 import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -103,7 +103,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseValid() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), TWO_NODES_ENTERPRISE_LICENSE);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
@@ -114,7 +114,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseValidWithoutHumanReadablePart() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
@@ -124,21 +124,21 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseNotFound() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, "blabla");
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "blabla");
         createHazelcastInstance(config);
     }
 
     @Test(expected = InvalidLicenseException.class)
     public void testEnterpriseLicenseExpired() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, EXPIRED_ENTERPRISE_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), EXPIRED_ENTERPRISE_LICENSE);
         createHazelcastInstance(config);
     }
 
     @Test(expected = IllegalStateException.class)
     public void testNumberOfAllowedNodes() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, TWO_NODES_ENTERPRISE_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), TWO_NODES_ENTERPRISE_LICENSE);
 
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
@@ -154,7 +154,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testSecurityOnlyLicenseOnlyUsesOpenSourceWANReplication() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SECURITY_ONLY_LICENSE);
         HazelcastInstance h = createHazelcastInstance(config);
         Node node = TestUtil.getNode(h);
         WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
@@ -164,7 +164,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseInvalidForDifferentHZVersion() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_DIFFERENT_VERSION);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_DIFFERENT_VERSION);
         createHazelcastInstance(config);
     }
 
@@ -172,7 +172,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testLicenseInvalidForSmallerHZVersion() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_SMALLER_VERSION);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException e) {
             fail("V2 license should work with V3 license parser.");
@@ -183,7 +183,7 @@ public class LicenseTest extends HazelcastTestSupport {
     public void testValidEnterpriseHDLicense() {
         try {
             Config config = new Config();
-            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_HD_LICENSE);
+            config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
             createHazelcastInstance(config);
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
@@ -195,7 +195,7 @@ public class LicenseTest extends HazelcastTestSupport {
         final Config config = new Config();
         final SecurityConfig secCfg = config.getSecurityConfig();
         secCfg.setEnabled(true);
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, V4_LICENSE_WITH_SECURITY_DISABLED);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), V4_LICENSE_WITH_SECURITY_DISABLED);
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         factory.newHazelcastInstance(config); // Node should not start.
     }
@@ -210,11 +210,11 @@ public class LicenseTest extends HazelcastTestSupport {
 
     Config makeHotRestartConfigWithHotRestartDisabledLicense() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.V4_LICENSE_WITH_HOT_RESTART_DISABLED);
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.V4_LICENSE_WITH_HOT_RESTART_DISABLED);
+        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
 
         // to reduce used native memory size
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, "4");
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         hotRestartPersistenceConfig.setEnabled(true);
@@ -225,5 +225,4 @@ public class LicenseTest extends HazelcastTestSupport {
                 .setMetadataSpacePercentage(20);
         return config;
     }
-
 }

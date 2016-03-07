@@ -135,6 +135,11 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         storage.disposeDeferredBlocks();
     }
 
+    @Override
+    public Iterable<LazyEntryViewFromRecord> getRandomSamples(int sampleCount) {
+        return storage.getRandomSamples(sampleCount);
+    }
+
     public HotRestartKey createHotRestartKey(R record) {
         Data key = record.getKey();
         return new KeyOnHeap(prefix, key.toByteArray());

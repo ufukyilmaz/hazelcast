@@ -1,6 +1,5 @@
 package com.hazelcast.cache.nearcache;
 
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
@@ -40,7 +39,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
     public void tearDown() {
         super.tearDown();
         if (memoryManager != null) {
-            memoryManager.destroy();
+            memoryManager.dispose();
             memoryManager = null;
         }
     }

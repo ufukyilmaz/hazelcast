@@ -21,23 +21,23 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
     }
 
     @Override
-    public final long getMaxNativeMemory() {
+    public final long getMaxNative() {
         return maxNative;
     }
 
     @Override
-    public final long getCommittedNativeMemory() {
+    public final long getCommittedNative() {
         return committedNative.get();
     }
 
     @Override
-    public long getUsedNativeMemory() {
-        return getCommittedNativeMemory();
+    public long getUsedNative() {
+        return getCommittedNative();
     }
 
     @Override
-    public final long getFreeNativeMemory() {
-        long free = maxNative - getUsedNativeMemory();
+    public final long getFreeNative() {
+        long free = maxNative - getUsedNative();
         return (free > 0 ? free : 0L);
     }
 
@@ -51,7 +51,7 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
                             + " Cannot allocate " + MemorySize.toPrettyString(size) + "!"
                             + " Max Native Memory: " + MemorySize.toPrettyString(maxNative)
                             + ", Committed Native Memory: " + MemorySize.toPrettyString(currentAllocated)
-                            + ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNativeMemory())
+                            + ", Used Native Memory: " + MemorySize.toPrettyString(getUsedNative())
                     );
                 }
                 if (committedNative.compareAndSet(currentAllocated, memoryAfterAllocation)) {
@@ -92,10 +92,10 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
         sb.append(", Committed Heap: ").append(MemorySize.toPrettyString(getCommittedHeap()));
         sb.append(", Used Heap: ").append(MemorySize.toPrettyString(getUsedHeap()));
         sb.append(", Free Heap: ").append(MemorySize.toPrettyString(getFreeHeap()));
-        sb.append(", Max Native Memory: ").append(MemorySize.toPrettyString(getMaxNativeMemory()));
-        sb.append(", Committed Native Memory: ").append(MemorySize.toPrettyString(getCommittedNativeMemory()));
-        sb.append(", Used Native Memory: ").append(MemorySize.toPrettyString(getUsedNativeMemory()));
-        sb.append(", Free Native Memory: ").append(MemorySize.toPrettyString(getFreeNativeMemory()));
+        sb.append(", Max Native Memory: ").append(MemorySize.toPrettyString(getMaxNative()));
+        sb.append(", Committed Native Memory: ").append(MemorySize.toPrettyString(getCommittedNative()));
+        sb.append(", Used Native Memory: ").append(MemorySize.toPrettyString(getUsedNative()));
+        sb.append(", Free Native Memory: ").append(MemorySize.toPrettyString(getFreeNative()));
         appendAdditionalToString(sb);
         if (ASSERTS_ENABLED) {
             sb.append(", Internal Fragmentation: ").append(MemorySize.toPrettyString(internalFragmentation.get()));

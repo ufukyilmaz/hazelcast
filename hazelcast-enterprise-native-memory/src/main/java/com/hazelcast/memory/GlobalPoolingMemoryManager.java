@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.elastic.queue.LongLinkedBlockingQueue;
 import com.hazelcast.elastic.queue.LongQueue;
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -19,8 +20,11 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+
 @SuppressWarnings("checkstyle:methodcount")
-final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager implements MemoryManager {
+final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     // Size of the memory block header in bytes
     private static final int HEADER_SIZE = 4;
@@ -154,7 +158,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         long pageLookupAddr = NULL_ADDRESS;
         try {
             pageLookupAddr = systemAllocator.allocate(PAGE_LOOKUP_SIZE);
-            MEMORY_ACCESSOR.setMemory(pageLookupAddr, PAGE_LOOKUP_SIZE, (byte) 0x00);
+            AMEM.setMemory(pageLookupAddr, PAGE_LOOKUP_SIZE, (byte) 0x00);
         } catch (NativeOutOfMemoryError oome) {
             // TODO: should we log this?
             EmptyStatement.ignore(oome);
@@ -186,7 +190,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
 
     private int getHeader(long address) {
         long headerAddress = getHeaderAddress(address);
-        return MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
+        return AMEM.getIntVolatile(null, headerAddress);
     }
 
     private static boolean isHeaderAvailable(int header) {
@@ -241,7 +245,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         // Find the bit offset in the found 4 bytes block.
         byte lookupOffset = (byte) (idx & 0x1F);
         assert lookupIndex >= 0 && lookupIndex < PAGE_LOOKUP_SIZE;
-        int lookupValue = MEMORY_ACCESSOR.getIntVolatile(null, pageLookupAddress + lookupIndex);
+        int lookupValue = AMEM.getIntVolatile(null, pageLookupAddress + lookupIndex);
         if (!Bits.isBitSet(lookupValue, lookupOffset)) {
             // If related bit is not set, this means that the given address cannot be a page address.
             return false;
@@ -263,9 +267,9 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         // Find the bit offset in the found 4 bytes block.
         byte lookupOffset = (byte) (idx & 0x1F);
         for (; ; ) {
-            int currentLookupValue = MEMORY_ACCESSOR.getIntVolatile(null, pageLookupAddress + lookupIndex);
+            int currentLookupValue = AMEM.getIntVolatile(null, pageLookupAddress + lookupIndex);
             int newLookupValue = Bits.setBit(currentLookupValue, lookupOffset);
-            if (MEMORY_ACCESSOR.compareAndSwapInt(null, pageLookupAddress + lookupIndex,
+            if (AMEM.compareAndSwapInt(null, pageLookupAddress + lookupIndex,
                     currentLookupValue, newLookupValue)) {
                 break;
             }
@@ -315,11 +319,11 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
 
         int header = initHeader(size);
         long headerAddress = getHeaderAddressByOffset(address, offset);
-        if (!MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, 0, header)) {
+        if (!AMEM.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
                     + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
         }
-        MEMORY_ACCESSOR.putIntVolatile(null, address, offset);
+        AMEM.putIntVolatile(null, address, offset);
     }
 
     @Override
@@ -335,7 +339,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
 
         int header = Bits.setBit(0, EXTERNAL_BLOCK_BIT);
         long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
-        MEMORY_ACCESSOR.putIntVolatile(null, internalHeaderAddress, header);
+        AMEM.putIntVolatile(null, internalHeaderAddress, header);
 
         return address + EXTERNAL_BLOCK_HEADER_SIZE;
     }
@@ -366,7 +370,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        int header = MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
+        int header = AMEM.getIntVolatile(null, headerAddress);
         assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
         long pageBase = getOwningPage(address, header);
@@ -384,9 +388,9 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         int availableHeader = makeHeaderAvailable(header);
         availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
 
-        MEMORY_ACCESSOR.putIntVolatile(null, headerAddress, availableHeader);
-        MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
-        MEMORY_ACCESSOR.putIntVolatile(null, address, pageOffset);
+        AMEM.putIntVolatile(null, headerAddress, availableHeader);
+        AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
+        AMEM.putIntVolatile(null, address, pageOffset);
     }
 
     @Override
@@ -394,7 +398,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         assertNotNullPtr(address);
 
         long headerAddress = getHeaderAddress(address);
-        int header = MEMORY_ACCESSOR.getIntVolatile(null, headerAddress);
+        int header = AMEM.getIntVolatile(null, headerAddress);
         // This memory address may be merged up (after acquired but not marked as unavailable yet)
         // as buddy by our GarbageCollector thread so its size may be changed.
         // In this case, it must be discarded since it is not served by its current address queue.
@@ -413,13 +417,13 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
         } else {
             unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
         }
-        if (MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
+        if (AMEM.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
             int offset = getOffset(address);
             if (pageOffsetExist) {
                 // If page offset will be stored, write it to the unused part of the memory block.
-                MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
+                AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
             }
-            MEMORY_ACCESSOR.putIntVolatile(null, address, 0);
+            AMEM.putIntVolatile(null, address, 0);
             return true;
         }
         return false;
@@ -436,9 +440,9 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
 
         long headerAddress = getHeaderAddress(address);
         int expectedHeader = initHeader(expectedSize);
-        if (MEMORY_ACCESSOR.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
-            MEMORY_ACCESSOR.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
-            MEMORY_ACCESSOR.putIntVolatile(null, address, 0);
+        if (AMEM.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
+            AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
+            AMEM.putIntVolatile(null, address, 0);
             return true;
         }
         return false;
@@ -512,7 +516,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
 
     @Override
     protected int getOffset(long address) {
-        return MEMORY_ACCESSOR.getIntVolatile(null, address);
+        return AMEM.getIntVolatile(null, address);
     }
 
     private long getOwningPage(long address, int header) {
@@ -520,7 +524,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
             // If page offset is stored in the memory block, get the offset directly from there
             // and calculate page address by using this offset.
 
-            int pageOffset = MEMORY_ACCESSOR.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
+            int pageOffset = AMEM.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
             if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
                 throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
                         + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
@@ -534,7 +538,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         if (!destroyed.compareAndSet(false, true)) {
             return;
         }
@@ -575,7 +579,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
     }
 
     @Override
-    public boolean isDestroyed() {
+    public boolean isDisposed() {
         // TODO: this memory manager is multi-threaded, so there is no sync relation between destroy() and other methods
         return destroyed.get();
     }
@@ -588,6 +592,16 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager impl
     @Override
     protected Counter newCounter() {
         return MwCounter.newMwCounter();
+    }
+
+    @Override
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
     }
 
     @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF" })

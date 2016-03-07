@@ -2,8 +2,8 @@ package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorProvider;
-import com.hazelcast.internal.memory.MemoryAccessorType;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.util.HashUtil;
 
@@ -32,7 +32,7 @@ public class LongHashSet implements LongSet {
     // We are using `STANDARD` memory accessor because we internally guarantee that
     // every memory access is aligned.
     private static final MemoryAccessor MEMORY_ACCESSOR =
-            MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+            GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
 
     private static final long ENTRY_LENGTH = 8L;
 

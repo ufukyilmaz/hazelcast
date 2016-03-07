@@ -5,7 +5,7 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 

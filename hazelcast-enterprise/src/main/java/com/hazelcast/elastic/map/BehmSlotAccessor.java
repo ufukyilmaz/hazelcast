@@ -5,7 +5,7 @@ import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.Data;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
 /** Helper class with logic to access BinaryElasticHashMap's slots */

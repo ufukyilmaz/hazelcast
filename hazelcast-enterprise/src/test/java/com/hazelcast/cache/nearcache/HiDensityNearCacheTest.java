@@ -8,7 +8,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -37,7 +37,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     public void tearDown() {
         super.tearDown();
         if (memoryManager != null) {
-            memoryManager.destroy();
+            memoryManager.dispose();
             memoryManager = null;
         }
     }
@@ -51,7 +51,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                 createNearCacheExecutor());
     }
 
-    private NearCacheContext createNearCacheContext(MemoryManager memoryManager) {
+    private NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
         return new NearCacheContext(
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
@@ -164,7 +164,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
             nearCache.put(1, value);
         } finally {
-            mm.destroy();
+            mm.dispose();
         }
     }
 

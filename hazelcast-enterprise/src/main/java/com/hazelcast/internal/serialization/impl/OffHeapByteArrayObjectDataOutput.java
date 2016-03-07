@@ -7,8 +7,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;

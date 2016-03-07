@@ -30,13 +30,15 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.MemoryInfoAccessor;
+import com.hazelcast.util.RuntimeMemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.eviction.policies.MapEvictionPolicies.getMapEvictionPolicy;
@@ -56,7 +58,8 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     Evictor createEvictor(MapConfig mapConfig, MapServiceContext mapServiceContext) {
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            HDEvictionChecker hdEvictionChecker = new HDEvictionChecker(mapServiceContext);
+            MemoryInfoAccessor memoryInfoAccessor = new RuntimeMemoryInfoAccessor();
+            HDEvictionChecker hdEvictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
             MapEvictionPolicy evictionPolicy = getMapEvictionPolicy(mapConfig.getEvictionPolicy());
             IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
 
@@ -89,7 +92,7 @@ public class EnterpriseMapContainer extends MapContainer {
                 = (EnterpriseSerializationService) nodeEngine.getSerializationService();
         HiDensityRecordAccessor<HDRecord> recordAccessor
                 = new HDRecordAccessor(serializationService, optimizeQueries);
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         return new DefaultHiDensityRecordProcessor(serializationService, recordAccessor,
                 memoryManager, storageInfo);
     }

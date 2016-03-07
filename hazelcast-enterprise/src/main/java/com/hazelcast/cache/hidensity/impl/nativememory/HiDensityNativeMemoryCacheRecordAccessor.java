@@ -2,8 +2,8 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import com.hazelcast.memory.MemoryManager;
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import com.hazelcast.memory.HazelcastMemoryManager;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -16,7 +16,7 @@ public class HiDensityNativeMemoryCacheRecordAccessor
         extends AbstractHiDensityRecordAccessor<HiDensityNativeMemoryCacheRecord> {
 
     public HiDensityNativeMemoryCacheRecordAccessor(
-            EnterpriseSerializationService ss, MemoryManager memoryManager) {
+            EnterpriseSerializationService ss, HazelcastMemoryManager memoryManager) {
         super(ss, memoryManager);
     }
 

@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.queue;
 
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Ignore;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 public class LongConcurrentLinkedQueueTest extends LongQueueTestSupport {
 
     @Override
-    protected LongQueue createQueue(MemoryManager memoryManager) {
+    protected LongQueue createQueue(HazelcastMemoryManager memoryManager) {
         return new LongConcurrentLinkedQueue(memoryManager, NULL);
     }
 

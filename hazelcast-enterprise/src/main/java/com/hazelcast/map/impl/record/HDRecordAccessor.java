@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.map.impl.record.HDRecord.VALUE_OFFSET;

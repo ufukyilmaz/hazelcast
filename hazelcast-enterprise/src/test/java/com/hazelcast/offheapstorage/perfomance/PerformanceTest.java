@@ -5,7 +5,7 @@ import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueRedBlackTreeStor
 import com.hazelcast.elastic.binarystorage.sorted.BinaryKeyValueSortedStorage;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -30,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class PerformanceTest {
 
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private BinaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
@@ -54,7 +54,7 @@ public class PerformanceTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager =
+        HazelcastMemoryManager memoryManager =
                 new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
@@ -112,10 +112,10 @@ public class PerformanceTest {
             offHeapBlobMap.dispose();
         }
 
-        assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
 
         if (malloc != null) {
-            malloc.destroy();
+            malloc.dispose();
         }
     }
 }

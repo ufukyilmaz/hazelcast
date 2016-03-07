@@ -20,7 +20,7 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
     }
 
     @Override
-    public long getUsedNativeMemory() {
+    public long getUsedNative() {
         return usedNative.get();
     }
 

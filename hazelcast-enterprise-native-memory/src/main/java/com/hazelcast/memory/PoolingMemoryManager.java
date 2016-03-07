@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.util.QuickMath;
@@ -12,14 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
- * {@link MemoryManager} implementation which allocates native memory in fixed-size pages and
+ * {@link HazelcastMemoryManager} implementation which allocates native memory in fixed-size pages and
  * then internally manages application-level allocation within the pages.
  */
-public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
+public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageCollectable {
 
     @SuppressWarnings("checkstyle:magicnumber")
     static final int MIN_MIN_BLOCK_SIZE = 1 << 3;
@@ -31,8 +33,8 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     private final LibMalloc malloc = new UnsafeMalloc();
     private final PooledNativeMemoryStats memoryStats;
     private final GlobalPoolingMemoryManager globalMemoryManager;
-    private final Map<Thread, MemoryManager> threadLocalManagers
-            = new ConcurrentHashMap<Thread, MemoryManager>(32, .75f, 1);
+    private final Map<Thread, HazelcastMemoryManager> threadLocalManagers
+            = new ConcurrentHashMap<Thread, HazelcastMemoryManager>(32, .75f, 1);
 
     private final SimpleGarbageCollector gc = new SimpleGarbageCollector();
 
@@ -85,57 +87,83 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
         }
     }
 
+    /**
+     * Allocates memory from an internal memory pool or falls back to OS
+     * if not enough memory available in pool.
+     * Content of the memory block will be initialized to zero.
+     *
+     * <p>
+     * Complement of {@link #free(long, long)}.
+     * Memory allocated by this method should be freed using
+     * {@link #free(long, long)}
+     *
+     * @param size of requested memory block
+     * @return address of memory block
+     * @throws NativeOutOfMemoryError if not enough memory is available
+     */
     @Override
     public long allocate(long size) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.allocate(size);
     }
 
     @Override
     public long reallocate(long address, long currentSize, long newSize) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.reallocate(address, currentSize, newSize);
     }
 
+    /**
+     * Gives allocated memory block back to internal pool or to OS
+     * if pool is over capacity.
+     *
+     * <p>
+     * Complement of {@link #allocate(long)}.
+     * Only memory allocated by {@link #allocate(long)} can be
+     * freed using this method.
+     *
+     * @param address address of memory block
+     * @param size size of memory block
+     */
     @Override
     public void free(long address, long size) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         manager.free(address, size);
     }
 
     @Override
     public void compact() {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         manager.compact();
     }
 
     @Override
     public long getUsableSize(long address) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.getUsableSize(address);
     }
 
     @Override
     public long validateAndGetUsableSize(long address) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.validateAndGetUsableSize(address);
     }
 
     @Override
     public long getAllocatedSize(long address) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.getAllocatedSize(address);
     }
 
     @Override
     public long validateAndGetAllocatedSize(long address) {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.validateAndGetAllocatedSize(address);
     }
 
     @Override
     public long newSequence() {
-        MemoryManager manager = getMemoryManager();
+        HazelcastMemoryManager manager = getMemoryManager();
         return manager.newSequence();
     }
 
@@ -148,9 +176,9 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
         return globalMemoryManager;
     }
 
-    public MemoryManager getMemoryManager() {
+    public HazelcastMemoryManager getMemoryManager() {
         Thread current = Thread.currentThread();
-        MemoryManager pool = threadLocalManagers.get(current);
+        HazelcastMemoryManager pool = threadLocalManagers.get(current);
         if (pool == null) {
             pool = globalMemoryManager;
         }
@@ -158,14 +186,14 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         gc.abort();
 
-        Collection<MemoryManager> managers = threadLocalManagers.values();
+        Collection<HazelcastMemoryManager> managers = threadLocalManagers.values();
         if (!managers.isEmpty()) {
-            Iterator<MemoryManager> iterator = managers.iterator();
+            Iterator<HazelcastMemoryManager> iterator = managers.iterator();
             while (iterator.hasNext()) {
-                MemoryManager pool = iterator.next();
+                HazelcastMemoryManager pool = iterator.next();
                 iterator.remove();
                 destroyPool(pool);
             }
@@ -176,14 +204,14 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     }
 
     @Override
-    public boolean isDestroyed() {
-        MemoryManager manager = getMemoryManager();
-        return manager == null || manager.isDestroyed();
+    public boolean isDisposed() {
+        HazelcastMemoryManager manager = getMemoryManager();
+        return manager == null || manager.isDisposed();
     }
 
-    private static void destroyPool(MemoryManager pool) {
+    private static void destroyPool(HazelcastMemoryManager pool) {
         try {
-            pool.destroy();
+            pool.dispose();
         } catch (Throwable e) {
             e.printStackTrace();
         }
@@ -205,7 +233,7 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     }
 
     public void deregisterThread(Thread thread) {
-        MemoryManager pool = threadLocalManagers.remove(thread);
+        HazelcastMemoryManager pool = threadLocalManagers.remove(thread);
         if (pool != null) {
             destroyPool(pool);
         }
@@ -215,13 +243,13 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     @Override
     public final void gc() {
         if (!threadLocalManagers.isEmpty()) {
-            Iterator<Map.Entry<Thread, MemoryManager>> iter = threadLocalManagers.entrySet().iterator();
+            Iterator<Map.Entry<Thread, HazelcastMemoryManager>> iter = threadLocalManagers.entrySet().iterator();
             while (iter.hasNext()) {
-                Map.Entry<Thread, MemoryManager> next = iter.next();
+                Map.Entry<Thread, HazelcastMemoryManager> next = iter.next();
                 Thread t = next.getKey();
                 if (!t.isAlive()) {
                     iter.remove();
-                    MemoryManager pool = next.getValue();
+                    HazelcastMemoryManager pool = next.getValue();
                     destroyPool(pool);
                 }
             }
@@ -229,13 +257,23 @@ public class PoolingMemoryManager implements MemoryManager, GarbageCollectable {
     }
 
     @Override
-    public MemoryStats getMemoryStats() {
-        return memoryStats;
+    public MemoryAllocator getSystemAllocator() {
+        return globalMemoryManager.getSystemAllocator();
     }
 
     @Override
-    public MemoryAllocator unwrapMemoryAllocator() {
-        return globalMemoryManager.unwrapMemoryAllocator();
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
+    }
+
+    @Override
+    public MemoryStats getMemoryStats() {
+        return memoryStats;
     }
 
     @Override

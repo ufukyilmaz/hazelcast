@@ -5,7 +5,7 @@ import com.hazelcast.memory.MemoryBlock;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class ValueBlockAccessor extends MemoryBlock {

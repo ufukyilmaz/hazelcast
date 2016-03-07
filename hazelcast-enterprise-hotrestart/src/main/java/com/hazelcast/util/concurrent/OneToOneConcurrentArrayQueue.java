@@ -20,7 +20,7 @@ import com.hazelcast.util.function.Consumer;
 
 import java.util.Collection;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 
 /**

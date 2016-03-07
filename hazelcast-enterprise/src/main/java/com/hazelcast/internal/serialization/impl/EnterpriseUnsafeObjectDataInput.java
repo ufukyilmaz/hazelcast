@@ -25,7 +25,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import java.io.EOFException;
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 final class EnterpriseUnsafeObjectDataInput extends UnsafeObjectDataInput implements EnterpriseBufferObjectDataInput {
 

@@ -6,7 +6,6 @@
         <module>hazelcast-enterprise-native-memory</module>
         <module>hazelcast-enterprise</module>
         <module>hazelcast-enterprise-client</module>
-        <module>hazelcast-enterprise-sessions</module>
         <module>hazelcast-enterprise-hotrestart</module>
         <module>hazelcast-enterprise-all</module>
     </modules>
@@ -36,9 +35,11 @@
         <maven.shade.plugin.version>2.2</maven.shade.plugin.version>
 
         <maven.surefire.plugin.version>2.17</maven.surefire.plugin.version>
+        <maven.javadoc.plugin.version>2.9</maven.javadoc.plugin.version>
         <maven.findbugs.plugin.version>3.0.0</maven.findbugs.plugin.version>
         <maven.checkstyle.plugin.version>2.12</maven.checkstyle.plugin.version>
         <maven.sonar.plugin.version>2.6</maven.sonar.plugin.version>
+        <maven.gpg.plugin.version>1.4</maven.gpg.plugin.version>
         <maven.jacoco.plugin.version>0.7.4.201502262128</maven.jacoco.plugin.version>
 
         <log4j.version>1.2.12</log4j.version>
@@ -70,6 +71,11 @@
             <id>private-repository</id>
             <name>Hazelcast Private Repository</name>
             <url>https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
+        </repository>
+        <repository>
+            <id>private-snapshot-repository</id>
+            <name>Hazelcast Private Repository</name>
+            <url>https://repository-hazelcast-l337.forge.cloudbees.com/snapshot/</url>
         </repository>
     </repositories>
 
@@ -247,6 +253,102 @@
                         </configuration>
                     </plugin>
 
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release</id>
+            <properties>
+                <javadoc>true</javadoc>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven.gpg.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.plugin.version}</version>
+                        <configuration>
+                            <javaApiLinks>
+                                <property>
+                                    <name>api_1.6</name>
+                                    <value>http://download.oracle.com/javase/1.6.0/docs/api/</value>
+                                </property>
+                                <property>
+                                    <name>api_1.7</name>
+                                    <value>http://download.oracle.com/javase/1.7.0/docs/api/</value>
+                                </property>
+                            </javaApiLinks>
+                            <maxmemory>1024</maxmemory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>release-snapshot</id>
+            <properties>
+                <javadoc>true</javadoc>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven.javadoc.plugin.version}</version>
+                        <configuration>
+                            <javaApiLinks>
+                                <property>
+                                    <name>api_1.6</name>
+                                    <value>http://download.oracle.com/javase/1.6.0/docs/api/</value>
+                                </property>
+                                <property>
+                                    <name>api_1.7</name>
+                                    <value>http://download.oracle.com/javase/1.7.0/docs/api/</value>
+                                </property>
+                            </javaApiLinks>
+                            <excludePackageNames>
+                                *.impl:*.internal:*.operations:*.proxy:*.util:com.hazelcast.aws.security:
+                                *.handlermigration:*.client.connection.nio:*.client.console:*.buildutils:
+                                *.client.protocol.generator:*.cluster.client:*.concurrent:*.collection:
+                                *.nio.ascii:*.nio.ssl:*.nio.tcp:*.partition.client:*.transaction.client:
+                                *.core.server:com.hazelcast.instance:com.hazelcast.PlaceHolder
+                            </excludePackageNames>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -492,6 +594,12 @@
             <id>cloudbees-private-repository</id>
             <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/release/</url>
         </repository>
+        <snapshotRepository>
+            <id>cloudbees-private-repository</id>
+            <url>dav:https://repository-hazelcast-l337.forge.cloudbees.com/snapshot/</url>
+        </snapshotRepository>
     </distributionManagement>
 
 </project>
+
+

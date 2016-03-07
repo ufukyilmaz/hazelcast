@@ -1,5 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -30,17 +32,19 @@ public class OnHeapOffHeapTestBase {
 
     protected final int tombstoneKeyPrefix = keyPrefix + 1;
     protected KeyHandle tombstoneKeyHandle;
+    protected MemoryAllocator malloc;
 
-    protected MemoryManager malloc;
+    private MemoryManager memMgr;
 
     @Before public void generalSetup() {
-        malloc = new StandardMemoryManager(new MemorySize(32, KILOBYTES));
+        memMgr = new StandardMemoryManager(new MemorySize(32, KILOBYTES));
+        malloc = memMgr.getAllocator();
         keyHandle = keyHandle(keyPrefix);
         tombstoneKeyHandle = keyHandle(tombstoneKeyPrefix);
     }
 
     @After public void destroy() {
-        malloc.destroy();
+        memMgr.dispose();
     }
 
     protected KeyHandle keyHandle(int mockData) {

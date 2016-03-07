@@ -47,7 +47,7 @@ public class HotRestartStoreExerciser {
                     profile.offHeapMetadataPercentage);
             mem.registerThread(currentThread());
             this.malloc = mem;
-            cfg.setMalloc(mem.unwrapMemoryAllocator());
+            cfg.setMalloc(mem.getSystemAllocator());
         } else {
             this.malloc = null;
         }

@@ -7,7 +7,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -24,14 +24,14 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
 
     protected final EnterpriseSerializationService serializationService;
     protected final HiDensityRecordAccessor<R> recordAccessor;
-    protected final MemoryManager memoryManager;
+    protected final HazelcastMemoryManager memoryManager;
     protected final HiDensityStorageInfo storageInfo;
 
     protected final Queue<MemoryBlock> deferredBlocksQueue = new ArrayDeque<MemoryBlock>(8);
 
     public DefaultHiDensityRecordProcessor(EnterpriseSerializationService serializationService,
                                            HiDensityRecordAccessor<R> recordAccessor,
-                                           MemoryManager memoryManager,
+                                           HazelcastMemoryManager memoryManager,
                                            HiDensityStorageInfo storageInfo) {
         this.serializationService = serializationService;
         this.recordAccessor = recordAccessor;
@@ -196,7 +196,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
 
     @Override
     public MemoryAllocator unwrapMemoryAllocator() {
-        return memoryManager.unwrapMemoryAllocator();
+        return memoryManager.getSystemAllocator();
     }
 
     @Override
@@ -214,7 +214,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         return storageInfo.removeUsedMemory(size);
     }
 
-    public MemoryManager getMemoryManager() {
+    public HazelcastMemoryManager getMemoryManager() {
         return memoryManager;
     }
 

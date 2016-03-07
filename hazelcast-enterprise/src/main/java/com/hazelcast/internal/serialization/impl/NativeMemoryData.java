@@ -23,7 +23,7 @@ import com.hazelcast.util.HashUtil;
 
 import java.nio.ByteOrder;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readDataSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readTotalSize;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil.readType;

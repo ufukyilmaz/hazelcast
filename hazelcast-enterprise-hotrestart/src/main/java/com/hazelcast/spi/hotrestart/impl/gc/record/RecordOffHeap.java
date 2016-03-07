@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**

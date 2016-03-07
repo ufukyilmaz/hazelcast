@@ -10,7 +10,7 @@ import com.hazelcast.elastic.binarystorage.sorted.OrderingDirection;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.OffHeapDataInput;
 import com.hazelcast.internal.serialization.impl.OffHeapDataOutput;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -27,7 +27,7 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.MemoryAccessor.MEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class SortedStorageIntegerTest {
 
-    private MemoryManager malloc;
+    private HazelcastMemoryManager malloc;
     private BinaryKeyValueSortedStorage offHeapBlobMap;
 
     @Before
@@ -59,7 +59,7 @@ public class SortedStorageIntegerTest {
         int pageSize = memoryConfig.getPageSize();
         float metadataSpace = memoryConfig.getMetadataSpacePercentage();
 
-        MemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
+        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(memoryConfig.getSize(), blockSize, pageSize, metadataSpace);
 
         return new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
@@ -164,10 +164,10 @@ public class SortedStorageIntegerTest {
             offHeapBlobMap.dispose();
         }
 
-        assertEquals(0, malloc.getMemoryStats().getUsedNativeMemory());
+        assertEquals(0, malloc.getMemoryStats().getUsedNative());
 
         if (malloc != null) {
-            malloc.destroy();
+            malloc.dispose();
         }
     }
 }

@@ -1,8 +1,6 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.MemoryAccessorProvider;
-import com.hazelcast.internal.memory.MemoryAccessorType;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -10,10 +8,10 @@ import com.hazelcast.internal.util.counters.MwCounter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 
-    // We are using `STANDARD` memory accessor because we internally guarantee that every memory access is aligned
-    private static final MemoryAccessor MEMORY_ACCESSOR = MemoryAccessorProvider.getMemoryAccessor(MemoryAccessorType.STANDARD);
+public class AppendOnlyMemoryManager implements HazelcastMemoryManager, MemoryAllocator, Resetable {
 
     private long pointer;
 
@@ -111,7 +109,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
 
         if (requireNewMemoryBlock(address, newSize)) {
             allocateBlock(newSize);
-            MEMORY_ACCESSOR.copyMemory(address, pointer, currentSize);
+            AMEM.copyMemory(address, pointer, currentSize);
             long oldPointer = pointer;
             pointer += newSize;
             return oldPointer;
@@ -131,7 +129,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     }
 
     @Override
-    public MemoryAllocator unwrapMemoryAllocator() {
+    public MemoryAllocator getSystemAllocator() {
         return memoryAllocator;
     }
 
@@ -141,7 +139,7 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     }
 
     @Override
-    public void destroy() {
+    public void dispose() {
         if (!isDestroyed) {
             try {
                 for (MemoryBlock memoryBlock : memoryBlockList) {
@@ -160,11 +158,20 @@ public class AppendOnlyMemoryManager implements MemoryManager, Resetable {
     }
 
     @Override
-    public boolean isDestroyed() {
+    public boolean isDisposed() {
         return isDestroyed;
     }
 
     @Override
+    public MemoryAllocator getAllocator() {
+        return this;
+    }
+
+    @Override
+    public MemoryAccessor getAccessor() {
+        return MEM;
+    }
+
     public MemoryStats getMemoryStats() {
         return memoryStats;
     }

@@ -1,5 +1,6 @@
 package com.hazelcast.elastic;
 
+import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -28,18 +29,20 @@ public class LongArrayTest {
     @Rule
     public final TestRule assertEnabledFilter = new AssertEnabledFilterRule();
 
-    private MemoryManager malloc;
+    private MemoryAllocator malloc;
+    private MemoryManager memMgr;
     private LongArray array;
 
     @Before
     public void setup() throws Exception {
-        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+        memMgr = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+        malloc = memMgr.getAllocator();
         array = new LongArray(malloc, INITIAL_LEN);
     }
 
     @After
     public void tearDown() throws Exception {
-        malloc.destroy();
+        memMgr.dispose();
     }
 
     @Test

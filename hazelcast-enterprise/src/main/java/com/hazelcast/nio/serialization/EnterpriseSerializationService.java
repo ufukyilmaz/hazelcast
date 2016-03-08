@@ -4,7 +4,7 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.memory.HazelcastMemoryManager;
 
-public interface EnterpriseSerializationService extends SerializationService, OffHeapSerializationService {
+public interface EnterpriseSerializationService extends SerializationService {
 
     <B extends Data> B toData(Object obj, DataType type);
 

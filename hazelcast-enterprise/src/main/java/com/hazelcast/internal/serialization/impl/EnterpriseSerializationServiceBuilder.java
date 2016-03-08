@@ -19,7 +19,6 @@ import java.nio.ByteOrder;
 public class EnterpriseSerializationServiceBuilder extends DefaultSerializationServiceBuilder
         implements SerializationServiceBuilder {
 
-    protected boolean allowSerializeOffHeap;
     private HazelcastMemoryManager memoryManager;
     private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
 
@@ -113,11 +112,6 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         return (EnterpriseSerializationServiceBuilder) super.setInitialOutputBufferSize(initialOutputBufferSize);
     }
 
-    public EnterpriseSerializationServiceBuilder setAllowSerializeOffHeap(boolean allowSerializeOffHeap) {
-        this.allowSerializeOffHeap = allowSerializeOffHeap;
-        return this;
-    }
-
     @Override
     public EnterpriseSerializationService build() {
         return (EnterpriseSerializationService) super.build();
@@ -130,7 +124,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
                         partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject, allowSerializeOffHeap
+                        enableSharedObject
                 );
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
@@ -151,11 +145,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
             byteOrder = ByteOrder.nativeOrder();
 
             if (allowUnsafe && GlobalMemoryAccessorRegistry.MEM_AVAILABLE) {
-                if (allowSerializeOffHeap) {
-                    return new EnterpriseOffHeapInputOutputFactory();
-                } else {
-                    return new EnterpriseUnsafeInputOutputFactory();
-                }
+                return new EnterpriseUnsafeInputOutputFactory();
             }
         }
 

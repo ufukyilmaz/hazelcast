@@ -67,7 +67,7 @@ public class BinaryElasticHashMapTest {
             map.clear();
         }
         map.dispose();
-        serializationService.destroy();
+        serializationService.dispose();
         memoryManager.dispose();
     }
 

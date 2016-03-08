@@ -6,12 +6,19 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapKeyLoader;
+import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
+import com.hazelcast.map.impl.event.EntryEventData;
+import com.hazelcast.map.impl.querycache.QueryCacheContext;
+import com.hazelcast.map.impl.querycache.publisher.MapPublisherRegistry;
+import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
+import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
@@ -25,11 +32,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,6 +57,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     private final long prefix;
     private final HotRestartConfig hotRestartConfig;
     private final MemoryManager memoryManager;
+    private final Address thisAddress;
+    private final EnterpriseMapEventPublisherImpl mapEventPublisher;
 
     private RamStore ramStore;
 
@@ -61,6 +72,10 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             memoryManager = ((PoolingMemoryManager) memoryManager).getMemoryManager();
         }
         this.memoryManager = memoryManager;
+
+        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        this.thisAddress = nodeEngine.getThisAddress();
+        this.mapEventPublisher = (EnterpriseMapEventPublisherImpl) mapServiceContext.getMapEventPublisher();
     }
 
     public RamStore getRamStore() {
@@ -163,6 +178,52 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
             }
         }
         return notLockedRecords;
+    }
+
+
+    @Override
+    public Record loadRecordOrNull(Data key, boolean backup) {
+        Record record = super.loadRecordOrNull(key, backup);
+
+        // Here we are only publishing events for loaded entries. This is required for notifying query-caches
+        // otherwise query-caches cannot see loaded entries.
+        if (!backup && record != null && hasQueryCache()) {
+            addEventToQueryCache(record);
+        }
+        return record;
+    }
+
+    private void addEventToQueryCache(Record record) {
+        EntryEventData eventData = new EntryEventData(thisAddress.toString(), name, thisAddress,
+                toData(record.getKey()), toData(record.getValue()), null, null, ADDED.getType());
+
+        mapEventPublisher.addEventToQueryCache(eventData);
+    }
+
+    /**
+     * @return {@code true} if this IMap has any query-cache, otherwise return {@code false}
+     */
+    private boolean hasQueryCache() {
+        QueryCacheContext queryCacheContext = ((EnterpriseMapServiceContext) mapServiceContext).getQueryCacheContext();
+        PublisherContext publisherContext = queryCacheContext.getPublisherContext();
+        MapPublisherRegistry mapPublisherRegistry = publisherContext.getMapPublisherRegistry();
+        PublisherRegistry publisherRegistry = mapPublisherRegistry.getOrNull(name);
+        return publisherRegistry != null;
+    }
+
+    @Override
+    protected Map<Data, Object> loadEntries(Set<Data> keys) {
+        Map<Data, Object> loadedEntries = super.loadEntries(keys);
+        if (hasQueryCache()) {
+            for (Object key : loadedEntries.keySet()) {
+                Record record = storage.get(toData(key));
+                // Here we are only publishing events for loaded entries. This is required for notifying query-caches
+                // otherwise query-caches cannot see loaded entries.
+                addEventToQueryCache(record);
+            }
+        }
+
+        return loadedEntries;
     }
 
     /**

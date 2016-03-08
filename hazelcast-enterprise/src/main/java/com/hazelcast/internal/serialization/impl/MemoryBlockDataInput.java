@@ -611,12 +611,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public Data readData(DataType type) throws IOException {
-        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getMemoryManagerToUse(), false);
+        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getCurrentMemoryAllocator(), false);
     }
 
     @Override
     public Data tryReadData(DataType type) throws IOException {
-        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getMemoryManagerToUse(), true);
+        return EnterpriseSerializationUtil.readDataInternal(this, type, service.getCurrentMemoryAllocator(), true);
     }
 
     @Override

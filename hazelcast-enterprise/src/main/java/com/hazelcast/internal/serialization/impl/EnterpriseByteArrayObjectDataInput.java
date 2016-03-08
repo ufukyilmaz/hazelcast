@@ -41,12 +41,12 @@ class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput implem
     @Override
     public Data readData(DataType type) throws IOException {
         return EnterpriseSerializationUtil
-                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), false);
+                .readDataInternal(this, type, enterpriseSerializationService.getCurrentMemoryAllocator(), false);
     }
 
     @Override
     public Data tryReadData(DataType type) throws IOException {
         return EnterpriseSerializationUtil
-                .readDataInternal(this, type, enterpriseSerializationService.getMemoryManagerToUse(), true);
+                .readDataInternal(this, type, enterpriseSerializationService.getCurrentMemoryAllocator(), true);
     }
 }

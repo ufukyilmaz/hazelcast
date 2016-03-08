@@ -54,7 +54,7 @@ public abstract class AbstractEnterpriseSerializationTest extends HazelcastTestS
     }
 
     protected void shutdownMemoryManagerAndSerializationService() {
-        serializationService.destroy();
+        serializationService.dispose();
         memoryManager.dispose();
     }
 

@@ -215,8 +215,8 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public void dispose() {
+        super.dispose();
         if (memoryManager != null) {
             memoryManager.dispose();
         }

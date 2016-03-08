@@ -53,7 +53,7 @@ public class WanConnectionManager {
         this.groupName = groupName;
         this.password = password;
         targetAddressList.addAll(targets);
-        node.nodeEngine.getExecutionService().scheduleAtFixedRate(new FailureMonitor(), FAILURE_MONITOR_START_DELAY,
+        node.nodeEngine.getExecutionService().scheduleWithRepetition(new FailureMonitor(), FAILURE_MONITOR_START_DELAY,
                 FAILURE_MONITOR_PERIOD, TimeUnit.SECONDS);
     }
 

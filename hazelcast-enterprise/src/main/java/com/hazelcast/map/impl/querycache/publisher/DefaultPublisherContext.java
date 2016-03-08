@@ -141,7 +141,7 @@ public class DefaultPublisherContext implements PublisherContext {
 
     private void startRemovalTask(final Collection<PartitionAccumulatorRegistry> removalCandidates, String uuid) {
         QueryCacheScheduler queryCacheScheduler = context.getQueryCacheScheduler();
-        ScheduledFuture scheduledFuture = queryCacheScheduler.scheduleWithDelaySeconds(new Runnable() {
+        ScheduledFuture scheduledFuture = queryCacheScheduler.scheduleWithRepetition(new Runnable() {
             @Override
             public void run() {
                 for (PartitionAccumulatorRegistry registry : removalCandidates) {
@@ -163,7 +163,7 @@ public class DefaultPublisherContext implements PublisherContext {
 
     private void startBackgroundAccumulatorScanner() {
         QueryCacheScheduler scheduler = context.getQueryCacheScheduler();
-        scheduler.scheduleAtFixedRateWithDelaySeconds(
+        scheduler.scheduleWithRepetition(
                 new AccumulatorScannerTask(context), SCAN_PERIOD_SECONDS);
     }
 

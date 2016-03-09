@@ -3,11 +3,14 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 
@@ -21,7 +24,8 @@ final class RecordMapOffHeap implements RecordMap {
     private final RecordOffHeap rec = new RecordOffHeap();
 
     public RecordMapOffHeap(MemoryAllocator malloc, int initialCapacity) {
-        this.records = new HashSlotArrayTwinKeyImpl(0L, malloc, RecordOffHeap.SIZE, initialCapacity);
+        this.records = new HashSlotArrayTwinKeyImpl(
+                0L, new MemoryManagerBean(malloc, AMEM), RecordOffHeap.SIZE, initialCapacity);
     }
 
     RecordMapOffHeap(MemoryAllocator malloc, RecordMap gcRecordMap) {

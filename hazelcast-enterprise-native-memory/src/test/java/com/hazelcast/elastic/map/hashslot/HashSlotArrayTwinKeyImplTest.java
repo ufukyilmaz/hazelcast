@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.map.hashslot;
 
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -37,7 +38,7 @@ public class HashSlotArrayTwinKeyImplTest {
     @Before
     public void setUp() throws Exception {
         malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        hsa = new HashSlotArrayTwinKeyImpl(0L, malloc, VALUE_LENGTH);
+        hsa = new HashSlotArrayTwinKeyImpl(0L, new MemoryManagerBean(malloc, AMEM), VALUE_LENGTH);
     }
 
     @After

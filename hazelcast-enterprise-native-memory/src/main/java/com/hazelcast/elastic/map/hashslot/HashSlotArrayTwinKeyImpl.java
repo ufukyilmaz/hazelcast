@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 
@@ -18,19 +18,19 @@ public class HashSlotArrayTwinKeyImpl extends HashSlotArrayBase implements HashS
 
     private static final int KEY_LENGTH = 16;
 
-    public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryAllocator malloc, int valueLength, int initialCapacity) {
-        this(nullSentinel, KEY_LENGTH, malloc, valueLength, initialCapacity);
+    public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryManager mm, int valueLength, int initialCapacity) {
+        this(nullSentinel, KEY_LENGTH, mm, valueLength, initialCapacity);
         assert valueLengthValid(valueLength) : "Invalid value length: " + valueLength;
     }
 
-    public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryAllocator malloc, int valueLength) {
-        this(nullSentinel, malloc, valueLength, DEFAULT_CAPACITY);
+    public HashSlotArrayTwinKeyImpl(long nullSentinel, MemoryManager mm, int valueLength) {
+        this(nullSentinel, mm, valueLength, DEFAULT_CAPACITY);
     }
 
-    protected HashSlotArrayTwinKeyImpl(long nullSentinel, long offsetOfNullSentinel, MemoryAllocator malloc,
+    protected HashSlotArrayTwinKeyImpl(long nullSentinel, long offsetOfNullSentinel, MemoryManager mm,
                                        int valueLength, int initialCapacity
     ) {
-        super(nullSentinel, offsetOfNullSentinel, malloc, KEY_LENGTH, valueLength, initialCapacity);
+        super(nullSentinel, offsetOfNullSentinel, mm, KEY_LENGTH, valueLength, initialCapacity);
     }
 
     /**

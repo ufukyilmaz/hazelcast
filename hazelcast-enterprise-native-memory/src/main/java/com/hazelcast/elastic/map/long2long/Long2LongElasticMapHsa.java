@@ -4,6 +4,7 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArray;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
@@ -18,7 +19,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
     private final long nullValue;
 
     public Long2LongElasticMapHsa(long nullValue, MemoryAllocator malloc) {
-        this.hsa = new HashSlotArrayImpl(nullValue, malloc, LONG_SIZE_IN_BYTES);
+        this.hsa = new HashSlotArrayImpl(nullValue, new MemoryManagerBean(malloc, AMEM), LONG_SIZE_IN_BYTES);
         this.nullValue = nullValue;
     }
 

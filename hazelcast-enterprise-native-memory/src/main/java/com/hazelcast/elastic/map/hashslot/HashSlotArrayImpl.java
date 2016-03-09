@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
@@ -21,20 +21,20 @@ public class HashSlotArrayImpl extends HashSlotArrayBase implements HashSlotArra
 
     private static final int KEY_LENGTH = 8;
 
-    public HashSlotArrayImpl(long unassignedSentinel, MemoryAllocator malloc, int valueLength, int initialCapacity) {
-        this(unassignedSentinel, KEY_LENGTH, malloc, valueLength, initialCapacity);
+    public HashSlotArrayImpl(long unassignedSentinel, MemoryManager mm, int valueLength, int initialCapacity) {
+        this(unassignedSentinel, KEY_LENGTH, mm, valueLength, initialCapacity);
         assert valueLength > 0 : "Attempted to instantiate HashSlotArrayImpl with zero value length";
     }
 
-    public HashSlotArrayImpl(long unassignedSentinel, MemoryAllocator malloc, int valueLength) {
-        this(unassignedSentinel, malloc, valueLength, DEFAULT_CAPACITY);
+    public HashSlotArrayImpl(long unassignedSentinel, MemoryManager mm, int valueLength) {
+        this(unassignedSentinel, mm, valueLength, DEFAULT_CAPACITY);
         assert valueLength > 0 : "Attempted to instantiate HashSlotArrayImpl with zero value length";
     }
 
     protected HashSlotArrayImpl(long unassignedSentinel, long offsetOfUnassignedSentinel,
-                                MemoryAllocator malloc, int valueLength, int initialCapacity
+                                MemoryManager mm, int valueLength, int initialCapacity
     ) {
-        super(unassignedSentinel, offsetOfUnassignedSentinel, malloc, KEY_LENGTH, valueLength, initialCapacity);
+        super(unassignedSentinel, offsetOfUnassignedSentinel, mm, KEY_LENGTH, valueLength, initialCapacity);
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 
@@ -11,11 +11,11 @@ import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
  */
 public class HashSlotArrayNoValue extends HashSlotArrayImpl {
 
-    public HashSlotArrayNoValue(long unassignedSentinel, MemoryAllocator malloc, int valueLength, int initialCapacity) {
-        super(unassignedSentinel, 0L, malloc, valueLength, initialCapacity);
+    public HashSlotArrayNoValue(long unassignedSentinel, MemoryManager mm, int valueLength, int initialCapacity) {
+        super(unassignedSentinel, 0L, mm, valueLength, initialCapacity);
     }
 
-    public HashSlotArrayNoValue(long unassignedSentinel, MemoryAllocator malloc, int valueLength) {
-        super(unassignedSentinel, 0L, malloc, valueLength, DEFAULT_CAPACITY);
+    public HashSlotArrayNoValue(long unassignedSentinel, MemoryManager mm, int valueLength) {
+        super(unassignedSentinel, 0L, mm, valueLength, DEFAULT_CAPACITY);
     }
 }

@@ -4,10 +4,12 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
@@ -19,7 +21,8 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     private TrackerOffHeap tr = new TrackerOffHeap();
 
     TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, malloc, TrackerOffHeap.SIZE);
+        this.trackers = new HashSlotArrayTwinKeyImpl(
+                Long.MIN_VALUE, new MemoryManagerBean(malloc, AMEM), TrackerOffHeap.SIZE);
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {

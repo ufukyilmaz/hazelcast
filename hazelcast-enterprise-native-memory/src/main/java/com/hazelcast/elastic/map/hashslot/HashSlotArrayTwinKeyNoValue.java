@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
 
@@ -14,15 +14,15 @@ public class HashSlotArrayTwinKeyNoValue extends HashSlotArrayTwinKeyImpl {
     /**
      * @param nullKey1 the null-sentinel value checked against the {@code key1} field.
      */
-    public HashSlotArrayTwinKeyNoValue(long nullKey1, MemoryAllocator malloc, int initialCapacity) {
-        super(nullKey1, 0L, malloc, 0, initialCapacity);
+    public HashSlotArrayTwinKeyNoValue(long nullKey1, MemoryManager mm, int initialCapacity) {
+        super(nullKey1, 0L, mm, 0, initialCapacity);
     }
 
     /**
      * @param nullKey1 the null-sentinel value checked against the {@code key1} field.
      */
-    public HashSlotArrayTwinKeyNoValue(long nullKey1, MemoryAllocator malloc) {
-        this(nullKey1, malloc, DEFAULT_CAPACITY);
+    public HashSlotArrayTwinKeyNoValue(long nullKey1, MemoryManager mm) {
+        this(nullKey1, mm, DEFAULT_CAPACITY);
     }
 
     // Value length is always zero (not under user's control)

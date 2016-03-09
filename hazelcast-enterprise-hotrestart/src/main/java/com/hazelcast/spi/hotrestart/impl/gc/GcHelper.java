@@ -229,6 +229,7 @@ public abstract class GcHelper implements Disposable {
     public static class OffHeap extends GcHelper {
 
         private final MemoryAllocator malloc;
+
         public OffHeap(HotRestartStoreConfig cfg) {
             super(cfg);
             this.malloc = cfg.malloc();

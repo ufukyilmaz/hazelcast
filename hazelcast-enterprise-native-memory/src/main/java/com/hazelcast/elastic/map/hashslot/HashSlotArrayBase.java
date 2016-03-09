@@ -1,11 +1,12 @@
 package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
 import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
@@ -18,6 +19,10 @@ abstract class HashSlotArrayBase {
     protected static final int KEY_1_OFFSET = 0;
     private static final int KEY_2_OFFSET = 8;
     private static final int VALUE_LENGTH_GRANULARITY = 8;
+
+    private final MemoryAllocator malloc;
+
+    private final MemoryAccessor mem;
 
     /**
      * Base address of the backing memory region of this hash slot array.
@@ -33,8 +38,6 @@ abstract class HashSlotArrayBase {
      * Offset (from the slot's base address) where the unassigned sentinel value is to be found.
      */
     protected final long offsetOfUnassignedSentinel;
-
-    private final MemoryAllocator malloc;
 
     /**
      * Total length of an array slot in bytes.
@@ -83,19 +86,20 @@ abstract class HashSlotArrayBase {
      *
      * @param unassignedSentinel the value to be used to mark an unassigned slot
      * @param offsetOfUnassignedSentinel offset (from each slot's base address) where the unassigned sentinel is kept
-     * @param malloc memory allocator
+     * @param mm the memory manager
      * @param keyLength length of key in bytes
      * @param valueLength length of value in bytes
      * @param initialCapacity Initial capacity of map (will be rounded to closest power of 2, if not already)
      */
-    protected HashSlotArrayBase(long unassignedSentinel, long offsetOfUnassignedSentinel, MemoryAllocator malloc,
+    protected HashSlotArrayBase(long unassignedSentinel, long offsetOfUnassignedSentinel, MemoryManager mm,
                                 int keyLength, int valueLength, int initialCapacity
     ) {
         assert modPowerOfTwo(valueLength, VALUE_LENGTH_GRANULARITY) == 0
                 : "Value length should be a positive multiple of 8";
         this.unassignedSentinel = unassignedSentinel;
         this.offsetOfUnassignedSentinel = offsetOfUnassignedSentinel;
-        this.malloc = malloc;
+        this.malloc = mm.getAllocator();
+        this.mem = mm.getAccessor();
         this.valueOffset = keyLength;
         this.valueLength = valueLength;
         this.slotLength = keyLength + valueLength;
@@ -235,11 +239,11 @@ abstract class HashSlotArrayBase {
             }
             // Shift key/value pair.
             putKey(slotPrev, key1OfSlot(slotCurr), key2OfSlot(slotCurr));
-            AMEM.copyMemory(valueAddrOfSlot(slotCurr), valueAddrOfSlot(slotPrev), valueLength);
+            mem.copyMemory(valueAddrOfSlot(slotCurr), valueAddrOfSlot(slotPrev), valueLength);
         }
         final long slotBase = slotBase(slotPrev);
-        AMEM.setMemory(slotBase, slotLength, (byte) 0);
-        AMEM.putLong(slotBase + offsetOfUnassignedSentinel, unassignedSentinel);
+        mem.setMemory(slotBase, slotLength, (byte) 0);
+        mem.putLong(slotBase + offsetOfUnassignedSentinel, unassignedSentinel);
     }
 
     protected final void ensureLive() {
@@ -269,8 +273,8 @@ abstract class HashSlotArrayBase {
 
     protected void putKey(long slot, long key1, long key2) {
         final long slotBase = slotBase(baseAddress, slot);
-        AMEM.putLong(slotBase + KEY_1_OFFSET, key1);
-        AMEM.putLong(slotBase + KEY_2_OFFSET, key2);
+        mem.putLong(slotBase + KEY_1_OFFSET, key1);
+        mem.putLong(slotBase + KEY_2_OFFSET, key2);
     }
 
 
@@ -281,7 +285,7 @@ abstract class HashSlotArrayBase {
     }
 
     private boolean isAssigned(long baseAddr, long slot) {
-        return AMEM.getLong(slotBase(baseAddr, slot) + offsetOfUnassignedSentinel) != unassignedSentinel;
+        return mem.getLong(slotBase(baseAddr, slot) + offsetOfUnassignedSentinel) != unassignedSentinel;
     }
 
     private boolean isAssigned(long slot) {
@@ -309,14 +313,14 @@ abstract class HashSlotArrayBase {
     }
 
     private void markAllUnassigned() {
-        AMEM.setMemory(baseAddress, capacity * slotLength, (byte) 0);
+        mem.setMemory(baseAddress, capacity * slotLength, (byte) 0);
         if (unassignedSentinel == 0) {
             return;
         }
         final long addrOfFirstSentinel = baseAddress + offsetOfUnassignedSentinel;
         final int stride = slotLength;
         for (long i = 0; i < capacity; i++) {
-            AMEM.putLong(addrOfFirstSentinel + stride * i, unassignedSentinel);
+            mem.putLong(addrOfFirstSentinel + stride * i, unassignedSentinel);
         }
     }
 
@@ -341,7 +345,7 @@ abstract class HashSlotArrayBase {
                     newSlot = (newSlot + 1) & mask;
                 }
                 putKey(newSlot, key1, key2);
-                AMEM.copyMemory(valueAddress, valueAddrOfSlot(newSlot), valueLength);
+                mem.copyMemory(valueAddress, valueAddrOfSlot(newSlot), valueLength);
             }
         }
         malloc.free(oldAddress, oldCapacity * slotLength);
@@ -350,12 +354,12 @@ abstract class HashSlotArrayBase {
 
     // These public static methods are used by subclasses and also by Hot Restart code
 
-    public static long key1At(long slotBaseAddr) {
-        return AMEM.getLong(slotBaseAddr + KEY_1_OFFSET);
+    private long key1At(long slotBaseAddr) {
+        return mem.getLong(slotBaseAddr + KEY_1_OFFSET);
     }
 
-    public static long key2At(long slotBaseAddr) {
-        return AMEM.getLong(slotBaseAddr + KEY_2_OFFSET);
+    private long key2At(long slotBaseAddr) {
+        return mem.getLong(slotBaseAddr + KEY_2_OFFSET);
     }
 
 

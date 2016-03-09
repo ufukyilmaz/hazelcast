@@ -4,6 +4,7 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArray;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
@@ -17,7 +18,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
 
     public Long2bytesMapOffHeap(MemoryAllocator malloc) {
         this.vblockAccessor = new ValueBlockAccessor(malloc);
-        this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, malloc, 8, 16*1024);
+        this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, new MemoryManagerBean(malloc, AMEM), 8, 16*1024);
     }
 
     @Override public void put(long key, byte[] value) {

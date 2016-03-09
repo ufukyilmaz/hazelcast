@@ -4,17 +4,19 @@ import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
 import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
 import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     private final HashSlotArrayTwinKey set;
 
     SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayTwinKeyNoValue(0L, malloc);
+        this.set = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
     }
 
     @Override public void add(KeyHandle kh) {

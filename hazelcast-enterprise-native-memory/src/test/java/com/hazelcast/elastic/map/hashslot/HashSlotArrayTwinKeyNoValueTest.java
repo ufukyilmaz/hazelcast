@@ -1,6 +1,8 @@
 package com.hazelcast.elastic.map.hashslot;
 
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -15,6 +17,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -33,7 +36,7 @@ public class HashSlotArrayTwinKeyNoValueTest {
     @Before
     public void setUp() throws Exception {
         malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        map = new HashSlotArrayTwinKeyNoValue(0L, malloc);
+        map = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
     }
 
     @After

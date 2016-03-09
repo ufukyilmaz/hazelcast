@@ -5,9 +5,9 @@ import com.hazelcast.cache.impl.CacheClearResponse;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
+import com.hazelcast.spi.partition.IPartitionService;
 
 import javax.cache.CacheException;
 import java.io.IOException;

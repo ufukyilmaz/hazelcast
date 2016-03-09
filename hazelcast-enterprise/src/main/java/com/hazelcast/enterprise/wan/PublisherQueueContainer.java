@@ -1,7 +1,7 @@
 package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.instance.Node;
-import com.hazelcast.partition.IPartition;
+import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Map;

@@ -62,16 +62,6 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
     }
 
     @Override
-    public MemoryAllocator getAllocator() {
-        return this;
-    }
-
-    @Override
-    public MemoryAccessor getAccessor() {
-        return MEM;
-    }
-
-    @Override
     public MemoryStats getMemoryStats() {
         return memoryStats;
     }

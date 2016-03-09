@@ -262,16 +262,6 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     }
 
     @Override
-    public MemoryAllocator getAllocator() {
-        return this;
-    }
-
-    @Override
-    public MemoryAccessor getAccessor() {
-        return MEM;
-    }
-
-    @Override
     public MemoryStats getMemoryStats() {
         return memoryStats;
     }

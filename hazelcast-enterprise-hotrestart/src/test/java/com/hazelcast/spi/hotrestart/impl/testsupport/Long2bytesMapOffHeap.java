@@ -19,6 +19,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     public Long2bytesMapOffHeap(MemoryAllocator malloc) {
         this.vblockAccessor = new ValueBlockAccessor(malloc);
         this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, new MemoryManagerBean(malloc, AMEM), 8, 16*1024);
+        hsa.gotoNew();
     }
 
     @Override public void put(long key, byte[] value) {

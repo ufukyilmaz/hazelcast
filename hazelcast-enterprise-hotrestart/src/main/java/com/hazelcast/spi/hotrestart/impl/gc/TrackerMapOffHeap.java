@@ -23,6 +23,7 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     TrackerMapOffHeap(MemoryAllocator malloc) {
         this.trackers = new HashSlotArrayTwinKeyImpl(
                 Long.MIN_VALUE, new MemoryManagerBean(malloc, AMEM), TrackerOffHeap.SIZE);
+        trackers.gotoNew();
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {

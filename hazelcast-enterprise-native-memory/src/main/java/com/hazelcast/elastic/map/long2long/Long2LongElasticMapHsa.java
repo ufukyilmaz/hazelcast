@@ -25,6 +25,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
      */
     public Long2LongElasticMapHsa(long nullValue, MemoryManager memMgr) {
         this.hsa = new HashSlotArrayImpl(nullValue, memMgr, LONG_SIZE_IN_BYTES);
+        hsa.gotoNew();
         this.mem = memMgr.getAccessor();
         this.nullValue = nullValue;
     }

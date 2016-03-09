@@ -33,9 +33,6 @@ public class Long2LongElasticMapHsaTest {
 
     private static final long MISSING_VALUE = -1L;
 
-    @Rule
-    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
-
     private final Random random = new Random();
     private HazelcastMemoryManager malloc;
     private MemoryManager memMgr;
@@ -294,31 +291,36 @@ public class Long2LongElasticMapHsaTest {
         assertFalseKV(map.isEmpty(), key, value);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testGet_after_dispose() {
         map.dispose();
         map.get(newKey());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testPut_after_dispose() {
         map.dispose();
         map.put(newKey(), newValue());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testRemove_after_dispose() {
         map.dispose();
         map.remove(newKey());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testReplace_after_dispose() {
         map.dispose();
         map.replace(newKey(), newValue());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testContainsKey_after_dispose() {
         map.dispose();
         map.containsKey(newKey());

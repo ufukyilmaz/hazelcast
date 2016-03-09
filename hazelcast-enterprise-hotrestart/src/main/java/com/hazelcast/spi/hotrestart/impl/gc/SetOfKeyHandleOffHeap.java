@@ -13,20 +13,21 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
-    private final HashSlotArrayTwinKey set;
+    private final HashSlotArrayTwinKey hsa;
 
     SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
+        this.hsa = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
+        hsa.gotoNew();
     }
 
     @Override public void add(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.ensure(ohk.address(), ohk.sequenceId());
+        hsa.ensure(ohk.address(), ohk.sequenceId());
     }
 
     @Override public void remove(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.remove(ohk.address(), ohk.sequenceId());
+        hsa.remove(ohk.address(), ohk.sequenceId());
     }
 
     @Override public KhCursor cursor() {
@@ -34,11 +35,11 @@ final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     }
 
     @Override public void dispose() {
-        set.dispose();
+        hsa.dispose();
     }
 
     private final class Cursor implements KhCursor, KeyHandleOffHeap {
-        private final HashSlotCursorTwinKey c = set.cursor();
+        private final HashSlotCursorTwinKey c = hsa.cursor();
 
         @Override public boolean advance() {
             return c.advance();

@@ -61,7 +61,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
-@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount" })
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount"})
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;

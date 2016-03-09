@@ -49,7 +49,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * validating these metadata cluster-wide before restoring actual data
  * and storing these metadata when they change during runtime.
  */
-@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount", "checkstyle:classfanoutcomplexity" })
+@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
 public final class ClusterMetadataManager implements PartitionListener {
 
     private static final String DIR_NAME = "cluster";

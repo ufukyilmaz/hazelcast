@@ -23,7 +23,7 @@ public final class NativeLZ4BlockOutputStream extends OutputStream {
     static final int MAGIC_LENGTH = MAGIC.length;
 
     /** Length of the LZ4 block header. */
-    @SuppressWarnings({ "checkstyle:declarationorder", "checkstyle:trailingcomment" })
+    @SuppressWarnings({"checkstyle:declarationorder", "checkstyle:trailingcomment"})
     public static final int HEADER_LENGTH =
             MAGIC_LENGTH // magic bytes
                     + 1          // token

@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.elastic.CapacityUtil;
+import com.hazelcast.spi.hashslot.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;

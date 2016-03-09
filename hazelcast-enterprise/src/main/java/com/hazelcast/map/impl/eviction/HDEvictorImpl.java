@@ -24,7 +24,7 @@ import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.IPartitionService;
+import com.hazelcast.spi.partition.IPartitionService;
 
 import java.util.ArrayList;
 import java.util.List;

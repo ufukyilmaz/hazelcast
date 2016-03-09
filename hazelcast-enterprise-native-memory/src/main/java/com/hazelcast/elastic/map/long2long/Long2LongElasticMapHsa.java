@@ -18,6 +18,11 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
     private final long nullValue;
     private MemoryAccessor mem;
 
+    /**
+     * @param nullValue the value that represents "null" or missing value
+     * @param memMgr memory manager to use. It is safe for its {@link MemoryManager#getAccessor} method
+     *               to return an accessor that only supports aligned memory access.
+     */
     public Long2LongElasticMapHsa(long nullValue, MemoryManager memMgr) {
         this.hsa = new HashSlotArrayImpl(nullValue, memMgr, LONG_SIZE_IN_BYTES);
         this.mem = memMgr.getAccessor();

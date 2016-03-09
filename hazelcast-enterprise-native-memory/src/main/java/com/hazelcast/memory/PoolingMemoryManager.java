@@ -1,6 +1,5 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.util.QuickMath;
@@ -13,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 

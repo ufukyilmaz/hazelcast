@@ -13,6 +13,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -406,7 +407,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     private static void dumpNativeMemory(HazelcastInstance hz) {
         Node node = getNode(hz);
         EnterpriseSerializationService ss = (EnterpriseSerializationService) node.getSerializationService();
-        MemoryManager memoryManager = ss.getMemoryManager();
+        HazelcastMemoryManager memoryManager = ss.getMemoryManager();
 
         if (!(memoryManager instanceof StandardMemoryManager)) {
             System.err.println("Cannot dump memory for " + memoryManager);

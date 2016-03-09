@@ -21,7 +21,7 @@ public interface EnterpriseSerializationService extends SerializationService {
 
     <T> T toObject(Object data, MemoryAllocator memoryAllocator);
 
-    HazelcastMemoryManager getMemoryManager();
-
     MemoryAllocator getCurrentMemoryAllocator();
+
+    HazelcastMemoryManager getMemoryManager();
 }

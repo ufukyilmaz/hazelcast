@@ -594,16 +594,6 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         return MwCounter.newMwCounter();
     }
 
-    @Override
-    public MemoryAllocator getAllocator() {
-        return this;
-    }
-
-    @Override
-    public MemoryAccessor getAccessor() {
-        return MEM;
-    }
-
     @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF" })
     private final class GlobalAddressQueue implements AddressQueue, GarbageCollectable {
 

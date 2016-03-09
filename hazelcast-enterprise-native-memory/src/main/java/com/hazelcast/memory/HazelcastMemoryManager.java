@@ -5,7 +5,7 @@ package com.hazelcast.memory;
  * Also includes methods specific to Hazelcast's pooling memory managers.
  * Also behaves as a {@link MemoryAllocator}.
  */
-public interface HazelcastMemoryManager extends MemoryManager, MemoryAllocator {
+public interface HazelcastMemoryManager extends MemoryAllocator {
 
     /**
      * Indicates that size of a memory block is not known by this memory manager.

@@ -24,7 +24,6 @@ import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -324,7 +323,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) node.getSerializationService();
 
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             ((PoolingMemoryManager) memoryManager).registerThread(thread);
         }
@@ -339,7 +338,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         EnterpriseSerializationService serializationService
                 = (EnterpriseSerializationService) node.getSerializationService();
 
-        MemoryManager memoryManager = serializationService.getMemoryManager();
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
         if (memoryManager instanceof PoolingMemoryManager) {
             ((PoolingMemoryManager) memoryManager).deregisterThread(thread);
         }

@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map.hashslot;
+package com.hazelcast.spi.hashslot;
 
 /**
  * Cursor over assigned hash slots in a {@link HashSlotArray}.

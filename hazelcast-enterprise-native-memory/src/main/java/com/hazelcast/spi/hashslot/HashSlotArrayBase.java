@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map.hashslot;
+package com.hazelcast.spi.hashslot;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;

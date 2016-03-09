@@ -1,8 +1,8 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArray;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
+import com.hazelcast.spi.hashslot.HashSlotArray;
+import com.hazelcast.spi.hashslot.HashSlotArrayImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursor;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryManager;
 

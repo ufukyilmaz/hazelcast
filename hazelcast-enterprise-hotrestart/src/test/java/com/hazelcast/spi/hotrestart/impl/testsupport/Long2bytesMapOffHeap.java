@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArray;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
+import com.hazelcast.spi.hashslot.HashSlotArray;
+import com.hazelcast.spi.hashslot.HashSlotArrayImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.RecordDataSink;

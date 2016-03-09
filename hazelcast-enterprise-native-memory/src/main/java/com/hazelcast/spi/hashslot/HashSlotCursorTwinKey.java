@@ -1,4 +1,4 @@
-package com.hazelcast.elastic.map.hashslot;
+package com.hazelcast.spi.hashslot;
 
 /**
  * Cursor over assigned slots in a {@link HashSlotArrayTwinKey}. Initially the cursor's location is

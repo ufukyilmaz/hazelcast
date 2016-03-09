@@ -1,9 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;

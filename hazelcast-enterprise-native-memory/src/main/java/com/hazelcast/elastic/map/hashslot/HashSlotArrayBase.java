@@ -160,9 +160,7 @@ abstract class HashSlotArrayBase {
         }
         long slot = maskedHash(key1, key2);
         while (isAssigned(slot)) {
-            long slotKey1 = key1OfSlot(slot);
-            long slotKey2 = key2OfSlot(slot);
-            if (slotKey1 == key1 && slotKey2 == key2) {
+            if (equal(key1OfSlot(slot), key2OfSlot(slot), key1, key2)) {
                 return -valueAddrOfSlot(slot);
             }
             slot = (slot + 1) & mask;
@@ -177,9 +175,7 @@ abstract class HashSlotArrayBase {
         long slot = maskedHash(key1, key2);
         final long wrappedAround = slot;
         while (isAssigned(slot)) {
-            long slotAddress = key1OfSlot(slot);
-            long slotSequence = key2OfSlot(slot);
-            if (slotAddress == key1 && slotSequence == key2) {
+            if (equal(key1OfSlot(slot), key2OfSlot(slot), key1, key2)) {
                 return valueAddrOfSlot(slot);
             }
             slot = (slot + 1) & mask;
@@ -195,9 +191,7 @@ abstract class HashSlotArrayBase {
         long slot = maskedHash(key1, key2);
         final long wrappedAround = slot;
         while (isAssigned(slot)) {
-            long slotKey1 = key1OfSlot(slot);
-            long slotKey2 = key2OfSlot(slot);
-            if (slotKey1 == key1 && slotKey2 == key2) {
+            if (equal(key1OfSlot(slot), key2OfSlot(slot), key1, key2)) {
                 size--;
                 shiftConflictingKeys(slot);
                 return true;
@@ -260,15 +254,19 @@ abstract class HashSlotArrayBase {
     // These protected methods will be overridden in some subclasses
 
     protected long key2OfSlot(long slot) {
-        return key2At(slotBase(baseAddress, slot));
+        return mem.getLong(slotBase(baseAddress, slot) + KEY_2_OFFSET);
     }
 
     protected long key2OfSlot(long baseAddress, long slot) {
-        return key2At(slotBase(baseAddress, slot));
+        return mem.getLong(slotBase(baseAddress, slot) + KEY_2_OFFSET);
     }
 
     protected long hash(long key1, long key2) {
         return fastLongMix(fastLongMix(key1) + key2);
+    }
+
+    protected boolean equal(long key1a, long key2a, long key1b, long key2b) {
+        return key1a == key1b && key2a == key2b;
     }
 
     protected void putKey(long slot, long key1, long key2) {
@@ -293,7 +291,7 @@ abstract class HashSlotArrayBase {
     }
 
     private long key1OfSlot(long slot) {
-        return key1At(slotBase(baseAddress, slot));
+        return mem.getLong(slotBase(baseAddress, slot) + KEY_1_OFFSET);
     }
 
     private long valueAddrOfSlot(long slot) {
@@ -301,7 +299,7 @@ abstract class HashSlotArrayBase {
     }
 
     private long key1OfSlot(long baseAddress, long slot) {
-        return key1At(slotBase(baseAddress, slot));
+        return mem.getLong(slotBase(baseAddress, slot) + KEY_1_OFFSET);
     }
 
     private void allocateArrayAndAdjustFields(long newCapacity) {
@@ -349,17 +347,6 @@ abstract class HashSlotArrayBase {
             }
         }
         malloc.free(oldAddress, oldCapacity * slotLength);
-    }
-
-
-    // These public static methods are used by subclasses and also by Hot Restart code
-
-    private long key1At(long slotBaseAddr) {
-        return mem.getLong(slotBaseAddr + KEY_1_OFFSET);
-    }
-
-    private long key2At(long slotBaseAddr) {
-        return mem.getLong(slotBaseAddr + KEY_2_OFFSET);
     }
 
 

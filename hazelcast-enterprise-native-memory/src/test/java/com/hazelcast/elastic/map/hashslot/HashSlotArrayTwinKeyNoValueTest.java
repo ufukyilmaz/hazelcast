@@ -1,11 +1,8 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.memory.HeapMemoryManager;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -17,7 +14,6 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,19 +26,21 @@ import static org.junit.Assert.fail;
 public class HashSlotArrayTwinKeyNoValueTest {
 
     private final Random random = new Random();
-    private HazelcastMemoryManager malloc;
+    private MemoryManager memMgr;
+    private MemoryAccessor mem;
     private HashSlotArrayTwinKey map;
 
     @Before
     public void setUp() throws Exception {
-        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        map = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
+        memMgr = new HeapMemoryManager(32 << 20);
+        mem = memMgr.getAccessor();
+        map = new HashSlotArrayTwinKeyNoValue(0L, memMgr);
     }
 
     @After
     public void tearDown() throws Exception {
         map.dispose();
-        malloc.dispose();
+        memMgr.dispose();
     }
 
     @Test

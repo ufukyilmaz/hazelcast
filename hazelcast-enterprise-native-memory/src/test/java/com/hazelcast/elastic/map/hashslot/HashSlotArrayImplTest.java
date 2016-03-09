@@ -1,10 +1,8 @@
 package com.hazelcast.elastic.map.hashslot;
 
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
-import com.hazelcast.memory.MemorySize;
-import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.memory.HeapMemoryManager;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
@@ -16,7 +14,6 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Random;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,19 +28,21 @@ public class HashSlotArrayImplTest {
     private static final int VALUE_LENGTH = 32;
 
     private final Random random = new Random();
-    private HazelcastMemoryManager malloc;
+    private MemoryManager memMgr;
+    private MemoryAccessor mem;
     private HashSlotArray hsa;
 
     @Before
     public void setUp() throws Exception {
-        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        hsa = new HashSlotArrayImpl(0L, new MemoryManagerBean(malloc, AMEM), VALUE_LENGTH);
+        memMgr = new HeapMemoryManager(32 << 20);
+        mem = memMgr.getAccessor();
+        hsa = new HashSlotArrayImpl(0L, memMgr, VALUE_LENGTH);
     }
 
     @After
     public void tearDown() throws Exception {
         hsa.dispose();
-        malloc.dispose();
+        memMgr.dispose();
     }
 
     @Test
@@ -108,7 +107,7 @@ public class HashSlotArrayImplTest {
             long key = (long) i;
             long valueAddress = hsa.get(key);
 
-            assertEquals(key, AMEM.getLong(valueAddress));
+            assertEquals(key, mem.getLong(valueAddress));
         }
     }
 
@@ -275,13 +274,13 @@ public class HashSlotArrayImplTest {
     private long insert(long key) {
         final long valueAddress = hsa.ensure(key);
         assertTrue(valueAddress > 0);
-        AMEM.putLong(valueAddress, key);
+        mem.putLong(valueAddress, key);
         return valueAddress;
     }
 
-    private static void verifyValue(long key, long valueAddress) {
+    private void verifyValue(long key, long valueAddress) {
         // pre-check to avoid SIGSEGV
         assertNotEquals(NULL_ADDRESS, valueAddress);
-        assertEquals(key, AMEM.getLong(valueAddress));
+        assertEquals(key, mem.getLong(valueAddress));
     }
 }

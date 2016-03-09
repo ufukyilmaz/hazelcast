@@ -1,25 +1,32 @@
 package com.hazelcast.enterprise;
 
-import com.hazelcast.cache.EnterpriseCacheService;
-import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryXmlConfig;
+import com.hazelcast.config.SecurityConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.license.exception.InvalidLicenseException;
-import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.MapService;
+import com.hazelcast.memory.MemorySize;
+import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.net.UnknownHostException;
+import java.util.Arrays;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART;
@@ -28,7 +35,8 @@ import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_DIFFERENT_VERS
 import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.TWO_NODES_ENTERPRISE_LICENSE;
-import static junit.framework.Assert.assertFalse;
+import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.nio.IOUtil.toFileName;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +44,27 @@ import static org.junit.Assert.assertTrue;
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class LicenseTest extends HazelcastTestSupport {
+
+    private File folder;
+
+    @Rule
+    public TestName testName = new TestName();
+
+    @Before
+    public final void setup() throws UnknownHostException {
+        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        delete(folder);
+        if (!folder.mkdir() && !folder.exists()) {
+            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
+        }
+    }
+
+    @After
+    public final void tearDown() {
+        if (folder != null) {
+            delete(folder);
+        }
+    }
 
     @Test
     public void testXmlConfig() {
@@ -56,7 +85,7 @@ public class LicenseTest extends HazelcastTestSupport {
                 + "            </multicast>\n"
                 + "            <tcp-ip enabled=\"false\">\n"
                 + "                <interface>127.0.0.1</interface>\n"
-                + "            </tcp-ip>\n"
+               + "            </tcp-ip>\n"
                 + "        </join>\n"
                 + "        <interfaces enabled=\"false\">\n"
                 + "            <interface>10.10.1.*</interface>\n"
@@ -131,34 +160,6 @@ public class LicenseTest extends HazelcastTestSupport {
         assertTrue(wanReplicationService instanceof WanReplicationServiceImpl);
     }
 
-    @Test
-    public void testSecurityOnlyLicenseOnlyUsesOpenSourceMapServices() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
-        HazelcastInstance h = createHazelcastInstance(config);
-        Node node = TestUtil.getNode(h);
-        MapService mapService = node.getNodeExtension().createService(MapService.class);
-        assertFalse(mapService.getMapServiceContext() instanceof EnterpriseMapServiceContext);
-    }
-
-    @Test
-    public void testSecurityOnlyLicenseOnlyUsesOpenSourceCacheServices() {
-        Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
-        HazelcastInstance h = createHazelcastInstance(config);
-        Node node = TestUtil.getNode(h);
-        CacheService cacheService = node.getNodeExtension().createService(CacheService.class);
-        assertFalse(cacheService instanceof EnterpriseCacheService);
-    }
-
-    @Test
-    public void testEnterpriseLicenseOnlyUsesEnterpriseWANReplication() {
-        HazelcastInstance h = createHazelcastInstance();
-        Node node = TestUtil.getNode(h);
-        WanReplicationService wanReplicationService = node.getNodeExtension().createService(WanReplicationService.class);
-        assertTrue(wanReplicationService instanceof EnterpriseWanReplicationService);
-    }
-
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseInvalidForDifferentHZVersion() {
         Config config = new Config();
@@ -186,5 +187,41 @@ public class LicenseTest extends HazelcastTestSupport {
         } catch (InvalidLicenseException ile) {
             fail("Hazelcast should not fail because valid license has been provided.");
         }
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testSecurityStartupWithSecurityDisabledLicense() {
+        final Config config = new Config();
+        final SecurityConfig secCfg = config.getSecurityConfig();
+        secCfg.setEnabled(true);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.V4_LICENSE_WITH_SECURITY_DISABLED);
+        final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
+        factory.newHazelcastInstance(config); // Node should not start.
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testHotRestartStartupWithHotRestartDisabledLicense() {
+        String[] addresses = new String[10];
+        Arrays.fill(addresses, "127.0.0.1");
+        TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory(5000, addresses);
+        factory.newHazelcastInstance(makeHotRestartConfigWithHotRestartDisabledLicense()); // Node should not start
+    }
+
+    Config makeHotRestartConfigWithHotRestartDisabledLicense() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SampleLicense.V4_LICENSE_WITH_HOT_RESTART_DISABLED);
+        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, "100");
+
+        // to reduce used native memory size
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, "4");
+
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
+        hotRestartPersistenceConfig.setEnabled(true);
+        hotRestartPersistenceConfig.setBaseDir(folder);
+
+        config.getNativeMemoryConfig().setEnabled(true)
+                .setSize(new MemorySize(64, MemoryUnit.MEGABYTES))
+                .setMetadataSpacePercentage(20);
+        return config;
     }
 }

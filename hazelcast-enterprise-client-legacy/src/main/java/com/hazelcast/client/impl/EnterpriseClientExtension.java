@@ -16,8 +16,9 @@ import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
-import com.hazelcast.license.domain.LicenseType;
+import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.MemoryManager;
@@ -36,6 +37,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
     private volatile SocketInterceptor socketInterceptor;
     private volatile License license;
+    private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -47,9 +50,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         if (licenseKey == null) {
             licenseKey = clientConfig.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY);
         }
-        final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
-        license = LicenseHelper.checkLicenseKey(licenseKey, buildInfo.getVersion(),
-                LicenseType.ENTERPRISE, LicenseType.ENTERPRISE_SECURITY_ONLY, LicenseType.ENTERPRISE_HD);
+
+        license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());
     }
 
     @Override
@@ -138,11 +140,15 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            if (license.getType() == LicenseType.ENTERPRISE || license.getType() == LicenseType.ENTERPRISE_HD)  {
-                return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
-                        client.getSerializationService(), client.getClientConfig());
-            } else {
-                return super.createServiceProxyFactory(service);
+            if (MapService.class.isAssignableFrom(service)) {
+                try {
+                    LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
+                            Feature.CONTINUOUS_QUERY_CACHE);
+                    return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
+                            client.getSerializationService(), client.getClientConfig());
+                } catch (InvalidLicenseException e) {
+                    return super.createServiceProxyFactory(service);
+                }
             }
         }
 

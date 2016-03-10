@@ -84,7 +84,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
     }
 
     private void addInvalidation(Data key) {
-        if (!mapContainer.isNearCacheEnabled()) {
+        if (!mapContainer.isInvalidationEnabled()) {
             return;
         }
 

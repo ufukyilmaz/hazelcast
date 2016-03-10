@@ -447,11 +447,6 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast</groupId>
-            <artifactId>hazelcast</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
@@ -474,11 +469,6 @@
             <version>1.2.12</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.hazelcast.marketing</groupId>
-            <artifactId>hazelcast-license-extractor</artifactId>
-            <version>${license.extractor.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>

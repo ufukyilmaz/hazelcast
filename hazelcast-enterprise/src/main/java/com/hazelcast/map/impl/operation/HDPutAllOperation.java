@@ -105,7 +105,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     }
 
     private void addInvalidation(Data dataKey) {
-        if (mapContainer.isNearCacheEnabled()) {
+        if (mapContainer.isInvalidationEnabled()) {
             if (invalidationKeys == null) {
                 invalidationKeys = new ArrayList<Data>(mapEntries.size());
             }

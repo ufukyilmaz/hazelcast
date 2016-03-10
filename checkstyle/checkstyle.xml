@@ -81,12 +81,10 @@
 
     <!-- Checks for Headers                                -->
     <!-- See http://checkstyle.sf.net/config_header.html   -->
-    <!--
     <module name="Header">
         <property name="headerFile" value="${main.basedir}/checkstyle/ClassHeader.txt"/>
         <property name="fileExtensions" value="java"/>
     </module>
-    -->
 
     <module name="TreeWalker">
         <!-- Activate comment suppression filters -->
@@ -131,7 +129,9 @@
 
         <!-- Checks for imports                              -->
         <!-- See http://checkstyle.sf.net/config_import.html -->
-        <module name="AvoidStarImport"/>
+        <module name="AvoidStarImport">
+            <property name="excludes" value="java.awt,javax.swing"/>
+        </module>
         <!-- defaults to sun.* packages -->
         <module name="IllegalImport"/>
         <module name="RedundantImport"/>
@@ -253,7 +253,6 @@
         </module>
         <module name="EqualsHashCode"/>
         <module name="IllegalInstantiation"/>
-        <module name="InnerAssignment"/>
         <module name="MissingSwitchDefault"/>
 
         <!-- Checks for class design                         -->

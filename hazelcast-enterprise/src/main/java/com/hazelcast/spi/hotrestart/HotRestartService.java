@@ -54,7 +54,7 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHot
  * per thread on-heap and off-heap HotRestart stores. Also, it's listener for
  * membership and cluster state events.
  */
-@SuppressWarnings({"checkstyle:classfanoutcomplexity" })
+@SuppressWarnings("checkstyle:classfanoutcomplexity")
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
     /**

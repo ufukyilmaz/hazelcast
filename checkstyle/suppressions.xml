@@ -9,6 +9,9 @@
     <!-- Suppress duplicate checking of copyright notice -->
     <suppress checks="StrictDuplicateCode" files=".java" lines="1-15"/>
 
+    <!-- Exclude all files from header check, so we can keep a common checkstyle.xml configuration -->
+    <suppress checks="Header" files=""/>
+
     <!-- Exclude implementation packages from JavaDoc checks -->
     <suppress checks="JavadocMethod" files="/impl/"/>
     <suppress checks="JavadocPackage" files="/impl/"/>

@@ -121,13 +121,12 @@
                         </goals>
                         <configuration>
                             <shadedArtifactId>hazelcast-enterprise-client</shadedArtifactId>
-                            <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
                             <minimizeJar>false</minimizeJar>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <artifactSet>
                                 <includes>
                                     <include>com.hazelcast:hazelcast-client</include>
                                     <include>com.hazelcast:hazelcast-enterprise-client</include>
+                                    <include>com.hazelcast.marketing:hazelcast-license-extractor</include>
                                 </includes>
                             </artifactSet>
                             <filters>
@@ -162,6 +161,12 @@
             <version>${project.version}</version>
             <type>jar</type>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.hazelcast</groupId>
+                    <artifactId>hazelcast</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -176,8 +181,6 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-enterprise</artifactId>
             <version>${project.version}</version>
-            <type>jar</type>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -196,7 +199,11 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
-
+        <dependency>
+            <groupId>com.hazelcast.marketing</groupId>
+            <artifactId>hazelcast-license-extractor</artifactId>
+            <version>${license.extractor.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.hdrhistogram</groupId>
             <artifactId>HdrHistogram</artifactId>

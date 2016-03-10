@@ -1,22 +1,20 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
 import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyNoValue;
 import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     private final HashSlotArrayTwinKey hsa;
 
-    SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.hsa = new HashSlotArrayTwinKeyNoValue(0L, new MemoryManagerBean(malloc, AMEM));
+    SetOfKeyHandleOffHeap(MemoryManager memMgr) {
+        this.hsa = new HashSlotArrayTwinKeyNoValue(0L, memMgr);
         hsa.gotoNew();
     }
 

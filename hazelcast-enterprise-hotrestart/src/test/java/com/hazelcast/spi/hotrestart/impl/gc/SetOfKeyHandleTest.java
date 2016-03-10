@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.RecordMap.Cursor;
 import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -12,9 +11,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -30,7 +26,7 @@ public class SetOfKeyHandleTest extends OnHeapOffHeapTestBase {
     private SetOfKeyHandle set;
 
     @Before public void setup() {
-        set = offHeap ? new SetOfKeyHandleOffHeap(malloc) : new SetOfKeyHandleOnHeap();
+        set = offHeap ? new SetOfKeyHandleOffHeap(memMgr) : new SetOfKeyHandleOnHeap();
     }
 
     @After public void destroy() {

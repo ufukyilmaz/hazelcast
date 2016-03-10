@@ -1,15 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
 import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
 import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
@@ -20,9 +18,8 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     private HashSlotArrayTwinKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
-    TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new HashSlotArrayTwinKeyImpl(
-                Long.MIN_VALUE, new MemoryManagerBean(malloc, AMEM), TrackerOffHeap.SIZE);
+    TrackerMapOffHeap(MemoryManager memMgr) {
+        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, memMgr, TrackerOffHeap.SIZE);
         trackers.gotoNew();
     }
 

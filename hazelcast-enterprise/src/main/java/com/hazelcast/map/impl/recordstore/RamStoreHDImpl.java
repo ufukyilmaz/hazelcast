@@ -22,6 +22,8 @@ import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public class RamStoreHDImpl implements RamStore {
 
+    private static final int REMOVE_NULL_ENTRIES_BATCH_SIZE = 1024;
+
     private final EnterpriseRecordStore recordStore;
 
     private final HazelcastMemoryManager memoryManager;
@@ -72,7 +74,7 @@ public class RamStoreHDImpl implements RamStore {
             assert record != null;
             assert record.getSequence() == keyHandleOffHeap.sequenceId();
             storage.removeTransient(record);
-            if (++removedCount % 1024 == 0) {
+            if (++removedCount % REMOVE_NULL_ENTRIES_BATCH_SIZE == 0) {
                 storage.disposeDeferredBlocks();
             }
         }

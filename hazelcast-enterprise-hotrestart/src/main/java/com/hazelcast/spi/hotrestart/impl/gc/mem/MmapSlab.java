@@ -6,6 +6,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
@@ -18,7 +19,6 @@ import java.util.TreeMap;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.util.QuickMath.log2;
-import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 
 /**
@@ -29,34 +29,39 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
  * memory-mapped buffer is created.
  */
 final class MmapSlab implements Disposable {
-    public static final int BLOCK_SIZE_GRANULARITY = 8;
-    @SuppressWarnings("checkstyle:magicnumber")
-    public static final long MIN_FILE_SIZE = 1 << 13;
+
     private static final int MAPMODE_RW = 1;
 
+    final int mmapPageSize;
     private final long blockSize;
     private final int initialBlockCountLog2;
     private final BitSet blockBitmap = new BitSet();
     private final RandomAccessFile raf;
     private final List<Long> bufBases = new ArrayList<Long>();
+    private final List<Integer> offsetsOfBufsFromMmmapBases = new ArrayList<Integer>();
     private final NavigableMap<Long, Integer> bufBase2BufIndex = new TreeMap<Long, Integer>();
     private int blockCount;
     private int usedBlockCount;
     private final File mappedFile;
 
     MmapSlab(File baseDir, long blockSize) {
-        assert blockSize > 0 && modPowerOfTwo(blockSize, BLOCK_SIZE_GRANULARITY) == 0
-                : "Block size must be a multiple of " + BLOCK_SIZE_GRANULARITY;
         this.blockSize = blockSize;
-        final int initialBlockCount = (int) nextPowerOfTwo(MIN_FILE_SIZE / blockSize);
-        this.initialBlockCountLog2 = log2(initialBlockCount);
         try {
             this.mappedFile = new File(baseDir, blockSize + ".mmap");
             this.raf = new RandomAccessFile(mappedFile, "rw");
         } catch (Exception e) {
             throw new HotRestartException("Failed to create a MmapSlab for blockSize " + blockSize, e);
         }
-        mmapExpand(initialBlockCount);
+        try {
+            this.mmapPageSize = (int) mmapAllocationGranularity(raf.getChannel());
+            final int minFileSize = 2 * mmapPageSize;
+            final int initialBlockCount = (int) nextPowerOfTwo(minFileSize / blockSize);
+            this.initialBlockCountLog2 = log2(initialBlockCount);
+            mmapExpand(initialBlockCount);
+        } catch (HotRestartException e) {
+            delete(mappedFile);
+            throw e;
+        }
     }
 
     long allocate() {
@@ -125,8 +130,14 @@ final class MmapSlab implements Disposable {
             final FileChannel chan = raf.getChannel();
             final Method map0 = chan.getClass().getDeclaredMethod("map0", int.class, long.class, long.class);
             map0.setAccessible(true);
-            final long bufBase = (Long) map0.invoke(chan, MAPMODE_RW, blockCount * blockSize, addedFileSize);
+            final long fileposOfNewBuffer = blockCount * blockSize;
+            final long offsetOfBufIntoMmapPage = fileposOfNewBuffer % mmapPageSize;
+            final long fileposOfMappedRegion = fileposOfNewBuffer - offsetOfBufIntoMmapPage;
+            final long sizeOfMappedRegion = addedFileSize + offsetOfBufIntoMmapPage;
+            final long mmapBase = (Long) map0.invoke(chan, MAPMODE_RW, fileposOfMappedRegion, sizeOfMappedRegion);
+            final long bufBase = mmapBase + offsetOfBufIntoMmapPage;
             bufBases.add(bufBase);
+            offsetsOfBufsFromMmmapBases.add((int) offsetOfBufIntoMmapPage);
             bufBase2BufIndex.put(bufBase, bufBases.size() - 1);
             blockCount += addedBlockCount;
         } catch (Exception e) {
@@ -146,8 +157,10 @@ final class MmapSlab implements Disposable {
             unmap0.setAccessible(true);
             long blockCount = 1L << initialBlockCountLog2;
             boolean atFirstBuffer = true;
-            for (long bufBase : bufBases) {
-                unmap0.invoke(chan, bufBase, blockCount * blockSize);
+            for (int i = 0; i < bufBases.size(); i++) {
+                final long bufBase = bufBases.get(i);
+                final int bufOffsetFromMmapBase = offsetsOfBufsFromMmmapBases.get(i);
+                unmap0.invoke(chan, bufBase - bufOffsetFromMmapBase, blockCount * blockSize + bufOffsetFromMmapBase);
                 if (atFirstBuffer) {
                     atFirstBuffer = false;
                 } else {
@@ -165,6 +178,16 @@ final class MmapSlab implements Disposable {
             throw new HotRestartException("Reflection error accessing unmap0", e);
         } catch (IOException e) {
             throw new HotRestartException("Failed to close RAF", e);
+        }
+    }
+
+    private static long mmapAllocationGranularity(FileChannel channel) {
+        try {
+            final Field granularity = channel.getClass().getDeclaredField("allocationGranularity");
+            granularity.setAccessible(true);
+            return (Long) granularity.get(null);
+        } catch (Exception e) {
+            throw new HotRestartException("Failed to retrieve mmap allocation granularity", e);
         }
     }
 }

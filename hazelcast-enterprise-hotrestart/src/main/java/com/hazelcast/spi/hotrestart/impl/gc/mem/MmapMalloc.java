@@ -7,9 +7,6 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.io.File;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapSlab.BLOCK_SIZE_GRANULARITY;
-import static com.hazelcast.util.QuickMath.modPowerOfTwo;
-
 /**
  * Allocator based on memory-mapped files.
  */
@@ -27,8 +24,6 @@ public class MmapMalloc implements MemoryAllocator, Disposable {
     }
 
     @Override public long allocate(long size) {
-        assert modPowerOfTwo(size, BLOCK_SIZE_GRANULARITY) == 0
-                : "Allocation size must be a multiple of " + BLOCK_SIZE_GRANULARITY;
         MmapSlab slab = slabs.get(size);
         if (slab == null) {
             slab = new MmapSlab(baseDir, size);

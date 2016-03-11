@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
@@ -11,7 +11,6 @@ import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
 public final class StandardMemoryManager implements HazelcastMemoryManager {

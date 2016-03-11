@@ -9,8 +9,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
  * @param <K> key type

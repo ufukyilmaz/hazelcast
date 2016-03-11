@@ -16,7 +16,7 @@
 
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.test.HazelcastTestRunner;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
@@ -35,7 +35,8 @@ import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(HazelcastTestRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class AbstractMetadataReaderWriterTest extends AbstractReaderWriterTest {
 

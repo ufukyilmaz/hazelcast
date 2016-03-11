@@ -7,6 +7,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
@@ -41,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
@@ -72,7 +74,8 @@ public class HotRestartTestUtil {
             throws InterruptedException {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
-        final MockStoreRegistry cs = new MockStoreRegistry(cfg, malloc);
+        final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
+        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr);
         logger.info("Started in " + NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
         return cs;
     }

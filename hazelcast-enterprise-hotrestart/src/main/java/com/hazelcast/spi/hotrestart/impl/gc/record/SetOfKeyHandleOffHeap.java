@@ -1,8 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyNoValue;
+import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
@@ -13,8 +14,9 @@ import static com.hazelcast.util.HashUtil.fastLongMix;
 public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     private final HashSlotArrayTwinKey set;
 
-    public SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayTwinKeyNoValue(0L, malloc);
+    public SetOfKeyHandleOffHeap(MemoryManager memMgr) {
+        this.set = new HashSlotArrayTwinKeyNoValue(0L, memMgr);
+        set.gotoNew();
     }
 
     @Override public void add(KeyHandle kh) {

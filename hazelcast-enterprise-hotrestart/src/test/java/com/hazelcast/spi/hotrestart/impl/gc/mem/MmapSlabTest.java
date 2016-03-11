@@ -24,7 +24,7 @@ public class MmapSlabTest {
     public void setUp() {
         delete(baseDir);
         baseDir.mkdirs();
-        mm = new MmapSlab(baseDir, 1 << 3);
+        mm = new MmapSlab(baseDir, 24);
     }
 
     @After
@@ -33,7 +33,8 @@ public class MmapSlabTest {
         delete(baseDir);
     }
 
-    @Test public void test() {
+    @Test
+    public void testBlockBaseToIndexTransform() {
         final int blockCount = 1000 * 1000;
         for (int i = 0; i < blockCount; i++) {
             mm.allocate();

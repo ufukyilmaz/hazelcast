@@ -26,7 +26,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
     private TrackerMapBase containerMap;
 
     @Before public void setup() {
-        containerMap = offHeap ? new TrackerMapOffHeap(malloc, null) : new TrackerMapOnHeap();
+        containerMap = offHeap ? new TrackerMapOffHeap(memMgr, null) : new TrackerMapOnHeap();
         containerMap.putIfAbsent(keyHandle, chunkSeq, false);
         containerMap.putIfAbsent(tombstoneKeyHandle, tombstoneChunkSeq, true);
     }

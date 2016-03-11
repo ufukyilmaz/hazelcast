@@ -1,26 +1,26 @@
 package com.hazelcast.elastic.map.long2long;
 
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.Random;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -30,23 +30,22 @@ public class Long2LongElasticMapHsaTest {
 
     private static final long MISSING_VALUE = -1L;
 
-    @Rule
-    public final TestRule assertEnabledRule = new AssertEnabledFilterRule();
-
     private final Random random = new Random();
-    private HazelcastMemoryManager memoryManager;
+    private HazelcastMemoryManager malloc;
+    private MemoryManager memMgr;
     private Long2LongElasticMapHsa map;
 
     @Before
     public void setUp() throws Exception {
-        memoryManager = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        map = new Long2LongElasticMapHsa(MISSING_VALUE, memoryManager);
+        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+        memMgr = new MemoryManagerBean(malloc, AMEM);
+        map = new Long2LongElasticMapHsa(MISSING_VALUE, memMgr);
     }
 
     @After
     public void tearDown() throws Exception {
         map.dispose();
-        memoryManager.dispose();
+        memMgr.dispose();
     }
 
     @Test
@@ -90,7 +89,7 @@ public class Long2LongElasticMapHsaTest {
     @Test
     public void testPutAll() throws Exception {
         int count = 100;
-        Long2LongElasticMap entries = new Long2LongElasticMapHsa(count, memoryManager);
+        Long2LongElasticMap entries = new Long2LongElasticMapHsa(count, memMgr);
 
         for (int i = 0; i < count; i++) {
             long key = newKey();
@@ -289,31 +288,36 @@ public class Long2LongElasticMapHsaTest {
         assertFalseKV(map.isEmpty(), key, value);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testGet_after_dispose() {
         map.dispose();
         map.get(newKey());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testPut_after_dispose() {
         map.dispose();
         map.put(newKey(), newValue());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testRemove_after_dispose() {
         map.dispose();
         map.remove(newKey());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testReplace_after_dispose() {
         map.dispose();
         map.replace(newKey(), newValue());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testContainsKey_after_dispose() {
         map.dispose();
         map.containsKey(newKey());
@@ -358,7 +362,7 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = malloc.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
@@ -407,7 +411,7 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = malloc.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 
@@ -425,7 +429,7 @@ public class Long2LongElasticMapHsaTest {
 
         map.clear();
         map.dispose();
-        MemoryStats memoryStats = memoryManager.getMemoryStats();
+        MemoryStats memoryStats = malloc.getMemoryStats();
         assertEquals(memoryStats.toString(), 0, memoryStats.getUsedNative());
     }
 

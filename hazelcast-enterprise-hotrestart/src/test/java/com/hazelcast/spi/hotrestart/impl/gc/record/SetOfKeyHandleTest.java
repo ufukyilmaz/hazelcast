@@ -27,7 +27,7 @@ public class SetOfKeyHandleTest extends OnHeapOffHeapTestBase {
     private SetOfKeyHandle set;
 
     @Before public void setup() {
-        set = offHeap ? new SetOfKeyHandleOffHeap(malloc) : new SetOfKeyHandleOnHeap();
+        set = offHeap ? new SetOfKeyHandleOffHeap(memMgr) : new SetOfKeyHandleOnHeap();
     }
 
     @After public void destroy() {

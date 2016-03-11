@@ -1,8 +1,9 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArray;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArray;
+import com.hazelcast.spi.hashslot.HashSlotArrayImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursor;
 import com.hazelcast.memory.MemoryAllocator;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
@@ -17,8 +18,9 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
     private final HashSlotArray hsa;
     private final long nullValue;
 
-    public Long2LongElasticMapHsa(long nullValue, MemoryAllocator malloc) {
-        this.hsa = new HashSlotArrayImpl(nullValue, malloc, LONG_SIZE_IN_BYTES);
+    public Long2LongElasticMapHsa(long nullValue, MemoryManager memMgr) {
+        this.hsa = new HashSlotArrayImpl(nullValue, memMgr, LONG_SIZE_IN_BYTES);
+        hsa.gotoNew();
         this.nullValue = nullValue;
     }
 

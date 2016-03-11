@@ -32,7 +32,7 @@ public class RecordMapTest extends OnHeapOffHeapTestBase {
     private RecordMap m;
 
     @Before public void setup() {
-        m = offHeap ? newRecordMapOffHeap(malloc, malloc) : new RecordMapOnHeap();
+        m = offHeap ? newRecordMapOffHeap(memMgr, memMgr) : new RecordMapOnHeap();
     }
 
     @After public void destroy() {

@@ -2,6 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
@@ -224,36 +227,41 @@ public abstract class GcHelper implements Disposable {
 
     /** The GC helper specialization for off-heap Hot Restart store */
     public static class OffHeap extends GcHelper {
-        private final MemoryAllocator ramMalloc;
-        private final MmapMalloc mmapMalloc;
-        private final MmapMalloc mmapMallocWithCompaction;
+        private final MemoryManager ramMgr;
+        private final MemoryManager mmapMgr;
+        private final MemoryManager mmapMgrWithCompaction;
         public OffHeap(HotRestartStoreConfig cfg) {
             super(cfg);
-            this.ramMalloc = cfg.malloc();
-            this.mmapMalloc = new MmapMalloc(new File(cfg.homeDir(), "mmap"), false);
-            this.mmapMallocWithCompaction = new MmapMalloc(new File(cfg.homeDir(), "mmap-with-compaction"), true);
+            this.ramMgr = wrapWithAmem(cfg.malloc());
+            this.mmapMgr = wrapWithAmem(new MmapMalloc(new File(cfg.homeDir(), "mmap"), false));
+            this.mmapMgrWithCompaction =
+                    wrapWithAmem(new MmapMalloc(new File(cfg.homeDir(), "mmap-with-compaction"), true));
         }
 
         @Override public RecordMap newRecordMap(boolean isForGrowingSurvivor) {
             return isForGrowingSurvivor
-                    ? newRecordMapOffHeap(mmapMalloc, ramMalloc) : newRecordMapOffHeap(ramMalloc, null);
+                    ? newRecordMapOffHeap(mmapMgr, ramMgr) : newRecordMapOffHeap(ramMgr, null);
         }
 
         @Override public RecordMap newTombstoneMap() {
-            return newTombstoneMapOffHeap(ramMalloc);
+            return newTombstoneMapOffHeap(ramMgr);
         }
 
         @Override public TrackerMap newTrackerMap() {
-            return new TrackerMapOffHeap(ramMalloc, mmapMallocWithCompaction);
+            return new TrackerMapOffHeap(ramMgr, mmapMgrWithCompaction.getAllocator());
         }
 
         @Override public SetOfKeyHandle newSetOfKeyHandle() {
-            return new SetOfKeyHandleOffHeap(ramMalloc);
+            return new SetOfKeyHandleOffHeap(ramMgr);
         }
 
         @Override public void dispose() {
-            mmapMallocWithCompaction.dispose();
-            mmapMalloc.dispose();
+            mmapMgrWithCompaction.dispose();
+            mmapMgr.dispose();
+        }
+
+        private static MemoryManager wrapWithAmem(MemoryAllocator malloc) {
+            return new MemoryManagerBean(malloc, AMEM);
         }
     }
 }

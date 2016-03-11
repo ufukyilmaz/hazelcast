@@ -126,8 +126,9 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
                                               LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
         pageAllocations = new LongHashSet(INITIAL_CAPACITY, LOAD_FACTOR, systemAllocator, NULL_ADDRESS);
-        sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
-        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, systemAllocator);
+        final MemoryManagerBean systemMemMgr = new MemoryManagerBean(systemAllocator, AMEM);
+        sortedPageAllocations = new LongArray(systemMemMgr, INITIAL_CAPACITY);
+        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, systemMemMgr);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }

@@ -42,12 +42,12 @@ public class HotRestartStoreExerciser {
                 .setMetricsRegistry(metricsRegistry(loggingService));
         final int offHeapMb = profile.offHeapMb;
         if (offHeapMb > 0) {
-            final PoolingMemoryManager mem = new PoolingMemoryManager(
+            final PoolingMemoryManager malloc = new PoolingMemoryManager(
                     new MemorySize(offHeapMb, MEGABYTES), DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE,
                     profile.offHeapMetadataPercentage);
-            mem.registerThread(currentThread());
-            this.malloc = mem;
-            cfg.setMalloc(mem.getSystemAllocator());
+            malloc.registerThread(currentThread());
+            this.malloc = malloc;
+            cfg.setMalloc(malloc.getSystemAllocator());
         } else {
             this.malloc = null;
         }

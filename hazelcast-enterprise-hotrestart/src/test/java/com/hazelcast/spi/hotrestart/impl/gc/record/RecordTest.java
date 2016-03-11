@@ -35,7 +35,7 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     @Before public void setup() {
         if (offHeap) {
-            containerMap = newRecordMapOffHeap(malloc, malloc);
+            containerMap = newRecordMapOffHeap(memMgr, memMgr);
             containerMap.putIfAbsent(keyPrefix, keyHandle, seq, size, false, garbageCount);
             containerMap.putIfAbsent(tombstoneKeyPrefix, tombstoneKeyHandle,
                     tombstoneSeq, tombstoneSize, true, 0);

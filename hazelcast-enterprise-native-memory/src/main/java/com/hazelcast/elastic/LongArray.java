@@ -1,9 +1,10 @@
 package com.hazelcast.elastic;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.Disposable;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
@@ -13,15 +14,17 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 public final class LongArray implements Disposable {
 
     private final MemoryAllocator malloc;
+    private final MemoryAccessor mem;
     private long baseAddress;
     private long length;
 
     /**
-     * @param malloc memory allocator
+     * @param memMgr memory allocator
      * @param length length of array
      */
-    public LongArray(MemoryAllocator malloc, long length) {
-        this.malloc = malloc;
+    public LongArray(MemoryManager memMgr, long length) {
+        this.malloc = memMgr.getAllocator();
+        this.mem = memMgr.getAccessor();
         this.length = length;
         baseAddress = length > 0 ? malloc.allocate(lengthInBytes(length)) : NULL_ADDRESS;
     }
@@ -32,7 +35,7 @@ public final class LongArray implements Disposable {
      * @return array element at specified index.
      */
     public long get(long index) {
-        return AMEM.getLong(addressOfElement(index));
+        return mem.getLong(addressOfElement(index));
     }
 
     /**
@@ -41,7 +44,7 @@ public final class LongArray implements Disposable {
      * @param value value
      */
     public void set(long index, long value) {
-        AMEM.putLong(addressOfElement(index), value);
+        mem.putLong(addressOfElement(index), value);
     }
 
     /**

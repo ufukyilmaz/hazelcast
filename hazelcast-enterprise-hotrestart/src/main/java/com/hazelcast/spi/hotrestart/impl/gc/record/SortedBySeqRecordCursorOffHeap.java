@@ -1,16 +1,17 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
-import static com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl.addrOfValueAt;
-import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key1At;
-import static com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl.key2At;
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfKey1At;
+import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfKey2At;
+import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfValueAt;
 import static java.lang.Math.min;
 
 /**
@@ -20,11 +21,13 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
     private final LongArray seqsAndSlotBases;
     private final int size;
     private final RecordOffHeap r = new RecordOffHeap();
+    private final MemoryAccessor mem;
     private int position = -1;
 
-    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, int size, MemoryAllocator malloc, MutatorCatchup mc) {
+    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, int size, MemoryManager memMgr, MutatorCatchup mc) {
         this.size = size;
-        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, malloc, mc);
+        this.mem = memMgr.getAccessor();
+        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, memMgr, mc);
     }
 
     @Override public boolean advance() {
@@ -49,12 +52,12 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
 
     @Override public long address() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
-        return key1At(seqsAndSlotBases.get(position));
+        return mem.getLong(addrOfKey1At(seqsAndSlotBases.get(position)));
     }
 
     @Override public long sequenceId() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
-        return key2At(seqsAndSlotBases.get(position));
+        return mem.getLong(addrOfKey2At(seqsAndSlotBases.get(position)));
     }
 
     @Override public void dispose() {
@@ -62,10 +65,10 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
     }
 
     private static LongArray sortedByRecordSeq(
-            LongArray seqsAndSlotBases, int size, MemoryAllocator malloc, MutatorCatchup mc
+            LongArray seqsAndSlotBases, int size, MemoryManager memMgr, MutatorCatchup mc
     ) {
         LongArray from = seqsAndSlotBases;
-        LongArray to = new LongArray(malloc, size);
+        LongArray to = new LongArray(memMgr, size);
         mc.catchupNow();
         for (int width = 2; width < size; width *= 2) {
             for (int i = 0; i < size; i += 2 * width) {

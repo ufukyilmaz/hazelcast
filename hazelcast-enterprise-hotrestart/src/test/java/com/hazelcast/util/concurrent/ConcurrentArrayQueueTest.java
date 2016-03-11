@@ -1,9 +1,8 @@
 package com.hazelcast.util.concurrent;
 
-import com.hazelcast.test.HazelcastTestRunner;
+import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.RunParallel;
 import com.hazelcast.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,8 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunParallel
-@RunWith(HazelcastTestRunner.class)
+@RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ConcurrentArrayQueueTest {
     @Parameters(name = "manyToOne == {0}")

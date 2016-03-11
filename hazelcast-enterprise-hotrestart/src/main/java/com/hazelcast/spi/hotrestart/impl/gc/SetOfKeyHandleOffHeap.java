@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyNoValue;
+import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
@@ -11,20 +11,21 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
-    private final HashSlotArrayTwinKey set;
+    private final HashSlotArrayTwinKey hsa;
 
-    SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayTwinKeyNoValue(0L, malloc);
+    SetOfKeyHandleOffHeap(MemoryManager memMgr) {
+        this.hsa = new HashSlotArrayTwinKeyNoValue(0L, memMgr);
+        hsa.gotoNew();
     }
 
     @Override public void add(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.ensure(ohk.address(), ohk.sequenceId());
+        hsa.ensure(ohk.address(), ohk.sequenceId());
     }
 
     @Override public void remove(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.remove(ohk.address(), ohk.sequenceId());
+        hsa.remove(ohk.address(), ohk.sequenceId());
     }
 
     @Override public KhCursor cursor() {
@@ -32,11 +33,11 @@ final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     }
 
     @Override public void dispose() {
-        set.dispose();
+        hsa.dispose();
     }
 
     private final class Cursor implements KhCursor, KeyHandleOffHeap {
-        private final HashSlotCursorTwinKey c = set.cursor();
+        private final HashSlotCursorTwinKey c = hsa.cursor();
 
         @Override public boolean advance() {
             return c.advance();

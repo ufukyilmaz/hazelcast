@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryAllocator;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -24,14 +24,14 @@ public final class EnterpriseSerializationUtil {
     }
 
     public static Data readDataInternal(
-            EnterpriseObjectDataInput in, DataType type, HazelcastMemoryManager memoryManager,
+            EnterpriseObjectDataInput in, DataType type, MemoryAllocator malloc,
             boolean readToHeapOnOOME)
     throws IOException {
         if (type == DataType.HEAP) {
             return in.readData();
         }
 
-        if (memoryManager == null) {
+        if (malloc == null) {
             throw new HazelcastSerializationException("MemoryManager is required!");
         }
 
@@ -43,17 +43,17 @@ public final class EnterpriseSerializationUtil {
             if (size == 0) {
                 return new HeapData(null);
             }
-            return readNativeData(in, memoryManager, size, readToHeapOnOOME);
+            return readNativeData(in, malloc, size, readToHeapOnOOME);
         } catch (Throwable e) {
             throw handleException(e);
         }
     }
 
-    public static Data readNativeData(EnterpriseObjectDataInput in, HazelcastMemoryManager memoryManager, int size,
+    public static Data readNativeData(EnterpriseObjectDataInput in, MemoryAllocator malloc, int size,
                                       boolean readToHeapOnOOME) throws IOException {
         try {
             int memSize = size + NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
-            NativeMemoryData data = allocateNativeData(in, memoryManager, memSize, size, !readToHeapOnOOME);
+            NativeMemoryData data = allocateNativeData(in, malloc, memSize, size, !readToHeapOnOOME);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
 
             if (in instanceof EnterpriseBufferObjectDataInput) {
@@ -78,14 +78,14 @@ public final class EnterpriseSerializationUtil {
 
     @SuppressFBWarnings("SR_NOT_CHECKED")
     public static NativeMemoryData allocateNativeData(
-            EnterpriseObjectDataInput in, HazelcastMemoryManager memoryManager, int memSize, int size,
+            EnterpriseObjectDataInput in, MemoryAllocator malloc, int memSize, int size,
             boolean skipBytesOnOome)
     throws IOException {
-        if (memoryManager == null) {
+        if (malloc == null) {
             throw new HazelcastSerializationException("MemoryManager is required!");
         }
         try {
-            long address = memoryManager.allocate(memSize);
+            long address = malloc.allocate(memSize);
             return new NativeMemoryData(address, memSize);
         } catch (NativeOutOfMemoryError e) {
             if (skipBytesOnOome) {

@@ -1,14 +1,15 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 
 /**
@@ -20,12 +21,14 @@ final class RecordMapOffHeap implements RecordMap {
     private HashSlotArrayTwinKey records;
     private final RecordOffHeap rec = new RecordOffHeap();
 
-    public RecordMapOffHeap(MemoryAllocator malloc, int initialCapacity) {
-        this.records = new HashSlotArrayTwinKeyImpl(0L, malloc, RecordOffHeap.SIZE, initialCapacity);
+    public RecordMapOffHeap(MemoryManager memMgr, int initialCapacity) {
+        this.records = new HashSlotArrayTwinKeyImpl(
+                0L, memMgr, RecordOffHeap.SIZE, initialCapacity, DEFAULT_LOAD_FACTOR);
+        records.gotoNew();
     }
 
-    RecordMapOffHeap(MemoryAllocator malloc, RecordMap gcRecordMap) {
-        this(malloc, gcRecordMap.size());
+    RecordMapOffHeap(MemoryManager memMgr, RecordMap gcRecordMap) {
+        this(memMgr, gcRecordMap.size());
         for (Cursor cur = gcRecordMap.cursor(); cur.advance();) {
             final Record r = cur.asRecord();
             if (!r.isAlive() && r.garbageCount() == 0) {
@@ -39,8 +42,8 @@ final class RecordMapOffHeap implements RecordMap {
         }
     }
 
-    public RecordMapOffHeap(MemoryAllocator malloc) {
-        this(malloc, DEFAULT_INITIAL_CAPACITY);
+    public RecordMapOffHeap(MemoryManager memMgr) {
+        this(memMgr, DEFAULT_INITIAL_CAPACITY);
     }
 
     @Override

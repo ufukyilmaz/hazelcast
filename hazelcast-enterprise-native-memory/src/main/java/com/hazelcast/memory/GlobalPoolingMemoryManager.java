@@ -2,7 +2,6 @@ package com.hazelcast.memory;
 
 import com.hazelcast.elastic.queue.LongLinkedBlockingQueue;
 import com.hazelcast.elastic.queue.LongQueue;
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
@@ -21,7 +20,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 
 @SuppressWarnings("checkstyle:methodcount")
 final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
@@ -592,16 +590,6 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     @Override
     protected Counter newCounter() {
         return MwCounter.newMwCounter();
-    }
-
-    @Override
-    public MemoryAllocator getAllocator() {
-        return this;
-    }
-
-    @Override
-    public MemoryAccessor getAccessor() {
-        return MEM;
     }
 
     @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF" })

@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
+import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
@@ -18,8 +18,9 @@ final class TrackerMapOffHeap extends TrackerMapBase {
     private HashSlotArrayTwinKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
-    TrackerMapOffHeap(MemoryAllocator malloc) {
-        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, malloc, TrackerOffHeap.SIZE);
+    TrackerMapOffHeap(MemoryManager memMgr) {
+        this.trackers = new HashSlotArrayTwinKeyImpl(Long.MIN_VALUE, memMgr, TrackerOffHeap.SIZE);
+        trackers.gotoNew();
     }
 
     @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {

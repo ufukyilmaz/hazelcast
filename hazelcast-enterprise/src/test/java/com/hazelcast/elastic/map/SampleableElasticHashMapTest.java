@@ -57,7 +57,7 @@ public class SampleableElasticHashMapTest extends HazelcastTestSupport {
             map.dispose();
         }
         if (serializationService != null) {
-            serializationService.destroy();
+            serializationService.dispose();
         }
     }
 

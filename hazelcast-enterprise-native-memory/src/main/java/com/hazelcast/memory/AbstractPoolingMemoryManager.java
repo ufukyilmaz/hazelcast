@@ -1,12 +1,10 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.util.QuickMath.log2;
 
 @SuppressWarnings("checkstyle:methodcount")
@@ -410,16 +408,6 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
     protected abstract int getOffset(long address);
 
     @Override
-    public MemoryAllocator getAllocator() {
-        return this;
-    }
-
-    @Override
-    public MemoryAccessor getAccessor() {
-        return MEM;
-    }
-
-    @Override
     public final MemoryStats getMemoryStats() {
         return memoryStats;
     }
@@ -536,6 +524,10 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
                 throw new NativeOutOfMemoryError("Not enough contiguous memory available!"
                         + "Cannot acquire " + MemorySize.toPrettyString(size) + '!');
             }
+        }
+
+        @Override
+        public void dispose() {
         }
     }
 }

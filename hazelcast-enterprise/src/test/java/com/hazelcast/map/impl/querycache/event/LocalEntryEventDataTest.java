@@ -35,7 +35,7 @@ public class LocalEntryEventDataTest extends HazelcastTestSupport {
 
     @After
     public void after() {
-        serializationService.destroy();
+        serializationService.dispose();
     }
 
     @Test

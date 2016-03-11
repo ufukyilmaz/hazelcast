@@ -1,7 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_BASEDIR;
@@ -228,26 +230,27 @@ public abstract class GcHelper implements Disposable {
     /** The GC helper specialization for off-heap Hot Restart store */
     public static class OffHeap extends GcHelper {
 
-        private final MemoryAllocator malloc;
+        private final MemoryManager memMgr;
+
         public OffHeap(HotRestartStoreConfig cfg) {
             super(cfg);
-            this.malloc = cfg.malloc();
+            this.memMgr = new MemoryManagerBean(cfg.malloc(), AMEM);
         }
 
         @Override public RecordMap newRecordMap() {
-            return new RecordMapOffHeap(malloc);
+            return new RecordMapOffHeap(memMgr);
         }
 
         @Override RecordMap toPlainRecordMap(RecordMap gcRecordMap) {
-            return new RecordMapOffHeap(malloc, gcRecordMap);
+            return new RecordMapOffHeap(memMgr, gcRecordMap);
         }
 
         @Override public TrackerMap newTrackerMap() {
-            return new TrackerMapOffHeap(malloc);
+            return new TrackerMapOffHeap(memMgr);
         }
 
         @Override public SetOfKeyHandle newSetOfKeyHandle() {
-            return new SetOfKeyHandleOffHeap(malloc);
+            return new SetOfKeyHandleOffHeap(memMgr);
         }
     }
 

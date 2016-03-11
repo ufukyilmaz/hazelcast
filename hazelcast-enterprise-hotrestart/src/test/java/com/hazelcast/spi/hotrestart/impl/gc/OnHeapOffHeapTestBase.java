@@ -1,6 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -13,6 +15,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Collection;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
 import static java.util.Arrays.asList;
 
@@ -31,16 +34,16 @@ public class OnHeapOffHeapTestBase {
     final int tombstoneKeyPrefix = keyPrefix + 1;
     KeyHandle tombstoneKeyHandle;
 
-    HazelcastMemoryManager malloc;
+    MemoryManager memMgr;
 
     @Before public void generalSetup() {
-        malloc = new StandardMemoryManager(new MemorySize(32, KILOBYTES));
+        memMgr = new MemoryManagerBean(new StandardMemoryManager(new MemorySize(32, KILOBYTES)), AMEM);
         keyHandle = keyHandle(keyPrefix);
         tombstoneKeyHandle = keyHandle(tombstoneKeyPrefix);
     }
 
     @After public void destroy() {
-        malloc.dispose();
+        memMgr.dispose();
     }
 
     KeyHandle keyHandle(int mockData) {

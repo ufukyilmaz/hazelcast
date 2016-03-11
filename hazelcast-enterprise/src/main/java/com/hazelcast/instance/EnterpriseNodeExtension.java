@@ -198,6 +198,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                                 partitionCount));
             }
         }
+
+        initWanConsumers();
+    }
+
+    private void initWanConsumers() {
+        WanReplicationService wanReplicationService = node.nodeEngine.getWanReplicationService();
+        if (wanReplicationService != null && wanReplicationService instanceof EnterpriseWanReplicationService) {
+            ((EnterpriseWanReplicationService) wanReplicationService).initializeCustomConsumers();
+        }
     }
 
     @Override

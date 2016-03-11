@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.replication;
 
-import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
@@ -21,18 +22,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.BATCH_SIZE;
+import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.SNAPSHOT_ENABLED;
+import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
+
 /**
  * Wan replication publisher that sends events in batches.
  * <p>
  * Basically, it either publishes events either when a pre-defined
- * (see {@link WanTargetClusterConfig#batchSize}) number of events are enqueued
- * or enqueued events are waited enough (see {@link WanTargetClusterConfig#batchMaxDelayMillis}).
+ * (see {@link }) number of events are enqueued
+ * or enqueued events are waited enough (see {@link }).
  * </p>
  */
 public class WanBatchReplication
         extends AbstractWanReplication
         implements Runnable {
 
+    private static final int DEFAULT_BATCH_SIZE = 500;
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 50;
 
@@ -42,20 +48,31 @@ public class WanBatchReplication
     private volatile StripedExecutor executor;
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
+    private boolean snapshotEnabled;
+
+
     @Override
-    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig,
-                     boolean snapshotEnabled) {
-        super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
-        targets.addAll(targetClusterConfig.getEndpoints());
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig) {
+        super.init(node, wanReplicationConfig, wanPublisherConfig);
+        Map<String, Comparable> props = wanPublisherConfig.getProperties();
+        targets.addAll(endpointList);
+        snapshotEnabled = getProperty(SNAPSHOT_ENABLED, props, false);
+
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
+    @Override
     public void shutdown() {
         super.shutdown();
         StripedExecutor ex = executor;
         if (ex != null) {
             ex.shutdown();
         }
+    }
+
+    @Override
+    public int getStagingQueueSize() {
+        return getProperty(BATCH_SIZE, publisherConfig.getProperties(), DEFAULT_BATCH_SIZE);
     }
 
     public void run() {
@@ -205,5 +222,4 @@ public class WanBatchReplication
         }
 
     }
-
 }

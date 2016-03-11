@@ -52,7 +52,9 @@ public class WanConnectionManager {
     public void init(String groupName, String password, List<String> targets) {
         this.groupName = groupName;
         this.password = password;
-        targetAddressList.addAll(targets);
+        for (String target : targets) {
+            targetAddressList.add(target.trim());
+        }
         node.nodeEngine.getExecutionService().scheduleWithRepetition(new FailureMonitor(), FAILURE_MONITOR_START_DELAY,
                 FAILURE_MONITOR_PERIOD, TimeUnit.SECONDS);
     }

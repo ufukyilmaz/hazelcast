@@ -5,9 +5,10 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanAcknowledgeType;
-import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.instance.HazelcastInstanceManager;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.TestUtil;
@@ -18,8 +19,6 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -104,23 +103,26 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
     }
 
 
-    protected List getClusterEndPoints(Config config, int count) {
-        List ends = new ArrayList<String>();
+    protected String getClusterEndPoints(Config config, int count) {
+        StringBuilder ends = new StringBuilder();
 
         int port = config.getNetworkConfig().getPort();
 
         for (int i = 0; i < count; i++) {
-            ends.add(new String("127.0.0.1:" + port++));
+            ends.append(new String("127.0.0.1:" + port++ + ","));
         }
-        return ends;
+        return ends.toString();
     }
 
-    protected WanTargetClusterConfig targetCluster(Config config, int count) {
-        WanTargetClusterConfig target = new WanTargetClusterConfig();
+    protected WanPublisherConfig targetCluster(Config config, int count) {
+        WanPublisherConfig target = new WanPublisherConfig();
         target.setGroupName(config.getGroupConfig().getName());
-        target.setReplicationImpl(getReplicationImpl());
-        target.setEndpoints(getClusterEndPoints(config, count));
-        target.setAcknowledgeType(WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
+        target.setClassName(getReplicationImpl());
+        Map<String, Comparable> props = target.getProperties();
+        props.put(WanReplicationProperties.GROUP_PASSWORD.key(), config.getGroupConfig().getPassword());
+        props.put(WanReplicationProperties.ENDPOINTS.key(), (getClusterEndPoints(config, count)));
+        props.put(WanReplicationProperties.ACK_TYPE.key(), WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE);
+        props.put(WanReplicationProperties.SNAPSHOT_ENABLED.key(), isSnapshotEnabled());
         return target;
     }
 

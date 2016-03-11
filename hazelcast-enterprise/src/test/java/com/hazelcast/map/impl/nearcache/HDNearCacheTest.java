@@ -31,13 +31,13 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.HazelcastTestRunner;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.RunParallel;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
@@ -46,8 +46,8 @@ import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static junit.framework.TestCase.assertTrue;
 
-@RunParallel
-@RunWith(HazelcastTestRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDNearCacheTest extends NearCacheTest {
 

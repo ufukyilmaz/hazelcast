@@ -2,10 +2,9 @@ package com.hazelcast.map.hotrestart;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.IMap;
-import com.hazelcast.test.HazelcastTestRunner;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.RunParallel;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,8 +19,8 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-@RunParallel
-@RunWith(HazelcastTestRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapHotRestartTest extends AbstractMapHotRestartTest {
 

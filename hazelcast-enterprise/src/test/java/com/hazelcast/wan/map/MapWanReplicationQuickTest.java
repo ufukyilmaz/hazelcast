@@ -5,14 +5,13 @@ import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.enterprise.EnterpriseParameterizedTestRunner;
+import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.RunParallel;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +25,8 @@ import java.util.Collection;
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
-@RunParallel
-@RunWith(EnterpriseParameterizedTestRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
 

@@ -1,13 +1,12 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
+import com.hazelcast.spi.impl.memory.MemoryManagerBean;
+import com.hazelcast.spi.memory.MemoryManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runners.Parameterized.Parameter;
@@ -15,8 +14,8 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Collection;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryUnit.KILOBYTES;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static java.util.Arrays.asList;
 
 public class OnHeapOffHeapTestBase {

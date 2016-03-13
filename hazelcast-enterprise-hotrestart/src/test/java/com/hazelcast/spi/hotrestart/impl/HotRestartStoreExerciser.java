@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.logging.LoggingService;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;

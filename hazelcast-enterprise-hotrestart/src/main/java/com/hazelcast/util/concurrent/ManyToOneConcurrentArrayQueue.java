@@ -20,7 +20,7 @@ import com.hazelcast.util.function.Consumer;
 
 import java.util.Collection;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 /**
  * Many producer to one consumer concurrent queue that is array backed. The algorithm is a variation of Fast Flow

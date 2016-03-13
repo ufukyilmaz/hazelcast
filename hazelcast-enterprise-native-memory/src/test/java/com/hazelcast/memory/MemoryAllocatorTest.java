@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -7,7 +8,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.MEM;
 import static org.junit.Assert.assertEquals;
 
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;

@@ -1,7 +1,8 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.spi.impl.memory.LibMalloc;
+import com.hazelcast.spi.impl.memory.UnsafeMalloc;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;

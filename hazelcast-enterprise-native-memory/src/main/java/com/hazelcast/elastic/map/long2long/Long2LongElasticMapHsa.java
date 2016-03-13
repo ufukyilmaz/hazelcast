@@ -1,20 +1,20 @@
 package com.hazelcast.elastic.map.long2long;
 
-import com.hazelcast.spi.hashslot.HashSlotArray;
-import com.hazelcast.spi.hashslot.HashSlotArrayImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursor;
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArray8byteKey;
+import com.hazelcast.spi.impl.hashslot.HashSlotArray8byteKeyImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursor8byteKey;
+import com.hazelcast.spi.memory.MemoryAccessor;
+import com.hazelcast.spi.memory.MemoryManager;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
- * a {@link Long2LongElasticMap} implemented in terms of a {@link HashSlotArray}.
+ * a {@link Long2LongElasticMap} implemented in terms of a {@link HashSlotArray8byteKey}.
  */
 public class Long2LongElasticMapHsa implements Long2LongElasticMap {
 
-    private final HashSlotArray hsa;
+    private final HashSlotArray8byteKey hsa;
     private final long nullValue;
     private MemoryAccessor mem;
 
@@ -24,7 +24,7 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
      *               to return an accessor that only supports aligned memory access.
      */
     public Long2LongElasticMapHsa(long nullValue, MemoryManager memMgr) {
-        this.hsa = new HashSlotArrayImpl(nullValue, memMgr, LONG_SIZE_IN_BYTES);
+        this.hsa = new HashSlotArray8byteKeyImpl(nullValue, memMgr, LONG_SIZE_IN_BYTES);
         hsa.gotoNew();
         this.mem = memMgr.getAccessor();
         this.nullValue = nullValue;
@@ -143,9 +143,9 @@ public class Long2LongElasticMapHsa implements Long2LongElasticMap {
 
     private final class Cursor implements LongLongCursor {
 
-        private final HashSlotCursor cursor;
+        private final HashSlotCursor8byteKey cursor;
 
-        Cursor(HashSlotArray hsa) {
+        Cursor(HashSlotArray8byteKey hsa) {
             this.cursor = hsa.cursor();
         }
 

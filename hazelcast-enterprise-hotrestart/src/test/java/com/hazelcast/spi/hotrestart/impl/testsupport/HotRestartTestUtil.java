@@ -6,7 +6,7 @@ import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;

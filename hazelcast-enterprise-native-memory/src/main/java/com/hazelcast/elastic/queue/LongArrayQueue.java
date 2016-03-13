@@ -1,10 +1,10 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAccessor;
+import com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.spi.memory.GlobalMemoryAccessorType;
+import com.hazelcast.spi.memory.MemoryAllocator;
 
 import java.util.NoSuchElementException;
 

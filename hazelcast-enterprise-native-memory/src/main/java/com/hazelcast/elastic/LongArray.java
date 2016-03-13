@@ -1,9 +1,9 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**

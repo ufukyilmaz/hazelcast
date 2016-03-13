@@ -2,8 +2,8 @@ package com.hazelcast.cache.recordstore;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.spi.impl.memory.LibMalloc;
+import com.hazelcast.spi.impl.memory.UnsafeMalloc;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;

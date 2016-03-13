@@ -1,9 +1,10 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.GlobalMemoryAccessor;
+import com.hazelcast.spi.memory.GlobalMemoryAccessor;
+import com.hazelcast.spi.memory.MemoryAllocator;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
-import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.spi.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.nio.Bits.CHAR_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.DOUBLE_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.FLOAT_SIZE_IN_BYTES;

@@ -1,14 +1,14 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 /** Implementation of {@link LongBlockingQueue} with a linked list. */
 public final class LongLinkedBlockingQueue implements LongBlockingQueue {

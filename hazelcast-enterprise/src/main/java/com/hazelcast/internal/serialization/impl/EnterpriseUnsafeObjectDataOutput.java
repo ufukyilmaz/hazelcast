@@ -23,7 +23,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.spi.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 final class EnterpriseUnsafeObjectDataOutput extends UnsafeObjectDataOutput
         implements EnterpriseBufferObjectDataOutput {

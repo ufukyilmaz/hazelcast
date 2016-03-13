@@ -1,6 +1,6 @@
 package com.hazelcast.internal.memory;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.nio.serialization.Data;

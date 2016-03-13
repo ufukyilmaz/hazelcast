@@ -25,7 +25,7 @@ import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor HiDensityRecordProcessor} for hi-density cache implementation.

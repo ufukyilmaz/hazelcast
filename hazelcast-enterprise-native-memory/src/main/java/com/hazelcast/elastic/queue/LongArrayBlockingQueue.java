@@ -1,24 +1,18 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+
 
 /** Implementation of {@link LongBlockingQueue} with an off-heap array. */
 public final class LongArrayBlockingQueue implements LongBlockingQueue {
-
-    // We are using `STANDARD` memory accessor because we internally guarantee that
-    // every memory access is aligned.
-    private static final MemoryAccessor MEMORY_ACCESSOR =
-            GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
 
     private static final long ENTRY_SIZE = 8L;
 
@@ -47,14 +41,14 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        return MEMORY_ACCESSOR.getLong(address + (index * ENTRY_SIZE));
+        return AMEM.getLong(address + (index * ENTRY_SIZE));
     }
 
     private void set(int index, long value) {
         if (index >= capacity || index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
-        MEMORY_ACCESSOR.putLong(address + (index * ENTRY_SIZE), value);
+        AMEM.putLong(address + (index * ENTRY_SIZE), value);
     }
 
     @Override public boolean offer(long value) {
@@ -274,7 +268,7 @@ public final class LongArrayBlockingQueue implements LongBlockingQueue {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
-            MEMORY_ACCESSOR.setMemory(address, capacity * ENTRY_SIZE, (byte) 0);
+            AMEM.setMemory(address, capacity * ENTRY_SIZE, (byte) 0);
             add = 0;
             remove = 0;
             size = 0;

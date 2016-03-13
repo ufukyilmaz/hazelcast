@@ -1,15 +1,15 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.spi.memory.MemoryManager;
+import com.hazelcast.spi.hashslot.HashSlotArray16byteKey;
+import com.hazelcast.spi.impl.hashslot.HashSlotArray16byteKeyImpl;
+import com.hazelcast.spi.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 
 /**
@@ -18,11 +18,11 @@ import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 final class RecordMapOffHeap implements RecordMap {
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
 
-    private HashSlotArrayTwinKey records;
+    private HashSlotArray16byteKey records;
     private final RecordOffHeap rec = new RecordOffHeap();
 
     public RecordMapOffHeap(MemoryManager memMgr, int initialCapacity) {
-        this.records = new HashSlotArrayTwinKeyImpl(
+        this.records = new HashSlotArray16byteKeyImpl(
                 0L, memMgr, RecordOffHeap.SIZE, initialCapacity, DEFAULT_LOAD_FACTOR);
         records.gotoNew();
     }
@@ -85,7 +85,7 @@ final class RecordMapOffHeap implements RecordMap {
     }
 
     private final class CursorOffHeap implements Cursor {
-        private final HashSlotCursorTwinKey c = records.cursor();
+        private final HashSlotCursor16byteKey c = records.cursor();
         private final RecordOffHeap r = new RecordOffHeap();
 
         @Override public boolean advance() {

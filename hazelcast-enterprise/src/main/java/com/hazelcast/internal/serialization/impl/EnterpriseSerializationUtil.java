@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseObjectDataInput;
@@ -11,7 +11,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
-import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.spi.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
 import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 

@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * Flyweight object around a pointer to a native-memory record structure.

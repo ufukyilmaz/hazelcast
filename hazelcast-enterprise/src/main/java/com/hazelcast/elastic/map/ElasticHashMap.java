@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.spi.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -9,8 +9,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_CAPACITY;
-import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
  * @param <K> key type

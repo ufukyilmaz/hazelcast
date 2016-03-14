@@ -1,10 +1,10 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.Data;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 

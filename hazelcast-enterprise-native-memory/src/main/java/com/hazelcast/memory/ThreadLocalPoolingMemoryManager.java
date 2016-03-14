@@ -13,6 +13,7 @@ import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.Bits;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 

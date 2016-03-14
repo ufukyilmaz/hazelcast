@@ -1,12 +1,12 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 
 import java.nio.ByteBuffer;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class ValueBlockAccessor extends MemoryBlock {
     public static final int HEADER_SIZE = 4;

@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyNoValue;
-import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.util.hashslot.HashSlotArray16byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyNoValue;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
@@ -11,10 +11,10 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
-    private final HashSlotArrayTwinKey hsa;
+    private final HashSlotArray16byteKey hsa;
 
     SetOfKeyHandleOffHeap(MemoryManager memMgr) {
-        this.hsa = new HashSlotArrayTwinKeyNoValue(0L, memMgr);
+        this.hsa = new HashSlotArray16byteKeyNoValue(0L, memMgr);
         hsa.gotoNew();
     }
 
@@ -37,7 +37,7 @@ final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     }
 
     private final class Cursor implements KhCursor, KeyHandleOffHeap {
-        private final HashSlotCursorTwinKey c = hsa.cursor();
+        private final HashSlotCursor16byteKey c = hsa.cursor();
 
         @Override public boolean advance() {
             return c.advance();

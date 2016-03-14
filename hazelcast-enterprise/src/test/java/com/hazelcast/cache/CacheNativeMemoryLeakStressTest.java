@@ -19,7 +19,6 @@ import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;

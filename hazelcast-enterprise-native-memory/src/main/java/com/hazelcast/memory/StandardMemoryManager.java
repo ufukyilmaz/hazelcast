@@ -7,6 +7,7 @@ import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;

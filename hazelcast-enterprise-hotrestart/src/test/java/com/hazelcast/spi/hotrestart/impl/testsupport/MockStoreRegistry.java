@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;

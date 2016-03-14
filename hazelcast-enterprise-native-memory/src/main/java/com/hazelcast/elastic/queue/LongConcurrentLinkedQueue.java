@@ -2,7 +2,7 @@ package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
 import com.hazelcast.memory.GarbageCollectable;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Iterator;

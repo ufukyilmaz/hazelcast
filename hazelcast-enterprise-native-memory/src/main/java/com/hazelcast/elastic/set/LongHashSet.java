@@ -9,12 +9,12 @@ import com.hazelcast.util.HashUtil;
 
 import java.util.NoSuchElementException;
 
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
-import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**

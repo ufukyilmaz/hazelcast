@@ -1,14 +1,14 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.internal.util.hashslot.HashSlotArray8byteKey;
-import com.hazelcast.internal.util.hashslot.HashSlotCursor8byteKey;
-import com.hazelcast.spi.hotrestart.RecordDataSink;
-import com.hazelcast.internal.util.hashslot.impl.HashSlotArray8byteKeyImpl;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.util.hashslot.HashSlotArray8byteKey;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor8byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray8byteKeyImpl;
+import com.hazelcast.spi.hotrestart.RecordDataSink;
 
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block

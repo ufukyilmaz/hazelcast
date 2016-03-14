@@ -21,13 +21,13 @@ import com.hazelcast.core.OperationTimeoutException;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.spi.BlockingOperation;
 import com.hazelcast.spi.DefaultObjectNamespace;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.WaitNotifyKey;
-import com.hazelcast.spi.WaitSupport;
 
 public final class HDGetOperation extends HDKeyBasedMapOperation
-        implements IdentifiedDataSerializable, WaitSupport, ReadonlyOperation {
+        implements IdentifiedDataSerializable, BlockingOperation, ReadonlyOperation {
 
     private Data result;
 

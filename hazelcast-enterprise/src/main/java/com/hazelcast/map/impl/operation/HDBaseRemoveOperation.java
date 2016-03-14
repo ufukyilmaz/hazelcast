@@ -16,13 +16,13 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.core.EntryEventType;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 import com.hazelcast.util.Clock;
+
+import static com.hazelcast.core.EntryEventType.REMOVED;
 
 public abstract class HDBaseRemoveOperation extends HDLockAwareOperation implements BackupAwareOperation, MutatingOperation {
 
@@ -49,8 +49,7 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     @Override
     public void afterRun() {
         mapServiceContext.interceptAfterRemove(name, dataValue);
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
-        mapEventPublisher.publishEvent(getCallerAddress(), name, EntryEventType.REMOVED, dataKey, dataOldValue, null);
+        mapEventPublisher.publishEvent(getCallerAddress(), name, REMOVED, dataKey, dataOldValue, null);
         invalidateNearCache(dataKey);
         if (mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent) {
             // todo should evict operation replicated??

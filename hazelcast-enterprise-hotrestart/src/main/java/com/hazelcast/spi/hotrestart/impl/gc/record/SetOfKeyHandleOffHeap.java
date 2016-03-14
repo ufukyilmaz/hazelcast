@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayTwinKeyNoValue;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursorTwinKey;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.util.hashslot.HashSlotArray16byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyNoValue;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
@@ -11,20 +11,21 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
 public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
-    private final HashSlotArrayTwinKey set;
+    private final HashSlotArray16byteKey hsa;
 
-    public SetOfKeyHandleOffHeap(MemoryAllocator malloc) {
-        this.set = new HashSlotArrayTwinKeyNoValue(0L, malloc);
+    public SetOfKeyHandleOffHeap(MemoryManager memMgr) {
+        this.hsa = new HashSlotArray16byteKeyNoValue(0L, memMgr);
+        hsa.gotoNew();
     }
 
     @Override public void add(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.ensure(ohk.address(), ohk.sequenceId());
+        hsa.ensure(ohk.address(), ohk.sequenceId());
     }
 
     @Override public void remove(KeyHandle kh) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
-        set.remove(ohk.address(), ohk.sequenceId());
+        hsa.remove(ohk.address(), ohk.sequenceId());
     }
 
     @Override public KhCursor cursor() {
@@ -32,11 +33,11 @@ public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     }
 
     @Override public void dispose() {
-        set.dispose();
+        hsa.dispose();
     }
 
     private final class Cursor implements KhCursor, KeyHandleOffHeap {
-        private final HashSlotCursorTwinKey c = set.cursor();
+        private final HashSlotCursor16byteKey c = hsa.cursor();
 
         @Override public boolean advance() {
             return c.advance();

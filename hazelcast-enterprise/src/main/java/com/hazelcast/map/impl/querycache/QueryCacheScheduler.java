@@ -31,12 +31,7 @@ public interface QueryCacheScheduler {
      * <tt>null</tt> upon completion
      * @throws RejectedExecutionException if the task cannot be scheduled for execution
      */
-    ScheduledFuture<?> scheduleAtFixedRateWithDelaySeconds(Runnable task, long delaySeconds);
-
-    /**
-     * @see java.util.concurrent.ScheduledExecutorService#schedule
-     */
-    ScheduledFuture<?> scheduleWithDelaySeconds(Runnable task, long delaySeconds);
+    ScheduledFuture<?> scheduleWithRepetition(Runnable task, long delaySeconds);
 
     /**
      * Shuts down this scheduler.

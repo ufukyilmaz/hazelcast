@@ -19,13 +19,12 @@ package com.hazelcast.map.impl.eviction;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.eviction.policies.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.recordstore.HDStorageImpl;
 import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.IPartitionService;
+import com.hazelcast.spi.partition.IPartitionService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +93,7 @@ public class HDEvictorImpl extends EvictorImpl {
             return (Iterable<EntryView>) ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(sampleCount);
         }
 
-        return (Iterable<EntryView>) ((HDStorageImpl) storage).getRandomSamples(sampleCount);
+        return (Iterable<EntryView>) storage.getRandomSamples(sampleCount);
     }
 
     private static int calculateRemovalSize(RecordStore recordStore) {

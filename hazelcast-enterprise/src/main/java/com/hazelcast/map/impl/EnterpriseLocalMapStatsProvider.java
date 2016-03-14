@@ -21,10 +21,10 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.map.impl.operation.HDLocalMapStatsOperation;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.Address;
-import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.util.LinkedList;

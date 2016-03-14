@@ -35,7 +35,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
 
     @After
     public void tearDown() {
-        serializationService.destroy();
+        serializationService.dispose();
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.GlobalMemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAllocator;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;

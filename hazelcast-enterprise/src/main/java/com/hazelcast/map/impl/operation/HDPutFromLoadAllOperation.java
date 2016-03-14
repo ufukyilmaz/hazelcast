@@ -19,10 +19,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.impl.EntryViews;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -60,7 +57,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
 
     @Override
     protected void runInternal() {
-        RecordStore recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
         boolean hasInterceptor = mapServiceContext.hasInterceptor(name);
 
         List<Data> keyValueSequence = this.keyValueSequence;
@@ -84,7 +80,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
     }
 
     private void addInvalidation(Data key) {
-        if (!mapContainer.isNearCacheEnabled()) {
+        if (!mapContainer.isInvalidationEnabled()) {
             return;
         }
 
@@ -102,8 +98,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
 
     private void publishEntryEvent(Data key, Object previousValue, Object newValue) {
         final EntryEventType eventType = previousValue == null ? EntryEventType.ADDED : EntryEventType.UPDATED;
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        final MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, key, previousValue, newValue);
     }
 
@@ -112,8 +106,6 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             return;
         }
 
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        MapEventPublisher mapEventPublisher = mapServiceContext.getMapEventPublisher();
         value = mapServiceContext.toData(value);
         EntryView entryView = EntryViews.createSimpleEntryView(key, value, record);
         mapEventPublisher.publishWanReplicationUpdate(name, entryView);

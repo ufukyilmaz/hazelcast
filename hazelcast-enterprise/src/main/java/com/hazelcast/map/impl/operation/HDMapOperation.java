@@ -20,7 +20,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
-import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -51,11 +50,7 @@ public abstract class HDMapOperation extends MapOperation {
 
     protected static final int FORCED_EVICTION_RETRY_COUNT = 5;
 
-    protected transient RecordStore recordStore;
-
     protected transient NativeOutOfMemoryError oome;
-
-    protected transient boolean createRecordStoreOnDemand = true;
 
     public HDMapOperation() {
     }
@@ -66,27 +61,13 @@ public abstract class HDMapOperation extends MapOperation {
 
     @Override
     public void innerBeforeRun() throws Exception {
-        super.innerBeforeRun();
-
         try {
-            ensureInitialized();
-
-            getOrCreateRecordStore();
+            super.innerBeforeRun();
         } catch (Throwable e) {
             disposeDeferredBlocks();
             throw ExceptionUtil.rethrow(e, Exception.class);
         }
     }
-
-    protected void getOrCreateRecordStore() {
-        PartitionContainer partitionContainer = mapServiceContext.getPartitionContainer(getPartitionId());
-        if (createRecordStoreOnDemand) {
-            recordStore = partitionContainer.getRecordStore(name);
-        } else {
-            recordStore = partitionContainer.getExistingRecordStore(name);
-        }
-    }
-
 
     @Override
     public final void run() throws Exception {
@@ -277,17 +258,7 @@ public abstract class HDMapOperation extends MapOperation {
         }
     }
 
-    protected void ensureInitialized() {
-        if (mapService == null
-                || mapServiceContext == null
-                || mapContainer == null) {
-            mapService = getService();
-            mapServiceContext = mapService.getMapServiceContext();
-            mapContainer = mapServiceContext.getMapContainer(name);
-
-        }
-    }
-
+    @Override
     protected final void evict() {
         if (recordStore != null) {
             recordStore.evictEntries();
@@ -301,5 +272,14 @@ public abstract class HDMapOperation extends MapOperation {
 
     public void setThreadId(long threadId) {
         throw new UnsupportedOperationException();
+    }
+
+    protected void ensureInitialized() {
+        if (mapService == null || mapServiceContext == null || mapContainer == null || mapEventPublisher == null) {
+            mapService = getService();
+            mapServiceContext = mapService.getMapServiceContext();
+            mapContainer = mapServiceContext.getMapContainer(name);
+            mapEventPublisher = mapServiceContext.getMapEventPublisher();
+        }
     }
 }

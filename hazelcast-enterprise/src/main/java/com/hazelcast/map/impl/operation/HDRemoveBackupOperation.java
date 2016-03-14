@@ -16,9 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.MapServiceContext;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -55,10 +52,6 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
 
     @Override
     protected void runInternal() {
-        MapService mapService = getService();
-        MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        int partitionId = getPartitionId();
-        RecordStore recordStore = mapServiceContext.getRecordStore(partitionId, name);
         recordStore.removeBackup(dataKey);
         if (unlockKey) {
             recordStore.forceUnlock(dataKey);
@@ -69,8 +62,7 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
     public void afterRun() throws Exception {
         if (!disableWanReplicationEvent
                 && mapContainer.isWanReplicationEnabled()) {
-            mapService.getMapServiceContext()
-                    .getMapEventPublisher().publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
+            mapEventPublisher.publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
         }
         evict();
     }

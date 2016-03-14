@@ -51,8 +51,8 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
         return new NearCacheExecutor() {
 
             @Override
-            public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-                return executionService.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+            public ScheduledFuture<?> scheduleWithRepetition(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+                return executionService.scheduleWithRepetition(command, initialDelay, delay, unit);
             }
         };
     }

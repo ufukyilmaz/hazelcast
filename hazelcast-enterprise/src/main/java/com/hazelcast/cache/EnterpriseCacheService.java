@@ -241,11 +241,11 @@ public class EnterpriseCacheService
     @Override
     protected void destroySegments(String cacheName) {
         OperationService operationService = nodeEngine.getOperationService();
-        List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
+        //List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheName)) {
                 CacheDestroyOperation op = new CacheDestroyOperation(cacheName);
-                ops.add(op);
+                //ops.add(op);
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
                 operationService.executeOperation(op);

@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.elastic.CapacityUtil;
+import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -30,7 +30,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -67,7 +67,7 @@ public class BinaryElasticHashMapTest {
             map.clear();
         }
         map.dispose();
-        serializationService.destroy();
+        serializationService.dispose();
         memoryManager.dispose();
     }
 

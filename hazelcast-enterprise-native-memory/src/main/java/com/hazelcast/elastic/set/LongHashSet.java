@@ -1,20 +1,20 @@
 package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.HashUtil;
 
 import java.util.NoSuchElementException;
 
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_CAPACITY;
-import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.elastic.CapacityUtil.MIN_CAPACITY;
-import static com.hazelcast.elastic.CapacityUtil.nextCapacity;
-import static com.hazelcast.elastic.CapacityUtil.roundCapacity;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**
@@ -67,8 +67,9 @@ public class LongHashSet implements LongSet {
     private int perturbation;
 
     /**
-     * Creates a hash map with the default capacity of {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_CAPACITY},
-     * load factor of {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * Creates a hash map with the default capacity of
+     * {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_CAPACITY},
+     * load factor of {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public LongHashSet(MemoryAllocator malloc, long nullItem) {
         this(DEFAULT_CAPACITY, malloc, nullItem);
@@ -76,7 +77,7 @@ public class LongHashSet implements LongSet {
 
     /**
      * Creates a hash map with the given initial capacity, default load factor of
-     * {@value com.hazelcast.elastic.CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      *  @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
      */

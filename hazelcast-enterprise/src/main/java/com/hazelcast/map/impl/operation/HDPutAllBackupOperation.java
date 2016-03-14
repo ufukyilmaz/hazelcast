@@ -60,7 +60,7 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
             if (wanEnabled) {
                 final Data dataValueAsData = mapServiceContext.toData(entry.getValue());
                 final EntryView entryView = EntryViews.createSimpleEntryView(entry.getKey(), dataValueAsData, record);
-                mapServiceContext.getMapEventPublisher().publishWanReplicationUpdateBackup(name, entryView);
+                mapEventPublisher.publishWanReplicationUpdateBackup(name, entryView);
             }
             evict();
         }

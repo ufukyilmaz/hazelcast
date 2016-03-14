@@ -28,12 +28,11 @@ import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.record.Record;
-import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.partition.IPartitionService;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.impl.MutatingOperation;
+import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.Clock;
 
 import java.util.AbstractMap;
@@ -60,17 +59,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     protected AbstractHDMultipleEntryOperation(String name, EntryBackupProcessor backupProcessor) {
         super(name);
         this.backupProcessor = backupProcessor;
-    }
-
-    @Override
-    public void innerBeforeRun() throws Exception {
-        super.innerBeforeRun();
-        this.recordStore = getRecordStore();
-    }
-
-    protected RecordStore getRecordStore() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
-        return mapServiceContext.getRecordStore(getPartitionId(), name);
     }
 
     @Override
@@ -105,7 +93,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     }
 
     protected LocalMapStatsImpl getLocalMapStats() {
-        final MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         final LocalMapStatsProvider localMapStatsProvider = mapServiceContext.getLocalMapStatsProvider();
         return localMapStatsProvider.getLocalMapStatsImpl(name);
     }
@@ -218,12 +205,12 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
             return;
         }
         if (EntryEventType.REMOVED.equals(eventType)) {
-            mapServiceContext.getMapEventPublisher().publishWanReplicationRemove(name, key, getNow());
+            mapEventPublisher.publishWanReplicationRemove(name, key, getNow());
         } else {
             final Record record = recordStore.getRecord(key);
             if (record != null) {
                 final EntryView entryView = createSimpleEntryView(key, dataValue, record);
-                mapServiceContext.getMapEventPublisher().publishWanReplicationUpdate(name, entryView);
+                mapEventPublisher.publishWanReplicationUpdate(name, entryView);
             }
         }
     }

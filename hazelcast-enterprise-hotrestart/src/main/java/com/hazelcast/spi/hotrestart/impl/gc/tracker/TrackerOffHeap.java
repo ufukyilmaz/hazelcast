@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * Flyweight object around a pointer to a native-memory Tracker structure.

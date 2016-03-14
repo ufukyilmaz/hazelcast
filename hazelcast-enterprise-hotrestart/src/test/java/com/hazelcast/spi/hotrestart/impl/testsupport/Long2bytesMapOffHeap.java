@@ -1,25 +1,29 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.elastic.map.hashslot.HashSlotArray;
-import com.hazelcast.elastic.map.hashslot.HashSlotArrayImpl;
-import com.hazelcast.elastic.map.hashslot.HashSlotCursor;
-import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.util.hashslot.HashSlotArray8byteKey;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor8byteKey;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray8byteKeyImpl;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryManager;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
-    private final HashSlotArray hsa;
+    private final HashSlotArray8byteKey hsa;
     private final ValueBlockAccessor vblockAccessor;
+    private final MemoryAccessor mem;
+    private final MemoryManager memMgr;
     private boolean isDisposed;
 
-    public Long2bytesMapOffHeap(MemoryAllocator malloc) {
-        this.vblockAccessor = new ValueBlockAccessor(malloc);
-        this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, ((HazelcastMemoryManager) malloc).getSystemAllocator(),
-                8, 16*1024);
+    public Long2bytesMapOffHeap(MemoryManager memMgr) {
+        this.memMgr = memMgr;
+        this.mem = memMgr.getAccessor();
+        this.vblockAccessor = new ValueBlockAccessor(memMgr);
+        this.hsa = new HashSlotArray8byteKeyImpl(Long.MIN_VALUE, memMgr, 8, 16 * 1024, DEFAULT_LOAD_FACTOR);
+        hsa.gotoNew();
     }
 
     @Override public void put(long key, byte[] value) {
@@ -30,7 +34,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             hsa.remove(key);
             throw e;
         }
-        AMEM.putLong(vSlotAddr, vblockAccessor.address());
+        mem.putLong(vSlotAddr, vblockAccessor.address());
     }
 
     @Override public void remove(long key) {
@@ -53,7 +57,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public L2bCursor cursor() {
-        return new Cursor(hsa.cursor());
+        return new Cursor(hsa.cursor(), new ValueBlockAccessor(memMgr));
     }
 
     @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
@@ -72,7 +76,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public void clear() {
-        for (HashSlotCursor cursor = hsa.cursor(); cursor.advance();) {
+        for (HashSlotCursor8byteKey cursor = hsa.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }
@@ -104,16 +108,17 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             vblockAccessor.reset(vSlotAddr);
             vblockAccessor.delete();
         }
-        AMEM.putLong(vSlotAddr, NULL_ADDRESS);
+        mem.putLong(vSlotAddr, NULL_ADDRESS);
         return vSlotAddr;
     }
 
     private static final class Cursor implements L2bCursor {
-        private final ValueBlockAccessor vblockAccessor = new ValueBlockAccessor(null);
-        private final HashSlotCursor cursor;
+        private final HashSlotCursor8byteKey cursor;
+        private final ValueBlockAccessor vblockAccessor;
 
-        Cursor(HashSlotCursor wrappedCursor) {
+        Cursor(HashSlotCursor8byteKey wrappedCursor, ValueBlockAccessor vblockAccessor) {
             this.cursor = wrappedCursor;
+            this.vblockAccessor = vblockAccessor;
         }
 
         @Override public boolean advance() {

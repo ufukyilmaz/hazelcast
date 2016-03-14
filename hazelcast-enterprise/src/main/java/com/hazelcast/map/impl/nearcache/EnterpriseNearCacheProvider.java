@@ -49,9 +49,9 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
         this.executor = new NearCacheExecutor() {
 
             @Override
-            public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay,
+            public ScheduledFuture<?> scheduleWithRepetition(Runnable command, long initialDelay,
                                                              long delay, TimeUnit unit) {
-                return mapServiceContext.getNodeEngine().getExecutionService().scheduleWithFixedDelay(command, initialDelay,
+                return mapServiceContext.getNodeEngine().getExecutionService().scheduleWithRepetition(command, initialDelay,
                         delay, unit);
             }
         };

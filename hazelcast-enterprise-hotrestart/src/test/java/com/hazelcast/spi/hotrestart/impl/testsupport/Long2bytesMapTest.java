@@ -1,18 +1,19 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
-import com.hazelcast.test.HazelcastTestRunner;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.test.annotation.RunParallel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -20,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Set;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.KEY_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.MockRecordStoreBase.long2bytes;
@@ -28,8 +30,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunParallel
-@RunWith(HazelcastTestRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class Long2bytesMapTest {
 
@@ -50,8 +52,10 @@ public class Long2bytesMapTest {
 
 
     @Before public void setup() {
-        map = offHeap ? new Long2bytesMapOffHeap(new StandardMemoryManager(new MemorySize(1, MEGABYTES)))
-                      : new Long2bytesMapOnHeap();
+        map = offHeap
+                ? new Long2bytesMapOffHeap(new MemoryManagerBean(new StandardMemoryManager(new MemorySize(1, MEGABYTES)),
+                                                                 AMEM))
+                : new Long2bytesMapOnHeap();
     }
 
     @After public void destroy() {

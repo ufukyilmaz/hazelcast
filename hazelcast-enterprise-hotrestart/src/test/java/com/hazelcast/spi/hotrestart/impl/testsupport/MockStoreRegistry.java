@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -13,15 +13,14 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOffHeapHo
 import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHotRestartStore;
 
 public class MockStoreRegistry implements RamStoreRegistry {
-    private static final long TOMBSTONE_RELEASE_INTERVAL_MILLIS = 10;
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
-    private final MemoryAllocator malloc;
+    private final MemoryManager memMgr;
 
-    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws InterruptedException {
-        this.malloc = malloc;
+    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr) throws InterruptedException {
+        this.memMgr = memMgr;
         cfg.setRamStoreRegistry(this);
-        this.hrStore = malloc != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
+        this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
         hrStore.hotRestart(false);
     }
 
@@ -65,7 +64,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     MockRecordStore getOrCreateRecordStoreForPrefix(long prefix) {
         MockRecordStore ret = recordStores.get(prefix);
         if (ret == null) {
-            ret = malloc != null ? new MockRecordStoreOffHeap(prefix, malloc, hrStore)
+            ret = memMgr != null ? new MockRecordStoreOffHeap(prefix, memMgr, hrStore)
                                  : new MockRecordStoreOnHeap(prefix, hrStore);
             final MockRecordStore existing = recordStores.putIfAbsent(prefix, ret);
             if (existing != null) {

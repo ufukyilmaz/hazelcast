@@ -18,7 +18,7 @@ import static com.hazelcast.elastic.NativeSort.quickSortLong;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_INT_BASE_OFFSET;
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_LONG_BASE_OFFSET;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static org.junit.Assert.assertEquals;

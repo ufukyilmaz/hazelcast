@@ -1,26 +1,31 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.GlobalMemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.internal.memory.MemoryManager;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class ValueBlockAccessor extends MemoryBlock {
     public static final int HEADER_SIZE = 4;
     private final MemoryAllocator malloc;
+    private final MemoryAccessor mem;
     private int valueSize;
 
-    ValueBlockAccessor(MemoryAllocator malloc) {
+    ValueBlockAccessor(MemoryManager memMgr) {
+        super((GlobalMemoryAccessor) memMgr.getAccessor());
         setSize(HEADER_SIZE);
-        this.malloc = malloc;
+        this.malloc = memMgr.getAllocator();
+        this.mem = memMgr.getAccessor();
     }
 
     final void reset(long vSlotAddr) {
         assert vSlotAddr > NULL_ADDRESS : "Attempt to reset to invalid address: " + vSlotAddr;
-        final long address = AMEM.getLong(vSlotAddr);
+        final long address = mem.getLong(vSlotAddr);
         assert address > NULL_ADDRESS : "Read an invalid address from value slot: " + address;
         setAddress(address);
         final int sizeFromHeader = readInt(0);

@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.logging.LoggingService;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
@@ -42,12 +42,12 @@ public class HotRestartStoreExerciser {
                 .setMetricsRegistry(metricsRegistry(loggingService));
         final int offHeapMb = profile.offHeapMb;
         if (offHeapMb > 0) {
-            final PoolingMemoryManager mem = new PoolingMemoryManager(
+            final PoolingMemoryManager malloc = new PoolingMemoryManager(
                     new MemorySize(offHeapMb, MEGABYTES), DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE,
                     profile.offHeapMetadataPercentage);
-            mem.registerThread(currentThread());
-            this.malloc = mem;
-            cfg.setMalloc(mem.getSystemAllocator());
+            malloc.registerThread(currentThread());
+            this.malloc = malloc;
+            cfg.setMalloc(malloc.getSystemAllocator());
         } else {
             this.malloc = null;
         }

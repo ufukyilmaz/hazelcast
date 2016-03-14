@@ -22,6 +22,7 @@ import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
@@ -38,52 +39,44 @@ import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
 
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
-    private final boolean allowSerializeOffHeap;
-
     private final HazelcastMemoryManager memoryManager;
-    private final ThreadLocal<HazelcastMemoryManager> memoryManagerThreadLocal = new ThreadLocal<HazelcastMemoryManager>();
+    private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();
 
     public EnterpriseSerializationServiceV1(
             InputOutputFactory inputOutputFactory, byte version, int portableVersion, ClassLoader classLoader,
             Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
             Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
             PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject,
-            boolean allowSerializeOffHeap) {
+            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
                 enableSharedObject);
 
         this.memoryManager = memoryManager;
-        this.allowSerializeOffHeap = allowSerializeOffHeap;
     }
 
     @Override
-    public HazelcastMemoryManager getMemoryManagerToUse() {
-        HazelcastMemoryManager mm = memoryManagerThreadLocal.get();
-        if (mm != null) {
-            return mm;
-        } else {
-            return memoryManager;
-        }
+    public MemoryAllocator getCurrentMemoryAllocator() {
+        MemoryAllocator malloc = mallocThreadLocal.get();
+        return malloc != null ? malloc : memoryManager;
     }
 
     @Override
-    public Data toData(Object obj, DataType type) {
-        return toDataInternal(obj, type, globalPartitioningStrategy, getMemoryManagerToUse());
+    public <B extends Data> B toData(Object obj, DataType type) {
+        return toDataInternal(obj, type, globalPartitioningStrategy, getCurrentMemoryAllocator());
     }
 
     @Override
-    public Data toNativeData(Object obj, HazelcastMemoryManager memoryManager) {
-        return toDataInternal(obj, DataType.NATIVE, globalPartitioningStrategy, memoryManager);
+    public <B extends Data> B toNativeData(Object obj, MemoryAllocator malloc) {
+        return toDataInternal(obj, DataType.NATIVE, globalPartitioningStrategy, malloc);
     }
 
     @Override
-    public Data toData(Object obj, DataType type, PartitioningStrategy strategy) {
-        return toDataInternal(obj, type, strategy, getMemoryManagerToUse());
+    public <B extends Data> B toData(Object obj, DataType type, PartitioningStrategy strategy) {
+        return toDataInternal(obj, type, strategy, getCurrentMemoryAllocator());
     }
 
-    private Data toDataInternal(Object obj, DataType type, PartitioningStrategy strategy, HazelcastMemoryManager memoryManager) {
+    private <B extends Data> B toDataInternal(Object obj, DataType type, PartitioningStrategy strategy, MemoryAllocator malloc) {
         if (obj == null) {
             return null;
         }
@@ -94,17 +87,18 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             return super.toData(obj, strategy);
         }
         if (type == DataType.NATIVE) {
-            return toNativeDataInternal(obj, strategy, memoryManager);
+            return toNativeDataInternal(obj, strategy, malloc);
         }
         throw new IllegalArgumentException("Unknown data type: " + type);
     }
 
-    private Data toNativeDataInternal(Object obj, PartitioningStrategy strategy, HazelcastMemoryManager memoryManager) {
+    private <B extends Data> B toNativeDataInternal(
+            Object obj, PartitioningStrategy strategy, MemoryAllocator malloc) {
         if (obj == null) {
             return null;
         }
 
-        if (memoryManager == null) {
+        if (malloc == null) {
             throw new IllegalArgumentException("MemoryManager is required!");
         }
 
@@ -121,13 +115,13 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
 
             int size = out.position();
             int memSize = size + NATIVE_MEMORY_DATA_OVERHEAD;
-            long address = memoryManager.allocate(memSize);
+            long address = malloc.allocate(memSize);
             assert address != HazelcastMemoryManager.NULL_ADDRESS : "Illegal memory access: " + address;
 
             NativeMemoryData data = new NativeMemoryData(address, memSize);
             data.writeInt(NativeMemoryData.SIZE_OFFSET, size);
             out.copyToMemoryBlock(data, NATIVE_MEMORY_DATA_OVERHEAD, size);
-            return data;
+            return (B) data;
         } catch (Throwable e) {
             throw handleException(e);
         } finally {
@@ -136,68 +130,68 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public Data convertData(Data data, DataType type) {
-        return convertDataInternal(data, type, getMemoryManagerToUse());
+    public <B extends Data> B convertData(Data data, DataType type) {
+        return convertDataInternal(data, type, getCurrentMemoryAllocator());
     }
 
     @Override
-    public Data convertToNativeData(Data data, HazelcastMemoryManager memoryManager) {
-        return convertDataInternal(data, DataType.NATIVE, memoryManager);
+    public <B extends Data> B convertToNativeData(Data data, MemoryAllocator malloc) {
+        return convertDataInternal(data, DataType.NATIVE, malloc);
     }
 
-    private Data convertDataInternal(Data data, DataType type, HazelcastMemoryManager memoryManager) {
+    private static <B extends Data> B convertDataInternal(Data data, DataType type, MemoryAllocator malloc) {
         if (data == null) {
             return null;
         }
         switch (type) {
             case NATIVE:
                 if (data instanceof HeapData) {
-                    if (memoryManager == null) {
+                    if (malloc == null) {
                         throw new HazelcastSerializationException("MemoryManager is required!");
                     }
 
                     int size = data.totalSize();
                     int memSize = size + NATIVE_MEMORY_DATA_OVERHEAD;
 
-                    long address = memoryManager.allocate(memSize);
+                    long address = malloc.allocate(memSize);
                     NativeMemoryData nativeData = new NativeMemoryData(address, memSize);
                     nativeData.writeInt(NativeMemoryData.SIZE_OFFSET, size);
                     nativeData.copyFrom(NATIVE_MEMORY_DATA_OVERHEAD, data.toByteArray(), ARRAY_BYTE_BASE_OFFSET, size);
 
-                    return nativeData;
+                    return (B) nativeData;
                 }
                 break;
 
             case HEAP:
                 if (data instanceof NativeMemoryData) {
-                    return new HeapData(data.toByteArray());
+                    return (B) new HeapData(data.toByteArray());
                 }
                 break;
 
             default:
                 throw new IllegalArgumentException();
         }
-        return data;
+        return (B) data;
     }
 
     @Override
     public void disposeData(Data data) {
-        disposeDataInternal(data, getMemoryManagerToUse());
+        disposeDataInternal(data, getCurrentMemoryAllocator());
     }
 
     @Override
-    public void disposeData(Data data, HazelcastMemoryManager memoryManager) {
-        disposeDataInternal(data, memoryManager);
+    public void disposeData(Data data, MemoryAllocator memoryAllocator) {
+        disposeDataInternal(data, memoryAllocator);
     }
 
-    private void disposeDataInternal(Data data, HazelcastMemoryManager memoryManager) {
+    private void disposeDataInternal(Data data, MemoryAllocator malloc) {
         if (data instanceof NativeMemoryData) {
-            if (memoryManager == null) {
+            if (malloc == null) {
                 throw new HazelcastSerializationException("MemoryManager is required!");
             }
             NativeMemoryData memoryBlock = (NativeMemoryData) data;
             if (memoryBlock.address() != HazelcastMemoryManager.NULL_ADDRESS) {
-                memoryManager.free(memoryBlock.address(), memoryBlock.size());
+                malloc.free(memoryBlock.address(), memoryBlock.size());
                 memoryBlock.reset(HazelcastMemoryManager.NULL_ADDRESS);
             }
         } else {
@@ -206,12 +200,12 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public <T> T toObject(Object data, HazelcastMemoryManager memoryManager) {
+    public <T> T toObject(Object data, MemoryAllocator memoryAllocator) {
         try {
-            memoryManagerThreadLocal.set(memoryManager);
+            mallocThreadLocal.set((HazelcastMemoryManager) memoryAllocator);
             return super.toObject(data);
         } finally {
-            memoryManagerThreadLocal.remove();
+            mallocThreadLocal.remove();
         }
     }
 
@@ -221,28 +215,10 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public void dispose() {
+        super.dispose();
         if (memoryManager != null) {
             memoryManager.dispose();
         }
-    }
-
-    @Override
-    public OffHeapDataInput createOffHeapObjectDataInput(long dataAddress, long dataSize) {
-        if (!this.allowSerializeOffHeap) {
-            throw new UnsupportedOperationException("Unsupported for heap de-serializer");
-        }
-
-        return ((OffHeapInputFactory) inputOutputFactory).createInput(dataAddress, dataSize, this);
-    }
-
-    @Override
-    public OffHeapDataOutput createOffHeapObjectDataOutput(long bufferSize) {
-        if (!this.allowSerializeOffHeap) {
-            throw new UnsupportedOperationException("Unsupported for heap serializer");
-        }
-
-        return ((OffHeapOutputFactory) inputOutputFactory).createOutput(bufferSize, this);
     }
 }

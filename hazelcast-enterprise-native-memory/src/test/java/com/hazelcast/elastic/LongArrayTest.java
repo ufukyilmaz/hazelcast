@@ -1,7 +1,7 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -18,6 +18,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -30,19 +31,17 @@ public class LongArrayTest {
     public final TestRule assertEnabledFilter = new AssertEnabledFilterRule();
 
     private MemoryAllocator malloc;
-    private MemoryManager memMgr;
     private LongArray array;
 
     @Before
     public void setup() throws Exception {
-        memMgr = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        malloc = memMgr.getAllocator();
-        array = new LongArray(malloc, INITIAL_LEN);
+        malloc = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
+        array = new LongArray(new MemoryManagerBean(malloc, AMEM), INITIAL_LEN);
     }
 
     @After
     public void tearDown() throws Exception {
-        memMgr.dispose();
+        malloc.dispose();
     }
 
     @Test

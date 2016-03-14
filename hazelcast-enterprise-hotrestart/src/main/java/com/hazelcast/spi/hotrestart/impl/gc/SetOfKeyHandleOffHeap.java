@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.memory.MemoryManager;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hashslot.HashSlotArray16byteKey;
 import com.hazelcast.spi.impl.hashslot.HashSlotArray16byteKeyNoValue;
 import com.hazelcast.spi.hashslot.HashSlotCursor16byteKey;

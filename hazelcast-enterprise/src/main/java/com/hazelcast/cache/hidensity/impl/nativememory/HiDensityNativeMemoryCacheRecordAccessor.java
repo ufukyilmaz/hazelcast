@@ -3,10 +3,10 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
-import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * Cache record accessor for {@link HiDensityNativeMemoryCacheRecord}

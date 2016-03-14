@@ -10,7 +10,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static com.hazelcast.spi.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
 
 class EnterpriseByteArrayObjectDataInput extends ByteArrayObjectDataInput implements EnterpriseBufferObjectDataInput {
 

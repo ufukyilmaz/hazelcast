@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.memory;
 
-import com.hazelcast.spi.impl.memory.LibMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.memory.PooledNativeMemoryStats;
 import com.hazelcast.memory.ThreadLocalPoolingMemoryManager;
 

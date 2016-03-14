@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.memory.MemoryManager;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hashslot.HashSlotArray16byteKey;
 import com.hazelcast.spi.impl.hashslot.HashSlotArray16byteKeyImpl;
 import com.hazelcast.spi.hashslot.HashSlotCursor16byteKey;
@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
-import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * Off-heap implementation of record tracker map.

@@ -1,11 +1,11 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 
 import java.util.NoSuchElementException;
 
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 /** Implementation of {@link LongQueue} with a linked list. */
 public final class LongLinkedQueue implements LongQueue {

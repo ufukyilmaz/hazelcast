@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.queue;
 
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 /**

@@ -1,6 +1,6 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 
 /**
  * Specialization of {@link MemoryAllocator} to CPU's native address space.

@@ -1,9 +1,9 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.spi.impl.memory.IntMemArrayQuickSorter;
-import com.hazelcast.spi.impl.memory.LongMemArrayQuickSorter;
+import com.hazelcast.internal.memory.impl.IntMemArrayQuickSorter;
+import com.hazelcast.internal.memory.impl.LongMemArrayQuickSorter;
 
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 /**
  * Quick sort algorithm implementations for native {@code int}

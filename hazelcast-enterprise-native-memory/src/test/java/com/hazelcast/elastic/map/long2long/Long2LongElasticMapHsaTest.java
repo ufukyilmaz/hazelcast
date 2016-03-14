@@ -6,8 +6,8 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.spi.impl.memory.MemoryManagerBean;
-import com.hazelcast.spi.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.QuickTest;
@@ -20,7 +20,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Random;
 
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

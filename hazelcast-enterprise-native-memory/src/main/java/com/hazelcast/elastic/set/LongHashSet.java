@@ -1,10 +1,10 @@
 package com.hazelcast.elastic.set;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.spi.memory.MemoryAccessor;
-import com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.spi.memory.GlobalMemoryAccessorType;
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
+import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.HashUtil;
 
 import java.util.NoSuchElementException;
@@ -14,7 +14,7 @@ import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.spi.impl.hashslot.CapacityUtil.MIN_CAPACITY;
 import static com.hazelcast.spi.impl.hashslot.CapacityUtil.nextCapacity;
 import static com.hazelcast.spi.impl.hashslot.CapacityUtil.roundCapacity;
-import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
 /**

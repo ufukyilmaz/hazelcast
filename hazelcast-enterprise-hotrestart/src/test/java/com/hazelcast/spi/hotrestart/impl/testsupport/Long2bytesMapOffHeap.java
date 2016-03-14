@@ -4,12 +4,12 @@ import com.hazelcast.spi.hashslot.HashSlotArray8byteKey;
 import com.hazelcast.spi.hashslot.HashSlotCursor8byteKey;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.impl.hashslot.HashSlotArray8byteKeyImpl;
-import com.hazelcast.spi.impl.memory.MemoryManagerBean;
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryAllocator;
 
 import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.spi.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block

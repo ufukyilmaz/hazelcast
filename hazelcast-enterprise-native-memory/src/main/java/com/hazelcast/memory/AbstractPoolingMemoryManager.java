@@ -1,11 +1,11 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.spi.impl.memory.LibMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.spi.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.QuickMath.log2;
 
 @SuppressWarnings("checkstyle:methodcount")

@@ -10,16 +10,16 @@ import com.hazelcast.elastic.queue.LongArrayQueue;
 import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
 import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
-import com.hazelcast.spi.impl.memory.LibMalloc;
+import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.Bits;
-import com.hazelcast.spi.impl.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.spi.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
 @SuppressWarnings("checkstyle:methodcount")
 public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements HazelcastMemoryManager {

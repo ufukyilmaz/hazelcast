@@ -9,11 +9,11 @@ import com.hazelcast.util.HashUtil;
 
 import java.util.NoSuchElementException;
 
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_CAPACITY;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.MIN_CAPACITY;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.nextCapacity;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.roundCapacity;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_CAPACITY;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;
 
@@ -68,8 +68,8 @@ public class LongHashSet implements LongSet {
 
     /**
      * Creates a hash map with the default capacity of
-     * {@value com.hazelcast.spi.impl.hashslot.CapacityUtil#DEFAULT_CAPACITY},
-     * load factor of {@value com.hazelcast.spi.impl.hashslot.CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_CAPACITY},
+     * load factor of {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      */
     public LongHashSet(MemoryAllocator malloc, long nullItem) {
         this(DEFAULT_CAPACITY, malloc, nullItem);
@@ -77,7 +77,7 @@ public class LongHashSet implements LongSet {
 
     /**
      * Creates a hash map with the given initial capacity, default load factor of
-     * {@value com.hazelcast.spi.impl.hashslot.CapacityUtil#DEFAULT_LOAD_FACTOR}.
+     * {@value com.hazelcast.internal.util.hashslot.impl.CapacityUtil#DEFAULT_LOAD_FACTOR}.
      *  @param initialCapacity Initial capacity (greater than zero and automatically
      *                        rounded to the next power of two).
      */

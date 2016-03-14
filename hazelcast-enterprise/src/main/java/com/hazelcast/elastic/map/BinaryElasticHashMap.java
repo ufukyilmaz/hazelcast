@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.spi.impl.hashslot.CapacityUtil;
+import com.hazelcast.internal.util.hashslot.impl.CapacityUtil;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -23,10 +23,10 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.MIN_CAPACITY;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.nextCapacity;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.roundCapacity;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.MIN_CAPACITY;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.nextCapacity;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.roundCapacity;
 import static com.hazelcast.elastic.map.BehmSlotAccessor.rehash;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.util.HashUtil.computePerturbationValue;

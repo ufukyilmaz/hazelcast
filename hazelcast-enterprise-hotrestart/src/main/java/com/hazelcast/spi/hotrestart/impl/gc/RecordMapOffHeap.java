@@ -1,15 +1,15 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArray16byteKey;
-import com.hazelcast.spi.impl.hashslot.HashSlotArray16byteKeyImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursor16byteKey;
+import com.hazelcast.internal.util.hashslot.HashSlotArray16byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.spi.impl.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.spi.hotrestart.impl.gc.Record.toRawSizeValue;
 
 /**

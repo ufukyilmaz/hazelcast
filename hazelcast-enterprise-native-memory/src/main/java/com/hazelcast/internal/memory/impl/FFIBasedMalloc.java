@@ -1,4 +1,4 @@
-package com.hazelcast.spi.impl.memory;
+package com.hazelcast.internal.memory.impl;
 
 import jnr.ffi.LibraryLoader;
 

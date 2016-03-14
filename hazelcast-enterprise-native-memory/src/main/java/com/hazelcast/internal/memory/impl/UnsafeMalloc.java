@@ -1,6 +1,6 @@
-package com.hazelcast.spi.impl.memory;
+package com.hazelcast.internal.memory.impl;
 
-import static com.hazelcast.spi.impl.memory.UnsafeUtil.UNSAFE;
+import static com.hazelcast.internal.memory.impl.UnsafeUtil.UNSAFE;
 
 /**
  * @author mdogan 03/12/13

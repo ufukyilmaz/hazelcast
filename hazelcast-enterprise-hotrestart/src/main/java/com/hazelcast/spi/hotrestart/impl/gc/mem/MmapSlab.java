@@ -32,7 +32,7 @@ final class MmapSlab implements Disposable {
 
     private static final int MAPMODE_RW = 1;
 
-    final int mmapPageSize;
+    private final int mmapPageSize;
     private final long blockSize;
     private final int initialBlockCountLog2;
     private final BitSet blockBitmap = new BitSet();

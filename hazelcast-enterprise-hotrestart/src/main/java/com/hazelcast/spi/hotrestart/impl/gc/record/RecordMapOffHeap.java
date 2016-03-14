@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
@@ -11,8 +11,8 @@ import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
-import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.valueAddr2slotBase;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.toRawSizeValue;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.TOMBSTONE_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordOffHeap.VALUE_RECORD_SIZE;
@@ -26,7 +26,7 @@ public final class RecordMapOffHeap implements RecordMap {
     private final MemoryManager stableMemMgr;
     private final boolean isTombstoneMap;
 
-    private HashSlotArrayTwinKeyImpl hsa;
+    private HashSlotArray16byteKeyImpl hsa;
     private final RecordOffHeap rec = new RecordOffHeap();
 
     private RecordMapOffHeap(MemoryManager memMgr, MemoryManager stableMemMgr,
@@ -34,7 +34,7 @@ public final class RecordMapOffHeap implements RecordMap {
         this.memMgr = memMgr;
         this.stableMemMgr = stableMemMgr;
         this.isTombstoneMap = isTombstoneMap;
-        this.hsa = new HashSlotArrayTwinKeyImpl(0L, memMgr,
+        this.hsa = new HashSlotArray16byteKeyImpl(0L, memMgr,
                 isTombstoneMap ? TOMBSTONE_SIZE : VALUE_RECORD_SIZE, initialCapacity, DEFAULT_LOAD_FACTOR);
         hsa.gotoNew();
     }
@@ -96,7 +96,7 @@ public final class RecordMapOffHeap implements RecordMap {
         mc.catchupNow();
         int i = 0;
         for (RecordMap map : recordMaps) {
-            for (HashSlotCursorTwinKey cursor = ((RecordMapOffHeap) map).hsa.cursor(); cursor.advance();) {
+            for (HashSlotCursor16byteKey cursor = ((RecordMapOffHeap) map).hsa.cursor(); cursor.advance();) {
                 r.address = cursor.valueAddress();
                 if (r.isAlive()) {
                     seqsAndSlotBases.set(i++, r.liveSeq());
@@ -121,7 +121,7 @@ public final class RecordMapOffHeap implements RecordMap {
     }
 
     final class CursorOffHeap implements Cursor {
-        private final HashSlotCursorTwinKey c = hsa.cursor();
+        private final HashSlotCursor16byteKey c = hsa.cursor();
         private final RecordOffHeap r = new RecordOffHeap();
 
         @Override public boolean advance() {

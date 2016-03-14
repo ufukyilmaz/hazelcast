@@ -1,11 +1,11 @@
 package com.hazelcast.elastic;
 
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.nio.Disposable;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**

@@ -1,9 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.core.HazelcastException;
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;

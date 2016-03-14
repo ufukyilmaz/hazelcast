@@ -1,7 +1,7 @@
 package com.hazelcast.elastic;
 
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;

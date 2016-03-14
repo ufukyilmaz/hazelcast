@@ -2,16 +2,16 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.memory.MemoryManager;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfKey1At;
-import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfKey2At;
-import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.addrOfValueAt;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey1At;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey2At;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfValueAt;
 import static java.lang.Math.min;
 
 /**

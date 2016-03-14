@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.RecordDataSink;

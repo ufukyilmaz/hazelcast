@@ -1,5 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+
 /**
  * Specialization of {@link MemoryManager} to CPU's native address space.
  * Also includes methods specific to Hazelcast's pooling memory managers.

@@ -22,7 +22,7 @@ import com.hazelcast.internal.serialization.InputOutputFactory;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;

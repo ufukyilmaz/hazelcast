@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;

@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.mem;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.util.collection.Long2ObjectHashMap;

@@ -2,6 +2,7 @@ package com.hazelcast.memory;
 
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;

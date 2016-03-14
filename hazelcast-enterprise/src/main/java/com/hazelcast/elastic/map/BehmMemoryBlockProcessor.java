@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.map;
 
-import com.hazelcast.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;

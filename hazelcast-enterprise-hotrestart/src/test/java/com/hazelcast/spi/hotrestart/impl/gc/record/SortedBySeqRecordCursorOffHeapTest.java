@@ -1,8 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl.valueAddr2slotBase;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

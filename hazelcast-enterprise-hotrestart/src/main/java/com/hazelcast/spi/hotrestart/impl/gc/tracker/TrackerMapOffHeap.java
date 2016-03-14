@@ -1,16 +1,16 @@
 package com.hazelcast.spi.hotrestart.impl.gc.tracker;
 
-import com.hazelcast.memory.MemoryAllocator;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKey;
-import com.hazelcast.spi.hashslot.HashSlotArrayTwinKeyImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursorTwinKey;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.util.hashslot.HashSlotArray16byteKey;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor16byteKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.spi.hashslot.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
  * Off-heap implementation of record tracker map.
@@ -19,11 +19,11 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
 
     @SuppressWarnings("checkstyle:magicnumber")
     private static final int INITIAL_CAPACITY = 1 << 9;
-    private HashSlotArrayTwinKey trackers;
+    private HashSlotArray16byteKey trackers;
     private TrackerOffHeap tr = new TrackerOffHeap();
 
     public TrackerMapOffHeap(MemoryManager memMgr, MemoryAllocator auxMalloc) {
-        this.trackers = new HashSlotArrayTwinKeyImpl(
+        this.trackers = new HashSlotArray16byteKeyImpl(
                 Long.MIN_VALUE, memMgr, auxMalloc, TrackerOffHeap.SIZE, INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
         trackers.gotoNew();
     }
@@ -71,7 +71,7 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
     }
 
     private class CursorOffHeap implements Cursor, KeyHandleOffHeap {
-        private final HashSlotCursorTwinKey c = trackers.cursor();
+        private final HashSlotCursor16byteKey c = trackers.cursor();
         private final TrackerOffHeap r = new TrackerOffHeap();
 
         @Override public boolean advance() {

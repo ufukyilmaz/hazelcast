@@ -36,8 +36,7 @@ public abstract class Record {
     }
 
     public final int size() {
-        final int size = rawSizeValue();
-        return size >= 0 ? size : -size;
+        return Math.abs(rawSizeValue());
     }
 
     public final int payloadSize() {

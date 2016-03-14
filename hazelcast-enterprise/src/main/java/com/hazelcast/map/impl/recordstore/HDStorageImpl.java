@@ -16,7 +16,7 @@ import java.util.Collection;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.SizeEstimators.createMapSizeEstimator;
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
  * HiDensity backed {@code Storage} impl. for {@link com.hazelcast.core.IMap}.

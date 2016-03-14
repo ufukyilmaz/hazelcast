@@ -1,5 +1,6 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;

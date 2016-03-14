@@ -1,8 +1,8 @@
 package com.hazelcast.elastic.map.long2long;
 
 import com.hazelcast.memory.HazelcastMemoryManager;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.memory.MemoryManagerBean;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;

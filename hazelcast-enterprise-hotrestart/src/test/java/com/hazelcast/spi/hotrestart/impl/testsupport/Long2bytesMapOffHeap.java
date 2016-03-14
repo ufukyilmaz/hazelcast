@@ -1,17 +1,18 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.internal.memory.MemoryAccessor;
-import com.hazelcast.memory.MemoryManager;
-import com.hazelcast.spi.hashslot.HashSlotArray;
-import com.hazelcast.spi.hashslot.HashSlotArrayImpl;
-import com.hazelcast.spi.hashslot.HashSlotCursor;
+import com.hazelcast.internal.util.hashslot.HashSlotArray8byteKey;
+import com.hazelcast.internal.util.hashslot.HashSlotCursor8byteKey;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
+import com.hazelcast.internal.util.hashslot.impl.HashSlotArray8byteKeyImpl;
+import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryManager;
 
-import static com.hazelcast.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     // key: long; value: pointer to value block
-    private final HashSlotArray hsa;
+    private final HashSlotArray8byteKey hsa;
     private final ValueBlockAccessor vblockAccessor;
     private final MemoryAccessor mem;
     private final MemoryManager memMgr;
@@ -21,7 +22,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         this.memMgr = memMgr;
         this.mem = memMgr.getAccessor();
         this.vblockAccessor = new ValueBlockAccessor(memMgr);
-        this.hsa = new HashSlotArrayImpl(Long.MIN_VALUE, memMgr, 8, 16 * 1024);
+        this.hsa = new HashSlotArray8byteKeyImpl(Long.MIN_VALUE, memMgr, 8, 16 * 1024, DEFAULT_LOAD_FACTOR);
         hsa.gotoNew();
     }
 
@@ -75,7 +76,7 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     @Override public void clear() {
-        for (HashSlotCursor cursor = hsa.cursor(); cursor.advance();) {
+        for (HashSlotCursor8byteKey cursor = hsa.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
         }
@@ -112,10 +113,10 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
     }
 
     private static final class Cursor implements L2bCursor {
-        private final HashSlotCursor cursor;
+        private final HashSlotCursor8byteKey cursor;
         private final ValueBlockAccessor vblockAccessor;
 
-        Cursor(HashSlotCursor wrappedCursor, ValueBlockAccessor vblockAccessor) {
+        Cursor(HashSlotCursor8byteKey wrappedCursor, ValueBlockAccessor vblockAccessor) {
             this.cursor = wrappedCursor;
             this.vblockAccessor = vblockAccessor;
         }

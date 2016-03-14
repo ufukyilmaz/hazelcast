@@ -19,11 +19,11 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.concurrent.lock.LockWaitNotifyKey;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.BlockingOperation;
 import com.hazelcast.spi.DefaultObjectNamespace;
 import com.hazelcast.spi.WaitNotifyKey;
-import com.hazelcast.spi.WaitSupport;
 
-public abstract class HDLockAwareOperation extends HDKeyBasedMapOperation implements WaitSupport {
+public abstract class HDLockAwareOperation extends HDKeyBasedMapOperation implements BlockingOperation {
 
     protected HDLockAwareOperation() {
     }

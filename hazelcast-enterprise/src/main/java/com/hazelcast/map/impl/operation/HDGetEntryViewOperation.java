@@ -23,12 +23,12 @@ import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.BlockingOperation;
 import com.hazelcast.spi.DefaultObjectNamespace;
 import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.WaitNotifyKey;
-import com.hazelcast.spi.WaitSupport;
 
-public class HDGetEntryViewOperation extends HDKeyBasedMapOperation implements ReadonlyOperation, WaitSupport {
+public class HDGetEntryViewOperation extends HDKeyBasedMapOperation implements ReadonlyOperation, BlockingOperation {
 
     private EntryView<Data, Data> result;
 

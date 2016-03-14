@@ -1,11 +1,13 @@
 package com.hazelcast.elastic.set;
 
-import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.elastic.LongCursor;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.test.HazelcastSerialClassRunner;
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -17,22 +19,23 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class LongHashSetTest {
+public class LongSetHsaTest {
 
     private final Random random = new Random();
     private HazelcastMemoryManager memoryManager;
-    private LongHashSet set;
+    private LongSet set;
 
     @Before
     public void setUp() throws Exception {
         memoryManager = new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES));
-        set = new LongHashSet(memoryManager, 0L);
+        set = new LongSetHsa(0L, new MemoryManagerBean(memoryManager, AMEM));
     }
 
     @After
@@ -72,8 +75,8 @@ public class LongHashSetTest {
     }
 
     @Test
-    public void testIterator() throws Exception {
-        assertFalse(set.iterator().hasNext());
+    public void testCursor() throws Exception {
+        assertFalse(set.cursor().advance());
 
         Set<Long> expected = new HashSet<Long>();
         for (int i = 1; i <= 1000; i++) {
@@ -81,15 +84,11 @@ public class LongHashSetTest {
             expected.add((long) i);
         }
 
-        LongIterator iterator = set.iterator();
-        while (iterator.hasNext()) {
-            long key = iterator.next();
+        LongCursor cursor = set.cursor();
+        while (cursor.advance()) {
+            long key = cursor.value();
             assertTrue("Key: " + key, expected.remove(key));
-
-            iterator.remove();
         }
-
-        assertTrue("size: " + set.size(), set.isEmpty());
     }
 
     @Test
@@ -124,35 +123,40 @@ public class LongHashSetTest {
         assertFalse(set.isEmpty());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testAdd_after_destroy() throws Exception {
         set.dispose();
         set.add(1);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testRemove_after_destroy() throws Exception {
         set.dispose();
         set.remove(1);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
     public void testContains_after_destroy() throws Exception {
         set.dispose();
         set.contains(1);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testIterator_after_destroy() throws Exception {
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
+    public void testCursor_after_destroy() throws Exception {
         set.dispose();
-        set.iterator();
+        set.cursor();
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testIterator_after_destroy2() throws Exception {
+    @Test(expected = AssertionError.class)
+    @RequireAssertEnabled
+    public void testCursor_after_destroy2() throws Exception {
         set.add(1);
-        LongIterator iterator = set.iterator();
+        LongCursor cursor = set.cursor();
         set.dispose();
-        iterator.next();
+        cursor.advance();
     }
 }

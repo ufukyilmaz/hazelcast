@@ -1,13 +1,13 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.elastic.LongArray;
-import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.elastic.LongCursor;
 import com.hazelcast.elastic.map.long2long.Long2LongElasticMap;
 import com.hazelcast.elastic.map.long2long.Long2LongElasticMapHsa;
 import com.hazelcast.elastic.map.long2long.LongLongCursor;
 import com.hazelcast.elastic.queue.LongArrayQueue;
-import com.hazelcast.elastic.set.LongHashSet;
 import com.hazelcast.elastic.set.LongSet;
+import com.hazelcast.elastic.set.LongSetHsa;
 import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.LongMemArrayQuickSorter;
@@ -128,10 +128,11 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     protected ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
                                               LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
-        pageAllocations = new LongHashSet(INITIAL_CAPACITY, LOAD_FACTOR, systemAllocator, NULL_ADDRESS);
+        final MemoryManagerBean memMgr = new MemoryManagerBean(systemAllocator, AMEM);
+        pageAllocations = new LongSetHsa(NULL_ADDRESS, memMgr, INITIAL_CAPACITY, LOAD_FACTOR);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
         pageAllocationsSorter = new LongMemArrayQuickSorter(AMEM, NULL_ADDRESS);
-        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, new MemoryManagerBean(systemAllocator, AMEM));
+        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, memMgr);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -231,7 +232,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     }
 
     private void addSorted(long address) {
-        int len = pageAllocations.size();
+        long len = pageAllocations.size();
         if (sortedPageAllocations.length() == len) {
             long newArrayLen = sortedPageAllocations.length() << 1;
             sortedPageAllocations.expand(newArrayLen);
@@ -467,11 +468,11 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             return address - pageOffset;
         } else {
             // Otherwise, find page address by binary search in sorted page allocations list.
-            int low = 0;
-            int high = pageAllocations.size() - 1;
+            long low = 0;
+            long high = pageAllocations.size() - 1;
 
             while (low <= high) {
-                int middle = (low + high) >>> 1;
+                long middle = (low + high) >>> 1;
                 long pageBase = sortedPageAllocations.get(middle);
                 long pageEnd = pageBase + pageSize - 1;
                 if (address > pageEnd) {
@@ -510,11 +511,8 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
     private void disposePageAllocations() {
         if (!pageAllocations.isEmpty()) {
-            LongIterator iterator = pageAllocations.iterator();
-            while (iterator.hasNext()) {
-                long address = iterator.next();
-                freePage(address);
-                iterator.remove();
+            for (LongCursor cursor = pageAllocations.cursor(); cursor.advance();) {
+                freePage(cursor.value());
             }
         }
         pageAllocations.dispose();

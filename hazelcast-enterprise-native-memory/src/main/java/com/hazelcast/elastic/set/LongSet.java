@@ -1,6 +1,6 @@
 package com.hazelcast.elastic.set;
 
-import com.hazelcast.elastic.LongIterator;
+import com.hazelcast.elastic.LongCursor;
 import com.hazelcast.nio.Disposable;
 
 /** Set of primitive long integers. */
@@ -12,12 +12,11 @@ public interface LongSet extends Disposable {
 
     boolean contains(long value);
 
-    int size();
+    long size();
 
     boolean isEmpty();
 
     void clear();
 
-    LongIterator iterator();
-
+    LongCursor cursor();
 }

@@ -10,9 +10,12 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.Random;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.fillBlock;
+import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.verifyBlock;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -22,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class MmapSlabTest {
     private static final int BLOCK_SIZE = 24;
 
-    private final File baseDir = new File("test-mmap-malloc");
+    private final File baseDir = new File("test-mmap-slab");
     private MmapSlab mm;
 
     @Before
@@ -53,10 +56,18 @@ public class MmapSlabTest {
     public void testAllocateAndFree() {
         final int blockCount = 1000;
         final long[] addrs = new long[blockCount];
-        for (int i = 0; i < blockCount; i++) {
+        final Random rnd = new Random();
+        for (int i = 0; i < 100 * blockCount; i++) {
+            final int index = rnd.nextInt(addrs.length);
+            if (addrs[index] != 0) {
+                mm.free(addrs[index]);
+            }
             final long addr = mm.allocate();
-            verifyWritable(addr);
-            addrs[i] = addr;
+            fillBlock(addr, BLOCK_SIZE);
+            addrs[index] = addr;
+        }
+        for (long addr : addrs) {
+            verifyBlock(addr, BLOCK_SIZE);
         }
         Boolean lastResult = null;
         for (long addr : addrs) {
@@ -65,12 +76,4 @@ public class MmapSlabTest {
         assertNotNull(lastResult);
         assertTrue("MmapSlab failed to report that it has no more allocated blocks", lastResult);
     }
-
-    static void verifyWritable(long addr) {
-        for (int i = 0; i < BLOCK_SIZE; i++) {
-            AMEM.putByte(addr + i, (byte) 13);
-        }
-    }
-
-
 }

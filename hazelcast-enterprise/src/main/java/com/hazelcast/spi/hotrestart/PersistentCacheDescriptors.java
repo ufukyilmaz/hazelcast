@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.ObjectDataInputStream;
 import com.hazelcast.internal.serialization.impl.ObjectDataOutputStream;
 import com.hazelcast.nio.IOUtil;
@@ -56,7 +56,7 @@ public class PersistentCacheDescriptors {
         return idToDesc.get(extractInt(prefix, false));
     }
 
-    public void ensureHas(SerializationService serializationService, String serviceName, String name, Object config) {
+    public void ensureHas(InternalSerializationService serializationService, String serviceName, String name, Object config) {
         String cacheKey = toCacheKey(serviceName, name);
         if (nameToDesc.get(cacheKey) != null) {
             return;
@@ -94,7 +94,7 @@ public class PersistentCacheDescriptors {
         return toFileName(serviceName) + '-' + toFileName(name) + CONFIG_SUFFIX;
     }
 
-    void restore(SerializationService serializationService) {
+    void restore(InternalSerializationService serializationService) {
         if (cacheIdSeq != 0) {
             return;
         }

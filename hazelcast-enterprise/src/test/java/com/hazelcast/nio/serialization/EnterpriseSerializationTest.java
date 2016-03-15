@@ -26,7 +26,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.executor.impl.operations.CancellationOperation;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.SimpleMemberImpl;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -91,19 +91,19 @@ public class EnterpriseSerializationTest
                     }
                 }));
 
-        SerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         DummyValue value = new DummyValue("test", 111);
         Data data = ss1.toData(value);
         assertNotNull(data);
 
-        SerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Object o = ss2.toObject(data);
         assertEquals(value, o);
     }
 
     @Test
     public void test_callid_on_correct_stream_position() throws Exception {
-        SerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
         CancellationOperation operation = new CancellationOperation(newUnsecureUuidString(), true);
         operation.setCallerUuid(newUnsecureUuidString());
         OperationAccessor.setCallId(operation, 12345);
@@ -172,11 +172,11 @@ public class EnterpriseSerializationTest
                             }
                         }));
 
-        SerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Data data = ss1.toData(new SingletonValue());
         assertNotNull(data);
 
-        SerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
         Object o = ss2.toObject(data);
         assertEquals(new SingletonValue(), o);
     }
@@ -190,7 +190,7 @@ public class EnterpriseSerializationTest
     @Test
     public void testNullData() {
         Data data = new HeapData();
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
         assertNull(ss.toObject(data));
     }
 
@@ -199,7 +199,7 @@ public class EnterpriseSerializationTest
      */
     @Test
     public void testSharedJavaSerialization() {
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(true).build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(true).build();
         Data data = ss.toData(new Foo());
         Foo foo = (Foo) ss.toObject(data);
 
@@ -208,7 +208,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testLinkedListSerialization() {
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
         LinkedList<Person> linkedList = new LinkedList<Person>();
         linkedList.add(new Person(35, 180, 100, "Orhan", null));
         linkedList.add(new Person(12, 120, 60, "Osman", null));
@@ -219,7 +219,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testArrayListSerialization() {
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
         ArrayList<Person> arrayList = new ArrayList<Person>();
         arrayList.add(new Person(35, 180, 100, "Orhan", null));
         arrayList.add(new Person(12, 120, 60, "Osman", null));
@@ -230,7 +230,7 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testArraySerialization() {
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
         byte[] array = new byte[1024];
         new Random().nextBytes(array);
         Data data = ss.toData(array);
@@ -277,7 +277,7 @@ public class EnterpriseSerializationTest
      */
     @Test
     public void testUnsharedJavaSerialization() {
-        SerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(false).build();
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(false).build();
         Data data = ss.toData(new Foo());
         Foo foo = ss.toObject(data);
 

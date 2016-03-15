@@ -7,13 +7,13 @@ import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.Clock;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -63,7 +63,7 @@ public final class CacheReplicationOperation
     }
 
     private void dispose() {
-        SerializationService ss = getNodeEngine().getSerializationService();
+        EnterpriseSerializationService ss = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
         for (Map.Entry<String, Map<Data, CacheRecordHolder>> entry : offHeapDestination.entrySet()) {
             Map<Data, CacheRecordHolder> value = entry.getValue();
             for (Map.Entry<Data, CacheRecordHolder> e : value.entrySet()) {

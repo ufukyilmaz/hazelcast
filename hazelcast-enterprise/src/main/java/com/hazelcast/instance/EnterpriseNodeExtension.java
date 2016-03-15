@@ -15,7 +15,7 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
@@ -212,8 +212,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public SerializationService createSerializationService() {
-        SerializationService ss;
+    public InternalSerializationService createSerializationService() {
+        InternalSerializationService ss;
         try {
             Config config = node.getConfig();
             ClassLoader configClassLoader = node.getConfigClassLoader();

@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOperation;
 
@@ -11,9 +11,9 @@ import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOpera
  */
 public class NodeSubscriberContextSupport implements SubscriberContextSupport {
 
-    private final SerializationService serializationService;
+    private final InternalSerializationService serializationService;
 
-    public NodeSubscriberContextSupport(SerializationService serializationService) {
+    public NodeSubscriberContextSupport(InternalSerializationService serializationService) {
         this.serializationService = serializationService;
     }
 

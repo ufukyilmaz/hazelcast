@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache;
 
 import com.hazelcast.core.Member;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.subscriber.SubscriberContext;
 import com.hazelcast.nio.Address;
@@ -36,11 +36,11 @@ public interface QueryCacheContext {
     SubscriberContext getSubscriberContext();
 
     /**
-     * Returns {@link SerializationService} for this context
+     * Returns {@link InternalSerializationService} for this context
      *
-     * @return {@link SerializationService} for this context
+     * @return {@link InternalSerializationService} for this context
      */
-    SerializationService getSerializationService();
+    InternalSerializationService getSerializationService();
 
     /**
      * Returns {@link QueryCacheEventService} factory for this context

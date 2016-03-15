@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.event;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.serialization.Data;
 
 /**
@@ -14,7 +14,7 @@ public final class QueryCacheEventDataBuilder {
     private Data dataOldValue;
     private int eventType;
     private int partitionId;
-    private SerializationService serializationService;
+    private InternalSerializationService serializationService;
     private final boolean includeValue;
 
     private QueryCacheEventDataBuilder(boolean includeValue) {
@@ -55,7 +55,7 @@ public final class QueryCacheEventDataBuilder {
         return this;
     }
 
-    public QueryCacheEventDataBuilder withSerializationService(SerializationService serializationService) {
+    public QueryCacheEventDataBuilder withSerializationService(InternalSerializationService serializationService) {
         this.serializationService = serializationService;
         return this;
     }

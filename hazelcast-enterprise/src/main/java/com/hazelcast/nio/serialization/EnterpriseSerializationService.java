@@ -1,11 +1,11 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.internal.memory.MemoryAllocator;
 
-public interface EnterpriseSerializationService extends SerializationService {
+public interface EnterpriseSerializationService extends InternalSerializationService {
 
     <B extends Data> B toData(Object obj, DataType type);
 

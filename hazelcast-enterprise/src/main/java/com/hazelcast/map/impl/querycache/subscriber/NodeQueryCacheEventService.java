@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.IMapEvent;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryEventFilter;
@@ -22,6 +22,7 @@ import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.spi.impl.eventservice.impl.Registration;
 import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 
@@ -164,7 +165,8 @@ public class NodeQueryCacheEventService implements QueryCacheEventService<EventD
         Data keyData = localEntryEventData.getKeyData();
         Object value = getValueOrOldValue(localEntryEventData);
 
-        QueryableEntry entry = new QueryEntry(serializationService, keyData, value, Extractors.empty());
+        QueryableEntry entry = new QueryEntry((InternalSerializationService) serializationService,
+                keyData, value, Extractors.empty());
         return filter.eval(entry);
     }
 

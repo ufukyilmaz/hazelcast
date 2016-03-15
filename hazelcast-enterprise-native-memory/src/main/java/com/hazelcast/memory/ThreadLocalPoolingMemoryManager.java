@@ -1,19 +1,19 @@
 package com.hazelcast.memory;
 
 import com.hazelcast.elastic.LongArray;
-import com.hazelcast.elastic.LongCursor;
-import com.hazelcast.elastic.map.long2long.Long2LongElasticMap;
-import com.hazelcast.elastic.map.long2long.Long2LongElasticMapHsa;
-import com.hazelcast.elastic.map.long2long.LongLongCursor;
 import com.hazelcast.elastic.queue.LongArrayQueue;
-import com.hazelcast.elastic.set.LongSet;
-import com.hazelcast.elastic.set.LongSetHsa;
 import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.memory.impl.LibMalloc;
-import com.hazelcast.internal.memory.impl.LongMemArrayQuickSorter;
-import com.hazelcast.internal.memory.impl.MemArrayQuickSorter;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.internal.util.collection.Long2LongMap;
+import com.hazelcast.internal.util.collection.LongCursor;
+import com.hazelcast.internal.util.collection.LongLongCursor;
+import com.hazelcast.internal.util.collection.LongSet;
+import com.hazelcast.internal.util.sort.MemArrayQuickSorter;
 import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.util.collection.Long2LongMapHsa;
+import com.hazelcast.internal.util.sort.LongMemArrayQuickSorter;
+import com.hazelcast.internal.util.collection.LongSetHsa;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
@@ -121,7 +121,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     private final String threadName;
     private final LongSet pageAllocations;
     private final LongArray sortedPageAllocations;
-    private final Long2LongElasticMap externalAllocations;
+    private final Long2LongMap externalAllocations;
     private final MemArrayQuickSorter pageAllocationsSorter;
     private long lastFullCompaction;
 
@@ -132,7 +132,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         pageAllocations = new LongSetHsa(NULL_ADDRESS, memMgr, INITIAL_CAPACITY, LOAD_FACTOR);
         sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
         pageAllocationsSorter = new LongMemArrayQuickSorter(AMEM, NULL_ADDRESS);
-        externalAllocations = new Long2LongElasticMapHsa(SIZE_INVALID, memMgr);
+        externalAllocations = new Long2LongMapHsa(SIZE_INVALID, memMgr);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -238,8 +238,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             sortedPageAllocations.expand(newArrayLen);
         }
         sortedPageAllocations.set(len - 1, address);
-        pageAllocationsSorter.setBaseAddress(sortedPageAllocations.address());
-        pageAllocationsSorter.sort(0, len);
+        pageAllocationsSorter.gotoAddress(sortedPageAllocations.address()).sort(0, len);
     }
 
     @Override

@@ -43,8 +43,7 @@ import static com.hazelcast.util.Preconditions.checkInstanceOf;
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
  */
-public class EnterpriseMapEventPublisherImpl
-        extends MapEventPublisherImpl {
+public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
 
     public EnterpriseMapEventPublisherImpl(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
@@ -137,6 +136,11 @@ public class EnterpriseMapEventPublisherImpl
     @Override
     protected void publishEventInternal(Collection<EventRegistration> registrations, Object eventData, int orderKey) {
         super.publishEventInternal(registrations, eventData, orderKey);
+
+        addEventToQueryCache(eventData);
+    }
+
+    public void addEventToQueryCache(Object eventData) {
         checkInstanceOf(EventData.class, eventData, "eventData");
 
         String mapName = ((EventData) eventData).getMapName();

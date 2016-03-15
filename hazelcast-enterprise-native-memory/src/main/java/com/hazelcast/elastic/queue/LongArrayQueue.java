@@ -1,9 +1,9 @@
 package com.hazelcast.elastic.queue;
 
 import com.hazelcast.elastic.LongIterator;
-import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
 import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
 
 import java.util.NoSuchElementException;

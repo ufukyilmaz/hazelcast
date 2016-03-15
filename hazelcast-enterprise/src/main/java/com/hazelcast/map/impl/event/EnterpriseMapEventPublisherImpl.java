@@ -38,13 +38,11 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
-import static com.hazelcast.util.Preconditions.checkInstanceOf;
 
 /**
  * Enterprise version of {@link MapEventPublisher} helper functionality.
  */
-public class EnterpriseMapEventPublisherImpl
-        extends MapEventPublisherImpl {
+public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
 
     public EnterpriseMapEventPublisherImpl(EnterpriseMapServiceContext mapServiceContext) {
         super(mapServiceContext);
@@ -137,7 +135,12 @@ public class EnterpriseMapEventPublisherImpl
     @Override
     protected void publishEventInternal(Collection<EventRegistration> registrations, Object eventData, int orderKey) {
         super.publishEventInternal(registrations, eventData, orderKey);
-        checkInstanceOf(EventData.class, eventData, "eventData");
+
+        addEventToQueryCache(eventData);
+    }
+
+    public void addEventToQueryCache(Object eventData) {
+        assert EventData.class.isInstance(eventData);
 
         String mapName = ((EventData) eventData).getMapName();
         int eventType = ((EventData) eventData).getEventType();

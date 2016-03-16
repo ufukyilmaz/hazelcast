@@ -92,6 +92,11 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.hazelcast.marketing</groupId>
+            <artifactId>hazelcast-license-extractor</artifactId>
+            <version>${license.extractor.version}</version>
+        </dependency>
     </dependencies>
 
 

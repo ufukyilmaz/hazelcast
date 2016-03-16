@@ -1,17 +1,17 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.QueryCacheConfig;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.eviction.EvictionListener;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.querycache.subscriber.record.DataQueryCacheRecordFactory;
 import com.hazelcast.map.impl.querycache.subscriber.record.ObjectQueryCacheRecordFactory;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryEntry;
+import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.util.Clock;
 
 import java.util.Collection;
@@ -29,10 +29,10 @@ class DefaultQueryCacheRecordStore implements QueryCacheRecordStore {
     private final QueryCacheRecordHashMap cache;
     private final QueryCacheRecordFactory recordFactory;
     private final Indexes indexes;
-    private final SerializationService serializationService;
+    private final InternalSerializationService serializationService;
     private final EvictionOperator evictionOperator;
 
-    public DefaultQueryCacheRecordStore(SerializationService serializationService,
+    public DefaultQueryCacheRecordStore(InternalSerializationService serializationService,
                                         Indexes indexes,
                                         QueryCacheConfig config, EvictionListener listener) {
         this.cache = new QueryCacheRecordHashMap(DEFAULT_CACHE_CAPACITY);

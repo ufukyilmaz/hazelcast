@@ -16,7 +16,7 @@
 
 package com.hazelcast.security;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,30 +79,30 @@ public class ParametersImpl implements Parameters {
         };
     }
 
-    private void checkCollection(int index){
+    private void checkCollection(int index) {
         final Object arg = args[index];
-        if ( !(arg instanceof Collection) ){
+        if (!(arg instanceof Collection)) {
             checkMap(index);
             return;
         }
         Collection collection;
         if (arg instanceof Set) {
             collection = new HashSet();
-        } else if (arg instanceof List){
+        } else if (arg instanceof List) {
             collection = new ArrayList(((List) arg).size());
         } else {
-            throw new IllegalArgumentException("Collection["+arg+"] is unknown!!!");
+            throw new IllegalArgumentException("Collection[" + arg + "] is unknown!!!");
         }
-        for (Object o : (Collection)arg) {
+        for (Object o : (Collection) arg) {
             collection.add(serializationService.toObject(o));
         }
         args[index] = collection;
     }
 
-    private void checkMap(int index){
+    private void checkMap(int index) {
         final Object arg = args[index];
         if (arg instanceof Map) {
-            Map<Object, Object> argMap = (Map)arg;
+            Map<Object, Object> argMap = (Map) arg;
             Map objectMap = new HashMap();
             for (Map.Entry entry : argMap.entrySet()) {
                 final Object key = serializationService.toObject(entry.getKey());

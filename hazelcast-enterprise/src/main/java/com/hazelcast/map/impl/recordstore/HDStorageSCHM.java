@@ -3,9 +3,9 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 
 /**

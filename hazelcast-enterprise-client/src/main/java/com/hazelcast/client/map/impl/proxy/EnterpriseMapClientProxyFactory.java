@@ -23,8 +23,8 @@ import com.hazelcast.client.spi.ClientExecutionService;
 import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.utils.Registry;
+import com.hazelcast.spi.serialization.SerializationService;
 
 import static com.hazelcast.map.impl.HDMapConfigValidator.checkHDConfig;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;

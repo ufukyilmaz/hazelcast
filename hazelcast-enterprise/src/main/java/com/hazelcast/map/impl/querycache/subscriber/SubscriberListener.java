@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.IMapEvent;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
@@ -10,6 +9,7 @@ import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.BatchIMapEvent;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
+import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
 

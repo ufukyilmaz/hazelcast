@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.core.EntryEventType;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.nio.serialization.Data;
@@ -13,10 +13,10 @@ class SubscriberAccumulatorHandler implements AccumulatorHandler<QueryCacheEvent
 
     private final InternalQueryCache queryCache;
     private final boolean includeValue;
-    private final SerializationService serializationService;
+    private final InternalSerializationService serializationService;
 
     public SubscriberAccumulatorHandler(boolean includeValue, InternalQueryCache queryCache,
-                                        SerializationService serializationService) {
+                                        InternalSerializationService serializationService) {
         this.includeValue = includeValue;
         this.queryCache = queryCache;
         this.serializationService = serializationService;

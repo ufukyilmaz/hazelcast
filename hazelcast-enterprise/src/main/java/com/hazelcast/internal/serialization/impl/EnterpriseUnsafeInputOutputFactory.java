@@ -17,7 +17,7 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.serialization.InputOutputFactory;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.EnterpriseBufferObjectDataInput;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
@@ -31,7 +31,7 @@ import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_
 final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
 
     @Override
-    public EnterpriseBufferObjectDataInput createInput(Data data, SerializationService service) {
+    public EnterpriseBufferObjectDataInput createInput(Data data, InternalSerializationService service) {
         EnterpriseSerializationService serializationService = (EnterpriseSerializationService) service;
         if (data instanceof NativeMemoryData) {
             MemoryBlock memoryBlock = (NativeMemoryData) data;
@@ -42,12 +42,12 @@ final class EnterpriseUnsafeInputOutputFactory implements InputOutputFactory {
     }
 
     @Override
-    public EnterpriseBufferObjectDataInput createInput(byte[] buffer, SerializationService service) {
+    public EnterpriseBufferObjectDataInput createInput(byte[] buffer, InternalSerializationService service) {
         return new EnterpriseUnsafeObjectDataInput(buffer, 0, (EnterpriseSerializationService) service);
     }
 
     @Override
-    public EnterpriseBufferObjectDataOutput createOutput(int size, SerializationService service) {
+    public EnterpriseBufferObjectDataOutput createOutput(int size, InternalSerializationService service) {
         return new EnterpriseUnsafeObjectDataOutput(size, (EnterpriseSerializationService) service);
     }
 

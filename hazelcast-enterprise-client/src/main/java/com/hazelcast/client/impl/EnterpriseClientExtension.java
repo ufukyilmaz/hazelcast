@@ -14,7 +14,7 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.instance.BuildInfo;
 import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.instance.GroupProperty;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
@@ -53,8 +53,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     @Override
-    public SerializationService createSerializationService(byte version) {
-        SerializationService ss;
+    public InternalSerializationService createSerializationService(byte version) {
+        InternalSerializationService ss;
         try {
             ClientConfig config = client.getClientConfig();
             ClassLoader configClassLoader = config.getClassLoader();

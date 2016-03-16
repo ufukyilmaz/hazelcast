@@ -1,6 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolImpl;
 import com.hazelcast.nio.BufferObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
@@ -13,7 +13,7 @@ import static com.hazelcast.nio.IOUtil.closeResource;
  */
 public class EnterpriseBufferPool extends BufferPoolImpl {
 
-    public EnterpriseBufferPool(SerializationService serializationService) {
+    public EnterpriseBufferPool(InternalSerializationService serializationService) {
         super(serializationService);
     }
 

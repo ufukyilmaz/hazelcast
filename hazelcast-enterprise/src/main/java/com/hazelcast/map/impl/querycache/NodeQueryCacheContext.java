@@ -8,7 +8,7 @@ import com.hazelcast.core.Member;
 import com.hazelcast.instance.LifecycleServiceImpl;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.querycache.publisher.DefaultPublisherContext;
@@ -121,8 +121,8 @@ public class NodeQueryCacheContext implements QueryCacheContext {
     }
 
     @Override
-    public SerializationService getSerializationService() {
-        return nodeEngine.getSerializationService();
+    public InternalSerializationService getSerializationService() {
+        return (InternalSerializationService) nodeEngine.getSerializationService();
     }
 
     @Override

@@ -5,7 +5,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.map.impl.MapService;
@@ -393,7 +393,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         MapServiceContext mapServiceContext = ((MapService) mapProxy.getService()).getMapServiceContext();
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapProxy.getName());
 
-        SerializationService serializationService = getSerializationService(clusterA[0]);
+        InternalSerializationService serializationService = getSerializationService(clusterA[0]);
         Set keySet = new HashSet();
         for (int i = 0; i < 10; i++) {
             keySet.add(serializationService.toData(i));

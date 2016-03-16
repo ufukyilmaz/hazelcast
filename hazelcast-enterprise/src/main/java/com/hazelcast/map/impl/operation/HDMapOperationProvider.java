@@ -219,8 +219,8 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createPutAllOperation(String name, MapEntries mapEntries, boolean initialLoad) {
-        return new HDPutAllOperation(name, mapEntries, initialLoad);
+    public MapOperation createPutAllOperation(String name, MapEntries mapEntries) {
+        return new HDPutAllOperation(name, mapEntries);
     }
 
     @Override

@@ -34,6 +34,7 @@ class SubscriberAccumulatorHandler implements AccumulatorHandler<QueryCacheEvent
         switch (entryEventType) {
             case ADDED:
             case UPDATED:
+            case MERGED:
                 queryCache.setInternal(keyData, valueData, false, entryEventType);
                 break;
             case REMOVED:

@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.SizeEstimator;
@@ -11,6 +10,7 @@ import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
+import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
 

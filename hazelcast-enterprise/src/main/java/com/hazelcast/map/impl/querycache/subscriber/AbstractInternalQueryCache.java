@@ -5,7 +5,7 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.map.impl.querycache.QueryCacheConfigurator;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
@@ -37,7 +37,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     protected final QueryCacheContext context;
     protected final QueryCacheRecordStore recordStore;
     protected final Indexes indexes;
-    protected final SerializationService serializationService;
+    protected final InternalSerializationService serializationService;
     protected final PartitioningStrategy partitioningStrategy;
 
     public AbstractInternalQueryCache(String cacheName, String userGivenCacheName, IMap delegate, QueryCacheContext context) {
@@ -83,7 +83,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     }
 
     protected void doFullKeyScan(Predicate predicate, Set<K> resultingSet) {
-        SerializationService serializationService = this.serializationService;
+        InternalSerializationService serializationService = this.serializationService;
 
         CachedQueryEntry queryEntry = new CachedQueryEntry();
         Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();
@@ -102,7 +102,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     }
 
     protected void doFullEntryScan(Predicate predicate, Set<Map.Entry<K, V>> resultingSet) {
-        SerializationService serializationService = this.serializationService;
+        InternalSerializationService serializationService = this.serializationService;
 
         CachedQueryEntry queryEntry = new CachedQueryEntry();
         Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();
@@ -123,7 +123,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     }
 
     protected void doFullValueScan(Predicate predicate, Set<V> resultingSet) {
-        SerializationService serializationService = this.serializationService;
+        InternalSerializationService serializationService = this.serializationService;
 
         CachedQueryEntry queryEntry = new CachedQueryEntry();
         Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();

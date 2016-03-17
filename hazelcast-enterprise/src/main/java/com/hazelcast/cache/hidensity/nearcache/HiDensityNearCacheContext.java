@@ -19,7 +19,7 @@ package com.hazelcast.cache.hidensity.nearcache;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheExecutor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.spi.serialization.SerializationService;
 
 /**
  * Context to hold all required external services and utilities to be used by

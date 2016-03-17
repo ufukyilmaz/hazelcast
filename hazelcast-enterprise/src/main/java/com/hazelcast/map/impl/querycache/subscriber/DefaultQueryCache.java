@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.querycache.subscriber;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.EntryEventFilter;
 import com.hazelcast.map.impl.query.QueryEventFilter;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
@@ -432,7 +432,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
     public void addIndex(String attribute, boolean ordered) {
         getIndexes().addOrGetIndex(attribute, ordered);
 
-        SerializationService serializationService = context.getSerializationService();
+        InternalSerializationService serializationService = context.getSerializationService();
 
         Set<Map.Entry<Data, QueryCacheRecord>> entries = recordStore.entrySet();
         for (Map.Entry<Data, QueryCacheRecord> entry : entries) {

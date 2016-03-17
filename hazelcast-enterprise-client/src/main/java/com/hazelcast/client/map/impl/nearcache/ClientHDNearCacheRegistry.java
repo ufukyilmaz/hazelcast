@@ -24,8 +24,8 @@ import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.spi.ClientExecutionService;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.map.impl.utils.AbstractRegistry;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ConstructorFunction;
 
 import java.util.concurrent.ScheduledFuture;

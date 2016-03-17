@@ -1,6 +1,6 @@
 package com.hazelcast.nio.serialization;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -25,7 +25,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
     public void setup() {
         EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
         serializationService = builder
-                .setVersion(SerializationService.VERSION_1)
+                .setVersion(InternalSerializationService.VERSION_1)
                 .addPortableFactory(TestSerializationConstants.PORTABLE_FACTORY_ID, new PortableTest.TestPortableFactory())
                 .setAllowUnsafe(true)
                 .setUseNativeByteOrder(true)

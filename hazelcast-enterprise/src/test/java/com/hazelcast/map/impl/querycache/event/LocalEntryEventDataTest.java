@@ -1,7 +1,7 @@
 package com.hazelcast.map.impl.querycache.event;
 
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.DefaultSerializationServiceBuilder;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 @Category(QuickTest.class)
 public class LocalEntryEventDataTest extends HazelcastTestSupport {
 
-    private SerializationService serializationService;
+    private InternalSerializationService serializationService;
 
     // passed params are type of OBJECT to this event.
     private LocalEntryEventData objectEvent;

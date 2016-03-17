@@ -1,6 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.internal.serialization.SerializationService;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
@@ -91,7 +91,7 @@ public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData>
         SubscriberContext subscriberContext = context.getSubscriberContext();
         QueryCacheFactory queryCacheFactory = subscriberContext.getQueryCacheFactory();
         InternalQueryCache queryCache = queryCacheFactory.getOrNull(cacheName);
-        SerializationService serializationService = context.getSerializationService();
+        InternalSerializationService serializationService = context.getSerializationService();
         return new SubscriberAccumulatorHandler(includeValue, queryCache, serializationService);
     }
 

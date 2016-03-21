@@ -8,9 +8,9 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.HazelcastInstanceManager;
 import com.hazelcast.instance.TestUtil;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -272,7 +272,7 @@ public class SSLConnectionTest {
     @Test(timeout = 1000 * 180)
     public void testNodes() throws Exception {
         Config config = new Config();
-        config.setProperty(GroupProperty.IO_THREAD_COUNT, "1");
+        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);
@@ -318,7 +318,7 @@ public class SSLConnectionTest {
     @Test(timeout = 1000 * 600)
     public void testPutAndGetAlwaysGoesToWire() throws Exception {
         Config config = new Config();
-        config.setProperty(GroupProperty.IO_THREAD_COUNT, "1");
+        config.setProperty(GroupProperty.IO_THREAD_COUNT.getName(), "1");
         JoinConfig join = config.getNetworkConfig().getJoin();
         join.getMulticastConfig().setEnabled(false);
         join.getTcpIpConfig().setEnabled(true).addMember("127.0.0.1").setConnectionTimeoutSeconds(3000);

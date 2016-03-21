@@ -7,7 +7,6 @@ import com.hazelcast.config.QuorumConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MembershipAdapter;
 import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.instance.GroupProperties;
 import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -18,6 +17,8 @@ import com.hazelcast.test.TestHazelcastInstanceFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.internal.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_SECONDS;
+import static com.hazelcast.internal.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateRandomString;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
@@ -45,8 +46,8 @@ public class NativeMemPartitionedCluster {
 
     public NativeMemPartitionedCluster createFiveMemberCluster(CacheSimpleConfig cacheSimpleConfig, QuorumConfig quorumConfig) {
         Config config = new Config();
-        config.setProperty(GroupProperties.PROP_MERGE_FIRST_RUN_DELAY_SECONDS, "9999");
-        config.setProperty(GroupProperties.PROP_MERGE_NEXT_RUN_DELAY_SECONDS, "9999");
+        config.setProperty(MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "9999");
+        config.setProperty(MERGE_NEXT_RUN_DELAY_SECONDS.getName(), "9999");
         config.getGroupConfig().setName(generateRandomString(10));
         config.addCacheConfig(cacheSimpleConfig);
         config.addQuorumConfig(quorumConfig);

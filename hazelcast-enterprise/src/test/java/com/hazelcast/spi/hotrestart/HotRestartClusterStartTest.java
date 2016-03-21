@@ -4,8 +4,8 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -225,8 +225,8 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     @Override
     protected Config newConfig(ClusterHotRestartEventListener listener) {
         final Config config = super.newConfig(listener);
-        config.setProperty(GroupProperty.PARTITION_COUNT, String.valueOf(partitionCount));
-        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT, String.valueOf(partitionThreadCount));
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));
         return config;
     }
 }

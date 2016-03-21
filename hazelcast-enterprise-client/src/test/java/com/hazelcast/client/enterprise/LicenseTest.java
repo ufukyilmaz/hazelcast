@@ -8,7 +8,7 @@ import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -58,13 +58,13 @@ public class LicenseTest extends HazelcastTestSupport {
 
 
         ClientConfig config = new XmlClientConfigBuilder(new ByteArrayInputStream(stringToBytes(xml))).build();
-        assertEquals(license, config.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY));
+        assertEquals(license, config.getProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName()));
     }
 
     @Test
     public void testLicenseValidWhenLicenseSetViaProperty() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -72,14 +72,14 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         factory.newHazelcastClient(clientConfig);
     }
 
     @Test
     public void testLicenseValidWhenLicenseSetViaClientConfig() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -94,21 +94,21 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testLicenseValidWithoutHumanReadablePart() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
         assertClusterSizeEventually(2, h2);
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         factory.newHazelcastClient(clientConfig);
     }
 
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseNotFound() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -116,7 +116,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, "blah blah");
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), "blah blah");
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -124,7 +124,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test(expected = InvalidLicenseException.class)
     public void testClientEnterpriseLicenseExpired() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -132,7 +132,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, EXPIRED_ENTERPRISE_LICENSE);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), EXPIRED_ENTERPRISE_LICENSE);
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -140,7 +140,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testClientWithSecurityLicense() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -148,7 +148,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, SECURITY_ONLY_LICENSE);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SECURITY_ONLY_LICENSE);
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -156,8 +156,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test(expected = InvalidLicenseException.class)
     public void testLicenseInvalidForDifferentHZVersion() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY,
-                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -165,7 +164,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_DIFFERENT_VERSION);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_DIFFERENT_VERSION);
 
         factory.newHazelcastClient(clientConfig);
     }
@@ -173,8 +172,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testClientWithSmallerHZVersion() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY,
-                ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -182,7 +180,7 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, LICENSE_WITH_SMALLER_VERSION);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), LICENSE_WITH_SMALLER_VERSION);
         try {
             factory.newHazelcastClient(clientConfig);
         } catch (InvalidLicenseException e) {
@@ -193,7 +191,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testEnterpriseHDLicenseValidWhenLicenseSetViaProperty() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_HD_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -201,14 +199,14 @@ public class LicenseTest extends HazelcastTestSupport {
         assertClusterSizeEventually(2, h1);
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         factory.newHazelcastClient(clientConfig);
     }
 
     @Test
     public void testEnterpriseHDLicenseWhenLicenseSetViaClientConfig() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_HD_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -223,7 +221,7 @@ public class LicenseTest extends HazelcastTestSupport {
     @Test
     public void testSecurityOnlyLicenseOnlyUsesOpenSourceContinuousQueryCaching() {
         Config config = new Config();
-        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY, ENTERPRISE_HD_LICENSE);
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
 
         HazelcastInstance h1 = factory.newHazelcastInstance(config);
         HazelcastInstance h2 = factory.newHazelcastInstance(config);
@@ -232,7 +230,7 @@ public class LicenseTest extends HazelcastTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setLicenseKey(SECURITY_ONLY_LICENSE);
-        HazelcastClientProxy clientProxy = (HazelcastClientProxy)factory.newHazelcastClient(clientConfig);
+        HazelcastClientProxy clientProxy = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
 
         ClientProxyFactory proxyFactory = clientProxy.client.getClientExtension().createServiceProxyFactory(MapService.class);
         assertTrue(proxyFactory instanceof ClientProxyFactory);

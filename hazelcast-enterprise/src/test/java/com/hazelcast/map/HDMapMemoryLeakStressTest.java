@@ -33,6 +33,7 @@ import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -76,6 +77,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
     @Test
     @Category(QuickTest.class)
+    @Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/836
     public void test_shutdown() throws InterruptedException {
         final Config config = createConfig();
         config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.POOLED);

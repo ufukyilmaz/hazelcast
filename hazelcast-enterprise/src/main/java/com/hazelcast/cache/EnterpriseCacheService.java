@@ -35,9 +35,9 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
-import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
@@ -50,6 +50,7 @@ import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -152,7 +153,6 @@ public class EnterpriseCacheService
      * @param name        the name of the cache, including prefix
      * @param partitionId the partition id which cache record store is created on
      * @return the created {@link ICacheRecordStore}
-     *
      * @see com.hazelcast.cache.impl.CacheRecordStore
      * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
      */
@@ -216,7 +216,7 @@ public class EnterpriseCacheService
         try {
             return hotRestart.isEnabled()
                     ? new HotRestartHiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine,
-                        hotRestart.isFsync(), prefix)
+                    hotRestart.isFsync(), prefix)
                     : new HiDensityNativeMemoryCacheRecordStore(partitionId, name, this, nodeEngine);
         } catch (NativeOutOfMemoryError e) {
             throw new NativeOutOfMemoryError("Cannot create internal cache map, "
@@ -326,7 +326,7 @@ public class EnterpriseCacheService
     public int forceEvict(String name, int originalPartitionId) {
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int threadCount = getPartitionThreadCount();
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
@@ -339,6 +339,11 @@ public class EnterpriseCacheService
         return evicted;
     }
 
+    private int getPartitionThreadCount() {
+        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        return operationService.getPartitionOperationThreadCount();
+    }
+
     /**
      * Does forced eviction on other caches. Runs on the operation threads.
      *
@@ -349,7 +354,7 @@ public class EnterpriseCacheService
     public int forceEvictOnOthers(String name, int originalPartitionId) {
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int threadCount = getPartitionThreadCount();
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
@@ -376,7 +381,7 @@ public class EnterpriseCacheService
     public int forceEvictOnAll(int originalPartitionId) {
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int threadCount = getPartitionThreadCount();
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
@@ -400,7 +405,7 @@ public class EnterpriseCacheService
     public void clearAll(int originalPartitionId) {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
-        int threadCount = nodeEngine.getOperationService().getPartitionOperationThreadCount();
+        int threadCount = getPartitionThreadCount();
         int mod = originalPartitionId % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
@@ -441,7 +446,7 @@ public class EnterpriseCacheService
      */
     @Override
     protected CacheOperationProvider createOperationProvider(String cacheNameWithPrefix,
-                                                            InMemoryFormat inMemoryFormat) {
+                                                             InMemoryFormat inMemoryFormat) {
         EnterpriseCacheOperationProvider operationProvider;
         if (InMemoryFormat.NATIVE.equals(inMemoryFormat)) {
             operationProvider = new HiDensityCacheOperationProvider(cacheNameWithPrefix);
@@ -482,7 +487,6 @@ public class EnterpriseCacheService
      * which holds live information about cache.
      *
      * @param cacheNameWithPrefix Name (including prefix) of the cache whose live information is requested
-     *
      * @return the {@link HiDensityStorageInfo} instance which holds live information about Hi-Density cache
      */
     public HiDensityStorageInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {

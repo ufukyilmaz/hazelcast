@@ -6,6 +6,7 @@ import com.hazelcast.client.impl.HazelcastClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
@@ -28,6 +29,7 @@ import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_DIFFERENT_VERS
 import static com.hazelcast.enterprise.SampleLicense.LICENSE_WITH_SMALLER_VERSION;
 import static com.hazelcast.enterprise.SampleLicense.SECURITY_ONLY_LICENSE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
+import static com.hazelcast.enterprise.SampleLicense.V4_LICENSE_WITH_HD_MEMORY_DISABLED;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -236,5 +238,24 @@ public class LicenseTest extends HazelcastTestSupport {
 
         ClientProxyFactory proxyFactory = clientProxy.client.getClientExtension().createServiceProxyFactory(MapService.class);
         assertTrue(proxyFactory instanceof ClientProxyFactory);
+    }
+
+    @Test(expected = InvalidLicenseException.class)
+    public void testEnterpriseClientWithHDMemoryDisabledLicense() {
+        Config config = new Config();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
+
+        HazelcastInstance h1 = factory.newHazelcastInstance(config);
+        HazelcastInstance h2 = factory.newHazelcastInstance(config);
+        assertClusterSizeEventually(2, h2);
+        assertClusterSizeEventually(2, h1);
+
+        ClientConfig clientConfig = new ClientConfig();
+        NativeMemoryConfig nativeMemoryConfig = new NativeMemoryConfig();
+        nativeMemoryConfig.setEnabled(true);
+        clientConfig.setNativeMemoryConfig(nativeMemoryConfig);
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), V4_LICENSE_WITH_HD_MEMORY_DISABLED);
+
+        factory.newHazelcastClient(clientConfig);
     }
 }

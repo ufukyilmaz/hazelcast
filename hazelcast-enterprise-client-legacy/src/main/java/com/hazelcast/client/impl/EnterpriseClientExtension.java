@@ -18,6 +18,7 @@ import com.hazelcast.internal.serialization.SerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
+import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
@@ -82,6 +83,10 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     private MemoryManager getMemoryManager(ClientConfig config) {
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
+            if (license.getVersion() == LicenseVersion.V4) {
+                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
+                        Feature.HD_MEMORY);
+            }
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
             LOGGER.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");

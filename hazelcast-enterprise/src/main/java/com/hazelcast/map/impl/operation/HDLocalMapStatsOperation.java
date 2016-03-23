@@ -36,11 +36,13 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public class HDLocalMapStatsOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
 
     private MapStatsHolder mapStatsHolder;
+    private boolean iterateStats;
 
-    public HDLocalMapStatsOperation(String mapName) {
+    public HDLocalMapStatsOperation(String mapName, boolean iterateStats) {
         super(mapName);
         checkNotNull(mapName, "mapName cannot be null");
         this.createRecordStoreOnDemand = false;
+        this.iterateStats = iterateStats;
     }
 
     @Override
@@ -59,16 +61,18 @@ public class HDLocalMapStatsOperation extends HDMapOperation implements Partitio
             long lastUpdateTime = 0;
             long hits = 0;
 
-            // TODO This is O(n), should be O(1), will fix later.
-            Iterator<Record> iterator = recordStore.iterator();
-            while (iterator.hasNext()) {
-                Record record = iterator.next();
-                Data key = record.getKey();
+            if (iterateStats) {
+                // TODO This is O(n), should be O(1), will fix later.
+                Iterator<Record> iterator = recordStore.iterator();
+                while (iterator.hasNext()) {
+                    Record record = iterator.next();
+                    Data key = record.getKey();
 
-                hits += record.getStatistics().getHits();
-                lockedEntryCount += recordStore.isLocked(key) ? 1 : 0;
-                lastAccessTime = Math.max(lastAccessTime, record.getLastAccessTime());
-                lastUpdateTime = Math.max(lastUpdateTime, record.getLastUpdateTime());
+                    hits += record.getStatistics().getHits();
+                    lockedEntryCount += recordStore.isLocked(key) ? 1 : 0;
+                    lastAccessTime = Math.max(lastAccessTime, record.getLastAccessTime());
+                    lastUpdateTime = Math.max(lastUpdateTime, record.getLastUpdateTime());
+                }
             }
 
             mapStatsHolder.setHits(hits);

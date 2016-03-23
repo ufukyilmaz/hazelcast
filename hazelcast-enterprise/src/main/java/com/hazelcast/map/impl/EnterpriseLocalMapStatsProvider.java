@@ -88,7 +88,7 @@ class EnterpriseLocalMapStatsProvider extends LocalMapStatsProvider {
             if (partitionContainer == null) {
                 continue;
             }
-            Operation operation = new HDLocalMapStatsOperation(mapName);
+            Operation operation = new HDLocalMapStatsOperation(mapName, iterateStats);
             operation.setPartitionId(partitionId);
             // Execute the this operation on all local primary and replica partitions.
             operation.setValidateTarget(false);

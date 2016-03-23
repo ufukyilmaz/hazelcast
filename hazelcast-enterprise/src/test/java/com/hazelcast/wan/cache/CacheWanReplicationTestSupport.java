@@ -84,7 +84,7 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
             wanConfig = new WanReplicationConfig();
             wanConfig.setName(setupName);
         }
-        wanConfig.addTargetClusterConfig(targetCluster(toConfig, clusterSz));
+        wanConfig.addWanPublisherConfig(targetCluster(toConfig, clusterSz));
 
         WanReplicationRef wanRef = new WanReplicationRef();
         wanRef.setName(setupName);

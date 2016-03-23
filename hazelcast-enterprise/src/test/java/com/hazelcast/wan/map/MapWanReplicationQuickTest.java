@@ -2,8 +2,8 @@ package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
@@ -63,7 +63,7 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
     public void testExceptionOnQueueOverrun() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanTargetClusterConfig targetClusterConfig = wanConfig.getTargetClusterConfigs().get(0);
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA, factory);

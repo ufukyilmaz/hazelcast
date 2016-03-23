@@ -3,8 +3,8 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
@@ -64,7 +64,7 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
         initConfigB();
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(), DEFAULT_CACHE_NAME);
         WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanTargetClusterConfig targetClusterConfig = wanConfig.getTargetClusterConfigs().get(0);
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA, factory);

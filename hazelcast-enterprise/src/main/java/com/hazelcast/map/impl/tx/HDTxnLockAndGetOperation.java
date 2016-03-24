@@ -33,21 +33,23 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
     private VersionedValue response;
     private String ownerUuid;
     private boolean shouldLoad;
+    private boolean blockReads;
 
     public HDTxnLockAndGetOperation() {
     }
 
     public HDTxnLockAndGetOperation(String name, Data dataKey, long timeout, long ttl, String ownerUuid,
-                                    boolean shouldLoad) {
+                                    boolean shouldLoad, boolean blockReads) {
         super(name, dataKey, ttl);
         this.ownerUuid = ownerUuid;
         this.shouldLoad = shouldLoad;
+        this.blockReads = blockReads;
         setWaitTimeout(timeout);
     }
 
     @Override
     protected void runInternal() {
-        if (!recordStore.txnLock(getKey(), ownerUuid, getThreadId(), getCallId(), ttl)) {
+        if (!recordStore.txnLock(getKey(), ownerUuid, getThreadId(), getCallId(), ttl, blockReads)) {
             throw new TransactionException("Transaction couldn't obtain lock.");
         }
         Record record = recordStore.getRecordOrNull(dataKey);
@@ -77,6 +79,7 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
         super.writeInternal(out);
         out.writeUTF(ownerUuid);
         out.writeBoolean(shouldLoad);
+        out.writeBoolean(blockReads);
     }
 
     @Override
@@ -84,6 +87,7 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
         super.readInternal(in);
         ownerUuid = in.readUTF();
         shouldLoad = in.readBoolean();
+        blockReads = in.readBoolean();
     }
 
     @Override

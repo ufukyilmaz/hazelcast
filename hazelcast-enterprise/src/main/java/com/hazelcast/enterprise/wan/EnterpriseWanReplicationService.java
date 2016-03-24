@@ -81,7 +81,6 @@ public class EnterpriseWanReplicationService
                         } catch (Exception e) {
                             throw ExceptionUtil.rethrow(e);
                         }
-                        assert consumer instanceof WanReplicationConsumer;
                     } else {
                         throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
                                 + "attribute need to be set in WanConsumerConfig");

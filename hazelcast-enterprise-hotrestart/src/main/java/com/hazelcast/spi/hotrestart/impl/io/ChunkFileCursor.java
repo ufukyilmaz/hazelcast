@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.io;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.EOFException;
 import java.io.File;
@@ -85,6 +86,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         return headerBuf.capacity() + key.length;
     }
 
+    @SuppressFBWarnings(value = "EI", justification = "key is treated as a read-only byte array")
     @Override public byte[] key() {
         return key;
     }

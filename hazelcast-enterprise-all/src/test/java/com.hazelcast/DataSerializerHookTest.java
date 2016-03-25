@@ -68,19 +68,29 @@ public class DataSerializerHookTest {
         for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
             if (line.startsWith("com")) {
                 assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath, enterpriseAllSet.contains(line));
+                enterpriseAllSet.remove(line);
             }
         }
 
         for (String line = wmInput.readLine(); line != null; line = wmInput.readLine()) {
             if (line.startsWith("com")) {
                 assertTrue("Class in WM module: " + line + " is missing!", enterpriseAllSet.contains(line));
+                enterpriseAllSet.remove(line);
             }
         }
 
         for (String line = eeInput.readLine(); line != null; line = eeInput.readLine()) {
             if (line.startsWith("com")) {
                 assertTrue("Class in EE: " + line + " is missing!", enterpriseAllSet.contains(line));
+                enterpriseAllSet.remove(line);
             }
         }
+
+        StringBuilder extraLines = new StringBuilder();
+        for (String line : enterpriseAllSet) {
+            extraLines.append(line).append("\n");
+        }
+
+        assertTrue("Below classes in EE doesn't exists\n" + extraLines.toString(), enterpriseAllSet.isEmpty());
     }
 }

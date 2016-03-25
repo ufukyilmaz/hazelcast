@@ -78,6 +78,39 @@ a `SAXParse` exception is thrown. [5528]
 
 The following are the issues solved for Hazelcast 3.6 and 3.6.x releases.
 
+*3.6.2*
+
+The following are the fixed issues for 3.6.2 release.
+
+- In Hazelcast 3.6.1, the OSGi bundle install fails. [7772]
+- Timeout happens at the `ClientMapBasicTest`. [7718]
+- IMap does not send invalidations to the client's near caches after `putAll`/`loadAll` operations at member side. [7715]
+- The test `ClientXAStressTest.testCommitConcurrently` fails due to an assertion error that reads as "the size of the map is not correct". [7709]
+- The test `ClientTransactionalMapQuorumTest` fails since it timed out. [7693]
+- Wildcards do not work with permissions. For example, when a queue permission is defined using wildcard, i.e. `<queue-permission name="secure.*" principal="admin">` and the queue `secure.orders` is created at the client, Hazelcast throws `AccessControlException`. [7616]
+- The FREE_HEAP_PERCENTAGE eviction policy does not work as documented because the `EvictionChecker` is incorrectly calculating available memory percentage in `checkFreeHeapPercentageEviction`. [7599]
+- `DiscoveryStrategy`'s `destroy()` method is not called on shutdown. [7545]
+- The method `MapStore.storeAll()` is never called when the objects are updated with a delay. [7464]
+- WebFilter(3.6-RC1): Session attributes are lost or overwritten with old values when using `deferred-write` by reading them.[7291]
+- The method `HazelcastHttpSession.getAttributeNames()` returns entries that were only read but not written. [7033]
+- Hazelcast 3.5.3 conflicts with FUSE 6.1. When Hazelcast is integrated into a system with JBoss Fuse 6.1, there appeared some warnings in the logs. [6821]
+- An exception is thrown on the server when attempting to deserialize `HIBERNATE4_TYPE_HIBERNATE_CACHE_ENTRY` value. [6683]
+- The test `IOBalancerMemoryLeakTest.testMemoryLeak` fails due to a socket exception that reads as "unexpected end of file from server". [6496]
+- Merging events throw exception on the query cache of client. [827]
+- Hazelcast Enterprise Java Client should check the license key for High-Density Memory and High-Density Near Cache features. [826]
+- The dependency tree of the package `hazelcast-enterprise-all` needs a cleanup. [789]
+- Support for MapLoader's load event should be added to continuous query cache. [788]
+- Invalid license messages for each feature should be improved and more explanatory. [747]
+- In the license expiration cases, the build number should be logged before the license version is checked. [714]
+
+
+
+The following are the enhancement issues fixed for 3.6.2 release.
+
+- Hazelcast Docker images are big in size; it would be better to clean them up and reduce their sizes. [7553]
+- It would be better to provide an `enterprise-javadoc.jar` in the Hazelcast Enterprise bundle. This way IDEs can auto-import the Javadocs for the Enterprise APIs and provide context sensitive completion/help within the IDE. [7245]
+- Management Center WAN Replication metrics take a long time to stabilize. The responsiveness of the Outbound records/sec. metric should be improved. It currently seems to under-report WAN replication performance for 10s of seconds before reaching the same figure as the client side reported metrics. [7244]
+
 *3.6.1 Fixes*
 
 This section lists the fixed issues for 3.6.1 release.

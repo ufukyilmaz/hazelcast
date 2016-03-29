@@ -15,6 +15,7 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
@@ -87,7 +88,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public void beforeStart() {
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-        String licenseKey = node.groupProperties.getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
+        String licenseKey = node.getGroupProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
@@ -196,6 +197,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                                 SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB,
                                 partitionCount));
             }
+        }
+
+        initWanConsumers();
+    }
+
+    private void initWanConsumers() {
+        WanReplicationService wanReplicationService = node.nodeEngine.getWanReplicationService();
+        if (wanReplicationService != null && wanReplicationService instanceof EnterpriseWanReplicationService) {
+            ((EnterpriseWanReplicationService) wanReplicationService).initializeCustomConsumers();
         }
     }
 

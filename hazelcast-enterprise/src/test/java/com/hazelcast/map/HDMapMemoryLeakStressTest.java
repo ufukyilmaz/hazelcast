@@ -11,8 +11,8 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -33,6 +33,7 @@ import com.hazelcast.util.EmptyStatement;
 import com.hazelcast.util.function.LongLongConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -76,6 +77,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
     @Test
     @Category(QuickTest.class)
+    @Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/836
     public void test_shutdown() throws InterruptedException {
         final Config config = createConfig();
         config.getNativeMemoryConfig().setAllocatorType(MemoryAllocatorType.POOLED);
@@ -149,7 +151,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     protected Config createConfig() {
         Config config = new Config();
 
-        config.setProperty(GroupProperty.PARTITION_COUNT, String.valueOf(PARTITION_COUNT));
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT));
 
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig.setEnabled(true).setAllocatorType(ALLOCATOR_TYPE).setSize(MEMORY_SIZE);

@@ -14,9 +14,9 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -157,7 +157,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
         // Due to a race condition in object destruction, it can happen that the sync operation takes place
         // while a cache is being destroyed which can result in a memory leak.
-        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS, String.valueOf(Integer.MAX_VALUE));
+        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE));
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig
                 .setEnabled(true)

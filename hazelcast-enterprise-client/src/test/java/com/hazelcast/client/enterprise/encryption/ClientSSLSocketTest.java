@@ -28,6 +28,7 @@ import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -54,6 +55,7 @@ public class ClientSSLSocketTest {
     }
 
     @Test(expected = IllegalStateException.class, timeout = 60000)
+    @Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/597
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Properties serverSslProps = TestKeyStoreUtil.createSslProperties();
         Config cfg = new Config();

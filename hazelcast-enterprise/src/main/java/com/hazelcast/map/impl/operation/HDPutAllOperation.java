@@ -48,6 +48,8 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     private List<Map.Entry<Data, Data>> backupEntries;
     private List<RecordInfo> backupRecordInfos;
     private List<Data> invalidationKeys;
+    private boolean hasMapListener;
+    private boolean shouldWanReplicate;
 
     public HDPutAllOperation() {
     }
@@ -59,9 +61,10 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     protected void runInternal() {
+        hasMapListener = mapEventPublisher.hasEventListener(name);
+        shouldWanReplicate = shouldWanReplicate();
         backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());
         backupEntries = new ArrayList<Map.Entry<Data, Data>>(mapEntries.size());
-        recordStore = mapServiceContext.getRecordStore(getPartitionId(), name);
 
         Iterator<Map.Entry<Data, Data>> iterator = mapEntries.iterator();
         while (iterator.hasNext()) {
@@ -71,19 +74,30 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         }
     }
 
-    private boolean put(Map.Entry<Data, Data> entry) {
+    private void put(Map.Entry<Data, Data> entry) {
         Data dataKey = entry.getKey();
         Data dataValue = entry.getValue();
 
-        Object oldValue = recordStore.put(dataKey, dataValue, DEFAULT_TTL);
-        mapServiceContext.interceptAfterPut(name, dataValue);
-        EntryEventType eventType = oldValue == null ? ADDED : UPDATED;
+        Object oldValue = null;
+        if (hasMapListener) {
+            oldValue = recordStore.put(dataKey, dataValue, DEFAULT_TTL);
+        } else {
+            // By using `recordStore.set`, we get-rid-of one extra map-store access.
+            // Because `recordStore.put` tries to find previous value from map-store, in order to pass it EntryEvent.
+            // If loading from map-store is expensive, this can lead serious performance degradation.
+            // To prevent this potential problem, when there is no map-listener exists, don't use `recordStore.put`.
+            recordStore.set(dataKey, dataValue, DEFAULT_TTL);
+        }
+
         dataValue = getValueOrPostProcessedValue(dataKey, dataValue);
+        mapServiceContext.interceptAfterPut(name, dataValue);
+
+        EntryEventType eventType = oldValue == null ? ADDED : UPDATED;
         mapEventPublisher.publishEvent(getCallerAddress(), name, eventType, dataKey, oldValue, dataValue);
 
         Record record = recordStore.getRecord(dataKey);
 
-        if (shouldWanReplicate()) {
+        if (shouldWanReplicate) {
             EntryView entryView = createSimpleEntryView(dataKey, dataValue, record);
             mapEventPublisher.publishWanReplicationUpdate(name, entryView);
         }
@@ -93,8 +107,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         evict();
 
         addInvalidation(dataKey);
-
-        return true;
     }
 
     private void addInvalidation(Data dataKey) {

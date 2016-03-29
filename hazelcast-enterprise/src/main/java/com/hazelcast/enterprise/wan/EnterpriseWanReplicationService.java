@@ -1,18 +1,18 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.config.InvalidConfigurationException;
+import com.hazelcast.config.WanConsumerConfig;
+import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.config.WanTargetClusterConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
-import com.hazelcast.enterprise.wan.replication.AbstractWanReplication;
-import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
+import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
-import com.hazelcast.nio.Packet;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.partition.MigrationEndpoint;
 import com.hazelcast.spi.MigrationAwareService;
@@ -53,7 +53,8 @@ public class EnterpriseWanReplicationService
     private final Node node;
     private final ILogger logger;
 
-    private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWebReplicationPublisherMapping();
+    private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWanReplicationPublisherMapping();
+    private final Map<String, WanReplicationConsumer> wanConsumers = initializeCustomWanReplicationConsumerMapping();
     private final Object publisherMutex = new Object();
     private final Object executorMutex = new Object();
     private volatile StripedExecutor executor;
@@ -61,6 +62,34 @@ public class EnterpriseWanReplicationService
     public EnterpriseWanReplicationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(EnterpriseWanReplicationService.class.getName());
+    }
+
+    public void initializeCustomConsumers() {
+        Map<String, WanReplicationConfig> configs = node.getConfig().getWanReplicationConfigs();
+        if (configs != null) {
+            for (Map.Entry<String, WanReplicationConfig> wanReplicationConfigEntry : configs.entrySet()) {
+                WanConsumerConfig consumerConfig = wanReplicationConfigEntry.getValue().getWanConsumerConfig();
+
+                if (consumerConfig != null) {
+                    WanReplicationConsumer consumer;
+                    if (consumerConfig.getImplementation() != null) {
+                        consumer = (WanReplicationConsumer) consumerConfig.getImplementation();
+                    } else if (consumerConfig.getClassName() != null) {
+                        try {
+                            consumer = ClassLoaderUtil
+                                    .newInstance(node.getConfigClassLoader(), consumerConfig.getClassName());
+                        } catch (Exception e) {
+                            throw ExceptionUtil.rethrow(e);
+                        }
+                    } else {
+                        throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
+                                + "attribute need to be set in WanConsumerConfig");
+                    }
+                    consumer.init(node, wanReplicationConfigEntry.getKey(), consumerConfig);
+                    wanConsumers.put(wanReplicationConfigEntry.getKey(), consumer);
+                }
+            }
+        }
     }
 
     @Override
@@ -76,7 +105,7 @@ public class EnterpriseWanReplicationService
             String wanReplicationName = entry.getKey();
             WanReplicationPublisherDelegate publisherDelegate = entry.getValue();
             for (WanReplicationEndpoint endpoint : publisherDelegate.getEndpoints().values()) {
-                AbstractWanReplication wanReplication = (AbstractWanReplication) endpoint;
+                AbstractWanPublisher wanReplication = (AbstractWanPublisher) endpoint;
                 PublisherQueueContainer publisherQueueContainer = endpoint.getPublisherQueueContainer();
                 Map<Integer, PartitionWanEventContainer> eventQueueMap
                         = publisherQueueContainer.getPublisherEventQueueMap();
@@ -162,28 +191,37 @@ public class EnterpriseWanReplicationService
             if (wanReplicationConfig == null) {
                 return null;
             }
-            List<WanTargetClusterConfig> targets = wanReplicationConfig.getTargetClusterConfigs();
-
+            List<WanPublisherConfig> publisherConfigs = wanReplicationConfig.getWanPublisherConfigs();
             Map<String, WanReplicationEndpoint> targetEndpoints = new HashMap<String, WanReplicationEndpoint>();
-            for (WanTargetClusterConfig targetClusterConfig : targets) {
-                WanReplicationEndpoint target;
-                if (targetClusterConfig.getReplicationImpl() != null) {
-                    try {
-                        target = ClassLoaderUtil
-                                .newInstance(node.getConfigClassLoader(), targetClusterConfig.getReplicationImpl());
-                    } catch (Exception e) {
-                        throw ExceptionUtil.rethrow(e);
+
+            if (!publisherConfigs.isEmpty()) {
+                for (WanPublisherConfig wanPublisherConfig : publisherConfigs) {
+                    WanReplicationEndpoint target;
+                    if (wanPublisherConfig.getImplementation() != null) {
+                        target = (WanReplicationEndpoint) wanPublisherConfig.getImplementation();
+                    } else if (wanPublisherConfig.getClassName() != null) {
+                        target = createWanReplicationEndpoint(wanPublisherConfig.getClassName());
+                    } else {
+                        throw new InvalidConfigurationException("Either \'implementation\' or \'className\' "
+                                + "attribute need to be set in WanPublisherConfig");
                     }
-                } else {
-                    target = new WanNoDelayReplication();
+                    String groupName = wanPublisherConfig.getGroupName();
+                    target.init(node, wanReplicationConfig, wanPublisherConfig);
+                    targetEndpoints.put(groupName, target);
                 }
-                String groupName = targetClusterConfig.getGroupName();
-                target.init(node, name, targetClusterConfig, wanReplicationConfig.isSnapshotEnabled());
-                targetEndpoints.put(groupName, target);
             }
             wr = new WanReplicationPublisherDelegate(name, targetEndpoints);
             wanReplications.put(name, wr);
             return wr;
+        }
+    }
+
+    private WanReplicationEndpoint createWanReplicationEndpoint(String className) {
+        try {
+            return ClassLoaderUtil
+                    .newInstance(node.getConfigClassLoader(), className);
+        } catch (Exception e) {
+            throw ExceptionUtil.rethrow(e);
         }
     }
 
@@ -194,11 +232,6 @@ public class EnterpriseWanReplicationService
         return endpoints.get(target);
     }
 
-    @Override
-    public void handle(final Packet packet) {
-        handleEvent(packet, null);
-    }
-
     public void handleEvent(final Data data, WanOperation wanOperation) {
         Object event = node.nodeEngine.toObject(data);
         if (event instanceof BatchWanReplicationEvent) {
@@ -206,6 +239,12 @@ public class EnterpriseWanReplicationService
         } else {
             handleRepEvent((WanReplicationEvent) event, wanOperation);
         }
+    }
+
+    public void handleEvent(WanReplicationEvent event) {
+        String serviceName = event.getServiceName();
+        ReplicationSupportingService service = node.nodeEngine.getService(serviceName);
+        service.onReplicationEvent(event);
     }
 
     private void handleRepEvent(final BatchWanReplicationEvent batchWanReplicationEvent, WanOperation op) {
@@ -382,11 +421,17 @@ public class EnterpriseWanReplicationService
                 }
             }
         }
+
+        for (WanReplicationConsumer consumer : wanConsumers.values()) {
+            consumer.shutdown();
+        }
+
         StripedExecutor ex = executor;
         if (ex != null) {
             ex.shutdown();
         }
         wanReplications.clear();
+        wanConsumers.clear();
     }
 
     @Override
@@ -407,7 +452,11 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
-    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWebReplicationPublisherMapping() {
+    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
         return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
+    }
+
+    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
+        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
     }
 }

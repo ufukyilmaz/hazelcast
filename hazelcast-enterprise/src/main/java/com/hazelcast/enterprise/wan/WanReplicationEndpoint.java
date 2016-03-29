@@ -16,7 +16,8 @@
 
 package com.hazelcast.enterprise.wan;
 
-import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.instance.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -33,10 +34,10 @@ public interface WanReplicationEndpoint
      * Initializes the endpoint using the given arguments.
      *
      * @param node      the current node that tries to connect
-     * @param wanReplicationName the name of {@link com.hazelcast.config.WanReplicationConfig} config
-     * @param targetClusterConfig  this endpoint will be initialized using this {@link WanTargetClusterConfig} instance
+     * @param wanReplicationConfig  {@link com.hazelcast.config.WanReplicationConfig} config
+     * @param wanPublisherConfig  this endpoint will be initialized using this {@link WanPublisherConfig} instance
      */
-    void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig, boolean snapshotEnabled);
+    void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig);
 
     /**
      * Closes the endpoint and its internal connections and shuts down other internal states

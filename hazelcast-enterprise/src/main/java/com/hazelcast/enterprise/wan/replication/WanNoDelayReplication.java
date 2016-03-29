@@ -1,6 +1,7 @@
 package com.hazelcast.enterprise.wan.replication;
 
-import com.hazelcast.config.WanTargetClusterConfig;
+import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.connection.WanConnectionWrapper;
 import com.hazelcast.instance.Node;
@@ -16,12 +17,12 @@ public class WanNoDelayReplication
         extends AbstractWanReplication
         implements Runnable {
 
+    private static final int STAGING_QUEUE_SIZE = 50;
     private final LinkedList<WanReplicationEvent> failureQ = new LinkedList<WanReplicationEvent>();
 
     @Override
-    public void init(Node node, String wanReplicationName, WanTargetClusterConfig targetClusterConfig,
-                     boolean snapshotEnabled) {
-        super.init(node, wanReplicationName, targetClusterConfig, snapshotEnabled);
+    public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig targetClusterConfig) {
+        super.init(node, wanReplicationConfig, targetClusterConfig);
         node.nodeEngine.getExecutionService().execute("hz:wan", this);
     }
 
@@ -67,4 +68,8 @@ public class WanNoDelayReplication
         }
     }
 
+    @Override
+    public int getStagingQueueSize() {
+        return STAGING_QUEUE_SIZE;
+    }
 }

@@ -207,9 +207,9 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             OperationServiceImpl operationService = (OperationServiceImpl) nodeEngineImpl.getOperationService();
             final OperationExecutor operationExecutor = operationService.getOperationExecutor();
             final CountDownLatch latch = new CountDownLatch(
-                    operationExecutor.getPartitionOperationThreadCount());
+                    operationExecutor.getPartitionThreadCount());
 
-            operationExecutor.runOnAllPartitionThreads(new Runnable() {
+            operationExecutor.executeOnPartitionThreads(new Runnable() {
                 @Override
                 public void run() {
                     try {

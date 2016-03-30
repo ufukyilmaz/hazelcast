@@ -183,7 +183,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     public void prepare() {
         OperationExecutor operationExecutor = getOperationExecutor();
-        final int threadCount = operationExecutor.getPartitionOperationThreadCount();
+        final int threadCount = operationExecutor.getPartitionThreadCount();
         final int lastNumberOfHotRestartStores = findNumberOfHotRestartStoreDirectories();
         if (lastNumberOfHotRestartStores != 0 && threadCount != lastNumberOfHotRestartStores) {
             throw new HotRestartException("Number of Hot Restart stores is changed before restart! "
@@ -215,7 +215,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             persistentCacheDescriptors.restore(node.getSerializationService());
 
             OperationExecutor opExec = getOperationExecutor();
-            final CountDownLatch doneLatch = new CountDownLatch(opExec.getPartitionOperationThreadCount());
+            final CountDownLatch doneLatch = new CountDownLatch(opExec.getPartitionThreadCount());
             final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
 
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
@@ -226,7 +226,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
 
             long start = Clock.currentTimeMillis();
-            opExec.runOnAllPartitionThreads(new PartitionedLoader(exceptions, doneLatch));
+            opExec.executeOnPartitionThreads(new PartitionedLoader(exceptions, doneLatch));
 
             Throwable failure = awaitDataLoadTasks(doneLatch);
             persistentCacheDescriptors.clearProvisionalConfigs();
@@ -271,7 +271,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
         OperationExecutor operationExecutor = getOperationExecutor();
         logger.fine("Interrupting partition threads...");
-        operationExecutor.interruptAllPartitionThreads();
+        operationExecutor.interruptPartitionThreads();
 
         logger.fine("Closing hot restart stores...");
         closeHotRestartStores();
@@ -332,8 +332,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         final HazelcastMemoryManager memoryManager = ((EnterpriseNodeExtension) node.getNodeExtension())
                 .getMemoryManager();
         OperationExecutor operationExecutor = getOperationExecutor();
-        CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
-        operationExecutor.runOnAllPartitionThreads(new CreateHotRestartStoresTask(latch, memoryManager));
+        CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionThreadCount());
+        operationExecutor.executeOnPartitionThreads(new CreateHotRestartStoresTask(latch, memoryManager));
 
         try {
             latch.await();
@@ -370,8 +370,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private void closeHotRestartStores() {
         OperationExecutor operationExecutor = getOperationExecutor();
-        final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionOperationThreadCount());
-        operationExecutor.runOnAllPartitionThreads(new CloseHotRestartStoresTask(latch));
+        final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionThreadCount());
+        operationExecutor.executeOnPartitionThreads(new CloseHotRestartStoresTask(latch));
 
         try {
             latch.await();

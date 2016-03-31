@@ -211,7 +211,7 @@ public abstract class HDMapOperation extends MapOperation {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
-        int threadCount = operationService.getPartitionOperationThreadCount();
+        int threadCount = operationService.getPartitionThreadCount();
         int mod = getPartitionId() % threadCount;
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             if (partitionId % threadCount == mod) {
@@ -231,7 +231,7 @@ public abstract class HDMapOperation extends MapOperation {
         NodeEngine nodeEngine = getNodeEngine();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
-        int threadCount = operationService.getPartitionOperationThreadCount();
+        int threadCount = operationService.getPartitionThreadCount();
         int mod = getPartitionId() % threadCount;
 
         for (int partitionId = 0; partitionId < partitionCount; partitionId++) {

@@ -283,7 +283,7 @@ public class EnterpriseCacheService
      */
     @Override
     public void shutdown(boolean terminate) {
-        OperationService operationService = nodeEngine.getOperationService();
+        InternalOperationService operationService = (InternalOperationService)nodeEngine.getOperationService();
         List<CacheSegmentShutdownOperation> ops = new ArrayList<CacheSegmentShutdownOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {
@@ -291,7 +291,7 @@ public class EnterpriseCacheService
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
 
-                if (operationService.isAllowedToRunOnCallingThread(op)) {
+                if (operationService.isRunAllowed(op)) {
                     operationService.runOperationOnCallingThread(op);
                 } else {
                     operationService.executeOperation(op);
@@ -341,7 +341,7 @@ public class EnterpriseCacheService
 
     private int getPartitionThreadCount() {
         InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
-        return operationService.getPartitionOperationThreadCount();
+        return operationService.getPartitionThreadCount();
     }
 
     /**

@@ -46,6 +46,7 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
@@ -219,7 +220,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public void clearPartitions(boolean onShutdown) {
-        OperationService operationService = nodeEngine.getOperationService();
+        InternalOperationService operationService = (InternalOperationService)nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
@@ -235,7 +236,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
                     .setNodeEngine(nodeEngine)
                     .setService(getService());
 
-            if (operationService.isAllowedToRunOnCallingThread(operation)) {
+            if (operationService.isRunAllowed(operation)) {
                 operationService.runOperationOnCallingThread(operation);
             } else {
                 operationService.executeOperation(operation);

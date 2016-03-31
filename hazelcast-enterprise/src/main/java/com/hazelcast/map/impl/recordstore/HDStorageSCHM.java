@@ -5,8 +5,8 @@ import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.serialization.SerializationService;
-import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
 
 /**
  * An extended {@link SampleableElasticHashMap} for HD backed {@link com.hazelcast.core.IMap}.

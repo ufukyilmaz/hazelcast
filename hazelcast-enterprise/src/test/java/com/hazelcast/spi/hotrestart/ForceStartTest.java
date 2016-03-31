@@ -21,7 +21,7 @@ import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
-import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
+import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 import com.hazelcast.test.ExpectedRuntimeException;
 import com.hazelcast.test.annotation.ParallelTest;

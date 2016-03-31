@@ -47,7 +47,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
-import com.hazelcast.spi.impl.operationexecutor.classic.PartitionOperationThread;
+import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;

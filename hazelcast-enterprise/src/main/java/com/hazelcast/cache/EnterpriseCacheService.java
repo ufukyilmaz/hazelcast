@@ -283,7 +283,7 @@ public class EnterpriseCacheService
      */
     @Override
     public void shutdown(boolean terminate) {
-        InternalOperationService operationService = (InternalOperationService)nodeEngine.getOperationService();
+        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
         List<CacheSegmentShutdownOperation> ops = new ArrayList<CacheSegmentShutdownOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasAnyRecordStore()) {

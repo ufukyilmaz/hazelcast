@@ -38,7 +38,6 @@ import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
@@ -220,7 +219,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public void clearPartitions(boolean onShutdown) {
-        InternalOperationService operationService = (InternalOperationService)nodeEngine.getOperationService();
+        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
 
         List<EnterpriseMapPartitionClearOperation> operations = new ArrayList<EnterpriseMapPartitionClearOperation>();
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();

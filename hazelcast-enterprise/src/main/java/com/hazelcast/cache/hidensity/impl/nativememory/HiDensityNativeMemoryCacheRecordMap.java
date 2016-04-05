@@ -41,7 +41,6 @@ public class HiDensityNativeMemoryCacheRecordMap
         } else {
             if (entryCountingEnable) {
                 int size = size();
-                assert (size == 0) : "Expected empty cache record map!";
                 // It was enable before but now it will be disable.
                 // Therefore, we decrease the entry count as size of records.
                 storageInfo.removeEntryCount(size);

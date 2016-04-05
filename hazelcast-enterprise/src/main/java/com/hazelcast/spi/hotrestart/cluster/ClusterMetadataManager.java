@@ -365,7 +365,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     private Address[][] createTableFromPartitionService() {
         InternalPartitionServiceImpl partitionService = node.partitionService;
         Address[][] table = new Address[partitionService.getPartitionCount()][InternalPartition.MAX_REPLICA_COUNT];
-        for (InternalPartition partition : partitionService.getPartitions()) {
+        for (InternalPartition partition : partitionService.getInternalPartitions()) {
             int partitionId = partition.getPartitionId();
             for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
                 table[partitionId][replica] = partition.getReplicaAddress(replica);
@@ -699,7 +699,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         try {
             InternalPartitionService partitionService = node.getPartitionService();
             partitionTableWriter.setPartitionVersion(partitionService.getPartitionStateVersion());
-            partitionTableWriter.write(partitionService.getPartitions());
+            partitionTableWriter.write(partitionService.getInternalPartitions());
         } catch (IOException e) {
             logger.severe("While persisting partition table", e);
         }

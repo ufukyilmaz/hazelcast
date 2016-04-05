@@ -1,59 +1,50 @@
 package com.hazelcast.elastic;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.nio.Disposable;
 
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
 /**
  *  Native long array.
  */
-public class LongArray {
+public final class LongArray implements Disposable {
 
     private final MemoryAllocator malloc;
+    private final MemoryAccessor mem;
     private long baseAddress;
     private long length;
 
     /**
-     * @param malloc memory allocator
+     * @param memMgr memory allocator
      * @param length length of array
      */
-    public LongArray(MemoryAllocator malloc, long length) {
-        this.malloc = malloc;
+    public LongArray(MemoryManager memMgr, long length) {
+        this.malloc = memMgr.getAllocator();
+        this.mem = memMgr.getAccessor();
         this.length = length;
-        baseAddress = malloc.allocate(toMemorySize(length));
-    }
-
-    private static long toMemorySize(long length) {
-        return length * LONG_SIZE_IN_BYTES;
+        baseAddress = length > 0 ? malloc.allocate(lengthInBytes(length)) : NULL_ADDRESS;
     }
 
     /**
      * Returns array element at specified index.
      * @param index index of element
      * @return array element at specified index.
-     * @throws ArrayIndexOutOfBoundsException if given index is out of bounds
      */
     public long get(long index) {
-        return AMEM.getLong(baseAddress + offset(index));
+        return mem.getLong(addressOfElement(index));
     }
 
     /**
      * Writes value to specified index of array.
      * @param index index to write value
      * @param value value
-     * @throws ArrayIndexOutOfBoundsException if given index is out of bounds
      */
     public void set(long index, long value) {
-        AMEM.putLong(baseAddress + offset(index), value);
-    }
-
-    private long offset(long index) {
-        if (index < 0 || index >= length) {
-            throw new ArrayIndexOutOfBoundsException("Index: " + index + ", Len: " + length);
-        }
-        return toMemorySize(index);
+        mem.putLong(addressOfElement(index), value);
     }
 
     /**
@@ -64,12 +55,10 @@ public class LongArray {
         if (newLength == length) {
             return;
         }
-        if (newLength < length) {
-            throw new IllegalArgumentException("newLength is lower than length! Length: "
-                    + length + ", newLength: " + newLength);
-        }
-        long currentSize = toMemorySize(length);
-        long newSize = toMemorySize(newLength);
+        assert newLength > length
+                : String.format("Requested to expand to smaller length. Current %,d, requested %,d", length, newLength);
+        long currentSize = lengthInBytes(length);
+        long newSize = lengthInBytes(newLength);
         baseAddress = malloc.reallocate(baseAddress, currentSize, newSize);
         length = newLength;
     }
@@ -88,9 +77,18 @@ public class LongArray {
 
     public void dispose() {
         if (baseAddress != NULL_ADDRESS) {
-            malloc.free(baseAddress, toMemorySize(length));
+            malloc.free(baseAddress, lengthInBytes(length));
             baseAddress = NULL_ADDRESS;
             length = 0;
         }
+    }
+
+    private long addressOfElement(long index) {
+        assert index >= 0 && index < length : "Native array index out of bounds: " + index + " vs. length " + length;
+        return baseAddress + lengthInBytes(index);
+    }
+
+    private static long lengthInBytes(long lengthInElements) {
+        return lengthInElements * LONG_SIZE_IN_BYTES;
     }
 }

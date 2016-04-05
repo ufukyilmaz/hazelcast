@@ -1,4 +1,2 @@
-/**
- * Native memory backed maps.
- */
+/** Off-heap maps */
 package com.hazelcast.elastic.map;

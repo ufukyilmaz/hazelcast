@@ -6,14 +6,14 @@ import com.hazelcast.instance.OutOfMemoryErrorDispatcher;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.internal.util.collection.Long2LongMap;
+import com.hazelcast.internal.util.collection.Long2LongMapHsa;
 import com.hazelcast.internal.util.collection.LongCursor;
 import com.hazelcast.internal.util.collection.LongLongCursor;
 import com.hazelcast.internal.util.collection.LongSet;
-import com.hazelcast.internal.util.sort.MemArrayQuickSorter;
-import com.hazelcast.internal.util.counters.Counter;
-import com.hazelcast.internal.util.collection.Long2LongMapHsa;
-import com.hazelcast.internal.util.sort.LongMemArrayQuickSorter;
 import com.hazelcast.internal.util.collection.LongSetHsa;
+import com.hazelcast.internal.util.counters.Counter;
+import com.hazelcast.internal.util.sort.LongMemArrayQuickSorter;
+import com.hazelcast.internal.util.sort.MemArrayQuickSorter;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.QuickMath;
@@ -128,11 +128,11 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     protected ThreadLocalPoolingMemoryManager(int minBlockSize, int pageSize,
                                               LibMalloc malloc, PooledNativeMemoryStats stats) {
         super(minBlockSize, pageSize, malloc, stats);
-        final MemoryManagerBean memMgr = new MemoryManagerBean(systemAllocator, AMEM);
-        pageAllocations = new LongSetHsa(NULL_ADDRESS, memMgr, INITIAL_CAPACITY, LOAD_FACTOR);
-        sortedPageAllocations = new LongArray(systemAllocator, INITIAL_CAPACITY);
+        final MemoryManagerBean systemMemMgr = new MemoryManagerBean(systemAllocator, AMEM);
+        sortedPageAllocations = new LongArray(systemMemMgr, INITIAL_CAPACITY);
+        pageAllocations = new LongSetHsa(NULL_ADDRESS, systemMemMgr, INITIAL_CAPACITY, LOAD_FACTOR);
         pageAllocationsSorter = new LongMemArrayQuickSorter(AMEM, NULL_ADDRESS);
-        externalAllocations = new Long2LongMapHsa(SIZE_INVALID, memMgr);
+        externalAllocations = new Long2LongMapHsa(SIZE_INVALID, systemMemMgr);
         initializeAddressQueues();
         threadName = Thread.currentThread().getName();
     }
@@ -190,7 +190,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         return Bits.clearBit(header, AVAILABLE_BIT);
     }
 
-    private long getPageOffsetAddressByHeader(long address, byte header) {
+    private static long getPageOffsetAddressByHeader(long address, byte header) {
         int size = getSizeFromHeader(header);
         // We keep the page offset (if there is enough space) at the end of block as aligned
         return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;

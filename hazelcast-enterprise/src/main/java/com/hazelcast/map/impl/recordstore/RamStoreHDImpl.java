@@ -22,6 +22,8 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public class RamStoreHDImpl implements RamStore {
 
+    private static final int REMOVE_NULL_ENTRIES_BATCH_SIZE = 1024;
+
     private final EnterpriseRecordStore recordStore;
 
     private final HazelcastMemoryManager memoryManager;
@@ -64,6 +66,7 @@ public class RamStoreHDImpl implements RamStore {
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
         SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();
         NativeMemoryData key = new NativeMemoryData();
+        long removedCount = 0;
         while (cursor.advance()) {
             KeyHandleOffHeap keyHandleOffHeap = (KeyHandleOffHeap) cursor.asKeyHandle();
             key.reset(keyHandleOffHeap.address());
@@ -71,7 +74,11 @@ public class RamStoreHDImpl implements RamStore {
             assert record != null;
             assert record.getSequence() == keyHandleOffHeap.sequenceId();
             storage.removeTransient(record);
+            if (++removedCount % REMOVE_NULL_ENTRIES_BATCH_SIZE == 0) {
+                storage.disposeDeferredBlocks();
+            }
         }
+        storage.disposeDeferredBlocks();
     }
 
     private KeyHandleOffHeap readKeyHandle(long nativeKeyAddress) {

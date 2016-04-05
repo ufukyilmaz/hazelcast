@@ -6,8 +6,9 @@ import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Record;
-import com.hazelcast.spi.hotrestart.impl.gc.WriteThroughChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
@@ -20,8 +21,8 @@ public final class HotRestartStoreImpl implements HotRestartStore {
     private final ILogger logger;
     private final GcExecutor gcExec;
     private final GcHelper gcHelper;
-    private WriteThroughChunk activeValChunk;
-    private WriteThroughChunk activeTombChunk;
+    private ActiveChunk activeValChunk;
+    private ActiveChunk activeTombChunk;
 
     private HotRestartStoreImpl(HotRestartStoreConfig cfg, GcHelper gcHelper) {
         this.gcHelper = gcHelper;
@@ -61,13 +62,13 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         final int size = Record.size(hrKey.bytes(), value);
         final long seq = gcHelper.nextRecordSeq();
         final boolean isTombstone = value == null;
-        WriteThroughChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
+        ActiveChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
         activeChunk.flagForFsyncOnClose(needsFsync);
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
-        final boolean full = activeChunk.addStep1(hrKey.prefix(), seq, hrKey.bytes(), value);
+        final boolean full = activeChunk.addStep1(seq, hrKey.prefix(), hrKey.bytes(), value);
         if (full) {
             activeChunk.close();
-            final WriteThroughChunk inactiveChunk = activeChunk;
+            final ActiveChunk inactiveChunk = activeChunk;
             if (isTombstone) {
                 activeChunk = activeTombChunk = gcHelper.newActiveTombChunk();
             } else {
@@ -93,7 +94,7 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.submitReplaceActiveChunk(null, activeTombChunk);
         gcExec.start();
         logger.info(String.format("%s reloaded %,d keys; chunk seq %03x",
-                name, gcExec.chunkMgr.trackedKeyCount(), activeValChunk.seq));
+                name, gcExec.chunkMgr.trackedKeyCount(), ((Chunk) activeValChunk).seq));
     }
 
     @Override public boolean isEmpty() {
@@ -119,11 +120,11 @@ public final class HotRestartStoreImpl implements HotRestartStore {
         gcExec.shutdown();
     }
 
-    private void closeAndDeleteIfEmpty(WriteThroughChunk chunk) {
+    private void closeAndDeleteIfEmpty(ActiveChunk chunk) {
         if (chunk != null) {
             chunk.close();
             if (chunk.size() == 0) {
-                gcHelper.deleteChunkFile(chunk);
+                gcHelper.deleteChunkFile((Chunk) chunk);
             }
         }
 

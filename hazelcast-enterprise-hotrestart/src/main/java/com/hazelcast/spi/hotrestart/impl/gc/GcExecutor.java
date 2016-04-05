@@ -2,21 +2,26 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.concurrent.locks.LockSupport;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Top-level control code of the GC thread. Only thread mechanics are here;
@@ -52,10 +57,9 @@ public final class GcExecutor {
             new OneToOneConcurrentArrayQueue<Runnable>(WORK_QUEUE_CAPACITY);
     private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(WORK_QUEUE_CAPACITY);
     private final Thread gcThread;
-    private final MutatorCatchup mc = new MutatorCatchup();
+    private final MutatorCatchup mc;
     private final IdleStrategy mutatorIdler = idler();
     private final GcLogger logger;
-    private final GcHelper gcHelper;
     /** This lock exists only to serve the needs of {@link #runWhileGcPaused(CatchupRunnable)}. */
     private final Object testGcMutex = new Object();
     private volatile boolean backpressure;
@@ -65,8 +69,8 @@ public final class GcExecutor {
     private boolean stopped;
 
     public GcExecutor(HotRestartStoreConfig cfg, GcHelper gcHelper) {
-        this.gcHelper = gcHelper;
         this.logger = gcHelper.logger;
+        this.mc = new MutatorCatchup();
         this.gcThread = new Thread(new MainLoop(), "GC thread for " + cfg.storeName());
         this.pfixTombstoMgr = new PrefixTombstoneManager(this, logger);
         this.chunkMgr = new ChunkManager(cfg, gcHelper, pfixTombstoMgr);
@@ -83,7 +87,6 @@ public final class GcExecutor {
             final IdleStrategy idler = idler();
             try {
                 long idleCount = 0;
-                int parkCount = 0;
                 boolean didWork = false;
                 while (!stopped && !interrupted()) {
                     final int workCount;
@@ -93,32 +96,22 @@ public final class GcExecutor {
                         if (gcp.forceGc) {
                             didWork = runForcedGC(gcp);
                         } else {
-                            didWork = chunkMgr.gc(gcp, mc);
+                            didWork = chunkMgr.valueGc(gcp, mc);
+                        }
+                        if (didWork) {
+                            mc.catchupNow();
+                            chunkMgr.tombGc(mc);
                         }
                         didWork |= pfixTombstoMgr.sweepAsNeeded();
-                        didWork |= chunkMgr.deleteGarbageTombChunks(mc);
                     }
                     if (didWork) {
                         Thread.yield();
                     }
                     if (workCount > 0 || didWork) {
                         idleCount = 0;
-                        parkCount = 0;
-                    } else if (idler.idle(idleCount++)) {
-                        parkCount++;
+                    } else {
+                        idler.idle(idleCount++);
                     }
-                    if (gcHelper.compressionEnabled() && parkCount >= PARK_COUNT_BEFORE_COMPRESS) {
-                        synchronized (testGcMutex) {
-                            didWork = chunkMgr.compressSomeChunk(mc);
-                            parkCount = 0;
-                        }
-                    }
-                }
-                // This should be optional, configurable behavior.
-                // Compression is performed while the rest of the system
-                // is already down, thus contributing to downtime.
-                if (gcHelper.compressionEnabled()) {
-                    chunkMgr.compressAllChunks(mc);
                 }
                 logger.info("GC thread done. ");
             } catch (Throwable t) {
@@ -126,19 +119,16 @@ public final class GcExecutor {
                 logger.severe("GC thread terminated by exception", t);
                 gcThreadFailureCause = t;
             } finally {
-                chunkMgr.close();
+                chunkMgr.dispose();
             }
         }
     }
 
     boolean runForcedGC(GcParams gcp) {
         backpressure = true;
-        final boolean savedFsyncOften = mc.fsyncOften;
-        mc.fsyncOften = false;
         try {
-            return chunkMgr.gc(gcp, mc);
+            return chunkMgr.valueGc(gcp, mc);
         } finally {
-            mc.fsyncOften = savedFsyncOften;
             backpressure = false;
         }
     }
@@ -157,7 +147,6 @@ public final class GcExecutor {
                 LockSupport.unpark(gcThread);
                 Thread.sleep(1);
             }
-            chunkMgr.gcHelper.dispose();
         } catch (InterruptedException e) {
             currentThread().interrupt();
         }
@@ -167,7 +156,7 @@ public final class GcExecutor {
         submit(chunkMgr.new AddRecord(key, freshSeq, freshSize, freshIsTombstone));
     }
 
-    public void submitReplaceActiveChunk(final WriteThroughChunk closed, final WriteThroughChunk fresh) {
+    public void submitReplaceActiveChunk(final ActiveChunk closed, final ActiveChunk fresh) {
         submit(chunkMgr.new ReplaceActiveChunk(fresh, closed));
     }
 
@@ -216,14 +205,15 @@ public final class GcExecutor {
      * Instance of this class is passed around to allow catching up with
      * the mutator thread at any point along the GC cycle codepath.
      */
-    class MutatorCatchup implements CatchupTestSupport {
-        // Consulted by output streams to decide whether to fsync after each buffer flush.
-        // Perhaps expose this as configuration param (currently it's hardcoded).
-        boolean fsyncOften;
+    public class MutatorCatchup implements CatchupTestSupport {
+        private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
+        private static final int LATE_CATCHUP_CUTOFF_MILLIS = 110;
         // counts the number of calls to catchupAsNeeded since last catchupNow
         private long i;
+        private long lastCaughtUp = -1;
+//        private long lastCaughtUp = logger.isFineEnabled() ? 0 : -1;
 
-        int catchupAsNeeded() {
+        public int catchupAsNeeded() {
             return catchupAsNeeded(DEFAULT_CATCHUP_INTERVAL_LOG2);
         }
 
@@ -238,6 +228,9 @@ public final class GcExecutor {
 
         private int catchUpWithMutator() {
             final int workCount = workQueue.drainTo(workDrain, WORK_QUEUE_CAPACITY);
+            if (lastCaughtUp >= 0) {
+                diagnoseLateCatchup();
+            }
             if (workCount == 0) {
                 return 0;
             }
@@ -248,15 +241,24 @@ public final class GcExecutor {
             return workCount;
         }
 
-        void dismissGarbage(Chunk c) {
-            chunkMgr.dismissGarbage(c);
+        private void diagnoseLateCatchup() {
+            final long now = System.nanoTime();
+            final long sinceLastCatchup = now - lastCaughtUp;
+            lastCaughtUp = now;
+            if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
+                && sinceLastCatchup < MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
+            ) {
+                final StringWriter sw = new StringWriter(512);
+                final PrintWriter w = new PrintWriter(sw);
+                new Exception().printStackTrace(w);
+                final String trace = sw.toString();
+                final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
+                m.find();
+                logger.fine("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+            }
         }
 
-        void dismissGarbageRecord(Chunk c, KeyHandle kh, GcRecord r) {
-            chunkMgr.dismissGarbageRecord(c, kh, r);
-        }
-
-        boolean shutdownRequested() {
+        public boolean shutdownRequested() {
             return stopped;
         }
     }

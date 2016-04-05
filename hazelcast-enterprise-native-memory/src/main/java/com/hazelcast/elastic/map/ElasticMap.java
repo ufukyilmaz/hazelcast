@@ -30,6 +30,9 @@ public interface ElasticMap<K, V> extends Map<K, V>, Disposable {
      */
     boolean delete(K key);
 
+
+    // Backport of Java 8 methods
+
     V putIfAbsent(K key, V value);
 
     boolean replace(K key, V oldValue, V newValue);

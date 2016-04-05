@@ -14,6 +14,7 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
         this.maxMetadata = maxMetadata;
     }
 
+    @Override
     public final long getMaxMetadata() {
         return maxMetadata;
     }
@@ -39,6 +40,7 @@ public class PooledNativeMemoryStats extends NativeMemoryStats implements Memory
         usedMetadata.addAndGet(-size);
     }
 
+    @Override
     public final long getUsedMetadata() {
         return usedMetadata.get();
     }

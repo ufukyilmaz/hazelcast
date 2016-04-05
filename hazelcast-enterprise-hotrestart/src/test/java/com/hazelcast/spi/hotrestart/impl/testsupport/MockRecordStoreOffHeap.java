@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
-import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -10,8 +10,8 @@ import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 public class MockRecordStoreOffHeap extends MockRecordStoreBase {
 
-    MockRecordStoreOffHeap(long prefix, MemoryAllocator malloc, HotRestartStore hrStore) {
-        super(prefix, new Long2bytesMapOffHeap(malloc), hrStore);
+    MockRecordStoreOffHeap(long prefix, MemoryManager memMgr, HotRestartStore hrStore) {
+        super(prefix, new Long2bytesMapOffHeap(memMgr), hrStore);
     }
 
     @Override public KeyHandleOffHeap toKeyHandle(byte[] key) {

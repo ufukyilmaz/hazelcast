@@ -4,13 +4,14 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
-import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor.TombChunkFileCursor;
-import com.hazelcast.spi.hotrestart.impl.ChunkFileCursor.ValChunkFileCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
+import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 
 import java.io.EOFException;
@@ -30,16 +31,12 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.ACTIVE_CHUNK_SUFFIX;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.TOMB_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.gc.Chunk.VAL_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.gc.Compressor.COMPRESSED_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
-import static java.lang.Long.parseLong;
 
 /**
  * Reads the persistent state and:
@@ -49,12 +46,11 @@ import static java.lang.Long.parseLong;
  * </ol>
  */
 class HotRestarter {
-    private static final int HEX_RADIX = 16;
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
         public int compare(File left, File right) {
-            final long leftSeq = seq(left);
-            final long rightSeq = seq(right);
+            final long leftSeq = ChunkFilesetCursor.seq(left);
+            final long rightSeq = ChunkFilesetCursor.seq(right);
             return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
         }
     };
@@ -67,8 +63,7 @@ class HotRestarter {
     private static final FileFilter CHUNK_FILES_ONLY = new FileFilter() {
         public boolean accept(File f) {
             return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX)
-                                  || f.getName().endsWith(Chunk.FNAME_SUFFIX + COMPRESSED_SUFFIX)
-                                  || isActiveChunkFile(f));
+                                  || ChunkFilesetCursor.isActiveChunkFile(f));
         }
     };
 
@@ -97,8 +92,10 @@ class HotRestarter {
         this.rebuilder = new Rebuilder(gcExec.chunkMgr, gcHelper.logger);
         gcExec.setPrefixTombstones(prefixTombstones);
         this.prefixTombstones = prefixTombstones;
-        final ChunkFileCursor tombCursor = new TombChunkFileCursor(sortedChunkFiles(TOMB_BASEDIR), rebuilder, gcHelper);
-        final ChunkFileCursor valCursor = new ValChunkFileCursor(sortedChunkFiles(VAL_BASEDIR), rebuilder, gcHelper);
+        final ChunkFilesetCursor tombCursor =
+                new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR), rebuilder, gcHelper);
+        final ChunkFilesetCursor valCursor =
+                new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR), rebuilder, gcHelper);
         if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
             throw new HotRestartException("failIfAnyData == true and there's data to reload");
         }
@@ -118,28 +115,28 @@ class HotRestarter {
         }
     }
 
-    private void loadTombstones(ChunkFileCursor tombCursor) throws InterruptedException {
+    private void loadTombstones(ChunkFilesetCursor tombCursor) throws InterruptedException {
         while (tombCursor.advance()) {
-            if (!loadStep1(tombCursor)) {
+            final ChunkFileRecord rec = tombCursor.currentRecord();
+            if (!loadStep1(rec)) {
                 continue;
             }
-            final long prefix = tombCursor.prefix;
+            final long prefix = rec.prefix();
             SetOfKeyHandle sokh = tombKeys.get(prefix);
             if (sokh == null) {
                 sokh = gcHelper.newSetOfKeyHandle();
                 tombKeys.put(prefix, sokh);
             }
             sokh.add(keyHandle);
-            rebuilder.accept(prefix, keyHandle, tombCursor.seq, tombCursor.recordSize());
+            rebuilder.accept(prefix, keyHandle, rec.recordSeq(), rec.size());
         }
     }
 
-    private void loadValues(ChunkFileCursor valCursor) throws InterruptedException {
+    private void loadValues(ChunkFilesetCursor valCursor) throws InterruptedException {
         while (valCursor.advance()) {
-            if (loadStep1(valCursor)
-                    && rebuilder.accept(valCursor.prefix, keyHandle, valCursor.seq, valCursor.recordSize())
-            ) {
-                ramStore.accept(keyHandle, valCursor.value);
+            final ChunkFileRecord rec = valCursor.currentRecord();
+            if (loadStep1(rec) && rebuilder.accept(rec.prefix(), keyHandle, rec.recordSeq(), rec.size())) {
+                ramStore.accept(keyHandle, rec.value());
             }
         }
     }
@@ -189,16 +186,16 @@ class HotRestarter {
         return files;
     }
 
-    private boolean loadStep1(ChunkFileCursor cursor) {
-        rebuilder.preAccept(cursor.seq, cursor.recordSize());
-        if (cursor.seq <= prefixTombstones.get(cursor.prefix)) {
+    private boolean loadStep1(ChunkFileRecord rec) {
+        rebuilder.preAccept(rec.recordSeq(), rec.size());
+        if (rec.recordSeq() <= prefixTombstones.get(rec.prefix())) {
             // We are accepting a cleared record (interred by a prefix tombstone)
-            rebuilder.acceptCleared(cursor.recordSize());
+            rebuilder.acceptCleared(rec.size());
             return false;
         }
-        this.ramStore = reg.restartingRamStoreForPrefix(cursor.prefix);
-        assert ramStore != null : "RAM store registry failed to provide a store for prefix " + cursor.prefix;
-        this.keyHandle = ramStore.toKeyHandle(cursor.key);
+        this.ramStore = reg.restartingRamStoreForPrefix(rec.prefix());
+        assert ramStore != null : "RAM store registry failed to provide a store for prefix " + rec.prefix();
+        this.keyHandle = ramStore.toKeyHandle(rec.key());
         return true;
     }
 
@@ -217,11 +214,4 @@ class HotRestarter {
         return true;
     }
 
-    static long seq(File f) {
-        return parseLong(f.getName().substring(0, CHUNK_FNAME_LENGTH), HEX_RADIX);
-    }
-
-    static boolean isActiveChunkFile(File f) {
-        return f.getName().endsWith(Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX);
-    }
 }

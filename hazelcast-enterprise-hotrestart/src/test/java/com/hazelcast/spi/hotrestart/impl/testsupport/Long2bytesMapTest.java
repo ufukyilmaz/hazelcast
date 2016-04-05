@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.spi.hotrestart.RecordDataSink;
@@ -20,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Set;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.KEY_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.MockRecordStoreBase.long2bytes;
@@ -50,8 +52,10 @@ public class Long2bytesMapTest {
 
 
     @Before public void setup() {
-        map = offHeap ? new Long2bytesMapOffHeap(new StandardMemoryManager(new MemorySize(1, MEGABYTES)))
-                      : new Long2bytesMapOnHeap();
+        map = offHeap
+                ? new Long2bytesMapOffHeap(new MemoryManagerBean(new StandardMemoryManager(new MemorySize(1, MEGABYTES)),
+                                                                 AMEM))
+                : new Long2bytesMapOnHeap();
     }
 
     @After public void destroy() {

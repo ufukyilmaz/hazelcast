@@ -75,8 +75,8 @@ public class EnterpriseNearCachedMapProxyImpl<K, V> extends NearCachedMapProxyIm
         return getQueryCacheInternal(name, listener, predicate, includeValue, this);
     }
 
-    protected QueryCache getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
-                                               Boolean includeValue, IMap map) {
+    protected QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
+                                                     Boolean includeValue, IMap map) {
         QueryCacheContext queryCacheContext = getQueryCacheContext();
 
         QueryCacheRequest request = newQueryCacheRequest()
@@ -93,14 +93,13 @@ public class EnterpriseNearCachedMapProxyImpl<K, V> extends NearCachedMapProxyIm
 
     private QueryCacheContext getQueryCacheContext() {
         MapService mapService = getService();
-        EnterpriseMapServiceContext mapServiceContext
-                = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
+        EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
         return mapServiceContext.getQueryCacheContext();
     }
 
-    private QueryCache createQueryCache(QueryCacheRequest request) {
-        ConstructorFunction<String, InternalQueryCache> constructorFunction
-                = new NodeQueryCacheEndToEndConstructor(request);
+    @SuppressWarnings("unchecked")
+    private QueryCache<K, V> createQueryCache(QueryCacheRequest request) {
+        ConstructorFunction<String, InternalQueryCache> constructorFunction = new NodeQueryCacheEndToEndConstructor(request);
         QueryCacheContext queryCacheContext = request.getContext();
         SubscriberContext subscriberContext = queryCacheContext.getSubscriberContext();
         QueryCacheEndToEndProvider queryCacheEndToEndProvider = subscriberContext.getEndToEndQueryCacheProvider();

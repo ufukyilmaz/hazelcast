@@ -13,24 +13,25 @@ import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
  * Provides construction of whole {@link com.hazelcast.map.QueryCache QueryCache}
  * sub-system. As a result of that construction we can have a ready to use {@link com.hazelcast.map.QueryCache QueryCache}.
  */
-public class QueryCacheEndToEndProvider {
-
-    private static final ConstructorFunction<String, ConcurrentMap<String, InternalQueryCache>> CTOR
-            = new ConstructorFunction<String, ConcurrentMap<String, InternalQueryCache>>() {
-        @Override
-        public ConcurrentMap<String, InternalQueryCache> createNew(String arg) {
-            return new ConcurrentHashMap<String, InternalQueryCache>();
-        }
-    };
+public class QueryCacheEndToEndProvider<K, V>  {
 
     private static final int MUTEX_COUNT = 16;
     private static final int MASK = MUTEX_COUNT - 1;
+
+    private final ConstructorFunction<String, ConcurrentMap<String, InternalQueryCache<K, V>>> constructorFunction
+            = new ConstructorFunction<String, ConcurrentMap<String, InternalQueryCache<K, V>>>() {
+        @Override
+        public ConcurrentMap<String, InternalQueryCache<K, V>> createNew(String arg) {
+            return new ConcurrentHashMap<String, InternalQueryCache<K, V>>();
+        }
+    };
+
     private final Object[] mutexes;
-    private final ConcurrentMap<String, ConcurrentMap<String, InternalQueryCache>> queryCaches;
+    private final ConcurrentMap<String, ConcurrentMap<String, InternalQueryCache<K, V>>> queryCaches;
 
     public QueryCacheEndToEndProvider() {
         mutexes = createMutexes();
-        queryCaches = new ConcurrentHashMap<String, ConcurrentMap<String, InternalQueryCache>>();
+        queryCaches = new ConcurrentHashMap<String, ConcurrentMap<String, InternalQueryCache<K, V>>>();
     }
 
     private Object[] createMutexes() {
@@ -50,12 +51,13 @@ public class QueryCacheEndToEndProvider {
         return mutexes[hashCode & MASK];
     }
 
-    public InternalQueryCache getOrCreateQueryCache(String mapName, String cacheName,
-                                                    ConstructorFunction<String, InternalQueryCache> constructor) {
-        ConcurrentMap<String, InternalQueryCache> queryCachesOfMap = ConcurrencyUtil.getOrPutIfAbsent(queryCaches, mapName, CTOR);
+    public InternalQueryCache<K, V> getOrCreateQueryCache(String mapName, String cacheName,
+                                                    ConstructorFunction<String, InternalQueryCache<K, V>> constructor) {
+        ConcurrentMap<String, InternalQueryCache<K, V>> queryCachesOfMap = ConcurrencyUtil.getOrPutIfAbsent(queryCaches, mapName,
+                constructorFunction);
         Object mutex = getMutex(cacheName);
         synchronized (mutex) {
-            InternalQueryCache cache = getOrPutSynchronized(queryCachesOfMap, cacheName, mutex, constructor);
+            InternalQueryCache<K, V> cache = getOrPutSynchronized(queryCachesOfMap, cacheName, mutex, constructor);
             if (cache == NULL_QUERY_CACHE) {
                 remove(mapName, cacheName);
                 return null;
@@ -64,9 +66,8 @@ public class QueryCacheEndToEndProvider {
         }
     }
 
-    public InternalQueryCache remove(String mapName, String cacheName) {
-        ConcurrentMap<String, InternalQueryCache> queryCachesOfMap = queryCaches.get(mapName);
+    public InternalQueryCache<K, V> remove(String mapName, String cacheName) {
+        ConcurrentMap<String, InternalQueryCache<K, V>> queryCachesOfMap = queryCaches.get(mapName);
         return queryCachesOfMap.remove(cacheName);
     }
-
 }

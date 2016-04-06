@@ -83,7 +83,6 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
         return mapServiceContext.getQueryCacheContext();
     }
 
-    @SuppressWarnings("unchecked")
     private QueryCache<K, V> createQueryCache(QueryCacheRequest request) {
         ConstructorFunction<String, InternalQueryCache> constructorFunction = new NodeQueryCacheEndToEndConstructor(request);
         QueryCacheContext queryCacheContext = request.getContext();

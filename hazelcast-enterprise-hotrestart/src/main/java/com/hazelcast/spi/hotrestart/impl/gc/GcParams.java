@@ -31,7 +31,7 @@ final class GcParams {
     final boolean limitSrcChunks;
     final long currChunkSeq;
 
-    private GcParams(long garbage, long liveData, double ratio, long currChunkSeq, int chunkSize, boolean forceGc) {
+    private GcParams(long garbage, long liveData, double ratio, long currChunkSeq, long chunkSize, boolean forceGc) {
         this.currChunkSeq = currChunkSeq;
         this.forceGc = forceGc;
         final long costGoalChunks = max(1, min(MAX_COST_CHUNKS / 2, liveData / chunkSize));

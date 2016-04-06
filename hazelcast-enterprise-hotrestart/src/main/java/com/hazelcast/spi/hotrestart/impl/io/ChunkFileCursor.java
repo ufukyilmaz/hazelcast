@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.EOFException;
 import java.io.File;
@@ -77,6 +78,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         return headerBuf.capacity() + key.length;
     }
 
+    @SuppressFBWarnings(value = "EI", justification = "Returned array is never modified")
     @Override public byte[] key() {
         return key;
     }
@@ -98,8 +100,8 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
 
     abstract void loadRecord() throws IOException;
 
-    // Begin private API
 
+    // Begin private API
 
     void loadCommonHeader() throws IOException {
         seq = headerBuf.getLong();

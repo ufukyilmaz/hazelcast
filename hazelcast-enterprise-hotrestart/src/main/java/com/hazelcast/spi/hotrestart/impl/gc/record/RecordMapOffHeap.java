@@ -91,7 +91,7 @@ public final class RecordMapOffHeap implements RecordMap {
     @Override public SortedBySeqRecordCursor sortedBySeqCursor(
             int liveRecordCount, RecordMap[] recordMaps, MutatorCatchup mc
     ) {
-        final LongArray seqsAndSlotBases = new LongArray(memMgr, 2 * liveRecordCount);
+        final LongArray seqsAndSlotBases = new LongArray(memMgr, 2L * liveRecordCount);
         final RecordOffHeap r = new RecordOffHeap();
         mc.catchupNow();
         int i = 0;

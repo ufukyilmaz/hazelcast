@@ -12,7 +12,7 @@ public abstract class StableChunk extends Chunk {
         @Override public int compare(StableChunk left, StableChunk right) {
             final double leftCb = left.cachedBenefitToCost();
             final double rightCb = right.cachedBenefitToCost();
-            return leftCb == rightCb ? 0 : leftCb < rightCb ? 1 : -1;
+            return Double.compare(rightCb, leftCb);
         }
     };
 

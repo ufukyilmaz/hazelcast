@@ -34,6 +34,7 @@ public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
                         = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
                 wanRepService.handleEvent(event);
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

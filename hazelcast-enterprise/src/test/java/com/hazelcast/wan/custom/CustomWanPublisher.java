@@ -36,6 +36,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
                 EVENT_QUEUE.offer(event);
                 removeReplicationEvent(event);
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

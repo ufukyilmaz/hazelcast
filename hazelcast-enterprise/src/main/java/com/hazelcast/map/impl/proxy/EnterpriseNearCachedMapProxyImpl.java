@@ -97,7 +97,6 @@ public class EnterpriseNearCachedMapProxyImpl<K, V> extends NearCachedMapProxyIm
         return mapServiceContext.getQueryCacheContext();
     }
 
-    @SuppressWarnings("unchecked")
     private QueryCache<K, V> createQueryCache(QueryCacheRequest request) {
         ConstructorFunction<String, InternalQueryCache> constructorFunction = new NodeQueryCacheEndToEndConstructor(request);
         QueryCacheContext queryCacheContext = request.getContext();

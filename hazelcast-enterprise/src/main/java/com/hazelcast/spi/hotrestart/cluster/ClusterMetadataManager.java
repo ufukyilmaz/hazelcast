@@ -10,7 +10,6 @@ import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionListener;
 import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.internal.partition.impl.PartitionReplicaChangeEvent;
-import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.MembershipServiceEvent;
@@ -18,6 +17,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ExceptionUtil;
 
@@ -130,7 +130,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     private Address[][] restorePartitionTable() throws IOException {
-        int partitionCount = node.getGroupProperties().getInteger(GroupProperty.PARTITION_COUNT);
+        int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
         PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
         partitionTableReader.read();
         Address[][] table = partitionTableReader.getTable();
@@ -389,7 +389,7 @@ public final class ClusterMetadataManager implements PartitionListener {
             if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
                 result = PARTITION_TABLE_VERIFIED;
                 logger.info("Will send " + PARTITION_TABLE_VERIFIED + " instead of " + VERIFICATION_AND_LOAD_SUCCEEDED
-                            + " to member: " + sender);
+                        + " to member: " + sender);
             } else if (logger.isFineEnabled()) {
                 logger.fine("Partition table validation completed for all members. Sending " + result + " to: " + sender);
             }
@@ -571,7 +571,7 @@ public final class ClusterMetadataManager implements PartitionListener {
             if (!node.getThisAddress().equals(sender)) {
                 final ClusterState clusterState = node.getClusterService().getClusterState();
                 logger.info("Sending cluster-wide load-completion result " + status + " and cluster state: "
-                            + clusterState +  " to: " + sender);
+                        + clusterState + " to: " + sender);
                 operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
             }
         } else if (status == FORCE_STARTED) {

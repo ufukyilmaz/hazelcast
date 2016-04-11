@@ -10,10 +10,10 @@ import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
@@ -82,7 +82,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return new TestHazelcastInstanceFactory(5000, addresses);
     }
 
-    void setupInternal() {}
+    void setupInternal() {
+    }
 
     @After
     public final void tearDown() {
@@ -97,7 +98,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         }
     }
 
-    void tearDownInternal() {}
+    void tearDownInternal() {
+    }
 
     HazelcastInstance newHazelcastInstance() {
         return factory.newHazelcastInstance(makeConfig());

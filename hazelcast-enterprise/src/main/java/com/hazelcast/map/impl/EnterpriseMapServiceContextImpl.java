@@ -86,7 +86,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
-        this.hdMapQueryEngine = new HDMapQueryEngineImpl(this, newOptimizer(nodeEngine.getGroupProperties()));
+        this.hdMapQueryEngine = new HDMapQueryEngineImpl(this, newOptimizer(nodeEngine.getProperties()));
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();

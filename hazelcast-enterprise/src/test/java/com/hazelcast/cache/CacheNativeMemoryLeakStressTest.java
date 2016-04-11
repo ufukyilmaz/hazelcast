@@ -16,7 +16,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -31,6 +30,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.PartitionSpecificRunnable;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -121,8 +121,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
         final String cacheName = randomName();
         CacheConfiguration cacheConfig = new CacheConfig()
-                        .setInMemoryFormat(InMemoryFormat.NATIVE)
-                        .setEvictionConfig(getEvictionConfig());
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(getEvictionConfig());
 
         final ICache cache = (ICache) cacheManager.createCache(cacheName, cacheConfig);
 
@@ -231,7 +231,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         }
     }
 
-    private void verifyUsedMemorySizes(String cacheName, HazelcastInstance ... hzInstances) {
+    private void verifyUsedMemorySizes(String cacheName, HazelcastInstance... hzInstances) {
         for (HazelcastInstance hzInstance : hzInstances) {
             verifyUsedMemorySize(cacheName, hzInstance);
         }
@@ -593,7 +593,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
             for (int i = 0; i < partitionCount; i++) {
                 PartitionedCacheMemorySizeTask cacheMemorySizeTask =
-                    new PartitionedCacheMemorySizeTask(cacheService, cacheNameWithPrefix, i, actualMemorySize, latch);
+                        new PartitionedCacheMemorySizeTask(cacheService, cacheNameWithPrefix, i, actualMemorySize, latch);
                 operationService.execute(cacheMemorySizeTask);
             }
 
@@ -601,7 +601,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
             final long expectedMemorySize = cacheService.getOrCreateHiDensityCacheInfo(cacheNameWithPrefix).getUsedMemory();
             assertEquals("Expected and actual memory usage sizes are not equal on " + instance,
-                         expectedMemorySize, actualMemorySize.get());
+                    expectedMemorySize, actualMemorySize.get());
         }
 
     }
@@ -663,7 +663,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         @Override
         public void run() throws Exception {
             String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
-                             + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
+                    + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
 
             assertEquals(message, 0, memoryStats.getUsedNative());
             assertEquals(message, 0, memoryStats2.getUsedNative());
@@ -691,7 +691,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
                     HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
                     System.err.println((++k) + ". Record Address: " + key
-                                        + " (Value Address: " + record.getValueAddress() + ")");
+                            + " (Value Address: " + record.getValueAddress() + ")");
                 } else if (value == 13) {
                     System.err.println((++k) + ". Key Address: " + key);
                 } else {

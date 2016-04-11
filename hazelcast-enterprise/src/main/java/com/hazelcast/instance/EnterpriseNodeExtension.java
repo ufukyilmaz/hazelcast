@@ -15,7 +15,6 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.internal.properties.GroupProperty;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
@@ -48,6 +47,7 @@ import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
@@ -88,7 +88,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public void beforeStart() {
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
-        String licenseKey = node.getGroupProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
+        String licenseKey = node.getProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
         if (licenseKey == null || "".equals(licenseKey)) {
             licenseKey = node.getConfig().getLicenseKey();
         }
@@ -193,9 +193,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                 logger.warning(String.format("Native memory size per partition (%d MB) is higher than "
                                 + "suggested maximum native memory size per partition (%d MB). "
                                 + "You may think increasing partition count which is `%d` at the moment.",
-                                nativeMemorySizePerPartition,
-                                SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB,
-                                partitionCount));
+                        nativeMemorySizePerPartition,
+                        SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB,
+                        partitionCount));
             }
         }
 

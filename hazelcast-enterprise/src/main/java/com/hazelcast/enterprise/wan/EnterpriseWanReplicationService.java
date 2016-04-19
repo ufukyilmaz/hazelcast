@@ -154,11 +154,6 @@ public class EnterpriseWanReplicationService
         }
     }
 
-    @Override
-    public void clearPartitionReplica(int partitionId) {
-        clearMigrationData(partitionId);
-    }
-
     private void clearMigrationData(int partitionId) {
         for (WanReplicationPublisherDelegate wanReplication : wanReplications.values()) {
             Map<String, WanReplicationEndpoint> wanReplicationEndpoints = wanReplication.getEndpoints();

@@ -5,8 +5,10 @@ import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
@@ -16,6 +18,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.fillBlock;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.verifyBlock;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -25,11 +28,14 @@ import static org.junit.Assert.assertTrue;
 public class MmapSlabTest {
     private static final int BLOCK_SIZE = 24;
 
-    private final File baseDir = new File("test-mmap-slab");
+    @Rule public final TestName testName = new TestName();
+
+    private File baseDir;
     private MmapSlab mm;
 
     @Before
     public void setUp() {
+        baseDir = hotRestartHome(getClass(), testName);
         delete(baseDir);
         baseDir.mkdirs();
         mm = new MmapSlab(baseDir, BLOCK_SIZE);

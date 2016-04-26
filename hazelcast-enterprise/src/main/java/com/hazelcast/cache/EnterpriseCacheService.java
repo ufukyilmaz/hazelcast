@@ -22,7 +22,7 @@ import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.merge.entry.LazyCacheEntryView;
 import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.cache.impl.wan.CacheFilterProvider;
-import com.hazelcast.cache.operation.CacheDestroyOperation;
+import com.hazelcast.cache.operation.CacheSegmentDestroyOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.cache.operation.WANAwareCacheOperationProvider;
 import com.hazelcast.cache.wan.CacheReplicationRemove;
@@ -125,6 +125,11 @@ public class EnterpriseCacheService
         if (hotRestartService != null) {
             hotRestartService.registerRamStoreRegistry(SERVICE_NAME, this);
         }
+    }
+
+    @Override
+    protected boolean isNativeInMemoryFormatSupported() {
+        return true;
     }
 
     @Override
@@ -244,7 +249,7 @@ public class EnterpriseCacheService
         //List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheName)) {
-                CacheDestroyOperation op = new CacheDestroyOperation(cacheName);
+                CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheName);
                 //ops.add(op);
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);

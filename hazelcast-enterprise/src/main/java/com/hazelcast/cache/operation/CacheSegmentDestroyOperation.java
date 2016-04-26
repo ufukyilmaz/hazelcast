@@ -15,14 +15,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mdogan 03/06/14
  */
-public final class CacheDestroyOperation
+public final class CacheSegmentDestroyOperation
         extends AbstractOperation
         implements PartitionAwareOperation, AllowedDuringPassiveState {
 
     private final CountDownLatch done = new CountDownLatch(1);
     private final String name;
 
-    public CacheDestroyOperation(String name) {
+    public CacheSegmentDestroyOperation(String name) {
         this.name = name;
     }
 

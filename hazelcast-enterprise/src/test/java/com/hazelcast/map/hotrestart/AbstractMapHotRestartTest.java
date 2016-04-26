@@ -1,11 +1,13 @@
 package com.hazelcast.map.hotrestart;
 
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
@@ -104,12 +106,21 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
     void restartInstances(int clusterSize) {
         final Config config = makeConfig();
-        factory.terminateAll();
+        ClusterState state = ClusterState.ACTIVE;
+        if (factory != null) {
+            Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+            if (!instances.isEmpty()) {
+                HazelcastInstance instance = instances.iterator().next();
+                Cluster cluster = instance.getCluster();
+                state = cluster.getClusterState();
+                cluster.changeClusterState(ClusterState.PASSIVE);
+            }
+            factory.terminateAll();
+        }
 
         factory = createFactory();
 
         final CountDownLatch latch = new CountDownLatch(clusterSize);
-
 
         for (int i = 0; i < clusterSize; i++) {
             final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
@@ -123,6 +134,12 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         }
 
         assertOpenEventually(latch);
+
+        Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        if (!instances.isEmpty()) {
+            HazelcastInstance instance = instances.iterator().next();
+            instance.getCluster().changeClusterState(state);
+        }
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {

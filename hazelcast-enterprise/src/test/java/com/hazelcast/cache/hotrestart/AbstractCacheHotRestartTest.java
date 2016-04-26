@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.ICache;
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
@@ -8,6 +9,7 @@ import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
@@ -29,6 +31,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
@@ -110,7 +113,15 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     void restartInstances(int clusterSize) {
+        ClusterState state = ClusterState.ACTIVE;
         if (factory != null) {
+            Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+            if (!instances.isEmpty()) {
+                HazelcastInstance instance = instances.iterator().next();
+                Cluster cluster = instance.getCluster();
+                state = cluster.getClusterState();
+                cluster.changeClusterState(ClusterState.PASSIVE);
+            }
             factory.terminateAll();
         }
 
@@ -131,6 +142,12 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         }
 
         assertOpenEventually(latch);
+
+        Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        if (!instances.isEmpty()) {
+            HazelcastInstance instance = instances.iterator().next();
+            instance.getCluster().changeClusterState(state);
+        }
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {

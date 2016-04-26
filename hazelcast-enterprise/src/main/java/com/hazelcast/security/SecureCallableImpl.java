@@ -1,5 +1,6 @@
 package com.hazelcast.security;
 
+import com.hazelcast.cache.ICache;
 import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.ClientService;
@@ -36,6 +37,7 @@ import com.hazelcast.ringbuffer.Ringbuffer;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
+import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
 import com.hazelcast.security.permission.ListPermission;
@@ -262,6 +264,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         public ISemaphore getSemaphore(final String name) {
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
+        }
+
+        @Override
+        public <K, V> ICache<K, V> getCache(String name) {
+            checkPermission(new CachePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new CacheInvocationHandler(instance.getCache(name)));
         }
 
         @Override
@@ -747,6 +755,29 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public String getStructureName() {
             return "jobTracker";
+        }
+    }
+
+    private class CacheInvocationHandler extends SecureInvocationHandler {
+
+        CacheInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        @Override
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null) {
+                return null;
+            }
+            // TODO Should we use full name (with prefixes)?
+            // We are using simple name (without any prefix), not full name.
+            return new CachePermission(distributedObject.getName(), action);
+        }
+
+        @Override
+        public String getStructureName() {
+            return "cache";
         }
     }
 }

@@ -273,16 +273,6 @@ public class HiDensityCacheReadWriteQuorumTest extends HiDensityCacheQuorumTestS
     }
 
     @Test
-    public void testDestroyOperationSuccessfulWhenQuorumSizeMet() {
-        cache1.destroy();
-    }
-
-    @Test(expected = QuorumException.class)
-    public void testDestroyOperationThrowsExceptionWhenQuorumSizeNotMet() {
-        cache4.destroy();
-    }
-
-    @Test
     public void testInvokeOperationSuccessfulWhenQuorumSizeMet() {
         cache1.invoke(123, new SimpleEntryProcessor());
     }

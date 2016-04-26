@@ -11,6 +11,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -31,6 +32,7 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
+@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/879")
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
 
     private int partitionCount = 271;

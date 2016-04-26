@@ -96,6 +96,9 @@ public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueu
 
     @SuppressWarnings("unchecked")
     public int drainTo(final Collection<? super E> target, final int limit) {
+        if (limit <= 0) {
+            return 0;
+        }
         final Object[] buffer = this.buffer;
         final long mask = this.mask;
         long nextSequence = head;

@@ -8,10 +8,10 @@ import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordFactory;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
+import com.hazelcast.spi.serialization.SerializationService;
 
 /**
  * HotRestart storage implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
@@ -62,7 +62,6 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
             storage.removeRecord(record);
         }
         hotRestartStore.remove(createHotRestartKey(record), fsync);
-        fsyncIfRequired();
     }
 
     @Override
@@ -70,8 +69,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
         synchronized (mutex) {
             storage.clear(isDuringShutdown);
         }
-        hotRestartStore.clear(prefix);
-        fsyncIfRequired();
+        hotRestartStore.clear(fsync, prefix);
     }
 
     @Override
@@ -79,8 +77,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
         synchronized (mutex) {
             storage.destroy(isDuringShutdown);
         }
-        hotRestartStore.clear(prefix);
-        fsyncIfRequired();
+        hotRestartStore.clear(fsync, prefix);
     }
 
     @Override

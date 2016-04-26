@@ -6,8 +6,9 @@ import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
@@ -28,41 +29,39 @@ import java.util.Collection;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
 import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombChunksToCollect;
-import static com.hazelcast.spi.hotrestart.impl.gc.TombEvacuator.evacuate;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator.evacuate;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Manages chunk files and contains top-level code of the GC algorithm.
  */
 public final class ChunkManager implements Disposable {
-    /** Minimum chunk file size to compress. */
-    private static final int MIN_SIZE_TO_COMPRESS = 64 * 1024;
-    /** Batch size while releasing tombstones. Between batches we catch up and Thread.yield */
-    private static final int TOMBSTONE_RELEASING_BATCH_SIZE = 4 * 1024;
-    private static final double UNIT_PERCENTAGE = 100.0;
+    private static final double UNIT_PERCENTAGE = 100;
+
     @Probe(level = MANDATORY) final Counter valOccupancy = newSwCounter();
     @Probe(level = MANDATORY) final Counter valGarbage = newSwCounter();
     @Probe(level = MANDATORY) final Counter tombOccupancy = newSwCounter();
     @Probe(level = MANDATORY) final Counter tombGarbage = newSwCounter();
+
     final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
     final TrackerMap trackers;
-    final GcHelper gcHelper;
-    final PrefixTombstoneManager pfixTombstoMgr;
+
     // temporary storage during GC
     Long2ObjectHashMap<WriteThroughChunk> survivors;
     ActiveValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
-    private final GcLogger logger;
 
-    public ChunkManager(HotRestartStoreConfig cfg, GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr) {
+    private final DiContainer di;
+    private final GcLogger logger;
+    private final GcHelper gcHelper;
+
+    @Inject
+    private ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
+                         GcLogger logger, DiContainer di) {
+        this.di = di;
+        this.logger = logger;
         this.gcHelper = gcHelper;
-        this.logger = gcHelper.logger;
-        this.pfixTombstoMgr = pfixTombstoMgr;
         this.trackers = gcHelper.newTrackerMap();
-        final MetricsRegistry metrics = cfg.metricsRegistry();
-        final String metricsPrefix = "hot-restart." + cfg.storeName();
+        final String metricsPrefix = "hot-restart." + storeName;
         metrics.scanAndRegister(this, metricsPrefix);
         metrics.scanAndRegister(trackers, metricsPrefix);
     }
@@ -71,14 +70,14 @@ public final class ChunkManager implements Disposable {
         return trackers.size();
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         activeValChunk.dispose();
         activeTombChunk.dispose();
         for (Chunk c : chunks.values()) {
             c.dispose();
         }
         trackers.dispose();
-        gcHelper.dispose();
     }
 
     /** Accounts for the active value chunk having been inactivated
@@ -94,7 +93,8 @@ public final class ChunkManager implements Disposable {
             this.isTombChunk = fresh instanceof WriteThroughTombChunk;
         }
 
-        @Override public void run() {
+        @Override
+        public void run() {
             if (isTombChunk) {
                 activeTombChunk = (WriteThroughTombChunk) fresh;
             } else {
@@ -126,7 +126,8 @@ public final class ChunkManager implements Disposable {
             this.isTombstone = isTombstone;
         }
 
-        @Override public void run() {
+        @Override
+        public void run() {
             final GrowingChunk activeChunk = isTombstone ? activeTombChunk : activeValChunk;
             final Tracker tr = trackers.putIfAbsent(keyHandle, activeChunk.seq, false);
             if (tr != null) {
@@ -141,8 +142,9 @@ public final class ChunkManager implements Disposable {
             activeChunk.addStep2(prefix, keyHandle, seq, size);
         }
 
-        @Override public String toString() {
-            return "(" + keyHandle + ',' + seq + ',' + size + ',' + isTombstone + ')';
+        @Override
+        public String toString() {
+            return String.format("(%s,%d,%d,%s)", keyHandle, seq, size, isTombstone);
         }
     }
 
@@ -245,8 +247,7 @@ public final class ChunkManager implements Disposable {
             return false;
         }
         final long start = System.nanoTime();
-        final Collection<StableValChunk> srcChunks =
-                selectChunksToCollect(chunks.values(), gcp, pfixTombstoMgr, mc, logger);
+        final Collection<StableValChunk> srcChunks = di.wire(new ValChunkSelector(chunks.values(), gcp)).select();
         if (srcChunks.isEmpty()) {
             return false;
         }
@@ -259,7 +260,7 @@ public final class ChunkManager implements Disposable {
         if (gcp.forceGc) {
             logger.info("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
         }
-        evacuate(srcChunks, this, mc, logger, start);
+        di.wire(new ValEvacuator(srcChunks, start)).evacuate();
         afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start, mc);
         return true;
     }
@@ -273,7 +274,7 @@ public final class ChunkManager implements Disposable {
         final long garbage = tombGarbage.get();
         final long live = tombOccupancy.get() - garbage;
         logger.fine("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
-        evacuate(srcChunks, this, mc, logger);
+        di.wire(new TombEvacuator(srcChunks)).evacuate();
         afterEvacuation("Tomb", srcChunks, tombGarbage, tombOccupancy, start, mc);
         return true;
     }

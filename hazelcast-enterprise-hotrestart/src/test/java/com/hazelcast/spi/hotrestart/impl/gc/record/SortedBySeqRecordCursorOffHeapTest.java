@@ -6,8 +6,7 @@ import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
@@ -70,7 +69,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
     public void recordsShouldBeOrderedBySequenceInCursor() {
         // GIVEN
         int count = 1 << 11;
-        GcExecutor.MutatorCatchup mc = mock(MutatorCatchup.class);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
         LongArray seqsAndSlotBases = initSeqsAndSlotBases(memMgr, 1, count);
 
         // WHEN
@@ -90,7 +89,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
     public void mutatorCatchupShouldBeCalledInCursorAtLeastCountTimes() {
         // GIVEN
         int count = 1 << 11;
-        GcExecutor.MutatorCatchup mc = mock(MutatorCatchup.class);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
         LongArray seqsAndSlotBases = initSeqsAndSlotBases(memMgr, 1, count);
 
         // WHEN

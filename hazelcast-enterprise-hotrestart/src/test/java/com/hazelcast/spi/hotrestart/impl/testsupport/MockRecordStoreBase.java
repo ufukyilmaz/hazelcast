@@ -8,9 +8,8 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry.NEEDS_FSYNC;
 
 public abstract class MockRecordStoreBase implements MockRecordStore {
     final Long2bytesMap ramStore;
@@ -31,7 +30,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         synchronized (ramStore) {
             ramStore.put(key, value);
         }
-        hrStore.put(hrKey(key), value, false);
+        hrStore.put(hrKey(key), value, NEEDS_FSYNC);
     }
 
     @Override public final void remove(long key) {
@@ -41,7 +40,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
             }
             ramStore.remove(key);
         }
-        hrStore.remove(hrKey(key), false);
+        hrStore.remove(hrKey(key), NEEDS_FSYNC);
     }
 
     @Override public final void clear() {
@@ -70,7 +69,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
 
     @Override public final void accept(KeyHandle kh, byte[] value) {
         assert kh != null : "accept() called with null key";
-        assert value != null : "accept called with null value";
+        assert value != null : "accept() called with null value";
         ramStore.put(unwrapKey(kh), value);
     }
 

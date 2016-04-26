@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.instance.TestUtil.warmUpPartitions;
@@ -237,23 +238,19 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public boolean copyEntry(KeyHandle key, int expectedSize, RecordDataSink bufs) throws HotRestartException {
+        public boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink bufs) throws HotRestartException {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public KeyHandle toKeyHandle(byte[] key) {
             loadStarted.countDown();
-            try {
-                Thread.sleep(Long.MAX_VALUE);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            LockSupport.park();
             return new KeyOnHeap(1, key);
         }
 
         @Override
-        public void accept(KeyHandle hrKey, byte[] value) {
+        public void accept(KeyHandle kh, byte[] value) {
             throw new UnsupportedOperationException();
         }
 
@@ -269,6 +266,11 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public RamStore restartingRamStoreForPrefix(long prefix) {
             return this;
+        }
+
+        @Override
+        public int prefixToThreadId(long prefix) {
+            return 0;
         }
     }
 

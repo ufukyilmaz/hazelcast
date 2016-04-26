@@ -3,11 +3,10 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.internal.metrics.LongGauge;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
+import com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore;
+import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupRunnable;
+import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -142,7 +141,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     }
 
     private void withGcPaused(CatchupRunnable r) {
-        ((HotRestartStoreImpl) store.hrStore).runWhileGcPaused(r);
+        ((ConcurrentHotRestartStore) store.hrStore).getPersistenceEngine().runWhileGcPaused(r);
     }
 
     private LongGauge gauge(String name) {

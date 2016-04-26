@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 
@@ -20,17 +19,18 @@ final class TombChunkSelector {
         this.mc = mc;
     }
 
-    static Collection<StableTombChunk> selectTombChunksToCollect(Collection<StableChunk> allChunks, MutatorCatchup mc) {
+    static Collection<StableTombChunk> selectTombChunksToCollect(
+            Collection<? extends StableChunk> allChunks, MutatorCatchup mc) {
         return new TombChunkSelector(mc).select(allChunks);
     }
 
-    private Collection<StableTombChunk> select(Collection<StableChunk> allChunks) {
+    private Collection<StableTombChunk> select(Collection<? extends StableChunk> allChunks) {
         final List<StableTombChunk> candidates = preselectCandidates(allChunks);
         sortCandidates(candidates);
         return selectChunksForCollection(candidates);
     }
 
-    private List<StableTombChunk> preselectCandidates(Collection<StableChunk> allChunks) {
+    private List<StableTombChunk> preselectCandidates(Collection<? extends StableChunk> allChunks) {
         final List<StableTombChunk> candidates = new ArrayList<StableTombChunk>();
         for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableTombChunk)) {

@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;

@@ -2,8 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 
 import java.io.File;
@@ -16,18 +14,13 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFF
 import static java.lang.Long.parseLong;
 
 public abstract class ChunkFilesetCursor {
-    static final byte[] NO_VALUE = new byte[0];
     private static final int HEX_RADIX = 16;
 
-    final GcHelper gcHelper;
-    final Rebuilder rebuilder;
     ChunkFileCursor currentChunkCursor;
     private final List<File> chunkFiles;
 
-    ChunkFilesetCursor(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
+    ChunkFilesetCursor(List<File> chunkFiles) {
         this.chunkFiles = chunkFiles;
-        this.rebuilder = rebuilder;
-        this.gcHelper = gcHelper;
     }
 
     public static long seq(File f) {
@@ -68,7 +61,6 @@ public abstract class ChunkFilesetCursor {
                 return false;
             }
             this.currentChunkCursor = openCursor(chunkFile);
-            rebuilder.startNewChunk(seq(chunkFile));
             return true;
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -96,23 +88,23 @@ public abstract class ChunkFilesetCursor {
 
 
     public static class Val extends ChunkFilesetCursor {
-        public Val(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
-            super(chunkFiles, rebuilder, gcHelper);
+        public Val(List<File> chunkFiles) {
+            super(chunkFiles);
         }
 
         @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Val(chunkFile, gcHelper);
+            return new ChunkFileCursor.Val(chunkFile);
         }
     }
 
 
     public static class Tomb extends ChunkFilesetCursor {
-        public Tomb(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
-            super(chunkFiles, rebuilder, gcHelper);
+        public Tomb(List<File> chunkFiles) {
+            super(chunkFiles);
         }
 
         @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Tomb(chunkFile, gcHelper);
+            return new ChunkFileCursor.Tomb(chunkFile);
         }
     }
 }

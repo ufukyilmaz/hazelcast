@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.EOFException;
@@ -16,6 +15,7 @@ import java.nio.ByteBuffer;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.seq;
 
 /**
  * A cursor over a chunk file's contents.
@@ -24,14 +24,16 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     final ByteBuffer headerBuf;
     byte[] key;
     private final File chunkFile;
+    private final long chunkSeq;
     private final InputStream in;
     private long seq;
     private long prefix;
     private long truncationPoint;
 
-    public ChunkFileCursor(int headerSize, File chunkFile, GcHelper gcHelper) {
+    public ChunkFileCursor(int headerSize, File chunkFile) {
         this.chunkFile = chunkFile;
         this.headerBuf = ByteBuffer.allocate(headerSize);
+        this.chunkSeq = seq(chunkFile);
         try {
             final FileInputStream fileIn = new FileInputStream(chunkFile);
             this.in = new BufferingInputStream(fileIn);
@@ -62,6 +64,9 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    @Override public final long chunkSeq() {
+        return chunkSeq;
+    }
 
     @Override public final long recordSeq() {
         return seq;
@@ -81,10 +86,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     @SuppressFBWarnings(value = "EI", justification = "Returned array is never modified")
     @Override public byte[] key() {
         return key;
-    }
-
-    @Override public byte[] value() {
-        throw new UnsupportedOperationException("value");
     }
 
     public final void close() {
@@ -159,21 +160,25 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
     }
 
     public static final class Tomb extends ChunkFileCursor {
-        public Tomb(File chunkFile, GcHelper gcHelper) {
-            super(TOMB_HEADER_SIZE, chunkFile, gcHelper);
+        public Tomb(File chunkFile) {
+            super(TOMB_HEADER_SIZE, chunkFile);
         }
 
         @Override void loadRecord() throws IOException {
             loadCommonHeader();
             key = readPayload(headerBuf.getInt());
         }
+
+        @Override public byte[] value() {
+            return null;
+        }
     }
 
     static final class Val extends ChunkFileCursor {
         private byte[] value;
 
-        Val(File chunkFile, GcHelper gcHelper) {
-            super(VAL_HEADER_SIZE, chunkFile, gcHelper);
+        Val(File chunkFile) {
+            super(VAL_HEADER_SIZE, chunkFile);
         }
 
         @Override void loadRecord() throws IOException {

@@ -13,8 +13,6 @@ import java.util.Arrays;
  */
 public final class StableTombChunk extends StableChunk {
 
-    private double benefitToCost;
-
     private Long2ObjectHashMap<KeyHandle> filePosToKeyHandle;
 
     StableTombChunk(WriteThroughTombChunk from, boolean compressed) {
@@ -62,10 +60,6 @@ public final class StableTombChunk extends StableChunk {
 
     public void disposeFilePosToKeyHandle() {
         filePosToKeyHandle = null;
-    }
-
-    public double cachedBenefitToCost() {
-        return benefitToCost;
     }
 
     public double updateBenefitToCost() {

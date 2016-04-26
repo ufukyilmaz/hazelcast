@@ -1,18 +1,22 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
+import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOffHeapHotRestartStore;
-import static com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.newOnHeapHotRestartStore;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
+import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 
 public class MockStoreRegistry implements RamStoreRegistry {
+    public static final boolean NEEDS_FSYNC = false;
+
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
     private final MemoryManager memMgr;
@@ -21,7 +25,28 @@ public class MockStoreRegistry implements RamStoreRegistry {
         this.memMgr = memMgr;
         cfg.setRamStoreRegistry(this);
         this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
-        hrStore.hotRestart(false);
+        final RamStoreRestartLoop loop = new RamStoreRestartLoop(this, 1, cfg.logger());
+        final Throwable[] failure = { null };
+        final Thread restartIoThread = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    hrStore.hotRestart(false, loop.keyReceivers, loop.keyHandleSender, loop.valueReceivers);
+                } catch (Throwable t) {
+                    failure[0] = t;
+                }
+            }
+        };
+        restartIoThread.start();
+        try {
+            loop.run(0);
+        } catch (Throwable t) {
+            throw new HotRestartException("ramStoreRestartLoop failed", t);
+        }
+        restartIoThread.join();
+        if (failure[0] != null) {
+            throw new HotRestartException("hotRestart IO thread failed", failure[0]);
+        }
     }
 
     public boolean isEmpty() {
@@ -37,7 +62,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     }
 
     public void clear(long... prefixes) {
-        hrStore.clear(prefixes);
+        hrStore.clear(NEEDS_FSYNC, prefixes);
         for (long prefix : prefixes) {
             getOrCreateRecordStoreForPrefix(prefix).clear();
         }
@@ -49,6 +74,11 @@ public class MockStoreRegistry implements RamStoreRegistry {
 
     @Override public RamStore restartingRamStoreForPrefix(long prefix) {
         return getOrCreateRecordStoreForPrefix((int) prefix);
+    }
+
+    @Override
+    public int prefixToThreadId(long prefix) {
+        return 0;
     }
 
     public void closeHotRestartStore() {

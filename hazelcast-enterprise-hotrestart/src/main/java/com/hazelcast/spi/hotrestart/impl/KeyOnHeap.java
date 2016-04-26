@@ -55,6 +55,6 @@ public class KeyOnHeap implements HotRestartKey, KeyHandle {
     }
 
     @Override public String toString() {
-        return new BigInteger(bytes).toString(MAX_RADIX);
+        return prefix + ":" + new BigInteger(bytes).toString(MAX_RADIX);
     }
 }

@@ -72,5 +72,4 @@ final class GcParams {
     private static long garbageExceedingThreshold(double thresholdRatio, long garbage, long liveData) {
         return 1 + garbage - (long) (thresholdRatio * liveData);
     }
-
 }

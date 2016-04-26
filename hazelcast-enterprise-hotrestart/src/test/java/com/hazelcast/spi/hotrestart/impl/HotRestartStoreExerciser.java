@@ -90,9 +90,9 @@ public class HotRestartStoreExerciser {
                 reg = newStoreRegistry();
                 verifyRestartedStore(summary, reg);
             }
-        } finally {
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
+        } finally {
         }
     }
 

@@ -1,7 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -52,8 +50,8 @@ public class ChunkFilesetCursorIntegrationTest {
         files.add(generateFileWithGivenRecords(recordsSecond, valueChunks));
 
         // WHEN
-        ChunkFilesetCursor cursor = valueChunks ? new ChunkFilesetCursor.Val(files, mock(Rebuilder.class), mock(GcHelper.class)) :
-                new ChunkFilesetCursor.Tomb(files, mock(Rebuilder.class), mock(GcHelper.class));
+        ChunkFilesetCursor cursor = valueChunks ? new ChunkFilesetCursor.Val(files) :
+                new ChunkFilesetCursor.Tomb(files);
 
         // THEN
         int count = 0;

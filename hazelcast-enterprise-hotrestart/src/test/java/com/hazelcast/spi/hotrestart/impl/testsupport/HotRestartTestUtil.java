@@ -8,12 +8,12 @@ import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore;
+import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupRunnable;
+import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupRunnable;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreImpl.CatchupTestSupport;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
@@ -141,7 +141,7 @@ public class HotRestartTestUtil {
     public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg) {
         logger.info("Waiting to start summarizing record stores");
         final Map<Long, Long2LongHashMap>[] summary = new Map[1];
-        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
+        ((ConcurrentHotRestartStore) reg.hrStore).getPersistenceEngine().runWhileGcPaused(new CatchupRunnable() {
             @Override
             public void run(CatchupTestSupport mc) {
                 logger.info("Summarizing record stores");
@@ -167,7 +167,7 @@ public class HotRestartTestUtil {
 
     public static void verifyRestartedStore(final Map<Long, Long2LongHashMap> summaries, final MockStoreRegistry reg) {
         logger.info("Waiting to start verification");
-        ((HotRestartStoreImpl) reg.hrStore).runWhileGcPaused(new CatchupRunnable() {
+        ((ConcurrentHotRestartStore) reg.hrStore).getPersistenceEngine().runWhileGcPaused(new CatchupRunnable() {
             @Override
             public void run(CatchupTestSupport mc) {
                 logger.info("Verifying restarted store");
@@ -287,7 +287,7 @@ public class HotRestartTestUtil {
 
     public static File populateRecordFile(File file, List<TestRecord> records, boolean valueRecords) {
         try {
-            ChunkFileOut out = new ChunkFileOut(file, mock(GcExecutor.MutatorCatchup.class));
+            ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
             ActiveChunk chunk = valueRecords ? new ActiveValChunk(0, "testsuffix", null, out, mock(GcHelper.class)) :
                     new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
             for (TestRecord record : records) {

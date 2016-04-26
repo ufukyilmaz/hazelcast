@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.util.collection.LongHashSet;
@@ -37,27 +37,18 @@ final class ValChunkSelector {
     };
     private final Collection<StableChunk> allChunks;
     private final GcParams gcp;
-    private final PrefixTombstoneManager pfixTombstoMgr;
-    private final MutatorCatchup mc;
-    private final GcLogger logger;
 
-    private ValChunkSelector(Collection<StableChunk> allChunks, GcParams gcp, PrefixTombstoneManager pfixTombstoMgr,
-                             MutatorCatchup mc, GcLogger logger) {
+    @Inject private PrefixTombstoneManager pfixTombstoMgr;
+    @Inject private MutatorCatchup mc;
+    @Inject private GcLogger logger;
+
+    ValChunkSelector(Collection<StableChunk> allChunks, GcParams gcp) {
         this.allChunks = allChunks;
         this.gcp = gcp;
-        this.pfixTombstoMgr = pfixTombstoMgr;
-        this.mc = mc;
-        this.logger = logger;
-    }
-
-    static Collection<StableValChunk>
-    selectChunksToCollect(Collection<StableChunk> allChunks, GcParams gcp,
-                          PrefixTombstoneManager pfixTombstoMgr, MutatorCatchup mc, GcLogger logger) {
-        return new ValChunkSelector(allChunks, gcp, pfixTombstoMgr, mc, logger).select();
     }
 
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
-    private Collection<StableValChunk> select() {
+    Collection<StableValChunk> select() {
         final Set<StableValChunk> candidates = candidateChunks();
         if (candidates.isEmpty()) {
             return candidates;

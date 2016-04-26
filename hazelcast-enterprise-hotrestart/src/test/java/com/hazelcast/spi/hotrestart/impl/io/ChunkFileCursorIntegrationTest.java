@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -42,7 +41,7 @@ public class ChunkFileCursorIntegrationTest {
         File file = populateTombRecordFile(temporaryFile(counter), asList(new TestRecord(counter)));
 
         // WHEN
-        ChunkFileCursor.Tomb cursor = new ChunkFileCursor.Tomb(file, mock(GcHelper.class));
+        ChunkFileCursor.Tomb cursor = new ChunkFileCursor.Tomb(file);
         assertTrue(cursor.advance());
 
         // THEN
@@ -68,8 +67,8 @@ public class ChunkFileCursorIntegrationTest {
         File file = populateRecordFile(temporaryFile(counter), recs, valueChunk);
 
         // THEN
-        ChunkFileCursor cursor = valueChunk ? new ChunkFileCursor.Val(file, mock(GcHelper.class)) :
-                new ChunkFileCursor.Tomb(file, mock(GcHelper.class));
+        ChunkFileCursor cursor = valueChunk ? new ChunkFileCursor.Val(file) :
+                new ChunkFileCursor.Tomb(file);
         for (TestRecord rec : recs) {
             assertTrue(cursor.advance());
             assertEquals(rec.recordSeq, cursor.recordSeq());

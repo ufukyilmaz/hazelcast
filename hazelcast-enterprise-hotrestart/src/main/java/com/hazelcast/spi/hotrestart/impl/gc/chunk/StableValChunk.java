@@ -6,7 +6,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  * Represents a chunk whose on-disk contents are stable (immutable).
  */
 public final class StableValChunk extends StableChunk {
-    private double benefitToCost;
 
     public StableValChunk(ActiveValChunk from, boolean compressed) {
         super(from);
@@ -25,10 +24,6 @@ public final class StableValChunk extends StableChunk {
      * @return the updated value. */
     public double updateBenefitToCost(long currChunkSeq) {
         return benefitToCost = benefitToCost(currChunkSeq);
-    }
-
-    @Override public double cachedBenefitToCost() {
-        return benefitToCost;
     }
 
     private double benefitToCost(long currChunkSeq) {

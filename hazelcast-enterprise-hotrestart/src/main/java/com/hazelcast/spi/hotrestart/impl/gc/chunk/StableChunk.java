@@ -17,6 +17,7 @@ public abstract class StableChunk extends Chunk {
     };
 
     public long size;
+    double benefitToCost;
 
     StableChunk(GrowingChunk from) {
         super(from);
@@ -34,5 +35,7 @@ public abstract class StableChunk extends Chunk {
         return size;
     }
 
-    public abstract double cachedBenefitToCost();
+    public final double cachedBenefitToCost() {
+        return benefitToCost;
+    }
 }

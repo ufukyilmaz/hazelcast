@@ -1,5 +1,7 @@
 package com.hazelcast.spi.hotrestart;
 
+import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+
 /**
  * RAM store registry for the data managed by a Hot Restart store.
  */
@@ -27,4 +29,10 @@ public interface RamStoreRegistry {
      * destroyed before shutdown.
      */
     RamStore restartingRamStoreForPrefix(long prefix);
+
+    /**
+     * Returns the concurrent queue index responsible for the given key prefix.
+     */
+    int prefixToThreadId(long prefix);
+
 }

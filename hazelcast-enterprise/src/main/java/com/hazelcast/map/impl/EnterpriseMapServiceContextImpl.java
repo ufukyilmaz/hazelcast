@@ -131,6 +131,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
+    public int prefixToThreadId(long prefix) {
+        throw new UnsupportedOperationException("prefixToThreadId() should not have been called on this class");
+    }
+
+    @Override
     NearCacheProvider createNearCacheProvider() {
         return new EnterpriseNearCacheProvider(this);
     }

@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
@@ -17,32 +17,24 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class TombEvacuator {
     private final Collection<StableTombChunk> srcChunks;
-    private final GcLogger logger;
-    private final Long2ObjectHashMap<WriteThroughChunk> survivorMap;
-    private final TrackerMap recordTrackers;
-    private final GcHelper gcHelper;
-    private final MutatorCatchup mc;
+
+    @Inject private GcLogger logger;
+    @Inject private GcHelper gcHelper;
+    @Inject private MutatorCatchup mc;
+    @Inject private ChunkManager chunkMgr;
+
+    private Long2ObjectHashMap<WriteThroughChunk> survivorMap;
+    private TrackerMap recordTrackers;
     private WriteThroughTombChunk survivor;
     private long start;
 
-    private TombEvacuator(Collection<StableTombChunk> srcChunks, ChunkManager chunkMgr,
-                          MutatorCatchup mc, GcLogger logger
-    ) {
+    TombEvacuator(Collection<StableTombChunk> srcChunks) {
         this.srcChunks = srcChunks;
-        this.logger = logger;
+    }
+
+    void evacuate() {
         this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
-        this.gcHelper = chunkMgr.gcHelper;
         this.recordTrackers = chunkMgr.trackers;
-        this.mc = mc;
-    }
-
-    static void evacuate(
-            Collection<StableTombChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger
-    ) {
-        new TombEvacuator(srcChunks, chunkMgr, mc, logger).evacuateSrcChunks();
-    }
-
-    private void evacuateSrcChunks() {
         for (StableTombChunk chunk : srcChunks) {
             evacuate(chunk);
         }

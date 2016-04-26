@@ -27,7 +27,7 @@ public interface RamStore {
      * @param expectedSize the expected size of the record (key + value).
      * @throws HotRestartException if a record identified by the supplied key handle was not found
      */
-    boolean copyEntry(KeyHandle key, int expectedSize, RecordDataSink bufs) throws HotRestartException;
+    boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink bufs) throws HotRestartException;
 
     /**
      * Called during Hot Restart. Requests a handle object for the given
@@ -41,7 +41,7 @@ public interface RamStore {
      * Called during Hot Restart. Allows the RAM store to re-establish a
      * mapping from the supplied key to the supplied value.
      */
-    void accept(KeyHandle hrKey, byte[] value);
+    void accept(KeyHandle kh, byte[] value);
 
     /**
      * Called during Hot Restart. Gives the RAM store a set of key handles which can

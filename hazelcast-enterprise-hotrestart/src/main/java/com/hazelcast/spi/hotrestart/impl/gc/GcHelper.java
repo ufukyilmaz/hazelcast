@@ -7,15 +7,14 @@ import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
-import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMalloc;
-import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOnHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.record.SetOfKeyHandleOffHeap;
@@ -40,59 +39,60 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newTombstoneMapOffHeap;
-import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
  * Contains common services needed across the hot restart codebase. Passed
  * around a lot due to the lack of proper DI support in current HZ.
  */
 public abstract class GcHelper implements Disposable {
-    /** Name of the file that contains prefix tombstones */
+    /**
+     * Name of the file that contains prefix tombstones
+     */
     public static final String PREFIX_TOMBSTONES_FILENAME = "prefix-tombstones";
 
-    /** A hex digit represents this many bits. */
+    /**
+     * A hex digit represents this many bits.
+     */
     public static final int BITS_PER_HEX_DIGIT = 4;
 
-    /** Chunk filename is a zero-padded long in hex notation. This constant equals
-     * the max number of hex digits in a long. */
+    /**
+     * Chunk filename is a zero-padded long in hex notation. This constant equals
+     * the max number of hex digits in a long.
+     */
     public static final int CHUNK_FNAME_LENGTH = Long.SIZE / BITS_PER_HEX_DIGIT;
 
-    /** The number of hex digits in the name of a bucket dir */
+    /**
+     * The number of hex digits in the name of a bucket dir
+     */
     public static final int BUCKET_DIRNAME_DIGITS = 2;
 
-    /** To optimize file access times, chunk files are distributed across
+    /**
+     * To optimize file access times, chunk files are distributed across
      * bucket directories. This is the maximum number of such directories.
-     * INVARIANT: this number is a power of two. */
+     * INVARIANT: this number is a power of two.
+     */
     public static final int MAX_BUCKET_DIRS = 1 << (BITS_PER_HEX_DIGIT * BUCKET_DIRNAME_DIGITS);
 
-    /** Bitmask used for the operation "modulo MAX_BUCKET_DIRS" */
+    /**
+     * Bitmask used for the operation "modulo MAX_BUCKET_DIRS"
+     */
     public static final int BUCKET_DIR_MASK = MAX_BUCKET_DIRS - 1;
 
     private static final String BUCKET_DIRNAME_FORMAT = String.format("%%0%dx", BUCKET_DIRNAME_DIGITS);
     private static final String CHUNK_FNAME_FORMAT = String.format("%%0%dx%%s", CHUNK_FNAME_LENGTH);
 
-    /** Hot Restart Store's home directory. */
-    public final File homeDir;
-
-    /** In-memory store registry used by this Hot Restart Store. */
-    public final RamStoreRegistry ramStoreRegistry;
-
-    /** Record Data Handler singleton, used by the GC process to
-     * transfer data from the in-memory store. */
-    public final RecordDataHolder recordDataHolder = new RecordDataHolder();
-
-    public final GcLogger logger;
+    final File homeDir;
+    final RamStoreRegistry ramStoreRegistry;
+    final GcLogger logger;
 
     private final AtomicLong chunkSeq = new AtomicLong();
-
     private volatile long recordSeq;
 
-    public GcHelper(HotRestartStoreConfig cfg) {
-        this.homeDir = cfg.homeDir();
-        checkNotNull(cfg.logger(), "Logger is null");
-        this.logger = new GcLogger(cfg.logger());
-        logger.info("homeDir " + homeDir);
-        this.ramStoreRegistry = cfg.ramStoreRegistry();
+    GcHelper(File homeDir, RamStoreRegistry ramStoreRegistry, GcLogger logger) {
+        this.homeDir = homeDir;
+        this.ramStoreRegistry = ramStoreRegistry;
+        this.logger = logger;
+        logger.info("homeDir "+homeDir);
     }
 
     @SuppressWarnings("checkstyle:emptyblock")
@@ -100,8 +100,7 @@ public abstract class GcHelper implements Disposable {
         if (toClose != null) {
             try {
                 toClose.close();
-            } catch (IOException ignored) {
-            }
+            } catch (IOException ignored) { }
         }
     }
 
@@ -172,7 +171,7 @@ public abstract class GcHelper implements Disposable {
         final File nameNow = chunkFile(base, seq, suffixNow, false);
         final File nameToBe = chunkFile(base, seq, suffixToBe, false);
         if (!nameNow.renameTo(nameToBe)) {
-            throw new HazelcastException("Failed to rename " + nameNow + " to " + nameToBe);
+            throw new HotRestartException("Failed to rename " + nameNow + " to " + nameToBe);
         }
     }
 
@@ -201,61 +200,75 @@ public abstract class GcHelper implements Disposable {
     /** The GC helper specialization for on-heap Hot Restart store */
     public static class OnHeap extends GcHelper {
 
-        public OnHeap(HotRestartStoreConfig cfg) {
-            super(cfg);
+        @Inject
+        private OnHeap(@Name("homeDir") File homeDir, RamStoreRegistry ramStoreRegistry, GcLogger logger) {
+            super(homeDir, ramStoreRegistry, logger);
         }
 
-        @Override public RecordMap newRecordMap(boolean ignored) {
+        @Override
+        public RecordMap newRecordMap(boolean ignored) {
             return new RecordMapOnHeap();
         }
 
-        @Override RecordMap newTombstoneMap() {
+        @Override
+        RecordMap newTombstoneMap() {
             return newRecordMap(false);
         }
 
-        @Override public TrackerMap newTrackerMap() {
+        @Override
+        public TrackerMap newTrackerMap() {
             return new TrackerMapOnHeap();
         }
 
-        @Override public SetOfKeyHandle newSetOfKeyHandle() {
+        @Override
+        public SetOfKeyHandle newSetOfKeyHandle() {
             return new SetOfKeyHandleOnHeap();
         }
 
-        @Override public void dispose() {
-        }
+        @Override
+        public void dispose() { }
     }
 
     /** The GC helper specialization for off-heap Hot Restart store */
     public static class OffHeap extends GcHelper {
+
         private final MemoryManager ramMgr;
         private final MemoryManager mmapMgr;
         private final MemoryManager mmapMgrWithCompaction;
-        public OffHeap(HotRestartStoreConfig cfg) {
-            super(cfg);
-            this.ramMgr = wrapWithAmem(cfg.malloc());
-            this.mmapMgr = wrapWithAmem(new MmapMalloc(new File(cfg.homeDir(), "mmap"), false));
+
+        @Inject
+        private OffHeap(MemoryAllocator malloc, @Name("homeDir") File homeDir, RamStoreRegistry ramStoreRegistry,
+                        GcLogger logger) {
+            super(homeDir, ramStoreRegistry, logger);
+            this.ramMgr = wrapWithAmem(malloc);
+            this.mmapMgr = wrapWithAmem(new MmapMalloc(new File(homeDir, "mmap"), false));
             this.mmapMgrWithCompaction =
-                    wrapWithAmem(new MmapMalloc(new File(cfg.homeDir(), "mmap-with-compaction"), true));
+                    wrapWithAmem(new MmapMalloc(new File(homeDir, "mmap-with-compaction"), true));
         }
 
-        @Override public RecordMap newRecordMap(boolean isForGrowingSurvivor) {
+        @Override
+        public RecordMap newRecordMap(boolean isForGrowingSurvivor) {
             return isForGrowingSurvivor
                     ? newRecordMapOffHeap(mmapMgr, ramMgr) : newRecordMapOffHeap(ramMgr, null);
         }
 
-        @Override public RecordMap newTombstoneMap() {
+        @Override
+        public RecordMap newTombstoneMap() {
             return newTombstoneMapOffHeap(ramMgr);
         }
 
-        @Override public TrackerMap newTrackerMap() {
+        @Override
+        public TrackerMap newTrackerMap() {
             return new TrackerMapOffHeap(ramMgr, mmapMgrWithCompaction.getAllocator());
         }
 
-        @Override public SetOfKeyHandle newSetOfKeyHandle() {
+        @Override
+        public SetOfKeyHandle newSetOfKeyHandle() {
             return new SetOfKeyHandleOffHeap(ramMgr);
         }
 
-        @Override public void dispose() {
+        @Override
+        public void dispose() {
             mmapMgrWithCompaction.dispose();
             mmapMgr.dispose();
         }

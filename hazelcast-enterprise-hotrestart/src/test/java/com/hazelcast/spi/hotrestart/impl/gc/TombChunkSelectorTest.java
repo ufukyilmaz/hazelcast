@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -27,8 +28,8 @@ public class TombChunkSelectorTest {
     @Test
     public void noStableTombChunksForSelection_noneSelected() {
         // GIVEN
-        List<StableChunk> chunks = Arrays.asList(mock(StableChunk.class));
-        GcExecutor.MutatorCatchup mc = mock(GcExecutor.MutatorCatchup.class);
+        List<StableChunk> chunks = singletonList(mock(StableChunk.class));
+        MutatorCatchup mc = mock(MutatorCatchup.class);
 
         // WHEN
         Collection<StableTombChunk> result = TombChunkSelector.selectTombChunksToCollect(chunks, mc);
@@ -41,8 +42,8 @@ public class TombChunkSelectorTest {
     public void chunkFullOfGarbage_selected() {
         // GIVEN
         StableChunk fullOfGarbage = c(10, 10);
-        List<StableChunk> chunks = Arrays.asList(fullOfGarbage);
-        GcExecutor.MutatorCatchup mc = mock(GcExecutor.MutatorCatchup.class);
+        List<StableChunk> chunks = singletonList(fullOfGarbage);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
 
         // WHEN
         Collection<StableTombChunk> result = TombChunkSelector.selectTombChunksToCollect(chunks, mc);
@@ -55,8 +56,8 @@ public class TombChunkSelectorTest {
     public void almostNoGarbage_minimumNotReached() {
         // GIVEN
         StableChunk littleGarbage = c(10, 1);
-        List<StableChunk> chunks = Arrays.asList(littleGarbage);
-        GcExecutor.MutatorCatchup mc = mock(GcExecutor.MutatorCatchup.class);
+        List<StableChunk> chunks = singletonList(littleGarbage);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
 
         // WHEN
         Collection<StableTombChunk> result = TombChunkSelector.selectTombChunksToCollect(chunks, mc);
@@ -68,10 +69,10 @@ public class TombChunkSelectorTest {
     @Test
     public void someGarbage_sizeFactorEvaluated() {
         // GIVEN
-        StableChunk bigChunkgMoreThanHalfGarbage = c(1 << 20, 1 << 19 + 1);
-        StableChunk smallChunkHalfGarbage = c(10, 5);
-        List<StableChunk> chunks = Arrays.asList(bigChunkgMoreThanHalfGarbage, smallChunkHalfGarbage);
-        GcExecutor.MutatorCatchup mc = mock(GcExecutor.MutatorCatchup.class);
+        StableTombChunk bigChunkgMoreThanHalfGarbage = c(1 << 20, 1 << 19 + 1);
+        StableTombChunk smallChunkHalfGarbage = c(10, 5);
+        List<StableTombChunk> chunks = Arrays.asList(bigChunkgMoreThanHalfGarbage, smallChunkHalfGarbage);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
 
         // WHEN
         Collection<StableTombChunk> result = TombChunkSelector.selectTombChunksToCollect(chunks, mc);
@@ -83,11 +84,11 @@ public class TombChunkSelectorTest {
     @Test
     public void aCoupleOfChunks_correctSelected() {
         // GIVEN
-        StableChunk fullOfGarbage = c(10, 10);
-        StableChunk halfOfGarbage = c(10, 5);
-        StableChunk noGarbage = c(10, 0);
-        List<StableChunk> chunks = Arrays.asList(noGarbage, halfOfGarbage, fullOfGarbage);
-        GcExecutor.MutatorCatchup mc = mock(GcExecutor.MutatorCatchup.class);
+        StableTombChunk fullOfGarbage = c(10, 10);
+        StableTombChunk halfOfGarbage = c(10, 5);
+        StableTombChunk noGarbage = c(10, 0);
+        List<StableTombChunk> chunks = Arrays.asList(noGarbage, halfOfGarbage, fullOfGarbage);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
 
         // WHEN
         Collection<StableTombChunk> result = TombChunkSelector.selectTombChunksToCollect(chunks, mc);

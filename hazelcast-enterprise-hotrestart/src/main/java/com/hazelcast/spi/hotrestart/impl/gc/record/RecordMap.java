@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
 /**
  * Abstraction for chunk's record map.

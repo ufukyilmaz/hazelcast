@@ -96,7 +96,6 @@ public class HotRestartStoreQuickTest {
         profile.logStepSize = 1;
         profile.offHeapMetadataPercentage = 12f;
         profile.restartCount = 0;
-        profile.disableIo = false;
     }
 
     private void generalExercise() throws Exception {

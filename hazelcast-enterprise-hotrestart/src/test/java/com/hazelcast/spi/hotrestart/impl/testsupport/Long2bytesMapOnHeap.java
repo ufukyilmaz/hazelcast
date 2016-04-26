@@ -28,10 +28,10 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
 
     @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
         final byte[] value = map.get(key);
+        sink.getKeyBuffer(KEY_SIZE).putLong(key);
         if (value == null || expectedSize != KEY_SIZE + value.length) {
             return false;
         }
-        sink.getKeyBuffer(KEY_SIZE).putLong(key);
         sink.getValueBuffer(value.length).put(value);
         return true;
     }

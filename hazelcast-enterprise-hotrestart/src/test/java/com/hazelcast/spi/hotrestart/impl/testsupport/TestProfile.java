@@ -29,7 +29,6 @@ public abstract class TestProfile {
     public int offHeapMb = 1024;
     public float offHeapMetadataPercentage = DEFAULT_METADATA_SPACE_PERCENTAGE;
     public int restartCount;
-    public boolean disableIo;
 
     public int[] hotKeys;
     public byte[] valueData;

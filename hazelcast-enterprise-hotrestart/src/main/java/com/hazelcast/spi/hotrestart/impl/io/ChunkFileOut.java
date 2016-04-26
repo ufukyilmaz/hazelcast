@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
 import java.io.File;

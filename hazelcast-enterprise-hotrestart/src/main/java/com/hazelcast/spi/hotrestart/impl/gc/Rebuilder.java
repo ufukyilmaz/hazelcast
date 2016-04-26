@@ -2,8 +2,10 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.RestartItem;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.GrowingChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
@@ -13,6 +15,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapBase;
+import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,20 +29,24 @@ import java.util.Map.Entry;
  */
 public class Rebuilder {
     private final ChunkManager cm;
+    private final GcHelper gcHelper;
     private final GcLogger logger;
+
     private boolean isLoadingTombstones = true;
     private Counter occupancy;
     private Counter garbage;
     private Map<Long, SetOfKeyHandle> tombKeys;
-    private RebuildingChunk chunk;
+    private Long2ObjectHashMap<RebuildingChunk> rebuildingChunks = new Long2ObjectHashMap<RebuildingChunk>(-1);
     private long maxSeq;
     private long maxChunkSeq;
 
-    public Rebuilder(ChunkManager chunkMgr, GcLogger logger) {
-        this.cm = chunkMgr;
+    @Inject
+    private Rebuilder(ChunkManager cm, GcHelper gcHelper, GcLogger logger) {
+        this.cm = cm;
+        this.gcHelper = gcHelper;
         this.logger = logger;
-        this.occupancy = chunkMgr.tombOccupancy;
-        this.garbage = chunkMgr.tombGarbage;
+        this.occupancy = cm.tombOccupancy;
+        this.garbage = cm.tombGarbage;
     }
 
     public long maxChunkSeq() {
@@ -47,26 +54,10 @@ public class Rebuilder {
     }
 
     public void startValuePhase(Map<Long, SetOfKeyHandle> tombKeys) {
-        this.isLoadingTombstones = false;
         this.tombKeys = tombKeys;
-        this.occupancy = cm.valOccupancy;
-        this.garbage = cm.valGarbage;
-    }
-
-    /**
-     * Called when another chunk file starts being read.
-     * @param seq the sequence id of the chunk file
-     */
-    public void startNewChunk(long seq) {
-        finishCurrentChunk();
-        if (seq > maxChunkSeq) {
-            this.maxChunkSeq = seq;
-        }
-        if (isLoadingTombstones) {
-            this.chunk = new RebuildingTombChunk(seq, cm.gcHelper.newRecordMap(false));
-        } else {
-            this.chunk = new RebuildingValChunk(seq, cm.gcHelper.newRecordMap(false));
-        }
+        isLoadingTombstones = false;
+        occupancy = cm.valOccupancy;
+        garbage = cm.valGarbage;
     }
 
     public void preAccept(long seq, int size) {
@@ -77,66 +68,65 @@ public class Rebuilder {
     }
 
     /**
+     * Called when encountering a record which is interred by a prefix tombstone.
+     * @param size size of the record
+     */
+    public void acceptCleared(long chunkSeq, int size) {
+        final RebuildingChunk chunk = rebuildingChunk(chunkSeq);
+        chunk.size += size;
+        chunk.garbage += size;
+        garbage.inc(size);
+    }
+
+    /**
      * Called upon encountering another record in the file.
      * @return {@code false} if the accepted record is known to be garbage; {@code true} otherwise.
      */
-    public boolean accept(long prefix, KeyHandle kh, long seq, int size) {
+    public boolean accept(RestartItem item) {
+        final long chunkSeq = item.chunkSeq;
+        final long prefix = item.prefix;
+        final KeyHandle kh = item.keyHandle;
+        final long recordSeq = item.recordSeq;
+        final int size = item.size;
+        final RebuildingChunk chunk = rebuildingChunk(chunkSeq);
         final Tracker tr = cm.trackers.putIfAbsent(kh, chunk.seq, isLoadingTombstones);
         if (tr == null) {
             // We are accepting a record for a yet-unseen key
-            chunk.add(prefix, kh, seq, size);
+            chunk.add(prefix, kh, recordSeq, size);
             return true;
         } else {
             final Chunk chunkWithStale = chunk(tr.chunkSeq());
             final Record stale = chunkWithStale.records.get(kh);
-            if (seq >= stale.liveSeq()) {
+            if (recordSeq >= stale.liveSeq()) {
                 // We are accepting a record which replaces an existing, now stale record
                 (stale.isTombstone() ? cm.tombGarbage : cm.valGarbage).inc(stale.size());
                 chunkWithStale.retire(kh, stale);
-                chunk.add(prefix, kh, seq, size);
+                chunk.add(prefix, kh, recordSeq, size);
                 tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers, true);
-                removeFromTombKeys(prefix, kh);
+                if (!isLoadingTombstones) {
+                    removeFromTombKeys(prefix, kh);
+                }
                 return true;
             } else {
                 // We are accepting a stale record
                 chunk.size += size;
                 chunk.garbage += size;
                 garbage.inc(size);
-                chunk.acceptStale(tr, prefix, kh, seq, size);
+                chunk.acceptStale(tr, prefix, kh, recordSeq, size);
                 return false;
             }
         }
     }
 
     /**
-     * Called when encountering a record which is interred by a prefix tombstone.
-     * @param size size of the record
-     */
-    public void acceptCleared(int size) {
-        chunk.size += size;
-        chunk.garbage += size;
-        garbage.inc(size);
-    }
-
-    private void removeFromTombKeys(long prefix, KeyHandle kh) {
-        if (tombKeys == null) {
-            return;
-        }
-        final SetOfKeyHandle khs = tombKeys.get(prefix);
-        if (khs != null) {
-            khs.remove(kh);
-        }
-    }
-
-    private Chunk chunk(long chunkSeq) {
-        return chunkSeq == chunk.seq ? chunk : cm.chunks.get(chunkSeq);
-    }
-
-    /**
      * Called when done reading. Retires any tombstones which are no longer needed.
      */
     public void done() {
-        finishCurrentChunk();
+        for (RebuildingChunk rebuildingChunk : rebuildingChunks.values()) {
+            final StableChunk stable = rebuildingChunk.toStableChunk();
+            cm.chunks.put(stable.seq, stable);
+        }
+        rebuildingChunks = null;
         final TrackerMapBase trackerMap = (TrackerMapBase) cm.trackers;
         long tombstoneCount = 0;
         long retiredCount = 0;
@@ -161,13 +151,34 @@ public class Rebuilder {
         logger.info("Retired %,d tombstones, left %,d live ones. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
         assert tombstoneCount == trackerMap.liveTombstones.get();
-        cm.gcHelper.initRecordSeq(maxSeq);
+        gcHelper.initRecordSeq(maxSeq);
     }
 
-    private void finishCurrentChunk() {
-        if (chunk != null) {
-            final StableChunk stable = chunk.toStableChunk();
-            cm.chunks.put(stable.seq, stable);
+    private Chunk chunk(long chunkSeq) {
+        final RebuildingChunk rebuildingChunk = rebuildingChunks.get(chunkSeq);
+        return rebuildingChunk != null ? rebuildingChunk : cm.chunks.get(chunkSeq);
+    }
+
+    private RebuildingChunk rebuildingChunk(long chunkSeq) {
+        final RebuildingChunk chunk = rebuildingChunks.get(chunkSeq);
+        return chunk != null ? chunk : startNewChunk(chunkSeq);
+    }
+
+    private RebuildingChunk startNewChunk(long seq) {
+        if (seq > maxChunkSeq) {
+            this.maxChunkSeq = seq;
+        }
+        final RebuildingChunk chunk = isLoadingTombstones
+                ? new RebuildingTombChunk(seq, gcHelper.newRecordMap(false))
+                : new RebuildingValChunk(seq, gcHelper.newRecordMap(false));
+        rebuildingChunks.put(seq, chunk);
+        return chunk;
+    }
+
+    private void removeFromTombKeys(long prefix, KeyHandle kh) {
+        final SetOfKeyHandle khs = tombKeys.get(prefix);
+        if (khs != null) {
+            khs.remove(kh);
         }
     }
 

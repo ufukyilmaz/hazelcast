@@ -15,11 +15,6 @@ public class RecordOnHeap extends Record {
         this.additionalInt = additionalInt;
     }
 
-    public RecordOnHeap(Record r) {
-        setRawSeqSize(r.rawSeqValue(), r.rawSizeValue());
-        setGarbageCount(r.garbageCount());
-    }
-
     @Override public final long rawSeqValue() {
         return seq;
     }

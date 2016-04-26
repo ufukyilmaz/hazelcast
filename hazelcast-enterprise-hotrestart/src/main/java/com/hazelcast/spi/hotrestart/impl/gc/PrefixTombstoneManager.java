@@ -2,6 +2,9 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
@@ -35,41 +38,43 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class PrefixTombstoneManager {
     public static final String NEW_FILE_SUFFIX = ".new";
     public static final int SWEEPING_TIMESLICE_MS = 10;
-    private static final long[] EMPTY_LONGS = new long[0];
     long chunkSeqToStartSweep;
-    private final GcExecutor gcExec;
+
     private final GcLogger logger;
-    private ChunkManager chunkMgr;
+    private final GcHelper gcHelper;
+    private final ConcurrentConveyorSingleQueue<Runnable> conveyor;
+    private final ChunkManager chunkMgr;
+
+    @Inject
+    private PrefixTombstoneManager(
+            ChunkManager chunkMgr, GcHelper gcHelper, GcLogger logger,
+            @Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> conveyor
+    ) {
+        this.conveyor = conveyor;
+        this.chunkMgr = chunkMgr;
+        this.gcHelper = gcHelper;
+        this.logger = logger;
+    }
+
     private Long2LongHashMap mutatorPrefixTombstones;
     private Long2LongHashMap collectorPrefixTombstones;
-    private final Long2LongHashMap dismissedActiveChunks;
+    private final Long2LongHashMap dismissedActiveChunks = new Long2LongHashMap(0);
     private Sweeper sweeper;
 
-    PrefixTombstoneManager(GcExecutor gcExec, GcLogger logger) {
-        this.gcExec = gcExec;
-        this.logger = logger;
-        this.dismissedActiveChunks = new Long2LongHashMap(0);
-    }
-
-    void setChunkManager(ChunkManager chunkMgr) {
-        this.chunkMgr = chunkMgr;
-    }
-
-    void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
+    public void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
         this.mutatorPrefixTombstones = prefixTombstones;
         this.collectorPrefixTombstones = new Long2LongHashMap(prefixTombstones);
     }
 
     // Called on the mutator thread
-    void addPrefixTombstones(long[] prefixes) {
-        final GcHelper gcHelper = chunkMgr.gcHelper;
+    public void addPrefixTombstones(long[] prefixes) {
         final Long2LongHashMap tombstoneSnapshot;
         final long currRecordSeq = gcHelper.recordSeq();
         synchronized (this) {
             multiPut(mutatorPrefixTombstones, prefixes, currRecordSeq);
             tombstoneSnapshot = new Long2LongHashMap(mutatorPrefixTombstones);
         }
-        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
+        conveyor.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
         persistTombstones(gcHelper, tombstoneSnapshot);
     }
 
@@ -101,7 +106,7 @@ public class PrefixTombstoneManager {
     @SuppressFBWarnings(value = "QBA",
             justification = "sweptSome = true executes conditionally on sweepNextChunk() returning true."
                           + " sweptSome correctly tells whether some chunk was swept")
-    @SuppressWarnings("checkstyle:emptyblock")
+    @SuppressWarnings({"checkstyle:emptyblock", "ConstantConditions"})
     boolean sweepAsNeeded() {
         final long start = System.nanoTime();
         if (sweeper != null) {

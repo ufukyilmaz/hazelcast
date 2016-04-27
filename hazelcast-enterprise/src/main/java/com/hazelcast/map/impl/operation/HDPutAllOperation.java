@@ -45,6 +45,8 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         MutatingOperation {
 
     private MapEntries mapEntries;
+    private Iterator<Map.Entry<Data, Data>> iterator;
+    private Map.Entry<Data, Data> lastElement;
 
     private boolean hasMapListener;
     private boolean hasWanReplication;
@@ -52,7 +54,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     private boolean hasInvalidation;
 
     private List<RecordInfo> backupRecordInfos;
-    private List<Map.Entry<Data, Data>> backupEntries;
     private List<Data> invalidationKeys;
 
     public HDPutAllOperation() {
@@ -64,25 +65,35 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     }
 
     @Override
-    protected void runInternal() {
-        hasMapListener = mapEventPublisher.hasEventListener(name);
-        hasWanReplication = hasWanReplication();
-        hasBackups = hasBackups();
-        hasInvalidation = mapContainer.isInvalidationEnabled();
+    public void beforeRun() throws Exception {
+        super.beforeRun();
+
+        this.iterator = mapEntries.iterator();
+
+        this.hasMapListener = mapEventPublisher.hasEventListener(name);
+        this.hasWanReplication = hasWanReplication();
+        this.hasBackups = hasBackups();
+        this.hasInvalidation = mapContainer.isInvalidationEnabled();
 
         if (hasBackups) {
-            backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());
-            backupEntries = new ArrayList<Map.Entry<Data, Data>>(mapEntries.size());
+            this.backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());
         }
         if (hasInvalidation) {
-            invalidationKeys = new ArrayList<Data>(mapEntries.size());
+            this.invalidationKeys = new ArrayList<Data>(mapEntries.size());
+        }
+    }
+
+    @Override
+    protected void runInternal() {
+        // if lastElement is set this is a continuation of the operation after a NativeOOME
+        if (lastElement != null) {
+            put(lastElement);
         }
 
-        Iterator<Map.Entry<Data, Data>> iterator = mapEntries.iterator();
         while (iterator.hasNext()) {
-            Map.Entry<Data, Data> entry = iterator.next();
-            put(entry);
-            iterator.remove();
+            lastElement = iterator.next();
+            put(lastElement);
+            lastElement = null;
         }
     }
 
@@ -113,7 +124,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
             mapEventPublisher.publishWanReplicationUpdate(name, entryView);
         }
         if (hasBackups) {
-            backupEntries.add(entry);
             RecordInfo replicationInfo = buildRecordInfo(record);
             backupRecordInfos.add(replicationInfo);
         }
@@ -159,7 +169,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     public boolean shouldBackup() {
-        return (hasBackups && !backupEntries.isEmpty());
+        return (hasBackups && !mapEntries.isEmpty());
     }
 
     @Override
@@ -174,7 +184,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     public Operation getBackupOperation() {
-        return new HDPutAllBackupOperation(name, backupEntries, backupRecordInfos);
+        return new HDPutAllBackupOperation(name, mapEntries, backupRecordInfos);
     }
 
     @Override

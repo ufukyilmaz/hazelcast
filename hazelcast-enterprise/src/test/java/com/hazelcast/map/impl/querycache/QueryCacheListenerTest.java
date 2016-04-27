@@ -136,6 +136,44 @@ public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
         });
     }
 
+    @Test
+    public void listenKey_withPredicate_whenNoLongerMatching() throws Exception {
+        String cacheName = randomString();
+
+        CountDownLatch numberOfCaughtEvents = new CountDownLatch(1);
+        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, new SqlPredicate("id < 100"), true);
+
+        Employee employee = new Employee(0);
+        map.put(0, employee);
+        cache.addEntryListener(new QueryCacheRemovalListener(numberOfCaughtEvents), true);
+
+        employee = new Employee(200);
+        map.put(0, employee);
+
+        sleepAtLeastSeconds(5);
+
+        assertOpenEventually(numberOfCaughtEvents);
+    }
+
+    @Test
+    public void listenKey_withPredicate_whenMatching() throws Exception {
+        String cacheName = randomString();
+
+        CountDownLatch numberOfCaughtEvents = new CountDownLatch(1);
+        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, new SqlPredicate("id < 100"), true);
+
+        Employee employee = new Employee(200);
+        map.put(0, employee);
+        cache.addEntryListener(new QueryCacheAdditionListener(numberOfCaughtEvents), true);
+
+        employee = new Employee(0);
+        map.put(0, employee);
+
+        sleepAtLeastSeconds(5);
+
+        assertOpenEventually(numberOfCaughtEvents);
+    }
+
     private void assertQueryCacheSizeEventually(final int expected, final QueryCache cache) {
         assertTrueEventually(new AssertTask() {
             @Override

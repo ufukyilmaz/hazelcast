@@ -35,7 +35,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.EXPIRED;
+import static com.hazelcast.core.EntryEventType.REMOVED;
+import static com.hazelcast.core.EntryEventType.UPDATED;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.querycache.event.QueryCacheEventDataBuilder.newQueryCacheEventDataBuilder;
 import static com.hazelcast.util.CollectionUtil.isEmpty;
@@ -183,10 +186,12 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
     }
 
     private QueryCacheEventData convertQueryCacheEventDataOrNull(PartitionAccumulatorRegistry registry, Data dataKey,
-                                                                 Data dataNewValue, Data dataOldValue, int eventType,
+                                                                 Data dataNewValue, Data dataOldValue, int eventTypeId,
                                                                  int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
-        if (!doFilter(eventFilter, dataKey, dataOldValue, dataNewValue, EntryEventType.getByType(eventType), null)) {
+        EntryEventType eventType = EntryEventType.getByType(eventTypeId);
+        eventType = getCQCEventTypeOrNull(eventType, eventFilter, dataKey, dataNewValue, dataOldValue);
+        if (eventType == null) {
             return null;
         }
 
@@ -195,8 +200,33 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 .withPartitionId(partitionId)
                 .withDataKey(dataKey)
                 .withDataNewValue(dataNewValue)
-                .withEventType(eventType)
+                .withEventType(eventType.getType())
                 .withDataOldValue(dataOldValue).build();
+    }
+
+    private EntryEventType getCQCEventTypeOrNull(EntryEventType eventType, EventFilter eventFilter,
+                                                 Data dataKey, Data dataNewValue, Data dataOldValue) {
+        if (eventType == UPDATED) {
+            // UPDATED event has a special handling as it might result in either ADDING or REMOVING an entry from CQC
+            // depending on a predicate
+            boolean newValueMatching = doFilter(eventFilter, dataKey, null, dataNewValue, EntryEventType.ADDED, null);
+            boolean oldValueMatching = doFilter(eventFilter, dataKey, null, dataOldValue, EntryEventType.ADDED, null);
+            if (oldValueMatching) {
+                if (!newValueMatching) {
+                    eventType = REMOVED;
+                }
+            } else {
+                if (newValueMatching) {
+                    eventType = ADDED;
+                } else {
+                    //neither old value or new value is matching -> it's a non-event for the CQC
+                    return null;
+                }
+            }
+        } else if (!doFilter(eventFilter, dataKey, dataOldValue, dataNewValue, eventType, null)) {
+            return null;
+        }
+        return eventType;
     }
 
     // TODO Problem : Locked keys will also be cleared from the query-cache after calling a map-wide event like clear/evictAll.

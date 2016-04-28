@@ -16,7 +16,6 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -32,16 +31,19 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.IDLER;
+import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
+import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFileCursor.readFullyOrNothing;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
 import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
+import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -51,7 +53,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  *     <li>rebuilds the Hot Restart Store's metadata</li>
  * </ol>
  */
-public class HotRestarter {
+public final class HotRestarter {
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
         @Override public int compare(File left, File right) {
@@ -71,13 +73,16 @@ public class HotRestarter {
             return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX) || isActiveChunkFile(f));
         }
     };
+    private static final int RECORD_COUNT_NULL_SENTINEL = -2;
 
-    volatile long recordCountInCurrentPhase = -2;
-    volatile Throwable step2Failure;
+    volatile long recordCountInCurrentPhase = RECORD_COUNT_NULL_SENTINEL;
+    volatile Throwable rebuilderFailure;
 
     private final PrefixTombstoneManager pfixTombstoMgr;
     private final GcHelper gcHelper;
     private final File homeDir;
+    private final String storeName;
+    private final Integer storeCount;
     private final ConcurrentConveyorSingleQueue<RestartItem>[] keySenders;
     private final ConcurrentConveyor<RestartItem> keyHandleReceiver;
     private final ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders;
@@ -88,9 +93,10 @@ public class HotRestarter {
     private Long2LongHashMap prefixTombstones;
 
     @Inject
+    @SuppressWarnings("checkstyle:parameternumber")
     private HotRestarter(
-            Rebuilder rebuilder, PrefixTombstoneManager pfixTombstoMgr, GcHelper gcHelper,
-            RamStoreRegistry reg, GcLogger logger, @Name("homeDir") File homeDir,
+            Rebuilder rebuilder, PrefixTombstoneManager pfixTombstoMgr, GcHelper gcHelper, RamStoreRegistry reg, GcLogger logger,
+            @Name("homeDir") File homeDir, @Name("storeName") String storeName, @Name("storeCount") Integer storeCount,
             @Name("keyConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] keySenders,
             @Name("keyHandleConveyor") ConcurrentConveyor<RestartItem> keyHandleReceiver,
             @Name("valueConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders
@@ -101,13 +107,15 @@ public class HotRestarter {
         this.reg = reg;
         this.logger = logger;
         this.homeDir = homeDir;
+        this.storeName = storeName;
+        this.storeCount = storeCount;
         this.keySenders = keySenders;
         this.keyHandleReceiver = keyHandleReceiver;
         this.valueSenders = valueSenders;
     }
 
     public void restart(boolean failIfAnyData) throws InterruptedException {
-        final Thread step2Thread = new Thread(new RestartStep2(), "restartStep2");
+        final Thread rebuilderThread = new Thread(new RebuilderLoop(), "Rebuilder for " + storeName);
         Throwable localFailure = null;
         try {
             final Long2LongHashMap prefixTombstones = restorePrefixTombstones(homeDir);
@@ -119,7 +127,7 @@ public class HotRestarter {
             if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
                 throw new HotRestartException("failIfAnyData == true and there's data to reload");
             }
-            step2Thread.start();
+            rebuilderThread.start();
             readRecords(tombCursor);
             readRecords(valCursor);
         } catch (Throwable t) {
@@ -127,16 +135,14 @@ public class HotRestarter {
         }
         sendSubmitterGone(keySenders);
         try {
-            step2Thread.join(SECONDS.toMillis(2));
-            if (localFailure == null && step2Thread.isAlive()) {
-                logger.warning("Timed out while joining step2Thread");
+            rebuilderThread.join(SECONDS.toMillis(2));
+            if (localFailure == null && rebuilderThread.isAlive()) {
+                logger.warning("Timed out while joining Rebuilder thread");
             }
-        } catch (InterruptedException ignored) { }
-        if (localFailure == null) {
-            propagateStep2Failure();
-        } else {
-            sneakyThrow(localFailure);
+        } catch (InterruptedException ignored) {
+            currentThread().interrupt();
         }
+        propagateLocalAndRebuilderFailure(localFailure);
     }
 
     private static Long2LongHashMap restorePrefixTombstones(File homeDir) {
@@ -205,7 +211,7 @@ public class HotRestarter {
             count++;
             final ChunkFileRecord rec = cursor.currentRecord();
             final long prefix = rec.prefix();
-            keySenders[reg.prefixToThreadId(prefix)].submit(
+            keySenders[reg.prefixToThreadId(prefix) / storeCount].submit(
                     rec.recordSeq() > prefixTombstones.get(prefix)
                     ? new RestartItem(rec.chunkSeq(), prefix, rec.recordSeq(), rec.size(), rec.key(), rec.value())
                     : clearedItem(rec.chunkSeq(), rec.recordSeq(), rec.size()));
@@ -216,15 +222,22 @@ public class HotRestarter {
     private void awaitDownstreamCompletion(long count) {
         recordCountInCurrentPhase = count;
         for (long i = 0; recordCountInCurrentPhase != -1; i++) {
-            IDLER.idle(i);
-            propagateStep2Failure();
+            SUBMIT_IDLER.idle(i);
+            propagateLocalAndRebuilderFailure(null);
         }
     }
 
-    private void propagateStep2Failure() {
-        final Throwable t = step2Failure;
-        if (t != null) {
-            throw new HotRestartException("The restartStep2 thread failed", t);
+    private void propagateLocalAndRebuilderFailure(Throwable localFailure) {
+        final Throwable rebuilderFailure = this.rebuilderFailure;
+        if (localFailure != null) {
+            if (rebuilderFailure != null && !(localFailure instanceof RebuilderFailure)) {
+                logger.severe("Both HotRestarter and Rebuilder loops failed. Reporting Rebuilder failure:",
+                        rebuilderFailure);
+            }
+            sneakyThrow(localFailure);
+        }
+        if (rebuilderFailure != null) {
+            throw new RebuilderFailure(rebuilderFailure);
         }
     }
 
@@ -255,21 +268,26 @@ public class HotRestarter {
                 conveyValues();
                 recordCountInCurrentPhase = -1;
                 for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
-                    valueSenders[reg.prefixToThreadId(e.getKey())]
+                    valueSenders[reg.prefixToThreadId(e.getKey()) / storeCount]
                             .submit(new RestartItem.WithSetOfKeyHandle(e.getKey(), e.getValue()));
                 }
                 gcHelper.initChunkSeq(rebuilder.maxChunkSeq());
                 rebuilder.done();
             } catch (Throwable t) {
                 step2Failure = t;
-                logger.severe("restartStep2 failed", t);
             } finally {
-                sendSubmitterGone(valueSenders);
-                for (ConcurrentConveyor<RestartItem> valueSender : valueSenders) {
-                    valueSender.awaitDrainerGone();
-                }
-                for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
-                    e.getValue().dispose();
+                try {
+                    sendSubmitterGone(valueSenders);
+                    for (ConcurrentConveyor<RestartItem> valueSender : valueSenders) {
+                        valueSender.awaitDrainerGone();
+                    }
+                    for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
+                        e.getValue().dispose();
+                    }
+                } catch (Throwable t) {
+                    if (step2Failure == null) {
+                        step2Failure = t;
+                    }
                 }
             }
             if (step2Failure == null) {
@@ -280,19 +298,49 @@ public class HotRestarter {
         }
 
         private void drainTombstones() {
+            long idleCount = 0;
             for (long itemsDrained = 0; itemsDrained != recordCountInCurrentPhase;) {
                 checkSubmittersGone();
                 for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
                     drain.clear();
-                    itemsDrained += keyHandleReceiver.drainTo(i, drain);
-                    processTombstoneDrain();
+                    final int count = keyHandleReceiver.drainTo(i, drain);
+                    if (count > 0) {
+                        processTombstoneDrain();
+                        itemsDrained += count;
+                        idleCount = 0;
+                    } else {
+                        DRAIN_IDLER.idle(idleCount++);
+                    }
                 }
             }
         }
 
+        private void conveyValues() {
+            long drainOpCount = 0;
+            long idleCount = 0;
+            for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained;) {
+                checkSubmittersGone();
+                for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
+                    drain.clear();
+                    final int count = keyHandleReceiver.drainTo(i, drain);
+                    if (count > 0) {
+                        processValueDrain(valueSenders[i]);
+                        idleCount = 0;
+                        itemsDrained += count;
+                        drainOpCount++;
+                    } else {
+                        DRAIN_IDLER.idle(idleCount++);
+                    }
+                }
+            }
+            final int capacity = keyHandleReceiver.queue(0).capacity();
+            logger.fine("%s.conveyValues: drained %,d items, mean queue size was %.1f (capacity %,d)",
+                    storeName, recordCountInCurrentPhase, (double) recordCountInCurrentPhase / drainOpCount, capacity);
+        }
+
         private void processTombstoneDrain() {
             for (RestartItem item : drain) {
-                if (item.key != null) {
+                if (!item.isSpecialItem()) {
                     addTombKey(item.keyHandle, item.prefix);
                     rebuilder.preAccept(item.recordSeq, item.size);
                     rebuilder.accept(item);
@@ -300,27 +348,6 @@ public class HotRestarter {
                     processSpecialItem(item);
                 }
             }
-        }
-
-        private void conveyValues() {
-            long drainOpCount = 0;
-            for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained;) {
-                checkSubmittersGone();
-                for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
-                    drain.clear();
-                    final int count = keyHandleReceiver.drainTo(i, drain);
-                    // Maintain counters used to determine the mean queue size over the whole run:
-                    if (count > 0) {
-                        itemsDrained += count;
-                        drainOpCount++;
-                    }
-                    processValueDrain(valueSenders[i]);
-                }
-            }
-            final int capacity = keyHandleReceiver.queue(0).capacity();
-            logger.fine("conveyValues: drained %,d items, mean queue utilization was %.1f%% (capacity %,d)",
-                    recordCountInCurrentPhase, 100.0 * recordCountInCurrentPhase / (drainOpCount * capacity),
-                    capacity);
         }
 
         private void processValueDrain(ConcurrentConveyorSingleQueue<RestartItem> outConveyor) {
@@ -339,7 +366,7 @@ public class HotRestarter {
         private void processSpecialItem(RestartItem item) {
             if (item.isClearedItem()) {
                 rebuilder.preAccept(item.recordSeq, item.size);
-                rebuilder.acceptCleared(item.chunkSeq, item.size);
+                rebuilder.acceptCleared(item);
             } else {
                 assert item == submitterGoneItem;
                 submitterGoneCount++;

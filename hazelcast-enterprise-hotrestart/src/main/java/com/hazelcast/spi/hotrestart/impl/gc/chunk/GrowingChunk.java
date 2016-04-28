@@ -12,7 +12,7 @@ public abstract class GrowingChunk extends Chunk {
     public long size;
 
     // Current chunk file offset from the viewpoint of the addStep2() method.
-    protected int addStep2FileOffset;
+    protected int addStep2FilePos;
 
     private final int sizeLimit = determineSizeLimit();
 
@@ -36,16 +36,21 @@ public abstract class GrowingChunk extends Chunk {
         return full();
     }
 
-    /**
-     * Adds the record to this chunk's RAM-based index of records. Called by the collector thread.
-     */
+    /** Adds the record to this chunk's record map. Called by the collector thread. */
     public final void addStep2(long prefix, KeyHandle kh, long seq, int size) {
-        insertOrUpdate(prefix, kh, seq, size, addStep2FileOffset);
-        addStep2FileOffset += size;
+        insertOrUpdate(prefix, kh, seq, addStep2FilePos, size);
+        addStep2FilePos += size;
         liveRecordCount++;
     }
 
-    public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset);
+    /** Called only by {@code Rebuilder}, which encounters records out of file order. Therefore
+     * {@code addStep2FilePos} is unusable. */
+    public final void addStep2(long prefix, KeyHandle kh, long seq, int filePos, int size) {
+        insertOrUpdate(prefix, kh, seq, filePos, size);
+        liveRecordCount++;
+    }
+
+    public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size);
 
     protected abstract int determineSizeLimit();
 
@@ -64,11 +69,11 @@ public abstract class GrowingChunk extends Chunk {
         }
     }
 
-    protected final void insertOrUpdateTombstone(long prefix, KeyHandle kh, long seq, int size, int filePosition) {
-        final Record existing = records.putIfAbsent(prefix, kh, seq, size, true, filePosition);
+    protected final void insertOrUpdateTombstone(long prefix, KeyHandle kh, long seq, int filePos, int size) {
+        final Record existing = records.putIfAbsent(prefix, kh, seq, size, true, filePos);
         if (existing != null) {
             existing.update(seq, size);
-            existing.setFilePosition(filePosition);
+            existing.setFilePosition(filePos);
         }
     }
 }

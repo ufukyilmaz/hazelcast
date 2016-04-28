@@ -32,14 +32,14 @@ import static java.util.concurrent.locks.LockSupport.unpark;
  */
 public class ConcurrentConveyor<E> {
     /** How many times to busy-spin while waiting to submit to the work queue. */
-    public static final int SPIN_COUNT = 1000;
+    public static final int SUBMIT_SPIN_COUNT = 1000;
     /** How many times to yield while waiting to submit to the work queue. */
-    public static final int YIELD_COUNT = 1000;
+    public static final int SUBMIT_YIELD_COUNT = 200;
     /** Max park microseconds while waiting to submit to the work queue. */
-    public static final long MAX_PARK_MICROS = 200;
+    public static final long SUBMIT_MAX_PARK_MICROS = 200;
     /** Idling strategy suitable for the drainer thread's main loop. */
-    public static final IdleStrategy IDLER =
-            new BackoffIdleStrategy(SPIN_COUNT, YIELD_COUNT, 1, MICROSECONDS.toNanos(MAX_PARK_MICROS));
+    public static final IdleStrategy SUBMIT_IDLER = new BackoffIdleStrategy(
+            SUBMIT_SPIN_COUNT, SUBMIT_YIELD_COUNT, 1, MICROSECONDS.toNanos(SUBMIT_MAX_PARK_MICROS));
 
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private static final Throwable REGULAR_DEPARTURE = regularDeparture();
@@ -90,19 +90,15 @@ public class ConcurrentConveyor<E> {
         }
     }
 
-    public final void submit(int queueIndex, E item) {
-        submit(queues[queueIndex], item);
-    }
-
     public final void submit(AbstractConcurrentArrayQueue<E> queue, E item) {
         for (long i = 0; !queue.offer(item); i++) {
-            IDLER.idle(i);
+            SUBMIT_IDLER.idle(i);
             checkDrainerGone();
             unparkDrainer();
         }
         long deadline = System.nanoTime() + SECONDS.toNanos(2);
         for (long i = 0; backpressure; i++) {
-            IDLER.idle(i);
+            SUBMIT_IDLER.idle(i);
             if (System.nanoTime() > deadline) {
                 System.out.format("Stuck after submitting %s%n", item);
                 deadline = Long.MAX_VALUE;
@@ -145,10 +141,6 @@ public class ConcurrentConveyor<E> {
         return drainerDepartureCause != null;
     }
 
-    public final Throwable drainerFailure() {
-        return drainerDepartureCause != REGULAR_DEPARTURE ? drainerDepartureCause : null;
-    }
-
     public final void reset() {
         drainer = null;
         drainerDepartureCause = null;
@@ -168,18 +160,14 @@ public class ConcurrentConveyor<E> {
 
     public final void awaitDrainerGone() {
         for (long i = 0; !isDrainerGone(); i++) {
-            IDLER.idle(i);
+            SUBMIT_IDLER.idle(i);
         }
         if (drainerDepartureCause != REGULAR_DEPARTURE) {
             throw new ConcurrentConveyorException("Queue drainer failed", drainerDepartureCause);
         }
     }
 
-    private int drain(AbstractConcurrentArrayQueue<E> q, Collection<? super E> drain, int limit) {
-        return q.drainTo(drain, limit);
-    }
-
-    private void checkDrainerGone() {
+    public final void checkDrainerGone() {
         final Throwable cause = drainerDepartureCause;
         if (cause == REGULAR_DEPARTURE) {
             throw new ConcurrentConveyorException("Queue drainer has already left");
@@ -187,6 +175,10 @@ public class ConcurrentConveyor<E> {
         if (cause != null) {
             throw new ConcurrentConveyorException("Queue drainer failed", cause);
         }
+    }
+
+    private int drain(AbstractConcurrentArrayQueue<E> q, Collection<? super E> drain, int limit) {
+        return q.drainTo(drain, limit);
     }
 
     private void unparkDrainer() {

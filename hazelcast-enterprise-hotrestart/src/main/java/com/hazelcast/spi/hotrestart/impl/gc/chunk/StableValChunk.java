@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
+import com.hazelcast.internal.util.collection.LongSet;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
 /**
@@ -7,13 +8,24 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  */
 public final class StableValChunk extends StableChunk {
 
-    public StableValChunk(ActiveValChunk from, boolean compressed) {
+    public final LongSet clearedPrefixesFoundAtRestart;
+
+    public StableValChunk(ActiveValChunk from) {
         super(from);
+        this.clearedPrefixesFoundAtRestart = new EmptyLongSet();
     }
 
-    public StableValChunk(long seq, RecordMap records, int liveRecordCount,
+    public StableValChunk(
+            long seq, RecordMap records, int liveRecordCount, long size, long garbage, boolean needsDismissing
+    ) {
+        this(seq, records, new EmptyLongSet(), liveRecordCount, size, garbage, needsDismissing);
+    }
+
+    public StableValChunk(long seq, RecordMap records, LongSet clearedPrefixesFoundAtRestart, int liveRecordCount,
                           long size, long garbage, boolean needsDismissing) {
         super(seq, records, liveRecordCount, size, garbage, needsDismissing);
+        this.clearedPrefixesFoundAtRestart = clearedPrefixesFoundAtRestart.isEmpty()
+                ? new EmptyLongSet() : clearedPrefixesFoundAtRestart;
     }
 
     public long cost() {

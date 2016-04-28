@@ -278,6 +278,12 @@ public class PrefixTombstoneManager {
                 final long prefix = r.keyPrefix(kh);
                 garbageTombstones.remove(prefix);
             }
+            if (!(chunk instanceof StableValChunk)) {
+                return;
+            }
+            for (LongCursor cursor = ((StableValChunk) chunk).clearedPrefixesFoundAtRestart.cursor(); cursor.advance();) {
+                garbageTombstones.remove(cursor.value());
+            }
         }
 
         private long lowChunkSeq() {

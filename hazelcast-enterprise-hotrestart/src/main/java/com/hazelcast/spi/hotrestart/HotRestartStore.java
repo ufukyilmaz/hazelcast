@@ -3,8 +3,6 @@ package com.hazelcast.spi.hotrestart;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
 import com.hazelcast.spi.hotrestart.impl.RestartItem;
 
-import java.util.concurrent.TimeoutException;
-
 /**
  * Persistent store of key-value mappings specifically tailored to support
  * the Hot Restart feature. Supports only update operations and no data lookup.
@@ -22,20 +20,25 @@ public interface HotRestartStore {
     /** The name of the log category used by the Hot Restart module */
     String LOG_CATEGORY = "com.hazelcast.spi.hotrestart";
 
+    /** Returns the store's name, which matches the name of its home directory. */
+    String name();
+
     /**
      * Performs hot restart: reloads the data from persistent storage and
      * pushes it to its associated {@link RamStoreRegistry}.
      *
-     * @param failIfAnyData if true, the call will fail if any persistent data is found.
+     * @param failIfAnyData if true, the call will fail if any persistent data is found
+     * @param storeCount the number of Hot Restart stores associated with this HZ instance
      * @param keyConveyors convey keys from {@code HotRestartStore} to {@code RamStore}
-     * @param keyHandleConveyor conveys key handles from {@code RamStore} to {@code HotRestartStore}
      * @param valueConveyors convey values from {@code HotRestartStore} to {@code RamStore}
+     * @param keyHandleConveyor conveys key handles from {@code RamStore} to {@code HotRestartStore}
      * @throws InterruptedException
      */
-    void hotRestart(boolean failIfAnyData,
+    void hotRestart(boolean failIfAnyData, int storeCount,
                     ConcurrentConveyor<RestartItem>[] keyConveyors,
                     ConcurrentConveyor<RestartItem> keyHandleConveyor,
-                    ConcurrentConveyor<RestartItem>[] valueConveyors)
+                    ConcurrentConveyor<RestartItem>[] valueConveyors
+    )
             throws InterruptedException;
 
     /**

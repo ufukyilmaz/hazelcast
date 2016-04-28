@@ -8,6 +8,8 @@ public interface ChunkFileRecord {
 
     long prefix();
 
+    int filePos();
+
     int size();
 
     byte[] key();

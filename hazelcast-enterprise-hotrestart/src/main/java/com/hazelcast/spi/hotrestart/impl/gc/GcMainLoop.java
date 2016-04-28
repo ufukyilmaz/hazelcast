@@ -4,7 +4,7 @@ import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.IDLER;
+import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
 import static java.lang.Thread.interrupted;
 
 public class GcMainLoop implements Runnable {
@@ -55,7 +55,7 @@ public class GcMainLoop implements Runnable {
                 if (workCount > 0 || didWork) {
                     idleCount = 0;
                 } else {
-                    IDLER.idle(idleCount++);
+                    SUBMIT_IDLER.idle(idleCount++);
                 }
             }
             gcConveyor.drainerDone();

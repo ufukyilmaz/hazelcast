@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
@@ -7,31 +8,41 @@ import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
+import com.hazelcast.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.util.concurrent.IdleStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.IDLER;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.WORK_QUEUE_CAPACITY;
 import static java.lang.Thread.interrupted;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 /**
  * Concurrent implementation of {@link HotRestartStore} which delegates work to a
  * single-threaded {@code HotRestartStore} over a concurrent queue.
  */
 public final class ConcurrentHotRestartStore implements HotRestartStore {
+    private static final IdleStrategy IDLER = new BackoffIdleStrategy(1, 1, 1, MICROSECONDS.toNanos(200));
+
+    private final String name;
     private final HotRestartPersistenceEngine persistence;
     private final ConcurrentConveyorSingleQueue<RunnableWithStatus> persistenceConveyor;
     private final DiContainer di;
     private final PersistenceEngineLoop persistenceLoop;
     private final Thread persistenceThread;
+    private final ILogger logger;
 
     @Inject
     private ConcurrentHotRestartStore(
+            ILogger logger,
+            @Name("storeName") String storeName,
             HotRestartPersistenceEngine persistence,
             @Name("persistenceConveyor") ConcurrentConveyorSingleQueue<RunnableWithStatus> persistenceConveyor,
             DiContainer di
     ) {
+        this.logger = logger;
+        this.name = storeName;
         this.persistence = persistence;
         this.persistenceConveyor = persistenceConveyor;
         this.di = di;
@@ -41,10 +52,11 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
 
     @Override
     public void hotRestart(
-            boolean failIfAnyData, ConcurrentConveyor<RestartItem>[] keyConveyors,
+            boolean failIfAnyData, int storeCount, ConcurrentConveyor<RestartItem>[] keyConveyors,
             ConcurrentConveyor<RestartItem> keyHandleConveyor, ConcurrentConveyor<RestartItem>[] valueConveyors)
     throws InterruptedException {
         new DiContainer(di).dep(Rebuilder.class)
+                           .dep("storeCount", storeCount)
                            .dep("keyConveyors", keyConveyors)
                            .dep("keyHandleConveyor", keyHandleConveyor)
                            .dep("valueConveyors", valueConveyors)
@@ -56,17 +68,17 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
 
     @Override
     public void put(HotRestartKey key, byte[] value, boolean needsFsync) {
-        persistenceConveyor.submit(persistence.new Put(key, value, needsFsync));
+        submitAndProceedWhenAllowed(persistence.new Put(key, value, needsFsync));
     }
 
     @Override
     public void remove(HotRestartKey key, boolean needsFsync) {
-        persistenceConveyor.submit(persistence.new Remove(key, needsFsync));
+        submitAndProceedWhenAllowed(persistence.new Remove(key, needsFsync));
     }
 
     @Override
     public void clear(boolean needsFsync, long... keyPrefixes) throws HotRestartException {
-        persistenceConveyor.submit(persistence.new Clear(keyPrefixes, needsFsync));
+        submitAndProceedWhenAllowed(persistence.new Clear(keyPrefixes, needsFsync));
     }
 
     @Override
@@ -86,6 +98,23 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         return persistence;
     }
 
+    @Override
+    public String name() {
+        return name;
+    }
+
+    private void submitAndProceedWhenAllowed(RunnableWithStatus item) {
+        persistenceConveyor.submit(item);
+        for (long idleCount = 0; !item.submitterCanProceed; idleCount++) {
+            IDLER.idle(idleCount);
+            // FIRST establish that the drainer is gone and THEN that submitterCanProceed is still false.
+            if (persistenceConveyor.isDrainerGone() && !item.submitterCanProceed) {
+                // checkDrainerGone is now certain to throw an exception.
+                persistenceConveyor.checkDrainerGone();
+            }
+        }
+    }
+
     private final class PersistenceEngineLoop implements Runnable {
 
         boolean askedToStop;
@@ -95,12 +124,13 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
             }
         };
 
-        private final List<RunnableWithStatus> workDrain = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
-        private final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
-        private final List<RunnableWithStatus> nonblockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
-
         @Override
         public void run() {
+            final List<RunnableWithStatus> workDrain = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> nonblockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
+            long drainCount = 0;
+            long blockingItemCount = 0;
             try {
                 long idleCount = 0;
                 persistenceConveyor.drainerArrived();
@@ -118,6 +148,8 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
                         (task.submitterCanProceed ? nonblockingTasks : blockingTasks).add(task);
                     }
                     if (!blockingTasks.isEmpty()) {
+                        drainCount++;
+                        blockingItemCount += blockingTasks.size();
                         for (Runnable task : blockingTasks) {
                             task.run();
                         }
@@ -135,6 +167,8 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
                 persistenceConveyor.drainerFailed(t);
             } finally {
                 persistence.close();
+                logger.fine(String.format("Drained %,d blocking items. Mean batch size was %.1f",
+                        blockingItemCount, (double) blockingItemCount / drainCount));
             }
         }
     }

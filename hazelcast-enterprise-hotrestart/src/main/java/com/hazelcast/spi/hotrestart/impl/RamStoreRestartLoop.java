@@ -1,23 +1,26 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.RestartItem.WithSetOfKeyHandle;
 import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
+import com.hazelcast.util.concurrent.BackoffIdleStrategy;
+import com.hazelcast.util.concurrent.IdleStrategy;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Queue;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.IDLER;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.concurrentConveyor;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static java.lang.Math.max;
 import static java.lang.Thread.currentThread;
-import static java.lang.Thread.interrupted;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 /**
  * Contains the main loop executed by the threads that call into the {@code RamStore}
@@ -27,10 +30,18 @@ public class RamStoreRestartLoop {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int QUEUE_CAPACITY_BUDGET = 1 << 12;
     public static final int MIN_QUEUE_CAPACITY = 8;
+    /** How many times to busy-spin while awaiting new items in the queue. */
+    public static final int SPIN_COUNT = 1;
+    /** How many times to yield while awaiting new items in the queue. */
+    public static final int YIELD_COUNT = 1;
+    /** Max park microseconds while awaiting new items in the queue. */
+    public static final long MAX_PARK_MICROS = 10;
+    public static final IdleStrategy DRAIN_IDLER =
+            new BackoffIdleStrategy(SPIN_COUNT, YIELD_COUNT, 1, MICROSECONDS.toNanos(MAX_PARK_MICROS));
 
-    public final ConcurrentConveyorSingleQueue<RestartItem>[] keyReceivers;
-    public final ConcurrentConveyor<RestartItem> keyHandleSender;
-    public final ConcurrentConveyorSingleQueue<RestartItem>[] valueReceivers;
+    public final ConcurrentConveyorSingleQueue<RestartItem>[][] keyReceivers;
+    public final ConcurrentConveyor<RestartItem>[] keyHandleSenders;
+    public final ConcurrentConveyorSingleQueue<RestartItem>[][] valueReceivers;
 
     private final RestartItem keySubmitterGone;
     private final RestartItem.WithSetOfKeyHandle valueSubmitterGone;
@@ -39,24 +50,28 @@ public class RamStoreRestartLoop {
 
     private boolean submitterGoneSent;
 
-    public RamStoreRestartLoop(RamStoreRegistry reg, int threadCount, ILogger logger) {
+    public RamStoreRestartLoop(int storeCount, int threadCount, RamStoreRegistry reg, ILogger logger) {
         this.reg = reg;
         this.logger = logger;
-        this.keyReceivers = makeConveyors(threadCount);
-        this.keyHandleSender = concurrentConveyor(RestartItem.END, makeQueues(threadCount));
-        this.valueReceivers = makeConveyors(threadCount);
-        this.keySubmitterGone = keyReceivers[0].submitterGoneItem();
-        this.valueSubmitterGone = (RestartItem.WithSetOfKeyHandle) valueReceivers[0].submitterGoneItem();
+        this.keyReceivers = makeSingleQueueConveyors(storeCount, threadCount);
+        this.keyHandleSenders = makeMultiQueueConveyors(storeCount, threadCount);
+        this.valueReceivers = makeSingleQueueConveyors(storeCount, threadCount);
+        this.keySubmitterGone = keyReceivers[0][0].submitterGoneItem();
+        this.valueSubmitterGone = (RestartItem.WithSetOfKeyHandle) valueReceivers[0][0].submitterGoneItem();
     }
 
-    public final void run(int queueIndex) {
-        final ConcurrentConveyor<RestartItem> keyReceiver = keyReceivers[queueIndex];
-        final ConcurrentConveyor<RestartItem> valueReceiver = valueReceivers[queueIndex];
-        final AbstractConcurrentArrayQueue<RestartItem> sendQ = keyHandleSender.queue(queueIndex);
+    public final void run(int threadIndex) {
+        final int storeCount = keyHandleSenders.length;
+        final int remainder = threadIndex % storeCount;
+        final int quotient = threadIndex / storeCount;
+        final ConcurrentConveyor<RestartItem> keyReceiver = keyReceivers[remainder][quotient];
+        final ConcurrentConveyor<RestartItem> keyHandleSender = keyHandleSenders[remainder];
+        final AbstractConcurrentArrayQueue<RestartItem> keyHandleSendQ = keyHandleSender.queue(quotient);
+        final ConcurrentConveyor<RestartItem> valueReceiver = valueReceivers[remainder][quotient];
         try {
             keyReceiver.drainerArrived();
             valueReceiver.drainerArrived();
-            mainLoop(keyReceiver, valueReceiver, sendQ);
+            mainLoop(threadIndex, keyReceiver, keyHandleSender, keyHandleSendQ, valueReceiver);
             keyReceiver.drainerDone();
             valueReceiver.drainerDone();
         } catch (Throwable t) {
@@ -64,37 +79,42 @@ public class RamStoreRestartLoop {
             valueReceiver.drainerFailed(t);
             sneakyThrow(t);
         } finally {
-            if (!submitterGoneSent) {
-                try {
-                    keyHandleSender.submit(sendQ, keyHandleSender.submitterGoneItem());
-                } catch (Exception ignored) { }
-            }
+            ensureSubmitterGoneSent(keyHandleSender, keyHandleSendQ);
         }
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private void mainLoop(
-            ConcurrentConveyor<RestartItem> keyReceiver, ConcurrentConveyor<RestartItem> valueReceiver,
-            AbstractConcurrentArrayQueue<RestartItem> sendQ
+            int threadIndex, ConcurrentConveyor<RestartItem> keyReceiver,
+            ConcurrentConveyor<RestartItem> keyHandleSender, AbstractConcurrentArrayQueue<RestartItem> sendQ,
+            ConcurrentConveyor<RestartItem> valueReceiver
     ) {
         final int capacity = keyReceiver.queue(0).capacity();
         final Deque<RestartItem> keyDrain = new ArrayDeque<RestartItem>(capacity);
         final List<RestartItem> valueDrain = new ArrayList<RestartItem>(capacity);
+        final RestartItem keyHandleSubmitterGoneItem = keyHandleSender.submitterGoneItem();
         RestartItem danglingDownstreamItem = null;
         long idleCount = 0;
         boolean didWork = true;
         long keyCount = 0;
         long keyDrainCount = 0;
-        while (!interrupted()) {
+        mainLoop:
+        while (true) {
+            if (currentThread().isInterrupted()) {
+                throw new HotRestartException("Thread interrupted inside RamStoreRestartLoop");
+            }
             if (didWork) {
                 idleCount = 0;
             } else {
-                IDLER.idle(idleCount++);
+                DRAIN_IDLER.idle(idleCount++);
             }
             didWork = false;
             valueDrain.clear();
             valueReceiver.drainTo(valueDrain);
             for (RestartItem item : valueDrain) {
-                consumeValueItem(item);
+                if (consumeValueItem(item)) {
+                    break mainLoop;
+                }
                 didWork = true;
             }
             final int count = keyReceiver.drainTo(keyDrain, capacity - keyDrain.size());
@@ -103,17 +123,16 @@ public class RamStoreRestartLoop {
                 keyCount += count;
                 keyDrainCount++;
             }
-
             if (danglingDownstreamItem != null) {
                 if (keyHandleSender.offer(sendQ, danglingDownstreamItem)) {
                     danglingDownstreamItem = null;
                 } else {
-                    // Don't drain more key items until the dangling item's submission succeeds
+                    // Don't drain more key items until the dangling keyHandle item is sent
                     continue;
                 }
             }
             for (RestartItem item; (item = keyDrain.pollFirst()) != null; ) {
-                final RestartItem downstreamItem = consumeKeyItem(item);
+                final RestartItem downstreamItem = consumeKeyItem(item, keyHandleSubmitterGoneItem);
                 didWork = true;
                 // Offer to keyHandleSender instead of submitting. If we block trying to submit,
                 // we risk a deadlock where the downstream thread is blocking to submit back
@@ -125,52 +144,105 @@ public class RamStoreRestartLoop {
                 }
             }
         }
-        logger.fine(String.format("%s: drained %,d items, mean queue utilization was %.1f%% (capacity %,d)",
-                currentThread().getName(), keyCount, 100.0 * keyCount / (keyDrainCount * capacity), capacity));
+        logger.fine(String.format("threadIndex %d: drained %,d items, mean queue size was %.1f (capacity %,d)",
+                threadIndex, keyCount, (double) keyCount / keyDrainCount, capacity));
     }
 
-    private RestartItem consumeKeyItem(RestartItem item) {
+    private RestartItem consumeKeyItem(RestartItem item, RestartItem keyHandleSubmitterGoneItem) {
         if (!item.isSpecialItem()) {
             item.ramStore = reg.restartingRamStoreForPrefix(item.prefix);
             item.keyHandle = item.ramStore.toKeyHandle(item.key);
             return item;
-        } else if (item.isClearedItem()) {
+        }
+        if (item.isClearedItem()) {
             return item;
         }
         assert item == keySubmitterGone;
         submitterGoneSent = true;
-        return keyHandleSender.submitterGoneItem();
+        return keyHandleSubmitterGoneItem;
     }
 
-    private void consumeValueItem(RestartItem item) {
-        if (!(item instanceof WithSetOfKeyHandle)) {
+    private boolean consumeValueItem(RestartItem item) {
+        if (!item.isSpecialItem()) {
             item.ramStore.accept(item.keyHandle, item.value);
-        } else if (item != valueSubmitterGone) {
-            final SetOfKeyHandle sokh = ((WithSetOfKeyHandle) item).sokh;
-            reg.ramStoreForPrefix(item.prefix).removeNullEntries(sokh);
-        } else {
-            currentThread().interrupt();
+            return false;
         }
+        if (item.isClearedItem()) {
+            return false;
+        }
+        if (item == valueSubmitterGone) {
+            return true;
+        }
+        final SetOfKeyHandle sokh = ((WithSetOfKeyHandle) item).sokh;
+        reg.ramStoreForPrefix(item.prefix).removeNullEntries(sokh);
+        return false;
     }
 
-    private static OneToOneConcurrentArrayQueue<RestartItem>[] makeQueues(int count) {
-        final OneToOneConcurrentArrayQueue<RestartItem>[] qs = new OneToOneConcurrentArrayQueue[count];
-        for (int i = 0; i < qs.length; i++) {
-            qs[i] = new OneToOneConcurrentArrayQueue<RestartItem>(queueCapacity(count));
-        }
-        return qs;
-    }
-
-    private static ConcurrentConveyorSingleQueue<RestartItem>[] makeConveyors(int count) {
-        final ConcurrentConveyorSingleQueue<RestartItem>[] conveyors = new ConcurrentConveyorSingleQueue[count];
-        for (int i = 0; i < conveyors.length; i++) {
-            conveyors[i] = concurrentConveyorSingleQueue(RestartItem.END,
-                    new OneToOneConcurrentArrayQueue<RestartItem>(queueCapacity(count)));
+    private static ConcurrentConveyor<RestartItem>[] makeMultiQueueConveyors(
+            int storeCount, int threadCount
+    ) {
+        final ConcurrentConveyor<RestartItem>[] conveyors = new ConcurrentConveyor[storeCount];
+        final QueueParams qp = new QueueParams(storeCount, threadCount);
+        for (int storeIndex = 0; storeIndex < storeCount; storeIndex++) {
+            conveyors[storeIndex] = concurrentConveyor(RestartItem.END, qp.makeQueues(storeIndex));
         }
         return conveyors;
     }
 
-    private static int queueCapacity(int queueCount) {
-        return max(QUEUE_CAPACITY_BUDGET / queueCount, MIN_QUEUE_CAPACITY);
+
+    private static ConcurrentConveyorSingleQueue<RestartItem>[][] makeSingleQueueConveyors(
+            int storeCount, int threadCount
+    ) {
+        final ConcurrentConveyorSingleQueue<RestartItem>[][] conveyorArrays =
+                new ConcurrentConveyorSingleQueue[storeCount][];
+        final QueueParams qp = new QueueParams(storeCount, threadCount);
+        for (int storeIndex = 0; storeIndex < conveyorArrays.length; storeIndex++) {
+            final int submitterCount = qp.submitterCount(storeIndex);
+            final ConcurrentConveyorSingleQueue<RestartItem>[] conveyors =
+                    new ConcurrentConveyorSingleQueue[submitterCount];
+            for (int submitterIndex = 0; submitterIndex < submitterCount; submitterIndex++) {
+                conveyors[submitterIndex] = concurrentConveyorSingleQueue(RestartItem.END,
+                        new OneToOneConcurrentArrayQueue<RestartItem>(qp.queueCapacity));
+            }
+            conveyorArrays[storeIndex] = conveyors;
+        }
+        return conveyorArrays;
     }
+
+    @SuppressWarnings("checkstyle:emptyblock")
+    private void ensureSubmitterGoneSent(ConcurrentConveyor<RestartItem> conveyor, Queue<RestartItem> queue) {
+        if (!submitterGoneSent) {
+            try {
+                conveyor.submit(queue, conveyor.submitterGoneItem());
+            } catch (Exception ignored) { }
+        }
+    }
+
+    private static class QueueParams {
+        final int queueCapacity;
+        private final int quotient;
+        private final int remainder;
+
+        QueueParams(int storeCount, int threadCount) {
+            this.queueCapacity = max(QUEUE_CAPACITY_BUDGET / (threadCount / storeCount), MIN_QUEUE_CAPACITY);
+            final int maxThreadIndex = threadCount - 1;
+            this.quotient = maxThreadIndex / storeCount;
+            this.remainder = maxThreadIndex % storeCount;
+        }
+
+        /** Number of partition threads associated with the HR store at storeIndex */
+        int submitterCount(int storeIndex) {
+            return quotient + (storeIndex <= remainder ? 1 : 0);
+        }
+
+        OneToOneConcurrentArrayQueue<RestartItem>[] makeQueues(int storeIndex) {
+            final OneToOneConcurrentArrayQueue<RestartItem>[] qs =
+                    new OneToOneConcurrentArrayQueue[submitterCount(storeIndex)];
+            for (int i = 0; i < qs.length; i++) {
+                qs[i] = new OneToOneConcurrentArrayQueue<RestartItem>(queueCapacity);
+            }
+            return qs;
+        }
+    }
+
 }

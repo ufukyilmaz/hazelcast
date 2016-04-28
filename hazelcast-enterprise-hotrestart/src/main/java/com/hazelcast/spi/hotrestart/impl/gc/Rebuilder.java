@@ -1,5 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.collection.HsaHeapMemoryManager;
+import com.hazelcast.internal.util.collection.LongSet;
+import com.hazelcast.internal.util.collection.LongSetHsa;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.RestartItem;
@@ -27,7 +30,7 @@ import java.util.Map.Entry;
  * doesn't matter for correctness, but for efficiency it is preferred that
  * newer records are encountered first.
  */
-public class Rebuilder {
+public final class Rebuilder {
     private final ChunkManager cm;
     private final GcHelper gcHelper;
     private final GcLogger logger;
@@ -54,6 +57,8 @@ public class Rebuilder {
     }
 
     public void startValuePhase(Map<Long, SetOfKeyHandle> tombKeys) {
+        closeRebuildingChunks();
+        rebuildingChunks.clear();
         this.tombKeys = tombKeys;
         isLoadingTombstones = false;
         occupancy = cm.valOccupancy;
@@ -69,13 +74,12 @@ public class Rebuilder {
 
     /**
      * Called when encountering a record which is interred by a prefix tombstone.
-     * @param size size of the record
      */
-    public void acceptCleared(long chunkSeq, int size) {
-        final RebuildingChunk chunk = rebuildingChunk(chunkSeq);
-        chunk.size += size;
-        chunk.garbage += size;
-        garbage.inc(size);
+    public void acceptCleared(RestartItem item) {
+        final RebuildingChunk chunk = rebuildingChunk(item.chunkSeq);
+        chunk.acceptStale1(item.size);
+        chunk.acceptClearedPrefix(item.prefix);
+        garbage.inc(item.size);
     }
 
     /**
@@ -87,12 +91,13 @@ public class Rebuilder {
         final long prefix = item.prefix;
         final KeyHandle kh = item.keyHandle;
         final long recordSeq = item.recordSeq;
+        final int filePos = item.filePos;
         final int size = item.size;
         final RebuildingChunk chunk = rebuildingChunk(chunkSeq);
         final Tracker tr = cm.trackers.putIfAbsent(kh, chunk.seq, isLoadingTombstones);
         if (tr == null) {
             // We are accepting a record for a yet-unseen key
-            chunk.add(prefix, kh, recordSeq, size);
+            chunk.add(prefix, kh, recordSeq, filePos, size);
             return true;
         } else {
             final Chunk chunkWithStale = chunk(tr.chunkSeq());
@@ -101,7 +106,7 @@ public class Rebuilder {
                 // We are accepting a record which replaces an existing, now stale record
                 (stale.isTombstone() ? cm.tombGarbage : cm.valGarbage).inc(stale.size());
                 chunkWithStale.retire(kh, stale);
-                chunk.add(prefix, kh, recordSeq, size);
+                chunk.add(prefix, kh, recordSeq, filePos, size);
                 tr.newLiveRecord(chunk.seq, isLoadingTombstones, cm.trackers, true);
                 if (!isLoadingTombstones) {
                     removeFromTombKeys(prefix, kh);
@@ -109,10 +114,9 @@ public class Rebuilder {
                 return true;
             } else {
                 // We are accepting a stale record
-                chunk.size += size;
-                chunk.garbage += size;
                 garbage.inc(size);
-                chunk.acceptStale(tr, prefix, kh, recordSeq, size);
+                chunk.acceptStale1(size);
+                chunk.acceptStale2(tr, prefix, kh, recordSeq, size);
                 return false;
             }
         }
@@ -122,10 +126,7 @@ public class Rebuilder {
      * Called when done reading. Retires any tombstones which are no longer needed.
      */
     public void done() {
-        for (RebuildingChunk rebuildingChunk : rebuildingChunks.values()) {
-            final StableChunk stable = rebuildingChunk.toStableChunk();
-            cm.chunks.put(stable.seq, stable);
-        }
+        closeRebuildingChunks();
         rebuildingChunks = null;
         final TrackerMapBase trackerMap = (TrackerMapBase) cm.trackers;
         long tombstoneCount = 0;
@@ -168,11 +169,19 @@ public class Rebuilder {
         if (seq > maxChunkSeq) {
             this.maxChunkSeq = seq;
         }
+        final RecordMap records = gcHelper.newRecordMap(false);
         final RebuildingChunk chunk = isLoadingTombstones
-                ? new RebuildingTombChunk(seq, gcHelper.newRecordMap(false))
-                : new RebuildingValChunk(seq, gcHelper.newRecordMap(false));
+                ? new RebuildingTombChunk(seq, records)
+                : new RebuildingValChunk(seq, records);
         rebuildingChunks.put(seq, chunk);
         return chunk;
+    }
+
+    private void closeRebuildingChunks() {
+        for (RebuildingChunk rebuildingChunk : rebuildingChunks.values()) {
+            final StableChunk stable = rebuildingChunk.toStableChunk();
+            cm.chunks.put(stable.seq, stable);
+        }
     }
 
     private void removeFromTombKeys(long prefix, KeyHandle kh) {
@@ -188,35 +197,39 @@ public class Rebuilder {
             super(seq, records);
         }
 
-        abstract void add(long prefix, KeyHandle kh, long seq, int size);
+        final void add(long prefix, KeyHandle kh, long seq, int filePos, int size) {
+            this.size += size;
+            addStep2(prefix, kh, seq, filePos, size);
+        }
 
         abstract StableChunk toStableChunk();
 
-        final void add0(long prefix, KeyHandle kh, long seq, int size) {
-            addStep1(size);
-            addStep2(prefix, kh, seq, size);
+        final void acceptStale1(int size) {
+            this.size += size;
+            this.garbage += size;
         }
 
-        void acceptStale(Tracker ignored1, long ignored2, KeyHandle ignored3, long ignored4, int size) {
-            addStep2FileOffset += size;
+        void acceptStale2(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
+        }
+
+        void acceptClearedPrefix(long prefix) {
         }
     }
 
     private static final class RebuildingValChunk extends RebuildingChunk {
+        private final LongSet clearedPrefixes = new LongSetHsa(0, new HsaHeapMemoryManager());
+
         RebuildingValChunk(long seq, RecordMap records) {
             super(seq, records);
         }
 
-        @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            add0(prefix, kh, seq, size);
+        @Override
+        StableChunk toStableChunk() {
+            return new StableValChunk(seq, records, clearedPrefixes, liveRecordCount, size(), garbage, false);
         }
 
-        @Override StableChunk toStableChunk() {
-            return new StableValChunk(seq, records, liveRecordCount, size(), garbage, false);
-        }
-
-        @Override void acceptStale(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
-            super.acceptStale(tr, prefix, kh, seq, size);
+        @Override
+        void acceptStale2(Tracker tr, long prefix, KeyHandle kh, long seq, int size) {
             final Record sameKeyRecord = records.putIfAbsent(prefix, kh, -seq, size, false, 1);
             if (sameKeyRecord != null) {
                 sameKeyRecord.incrementGarbageCount();
@@ -224,11 +237,18 @@ public class Rebuilder {
             tr.incrementGarbageCount();
         }
 
-        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+        @Override
+        void acceptClearedPrefix(long prefix) {
+            clearedPrefixes.add(prefix);
+        }
+
+        @Override
+        public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
             insertOrUpdateValue(prefix, kh, seq, size);
         }
 
-        @Override protected int determineSizeLimit() {
+        @Override
+        protected int determineSizeLimit() {
             return valChunkSizeLimit();
         }
     }
@@ -239,19 +259,18 @@ public class Rebuilder {
             super(seq, records);
         }
 
-        @Override void add(long prefix, KeyHandle kh, long seq, int size) {
-            add0(prefix, kh, seq, size);
-        }
-
-        @Override StableChunk toStableChunk() {
+        @Override
+        StableChunk toStableChunk() {
             return new StableTombChunk(seq, records, liveRecordCount, size(), garbage);
         }
 
-        @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
-            insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
+        @Override
+        public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size) {
+            insertOrUpdateTombstone(prefix, kh, seq, filePos, size);
         }
 
-        @Override protected int determineSizeLimit() {
+        @Override
+        protected int determineSizeLimit() {
             return tombChunkSizeLimit();
         }
     }

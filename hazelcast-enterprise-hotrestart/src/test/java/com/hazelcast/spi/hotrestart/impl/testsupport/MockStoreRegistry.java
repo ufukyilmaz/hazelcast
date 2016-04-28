@@ -25,13 +25,13 @@ public class MockStoreRegistry implements RamStoreRegistry {
         this.memMgr = memMgr;
         cfg.setRamStoreRegistry(this);
         this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
-        final RamStoreRestartLoop loop = new RamStoreRestartLoop(this, 1, cfg.logger());
+        final RamStoreRestartLoop loop = new RamStoreRestartLoop(1, 1, this, cfg.logger());
         final Throwable[] failure = { null };
         final Thread restartIoThread = new Thread() {
             @Override
             public void run() {
                 try {
-                    hrStore.hotRestart(false, loop.keyReceivers, loop.keyHandleSender, loop.valueReceivers);
+                    hrStore.hotRestart(false, 1, loop.keyReceivers[0], loop.keyHandleSenders[0], loop.valueReceivers[0]);
                 } catch (Throwable t) {
                     failure[0] = t;
                 }

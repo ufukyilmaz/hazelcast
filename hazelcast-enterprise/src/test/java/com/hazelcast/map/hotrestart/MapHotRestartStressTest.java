@@ -1,11 +1,13 @@
 package com.hazelcast.map.hotrestart;
 
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.config.XmlConfigBuilder;
+import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
@@ -165,7 +167,16 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
     }
 
     private void resetFixture(int clusterSize) throws Exception {
+        ClusterState state = ClusterState.ACTIVE;
         if (fac != null) {
+            Collection<HazelcastInstance> instances = fac.getAllHazelcastInstances();
+            if (!instances.isEmpty()) {
+                HazelcastInstance instance = instances.iterator().next();
+                Cluster cluster = instance.getCluster();
+                state = cluster.getClusterState();
+                cluster.changeClusterState(ClusterState.PASSIVE);
+            }
+
             fac.terminateAll();
             sleepAtLeastSeconds(2);
         }
@@ -189,11 +200,17 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
 
         assertOpenEventually(latch);
 
-        HazelcastInstance hz = fac.getAllHazelcastInstances().iterator().next();
-        if (memoryFormat == NATIVE) {
-            map = hz.getMap("native-" + name);
-        } else {
-            map = hz.getMap(name);
+        Collection<HazelcastInstance> instances = fac.getAllHazelcastInstances();
+        if (!instances.isEmpty()) {
+            HazelcastInstance hz = instances.iterator().next();
+            hz.getCluster().changeClusterState(state);
+
+            if (memoryFormat == NATIVE) {
+                map = hz.getMap("native-" + name);
+            } else {
+                map = hz.getMap(name);
+            }
         }
+
     }
 }

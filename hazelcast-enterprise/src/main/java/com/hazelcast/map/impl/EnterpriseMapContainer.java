@@ -21,10 +21,9 @@ import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
-import com.hazelcast.map.impl.eviction.Evictor;
+import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
-import com.hazelcast.map.impl.eviction.policies.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
@@ -34,14 +33,13 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ConstructorFunction;
-import com.hazelcast.util.MemoryInfoAccessor;
 import com.hazelcast.util.RuntimeMemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.eviction.policies.MapEvictionPolicies.getMapEvictionPolicy;
+import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
 
 /**
  * Includes enterprise specific {@link MapContainer} extensions.
@@ -56,17 +54,20 @@ public class EnterpriseMapContainer extends MapContainer {
     }
 
     @Override
-    Evictor createEvictor(MapConfig mapConfig, MapServiceContext mapServiceContext) {
-        if (NATIVE == mapConfig.getInMemoryFormat()) {
-            MemoryInfoAccessor memoryInfoAccessor = new RuntimeMemoryInfoAccessor();
-            HDEvictionChecker hdEvictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
-            MapEvictionPolicy evictionPolicy = getMapEvictionPolicy(mapConfig.getEvictionPolicy());
-            IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
-
-            return new HDEvictorImpl(hdEvictionChecker, evictionPolicy, partitionService);
+    public void initEvictor() {
+        MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
+        if (mapEvictionPolicy == null) {
+            evictor = NULL_EVICTOR;
+            return;
         }
 
-        return super.createEvictor(mapConfig, mapServiceContext);
+        if (NATIVE == mapConfig.getInMemoryFormat()) {
+            HDEvictionChecker evictionChecker = new HDEvictionChecker(new RuntimeMemoryInfoAccessor(), mapServiceContext);
+            IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
+            evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService);
+        } else {
+            super.initEvictor();
+        }
     }
 
     @Override

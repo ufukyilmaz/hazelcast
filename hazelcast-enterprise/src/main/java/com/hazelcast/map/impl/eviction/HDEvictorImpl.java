@@ -17,7 +17,7 @@
 package com.hazelcast.map.impl.eviction;
 
 import com.hazelcast.core.EntryView;
-import com.hazelcast.map.impl.eviction.policies.MapEvictionPolicy;
+import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
@@ -29,11 +29,10 @@ import com.hazelcast.spi.partition.IPartitionService;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.map.impl.eviction.EvictionChecker.isEvictionEnabled;
 
 /**
  * {@link Evictor} for maps which has {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
- *
+ * <p>
  * This evictor is sampling based evictor. So independent of the size of record-store, eviction works in constant time.
  */
 public class HDEvictorImpl extends EvictorImpl {
@@ -42,8 +41,9 @@ public class HDEvictorImpl extends EvictorImpl {
     private static final int FORCED_EVICTION_PERCENTAGE = 20;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
-    public HDEvictorImpl(EvictionChecker evictionChecker, MapEvictionPolicy evictionPolicy, IPartitionService partitionService) {
-        super(evictionChecker, evictionPolicy, partitionService);
+    public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy,
+                         EvictionChecker evictionChecker, IPartitionService partitionService) {
+        super(mapEvictionPolicy, evictionChecker, partitionService);
     }
 
     @Override
@@ -52,10 +52,9 @@ public class HDEvictorImpl extends EvictorImpl {
     }
 
     public void forceEvict(RecordStore recordStore) {
-        if (recordStore.size() == 0 || !isEvictionEnabled(recordStore)) {
+        if (recordStore.size() == 0 || !recordStore.shouldEvict()) {
             return;
         }
-
         boolean backup = isBackup(recordStore);
 
         int removalSize = calculateRemovalSize(recordStore);
@@ -86,14 +85,13 @@ public class HDEvictorImpl extends EvictorImpl {
 
     @Override
     protected Iterable<EntryView> getSamples(RecordStore recordStore) {
-        int sampleCount = evictionPolicy.getSampleCount();
         Storage storage = recordStore.getStorage();
 
         if (storage instanceof HotRestartHDStorageImpl) {
-            return (Iterable<EntryView>) ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(sampleCount);
+            return (Iterable<EntryView>) ((HotRestartHDStorageImpl) storage).getStorageImpl().getRandomSamples(SAMPLE_COUNT);
         }
 
-        return (Iterable<EntryView>) storage.getRandomSamples(sampleCount);
+        return (Iterable<EntryView>) storage.getRandomSamples(SAMPLE_COUNT);
     }
 
     private static int calculateRemovalSize(RecordStore recordStore) {

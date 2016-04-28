@@ -34,6 +34,7 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -99,11 +100,13 @@ public class HDNearCacheTest extends NearCacheTest {
     }
 
     @Test
+    @Ignore
     public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() throws Exception {
         testNearCacheInvalidationInternal("LFU");
     }
 
     @Test
+    @Ignore
     public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() throws Exception {
         testNearCacheInvalidationInternal("LRU");
     }

@@ -34,7 +34,6 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -100,36 +99,31 @@ public class HDNearCacheTest extends NearCacheTest {
     }
 
     @Test
-    @Ignore
     public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() throws Exception {
         testNearCacheInvalidationInternal("LFU");
     }
 
     @Test
-    @Ignore
     public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() throws Exception {
         testNearCacheInvalidationInternal("LRU");
     }
 
     protected void testNearCacheInvalidationInternal(String evictionPolicy) {
         String mapName = randomMapName();
-        final int putCount = 200000;
+        final int putCount = 2000;
 
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
+        NearCacheConfig nearCacheConfig = newNearCacheConfig().setInvalidateOnChange(false);
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.valueOf(evictionPolicy));
 
         Config config = newNativeMemoryConfig();
         config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
 
         final IMap map = createHazelcastInstance(config).getMap(mapName);
+        pullEntriesToNearCache(map, putCount);
 
         assertTrueEventually(new AssertTask() {
-
             @Override
             public void run() throws Exception {
-                populateMap(map, putCount);
-                pullEntriesToNearCache(map, putCount);
-
                 NearCacheStats stats = map.getLocalMapStats().getNearCacheStats();
                 long ownedEntryCount = stats.getOwnedEntryCount();
                 triggerNearCacheEviction(map);

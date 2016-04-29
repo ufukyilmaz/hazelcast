@@ -20,6 +20,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
+import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -199,8 +200,10 @@ public abstract class HDMapOperation extends MapOperation {
         MapContainer mapContainer = recordStore.getMapContainer();
         InMemoryFormat inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
         if (NATIVE == inMemoryFormat) {
-            HDEvictorImpl evictor = ((HDEvictorImpl) mapContainer.getEvictor());
-            evictor.forceEvict(recordStore);
+            Evictor evictor = mapContainer.getEvictor();
+            if (evictor instanceof HDEvictorImpl) {
+                ((HDEvictorImpl) evictor).forceEvict(recordStore);
+            }
         }
     }
 

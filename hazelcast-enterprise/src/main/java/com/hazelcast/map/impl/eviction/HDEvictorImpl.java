@@ -52,7 +52,7 @@ public class HDEvictorImpl extends EvictorImpl {
     }
 
     public void forceEvict(RecordStore recordStore) {
-        if (recordStore.size() == 0 || !recordStore.shouldEvict()) {
+        if (recordStore.size() == 0) {
             return;
         }
         boolean backup = isBackup(recordStore);

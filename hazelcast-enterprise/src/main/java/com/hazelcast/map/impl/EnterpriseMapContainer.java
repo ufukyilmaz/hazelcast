@@ -55,16 +55,15 @@ public class EnterpriseMapContainer extends MapContainer {
 
     @Override
     public void initEvictor() {
-        MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
-        if (mapEvictionPolicy == null) {
-            evictor = NULL_EVICTOR;
-            return;
-        }
-
         if (NATIVE == mapConfig.getInMemoryFormat()) {
-            HDEvictionChecker evictionChecker = new HDEvictionChecker(new RuntimeMemoryInfoAccessor(), mapServiceContext);
-            IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
-            evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService);
+            MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
+            if (mapEvictionPolicy != null) {
+                HDEvictionChecker evictionChecker = new HDEvictionChecker(new RuntimeMemoryInfoAccessor(), mapServiceContext);
+                IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
+                evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService);
+            } else {
+                evictor = NULL_EVICTOR;
+            }
         } else {
             super.initEvictor();
         }

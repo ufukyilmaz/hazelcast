@@ -32,10 +32,10 @@ import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public abstract class AbstractReaderWriterTest {
+public abstract class MetadataReaderWriterTestBase {
 
     @Rule
-    public TestName testName = new TestName();
+    public final TestName testName = new TestName();
 
     protected InetAddress localAddress;
     protected File folder;
@@ -43,13 +43,11 @@ public abstract class AbstractReaderWriterTest {
     @Before
     public final void setup() throws UnknownHostException {
         localAddress = InetAddress.getLocalHost();
-
         folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
         delete(folder);
         if (!folder.mkdir() && !folder.exists()) {
             throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
         }
-
         setupInternal();
     }
 
@@ -57,15 +55,12 @@ public abstract class AbstractReaderWriterTest {
 
     @After
     public final void tearDown() {
-        tearDownInternal();
         if (folder != null) {
             delete(folder);
         }
     }
 
-    void tearDownInternal() {}
-
-    Address[] initializeAddresses(int len) {
+    final Address[] initializeAddresses(int len) {
         Address[] addresses = new Address[len];
         Random random = new Random();
         for (int i = 0; i < addresses.length; i++) {
@@ -74,8 +69,8 @@ public abstract class AbstractReaderWriterTest {
         return addresses;
     }
 
-    File getNotExistingFolder() {
-        return new File(folder.getParentFile(), "NOT_EXISTING_FOLDER");
+    final File getNonExistingFolder() {
+        return new File(folder.getParentFile(), "I-dont-exist");
     }
 
     static void assertAddressEquals(Address address1, Address address2) {

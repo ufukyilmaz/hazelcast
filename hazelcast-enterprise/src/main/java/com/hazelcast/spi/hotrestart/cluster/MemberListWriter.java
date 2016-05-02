@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.core.Member;
 import com.hazelcast.nio.Address;
 
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -12,8 +13,7 @@ import java.util.Collection;
  * by overwriting previous one if exists.
  */
 class MemberListWriter extends AbstractMetadataWriter<Collection<Member>> {
-    static final String FILE_NAME = "members.data";
-    private static final String FILE_NAME_TMP = FILE_NAME + ".tmp";
+    static final String FILE_NAME = "members.bin";
 
     private final Address thisAddress;
 
@@ -23,23 +23,16 @@ class MemberListWriter extends AbstractMetadataWriter<Collection<Member>> {
     }
 
     @Override
-    void doWrite(Collection<Member> members) throws IOException {
-        writeAddress(thisAddress);
-        writeInt(members.size());
-
-        for (Member member : members) {
-            writeAddress(member.getAddress());
-        }
-    }
-
-    @Override
-    String getFileName() {
+    String getFilename() {
         return FILE_NAME;
     }
 
     @Override
-    String getNewFileName() {
-        return FILE_NAME_TMP;
+    void doWrite(DataOutput out, Collection<Member> members) throws IOException {
+        writeAddress(out, thisAddress);
+        out.writeInt(members.size());
+        for (Member member : members) {
+            writeAddress(out, member.getAddress());
+        }
     }
-
 }

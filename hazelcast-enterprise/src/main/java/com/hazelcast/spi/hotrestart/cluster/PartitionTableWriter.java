@@ -1,8 +1,9 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.nio.Address;
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.nio.Address;
 
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 
@@ -12,8 +13,7 @@ import java.io.IOException;
  */
 class PartitionTableWriter extends AbstractMetadataWriter<InternalPartition[]> {
 
-    static final String FILE_NAME = "partition.data";
-    private static final String FILE_NAME_TMP = FILE_NAME + ".tmp";
+    static final String FILE_NAME = "partitions.bin";
 
     private int partitionVersion;
 
@@ -21,30 +21,26 @@ class PartitionTableWriter extends AbstractMetadataWriter<InternalPartition[]> {
         super(homeDir);
     }
 
-    void doWrite(InternalPartition[] partitions) throws IOException {
-        writeInt(partitions.length);
-        writeInt(partitionVersion);
-        for (InternalPartition partition : partitions) {
-            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                Address address = partition.getReplicaAddress(replica);
-                boolean hasReplica = address != null;
-                writeByte((byte) (hasReplica ? 1 : 0));
-
-                if (hasReplica) {
-                    writeAddress(address);
-                }
-            }
-        }
-    }
-
     @Override
-    String getFileName() {
+    String getFilename() {
         return FILE_NAME;
     }
 
     @Override
-    String getNewFileName() {
-        return FILE_NAME_TMP;
+    void doWrite(DataOutput out, InternalPartition[] partitions) throws IOException {
+        out.writeInt(partitions.length);
+        out.writeInt(partitionVersion);
+        for (InternalPartition partition : partitions) {
+            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
+                final Address address = partition.getReplicaAddress(replica);
+                if (address != null) {
+                    out.writeBoolean(true);
+                    writeAddress(out, address);
+                } else {
+                    out.writeBoolean(false);
+                }
+            }
+        }
     }
 
     void setPartitionVersion(int partitionVersion) {

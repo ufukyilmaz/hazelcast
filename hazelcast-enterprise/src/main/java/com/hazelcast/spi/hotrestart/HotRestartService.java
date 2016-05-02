@@ -26,7 +26,6 @@ import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
-import com.hazelcast.util.ExceptionUtil;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -69,27 +68,16 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
 
     private final Map<String, RamStoreRegistry> ramStoreRegistryMap = new ConcurrentHashMap<String, RamStoreRegistry>();
-
     private final Map<Long, RamStoreDescriptor> ramStoreDescriptors = new ConcurrentHashMap<Long, RamStoreDescriptor>();
-
     private final File hotRestartHome;
-
     private final Node node;
-
     private final ILogger logger;
-
     private final PersistentCacheDescriptors persistentCacheDescriptors;
-
     private final ClusterMetadataManager clusterMetadataManager;
-
     private final long dataLoadTimeoutMillis;
-
     private final int storeCount;
-
     private HotRestartStore[] onHeapStores;
-
     private HotRestartStore[] offHeapStores;
-
     private int partitionThreadCount;
 
     public HotRestartService(Node node) {
@@ -98,20 +86,15 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         final Address adr = node.getThisAddress();
         final HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
         this.hotRestartHome = new File(hrCfg.getBaseDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
-        this.storeCount = hrCfg.getStoreCount();
+        this.storeCount = hrCfg.getParallelism();
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
         this.persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
     }
 
-    public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
-        this.clusterMetadataManager.addClusterHotRestartEventListener(listener);
-    }
-
     @Override
     public RamStore ramStoreForPrefix(long prefix) {
-        RamStoreDescriptor descriptor = ramStoreDescriptor(prefix);
-        return descriptor.registry.ramStoreForPrefix(prefix);
+        return ramStoreDescriptor(prefix).registry.ramStoreForPrefix(prefix);
     }
 
     @Override
@@ -158,39 +141,54 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return descriptor.getName();
     }
 
-    public void prepare() {
-        OperationExecutor operationExecutor = getOperationExecutor();
-        partitionThreadCount = operationExecutor.getPartitionThreadCount();
-        final int lastNumberOfHotRestartStores = numberOfStoresOnDisk();
-        if (lastNumberOfHotRestartStores != 0 && lastNumberOfHotRestartStores != storeCount) {
-            throw new HotRestartException("Number of Hot Restart stores was changed before restart. "
-                    + "Current number: " + lastNumberOfHotRestartStores + ", expected number: " + 1);
-        }
-        createHotRestartStores();
-        clusterMetadataManager.prepare();
-    }
-
-    public boolean isStartCompleted() {
-        final HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
-        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
-    }
-
     @Override
     public void memberAdded(MembershipServiceEvent event) {
-        clusterMetadataManager.onMembershipChange(event);
+        clusterMetadataManager.onMembershipChange();
     }
 
     @Override
     public void memberRemoved(MembershipServiceEvent event) {
-        clusterMetadataManager.onMembershipChange(event);
+        clusterMetadataManager.onMembershipChange();
     }
 
     @Override
     public void memberAttributeChanged(MemberAttributeServiceEvent event) {
     }
 
+    public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
+        this.clusterMetadataManager.addClusterHotRestartEventListener(listener);
+    }
+
     public ClusterMetadataManager getClusterMetadataManager() {
         return clusterMetadataManager;
+    }
+
+    public void prepare() {
+        partitionThreadCount = getOperationExecutor().getPartitionThreadCount();
+        final int persistedStoreCount = persistedStoreCount();
+        if (persistedStoreCount > 0) {
+            if (storeCount != persistedStoreCount) {
+                throw new HotRestartException(String.format(
+                        "Mismatch between configured and actual level of parallelism in Hot Restart Persistence."
+                        + " Configured %d, actual %d",
+                        storeCount, persistedStoreCount));
+            }
+            final int persistedPartitionThreadCount = clusterMetadataManager.readPartitionThreadCount();
+            if (partitionThreadCount != persistedPartitionThreadCount) {
+                throw new HotRestartException(String.format(
+                        "Mismatch between the current number of partition operation threads and" +
+                        " the number persisted in the Hot Restart data. Current %d, persisted %d",
+                        partitionThreadCount, persistedPartitionThreadCount));
+            }
+        } else {
+            if (storeCount <= 0) {
+                throw new HotRestartException("Configured Hot Restart store count must be a positive integer, but is "
+                        + storeCount);
+            }
+            clusterMetadataManager.writePartitionThreadCount(partitionThreadCount);
+        }
+        clusterMetadataManager.prepare();
+        createHotRestartStores();
     }
 
     public void start() {
@@ -198,11 +196,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             logger.info("Starting hot-restart service...");
             clusterMetadataManager.start();
             persistentCacheDescriptors.restore(node.getSerializationService());
-
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
             logger.info(allowData ? "Starting the Hot Restart process."
-                                  : "Initializing Hot Restart stores, not expecting to load any data.");
-
+                    : "Initializing Hot Restart stores, not expecting to load any data.");
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
@@ -217,23 +213,30 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
         } catch (ForceStartException e) {
             handleForceStart();
-        } catch (Throwable e) {
-            logger.severe("Hot-restart failed!", e);
-            throw ExceptionUtil.rethrow(e);
+        } catch (HotRestartException e) {
+            throw e;
+        } catch (InterruptedException e) {
+            currentThread().interrupt();
+            throw new HotRestartException("Interrupted during Hot Restart procedure", e);
+        } catch (Throwable t) {
+            throw new HotRestartException("Hot Restart procedure failed", t);
         }
+    }
+
+    public boolean isStartCompleted() {
+        final HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
+        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
     }
 
     public boolean triggerForceStart() {
         final InternalOperationService operationService = node.nodeEngine.getOperationService();
-
         final Address masterAddress = node.getMasterAddress();
-
         if (node.isMaster()) {
             return clusterMetadataManager.receiveForceStartTrigger(node.getThisAddress());
         } else if (masterAddress != null) {
             return operationService.send(new TriggerForceStartOnMasterOperation(), masterAddress);
         } else {
-            logger.warning("force start is not triggered since there is no master");
+            logger.warning("Force start not triggered because there is no master member");
             return false;
         }
     }
@@ -243,7 +246,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         closeHotRestartStores();
     }
 
-    private int numberOfStoresOnDisk() {
+    private int persistedStoreCount() {
         if (!hotRestartHome.exists()) {
             return 0;
         }
@@ -262,7 +265,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             descriptor = cacheDescriptorToRamStoreDescriptor(prefix);
         }
         if (descriptor == null) {
-            throw new IllegalArgumentException("No registration available for: " + prefix);
+            throw new IllegalArgumentException("No RamStore registered under prefix " + prefix);
         }
         return descriptor;
     }
@@ -375,9 +378,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         logger.warning("Force start requested, skipping hot restart");
         logger.fine("Closing Hot Restart stores");
         closeHotRestartStores();
-        logger.info("Deleting Hot Restart base-dir: " + hotRestartHome);
+        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
         IOUtil.delete(hotRestartHome);
-
         logger.fine("Resetting all services");
         NodeEngineImpl nodeEngine = node.getNodeEngine();
         Collection<ManagedService> services = nodeEngine.getServices(ManagedService.class);
@@ -388,19 +390,14 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             logger.fine("Resetting service: " + service);
             service.reset();
         }
-
         logger.fine("Resetting NodeEngine");
         node.nodeEngine.reset();
-
         logger.fine("Resetting hot restart cluster metadata");
         clusterMetadataManager.reset();
-
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
-
         logger.fine("Resetting cluster state to ACTIVE");
         setClusterState(node.getClusterService(), ClusterState.ACTIVE, true);
-
         logger.info("Force start completed");
     }
 

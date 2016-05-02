@@ -25,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class AbstractMetadataReaderWriterTest extends AbstractReaderWriterTest {
+public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBase {
 
     private static final String NAME = "sample.data";
 
@@ -68,7 +69,7 @@ public class AbstractMetadataReaderWriterTest extends AbstractReaderWriterTest {
 
     @Test
     public void test() throws IOException {
-        SampleWriter writer = new SampleWriter(folder, BUFFER_SIZE);
+        SampleWriter writer = new SampleWriter(folder);
         writer.write(data);
 
         SampleReader reader = new SampleReader(folder);
@@ -79,26 +80,21 @@ public class AbstractMetadataReaderWriterTest extends AbstractReaderWriterTest {
 
     private static class SampleWriter extends AbstractMetadataWriter<byte[]> {
 
-        SampleWriter(File homeDir, int bufferSize) {
-            super(homeDir, bufferSize);
+        SampleWriter(File homeDir) {
+            super(homeDir);
         }
 
         @Override
-        void doWrite(byte[] param) throws IOException {
-            writeInt(param.length);
+        void doWrite(DataOutput out, byte[] param) throws IOException {
+            out.writeInt(param.length);
             for (byte b : param) {
-                writeByte(b);
+                out.writeByte(b);
             }
         }
 
         @Override
-        String getFileName() {
+        String getFilename() {
             return NAME;
-        }
-
-        @Override
-        String getNewFileName() {
-            return NAME + ".tmp";
         }
     }
 
@@ -119,7 +115,7 @@ public class AbstractMetadataReaderWriterTest extends AbstractReaderWriterTest {
         }
 
         @Override
-        protected String getFileName() {
+        protected String getFilename() {
             return NAME;
         }
     }

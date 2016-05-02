@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.nio.Address;
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -20,11 +20,11 @@ import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
+public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase {
 
     @Test
     public void test_readNotExistingFolder() throws IOException {
-        PartitionTableReader reader = new PartitionTableReader(getNotExistingFolder(), 100);
+        PartitionTableReader reader = new PartitionTableReader(getNonExistingFolder(), 100);
         reader.read();
         assertPartitionTableEmpty(reader.getTable());
     }
@@ -48,7 +48,7 @@ public class PartitionTableReaderWriterTest extends AbstractReaderWriterTest {
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws IOException {
         InternalPartition[] partitions = new InternalPartition[100];
-        PartitionTableWriter writer = new PartitionTableWriter(getNotExistingFolder());
+        PartitionTableWriter writer = new PartitionTableWriter(getNonExistingFolder());
         writer.write(partitions);
     }
 

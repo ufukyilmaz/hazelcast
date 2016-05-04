@@ -16,17 +16,14 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.partition.IPartitionService;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
@@ -54,27 +51,10 @@ public class HDLocalMapStatsOperation extends HDMapOperation implements Partitio
 
         mapStatsHolder = new MapStatsHolder();
         if (local) {
-            int lockedEntryCount = 0;
-            long lastAccessTime = 0;
-            long lastUpdateTime = 0;
-            long hits = 0;
-
-            // TODO This is O(n), should be O(1), will fix later.
-            Iterator<Record> iterator = recordStore.iterator();
-            while (iterator.hasNext()) {
-                Record record = iterator.next();
-                Data key = record.getKey();
-
-                hits += record.getHits();
-                lockedEntryCount += recordStore.isLocked(key) ? 1 : 0;
-                lastAccessTime = Math.max(lastAccessTime, record.getLastAccessTime());
-                lastUpdateTime = Math.max(lastUpdateTime, record.getLastUpdateTime());
-            }
-
-            mapStatsHolder.setHits(hits);
-            mapStatsHolder.setLastAccessTime(lastAccessTime);
-            mapStatsHolder.setLastUpdateTime(lastUpdateTime);
-            mapStatsHolder.setLockedEntryCount(lockedEntryCount);
+            mapStatsHolder.setHits(recordStore.getHits());
+            mapStatsHolder.setLastAccessTime(recordStore.getLastAccessTime());
+            mapStatsHolder.setLastUpdateTime(recordStore.getLastUpdateTime());
+            mapStatsHolder.setLockedEntryCount(recordStore.getLockedEntryCount());
             mapStatsHolder.setHeapCost(recordStore.getHeapCost());
             mapStatsHolder.setOwnedEntryCount(recordStore.size());
             mapStatsHolder.setDirtyEntryCount(recordStore.getMapDataStore().notFinishedOperationsCount());

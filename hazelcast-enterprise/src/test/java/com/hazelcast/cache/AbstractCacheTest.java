@@ -8,7 +8,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.internal.monitors.HealthMonitorLevel;
+import com.hazelcast.internal.diagnostics.HealthMonitorLevel;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;

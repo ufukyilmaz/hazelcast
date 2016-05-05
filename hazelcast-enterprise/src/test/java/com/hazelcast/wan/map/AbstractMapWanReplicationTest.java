@@ -5,6 +5,8 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
@@ -20,10 +22,12 @@ import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.MapUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +43,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     @Override
     protected Config getConfig() {
         Config config = super.getConfig();
+        config.setProperty(GroupProperty.REST_ENABLED.getName(), "true");
         MapConfig mapConfig = config.getMapConfig("default");
         mapConfig.setInMemoryFormat(getMemoryFormat());
         return config;
@@ -73,6 +78,47 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertKeysNotIn(clusterC, "map", 0, 2000);
         assertDataSizeEventually(clusterC, "map", 0);
+
+    }
+
+    @Test
+    public void basicSyncTest() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+
+        clusterB[0].getCluster().shutdown();
+
+        startClusterB();
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+
+        EnterpriseWanReplicationService wanReplicationService = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
+        wanReplicationService.syncMap("atob", "B", "map");
+
+        assertKeysIn(clusterB, "map", 0, 1000);
+    }
+
+    @Test
+    public void syncUsingRestApi() throws IOException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 1000);
+        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
+
+        clusterB[0].getCluster().shutdown();
+
+        startClusterB();
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+
+        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
+        communicator.syncMapOverWAN("atob", "B", "map");
+
+        assertKeysIn(clusterB, "map", 0, 1000);
     }
 
     @Test

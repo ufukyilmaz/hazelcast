@@ -7,6 +7,8 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
+import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
@@ -51,12 +53,14 @@ public class EnterpriseWanReplicationService
     private static final int DEFAULT_KEY_FOR_STRIPED_EXECUTORS = -1;
 
     private final Node node;
+    private WanSyncManager syncManager;
     private final ILogger logger;
 
     private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWanReplicationPublisherMapping();
     private final Map<String, WanReplicationConsumer> wanConsumers = initializeCustomWanReplicationConsumerMapping();
     private final Object publisherMutex = new Object();
     private final Object executorMutex = new Object();
+    private final Object syncManagerMutex = new Object();
     private volatile StripedExecutor executor;
 
     public EnterpriseWanReplicationService(Node node) {
@@ -447,16 +451,32 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
-    @Override
-    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
-        throw new UnsupportedOperationException("WAN sync for map is not supported.");
-    }
-
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
         return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
     }
 
     private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
         return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
+    }
+
+    @Override
+    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
+        initializeSyncManagerIfNeeded();
+        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName);
+    }
+
+    private void initializeSyncManagerIfNeeded() {
+        if (syncManager == null) {
+            synchronized (syncManagerMutex) {
+                if (syncManager == null) {
+                    syncManager = new WanSyncManager(node.getNodeEngine());
+                }
+            }
+        }
+    }
+
+    public void publishMapWanSyncEvent(PartitionSyncReplicationEventObject eventObject) {
+        WanReplicationEndpoint endpoint = getEndpoint(eventObject.getWanReplicationName(), eventObject.getTargetGroupName());
+        endpoint.publishMapSyncEvent(eventObject);
     }
 }

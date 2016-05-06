@@ -251,7 +251,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         CacheRecord cacheRecord = new CacheDataRecord();
         cacheRecord.setCreationTime(record.getCreationTime());
-        cacheRecord.setAccessTime(record.getAccessTime());
+        cacheRecord.setAccessTime(record.getLastAccessTime());
         cacheRecord.setAccessHit(record.getAccessHit());
         cacheRecord.setExpirationTime(record.getExpirationTime());
         cacheRecord.setValue(toHeapData(record.getValue()));
@@ -264,7 +264,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
         HiDensityNativeMemoryCacheRecord nativeMemoryRecord =
                 createRecord(record.getValue(), record.getCreationTime(), record.getExpirationTime());
-        nativeMemoryRecord.setAccessTime(record.getAccessTime());
+        nativeMemoryRecord.setAccessTime(record.getLastAccessTime());
         nativeMemoryRecord.setAccessHit(record.getAccessHit());
         return nativeMemoryRecord;
     }
@@ -313,6 +313,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             recordAddress = cacheRecordProcessor.allocate(HiDensityNativeMemoryCacheRecord.SIZE);
             record = cacheRecordProcessor.newRecord();
             record.reset(recordAddress);
+            record.setAccessTime(HiDensityNativeMemoryCacheRecord.TIME_NOT_AVAILABLE);
             record.setSequence(sequence);
 
             if (creationTime >= 0) {
@@ -780,8 +781,9 @@ public class HiDensityNativeMemoryCacheRecordStore
                                           cacheEntryView,
                                           new DefaultCacheEntryView(key,
                                                                     existingValue,
+                                                                    record.getCreationTime(),
                                                                     record.getExpirationTime(),
-                                                                    record.getAccessTime(),
+                                                                    record.getLastAccessTime(),
                                                                     record.getAccessHit()));
                 if (existingValue != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,

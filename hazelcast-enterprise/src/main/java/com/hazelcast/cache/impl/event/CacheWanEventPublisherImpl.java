@@ -20,18 +20,22 @@ public class CacheWanEventPublisherImpl implements CacheWanEventPublisher {
 
     @Override
     public void publishWanReplicationUpdate(String cacheName, CacheEntryView<Data, Data> entryView) {
-        CacheEventContext cacheEventContext = CacheEventContextUtil.createCacheUpdatedEvent(entryView.getKey(),
-                entryView.getValue(), null, entryView.getExpirationTime(), entryView.getLastAccessTime(),
-                entryView.getAccessHit());
+        CacheEventContext cacheEventContext =
+                CacheEventContextUtil.createCacheUpdatedEvent(
+                        entryView.getKey(), entryView.getValue(), null,
+                        entryView.getCreationTime(), entryView.getExpirationTime(),
+                        entryView.getLastAccessTime(), entryView.getAccessHit());
         cacheEventContext.setCacheName(cacheName);
         cacheService.publishWanEvent(cacheEventContext);
     }
 
     @Override
     public void publishWanReplicationUpdateBackup(String cacheName, CacheEntryView<Data, Data> entryView) {
-        CacheEventContext cacheEventContext = CacheEventContextUtil.createCacheUpdatedEvent(entryView.getKey(),
-                entryView.getValue(), null, entryView.getExpirationTime(), entryView.getLastAccessTime(),
-                entryView.getAccessHit());
+        CacheEventContext cacheEventContext =
+                CacheEventContextUtil.createCacheUpdatedEvent(
+                        entryView.getKey(), entryView.getValue(), null,
+                        entryView.getCreationTime(), entryView.getExpirationTime(),
+                        entryView.getLastAccessTime(), entryView.getAccessHit());
         cacheEventContext.setCacheName(cacheName);
         cacheService.publishWanEventBackup(cacheEventContext);
     }

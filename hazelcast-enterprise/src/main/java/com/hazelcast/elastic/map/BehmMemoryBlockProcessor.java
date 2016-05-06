@@ -55,6 +55,11 @@ class BehmMemoryBlockProcessor<V extends MemoryBlock>
     }
 
     @Override
+    public Object toObject(Object data) {
+        return serializationService.toObject(data);
+    }
+
+    @Override
     public Data convertData(Data data, DataType dataType) {
         return serializationService.convertData(data, dataType);
     }

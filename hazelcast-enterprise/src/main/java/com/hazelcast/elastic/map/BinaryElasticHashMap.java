@@ -696,7 +696,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         }
     }
 
-    private V readV(long slotValue) {
+    protected V readV(long slotValue) {
         if (slotValue == NULL_ADDRESS) {
             return null;
         }

@@ -22,7 +22,7 @@ abstract class AbstractQueryCacheRecord implements QueryCacheRecord {
     }
 
     @Override
-    public long getAccessTime() {
+    public long getLastAccessTime() {
         return accessTime;
     }
 

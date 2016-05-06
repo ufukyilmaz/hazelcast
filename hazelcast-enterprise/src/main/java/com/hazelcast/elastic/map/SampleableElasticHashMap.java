@@ -1,6 +1,7 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
 import com.hazelcast.internal.memory.MemoryBlockProcessor;
@@ -60,15 +61,21 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     /**
      * Entry to define keys and values for sampling.
      */
-    public class SamplingEntry extends MapEntry {
+    public class SamplingEntry {
 
-        public SamplingEntry(final int slot) {
-            super(slot);
+        private final int slot;
+
+        protected SamplingEntry(final int slot) {
+            this.slot = slot;
         }
 
-        @Override
-        public V setValue(Object value) {
-            throw new UnsupportedOperationException("Setting value is not supported");
+        public NativeMemoryData getEntryKey() {
+            return accessor.keyData(slot);
+        }
+
+        public V getEntryValue() {
+            final long value = accessor.getValue(slot);
+            return readV(value);
         }
 
     }

@@ -55,7 +55,8 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
                         .build(),
-                createNearCacheExecutor());
+                createNearCacheExecutor(),
+                null);
     }
 
     @Override

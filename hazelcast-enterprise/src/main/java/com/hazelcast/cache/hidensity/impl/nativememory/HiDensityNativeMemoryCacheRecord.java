@@ -87,7 +87,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     }
 
     @Override
-    public long getAccessTime() {
+    public long getLastAccessTime() {
         return readLong(ACCESS_TIME_OFFSET);
     }
 
@@ -246,7 +246,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
     public String toString() {
         if (address() > NULL_PTR) {
             return "HiDensityNativeMemoryCacheRecord{creationTime: " + getCreationTime()
-                    + ", lastAccessTime: " + getAccessTime()
+                    + ", lastAccessTime: " + getLastAccessTime()
                     + ", hits: " + getAccessHit()
                     + ", ttl: " + getTtlMillis()
                     + ", sequence: " + getSequence()

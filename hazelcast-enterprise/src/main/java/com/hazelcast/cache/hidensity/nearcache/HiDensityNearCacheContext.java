@@ -29,27 +29,31 @@ public class HiDensityNearCacheContext extends NearCacheContext {
 
     private HiDensityStorageInfo storageInfo;
 
-    public HiDensityNearCacheContext() {
-    }
-
     public HiDensityNearCacheContext(NearCacheContext nearCacheContext) {
-        super(nearCacheContext.getSerializationService(), nearCacheContext.getNearCacheExecutor());
+        super(nearCacheContext.getSerializationService(),
+              nearCacheContext.getNearCacheExecutor(),
+              nearCacheContext.getClassLoader());
     }
 
     public HiDensityNearCacheContext(SerializationService serializationService,
-                                     NearCacheExecutor nearCacheExecutor) {
-        super(serializationService, nearCacheExecutor);
+                                     NearCacheExecutor nearCacheExecutor,
+                                     ClassLoader classLoader) {
+        super(serializationService, nearCacheExecutor, classLoader);
     }
 
-    public HiDensityNearCacheContext(NearCacheContext nearCacheContext, HiDensityStorageInfo storageInfo) {
-        super(nearCacheContext.getSerializationService(), nearCacheContext.getNearCacheExecutor());
+    public HiDensityNearCacheContext(NearCacheContext nearCacheContext,
+                                     HiDensityStorageInfo storageInfo) {
+        super(nearCacheContext.getSerializationService(),
+              nearCacheContext.getNearCacheExecutor(),
+              nearCacheContext.getClassLoader());
         this.storageInfo = storageInfo;
     }
 
     public HiDensityNearCacheContext(SerializationService serializationService,
                                      NearCacheExecutor nearCacheExecutor,
+                                     ClassLoader classLoader,
                                      HiDensityStorageInfo storageInfo) {
-        super(serializationService, nearCacheExecutor);
+        super(serializationService, nearCacheExecutor, classLoader);
         this.storageInfo = storageInfo;
     }
 

@@ -29,18 +29,43 @@ public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & E
      */
     public class EvictableSamplingEntry extends SamplingEntry implements EvictionCandidate {
 
-        public EvictableSamplingEntry(final int slot) {
+        public EvictableSamplingEntry(int slot) {
             super(slot);
         }
 
         @Override
         public Object getAccessor() {
-            return getKey();
+            return getEntryKey();
         }
 
         @Override
         public Evictable getEvictable() {
-            return (R) getValue();
+            return (R) getEntryValue();
+        }
+
+        @Override
+        public Object getKey() {
+            return recordProcessor.toObject(getEntryKey());
+        }
+
+        @Override
+        public Object getValue() {
+            return recordProcessor.toObject(((R) getEntryValue()).getValue());
+        }
+
+        @Override
+        public long getCreationTime() {
+            return ((R) getEntryValue()).getCreationTime();
+        }
+
+        @Override
+        public long getLastAccessTime() {
+            return ((R) getEntryValue()).getLastAccessTime();
+        }
+
+        @Override
+        public long getAccessHit() {
+            return ((R) getEntryValue()).getAccessHit();
         }
 
     }

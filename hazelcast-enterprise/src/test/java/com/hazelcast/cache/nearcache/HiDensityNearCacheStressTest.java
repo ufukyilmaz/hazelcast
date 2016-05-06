@@ -62,7 +62,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                 new EnterpriseSerializationServiceBuilder()
                         .setMemoryManager(memoryManager)
                         .build(),
-                createNearCacheExecutor());
+                createNearCacheExecutor(), null);
     }
 
     @Override

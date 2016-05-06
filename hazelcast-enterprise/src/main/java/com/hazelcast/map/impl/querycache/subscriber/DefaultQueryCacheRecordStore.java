@@ -35,11 +35,11 @@ class DefaultQueryCacheRecordStore implements QueryCacheRecordStore {
     public DefaultQueryCacheRecordStore(InternalSerializationService serializationService,
                                         Indexes indexes,
                                         QueryCacheConfig config, EvictionListener listener) {
-        this.cache = new QueryCacheRecordHashMap(DEFAULT_CACHE_CAPACITY);
+        this.cache = new QueryCacheRecordHashMap(serializationService, DEFAULT_CACHE_CAPACITY);
         this.serializationService = serializationService;
         this.recordFactory = getRecordFactory(config.getInMemoryFormat());
         this.indexes = indexes;
-        this.evictionOperator = new EvictionOperator(cache, config, listener);
+        this.evictionOperator = new EvictionOperator(cache, config, listener, serializationService.getClassLoader());
     }
 
     private QueryCacheRecord accessRecord(QueryCacheRecord record) {

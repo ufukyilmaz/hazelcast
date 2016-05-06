@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
+import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.hidensity.SampleableHiDensityCacheRecordMap;
 import com.hazelcast.cache.impl.CacheKeyIteratorResult;
 import com.hazelcast.elastic.SlottableIterator;
@@ -87,6 +88,26 @@ public class HiDensityNativeMemoryCacheRecordMap
         }
 
         return new CacheKeyIteratorResult(keys, iter.getNextSlot());
+    }
+
+    private final class CacheEvictableSamplingEntry
+            extends EvictableSamplingEntry
+            implements CacheEntryView {
+
+        private CacheEvictableSamplingEntry(int slot) {
+            super(slot);
+        }
+
+        @Override
+        public long getExpirationTime() {
+            return getEntryValue().getExpirationTime();
+        }
+
+    }
+
+    @Override
+    protected EvictableSamplingEntry createSamplingEntry(final int slot) {
+        return new CacheEvictableSamplingEntry(slot);
     }
 
 }

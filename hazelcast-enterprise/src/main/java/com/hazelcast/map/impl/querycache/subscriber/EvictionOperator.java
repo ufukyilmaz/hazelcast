@@ -8,8 +8,8 @@ import com.hazelcast.internal.eviction.EvictionStrategy;
 import com.hazelcast.internal.eviction.EvictionStrategyProvider;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.QueryCacheConfig;
+import com.hazelcast.internal.eviction.impl.EvictionConfigHelper;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 
@@ -25,8 +25,10 @@ public class EvictionOperator {
     private final EvictionStrategy<Data, QueryCacheRecord, QueryCacheRecordHashMap> evictionStrategy;
     private final QueryCacheRecordHashMap cache;
     private final EvictionListener listener;
+    private final ClassLoader classLoader;
 
-    public EvictionOperator(QueryCacheRecordHashMap cache, QueryCacheConfig config, EvictionListener listener) {
+    public EvictionOperator(QueryCacheRecordHashMap cache, QueryCacheConfig config,
+                            EvictionListener listener, ClassLoader classLoader) {
         this.cache = cache;
         this.evictionConfig = config.getEvictionConfig();
         this.maxSizeChecker = createCacheMaxSizeChecker();
@@ -34,6 +36,7 @@ public class EvictionOperator {
         this.evictionChecker = createEvictionChecker();
         this.evictionStrategy = createEvictionStrategy();
         this.listener = listener;
+        this.classLoader = classLoader;
     }
 
     boolean isEvictionEnabled() {
@@ -59,11 +62,8 @@ public class EvictionOperator {
     }
 
     private EvictionPolicyEvaluator<Data, QueryCacheRecord> createEvictionPolicyEvaluator() {
-        final EvictionPolicy evictionPolicy = evictionConfig.getEvictionPolicy();
-        if (evictionPolicy == null || evictionPolicy == EvictionPolicy.NONE) {
-            throw new IllegalArgumentException("Eviction policy cannot be null or NONE");
-        }
-        return EvictionPolicyEvaluatorProvider.getEvictionPolicyEvaluator(evictionConfig);
+        EvictionConfigHelper.checkEvictionConfig(evictionConfig);
+        return EvictionPolicyEvaluatorProvider.getEvictionPolicyEvaluator(evictionConfig, classLoader);
     }
 
     private EvictionStrategy<Data, QueryCacheRecord, QueryCacheRecordHashMap> createEvictionStrategy() {

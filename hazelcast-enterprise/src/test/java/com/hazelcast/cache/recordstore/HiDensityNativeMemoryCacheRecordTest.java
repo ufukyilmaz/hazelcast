@@ -57,7 +57,7 @@ public class HiDensityNativeMemoryCacheRecordTest {
         record.setValueAddress(address);
 
         assertEquals(creationTime, record.getCreationTime());
-        assertEquals(accessTime, record.getAccessTime());
+        assertEquals(accessTime, record.getLastAccessTime());
         assertEquals(hit, record.getAccessHit());
         assertEquals(seq, record.getSequence());
         assertEquals(ttl, record.getTtlMillis());

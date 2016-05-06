@@ -46,8 +46,9 @@ public class DefaultEnterpriseCacheRecordStore extends CacheRecordStore
                                           cacheEntryView,
                                           new DefaultCacheEntryView(key,
                                                                     toData(record.getValue()),
+                                                                    record.getCreationTime(),
                                                                     record.getExpirationTime(),
-                                                                    record.getAccessTime(),
+                                                                    record.getLastAccessTime(),
                                                                     record.getAccessHit()));
                 if (record.getValue() != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,

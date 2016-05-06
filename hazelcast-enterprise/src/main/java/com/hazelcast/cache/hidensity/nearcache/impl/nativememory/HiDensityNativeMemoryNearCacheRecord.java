@@ -65,7 +65,7 @@ public class HiDensityNativeMemoryNearCacheRecord
     }
 
     @Override
-    public long getAccessTime() {
+    public long getLastAccessTime() {
         int accessTimeDiff = getAccessTimeDiff();
         // Not accessed yet
         if (accessTimeDiff <= 0) {
@@ -196,7 +196,7 @@ public class HiDensityNativeMemoryNearCacheRecord
 
     @Override
     public boolean isIdleAt(long maxIdleMilliSeconds, long now) {
-        long accessTime = getAccessTime();
+        long accessTime = getLastAccessTime();
         if (maxIdleMilliSeconds > 0) {
             if (accessTime > TIME_NOT_SET) {
                 return accessTime + maxIdleMilliSeconds < now;

@@ -559,8 +559,10 @@ public class EnterpriseCacheService
                         new CacheReplicationUpdate(
                                 config.getName(),
                                 cacheMergePolicies.get(cacheName),
-                                new DefaultCacheEntryView(cacheEventContext.getDataKey(),
+                                new DefaultCacheEntryView(
+                                        cacheEventContext.getDataKey(),
                                         cacheEventContext.getDataValue(),
+                                        cacheEventContext.getCreationTime(),
                                         cacheEventContext.getExpirationTime(),
                                         cacheEventContext.getLastAccessTime(),
                                         cacheEventContext.getAccessHit()),
@@ -584,9 +586,15 @@ public class EnterpriseCacheService
 
     private boolean isEventFiltered(CacheEventContext eventContext, List<String> filters) {
         if (!filters.isEmpty()) {
-            CacheEntryView entryView = new LazyCacheEntryView(eventContext.getDataKey(),
-                    eventContext.getDataValue(), eventContext.getExpirationTime(), eventContext.getLastAccessTime(),
-                    eventContext.getAccessHit(), getSerializationService());
+            CacheEntryView entryView =
+                    new LazyCacheEntryView(
+                            eventContext.getDataKey(),
+                            eventContext.getDataValue(),
+                            eventContext.getCreationTime(),
+                            eventContext.getExpirationTime(),
+                            eventContext.getLastAccessTime(),
+                            eventContext.getAccessHit(),
+                            getSerializationService());
             WanFilterEventType eventType = convertWanFilterEventType(eventContext.getEventType());
             for (String filterName : filters) {
                 CacheWanEventFilter filter = cacheFilterProvider.getFilter(filterName);

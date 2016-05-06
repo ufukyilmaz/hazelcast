@@ -54,9 +54,9 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                      NearCacheContext nearCacheContext) {
         this(nearCacheConfig,
-                nearCacheContext,
-                new NearCacheStatsImpl(),
-                new HiDensityStorageInfo(nearCacheConfig.getName()));
+             nearCacheContext,
+             new NearCacheStatsImpl(),
+             new HiDensityStorageInfo(nearCacheConfig.getName()));
     }
 
 
@@ -65,8 +65,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                                                      NearCacheStatsImpl nearCacheStats,
                                                      HiDensityStorageInfo storageInfo) {
         super(nearCacheConfig,
-                new HiDensityNearCacheContext(nearCacheContext, storageInfo),
-                nearCacheStats);
+              new HiDensityNearCacheContext(nearCacheContext, storageInfo),
+              nearCacheStats);
     }
 
     private void ensureInitialized(NearCacheConfig nearCacheConfig,
@@ -110,8 +110,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                                                                                NearCacheContext nearCacheContext) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
 
-        return new HiDensityNativeMemoryNearCacheRecordMap(
-                DEFAULT_INITIAL_CAPACITY, recordProcessor, storageInfo);
+        return new HiDensityNativeMemoryNearCacheRecordMap(DEFAULT_INITIAL_CAPACITY, recordProcessor, storageInfo);
     }
 
     //CHECKSTYLE:OFF

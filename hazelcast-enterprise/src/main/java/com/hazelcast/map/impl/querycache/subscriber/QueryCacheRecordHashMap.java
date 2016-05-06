@@ -6,6 +6,7 @@ import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.impl.strategy.sampling.SampleableEvictableStore;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ConcurrentReferenceHashMap;
 import com.hazelcast.util.SampleableConcurrentHashMap;
 
@@ -20,42 +21,74 @@ import java.util.EnumSet;
 public class QueryCacheRecordHashMap extends SampleableConcurrentHashMap<Data, QueryCacheRecord>
         implements SampleableEvictableStore<Data, QueryCacheRecord> {
 
-    public QueryCacheRecordHashMap(int initialCapacity) {
+    private final SerializationService serializationService;
+
+    public QueryCacheRecordHashMap(SerializationService serializationService, int initialCapacity) {
         super(initialCapacity);
+        this.serializationService = serializationService;
     }
 
-    public QueryCacheRecordHashMap(int initialCapacity, float loadFactor, int concurrencyLevel,
+    public QueryCacheRecordHashMap(SerializationService serializationService,
+                                   int initialCapacity, float loadFactor, int concurrencyLevel,
                                    ConcurrentReferenceHashMap.ReferenceType keyType,
                                    ConcurrentReferenceHashMap.ReferenceType valueType,
                                    EnumSet<Option> options) {
         super(initialCapacity, loadFactor, concurrencyLevel, keyType, valueType, options);
+        this.serializationService = serializationService;
     }
 
     /**
      * @see com.hazelcast.util.SampleableConcurrentHashMap.SamplingEntry
      * @see EvictionCandidate
      */
-    public class EvictableSamplingEntry extends SamplingEntry implements EvictionCandidate {
+    public class QueryCacheEvictableSamplingEntry
+            extends SamplingEntry<Data, QueryCacheRecord>
+            implements EvictionCandidate {
 
-        public EvictableSamplingEntry(Data key, QueryCacheRecord value) {
+        public QueryCacheEvictableSamplingEntry(Data key, QueryCacheRecord value) {
             super(key, value);
         }
 
         @Override
         public Object getAccessor() {
-            return getKey();
+            return key;
         }
 
         @Override
         public Evictable getEvictable() {
-            return (Evictable) getValue();
+            return value;
+        }
+
+        @Override
+        public Object getKey() {
+            return serializationService.toObject(key);
+        }
+
+        @Override
+        public Object getValue() {
+            return serializationService.toObject(value.getValue());
+        }
+
+        @Override
+        public long getCreationTime() {
+            return value.getCreationTime();
+        }
+
+        @Override
+        public long getLastAccessTime() {
+            return value.getLastAccessTime();
+        }
+
+        @Override
+        public long getAccessHit() {
+            return value.getAccessHit();
         }
 
     }
 
     @Override
-    protected EvictableSamplingEntry createSamplingEntry(Data key, QueryCacheRecord value) {
-        return new EvictableSamplingEntry(key, value);
+    protected QueryCacheEvictableSamplingEntry createSamplingEntry(Data key, QueryCacheRecord value) {
+        return new QueryCacheEvictableSamplingEntry(key, value);
     }
 
     @Override
@@ -77,7 +110,7 @@ public class QueryCacheRecordHashMap extends SampleableConcurrentHashMap<Data, Q
     }
 
     @Override
-    public Iterable<EvictableSamplingEntry> sample(int sampleCount) {
+    public Iterable<QueryCacheEvictableSamplingEntry> sample(int sampleCount) {
         return super.getRandomSamples(sampleCount);
     }
 

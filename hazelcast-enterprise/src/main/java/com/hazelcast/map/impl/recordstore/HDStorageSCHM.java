@@ -53,7 +53,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         public LazyEntryViewFromRecord(int slot, SerializationService serializationService) {
             super(slot);
-            this.record = (HDRecord) super.getValue();
+            this.record = (HDRecord) super.getEntryValue();
             this.serializationService = serializationService;
         }
 

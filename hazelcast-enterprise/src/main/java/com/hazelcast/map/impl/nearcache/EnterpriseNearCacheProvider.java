@@ -56,7 +56,11 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
             }
         };
         this.nearCacheManager = new HiDensityNearCacheManager();
-        this.nearCacheContext = new NearCacheContext(nearCacheManager, serializationService, executor);
+        this.nearCacheContext =
+                new NearCacheContext(nearCacheManager,
+                                     serializationService,
+                                     executor,
+                                     mapServiceContext.getNodeEngine().getConfigClassLoader());
     }
 
     @Override

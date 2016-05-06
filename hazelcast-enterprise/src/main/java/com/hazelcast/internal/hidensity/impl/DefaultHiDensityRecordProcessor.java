@@ -119,6 +119,11 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
     }
 
     @Override
+    public Object toObject(Object data) {
+        return serializationService.toObject(data, memoryManager);
+    }
+
+    @Override
     public Data convertData(Data data, DataType dataType) {
         Data convertedData;
         if (dataType == DataType.NATIVE) {

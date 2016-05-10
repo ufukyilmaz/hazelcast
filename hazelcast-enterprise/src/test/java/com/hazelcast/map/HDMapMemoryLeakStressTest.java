@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 @Category(SlowTest.class)
 public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
 
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(1 * 60);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60);
     private static final MemoryAllocatorType ALLOCATOR_TYPE = MemoryAllocatorType.STANDARD;
     private static final MemorySize MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);
     private static final int[] OP_SET = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
@@ -96,7 +96,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         assertEquals(0, memoryStats.getUsedNative());
         assertEquals(0, memoryStats.getCommittedNative());
         if (memoryStats instanceof PooledNativeMemoryStats) {
-            assertEquals(0, ((PooledNativeMemoryStats) memoryStats).getUsedMetadata());
+            assertEquals(0, memoryStats.getUsedMetadata());
         }
     }
 
@@ -108,7 +108,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
 
-        IMap map = hz.getMap(MAP_NAME);
+        IMap<Integer, byte[]> map = hz.getMap(MAP_NAME);
         map.addIndex("__key", true);
 
         final AtomicBoolean done = new AtomicBoolean(false);
@@ -175,11 +175,12 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     private static class WorkerThread extends Thread {
+
         private final IMap<Integer, byte[]> map;
         private final CountDownLatch latch;
         private final Random rand = new Random();
 
-        public WorkerThread(IMap map, CountDownLatch latch) {
+        WorkerThread(IMap<Integer, byte[]> map, CountDownLatch latch) {
             this.map = map;
             this.latch = latch;
         }
@@ -305,10 +306,8 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
                     break;
 
                 case 16:
-                    Map<Integer, byte[]> keyValuePairs = new HashMap<Integer, byte[]>(32);
                     for (int k = key, i = 0; i < 32 && k < KEY_RANGE; k++, i++) {
                         final byte[] newValue = newValue(k);
-                        keyValuePairs.put(k, newValue);
                         Object newKey = map.executeOnKey(k, new AdderEntryProcessor(newValue));
 
                         verifyValue(((Integer) newKey), newValue);
@@ -360,45 +359,45 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
         }
     }
 
-    private static class AdderEntryProcessor extends AbstractEntryProcessor {
+    private static class AdderEntryProcessor extends AbstractEntryProcessor<Integer, byte[]> {
 
         private final byte[] value;
 
-        public AdderEntryProcessor(byte[] value) {
+        AdderEntryProcessor(byte[] value) {
             super(false);
             this.value = value;
         }
 
         @Override
-        public Object process(Map.Entry entry) {
+        public Object process(Map.Entry<Integer, byte[]> entry) {
             entry.setValue(value);
             return entry.getKey();
         }
     }
 
-    private static class RemoverEntryProcessor extends AbstractEntryProcessor {
+    private static class RemoverEntryProcessor extends AbstractEntryProcessor<Integer, byte[]> {
 
         @Override
-        public Object process(Map.Entry entry) {
+        public Object process(Map.Entry<Integer, byte[]> entry) {
             entry.setValue(null);
             return Boolean.TRUE;
         }
     }
 
     private static class AssertFreeMemoryTask extends AssertTask {
+
         final MemoryStats memoryStats;
         final MemoryStats memoryStats2;
 
-        public AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
+        AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
             memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
             memoryStats2 = getNode(hz2).hazelcastInstance.getMemoryStats();
         }
 
         @Override
         public void run() throws Exception {
-            String message =
-                    "Node1: " + toPrettyString(memoryStats.getUsedNative())
-                            + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
+            String message = "Node1: " + toPrettyString(memoryStats.getUsedNative())
+                    + ", Node2: " + toPrettyString(memoryStats2.getUsedNative());
 
             assertEquals(message, 0, memoryStats.getUsedNative());
             assertEquals(message, 0, memoryStats2.getUsedNative());
@@ -424,8 +423,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
             public void accept(long key, long value) {
                 if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
                     HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println(
-                            (++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
+                    System.err.println((++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
                 } else if (value == 13) {
                     System.err.println((++k) + ". Key Address: " + key);
                 } else {

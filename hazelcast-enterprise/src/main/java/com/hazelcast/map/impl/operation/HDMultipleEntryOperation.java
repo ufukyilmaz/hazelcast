@@ -19,6 +19,7 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.core.ManagedContext;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
@@ -55,7 +56,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
     protected void runInternal() {
         final long now = getNow();
 
-        final Set<Data> keys = this.keys;
+        responses = new MapEntries(keys.size());
         for (Data dataKey : keys) {
             if (isKeyProcessable(dataKey)) {
                 continue;
@@ -68,8 +69,10 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
             }
 
             final Data response = process(entry);
-
-            addToResponses(dataKey, response);
+            if (response != null) {
+                // copy key from HD memory to heap memory
+                responses.add(toData(dataKey), response);
+            }
 
             // first call noOp, other if checks below depends on it.
             if (noOp(entry, value)) {

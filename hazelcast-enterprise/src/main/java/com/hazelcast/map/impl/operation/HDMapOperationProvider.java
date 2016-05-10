@@ -219,6 +219,11 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
+    public MapOperation createPutAllPerMemberOperation(String name, int[] partitions, MapEntries[] mapEntries) {
+        return new HDPutAllPerMemberOperation(name, partitions, mapEntries);
+    }
+
+    @Override
     public MapOperation createPutAllOperation(String name, MapEntries mapEntries) {
         return new HDPutAllOperation(name, mapEntries);
     }
@@ -227,5 +232,4 @@ public class HDMapOperationProvider implements MapOperationProvider {
     public MapOperation createPutFromLoadAllOperation(String name, List<Data> keyValueSequence) {
         return new HDPutFromLoadAllOperation(name, keyValueSequence);
     }
-
 }

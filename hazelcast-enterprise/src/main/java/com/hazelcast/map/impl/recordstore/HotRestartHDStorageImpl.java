@@ -13,10 +13,12 @@ import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOffHeap;
 import com.hazelcast.spi.serialization.SerializationService;
 
+import java.util.Iterator;
+
 /**
  * HotRestart storage implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
-public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
+public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> implements ForcedEvictable<HDRecord> {
 
     private final Object mutex = new Object();
 
@@ -104,5 +106,10 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
 
     public Object getMutex() {
         return mutex;
+    }
+
+    @Override
+    public Iterator<HDRecord> newForcedEvictionValuesIterator() {
+        return ((ForcedEvictable<HDRecord>) storage).newForcedEvictionValuesIterator();
     }
 }

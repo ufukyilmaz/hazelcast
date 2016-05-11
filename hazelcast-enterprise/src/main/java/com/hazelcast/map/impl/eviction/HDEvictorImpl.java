@@ -19,6 +19,7 @@ package com.hazelcast.map.impl.eviction;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.map.impl.recordstore.ForcedEvictable;
 import com.hazelcast.map.impl.recordstore.HDStorageSCHM;
 import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -26,8 +27,7 @@ import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.partition.IPartitionService;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
 
 /**
@@ -60,24 +60,22 @@ public class HDEvictorImpl extends EvictorImpl {
         int removalSize = calculateRemovalSize(recordStore);
         int removedEntryCount = 0;
         Storage<Data, Record> storage = recordStore.getStorage();
-        List<Record> recordsToEvict = new ArrayList<Record>(removalSize);
-        for (Record record : storage.values()) {
+        Iterator<Record> recordIterator = ((ForcedEvictable<Record>) storage).newForcedEvictionValuesIterator();
+
+        while (recordIterator.hasNext()) {
+            Record record = recordIterator.next();
             Data key = record.getKey();
             if (!recordStore.isLocked(key)) {
-                recordsToEvict.add(record);
+                if (!backup) {
+                    recordStore.doPostEvictionOperations(record, backup);
+                }
+                recordStore.evict(record.getKey(), backup);
                 removedEntryCount++;
             }
 
             if (removedEntryCount >= removalSize) {
                 break;
             }
-        }
-
-        for (Record record : recordsToEvict) {
-            if (!backup) {
-                recordStore.doPostEvictionOperations(record, backup);
-            }
-            recordStore.evict(record.getKey(), backup);
         }
 
         recordStore.disposeDeferredBlocks();

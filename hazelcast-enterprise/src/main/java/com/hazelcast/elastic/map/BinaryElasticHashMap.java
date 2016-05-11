@@ -532,7 +532,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * more than once and some other entry won't be visited at all.
      *
      */
-    protected SlottableIterator<Data> newRandomEvictionKeyIterator() {
+    public SlottableIterator<Data> newRandomEvictionKeyIterator() {
         return new RandomKeyIter();
     }
 
@@ -543,7 +543,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * multiple-times and some other entry won't be visited at all.
      *
      */
-    protected SlottableIterator<V> newRandomEvictionValueIterator() {
+    public SlottableIterator<V> newRandomEvictionValueIterator() {
         return new RandomValueIter();
     }
 
@@ -574,21 +574,26 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         private NativeMemoryData keyHolder = new NativeMemoryData();
 
         RandomSlotIter() {
-            nextSlot = advance(0);
+            nextSlot = advanceAndIncrementIterations();
         }
 
-        @Override
-        public final int advance(int ignored) {
+        final int advanceAndIncrementIterations() {
             ensureMemory();
             if (iterationCount == initialSize) {
                 return -1;
             }
 
+            int slot = advance();
+            iterationCount++;
+            return slot;
+        }
+
+        final int advance() {
+            ensureMemory();
             int slot;
             do {
                 slot = random.nextInt(capacity());
-            } while (!accessor.isAssigned(slot) || slot == currentSlot);
-            iterationCount++;
+            } while (!accessor.isAssigned(slot) || (slot == currentSlot));
             return slot;
         }
 
@@ -605,13 +610,13 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             }
             currentSlot = nextSlot;
             if (!accessor.isAssigned(currentSlot)) {
-                currentSlot = advance(0);
+                currentSlot = advance();
                 if (currentSlot < 0) {
                     throw new ConcurrentModificationException("Map was modified externally.");
                 }
             }
 
-            nextSlot = advance(0);
+            nextSlot = advanceAndIncrementIterations();
             return currentSlot;
         }
 
@@ -675,8 +680,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             nextSlot = advance(startSlot);
         }
 
-        @Override
-        public final int advance(int start) {
+        final int advance(int start) {
             ensureMemory();
             for (int slot = start; slot < allocatedSlotCount; slot++) {
                 if (accessor.isAssigned(slot)) {

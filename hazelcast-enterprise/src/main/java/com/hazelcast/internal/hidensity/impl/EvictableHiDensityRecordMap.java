@@ -1,5 +1,6 @@
 package com.hazelcast.internal.hidensity.impl;
 
+import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -54,13 +55,12 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         evictCount = Math.max(evictCount, MIN_EVICTION_ELEMENT_COUNT);
 
 
-        int startSlot = (int) (Math.random() * capacity());
-        KeyIter iter = keyIter(startSlot);
+        SlottableIterator<Data> iter = newRandomEvictionKeyIterator();
 
         return forceEvict(iter, evictionListener, evictCount);
     }
 
-    private int forceEvict(KeyIter iterator, EvictionListener<Data, R> evictionListener, int evictCount) {
+    private int forceEvict(SlottableIterator<Data> iterator, EvictionListener<Data, R> evictionListener, int evictCount) {
         int evictedEntryCount = 0;
         while (iterator.hasNext()) {
             iterator.nextSlot();

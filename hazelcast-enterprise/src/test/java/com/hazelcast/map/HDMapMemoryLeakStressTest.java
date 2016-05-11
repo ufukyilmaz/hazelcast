@@ -101,6 +101,7 @@ public class HDMapMemoryLeakStressTest extends HazelcastTestSupport {
     }
 
     @Test
+    @Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/859
     public void test_MapOperations() throws InterruptedException {
         final Config config = createConfig();
 

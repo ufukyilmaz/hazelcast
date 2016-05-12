@@ -1,5 +1,6 @@
 package com.hazelcast.cache.eviction;
 
+import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -14,7 +15,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
+import com.hazelcast.util.QuickMath;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -24,11 +25,11 @@ import java.util.concurrent.ConcurrentMap;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/885
 public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictionPolicyComparatorTest {
 
-    private static final MemorySize MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
-    private static final int ITERATION_COUNT = (int) (MEMORY_SIZE.bytes() / (16 + 16));
+    private static final MemorySize MEMORY_SIZE = new MemorySize(4, MemoryUnit.MEGABYTES);
+    private static final int ITERATION_COUNT
+            = (int) (MEMORY_SIZE.bytes() / (16 + 16 + QuickMath.nextPowerOfTwo(HiDensityNativeMemoryCacheRecord.SIZE)));
 
     @Override
     protected CachingProvider createCachingProvider(HazelcastInstance instance) {
@@ -50,10 +51,12 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
     protected Config createConfig() {
         Config config = super.createConfig();
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "2");
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "4");
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig.setEnabled(true)
                 .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
                 .setMetadataSpacePercentage(50f)
+                .setPageSize((int) (MEMORY_SIZE.bytes() / 8))
                 .setSize(MEMORY_SIZE);
         return config;
     }

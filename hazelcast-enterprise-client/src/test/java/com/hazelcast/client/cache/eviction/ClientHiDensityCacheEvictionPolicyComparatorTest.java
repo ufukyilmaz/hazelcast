@@ -9,7 +9,6 @@ import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -18,7 +17,6 @@ import java.util.concurrent.ConcurrentMap;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/885
 public class ClientHiDensityCacheEvictionPolicyComparatorTest extends HiDensityCacheEvictionPolicyComparatorTest {
 
     private final TestHazelcastFactory instanceFactory = new TestHazelcastFactory();

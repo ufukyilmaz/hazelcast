@@ -197,6 +197,6 @@ public final class CipherHelper {
 
     public static void handleCipherException(Exception e, Connection connection) {
         LOGGER.warning(e);
-        connection.close();
+        connection.close(null, e);
     }
 }

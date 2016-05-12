@@ -1,8 +1,8 @@
 package com.hazelcast.enterprise.wan.connection;
 
-import com.hazelcast.internal.cluster.impl.operations.AuthorizationOperation;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.Node;
+import com.hazelcast.internal.cluster.impl.operations.AuthorizationOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.Connection;
@@ -159,9 +159,10 @@ public class WanConnectionManager {
     private Connection authorizeConnection(Connection conn) {
         boolean authorized = checkAuthorization(groupName, password, conn.getEndPoint());
         if (!authorized) {
-            conn.close();
+            String msg = "Invalid groupName or groupPassword!";
+            conn.close(msg, null);
             if (logger != null) {
-                logger.severe("Invalid groupName or groupPassword! ");
+                logger.severe(msg);
             }
             return null;
         }
@@ -178,6 +179,7 @@ public class WanConnectionManager {
     public Set<String> getFailedAddressSet() {
         return failedAddressSet;
     }
+
     /**
      * Maintains WAN target address set
      */

@@ -447,6 +447,11 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
+    @Override
+    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
+        throw new UnsupportedOperationException("WAN sync for map is not supported.");
+    }
+
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
         return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
     }

@@ -43,12 +43,15 @@ public class HDMultipleEntryBackupOperation extends AbstractHDMultipleEntryOpera
     protected void runInternal() {
         final Set<Data> keys = this.keys;
         for (Data dataKey : keys) {
-            if (keyNotOwnedByThisPartition(dataKey)) {
+            if (isKeyProcessable(dataKey)) {
                 continue;
             }
             final Object oldValue = recordStore.get(dataKey, true);
 
             final Map.Entry entry = createMapEntry(dataKey, oldValue);
+            if (!isEntryProcessable(entry)) {
+                continue;
+            }
 
             processBackup(entry);
 

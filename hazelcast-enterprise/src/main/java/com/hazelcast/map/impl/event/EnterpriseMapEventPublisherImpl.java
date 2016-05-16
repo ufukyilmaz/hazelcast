@@ -90,12 +90,13 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
     public void publishWanReplicationRemove(String mapName, Data key, long removeTime) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
+                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), removeTime, mapContainer.getTotalBackupCount());
         if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
             publishWanReplicationEventInternal(mapName, event);
         }
     }
 
+    @Override
     public void publishWanReplicationUpdateBackup(String mapName, EntryView entryView) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         EnterpriseMapReplicationUpdate replicationEvent = new EnterpriseMapReplicationUpdate(mapName,
@@ -109,7 +110,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
     public void publishWanReplicationRemoveBackup(String mapName, Data key, long removeTime) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         final EnterpriseMapReplicationRemove event
-                = new EnterpriseMapReplicationRemove(mapName, key, removeTime, mapContainer.getTotalBackupCount());
+                = new EnterpriseMapReplicationRemove(mapName, toHeapData(key), removeTime, mapContainer.getTotalBackupCount());
         if (!isEventFiltered(mapContainer, new SimpleEntryView(key, null), WanFilterEventType.REMOVED)) {
             publishWanReplicationEventInternalBackup(mapName, event);
         }

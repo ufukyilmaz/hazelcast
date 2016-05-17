@@ -212,8 +212,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     @Override
-    protected Map<Data, Object> loadEntries(Set<Data> keys) {
-        Map<Data, Object> loadedEntries = super.loadEntries(keys);
+    protected Map loadEntries(Set<Data> keys) {
+        Map loadedEntries = super.loadEntries(keys);
         if (hasQueryCache()) {
             for (Object key : loadedEntries.keySet()) {
                 Record record = storage.get(toData(key));

@@ -54,7 +54,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * per thread on-heap and off-heap HotRestart stores. Also, it's listener for
  * membership and cluster state events.
  */
-@SuppressWarnings("checkstyle:classfanoutcomplexity")
+@SuppressWarnings({ "checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling" })
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
     /**
@@ -152,8 +152,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     @Override
-    public void memberAttributeChanged(MemberAttributeServiceEvent event) {
-    }
+    public void memberAttributeChanged(MemberAttributeServiceEvent event) { }
 
     public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
         this.clusterMetadataManager.addClusterHotRestartEventListener(listener);
@@ -176,8 +175,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             final int persistedPartitionThreadCount = clusterMetadataManager.readPartitionThreadCount();
             if (partitionThreadCount != persistedPartitionThreadCount) {
                 throw new HotRestartException(String.format(
-                        "Mismatch between the current number of partition operation threads and" +
-                        " the number persisted in the Hot Restart data. Current %d, persisted %d",
+                        "Mismatch between the current number of partition operation threads and"
+                        + " the number persisted in the Hot Restart data. Current %d, persisted %d",
                         partitionThreadCount, persistedPartitionThreadCount));
             }
         } else {
@@ -197,8 +196,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             clusterMetadataManager.start();
             persistentCacheDescriptors.restore(node.getSerializationService());
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
-            logger.info(allowData ? "Starting the Hot Restart process."
-                    : "Initializing Hot Restart stores, not expecting to load any data.");
+            logger.info(allowData ? "Starting the Hot Restart procedure."
+                                  : "Initializing Hot Restart stores, not expecting to reload any data.");
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
@@ -209,7 +208,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
             persistentCacheDescriptors.clearProvisionalConfigs();
             clusterMetadataManager.loadCompletedLocal(failure);
-            logger.info(String.format("Hot Restart process completed in %,d seconds",
+            logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
         } catch (ForceStartException e) {
             handleForceStart();
@@ -217,7 +216,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             throw e;
         } catch (InterruptedException e) {
             currentThread().interrupt();
-            throw new HotRestartException("Interrupted during Hot Restart procedure", e);
+            throw new HotRestartException("Thread interrupted during the Hot Restart procedure", e);
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
         }
@@ -349,14 +348,14 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             failure.compareAndSet(null, t);
         }
         for (Thread thr : restartThreads) {
-            thr.join(deadline - currentTimeMillis());
-            final Throwable t = failure.get();
-            if (t != null) {
-                throw t;
-            }
+            thr.join(Math.max(1, deadline - currentTimeMillis()));
             if (thr.isAlive()) {
-                throw new HotRestartException("Timed out wating for a restartThread to complete");
+                failure.compareAndSet(null, new HotRestartException("Timed out wating for a restartThread to complete"));
             }
+        }
+        final Throwable t = failure.get();
+        if (t != null) {
+            throw t;
         }
     }
 

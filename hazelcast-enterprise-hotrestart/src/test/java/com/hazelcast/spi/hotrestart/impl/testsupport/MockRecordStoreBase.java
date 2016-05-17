@@ -22,18 +22,21 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         this.hrStore = hrStore;
     }
 
-    @Override public final Long2bytesMap ramStore() {
+    @Override
+    public final Long2bytesMap ramStore() {
         return ramStore;
     }
 
-    @Override public final void put(long key, byte[] value) {
+    @Override
+    public final void put(long key, byte[] value) {
         synchronized (ramStore) {
             ramStore.put(key, value);
         }
         hrStore.put(hrKey(key), value, NEEDS_FSYNC);
     }
 
-    @Override public final void remove(long key) {
+    @Override
+    public final void remove(long key) {
         synchronized (ramStore) {
             if (!ramStore.containsKey(key)) {
                 return;
@@ -43,13 +46,15 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         hrStore.remove(hrKey(key), NEEDS_FSYNC);
     }
 
-    @Override public final void clear() {
+    @Override
+    public final void clear() {
         synchronized (ramStore) {
             ramStore.clear();
         }
     }
 
-    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+    @Override
+    public void removeNullEntries(SetOfKeyHandle keyHandles) {
         for (KhCursor cursor = keyHandles.cursor(); cursor.advance();) {
             final long key = unwrapKey(cursor.asKeyHandle());
             assert ramStore.valueSize(key) < 0;
@@ -57,17 +62,20 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         }
     }
 
-    @Override public final void dispose() {
+    @Override
+    public final void dispose() {
         ramStore.dispose();
     }
 
-    @Override public final boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) {
+    @Override
+    public final boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) {
         synchronized (ramStore) {
             return ramStore.copyEntry(unwrapKey(kh), expectedSize, sink);
         }
     }
 
-    @Override public final void accept(KeyHandle kh, byte[] value) {
+    @Override
+    public final void accept(KeyHandle kh, byte[] value) {
         assert kh != null : "accept() called with null key";
         assert value != null : "accept() called with null value";
         ramStore.put(unwrapKey(kh), value);

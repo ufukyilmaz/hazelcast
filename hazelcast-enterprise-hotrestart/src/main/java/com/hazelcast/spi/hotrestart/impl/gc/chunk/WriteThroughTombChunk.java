@@ -19,39 +19,45 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
         super(seq, suffix, records, out, gcHelper);
     }
 
-    @Override public boolean addStep1(long recordSeq, long keyPrefix, byte[] keyBytes, byte[] ignored) {
+    @Override
+    public boolean addStep1(long recordSeq, long keyPrefix, byte[] keyBytes, byte[] ignored) {
         assert hasRoom();
         out.writeTombstone(recordSeq, keyPrefix, keyBytes);
-        size += Record.TOMB_HEADER_SIZE + keyBytes.length;
+        grow(Record.TOMB_HEADER_SIZE + keyBytes.length);
         return full();
     }
 
     public boolean addStep1(TombFileAccessor tfa, int filePos) {
         assert hasRoom();
         try {
-            size += tfa.loadAndCopyTombstone(filePos, out);
+            grow(tfa.loadAndCopyTombstone(filePos, out));
             return full();
         } catch (IOException e) {
             throw new HotRestartException("Failed to copy tombstone", e);
         }
     }
 
-    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int fileOffset) {
-        insertOrUpdateTombstone(prefix, kh, seq, size, fileOffset);
+    @Override
+    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size) {
+        insertOrUpdateTombstone(prefix, kh, seq, filePos, size);
     }
 
-    @Override protected int determineSizeLimit() {
+    @Override
+    protected int determineSizeLimit() {
         return tombChunkSizeLimit();
     }
 
-    @Override public void needsDismissing(boolean needsDismissing) {
+    @Override
+    public void needsDismissing(boolean needsDismissing) {
     }
 
-    @Override public String base() {
+    @Override
+    public String base() {
         return TOMB_BASEDIR;
     }
 
-    @Override public StableTombChunk toStableChunk() {
+    @Override
+    public StableTombChunk toStableChunk() {
         return new StableTombChunk(this, false);
     }
 }

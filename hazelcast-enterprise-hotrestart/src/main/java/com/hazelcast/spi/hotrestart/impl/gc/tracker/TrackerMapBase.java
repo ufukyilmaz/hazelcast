@@ -15,12 +15,14 @@ public abstract class TrackerMapBase implements TrackerMap {
     @Probe(level = MANDATORY) public final SwCounter liveValues = newSwCounter();
     @Probe(level = MANDATORY) public final SwCounter liveTombstones = newSwCounter();
 
-    @Override public void removeLiveTombstone(KeyHandle kh) {
+    @Override
+    public void removeLiveTombstone(KeyHandle kh) {
         liveTombstones.inc(-1);
         doRemove(kh);
     }
 
-    @Override public void removeIfDead(KeyHandle kh, Tracker tr) {
+    @Override
+    public void removeIfDead(KeyHandle kh, Tracker tr) {
         if (!tr.isAlive()) {
             doRemove(kh);
         }
@@ -46,7 +48,8 @@ public abstract class TrackerMapBase implements TrackerMap {
         liveTombstones.inc();
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         final StringBuilder b = new StringBuilder(1024);
         for (Cursor c = cursor(); c.advance();) {
             b.append(c.asKeyHandle()).append("->").append(c.asTracker()).append(' ');

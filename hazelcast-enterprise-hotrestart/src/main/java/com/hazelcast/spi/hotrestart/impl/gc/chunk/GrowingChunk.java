@@ -9,7 +9,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  * Represents a chunk file which is still growing.
  */
 public abstract class GrowingChunk extends Chunk {
-    public long size;
+    private long size;
 
     // Current chunk file offset from the viewpoint of the addStep2() method.
     protected int addStep2FilePos;
@@ -52,10 +52,13 @@ public abstract class GrowingChunk extends Chunk {
 
     public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size);
 
-    protected abstract int determineSizeLimit();
-
-    @Override public final long size() {
+    @Override
+    public final long size() {
         return size;
+    }
+
+    protected final void grow(int amount) {
+        size += amount;
     }
 
     public final boolean full() {
@@ -76,4 +79,6 @@ public abstract class GrowingChunk extends Chunk {
             existing.setFilePosition(filePos);
         }
     }
+
+    protected abstract int determineSizeLimit();
 }

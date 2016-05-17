@@ -78,7 +78,8 @@ public abstract class Record {
     }
 
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format("%s(%03x)", getClass().getSimpleName(), liveSeq());
     }
 

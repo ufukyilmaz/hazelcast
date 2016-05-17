@@ -16,11 +16,13 @@ public final class SurvivorValChunk extends WriteThroughChunk {
         super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
     }
 
-    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+    @Override
+    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
         insertOrUpdateValue(prefix, kh, seq, size);
     }
 
-    @Override protected int determineSizeLimit() {
+    @Override
+    protected int determineSizeLimit() {
         return valChunkSizeLimit();
     }
 
@@ -28,11 +30,12 @@ public final class SurvivorValChunk extends WriteThroughChunk {
         final long prefix = r.keyPrefix(kh);
         records.putIfAbsent(prefix, kh, r.liveSeq(), r.size(), false, 0);
         liveRecordCount++;
-        size += r.size();
+        grow(r.size());
         out.writeValueRecord(r, prefix, holder.keyBuffer, holder.valueBuffer);
     }
 
-    @Override public StableValChunk toStableChunk() {
+    @Override
+    public StableValChunk toStableChunk() {
         return new StableValChunk(seq, records.toStable(), liveRecordCount, size(), garbage, needsDismissing());
     }
 }

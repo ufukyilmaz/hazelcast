@@ -147,7 +147,8 @@ final class MmapSlab implements Disposable {
         }
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         if (bufBases.isEmpty()) {
             return;
         }

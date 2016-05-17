@@ -5,10 +5,10 @@ import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 
 import java.util.Collection;
+import java.util.Queue;
 
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.unpark;
 
 /**
@@ -30,6 +30,7 @@ import static java.util.concurrent.locks.LockSupport.unpark;
  * Does not manage drainer threads. There should be only one drainer thread at a time.
  *
  */
+@SuppressWarnings("checkstyle:interfaceistype")
 public class ConcurrentConveyor<E> {
     /** How many times to busy-spin while waiting to submit to the work queue. */
     public static final int SUBMIT_SPIN_COUNT = 1000;
@@ -80,7 +81,7 @@ public class ConcurrentConveyor<E> {
         return offer(queues[queueIndex], item);
     }
 
-    public final boolean offer(AbstractConcurrentArrayQueue<E> queue, E item) {
+    public final boolean offer(Queue<E> queue, E item) {
         if (queue.offer(item)) {
             return true;
         } else {
@@ -90,19 +91,16 @@ public class ConcurrentConveyor<E> {
         }
     }
 
-    public final void submit(AbstractConcurrentArrayQueue<E> queue, E item) {
-        for (long i = 0; !queue.offer(item); i++) {
-            SUBMIT_IDLER.idle(i);
+    public final void submit(Queue<E> queue, E item) {
+        for (long idleCount = 0; !queue.offer(item); idleCount++) {
+            SUBMIT_IDLER.idle(idleCount);
             checkDrainerGone();
             unparkDrainer();
+            checkInterrupted();
         }
-        long deadline = System.nanoTime() + SECONDS.toNanos(2);
-        for (long i = 0; backpressure; i++) {
-            SUBMIT_IDLER.idle(i);
-            if (System.nanoTime() > deadline) {
-                System.out.format("Stuck after submitting %s%n", item);
-                deadline = Long.MAX_VALUE;
-            }
+        for (long idleCount = 0; backpressure; idleCount++) {
+            SUBMIT_IDLER.idle(idleCount);
+            checkInterrupted();
         }
     }
 
@@ -162,9 +160,7 @@ public class ConcurrentConveyor<E> {
         for (long i = 0; !isDrainerGone(); i++) {
             SUBMIT_IDLER.idle(i);
         }
-        if (drainerDepartureCause != REGULAR_DEPARTURE) {
-            throw new ConcurrentConveyorException("Queue drainer failed", drainerDepartureCause);
-        }
+        propagateDrainerFailure(drainerDepartureCause);
     }
 
     public final void checkDrainerGone() {
@@ -172,9 +168,7 @@ public class ConcurrentConveyor<E> {
         if (cause == REGULAR_DEPARTURE) {
             throw new ConcurrentConveyorException("Queue drainer has already left");
         }
-        if (cause != null) {
-            throw new ConcurrentConveyorException("Queue drainer failed", cause);
-        }
+        propagateDrainerFailure(cause);
     }
 
     private int drain(AbstractConcurrentArrayQueue<E> q, Collection<? super E> drain, int limit) {
@@ -185,6 +179,18 @@ public class ConcurrentConveyor<E> {
         final Thread drainer = this.drainer;
         if (drainer != null) {
             unpark(drainer);
+        }
+    }
+
+    private void propagateDrainerFailure(Throwable cause) {
+        if (cause != null && cause != REGULAR_DEPARTURE) {
+            throw new ConcurrentConveyorException("Queue drainer failed", cause);
+        }
+    }
+
+    private static void checkInterrupted() {
+        if (currentThread().isInterrupted()) {
+            throw new ConcurrentConveyorException("Thread interrupted");
         }
     }
 

@@ -1,10 +1,12 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.collection.LongCursor;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
@@ -30,20 +32,26 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * Manages tombstones that inter all entries under a given key prefix.
  * These tombstones are used to implement the Hot Restart store's
- * {@link com.hazelcast.spi.hotrestart.HotRestartStore#clear(long...)} operation.
+ * {@link com.hazelcast.spi.hotrestart.HotRestartStore#clear(boolean, long...)} operation.
  */
 @SuppressFBWarnings(value = "IS", justification =
         "All accesses of the map referred to by mutatorPrefixTombstones are synchronized."
       + " Setter doesn't need synchronization because it is called before GC thread is started.")
-public class PrefixTombstoneManager {
+public final class PrefixTombstoneManager {
     public static final String NEW_FILE_SUFFIX = ".new";
     public static final int SWEEPING_TIMESLICE_MS = 10;
+
     long chunkSeqToStartSweep;
 
     private final GcLogger logger;
     private final GcHelper gcHelper;
     private final ConcurrentConveyorSingleQueue<Runnable> conveyor;
     private final ChunkManager chunkMgr;
+
+    private Long2LongHashMap mutatorPrefixTombstones;
+    private Long2LongHashMap collectorPrefixTombstones;
+    private final Long2LongHashMap dismissedActiveChunks = new Long2LongHashMap(0);
+    private Sweeper sweeper;
 
     @Inject
     private PrefixTombstoneManager(
@@ -55,11 +63,6 @@ public class PrefixTombstoneManager {
         this.gcHelper = gcHelper;
         this.logger = logger;
     }
-
-    private Long2LongHashMap mutatorPrefixTombstones;
-    private Long2LongHashMap collectorPrefixTombstones;
-    private final Long2LongHashMap dismissedActiveChunks = new Long2LongHashMap(0);
-    private Sweeper sweeper;
 
     public void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
         this.mutatorPrefixTombstones = prefixTombstones;
@@ -82,7 +85,7 @@ public class PrefixTombstoneManager {
         return new Runnable() {
             @Override public void run() {
                 multiPut(collectorPrefixTombstones, prefixes, recordSeq);
-                final Chunk activeChunk = chunkMgr.activeValChunk;
+                final ActiveValChunk activeChunk = chunkMgr.activeValChunk;
                 dismissGarbage(activeChunk, prefixes);
                 multiPut(dismissedActiveChunks, prefixes, activeChunk.seq);
                 for (StableChunk c : chunkMgr.chunks.values()) {
@@ -139,7 +142,7 @@ public class PrefixTombstoneManager {
      *
      * @param prefixesToDismiss set of key prefixes for which tombstones were added
      */
-    void dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
+    void dismissGarbage(ActiveValChunk chunk, long[] prefixesToDismiss) {
         logger.fine("Dismiss garbage in active chunk #%03x", chunk.seq);
         final LongHashSet prefixSetToDismiss = new LongHashSet(prefixesToDismiss, 0);
         for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
@@ -155,7 +158,7 @@ public class PrefixTombstoneManager {
     /**
      * Propagates the effects of all prefix tombstones to the given chunk.
      * Avoids applying a prefix tombstone to the chunk which was active at the time the
-     * tombstone was added (that work was already done by {@link #dismissGarbage(Chunk, long[])}).
+     * tombstone was added (that work was already done by {@link #dismissGarbage(ActiveValChunk, long[])}).
      *
      * @return true if the chunk needed dismissing.
      */

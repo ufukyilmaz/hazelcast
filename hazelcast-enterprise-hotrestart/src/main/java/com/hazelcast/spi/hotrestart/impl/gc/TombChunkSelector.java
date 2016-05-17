@@ -25,12 +25,12 @@ final class TombChunkSelector {
     }
 
     private Collection<StableTombChunk> select(Collection<? extends StableChunk> allChunks) {
-        final List<StableTombChunk> candidates = preselectCandidates(allChunks);
+        final List<StableTombChunk> candidates = candidateChunks(allChunks);
         sortCandidates(candidates);
         return selectChunksForCollection(candidates);
     }
 
-    private List<StableTombChunk> preselectCandidates(Collection<? extends StableChunk> allChunks) {
+    private List<StableTombChunk> candidateChunks(Collection<? extends StableChunk> allChunks) {
         final List<StableTombChunk> candidates = new ArrayList<StableTombChunk>();
         for (StableChunk chunk : allChunks) {
             if (!(chunk instanceof StableTombChunk)) {

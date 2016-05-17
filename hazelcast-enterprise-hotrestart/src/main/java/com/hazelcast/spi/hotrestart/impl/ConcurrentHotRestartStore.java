@@ -125,6 +125,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         };
 
         @Override
+        @SuppressWarnings("checkstyle:npathcomplexity")
         public void run() {
             final List<RunnableWithStatus> workDrain = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
             final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);

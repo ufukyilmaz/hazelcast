@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.core.HazelcastException;
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
@@ -92,7 +91,6 @@ public abstract class GcHelper implements Disposable {
         this.homeDir = homeDir;
         this.ramStoreRegistry = ramStoreRegistry;
         this.logger = logger;
-        logger.info("homeDir "+homeDir);
     }
 
     @SuppressWarnings("checkstyle:emptyblock")
@@ -198,7 +196,7 @@ public abstract class GcHelper implements Disposable {
     public abstract SetOfKeyHandle newSetOfKeyHandle();
 
     /** The GC helper specialization for on-heap Hot Restart store */
-    public static class OnHeap extends GcHelper {
+    public static final class OnHeap extends GcHelper {
 
         @Inject
         private OnHeap(@Name("homeDir") File homeDir, RamStoreRegistry ramStoreRegistry, GcLogger logger) {
@@ -230,7 +228,7 @@ public abstract class GcHelper implements Disposable {
     }
 
     /** The GC helper specialization for off-heap Hot Restart store */
-    public static class OffHeap extends GcHelper {
+    public static final class OffHeap extends GcHelper {
 
         private final MemoryManager ramMgr;
         private final MemoryManager mmapMgr;

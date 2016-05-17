@@ -137,7 +137,8 @@ public class ValChunkSelectorTest {
             super(logger);
         }
 
-        @Override boolean isFinestEnabled() {
+        @Override
+        boolean isFinestEnabled() {
             return true;
         }
     }

@@ -15,14 +15,14 @@ import java.util.Map.Entry;
  * Map with on-heap keys and records.
  */
 public final class RecordMapOnHeap implements RecordMap {
-    static final float LOAD_FACTOR = 0.75f;
     private final Map<KeyHandle, Record> records;
 
     public RecordMapOnHeap() {
         this.records = new HashMap<KeyHandle, Record>();
     }
 
-    @Override public Record putIfAbsent(
+    @Override
+    public Record putIfAbsent(
             long ignored, KeyHandle kh, long seq, int size, boolean isTombstone, int additionalInt
     ) {
         final Record rec = records.get(kh);
@@ -33,15 +33,18 @@ public final class RecordMapOnHeap implements RecordMap {
         return null;
     }
 
-    @Override public Record get(KeyHandle kh) {
+    @Override
+    public Record get(KeyHandle kh) {
         return records.get(kh);
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
         return records.size();
     }
 
-    @Override public SortedBySeqRecordCursor sortedBySeqCursor(
+    @Override
+    public SortedBySeqRecordCursor sortedBySeqCursor(
             int liveRecordCount, RecordMap[] recordMaps, MutatorCatchup mc
     ) {
         final List<KeyHandle> khs = new ArrayList<KeyHandle>(liveRecordCount);
@@ -59,21 +62,25 @@ public final class RecordMapOnHeap implements RecordMap {
         return new SortedBySeqRecordCursorOnHeap(khs, recs, mc);
     }
 
-    @Override public Cursor cursor() {
+    @Override
+    public Cursor cursor() {
         return new HeapCursor();
     }
 
-    @Override public RecordMap toStable() {
+    @Override
+    public RecordMap toStable() {
         return this;
     }
 
-    @Override public void dispose() { }
+    @Override
+    public void dispose() { }
 
     private final class HeapCursor implements Cursor {
         private final Iterator<Entry<KeyHandle, Record>> iter = records.entrySet().iterator();
         private Entry<KeyHandle, Record> current;
 
-        @Override public boolean advance() {
+        @Override
+        public boolean advance() {
             if (!iter.hasNext()) {
                 return false;
             }
@@ -81,11 +88,13 @@ public final class RecordMapOnHeap implements RecordMap {
             return true;
         }
 
-        @Override public KeyHandle toKeyHandle() {
+        @Override
+        public KeyHandle toKeyHandle() {
             return current.getKey();
         }
 
-        @Override public Record asRecord() {
+        @Override
+        public Record asRecord() {
             return current.getValue();
         }
     }

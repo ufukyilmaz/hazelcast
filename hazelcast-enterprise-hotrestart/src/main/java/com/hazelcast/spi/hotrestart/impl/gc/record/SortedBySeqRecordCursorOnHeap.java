@@ -39,7 +39,8 @@ public class SortedBySeqRecordCursorOnHeap implements SortedBySeqRecordCursor {
         this.records = recFrom;
     }
 
-    @Override public boolean advance() {
+    @Override
+    public boolean advance() {
         if (position == records.size() - 1) {
             return false;
         }
@@ -47,17 +48,20 @@ public class SortedBySeqRecordCursorOnHeap implements SortedBySeqRecordCursor {
         return true;
     }
 
-    @Override public KeyHandle asKeyHandle() {
+    @Override
+    public KeyHandle asKeyHandle() {
         assert position >= 0 : "asKeyHandle() called on an invalid cursor";
         return keyHandles.get(position);
     }
 
-    @Override public Record asRecord() {
+    @Override
+    public Record asRecord() {
         assert position >= 0 : "asRecord() called on an invalid cursor";
         return records.get(position);
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
     }
 
     private static void bottomUpMerge(List<Record> from, List<KeyHandle> khFrom, int leftStart, int rightStart,

@@ -30,7 +30,8 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, memMgr, mc);
     }
 
-    @Override public boolean advance() {
+    @Override
+    public boolean advance() {
         if (position != size - 1) {
             position += 2;
             r.address = addrOfValueAt(seqsAndSlotBases.get(position));
@@ -41,26 +42,31 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         }
     }
 
-    @Override public Record asRecord() {
+    @Override
+    public Record asRecord() {
         return r;
     }
 
-    @Override public KeyHandle asKeyHandle() {
+    @Override
+    public KeyHandle asKeyHandle() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return this;
     }
 
-    @Override public long address() {
+    @Override
+    public long address() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return mem.getLong(addrOfKey1At(seqsAndSlotBases.get(position)));
     }
 
-    @Override public long sequenceId() {
+    @Override
+    public long sequenceId() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return mem.getLong(addrOfKey2At(seqsAndSlotBases.get(position)));
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         seqsAndSlotBases.dispose();
     }
 

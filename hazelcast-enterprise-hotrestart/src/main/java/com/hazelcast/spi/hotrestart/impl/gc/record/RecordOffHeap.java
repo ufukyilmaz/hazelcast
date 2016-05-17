@@ -18,15 +18,18 @@ public final class RecordOffHeap extends Record {
 
     long address = NULL_ADDRESS;
 
-    @Override public long rawSeqValue() {
+    @Override
+    public long rawSeqValue() {
         return AMEM.getLong(address + SEQ_OFFSET);
     }
 
-    @Override public int rawSizeValue() {
+    @Override
+    public int rawSizeValue() {
         return AMEM.getInt(address + SIZE_OFFSET);
     }
 
-    @Override public long keyPrefix(KeyHandle ignored) {
+    @Override
+    public long keyPrefix(KeyHandle ignored) {
         assert !isTombstone() : "Attempt to access key prefix of a tombstone";
         return AMEM.getLong(address + KEY_PREFIX_OFFSET);
     }
@@ -36,29 +39,35 @@ public final class RecordOffHeap extends Record {
         AMEM.putLong(address + KEY_PREFIX_OFFSET, prefix);
     }
 
-    @Override public int additionalInt() {
+    @Override
+    public int additionalInt() {
         return AMEM.getInt(address + ADDITIONAL_INT_OFFSET);
     }
 
-    @Override public void setAdditionalInt(int value) {
+    @Override
+    public void setAdditionalInt(int value) {
         AMEM.putInt(address + ADDITIONAL_INT_OFFSET, value);
     }
 
-    @Override public void negateSeq() {
+    @Override
+    public void negateSeq() {
         AMEM.putLong(address + SEQ_OFFSET, -AMEM.getLong(address + SEQ_OFFSET));
     }
 
-    @Override public int decrementGarbageCount() {
+    @Override
+    public int decrementGarbageCount() {
         final int newCount = garbageCount() - 1;
         setGarbageCount(newCount);
         return newCount;
     }
 
-    @Override public void incrementGarbageCount() {
+    @Override
+    public void incrementGarbageCount() {
         setGarbageCount(garbageCount() + 1);
     }
 
-    @Override public void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
+    @Override
+    public void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
         AMEM.putLong(address + SEQ_OFFSET, rawSeqValue);
         AMEM.putInt(address + SIZE_OFFSET, rawSizeValue);
     }

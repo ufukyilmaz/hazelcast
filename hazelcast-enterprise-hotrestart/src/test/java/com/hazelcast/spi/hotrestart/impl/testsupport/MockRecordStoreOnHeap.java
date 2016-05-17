@@ -12,15 +12,18 @@ public class MockRecordStoreOnHeap extends MockRecordStoreBase {
         super(prefix, new Long2bytesMapOnHeap(), hrStore);
     }
 
-    @Override public KeyOnHeap toKeyHandle(byte[] key) {
+    @Override
+    public KeyOnHeap toKeyHandle(byte[] key) {
         return new KeyOnHeap(prefix, key);
     }
 
-    @Override HotRestartKey hrKey(long key) {
+    @Override
+    HotRestartKey hrKey(long key) {
         return new KeyOnHeap(prefix, long2bytes(key));
     }
 
-    @Override long unwrapKey(KeyHandle kh) {
+    @Override
+    long unwrapKey(KeyHandle kh) {
         return bytes2long(((KeyOnHeap) kh).bytes());
     }
 }

@@ -97,13 +97,4 @@ public abstract class ClusterHotRestartEventListener
     public void onHotRestartDataLoadComplete(HotRestartClusterInitializationStatus result) {
 
     }
-
-    /**
-     * Called when hot restart status is moved to {@link HotRestartClusterInitializationStatus#FORCE_STARTED} and hot restart
-     * will continue with clearing all hot restart data and start with a fresh new hot restart state
-     */
-    public void onForceStart() {
-
-    }
-
 }

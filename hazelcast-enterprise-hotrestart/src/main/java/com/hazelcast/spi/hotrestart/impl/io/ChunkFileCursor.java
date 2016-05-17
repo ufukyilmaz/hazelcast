@@ -23,12 +23,12 @@ import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.seq;
 public abstract class ChunkFileCursor implements ChunkFileRecord {
     final ByteBuffer headerBuf;
     byte[] key;
+    int truncationPoint;
     private final File chunkFile;
     private final long chunkSeq;
     private final InputStream in;
     private long seq;
     private long prefix;
-    private long truncationPoint;
 
     public ChunkFileCursor(int headerSize, File chunkFile) {
         this.chunkFile = chunkFile;
@@ -64,27 +64,32 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-    @Override public final long chunkSeq() {
+    @Override
+    public final long chunkSeq() {
         return chunkSeq;
     }
 
-    @Override public final long recordSeq() {
+    @Override
+    public final long recordSeq() {
         return seq;
     }
 
-    @Override public final long prefix() {
+    @Override
+    public final long prefix() {
         return prefix;
     }
 
     /**
      * @return Number of bytes the current record occupies in this chunk file.
      */
-    @Override public int size() {
+    @Override
+    public int size() {
         return headerBuf.capacity() + key.length;
     }
 
     @SuppressFBWarnings(value = "EI", justification = "Returned array is never modified")
-    @Override public byte[] key() {
+    @Override
+    public byte[] key() {
         return key;
     }
 
@@ -138,7 +143,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-    private static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
+    public static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
         int bytesRead = 0;
         do {
             int count = in.read(b, bytesRead, b.length - bytesRead);
@@ -164,12 +169,19 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
             super(TOMB_HEADER_SIZE, chunkFile);
         }
 
-        @Override void loadRecord() throws IOException {
+        @Override
+        void loadRecord() throws IOException {
             loadCommonHeader();
             key = readPayload(headerBuf.getInt());
         }
 
-        @Override public byte[] value() {
+        @Override
+        public int filePos() {
+            return truncationPoint - size();
+        }
+
+        @Override
+        public byte[] value() {
             return null;
         }
     }
@@ -181,7 +193,8 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
             super(VAL_HEADER_SIZE, chunkFile);
         }
 
-        @Override void loadRecord() throws IOException {
+        @Override
+        void loadRecord() throws IOException {
             loadCommonHeader();
             final int keySize = headerBuf.getInt();
             final int valueSize = headerBuf.getInt();
@@ -189,11 +202,18 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
             value = readPayload(valueSize);
         }
 
-        @Override public byte[] value() {
+        @Override
+        public byte[] value() {
             return value;
         }
 
-        @Override public int size() {
+        @Override
+        public int filePos() {
+            return 0;
+        }
+
+        @Override
+        public int size() {
             return super.size() + value.length;
         }
     }

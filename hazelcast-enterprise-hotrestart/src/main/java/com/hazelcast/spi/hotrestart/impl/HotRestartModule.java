@@ -17,7 +17,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.util.concurrent.ManyToOneConcurrentArrayQueue;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.concurrentConveyor;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 
 public final class HotRestartModule {
@@ -33,6 +32,7 @@ public final class HotRestartModule {
     }
 
     private static HotRestartStore hrStore(HotRestartStoreConfig cfg, boolean isOffHeap) {
+        cfg.logger().info(cfg.storeName() + " homeDir: " + cfg.homeDir());
         cfg.validateAndCreateHomeDir();
         final DiContainer di = new DiContainer();
         if (isOffHeap) {

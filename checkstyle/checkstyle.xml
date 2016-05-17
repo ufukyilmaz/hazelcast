@@ -227,6 +227,7 @@
             <property name="ignoreCase" value="true"/>
         </module>
         <module name="IllegalType">
+            <property name="legalAbstractClassNames" value="AbstractConcurrentArrayQueue"/>
             <property name="ignoredMethodNames" value="getInstance"/>
             <property name="tokens" value="PARAMETER_DEF, METHOD_DEF"/>
         </module>

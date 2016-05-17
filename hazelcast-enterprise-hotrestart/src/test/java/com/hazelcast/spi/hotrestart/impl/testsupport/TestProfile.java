@@ -126,14 +126,16 @@ public abstract class TestProfile {
     public static class Default extends TestProfile {
         private final List<Long> prefixes = new ArrayList<Long>();
 
-        @Override public void build() {
+        @Override
+        public void build() {
             super.build();
             for (long i = 0; i < prefixCount; i++) {
                 prefixes.add(i + 1);
             }
         }
 
-        @Override protected void performOp(MockStoreRegistry reg, long opCount) {
+        @Override
+        protected void performOp(MockStoreRegistry reg, long opCount) {
             final int key = randomKey(opCount);
             final int prefix = randomPrefix();
             if (rnd.nextInt(100) < 80) {
@@ -143,7 +145,8 @@ public abstract class TestProfile {
             }
         }
 
-        @Override public long[] prefixesToClear(long lastCleared) {
+        @Override
+        public long[] prefixesToClear(long lastCleared) {
             if (System.nanoTime() - lastCleared <= TimeUnit.SECONDS.toNanos(clearIntervalSeconds)) {
                 return EMPTY_PREFIXES;
             }

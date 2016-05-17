@@ -92,7 +92,8 @@ public abstract class ChunkFilesetCursor {
             super(chunkFiles);
         }
 
-        @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
+        @Override
+        ChunkFileCursor openCursor(File chunkFile) throws IOException {
             return new ChunkFileCursor.Val(chunkFile);
         }
     }
@@ -103,7 +104,8 @@ public abstract class ChunkFilesetCursor {
             super(chunkFiles);
         }
 
-        @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
+        @Override
+        ChunkFileCursor openCursor(File chunkFile) throws IOException {
             return new ChunkFileCursor.Tomb(chunkFile);
         }
     }

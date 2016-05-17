@@ -10,23 +10,28 @@ import java.util.Map.Entry;
 public class Long2bytesMapOnHeap extends Long2bytesMapBase {
     private final Map<Long, byte[]> map = new HashMap<Long, byte[]>();
 
-    @Override public void put(long key, byte[] value) {
+    @Override
+    public void put(long key, byte[] value) {
         map.put(key, value);
     }
 
-    @Override public boolean containsKey(long key) {
+    @Override
+    public boolean containsKey(long key) {
         return map.containsKey(key);
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
         return map.size();
     }
 
-    @Override public L2bCursor cursor() {
+    @Override
+    public L2bCursor cursor() {
         return new Cursor();
     }
 
-    @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
+    @Override
+    public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
         final byte[] value = map.get(key);
         sink.getKeyBuffer(KEY_SIZE).putLong(key);
         if (value == null || expectedSize != KEY_SIZE + value.length) {
@@ -36,27 +41,32 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
         return true;
     }
 
-    @Override public void remove(long key) {
+    @Override
+    public void remove(long key) {
         map.remove(key);
     }
 
-    @Override public void clear() {
+    @Override
+    public void clear() {
         map.clear();
     }
 
-    @Override public int valueSize(long key) {
+    @Override
+    public int valueSize(long key) {
         final byte[] value = map.get(key);
         return value != null ? value.length : -1;
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
     }
 
     private class Cursor implements L2bCursor {
         private final Iterator<Entry<Long, byte[]>> iter = map.entrySet().iterator();
         private Entry<Long, byte[]> current;
 
-        @Override public boolean advance() {
+        @Override
+        public boolean advance() {
             if (iter.hasNext()) {
                 current = iter.next();
                 return true;
@@ -64,11 +74,13 @@ public class Long2bytesMapOnHeap extends Long2bytesMapBase {
             return false;
         }
 
-        @Override public long key() {
+        @Override
+        public long key() {
             return current.getKey();
         }
 
-        @Override public int valueSize() {
+        @Override
+        public int valueSize() {
             return current.getValue().length;
         }
     }

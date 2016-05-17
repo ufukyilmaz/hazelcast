@@ -63,7 +63,8 @@ final class GcParams {
                 : new GcParams(garbage, liveData, ratio, currChunkSeq, chunkSize, forceGc);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format(
                 "(cost goal %,d, min cost %,d, max cost %,d, benefit goal %,d, min benefit/cost %.2f, forceGc %s)",
                 costGoal, minCost, maxCost, benefitGoal, minBenefitToCost, forceGc);

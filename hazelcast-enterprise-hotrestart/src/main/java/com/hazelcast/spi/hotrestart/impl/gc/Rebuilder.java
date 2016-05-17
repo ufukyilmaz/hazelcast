@@ -198,14 +198,14 @@ public final class Rebuilder {
         }
 
         final void add(long prefix, KeyHandle kh, long seq, int filePos, int size) {
-            this.size += size;
+            grow(size);
             addStep2(prefix, kh, seq, filePos, size);
         }
 
         abstract StableChunk toStableChunk();
 
         final void acceptStale1(int size) {
-            this.size += size;
+            grow(size);
             this.garbage += size;
         }
 

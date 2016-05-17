@@ -70,7 +70,8 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
     }
 
     @SuppressWarnings("unchecked")
-    @Override public int drain(final Consumer<E> elementHandler) {
+    @Override
+    public int drain(final Consumer<E> elementHandler) {
         final Object[] buffer = this.buffer;
         final long mask = this.mask;
         final long currentHead = head;
@@ -96,7 +97,8 @@ public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQue
     }
 
     @SuppressWarnings("unchecked")
-    @Override public int drainTo(final Collection<? super E> target, final int limit) {
+    @Override
+    public int drainTo(final Collection<? super E> target, final int limit) {
         final Object[] buffer = this.buffer;
         final long mask = this.mask;
         long nextSequence = head;

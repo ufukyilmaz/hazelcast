@@ -15,41 +15,50 @@ public class RecordOnHeap extends Record {
         this.additionalInt = additionalInt;
     }
 
-    @Override public final long rawSeqValue() {
+    @Override
+    public final long rawSeqValue() {
         return seq;
     }
 
-    @Override public final int rawSizeValue() {
+    @Override
+    public final int rawSizeValue() {
         return size;
     }
 
-    @Override public long keyPrefix(KeyHandle kh) {
+    @Override
+    public long keyPrefix(KeyHandle kh) {
         return ((KeyOnHeap) kh).prefix();
     }
 
-    @Override public final void negateSeq() {
+    @Override
+    public final void negateSeq() {
         seq = -seq;
     }
 
-    @Override public final int additionalInt() {
+    @Override
+    public final int additionalInt() {
         return additionalInt;
     }
 
-    @Override public final int decrementGarbageCount() {
+    @Override
+    public final int decrementGarbageCount() {
         assert !isTombstone() : "Attempt to decrement garbage count on a tombstone";
         return --additionalInt;
     }
 
-    @Override public final void incrementGarbageCount() {
+    @Override
+    public final void incrementGarbageCount() {
         assert !isTombstone() : "Attempt to increment garbage count on a tombstone";
         ++additionalInt;
     }
 
-    @Override public final void setAdditionalInt(int newCount) {
+    @Override
+    public final void setAdditionalInt(int newCount) {
         additionalInt = newCount;
     }
 
-    @Override public final void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
+    @Override
+    public final void setRawSeqSize(long rawSeqValue, int rawSizeValue) {
         this.seq = rawSeqValue;
         this.size = rawSizeValue;
     }

@@ -23,14 +23,16 @@ public class BufferingInputStream extends InputStream {
         this.buf = new byte[BUFFER_SIZE];
     }
 
-    @Override public int read() throws IOException {
+    @Override
+    public int read() throws IOException {
         if (!ensureDataInBuffer()) {
             return -1;
         }
         return buf[position++] & BYTE_MASK;
     }
 
-    @Override public int read(byte[] destBuf, int off, int len) throws IOException {
+    @Override
+    public int read(byte[] destBuf, int off, int len) throws IOException {
         if (!ensureDataInBuffer()) {
             return -1;
         }

@@ -7,7 +7,7 @@ import com.hazelcast.spi.hotrestart.impl.di.Name;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
 import static java.lang.Thread.interrupted;
 
-public class GcMainLoop implements Runnable {
+public final class GcMainLoop implements Runnable {
     private final ChunkManager chunkMgr;
     private final MutatorCatchup mc;
     private final PrefixTombstoneManager pfixTombstoMgr;

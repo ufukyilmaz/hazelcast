@@ -20,17 +20,20 @@ public final class KeyOffHeap implements HotRestartKey {
         this.handle = new SimpleHandleOffHeap(address, sequenceId);
     }
 
-    @Override public KeyHandleOffHeap handle() {
+    @Override
+    public KeyHandleOffHeap handle() {
         return handle;
     }
 
-    @Override public long prefix() {
+    @Override
+    public long prefix() {
         return prefix;
     }
 
     @SuppressFBWarnings(value = "EI",
             justification = "bytes is an effectively immutable array (it is illegal to change its contents)")
-    @Override public byte[] bytes() {
+    @Override
+    public byte[] bytes() {
         return bytes;
     }
 }

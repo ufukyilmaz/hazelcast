@@ -13,23 +13,28 @@ final class TrackerOffHeap extends Tracker {
 
     long address = NULL_ADDRESS;
 
-    @Override public long rawChunkSeq() {
+    @Override
+    public long rawChunkSeq() {
         return AMEM.getLong(address + CHUNK_SEQ_OFFSET);
     }
 
-    @Override public void setRawChunkSeq(long rawChunkSeqValue) {
+    @Override
+    public void setRawChunkSeq(long rawChunkSeqValue) {
         AMEM.putLong(address + CHUNK_SEQ_OFFSET, rawChunkSeqValue);
     }
 
-    @Override public long garbageCount() {
+    @Override
+    public long garbageCount() {
         return AMEM.getLong(address + GARBAGE_COUNT_OFFSET);
     }
 
-    @Override public void setGarbageCount(long garbageCount) {
+    @Override
+    public void setGarbageCount(long garbageCount) {
         AMEM.putLong(address + GARBAGE_COUNT_OFFSET, garbageCount);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         if (address == NULL_ADDRESS) {
             return "(NULL)";
         }

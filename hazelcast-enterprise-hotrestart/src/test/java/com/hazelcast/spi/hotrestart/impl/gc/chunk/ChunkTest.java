@@ -36,8 +36,7 @@ public class ChunkTest {
         keyHandle = new KeyOnHeap(keyPrefix, new byte[1]);
         records.putIfAbsent(keyPrefix, keyHandle, recordSeq, recordSize, false, 0);
         record = records.get(keyHandle);
-        stableValChunk = new StableValChunk(
-                chunkseq, records, 1, chunkSize, chunkGarbage, false);
+        stableValChunk = new StableValChunk(chunkseq, records, 1, chunkSize, chunkGarbage, false);
     }
 
     @Test public void size_reportsCorrectly() {

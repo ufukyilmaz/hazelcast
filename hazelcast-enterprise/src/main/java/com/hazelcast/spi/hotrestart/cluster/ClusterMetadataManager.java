@@ -156,7 +156,8 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void loadCompletedLocal(Throwable failure) throws InterruptedException {
         final boolean success = failure == null;
-        logger.info("Local hot-restart load completed: " + success + ". Waiting for all members to load...");
+        logger.info(String.format("Local Hot Restart procedure completed with %s. Waiting for all members to complete",
+                success ? "success" : "failure"));
         localLoadResult.set(success);
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
         waitForFailureOrExpectedStatus(EnumSet.of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED),
@@ -216,9 +217,6 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
             if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
                 logger.info("Force start will proceed as it is received from master: " + sender);
-                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                    listener.onForceStart();
-                }
             } else {
                 logger.warning("Could not set force start. Current: " + hotRestartStatus.get());
             }
@@ -236,9 +234,6 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
             if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
                 logger.info("Force start will proceed. Sender: " + sender);
-                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                    listener.onForceStart();
-                }
                 sendOperationToOthers(new ForceStartMemberOperation());
                 return true;
             } else {
@@ -321,8 +316,8 @@ public final class ClusterMetadataManager implements PartitionListener {
             if (node.isMaster()) {
                 processFailedLoadCompletionStatus(sender);
             } else if (!node.getThisAddress().equals(sender)) {
-                logger.warning(String.format("Received load completion status == false from %s, " +
-                        "but this node is not the master", sender));
+                logger.warning(String.format("Received load completion status == false from %s, "
+                        + "but this node is not the master", sender));
             }
         } else if (hotRestartStatus.get() == PARTITION_TABLE_VERIFIED) {
             processSuccessfulLoadCompletionStatusWhenPartitionTableVerified(sender);
@@ -747,8 +742,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         public void onTimeout() {
             if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
                 throw new HotRestartException(String.format(
-                        "Could not validate partition table, validation phase timed out. Started at %s, " +
-                                "timeout %d sec, deadline %s",
+                        "Could not validate partition table, validation phase timed out. Started at %s,"
+                        + " timeout %d sec, deadline %s",
                         new Date(validationStartTime), MILLISECONDS.toSeconds(validationTimeout),
                         new Date(validationStartTime + validationTimeout)
                 ));
@@ -775,8 +770,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         @Override
         public void onTimeout() {
             throw new HotRestartException(String.format(
-                    "Could not validate Hot Restart data, validation phase timed out. Started at %s, " +
-                            "timeout %d sec, deadline %s",
+                    "Could not validate Hot Restart data, validation phase timed out. Started at %s, "
+                    + "timeout %d sec, deadline %s",
                     new Date(loadStartTime),
                     MILLISECONDS.toSeconds(dataLoadTimeout),
                     new Date(loadStartTime + validationTimeout)));

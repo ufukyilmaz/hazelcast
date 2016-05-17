@@ -31,7 +31,8 @@ public abstract class StableChunk extends Chunk {
         needsDismissing(needsDismissing);
     }
 
-    @Override public final long size() {
+    @Override
+    public final long size() {
         return size;
     }
 

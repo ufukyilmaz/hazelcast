@@ -15,7 +15,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -117,7 +116,7 @@ final class ValEvacuator {
                         throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired."
                               + " Chunk #%03x, key %d:%x, record #%03x, size %,d, RAM store was %s",
-                                survivor.seq, r.keyPrefix(kh), holder.keyBuffer.getLong(),
+                                survivor != null ? survivor.seq : -1, r.keyPrefix(kh), holder.keyBuffer.getLong(),
                                 r.liveSeq(), r.size(), ramStoreName));
                     }
                 }

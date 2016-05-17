@@ -190,31 +190,19 @@ public final class HotRestarter {
         return files;
     }
 
-    private static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
-        int bytesRead = 0;
-        do {
-            int count = in.read(b, bytesRead, b.length - bytesRead);
-            if (count < 0) {
-                if (bytesRead == 0) {
-                    return false;
-                }
-                throw new EOFException();
-            }
-            bytesRead += count;
-        } while (bytesRead < b.length);
-        return true;
-    }
-
     private void readRecords(ChunkFilesetCursor cursor) throws InterruptedException {
         long count = 0;
         while (cursor.advance()) {
             count++;
             final ChunkFileRecord rec = cursor.currentRecord();
             final long prefix = rec.prefix();
-            keySenders[reg.prefixToThreadId(prefix) / storeCount].submit(
-                    rec.recordSeq() > prefixTombstones.get(prefix)
-                    ? new RestartItem(rec.chunkSeq(), prefix, rec.recordSeq(), rec.size(), rec.key(), rec.value())
-                    : clearedItem(rec.chunkSeq(), rec.recordSeq(), rec.size()));
+            try {
+                keySenders[reg.prefixToThreadId(prefix) / storeCount].submit(
+                        rec.recordSeq() > prefixTombstones.get(prefix) ? new RestartItem(rec) : clearedItem(rec));
+            } catch (ConcurrentConveyorException e) {
+                logger.severe("Failed to submit to threadIndex " + reg.prefixToThreadId(prefix));
+                throw e;
+            }
         }
         awaitDownstreamCompletion(count);
     }
@@ -241,17 +229,17 @@ public final class HotRestarter {
         }
     }
 
+    @SuppressWarnings("checkstyle:emptyblock")
     static void sendSubmitterGone(ConcurrentConveyorSingleQueue<RestartItem>... conveyors) {
         final RestartItem goneItem = conveyors[0].submitterGoneItem();
         for (ConcurrentConveyorSingleQueue<RestartItem> valueConveyor : conveyors) {
             try {
                 valueConveyor.submit(goneItem);
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) { }
         }
     }
 
-    private class RestartStep2 implements Runnable {
+    private class RebuilderLoop implements Runnable {
         private final int submitterCount = keyHandleReceiver.queueCount();
         private final List<RestartItem> drain = new ArrayList<RestartItem>(keyHandleReceiver.queue(0).capacity());
         private final Map<Long, SetOfKeyHandle> tombKeys = new Long2ObjectHashMap<SetOfKeyHandle>();
@@ -274,7 +262,7 @@ public final class HotRestarter {
                 gcHelper.initChunkSeq(rebuilder.maxChunkSeq());
                 rebuilder.done();
             } catch (Throwable t) {
-                step2Failure = t;
+                rebuilderFailure = t;
             } finally {
                 try {
                     sendSubmitterGone(valueSenders);
@@ -285,15 +273,15 @@ public final class HotRestarter {
                         e.getValue().dispose();
                     }
                 } catch (Throwable t) {
-                    if (step2Failure == null) {
-                        step2Failure = t;
+                    if (rebuilderFailure == null) {
+                        rebuilderFailure = t;
                     }
                 }
             }
-            if (step2Failure == null) {
+            if (rebuilderFailure == null) {
                 keyHandleReceiver.drainerDone();
             } else {
-                keyHandleReceiver.drainerFailed(step2Failure);
+                keyHandleReceiver.drainerFailed(rebuilderFailure);
             }
         }
 
@@ -387,6 +375,12 @@ public final class HotRestarter {
                 throw new HotRestartException(String.format(
                         "All submitters left prematurely (there were %d)", submitterCount));
             }
+        }
+    }
+
+    private static class RebuilderFailure extends RuntimeException {
+        RebuilderFailure(Throwable cause) {
+            super(cause);
         }
     }
 }

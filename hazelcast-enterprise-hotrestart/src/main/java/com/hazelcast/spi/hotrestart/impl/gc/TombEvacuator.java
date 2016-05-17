@@ -24,7 +24,7 @@ final class TombEvacuator {
     @Inject private ChunkManager chunkMgr;
 
     private Long2ObjectHashMap<WriteThroughChunk> survivorMap;
-    private TrackerMap recordTrackers;
+    private TrackerMap trackers;
     private WriteThroughTombChunk survivor;
     private long start;
 
@@ -34,7 +34,7 @@ final class TombEvacuator {
 
     void evacuate() {
         this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
-        this.recordTrackers = chunkMgr.trackers;
+        this.trackers = chunkMgr.trackers;
         for (StableTombChunk chunk : srcChunks) {
             evacuate(chunk);
         }
@@ -56,7 +56,7 @@ final class TombEvacuator {
                 final long posBefore = positionInUnitsOfBufsize(survivor.size());
                 final boolean full = survivor.addStep1(tfa, filePos);
                 survivor.addStep2(tfa.keyPrefix(), kh, tfa.recordSeq(), tfa.recordSize());
-                recordTrackers.get(kh).moveToChunk(survivor.seq);
+                trackers.get(kh).moveToChunk(survivor.seq);
                 if (positionInUnitsOfBufsize(survivor.size()) != posBefore) {
                     mc.catchupNow();
                 }

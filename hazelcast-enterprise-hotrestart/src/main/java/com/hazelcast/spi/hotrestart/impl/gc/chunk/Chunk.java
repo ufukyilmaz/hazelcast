@@ -4,6 +4,7 @@ import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
+import com.hazelcast.util.collection.LongHashSet;
 
 /**
  * Represents a chunk file.
@@ -48,8 +49,8 @@ public abstract class Chunk implements Disposable {
     public final RecordMap records;
     public long garbage;
     public int liveRecordCount;
-    /** Will be true when a new prefix tombstone arrives and this chunk
-     * may contain records interred by it. */
+
+    /** Will be true when a new prefix tombstone arrives and this chunk may contain records interred by it. */
     private boolean needsDismissing;
 
     public Chunk(long seq, RecordMap records) {
@@ -81,10 +82,6 @@ public abstract class Chunk implements Disposable {
     }
 
     public abstract long size();
-
-    public boolean compressed() {
-        return false;
-    }
 
     public void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
         assert records.get(kh).liveSeq() == r.liveSeq()
@@ -118,7 +115,8 @@ public abstract class Chunk implements Disposable {
         return Integer.getInteger(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, TOMB_SIZE_LIMIT_DEFAULT);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format("%s(%03x,%,d,%,d)",
                 getClass().getSimpleName(), seq, liveRecordCount, garbage);
     }

@@ -14,15 +14,18 @@ public class MockRecordStoreOffHeap extends MockRecordStoreBase {
         super(prefix, new Long2bytesMapOffHeap(memMgr), hrStore);
     }
 
-    @Override public KeyHandleOffHeap toKeyHandle(byte[] key) {
+    @Override
+    public KeyHandleOffHeap toKeyHandle(byte[] key) {
         return new SimpleHandleOffHeap(bytes2long(key), -prefix);
     }
 
-    @Override HotRestartKey hrKey(long key) {
+    @Override
+    HotRestartKey hrKey(long key) {
         return new KeyOffHeap(prefix, long2bytes(key), key, -prefix);
     }
 
-    @Override long unwrapKey(KeyHandle kh) {
+    @Override
+    long unwrapKey(KeyHandle kh) {
         return ((KeyHandleOffHeap) kh).address();
     }
 }

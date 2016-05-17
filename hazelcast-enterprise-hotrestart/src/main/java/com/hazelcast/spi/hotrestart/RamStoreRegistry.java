@@ -1,7 +1,5 @@
 package com.hazelcast.spi.hotrestart;
 
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
-
 /**
  * RAM store registry for the data managed by a Hot Restart store.
  */

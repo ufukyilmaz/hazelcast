@@ -5,7 +5,8 @@ import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
 /**
  * Specialization of {@link ConcurrentConveyor} to a single queue.
  */
-public class ConcurrentConveyorSingleQueue<E> extends ConcurrentConveyor<E> {
+@SuppressWarnings("checkstyle:interfaceistype")
+public final class ConcurrentConveyorSingleQueue<E> extends ConcurrentConveyor<E> {
     private final AbstractConcurrentArrayQueue<E> queue;
 
     private ConcurrentConveyorSingleQueue(E submitterGoneItem, AbstractConcurrentArrayQueue<E> queue) {

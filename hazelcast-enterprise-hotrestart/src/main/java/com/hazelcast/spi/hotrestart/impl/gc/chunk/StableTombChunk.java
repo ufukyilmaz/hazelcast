@@ -23,18 +23,21 @@ public final class StableTombChunk extends StableChunk {
         super(seq, records, liveRecordCount, size, garbage, false);
     }
 
-    @Override public String base() {
+    @Override
+    public String base() {
         return TOMB_BASEDIR;
     }
 
-    @Override public void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
+    @Override
+    public void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
         if (filePosToKeyHandle != null) {
             filePosToKeyHandle.remove(r.filePosition());
         }
         super.retire(kh, r, mayIncrementGarbageCount);
     }
 
-    @Override public void needsDismissing(boolean needsDismissing) {
+    @Override
+    public void needsDismissing(boolean needsDismissing) {
         // A tombstone chunk never needs dismissing. Ignore the request to raise the flag.
     }
 

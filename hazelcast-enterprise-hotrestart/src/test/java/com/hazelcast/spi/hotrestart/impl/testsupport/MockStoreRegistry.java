@@ -68,11 +68,13 @@ public class MockStoreRegistry implements RamStoreRegistry {
         }
     }
 
-    @Override public RamStore ramStoreForPrefix(long prefix) {
+    @Override
+    public RamStore ramStoreForPrefix(long prefix) {
         return recordStores.get(prefix);
     }
 
-    @Override public RamStore restartingRamStoreForPrefix(long prefix) {
+    @Override
+    public RamStore restartingRamStoreForPrefix(long prefix) {
         return getOrCreateRecordStoreForPrefix((int) prefix);
     }
 

@@ -6,7 +6,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * Flyweight object around a pointer to a native-memory record structure.
+ * Specialization of {@link Record} as a Flyweight object around a pointer to a native-memory record structure.
  */
 public final class RecordOffHeap extends Record {
     public static final int VALUE_RECORD_SIZE = 0x18;

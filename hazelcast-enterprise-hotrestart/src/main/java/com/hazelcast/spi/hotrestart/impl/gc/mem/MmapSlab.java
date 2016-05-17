@@ -27,6 +27,10 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
  * When the file needs expanding to accommodate more blocks, the existing buffer cannot be disposed
  * because the addresses inside it are allocated and pinned. Therefore on each expansion an additional
  * memory-mapped buffer is created.
+ * <p>
+ * Implemented in terms of reflective calls to the private OpenJDK methods
+ * {@link sun.nio.ch.FileChannelImpl#map0(int, long, long)} and
+ * {@link sun.nio.ch.FileChannelImpl#unmap0(long, long)}.
  */
 final class MmapSlab implements Disposable {
 
@@ -86,10 +90,13 @@ final class MmapSlab implements Disposable {
         return --usedBlockCount == 0;
     }
 
+    /**
+     * @param blockIndex index of a block in the underlying file
+     * @return the block's base address in RAM
+     */
     long indexToBlockBase(int blockIndex) {
         final int blockIndexLog2 = log2(blockIndex);
-        // Index of the mapped byte buffer (inside the list of all mapped byte buffers) which
-        // contains the selected free block
+        // Index of the mapped byte buffer (inside the list of all mapped byte buffers) which contains the block
         final int indexOfBuf = Math.max(0, blockIndexLog2 - initialBlockCountLog2 + 1);
         // Base address of the mapped byte buffer.
         final long bufBase = bufBases.get(indexOfBuf);
@@ -103,6 +110,10 @@ final class MmapSlab implements Disposable {
         return bufBase + blockOffset;
     }
 
+    /**
+     * @param blockBase base RAM address of a block
+     * @return index of the block in the underlying file
+     */
     int blockBaseToIndex(long blockBase) {
         final Entry<Long, Integer> floorEntry = bufBase2BufIndex.floorEntry(blockBase);
         final long bufBase = floorEntry.getKey();

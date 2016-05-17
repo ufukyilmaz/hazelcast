@@ -23,7 +23,30 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 
 /**
- * Chooses which chunks to evacuate.
+ * Selects value chunks for a ValueGC run. Adds them one by one in descending order of cost/benefit (CB) score,
+ * each time evaluating these constraints:
+ * <ol>
+ *     <li>
+ *         Cost goal. Keep adding chunks until this much live data is selected or a limit is exceeded.
+ *         The goal is half the maximum cost (see below).
+ *     </li><li>
+ *         Benefit goal. Keep adding chunks until this much garbage is selected or a limit is exceeded.
+ *         The goal is to collect enough garbage to fall below the "start GC" threshold of 5%. During a Forced GC
+ *         the goal is to fall below the Forced GC ratio of 30%.
+ *     </li><li>
+ *         Minimum cost. If this value wasn't reached before hitting a limit, the GC cycle is aborted.
+ *         It is equal to half a chunk, unless the garbage/live ratio has exceeded 20%, then it is zero.
+ *     </li><li>
+ *         Maximum cost. Stop selecting more chunks when this limit is reached. The limit is 8 chunks.
+ *         It does not apply to Forced GC.
+ *     </li><li>
+ *         Minimum benefit/cost. After chunk selection is done, the expected ratio of benefit to cost for the GC cycle
+ *         is evaluated (garbage reclaimed / live data copied). If it is below this threshold, the GC cycle is aborted.
+ *         The threshold is a function of the overall garbage/live ratio: it is 5.0 at 5%, falling in a straight line
+ *         to 0.4 at 20%, and continuing to fall beyond 20% with the same slope. During Forced GC this threshold is 0.01.
+ *     </li>
+ * </ol>
+ * The values used to evaluate constraints are calculated by {@link GcParams}.
  */
 final class ValChunkSelector {
     @SuppressWarnings("MagicNumber")
@@ -47,6 +70,10 @@ final class ValChunkSelector {
         this.gcp = gcp;
     }
 
+    /**
+     * Entry point to the selection procedure.
+     * @return the chunks selected for a ValueGC run
+     */
     @SuppressWarnings({ "checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity" })
     Collection<StableValChunk> select() {
         final Set<StableValChunk> candidates = candidateChunks();
@@ -108,6 +135,9 @@ final class ValChunkSelector {
         return srcChunks;
     }
 
+    /**
+     * Finds all candidate value chunks. Chunks with zero garbage but non-zero size do not qualify as candidates.
+     */
     private Set<StableValChunk> candidateChunks() {
         final Set<StableValChunk> candidates = new HashSet<StableValChunk>(allChunks.size());
         for (StableChunk chunk : allChunks) {
@@ -123,6 +153,11 @@ final class ValChunkSelector {
         return candidates;
     }
 
+    /**
+     * Finds at most {@code limit} best GC candidates.
+     * @param candidates all candidates
+     * @param limit max number of candidates to return
+     */
     private List<StableValChunk> topChunks(Set<StableValChunk> candidates, int limit) {
         if (candidates.size() <= limit) {
             final List<StableValChunk> sortedChunks = new ArrayList<StableValChunk>(candidates);
@@ -144,6 +179,14 @@ final class ValChunkSelector {
         }
     }
 
+    /**
+     * Determines the current status of chunk selection.
+     * @param garbage amount of garbage in selected chunks
+     * @param cost amount of live data in selected chunks (= GC cost, the amount of data to copy)
+     * @param liveRecordCount number of live records in selected chunks
+     * @return {@code null} if more chunks should be selected or a string message describing the reason
+     *         why enough chunks were selected
+     */
     private String status(long garbage, long cost, int liveRecordCount) {
         return cost > gcp.maxCost
                 ? format("max cost exceeded: will output %,d bytes", cost)
@@ -154,6 +197,10 @@ final class ValChunkSelector {
                 : null;
     }
 
+    /**
+     * Produces a large, detailed log message that reports some diagnostic values and visually presents all candidate
+     * chunks (displays a bar proportional to chunk size, split into garbage and live parts).
+     */
     static void diagnoseChunks(Collection<StableChunk> allChunks, Collection<? extends StableChunk> selectedChunks,
                                GcParams gcp, GcLogger logger
     ) {

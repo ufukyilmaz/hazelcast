@@ -10,6 +10,9 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 
 import static com.hazelcast.util.HashUtil.fastLongMix;
 
+/**
+ * Off-heap implementation of {@link SetOfKeyHandle}.
+ */
 public final class SetOfKeyHandleOffHeap implements SetOfKeyHandle {
     private final HashSlotArray16byteKey hsa;
 

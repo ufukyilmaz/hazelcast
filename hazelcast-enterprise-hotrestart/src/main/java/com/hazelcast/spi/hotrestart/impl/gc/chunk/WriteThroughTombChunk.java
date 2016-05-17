@@ -27,6 +27,13 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
         return full();
     }
 
+    /**
+     * Does the same work as {@link #addStep1(long, long, byte[], byte[])}, but using a
+     * {@link TombFileAccessor} to get the data.
+     * @param tfa tombstone file accessor connected to the source tombstone chunk
+     * @param filePos position of the tombstone in the source chunk
+     * @return whether this chunk is now full
+     */
     public boolean addStep1(TombFileAccessor tfa, int filePos) {
         assert hasRoom();
         try {
@@ -58,6 +65,6 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
 
     @Override
     public StableTombChunk toStableChunk() {
-        return new StableTombChunk(this, false);
+        return new StableTombChunk(this);
     }
 }

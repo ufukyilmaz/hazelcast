@@ -32,7 +32,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.TombChunkSelector.selectTombC
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * Manages chunk files and contains top-level code of the GC algorithm.
+ * Manages GC-related metadata and contains the entry points into the GC procedures.
  */
 public final class ChunkManager implements Disposable {
     private static final double UNIT_PERCENTAGE = 100;
@@ -66,6 +66,7 @@ public final class ChunkManager implements Disposable {
         metrics.scanAndRegister(trackers, metricsPrefix);
     }
 
+    /** @return the number of distinct keys known to this {@code ChunkManager} */
     public long trackedKeyCount() {
         return trackers.size();
     }
@@ -80,8 +81,7 @@ public final class ChunkManager implements Disposable {
         trackers.dispose();
     }
 
-    /** Accounts for the active value chunk having been inactivated
-     * and replaced with a new one. */
+    /** Accounts for the active value chunk having been inactivated and replaced with a new one. */
     class ReplaceActiveChunk implements Runnable {
         private final ActiveChunk fresh;
         private final ActiveChunk closed;
@@ -148,11 +148,23 @@ public final class ChunkManager implements Disposable {
         }
     }
 
+    /**
+     * Retires a record (makes it dead).
+     * @param chunk chunk where the record is written
+     * @param kh key handle of the record
+     * @param r the record being retired
+     */
     void retire(Chunk chunk, KeyHandle kh, Record r) {
         adjustGlobalGarbage(chunk, r);
         chunk.retire(kh, r);
     }
 
+    /**
+     * Propagates the effects of a "clear by prefix" operation to the given record.
+     * @param chunk chunk where the record is written
+     * @param kh key handle of the record
+     * @param r the record being retired
+     */
     void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
         final Tracker tr = trackers.get(kh);
         if (r.isAlive()) {
@@ -164,7 +176,7 @@ public final class ChunkManager implements Disposable {
             tr.retire(trackers);
         }
         if (tr != null) {
-            tr.decrementGarbageCount(r.garbageCount());
+            tr.reduceGarbageCount(r.garbageCount());
             if (tr.garbageCount() == 0) {
                 trackers.removeIfDead(kh, tr);
             }
@@ -195,7 +207,7 @@ public final class ChunkManager implements Disposable {
     }
 
     private void dismissChunkGarbageForKey(KeyHandle kh, Record r, Tracker tr) {
-        tr.decrementGarbageCount(r.garbageCount());
+        tr.reduceGarbageCount(r.garbageCount());
         r.setGarbageCount(0);
         final long newCount = tr.garbageCount();
         if (newCount == 0) {
@@ -238,10 +250,12 @@ public final class ChunkManager implements Disposable {
         }
     }
 
+    /** @return GC parameters calculated for the current state of the {@code ChunkManager} */
     GcParams gcParams() {
         return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.chunkSeq());
     }
 
+    /** Entry point to the ValueGC procedure (garbage collection of value chunks). */
     boolean valueGc(GcParams gcp, MutatorCatchup mc) {
         if (gcp == GcParams.ZERO) {
             return false;
@@ -265,6 +279,7 @@ public final class ChunkManager implements Disposable {
         return true;
     }
 
+    /** Entry point to the TombGC procedure (garbage collection of tombstone chunks). */
     boolean tombGc(MutatorCatchup mc) {
         final long start = System.nanoTime();
         final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc);
@@ -310,5 +325,4 @@ public final class ChunkManager implements Disposable {
         assert garbageAfterGc >= 0 : String.format("%s garbage went below zero: %,d", gcKind, garbageAfterGc);
         assert liveAfterGc >= 0 : String.format("%s live went below zero: %,d", gcKind, liveAfterGc);
     }
-
 }

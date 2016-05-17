@@ -23,13 +23,7 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-/**
- * Rebuilds the runtime metadata of the chunk manager when the system
- * is restarting. Each record read from persistent storage must be fed to this
- * class's <code>accept()</code> method. The order of encountering records
- * doesn't matter for correctness, but for efficiency it is preferred that
- * newer records are encountered first.
- */
+/** Rebuilds the GC-related metadata during the Hot Restart procedure. */
 public final class Rebuilder {
     private final ChunkManager cm;
     private final GcHelper gcHelper;
@@ -52,10 +46,16 @@ public final class Rebuilder {
         this.garbage = cm.tombGarbage;
     }
 
+    /** @return the highest observed chunk seq number. Used to initialize the chunk seq counter. */
     public long maxChunkSeq() {
         return maxChunkSeq;
     }
 
+    /**
+     * The Hot Restart procedure starts with the tombstone chunk reading phase and this method is called
+     * when transitioning into the value chunk reading phase.
+     * @param tombKeys map containing the key handles of all reloaded tombstone keys
+     */
     public void startValuePhase(Map<Long, SetOfKeyHandle> tombKeys) {
         closeRebuildingChunks();
         rebuildingChunks.clear();
@@ -65,6 +65,12 @@ public final class Rebuilder {
         garbage = cm.valGarbage;
     }
 
+    /**
+     * To be called for each encountered record and followed with a call to either {@link #accept(RestartItem)} or
+     * {@link #acceptCleared(RestartItem)}.
+     * @param seq record seq
+     * @param size record size
+     */
     public void preAccept(long seq, int size) {
         occupancy.inc(size);
         if (seq > maxSeq) {
@@ -72,9 +78,7 @@ public final class Rebuilder {
         }
     }
 
-    /**
-     * Called when encountering a record which is interred by a prefix tombstone.
-     */
+    /** Called when encountering a record which is interred by a prefix tombstone. */
     public void acceptCleared(RestartItem item) {
         final RebuildingChunk chunk = rebuildingChunk(item.chunkSeq);
         chunk.acceptStale1(item.size);
@@ -83,7 +87,7 @@ public final class Rebuilder {
     }
 
     /**
-     * Called upon encountering another record in the file.
+     * Called when encountering a record which is not interred by a prefix tombstone.
      * @return {@code false} if the accepted record is known to be garbage; {@code true} otherwise.
      */
     public boolean accept(RestartItem item) {
@@ -122,9 +126,7 @@ public final class Rebuilder {
         }
     }
 
-    /**
-     * Called when done reading. Retires any tombstones which are no longer needed.
-     */
+    /** Called when done reading. Retires any tombstones which are no longer needed. */
     public void done() {
         closeRebuildingChunks();
         rebuildingChunks = null;

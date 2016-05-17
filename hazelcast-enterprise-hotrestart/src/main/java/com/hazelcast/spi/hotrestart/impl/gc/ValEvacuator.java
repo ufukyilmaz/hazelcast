@@ -21,7 +21,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Evacuates source chunks into destination chunks by moving all live records.
+ * Evacuates source chunks into survivor chunks by moving all live records.
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class ValEvacuator {
@@ -57,8 +57,8 @@ final class ValEvacuator {
         logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
         moveToSurvivors(liveRecords);
         liveRecords.dispose();
-        // Apply clear operation to any dangling dest chunks. At the time the clear operation
-        // is issued, the highest chunk seq is recorded. Dest chunks created after that time
+        // Apply clear operation to any dangling survivor chunks. At the time the clear operation
+        // is issued, the highest chunk seq is recorded. Survivor chunks created after that time
         // will be missed by the Sweeper.
         for (Chunk c : survivorMap.values()) {
             pfixTombstoMgr.dismissGarbage(c);

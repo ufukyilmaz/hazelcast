@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -36,7 +37,6 @@ import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFileCursor.readFullyOrNothing;
@@ -49,7 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Reads the persistent state and:
  * <ol>
- *     <li>refills the in-memory stores</li>
+ *     <li>refills the RAM stores</li>
  *     <li>rebuilds the Hot Restart Store's metadata</li>
  * </ol>
  */
@@ -164,7 +164,7 @@ public final class HotRestarter {
                 prefixTombstones.put(byteBuf.getLong(0), byteBuf.getLong(LONG_SIZE_IN_BYTES));
             }
         } catch (IOException e) {
-            closeIgnoringFailure(in);
+            IOUtil.closeResource(in);
             throw new HotRestartException("Error restoring prefix tombstones", e);
         }
         return prefixTombstones;

@@ -29,7 +29,7 @@ public interface RamStoreRegistry {
     RamStore restartingRamStoreForPrefix(long prefix);
 
     /**
-     * Returns the concurrent queue index responsible for the given key prefix.
+     * Returns the ID of the partition thread responsible for the given key prefix.
      */
     int prefixToThreadId(long prefix);
 

@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 
-/** On-heap specialization of Record */
+/** Specialization of {@link Record} as a plain Java object. */
 public class RecordOnHeap extends Record {
     private long seq;
     private int size;

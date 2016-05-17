@@ -9,13 +9,13 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import java.util.Arrays;
 
 /**
- * Represents a tombstone chunk whose on-disk contents are stable (immutable).
+ * Stable tombstone chunk.
  */
 public final class StableTombChunk extends StableChunk {
 
     private Long2ObjectHashMap<KeyHandle> filePosToKeyHandle;
 
-    StableTombChunk(WriteThroughTombChunk from, boolean compressed) {
+    StableTombChunk(WriteThroughTombChunk from) {
         super(from);
     }
 
@@ -41,6 +41,11 @@ public final class StableTombChunk extends StableChunk {
         // A tombstone chunk never needs dismissing. Ignore the request to raise the flag.
     }
 
+    /**
+     * Initializes the file position-to-key handle map used during TombGC to look up a tombstone
+     * at a given file position, in order to determine its liveness status.
+     * @return array of the file positions of all currently live tombstones, in ascending order.
+     */
     public int[] initFilePosToKeyHandle() {
         final int[] filePositions = new int[liveRecordCount];
         filePosToKeyHandle = new Long2ObjectHashMap<KeyHandle>(liveRecordCount);
@@ -57,18 +62,32 @@ public final class StableTombChunk extends StableChunk {
         return filePositions;
     }
 
+    /**
+     * @param filePos a file position in this tombstone chunk
+     * @return the key handle of the tombstone at the supplied position, if that tombstone is still alive
+     */
     public KeyHandle getLiveKeyHandle(long filePos) {
         return filePosToKeyHandle.get(filePos);
     }
 
+    /** Disposes the file position-to-key handle map. */
     public void disposeFilePosToKeyHandle() {
         filePosToKeyHandle = null;
     }
 
+    /**
+     * Updates the cached value of the Benefit-Cost factor.
+     * @return the value just calculated
+     */
     public double updateBenefitToCost() {
         return benefitToCost = benefitToCost(garbage, size());
     }
 
+    /**
+     * Calculates the Benefit-Cost factor.
+     * @param garbage amount of garbage bytes in a chunk
+     * @param size total bytes in a chunk
+     */
     @SuppressWarnings("checkstyle:magicnumber")
     public static double benefitToCost(long garbage, long size) {
         // Benefit is the amount of garbage to reclaim.

@@ -5,9 +5,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-/**
- * Contains GC ergonomics logic: when to GC and how much to GC.
- */
+/** Contains GC ergonomics logic: when to GC and how much to GC. */
 final class GcParams {
     public static final double MIN_GARBAGE_RATIO = 0.05;
     public static final double HIGH_GARBAGE_RATIO = 0.2;

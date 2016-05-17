@@ -35,12 +35,26 @@ public class ChunkFileOut {
         this.mc = mc;
     }
 
+    /**
+     * Writes a value record to the chunk file.
+     * @param seq record seq
+     * @param prefix key prefix
+     * @param key key blob
+     * @param value value blob
+     */
     public void writeValueRecord(long seq, long prefix, byte[] key, byte[] value) {
         putValueHeader(seq, prefix, key.length, value.length);
         write(key, 0, key.length);
         write(value, 0, value.length);
     }
 
+    /**
+     * Writes a value record to the chunk file.
+     * @param r {@code Record} instance corresponding to the record to be written
+     * @param keyPrefix key prefix
+     * @param keyBuf byte buffer with key blob
+     * @param valBuf byte buffer with value blob
+     */
     public void writeValueRecord(Record r, long keyPrefix, ByteBuffer keyBuf, ByteBuffer valBuf) {
         final long seq = r.liveSeq();
         final int keySize = keyBuf.remaining();
@@ -59,6 +73,12 @@ public class ChunkFileOut {
         }
     }
 
+    /**
+     * Writes a tombstone record to the chunk file.
+     * @param seq record seq
+     * @param prefix key prefix
+     * @param key key blob
+     */
     public void writeTombstone(long seq, long prefix, byte[] key) {
         ensureRoomForHeader(Record.TOMB_HEADER_SIZE);
         buf.putLong(seq);
@@ -67,6 +87,13 @@ public class ChunkFileOut {
         write(key, 0, key.length);
     }
 
+    /**
+     * Writes a tombstone record to the chunk file.
+     * @param seq record seq
+     * @param prefix key prefix
+     * @param keyBuf byte buffer containing, among other data, the key blob and positioned at it
+     * @param keySize size of the key
+     */
     public void writeTombstone(long seq, long prefix, ByteBuffer keyBuf, int keySize) {
         ensureRoomForHeader(Record.TOMB_HEADER_SIZE);
         buf.putLong(seq);
@@ -75,6 +102,9 @@ public class ChunkFileOut {
         write(keyBuf, keySize);
     }
 
+    /**
+     * Sets whether to execute an {@code fsync} operation on the chunk file before closing it.
+     */
     public void flagForFsyncOnClose(boolean fsyncOnClose) {
         this.needsFsyncBeforeClosing |= fsyncOnClose;
     }
@@ -85,6 +115,10 @@ public class ChunkFileOut {
         needsFsyncBeforeClosing = false;
     }
 
+    /**
+     * Flushes any remaining data to the file, executes {@code fsync} on it as indicated by the
+     * {@link #needsFsyncBeforeClosing} flag, and closes the file.
+     */
     public void close() {
         flushLocalBuffer();
         try {

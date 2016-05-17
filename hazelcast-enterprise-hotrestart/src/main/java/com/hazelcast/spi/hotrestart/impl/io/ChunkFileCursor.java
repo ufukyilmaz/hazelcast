@@ -18,7 +18,8 @@ import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveCh
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.seq;
 
 /**
- * A cursor over a chunk file's contents.
+ * A cursor over a chunk file's contents. Common base class for tombstone and value chunk
+ * specializations, which are nested inside it.
  */
 public abstract class ChunkFileCursor implements ChunkFileRecord {
     final ByteBuffer headerBuf;
@@ -42,6 +43,12 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    /**
+     * Advances to the next record in the chunk file. If this was an active chunk file at the time
+     * of shutdown, and if a broken record is found (unable to read the amount of data indicated by
+     * the header), the file is automatically truncated to the last intact record.
+     * @return whether there was a next record to advance to
+     */
     public final boolean advance() {
         try {
             try {
@@ -64,6 +71,20 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    public final void close() {
+        try {
+            in.close();
+        } catch (IOException e) {
+            throw new HotRestartException("Failed to close chunk file " + chunkFile, e);
+        }
+        if (isActiveChunkFile(chunkFile)) {
+            ChunkFilesetCursor.removeActiveSuffix(chunkFile);
+        }
+    }
+
+
+    // Implementation of ChunkFileRecord
+
     @Override
     public final long chunkSeq() {
         return chunkSeq;
@@ -79,9 +100,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         return prefix;
     }
 
-    /**
-     * @return Number of bytes the current record occupies in this chunk file.
-     */
     @Override
     public int size() {
         return headerBuf.capacity() + key.length;
@@ -93,21 +111,11 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         return key;
     }
 
-    public final void close() {
-        try {
-            in.close();
-        } catch (IOException e) {
-            throw new HotRestartException("Failed to close chunk file " + chunkFile, e);
-        }
-        if (isActiveChunkFile(chunkFile)) {
-            ChunkFilesetCursor.removeActiveSuffix(chunkFile);
-        }
-    }
-
-    abstract void loadRecord() throws IOException;
-
 
     // Begin private API
+
+
+    abstract void loadRecord() throws IOException;
 
     void loadCommonHeader() throws IOException {
         seq = headerBuf.getLong();
@@ -164,6 +172,9 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    /**
+     * Specialization of {@code ChunkFileCursor} to tombstone chunk.
+     */
     public static final class Tomb extends ChunkFileCursor {
         public Tomb(File chunkFile) {
             super(TOMB_HEADER_SIZE, chunkFile);
@@ -186,6 +197,9 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    /**
+     * Specialization of {@code ChunkFileCursor} to value chunk.
+     */
     static final class Val extends ChunkFileCursor {
         private byte[] value;
 

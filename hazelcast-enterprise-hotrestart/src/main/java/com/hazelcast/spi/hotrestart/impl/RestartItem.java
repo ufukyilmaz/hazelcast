@@ -5,7 +5,14 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 
 /**
- * Acts as an item in the concurret queues during restarting.
+ * Item in the concurret queues during restarting. Reused along the complete pipeline:
+ * <ol>
+ *     <li>HotRestarter thread creates it and submits to a partition thread;</li>
+ *     <li>partition thread attaches a key handle to it and submits to the Rebuilder thread;</li>
+ *     <li>Rebuilder uses it to update the GC metadata and submits back to the partition thread, unless
+ *         it determines that it corresponds to a record that is known to be garbage;</li>
+ *     <li>partition thread inserts the value blob into the appropriate {@link RamStore}.</li>
+ * </ol>
  */
 public class RestartItem {
     public static final RestartItem END = new RestartItem.WithSetOfKeyHandle(0, null);
@@ -42,18 +49,31 @@ public class RestartItem {
         this.value = null;
     }
 
+    /** Says whether this is a special item, either:
+     *  <ul>
+     *      <li>describing a cleared record (interred by a prefix tombstone),</li>
+     *      <li>requesting to remove null-keys from the {@code RamStore},</li>
+     *      <li>or the "submitter gone" item, which the submitter thread sends as the very last item.</li>
+     *  </ul>
+     */
     public final boolean isSpecialItem() {
         return key == null;
     }
 
+    /** @return whether this item corresponds to a cleared record (interred by a prefix tombstone) */
     public final boolean isClearedItem() {
         return recordSeq == RECORD_SEQ_CLEARED_ITEM;
     }
 
+    /**
+     * Constructs an item that corresponds to a cleared record (interred by a prefix tombstone).
+     * @param rec the object representing the cleared record in a chunk file
+     */
     public static RestartItem clearedItem(ChunkFileRecord rec) {
         return new RestartItem(rec.chunkSeq(), RECORD_SEQ_CLEARED_ITEM, rec.prefix(), rec.filePos(), rec.size());
     }
 
+    /** Used both for the "remove null keys" item and for the "submitter gone" item. */
     public static class WithSetOfKeyHandle extends RestartItem {
         public final SetOfKeyHandle sokh;
 

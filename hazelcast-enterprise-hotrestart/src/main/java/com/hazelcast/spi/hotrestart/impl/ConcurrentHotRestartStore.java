@@ -20,7 +20,7 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
 /**
  * Concurrent implementation of {@link HotRestartStore} which delegates work to a
- * single-threaded {@code HotRestartStore} over a concurrent queue.
+ * single-threaded {@link HotRestartPersistenceEngine} over a many-to-one concurrent queue.
  */
 public final class ConcurrentHotRestartStore implements HotRestartStore {
     private static final IdleStrategy IDLER = new BackoffIdleStrategy(1, 1, 1, MICROSECONDS.toNanos(200));

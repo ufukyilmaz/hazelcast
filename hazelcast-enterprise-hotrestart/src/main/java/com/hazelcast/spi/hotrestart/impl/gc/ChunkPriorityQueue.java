@@ -10,10 +10,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/** Maintains a partial ordering of chunks such that the
- * worst one (with the lowest cost-benefit score) can be
- * looked up in constant time. Insertion and removal operations
- * have O(log size) time complexity.
+/** Maintains a partial ordering of chunks such that the worst one (with the lowest cost-benefit score) can be
+ * looked up in constant time. Insertion and removal operations have O(log size) time complexity.
  */
 final class ChunkPriorityQueue {
     private int size;
@@ -30,14 +28,11 @@ final class ChunkPriorityQueue {
     }
 
     /**
-     * Adds a chunk in O(log size) time.
-     * Returns the chunk (if any) that was
-     * dropped off the heap because it was full. This can be
-     * the supplied chunk (in case it isn't better than the
-     * full heap's minimum, and couldn't be added), or another
-     * chunk that was previously the worst value in the
-     * heap and now has been replaced by a better one, or null
-     * if the queue wasn't yet full with maxSize elements.
+     * Adds a chunk in O(log size) time. Returns the chunk (if any) that was dropped off the heap
+     * because it was full. This can be the supplied chunk (in case it isn't better than the
+     * full heap's minimum, and couldn't be added), or another chunk that was previously the
+     * worst value in the heap and now has been replaced by a better one, or null if the queue
+     * wasn't yet full with maxSize elements.
      */
     public StableValChunk offer(StableValChunk element) {
         if (size < maxSize) {

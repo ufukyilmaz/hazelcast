@@ -19,6 +19,12 @@ final class TombChunkSelector {
         this.mc = mc;
     }
 
+    /**
+     * Selects tombstone chunks for a TombGC run. All chunks with benefit-cost factor at least 2
+     * are selected and further chunks are selected as needed reach at least half a chunk's worth of
+     * live data, but no chunk with benefit-cost less than 1 is selected. If the live data size goal
+     * cannot be reached, no chunks are selected (the GC cycle will not proceed).
+     */
     static Collection<StableTombChunk> selectTombChunksToCollect(
             Collection<? extends StableChunk> allChunks, MutatorCatchup mc) {
         return new TombChunkSelector(mc).select(allChunks);

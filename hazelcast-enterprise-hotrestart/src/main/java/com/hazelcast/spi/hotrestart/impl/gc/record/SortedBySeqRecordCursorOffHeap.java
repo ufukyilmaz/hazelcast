@@ -15,7 +15,8 @@ import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyIm
 import static java.lang.Math.min;
 
 /**
- * Off-heap implementation of {@link SortedBySeqRecordCursor}.
+ * Off-heap implementation of {@link SortedBySeqRecordCursor}. Contains pointers to record structures
+ * inside the {@link RecordMap}s, therefore becomes invalid as soon as any of the record maps is updated.
  */
 final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, KeyHandleOffHeap {
     private final LongArray seqsAndSlotBases;

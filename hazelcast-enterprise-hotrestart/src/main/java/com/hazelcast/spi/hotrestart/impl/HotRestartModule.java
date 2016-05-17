@@ -19,14 +19,25 @@ import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 
+/**
+ * Contains Hot Restart Store factory methods.
+ */
 public final class HotRestartModule {
 
     private HotRestartModule() { }
 
+    /**
+     * Constructs, configures, and returns an on-heap Hot Restart Store.
+     * @param cfg the configuration object
+     */
     public static HotRestartStore newOnHeapHotRestartStore(HotRestartStoreConfig cfg) {
         return hrStore(cfg, false);
     }
 
+    /**
+     * Constructs, configures, and returns an off-heap Hot Restart Store.
+     * @param cfg the configuration object
+     */
     public static HotRestartStore newOffHeapHotRestartStore(HotRestartStoreConfig cfg) {
         return hrStore(cfg, true);
     }

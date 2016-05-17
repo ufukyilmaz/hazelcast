@@ -7,6 +7,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * On-heap implementation of {@link SetOfKeyHandle}.
+ */
 public final class SetOfKeyHandleOnHeap implements SetOfKeyHandle {
     private final Set<KeyHandle> set = new HashSet<KeyHandle>();
 

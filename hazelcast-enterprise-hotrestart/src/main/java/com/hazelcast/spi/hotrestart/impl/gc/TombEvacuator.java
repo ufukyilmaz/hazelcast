@@ -15,6 +15,10 @@ import java.util.Collection;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.positionInUnitsOfBufsize;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * Performs the TombGC procedure. Selected source chunk files are opened one at a time and all their live
+ * tombstones are copied to the survivor chunks.
+ */
 final class TombEvacuator {
     private final Collection<StableTombChunk> srcChunks;
 

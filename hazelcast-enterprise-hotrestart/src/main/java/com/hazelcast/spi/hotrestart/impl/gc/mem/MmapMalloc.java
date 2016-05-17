@@ -8,7 +8,8 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import java.io.File;
 
 /**
- * Allocator based on memory-mapped files.
+ * Allocator based on memory-mapped files. Uses a set of {@link MmapSlabs}, one for each
+ * block size.
  */
 public class MmapMalloc implements MemoryAllocator, Disposable {
     private final File baseDir;

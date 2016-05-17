@@ -23,10 +23,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMapOnHeap;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -40,18 +38,15 @@ import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRe
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newTombstoneMapOffHeap;
 
 /**
- * Contains common services needed across the hot restart codebase. Passed
- * around a lot due to the lack of proper DI support in current HZ.
+ * Contains common constants, global counters, static utility methods, and system resource-oriented methods used
+ * throughout the Hot Restart module.
  */
 public abstract class GcHelper implements Disposable {
-    /**
-     * Name of the file that contains prefix tombstones
-     */
+
+    /** Name of the file that contains prefix tombstones */
     public static final String PREFIX_TOMBSTONES_FILENAME = "prefix-tombstones";
 
-    /**
-     * A hex digit represents this many bits.
-     */
+    /** A hex digit represents this many bits. */
     public static final int BITS_PER_HEX_DIGIT = 4;
 
     /**
@@ -60,9 +55,7 @@ public abstract class GcHelper implements Disposable {
      */
     public static final int CHUNK_FNAME_LENGTH = Long.SIZE / BITS_PER_HEX_DIGIT;
 
-    /**
-     * The number of hex digits in the name of a bucket dir
-     */
+    /** The number of hex digits in the name of a bucket dir */
     public static final int BUCKET_DIRNAME_DIGITS = 2;
 
     /**
@@ -72,14 +65,13 @@ public abstract class GcHelper implements Disposable {
      */
     public static final int MAX_BUCKET_DIRS = 1 << (BITS_PER_HEX_DIGIT * BUCKET_DIRNAME_DIGITS);
 
-    /**
-     * Bitmask used for the operation "modulo MAX_BUCKET_DIRS"
-     */
+    /** Bitmask used for the operation "modulo MAX_BUCKET_DIRS" */
     public static final int BUCKET_DIR_MASK = MAX_BUCKET_DIRS - 1;
 
     private static final String BUCKET_DIRNAME_FORMAT = String.format("%%0%dx", BUCKET_DIRNAME_DIGITS);
     private static final String CHUNK_FNAME_FORMAT = String.format("%%0%dx%%s", CHUNK_FNAME_LENGTH);
 
+    /** Hot Restart Store's home directory. */
     final File homeDir;
     final RamStoreRegistry ramStoreRegistry;
     final GcLogger logger;
@@ -93,19 +85,13 @@ public abstract class GcHelper implements Disposable {
         this.logger = logger;
     }
 
-    @SuppressWarnings("checkstyle:emptyblock")
-    public static void closeIgnoringFailure(Closeable toClose) {
-        if (toClose != null) {
-            try {
-                toClose.close();
-            } catch (IOException ignored) { }
-        }
-    }
-
+    /** Disposes the native memory block associated with the given {@link MappedByteBuffer}.
+     * Calls into OpenJDK's private API. */
     public static void disposeMappedBuffer(MappedByteBuffer buf) {
         ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
     }
 
+    /** Creates a new active value chunk file and returns an instance of {@link ActiveValChunk} that wraps it. */
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(false),
@@ -113,6 +99,7 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
+    /** Creates a new survivor value chunk file and returns an instance of {@link SurvivorValChunk} that wraps it. */
     public final SurvivorValChunk newSurvivorValChunk(MutatorCatchup mc) {
         final long seq = chunkSeq.incrementAndGet();
         return new SurvivorValChunk(seq, newRecordMap(true),
@@ -120,10 +107,14 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
+    /** Creates a new active tombstone chunk file and returns an instance of
+     * {@link WriteThroughTombChunk} that wraps it. */
     public final WriteThroughTombChunk newActiveTombChunk() {
         return newWriteThroughTombChunk(ACTIVE_CHUNK_SUFFIX);
     }
 
+    /** Creates a new tombstone chunk file with the given filename suffix and returns an instance of
+     * {@link WriteThroughTombChunk} that wraps it. */
     final WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
         final long seq = chunkSeq.incrementAndGet();
         return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
@@ -139,32 +130,45 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
+    /** Initializes the chunk sequence counter to the given value. */
     public final void initChunkSeq(long seq) {
         chunkSeq.set(seq);
     }
 
+    /** @return the current value of the chunk sequence counter */
     public final long chunkSeq() {
         return chunkSeq.get();
     }
 
+    /** Initializes the record sequence counter to the given value. */
     final void initRecordSeq(long seq) {
         recordSeq = seq;
     }
 
+    /** @return the current value of the record sequence counter */
     public final long recordSeq() {
         return recordSeq;
     }
 
+    /** Increments the record sequence counter and returns the new value. */
     public final long nextRecordSeq() {
         return ++recordSeq;
     }
 
+    /** Deletes the chunk file associated with the given instance of {@link Chunk}. */
     public final void deleteChunkFile(Chunk chunk) {
         final File toDelete = chunkFile(chunk, false);
         assert toDelete.exists() : "Attempt to delete non-existent file " + toDelete;
         delete(toDelete);
     }
 
+    /**
+     * Changes the filename suffix of a chunk file.
+     * @param base name of the chunk's base directory (inside the overal Hot Restart home directory).
+     * @param seq chunk's seq
+     * @param suffixNow chunk file's current filename suffix
+     * @param suffixToBe desired new filename suffix
+     */
     public final void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
         final File nameNow = chunkFile(base, seq, suffixNow, false);
         final File nameToBe = chunkFile(base, seq, suffixToBe, false);
@@ -173,10 +177,22 @@ public abstract class GcHelper implements Disposable {
         }
     }
 
+    /**
+     * Returns a {@code File} instance representing the file associated with the given chunk.
+     * @param chunk the chunk
+     * @param mkdirs whether to also create any missing ancestor directories of the chunk file
+     */
     public final File chunkFile(Chunk chunk, boolean mkdirs) {
         return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
     }
 
+    /**
+     * Returns a {@code File} instance representing the chunk file described by the parameters.
+     * @param base name of the chunk's base directory (inside the overal Hot Restart home directory).
+     * @param seq seq of the chunk
+     * @param suffix filename suffix
+     * @param mkdirs whether to also create any missing ancestor directories of the chunk file
+     */
     public final File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
         final String bucketDirname = String.format(BUCKET_DIRNAME_FORMAT, seq & BUCKET_DIR_MASK);
         final String chunkFilename = String.format(CHUNK_FNAME_FORMAT, seq, suffix);
@@ -187,12 +203,20 @@ public abstract class GcHelper implements Disposable {
         return new File(bucketDir, chunkFilename);
     }
 
-    abstract RecordMap newRecordMap(boolean isForDestValChunk);
+    /**
+     * Creates and returns an instance of {@link RecordMap} for a value chunk.
+     * @param isForSurvivorValChunk whether the map will be used in a survivor value chunk. In the off-heap case
+     *                              this means the auxiliary memory allocater will be used.
+     */
+    abstract RecordMap newRecordMap(boolean isForSurvivorValChunk);
 
+    /** Creates and returns an instance of {@link RecordMap} for a tombstone chunk. */
     abstract RecordMap newTombstoneMap();
 
+    /** Creates and returns an instance of {@link TrackerMap}. */
     public abstract TrackerMap newTrackerMap();
 
+    /** Creates and returns an instance of {@link SetOfKeyHandle}. */
     public abstract SetOfKeyHandle newSetOfKeyHandle();
 
     /** The GC helper specialization for on-heap Hot Restart store */
@@ -245,8 +269,8 @@ public abstract class GcHelper implements Disposable {
         }
 
         @Override
-        public RecordMap newRecordMap(boolean isForGrowingSurvivor) {
-            return isForGrowingSurvivor
+        public RecordMap newRecordMap(boolean isForSurvivorValChunk) {
+            return isForSurvivorValChunk
                     ? newRecordMapOffHeap(mmapMgr, ramMgr) : newRecordMapOffHeap(ramMgr, null);
         }
 

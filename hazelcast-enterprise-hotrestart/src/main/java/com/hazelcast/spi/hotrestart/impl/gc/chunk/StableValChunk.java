@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc.chunk;
 
 import com.hazelcast.internal.util.collection.LongSet;
+import com.hazelcast.spi.hotrestart.impl.RestartItem;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
 /**
@@ -8,6 +9,15 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  */
 public final class StableValChunk extends StableChunk {
 
+    /**
+     * A key prefix could exist in a chunk file, yet during Hot Restart no record with that key prefix
+     * might be added to a record map due to a prefix tombstone
+     * ({@link com.hazelcast.spi.hotrestart.impl.gc.Rebuilder#acceptCleared(RestartItem)} doesn't add
+     * the record to the record map). Then the prefix tombstone might be incorrectly garbage-collected,
+     * leading to the resurrection of dead records. To prevent that, this set holds the key prefixes of all
+     * records in this chunk interred by a prefix tombstone and is consulted in
+     * {@link com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager.Sweeper#markLiveTombstones(Chunk)}.
+     */
     public final LongSet clearedPrefixesFoundAtRestart;
 
     public StableValChunk(ActiveValChunk from) {
@@ -28,6 +38,7 @@ public final class StableValChunk extends StableChunk {
                 ? new EmptyLongSet() : clearedPrefixesFoundAtRestart;
     }
 
+    /** @return the GC cost of this chunk (amount of live data in it). */
     public long cost() {
         return size() - garbage;
     }

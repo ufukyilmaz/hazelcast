@@ -7,9 +7,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
-/**
- * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}.
- */
+/** Survivor chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}. */
 public final class SurvivorValChunk extends WriteThroughChunk {
 
     public SurvivorValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
@@ -26,6 +24,12 @@ public final class SurvivorValChunk extends WriteThroughChunk {
         return valChunkSizeLimit();
     }
 
+    /**
+     * Adds a record both to the survivor chunk file and to the chunk's record map.
+     * @param r the record
+     * @param kh record's key handle
+     * @param holder record's key and value blobs
+     */
     public void add(Record r, KeyHandle kh, RecordDataHolder holder) {
         final long prefix = r.keyPrefix(kh);
         records.putIfAbsent(prefix, kh, r.liveSeq(), r.size(), false, 0);

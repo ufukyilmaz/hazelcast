@@ -7,6 +7,9 @@ import com.hazelcast.spi.hotrestart.impl.di.Name;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
 import static java.lang.Thread.interrupted;
 
+/**
+ * {@code Runnable} that runs the main loop of the GC thread.
+ */
 public final class GcMainLoop implements Runnable {
     private final ChunkManager chunkMgr;
     private final MutatorCatchup mc;
@@ -68,7 +71,7 @@ public final class GcMainLoop implements Runnable {
         }
     }
 
-    boolean runForcedGC(GcParams gcp) {
+    private boolean runForcedGC(GcParams gcp) {
         persistenceConveyor.backpressureOn();
         try {
             return chunkMgr.valueGc(gcp, mc);

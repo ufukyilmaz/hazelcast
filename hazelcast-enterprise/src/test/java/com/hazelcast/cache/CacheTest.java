@@ -11,7 +11,7 @@ import com.hazelcast.cache.hidensity.operation.CacheReplaceOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSizeOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSizeOperationFactory;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
@@ -529,7 +529,7 @@ public class CacheTest extends AbstractCacheTest {
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.ITERATE)
                 instanceof CacheKeyIteratorOperation);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.ITERATION_RESULT)
-                instanceof CacheKeyIteratorResult);
+                instanceof CacheKeyIterationResult);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.LOAD_ALL_FACTORY)
                 instanceof CacheLoadAllOperationFactory);
         assertTrue(factory.create(HiDensityCacheDataSerializerHook.ENTRY_PROCESSOR)

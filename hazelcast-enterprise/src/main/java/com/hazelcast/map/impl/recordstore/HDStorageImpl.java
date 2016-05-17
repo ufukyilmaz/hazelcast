@@ -5,19 +5,20 @@ import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.SizeEstimator;
+import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
+import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
-import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.serialization.SerializationService;
-
 import java.util.Collection;
 import java.util.Iterator;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.SizeEstimators.createMapSizeEstimator;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.map.impl.SizeEstimators.createMapSizeEstimator;
 
 /**
  * HiDensity backed {@code Storage} impl. for {@link com.hazelcast.core.IMap}.
@@ -187,6 +188,16 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     public Iterable getRandomSamples(int sampleCount) {
         return map.getRandomSamples(sampleCount);
+    }
+
+    @Override
+    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
+        return map.fetchKeys(tableIndex, size);
+    }
+
+    @Override
+    public MapEntriesWithCursor fetchEntries(int tableIndex, int size, SerializationService serializationService) {
+        return map.fetchEntries(tableIndex, size);
     }
 
     public long getNativeKeyAddress(Data key) {

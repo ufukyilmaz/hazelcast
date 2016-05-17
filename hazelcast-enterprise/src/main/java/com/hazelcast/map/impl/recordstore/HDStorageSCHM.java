@@ -1,12 +1,21 @@
 package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.core.EntryView;
+import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.elastic.map.SampleableElasticHashMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
+import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.Record;
+import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.serialization.SerializationService;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An extended {@link SampleableElasticHashMap} for HD backed {@link com.hazelcast.core.IMap}.
@@ -34,6 +43,31 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
     @Override
     protected <E extends SamplingEntry> E createSamplingEntry(int slot) {
         return (E) new LazyEntryViewFromRecord(slot, serializationService);
+    }
+
+    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
+        SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
+        List<Data> keys = new ArrayList<Data>(size);
+        for (int i = 0; i < size && iter.hasNext(); i++) {
+            Map.Entry<Data, HDRecord> entry = iter.next();
+            Data key = entry.getKey();
+            keys.add(memoryBlockProcessor.convertData(key, DataType.HEAP));
+        }
+        return new MapKeysWithCursor(keys, iter.getNextSlot());
+    }
+
+    public MapEntriesWithCursor fetchEntries(int tableIndex, int size) {
+        SlottableIterator<Entry<Data, HDRecord>> iter = entryIter(tableIndex);
+        List<Map.Entry<Data, Data>> entries = new ArrayList<Map.Entry<Data, Data>>(size);
+        for (int i = 0; i < size && iter.hasNext(); i++) {
+            Map.Entry<Data, HDRecord> entry = iter.next();
+            Data key = entry.getKey();
+            Data value = entry.getValue().getValue();
+            Data heapKeyData = memoryBlockProcessor.convertData(key, DataType.HEAP);
+            Data heapValueData = memoryBlockProcessor.convertData(value, DataType.HEAP);
+            entries.add(new AbstractMap.SimpleEntry<Data, Data>(heapKeyData, heapValueData));
+        }
+        return new MapEntriesWithCursor(entries, iter.getNextSlot());
     }
 
     /**

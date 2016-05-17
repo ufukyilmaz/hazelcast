@@ -3,14 +3,15 @@ package com.hazelcast.map.impl.recordstore;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.SizeEstimator;
+import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
+import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.record.RecordFactory;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-
+import com.hazelcast.spi.serialization.SerializationService;
 import java.util.Collection;
 
 /**
@@ -144,6 +145,16 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     @Override
     public Iterable<LazyEntryViewFromRecord> getRandomSamples(int sampleCount) {
         return storage.getRandomSamples(sampleCount);
+    }
+
+    @Override
+    public MapKeysWithCursor fetchKeys(int tableIndex, int size) {
+        return storage.fetchKeys(tableIndex, size);
+    }
+
+    @Override
+    public MapEntriesWithCursor fetchEntries(int tableIndex, int size, SerializationService serializationService) {
+        return storage.fetchEntries(tableIndex, size, serializationService);
     }
 
     public HotRestartKey createHotRestartKey(R record) {

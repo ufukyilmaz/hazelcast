@@ -1,6 +1,6 @@
 package com.hazelcast.cache.hidensity.operation;
 
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
@@ -185,7 +185,7 @@ public final class HiDensityCacheDataSerializerHook implements DataSerializerHoo
                         break;
 
                     case ITERATION_RESULT:
-                        dataSerializable = new CacheKeyIteratorResult();
+                        dataSerializable = new CacheKeyIterationResult();
                         break;
 
                     case GET_ALL:

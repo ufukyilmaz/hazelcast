@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.hidensity.HiDensityCacheRecord;
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -55,7 +55,7 @@ public class CacheKeyIteratorOperation
                 }
             }
             int newSlot = iter.getNextSlot();
-            response = new CacheKeyIteratorResult(keys, newSlot);
+            response = new CacheKeyIterationResult(keys, newSlot);
         }
     }
 

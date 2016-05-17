@@ -15,7 +15,7 @@ public abstract class GrowingChunk extends Chunk {
     public long size;
 
     // Current chunk file offset from the viewpoint of the addStep2() method.
-    protected int addStep2FileOffset;
+    public int addStep2FileOffset;
 
     private final int sizeLimit = determineSizeLimit();
 

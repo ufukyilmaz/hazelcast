@@ -117,6 +117,7 @@ public final class Rebuilder {
     public void acceptCleared(int size) {
         chunk.size += size;
         chunk.garbage += size;
+        chunk.addStep2FileOffset += size;
         garbage.inc(size);
     }
 

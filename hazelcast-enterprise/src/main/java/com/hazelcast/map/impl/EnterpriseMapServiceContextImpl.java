@@ -143,7 +143,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public MapContainer getMapContainer(String mapName) {
-        return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, mapContainers, mapConstructor);
+        return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, contextMutexFactory, mapConstructor);
     }
 
     @Override

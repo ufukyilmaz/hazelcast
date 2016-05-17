@@ -26,9 +26,9 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         if (mapConfig.isNearCacheEnabled()) {
             checkHDConfig(mapConfig.getNearCacheConfig());
 
-            return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine);
+            return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {
-            return new EnterpriseMapProxyImpl(name, mapServiceContext.getService(), nodeEngine);
+            return new EnterpriseMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         }
     }
 }

@@ -18,7 +18,6 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.g
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateRecordFile;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.temporaryFile;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})

@@ -2,7 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.util.collection.LongHashSet;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public abstract class Long2bytesMapBase implements Long2bytesMap {

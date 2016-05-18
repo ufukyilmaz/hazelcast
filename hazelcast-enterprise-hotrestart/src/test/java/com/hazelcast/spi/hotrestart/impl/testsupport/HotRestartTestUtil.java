@@ -1,27 +1,34 @@
 package com.hazelcast.spi.hotrestart.impl.testsupport;
 
 import com.hazelcast.instance.BuildInfo;
+import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
-import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore;
-import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupRunnable;
-import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
+import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
+import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
+import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
+import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
+import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
+import com.hazelcast.util.concurrent.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
 
@@ -45,14 +52,16 @@ import java.util.concurrent.locks.LockSupport;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 
 public class HotRestartTestUtil {
     public static ILogger logger;
@@ -75,7 +84,7 @@ public class HotRestartTestUtil {
         logger.info("Creating mock store registry");
         final long start = System.nanoTime();
         final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
-        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr);
+        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr, false);
         logger.info("Started in " + NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
         return cs;
     }
@@ -141,16 +150,15 @@ public class HotRestartTestUtil {
     public static Map<Long, Long2LongHashMap> summarize(final MockStoreRegistry reg) {
         logger.info("Waiting to start summarizing record stores");
         final Map<Long, Long2LongHashMap>[] summary = new Map[1];
-        ((ConcurrentHotRestartStore) reg.hrStore).getPersistenceEngine().runWhileGcPaused(new CatchupRunnable() {
+        runWithPausedGC(reg, new CatchupRunnable() {
             @Override
-            public void run(CatchupTestSupport mc) {
+            public void run(MutatorCatchup mc) {
                 logger.info("Summarizing record stores");
                 summary[0] = summarize0(reg);
             }
         });
         return summary[0];
     }
-
 
     static Map<Long, Long2LongHashMap> summarize0(MockStoreRegistry reg) {
         final Map<Long, Long2LongHashMap> storeSummaries = new HashMap<Long, Long2LongHashMap>();
@@ -167,9 +175,9 @@ public class HotRestartTestUtil {
 
     public static void verifyRestartedStore(final Map<Long, Long2LongHashMap> summaries, final MockStoreRegistry reg) {
         logger.info("Waiting to start verification");
-        ((ConcurrentHotRestartStore) reg.hrStore).getPersistenceEngine().runWhileGcPaused(new CatchupRunnable() {
+        runWithPausedGC(reg, new CatchupRunnable() {
             @Override
-            public void run(CatchupTestSupport mc) {
+            public void run(MutatorCatchup mc) {
                 logger.info("Verifying restarted store");
                 verify0(summaries, reg.recordStores);
             }
@@ -240,6 +248,26 @@ public class HotRestartTestUtil {
         return new MetricsRegistryImpl(loggingService.getLogger("metrics"), MANDATORY);
     }
 
+    public static DiContainer mockDiContainer() {
+        return new DiContainer()
+                .dep(ILogger.class, createLoggingService().getLogger("com.hazelcast.spi.hotrestart"))
+                .dep("testGcMutex", new Object())
+                .dep(new RecordDataHolder())
+                .dep(GcLogger.class)
+                .dep("persistenceConveyor", concurrentConveyorSingleQueue(null,
+                        new ManyToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
+                .dep("gcConveyor", concurrentConveyorSingleQueue(null,
+                        new OneToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
+                .dep(MutatorCatchup.class)
+                .dep(PrefixTombstoneManager.class, mock(PrefixTombstoneManager.class, withSettings().stubOnly()))
+                .wireAndInitializeAll();
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public static void runWithPausedGC(MockStoreRegistry reg, CatchupRunnable task) {
+        ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcExecutor.class).runWhileGcPaused(task);
+    }
+
     public static void assertRecordEquals(TestRecord expected, DataInputStream actual, boolean valueChunk) throws IOException {
         assertRecordEquals("", expected, actual, valueChunk);
     }
@@ -287,16 +315,17 @@ public class HotRestartTestUtil {
 
     public static File populateRecordFile(File file, List<TestRecord> records, boolean valueRecords) {
         try {
-            ChunkFileOut out = new ChunkFileOut(file, mock(MutatorCatchup.class));
-            ActiveChunk chunk = valueRecords ? new ActiveValChunk(0, "testsuffix", null, out, mock(GcHelper.class)) :
+            final DiContainer di = mockDiContainer();
+            ChunkFileOut out = new ChunkFileOut(file, di.get(MutatorCatchup.class));
+            ActiveChunk chunk = valueRecords ? new ActiveValChunk(0, "testsuffix", null, out, di.get(GcHelper.class)) :
                     new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
             for (TestRecord record : records) {
                 chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, record.valueBytes);
             }
             chunk.fsync();
             return file;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (Exception e) {
+            throw ExceptionUtil.rethrow(e);
         }
     }
 

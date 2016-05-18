@@ -19,34 +19,30 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.g
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateRecordFile;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateTombRecordFile;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.temporaryFile;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkFileCursorIntegrationTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private AtomicInteger counter = new AtomicInteger(1);
 
     @Test
-    public void valueOnTombCursorForbidden() throws IOException, InterruptedException {
+    public void valueOnTombCursorReturnsNull() {
         // GIVEN
-        File file = populateTombRecordFile(temporaryFile(counter), asList(new TestRecord(counter)));
+        File file = populateTombRecordFile(temporaryFile(counter), singletonList(new TestRecord(counter)));
 
         // WHEN
         ChunkFileCursor.Tomb cursor = new ChunkFileCursor.Tomb(file);
         assertTrue(cursor.advance());
 
         // THEN
-        expectedException.expect(UnsupportedOperationException.class);
-        cursor.value();
+        assertNull(cursor.value());
     }
 
     @Test

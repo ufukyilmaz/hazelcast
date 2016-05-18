@@ -115,14 +115,6 @@ public final class HotRestartPersistenceEngine {
         }
     }
 
-    /**
-     * Runs the supplied task while GC activity is paused. This method is provided
-     * strictly to facilitate testing.
-     */
-    public void runWhileGcPaused(CatchupRunnable task) {
-        gcExec.runWhileGcPaused(task);
-    }
-
     final class Put extends RunnableWithStatus {
         final HotRestartKey key;
         final byte[] value;
@@ -179,16 +171,5 @@ public final class HotRestartPersistenceEngine {
         public void run() {
             clear(prefixes);
         }
-    }
-
-
-    // interfaces that expose some internals exclusively for testing purposes
-
-    public interface CatchupRunnable {
-        void run(CatchupTestSupport mc);
-    }
-
-    public interface CatchupTestSupport {
-        int catchupNow();
     }
 }

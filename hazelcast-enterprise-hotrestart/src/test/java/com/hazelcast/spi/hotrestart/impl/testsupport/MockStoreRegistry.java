@@ -15,14 +15,15 @@ import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRe
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 
 public class MockStoreRegistry implements RamStoreRegistry {
-    public static final boolean NEEDS_FSYNC = false;
 
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
     private final MemoryManager memMgr;
+    public final boolean fsyncEnabled;
 
-    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr) throws InterruptedException {
+    public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr, boolean fsyncEnabled) throws InterruptedException {
         this.memMgr = memMgr;
+        this.fsyncEnabled = fsyncEnabled;
         cfg.setRamStoreRegistry(this);
         this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(1, 1, this, cfg.logger());
@@ -62,7 +63,7 @@ public class MockStoreRegistry implements RamStoreRegistry {
     }
 
     public void clear(long... prefixes) {
-        hrStore.clear(NEEDS_FSYNC, prefixes);
+        hrStore.clear(fsyncEnabled, prefixes);
         for (long prefix : prefixes) {
             getOrCreateRecordStoreForPrefix(prefix).clear();
         }
@@ -96,8 +97,8 @@ public class MockStoreRegistry implements RamStoreRegistry {
     MockRecordStore getOrCreateRecordStoreForPrefix(long prefix) {
         MockRecordStore ret = recordStores.get(prefix);
         if (ret == null) {
-            ret = memMgr != null ? new MockRecordStoreOffHeap(prefix, memMgr, hrStore)
-                                 : new MockRecordStoreOnHeap(prefix, hrStore);
+            ret = memMgr != null ? new MockRecordStoreOffHeap(prefix, memMgr, hrStore, fsyncEnabled)
+                                 : new MockRecordStoreOnHeap(prefix, hrStore, fsyncEnabled);
             final MockRecordStore existing = recordStores.putIfAbsent(prefix, ret);
             if (existing != null) {
                 ret = existing;

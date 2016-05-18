@@ -10,8 +10,8 @@ import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 
 public class MockRecordStoreOffHeap extends MockRecordStoreBase {
 
-    MockRecordStoreOffHeap(long prefix, MemoryManager memMgr, HotRestartStore hrStore) {
-        super(prefix, new Long2bytesMapOffHeap(memMgr), hrStore);
+    MockRecordStoreOffHeap(long prefix, MemoryManager memMgr, HotRestartStore hrStore, boolean fsyncEnabled) {
+        super(prefix, new Long2bytesMapOffHeap(memMgr), hrStore, fsyncEnabled);
     }
 
     @Override

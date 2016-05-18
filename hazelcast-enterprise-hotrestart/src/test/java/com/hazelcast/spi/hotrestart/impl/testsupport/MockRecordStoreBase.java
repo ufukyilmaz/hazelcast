@@ -9,17 +9,17 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 
 import java.nio.ByteBuffer;
 
-import static com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry.NEEDS_FSYNC;
-
 public abstract class MockRecordStoreBase implements MockRecordStore {
     final Long2bytesMap ramStore;
     final HotRestartStore hrStore;
     final long prefix;
+    private final boolean fsyncEnabled;
 
-    MockRecordStoreBase(long prefix, Long2bytesMap ramStore, HotRestartStore hrStore) {
+    MockRecordStoreBase(long prefix, Long2bytesMap ramStore, HotRestartStore hrStore, boolean fsyncEnabled) {
         this.ramStore = ramStore;
         this.prefix = prefix;
         this.hrStore = hrStore;
+        this.fsyncEnabled = fsyncEnabled;
     }
 
     @Override
@@ -32,7 +32,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         synchronized (ramStore) {
             ramStore.put(key, value);
         }
-        hrStore.put(hrKey(key), value, NEEDS_FSYNC);
+        hrStore.put(hrKey(key), value, fsyncEnabled);
     }
 
     @Override
@@ -43,7 +43,7 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
             }
             ramStore.remove(key);
         }
-        hrStore.remove(hrKey(key), NEEDS_FSYNC);
+        hrStore.remove(hrKey(key), fsyncEnabled);
     }
 
     @Override

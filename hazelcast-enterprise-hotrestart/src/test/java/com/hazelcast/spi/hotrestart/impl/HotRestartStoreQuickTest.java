@@ -48,12 +48,12 @@ public class HotRestartStoreQuickTest {
     @Test public void testRemoveAllKeys() throws Exception {
         profile.keysetSize = 100;
         final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
-        MockStoreRegistry reg = new MockStoreRegistry(cfg, null);
+        MockStoreRegistry reg = new MockStoreRegistry(cfg, null, false);
         putAll(reg);
         removeAll(reg);
         putAll(reg);
         closeAndDispose(reg);
-        reg = new MockStoreRegistry(cfg, null);
+        reg = new MockStoreRegistry(cfg, null, false);
         removePutAll(reg);
         closeAndDispose(reg);
     }

@@ -5,6 +5,7 @@ import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -21,27 +22,18 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
 import static com.hazelcast.spi.hotrestart.impl.gc.StableChunkBuilder.chunkBuilder;
 import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.INITIAL_TOP_CHUNKS;
 import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.diagnoseChunks;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ValChunkSelectorTest {
 
-    private final DiContainer di = new DiContainer();
+    private DiContainer di;
     private GcLogger loggerWithFinestEnabled;
 
     @Before public void setup() {
-        final ILogger iLogger = createLoggingService().getLogger("com.hazelcast.spi.hotrestart");
-        di.dep(PrefixTombstoneManager.class, mock(PrefixTombstoneManager.class, withSettings().stubOnly()))
-          .dep(MutatorCatchup.class, mock(MutatorCatchup.class, withSettings().stubOnly()))
-          .dep(ILogger.class, iLogger)
-          .dep(GcLogger.class)
-        ;
-        di.wireAndInitializeAll();
-        this.loggerWithFinestEnabled = di.instantiate(GcLoggerFinestEnabled.class);
+        di = HotRestartTestUtil.mockDiContainer();
+        loggerWithFinestEnabled = di.instantiate(GcLoggerFinestEnabled.class);
     }
 
     @Test public void when_goalsAreHigh_then_selectAllChunks() {

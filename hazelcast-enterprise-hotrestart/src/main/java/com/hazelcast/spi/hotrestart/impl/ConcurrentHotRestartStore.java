@@ -91,16 +91,14 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         }
     }
 
-    /**
-     * Gives access to the internal persistence engine, exclusively for testing purposes.
-     */
-    public HotRestartPersistenceEngine getPersistenceEngine() {
-        return persistence;
-    }
-
     @Override
     public String name() {
         return name;
+    }
+
+    /** Gives access to the internal DI container, exclusively for testing purposes. */
+    public DiContainer getDi() {
+        return di;
     }
 
     private void submitAndProceedWhenAllowed(RunnableWithStatus item) {

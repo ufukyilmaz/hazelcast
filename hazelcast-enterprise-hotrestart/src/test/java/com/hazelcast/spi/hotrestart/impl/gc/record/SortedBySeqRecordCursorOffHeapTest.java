@@ -12,6 +12,7 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -23,6 +24,7 @@ import java.util.List;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.mockDiContainer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -38,6 +40,13 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
     private final MemoryManager memMgr =
             new MemoryManagerBean(new StandardMemoryManager(new MemorySize(32, MemoryUnit.MEGABYTES)), AMEM);
+
+    private MutatorCatchup mc;
+
+    @Before
+    public void before() {
+        mc = mockDiContainer().get(MutatorCatchup.class);
+    }
 
     @Test(expected = NullPointerException.class)
     public void seqsAndSlotBasesAreNull() {
@@ -55,10 +64,9 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
     @Test(expected = AssertionError.class)
     @RequireAssertEnabled
-    public void initialisationDisposeAndIteration() {
+    public void initializeDisposeAndIterate() {
         LongArray seqsAndSlotBases = new LongArray(memMgr, 8);
-        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, memMgr,
-                mock(MutatorCatchup.class));
+        SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, memMgr, mc);
 
         cursor.dispose();
 
@@ -69,7 +77,6 @@ public class SortedBySeqRecordCursorOffHeapTest {
     public void recordsShouldBeOrderedBySequenceInCursor() {
         // GIVEN
         int count = 1 << 11;
-        MutatorCatchup mc = mock(MutatorCatchup.class);
         LongArray seqsAndSlotBases = initSeqsAndSlotBases(memMgr, 1, count);
 
         // WHEN

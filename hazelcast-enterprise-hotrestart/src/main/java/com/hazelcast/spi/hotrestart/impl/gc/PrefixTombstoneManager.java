@@ -37,7 +37,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @SuppressFBWarnings(value = "IS", justification =
         "All accesses of the map referred to by mutatorPrefixTombstones are synchronized."
       + " Setter doesn't need synchronization because it is called before GC thread is started.")
-public final class PrefixTombstoneManager {
+// class non-final for the sake of Mockito
+@SuppressWarnings("checkstyle:finalclass")
+public class PrefixTombstoneManager {
     public static final String NEW_FILE_SUFFIX = ".new";
     public static final int SWEEPING_TIMESLICE_MS = 10;
 

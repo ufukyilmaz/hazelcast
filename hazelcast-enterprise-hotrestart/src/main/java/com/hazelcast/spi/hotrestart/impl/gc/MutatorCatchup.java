@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
-import com.hazelcast.spi.hotrestart.impl.HotRestartPersistenceEngine.CatchupTestSupport;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 
@@ -15,10 +14,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * Instance of this class is passed around to allow catching up with
- * the mutator thread at any point along the GC cycle codepath.
+ * Instance of this class is passed around to allow catching up with the mutator thread
+ * at any point along the GC cycle codepath.
  */
-public final class MutatorCatchup implements CatchupTestSupport {
+// class non-final for the sake of Mockito
+@SuppressWarnings("checkstyle:finalclass")
+public class MutatorCatchup {
     /** Base-2 log of the number of calls to {@link #catchupAsNeeded()} before deciding to catch up. */
     public static final int DEFAULT_CATCHUP_INTERVAL_LOG2 = 10;
     private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
@@ -41,21 +42,36 @@ public final class MutatorCatchup implements CatchupTestSupport {
         this.conveyor = conveyor;
     }
 
+    /**
+     * Calls {@link #catchupAsNeeded(int)} with the value of {@link #DEFAULT_CATCHUP_INTERVAL_LOG2}.
+     */
+    // method non-final for the sake of Mockito
     public int catchupAsNeeded() {
         return catchupAsNeeded(DEFAULT_CATCHUP_INTERVAL_LOG2);
     }
 
-    int catchupAsNeeded(int power) {
+    /**
+     * Catches up "as needed", every 2<sup>power</sup> calls to this method.
+     * The call count is reset if {@link #catchupNow()} is called.
+     * @param power as explained above
+     * @return the number of work items drained from the work queue and processed
+     */
+    final int catchupAsNeeded(int power) {
         return (i++ & ((1 << power) - 1)) == 0 ? catchUpWithMutator() : 0;
     }
 
-    @Override
+    /**
+     * Caches up with the mutator thread.
+     * @return the number of work items drained from the work queue and processed
+     */
+    // method non-final for the sake of Mockito
     public int catchupNow() {
         i = 1;
         return catchUpWithMutator();
     }
 
-    public boolean shutdownRequested() {
+    /** @return whether the GC thread was asked to stop. */
+    public final boolean shutdownRequested() {
         return askedToStop;
     }
 
@@ -89,5 +105,11 @@ public final class MutatorCatchup implements CatchupTestSupport {
             m.find();
             logger.fine("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
         }
+    }
+
+
+    /** Allows a task to be run with access to the {@link MutatorCatchup}. Exclusively for testing purposes. */
+    public interface CatchupRunnable {
+        void run(MutatorCatchup mc);
     }
 }

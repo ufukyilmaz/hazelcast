@@ -135,6 +135,7 @@ public abstract class AbstractHotRestartClusterStartTest {
                         instancesList.add(instance);
                     } catch (Exception e) {
                         System.err.println("Node failed to start: " + address + "-> " + e);
+                        e.printStackTrace();
                     } finally {
                         latch.countDown();
                     }

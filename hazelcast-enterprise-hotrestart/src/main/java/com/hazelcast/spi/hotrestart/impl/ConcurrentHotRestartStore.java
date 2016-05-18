@@ -47,7 +47,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         this.persistenceConveyor = persistenceConveyor;
         this.di = di;
         this.persistenceLoop = new PersistenceEngineLoop();
-        this.persistenceThread = new Thread(persistenceLoop, "Hot Restart Persistence Engine");
+        this.persistenceThread = new Thread(persistenceLoop, "Persistence Engine thread for " + storeName);
     }
 
     @Override

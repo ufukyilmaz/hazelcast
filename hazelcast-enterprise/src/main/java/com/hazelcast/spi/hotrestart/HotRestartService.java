@@ -6,8 +6,8 @@ import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
-import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.ManagedService;
@@ -203,6 +203,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             try {
                 runRestarterPipeline(onHeapStores);
                 runRestarterPipeline(offHeapStores);
+            } catch (ForceStartException e) {
+                throw e;
             } catch (Throwable t) {
                 failure = t;
             }
@@ -286,8 +288,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     private void createHotRestartStores() {
-        final MemoryAllocator malloc =
-                ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager().getSystemAllocator();
+        HazelcastMemoryManager memMgr = ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager();
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setRamStoreRegistry(this)
            .setLoggingService(node.loggingService)
@@ -296,15 +297,20 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         for (int i = 0; i < storeCount; i++) {
             onHeapStores[i] = newOnHeapHotRestartStore(cfg.setHomeDir(storeDir(i, true)));
         }
-        if (malloc != null) {
+        if (memMgr != null) {
             offHeapStores = new HotRestartStore[storeCount];
             for (int i = 0; i < storeCount; i++) {
-                offHeapStores[i] = newOffHeapHotRestartStore(cfg.setHomeDir(storeDir(i, false)).setMalloc(malloc));
+                offHeapStores[i] = newOffHeapHotRestartStore(
+                        cfg.setHomeDir(storeDir(i, false)).setMalloc(memMgr.getSystemAllocator()));
             }
         }
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private void runRestarterPipeline(HotRestartStore[] stores) throws Throwable {
+        if (stores == null) {
+            return;
+        }
         assert stores.length == storeCount;
         final long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
         final RamStoreRestartLoop loop =
@@ -346,6 +352,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             awaitCompletionOnPartitionThreads(doneLatch, deadline);
         } catch (Throwable t) {
             failure.compareAndSet(null, t);
+            for (Thread thr : restartThreads) {
+                thr.interrupt();
+            }
         }
         for (Thread thr : restartThreads) {
             thr.join(Math.max(1, deadline - currentTimeMillis()));

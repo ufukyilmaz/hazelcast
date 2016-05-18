@@ -563,9 +563,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     // main thread
     private void waitForFailureOrExpectedStatus(
-            Collection<HotRestartClusterInitializationStatus> expectedStatusses, TimeoutableRunnable runnable, long deadLine
+            Collection<HotRestartClusterInitializationStatus> expectedStatuses, TimeoutableRunnable runnable, long deadLine
     ) throws InterruptedException {
-        while (!expectedStatusses.contains(hotRestartStatus.get())) {
+        while (!expectedStatuses.contains(hotRestartStatus.get())) {
             if (deadLine <= Clock.currentTimeMillis()) {
                 runnable.onTimeout();
             } else if (hotRestartStatus.get() == FORCE_STARTED) {
@@ -770,8 +770,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         @Override
         public void onTimeout() {
             throw new HotRestartException(String.format(
-                    "Could not validate Hot Restart data, validation phase timed out. Started at %s, "
-                    + "timeout %d sec, deadline %s",
+                    "Could not load all Hot Restart data, load phase timed out."
+                            + " Started at %s, timeout %d sec, deadline %s",
                     new Date(loadStartTime),
                     MILLISECONDS.toSeconds(dataLoadTimeout),
                     new Date(loadStartTime + validationTimeout)));

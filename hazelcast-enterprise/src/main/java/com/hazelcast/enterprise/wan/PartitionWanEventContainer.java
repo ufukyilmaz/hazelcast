@@ -1,5 +1,6 @@
 package com.hazelcast.enterprise.wan;
 
+import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WanReplicationEvent;
 
 import java.util.Map;
@@ -8,6 +9,8 @@ import java.util.Map;
  * Contains all map/cache event queues of a partition
  */
 public class PartitionWanEventContainer {
+
+    private static final int DEFAULT_BACKUP_COUNT = 1;
 
     private final PartitionWanEventQueueMap mapWanEventQueueMap = new PartitionWanEventQueueMap();
     private final PartitionWanEventQueueMap cacheWanEventQueueMap = new PartitionWanEventQueueMap();
@@ -54,8 +57,13 @@ public class PartitionWanEventContainer {
     }
 
     private int getBackupCount(WanReplicationEvent wanReplicationEvent) {
-        EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        return evObj.getBackupCount();
+        ReplicationEventObject eventObject = wanReplicationEvent.getEventObject();
+        if (eventObject instanceof EnterpriseReplicationEventObject) {
+            EnterpriseReplicationEventObject evObj = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
+            return evObj.getBackupCount();
+        } else {
+            return DEFAULT_BACKUP_COUNT;
+        }
     }
 
     public PartitionWanEventQueueMap getMapEventQueueMapByBackupCount(int backupCount) {

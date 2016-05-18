@@ -4,6 +4,7 @@ import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
@@ -11,9 +12,12 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
+import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.impl.LocalWanPublisherStatsImpl;
 import com.hazelcast.nio.serialization.Data;
@@ -158,6 +162,10 @@ public abstract class AbstractWanPublisher
     }
 
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
+
+        if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync) {
+            return;
+        }
         removeLocal();
         updateStats(wanReplicationEvent);
         Data wanReplicationEventData
@@ -312,6 +320,12 @@ public abstract class AbstractWanPublisher
         return targetGroupName;
     }
 
+    @Override
+    public void publishMapSyncEvent(PartitionSyncReplicationEventObject eventObject) {
+        WanReplicationEvent wanReplicationEvent = new WanReplicationEvent(MapService.SERVICE_NAME, eventObject);
+        eventQueueContainer.publishMapWanEvent(eventObject.getMapName(), eventObject.getPartitionId(), wanReplicationEvent);
+    }
+
     private class QueuePoller implements Runnable {
 
         private static final int MAX_SLEEP_MS = 2000;
@@ -337,7 +351,7 @@ public abstract class AbstractWanPublisher
                         offered = false;
                         while (!offered && running) {
                             try {
-                                stagingQueue.put(event);
+                                handleEvent(event);
                                 offered = true;
                                 emptyIterationCount = 0;
                             } catch (InterruptedException ignored) {
@@ -358,6 +372,18 @@ public abstract class AbstractWanPublisher
             }
         }
 
+        private void handleEvent(WanReplicationEvent event) throws InterruptedException {
+            if (event.getEventObject() instanceof PartitionSyncReplicationEventObject) {
+                PartitionSyncReplicationEventObject evObj = (PartitionSyncReplicationEventObject) event.getEventObject();
+                for (EntryView entryView : evObj.getEntryViews()) {
+                    EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
+                            evObj.getMapName(), entryView);
+                    WanReplicationEvent wanEvent = new WanReplicationEvent(event.getServiceName(), sync);
+                    stagingQueue.put(wanEvent);
+                }
+            } else {
+                stagingQueue.put(event);
+            }
+        }
     }
-
 }

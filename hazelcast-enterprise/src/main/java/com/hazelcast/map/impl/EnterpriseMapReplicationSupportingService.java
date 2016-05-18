@@ -7,8 +7,10 @@ import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
+import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.map.merge.MapMergePolicy;
+import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
@@ -24,18 +26,28 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {
 
+    private static final String DEFAULT_MERGE_POLICY = PassThroughMergePolicy.class.getName();
+
     private final MapServiceContext mapServiceContext;
     private final NodeEngine nodeEngine;
+    private final MapMergePolicy defaultSyncMergePolicy;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
+        this.defaultSyncMergePolicy = mapServiceContext.getMergePolicyProvider().getMergePolicy(DEFAULT_MERGE_POLICY);
     }
 
     @Override
     public void onReplicationEvent(WanReplicationEvent replicationEvent) {
         Object eventObject = replicationEvent.getEventObject();
         if (eventObject instanceof EnterpriseMapReplicationObject) {
+
+            if (eventObject instanceof EnterpriseMapReplicationSync) {
+                handleSyncObject((EnterpriseMapReplicationSync) eventObject);
+                return;
+            }
+
             EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
             String mapName = mapReplicationObject.getMapName();
             MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
@@ -70,6 +82,17 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
                 completableFuture.getSafely();
             }
         }
+    }
+
+    private void handleSyncObject(EnterpriseMapReplicationSync syncObject) {
+        EntryView<Data, Data> entryView = syncObject.getEntryView();
+        String mapName = syncObject.getMapName();
+        MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
+        Data dataKey = mapServiceContext.toData(entryView.getKey(), mapContainer.getPartitioningStrategy());
+        MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapName);
+        MapOperation operation
+                = operationProvider.createMergeOperation(mapName, dataKey, entryView, defaultSyncMergePolicy, true);
+        invokeOnPartition(entryView.getKey(), operation);
     }
 
     private InternalCompletableFuture invokeOnPartition(Data key, Operation operation) {

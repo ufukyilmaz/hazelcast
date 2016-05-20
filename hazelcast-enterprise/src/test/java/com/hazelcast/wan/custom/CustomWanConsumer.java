@@ -2,13 +2,10 @@ package com.hazelcast.wan.custom;
 
 import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.instance.Node;
 import com.hazelcast.enterprise.wan.WanReplicationConsumer;
+import com.hazelcast.instance.Node;
 import com.hazelcast.wan.WanReplicationEvent;
 
-/**
- * Created by emrah on 09/03/16.
- */
 public class CustomWanConsumer implements WanReplicationConsumer, Runnable {
 
     private volatile boolean running = true;

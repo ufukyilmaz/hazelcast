@@ -9,12 +9,10 @@ import com.hazelcast.wan.WanReplicationEvent;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-/**
- * Created by emrah on 08/03/16.
- */
 public class CustomWanPublisher extends AbstractWanPublisher implements Runnable {
 
-    public static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<WanReplicationEvent>(100);
+    static final BlockingQueue<WanReplicationEvent> EVENT_QUEUE = new ArrayBlockingQueue<WanReplicationEvent>(100);
+
     private volatile boolean running = true;
 
     @Override

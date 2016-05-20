@@ -1,8 +1,7 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecord;
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.CacheConfig;
@@ -16,8 +15,8 @@ import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.TestUtil;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.memory.MemorySize;
@@ -29,6 +28,9 @@ import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.impl.NodeEngineImpl;
+import com.hazelcast.spi.impl.PartitionSpecificRunnable;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -66,6 +68,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.instance.TestUtil.terminateInstance;
@@ -111,8 +114,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
         final String cacheName = randomName();
         CacheConfiguration cacheConfig = new CacheConfig()
-                        .setInMemoryFormat(InMemoryFormat.NATIVE)
-                        .setEvictionConfig(getEvictionConfig());
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(getEvictionConfig());
 
         final ICache cache = (ICache) cacheManager.createCache(cacheName, cacheConfig);
 
@@ -142,6 +145,10 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     private void testNativeMemoryLeakInternal(CacheExpiryPolicyFactory expiryPolicyFactory) throws InterruptedException {
         final Config config = new Config();
+        // Set Max Parallel Replications to max value, so that the initial partitions can sync as soon possible.
+        // Due to a race condition in object destruction, it can happen that the sync operation takes place
+        // while a cache is being destroyed which can result in a memory leak.
+        config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), String.valueOf(Integer.MAX_VALUE));
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         memoryConfig
                 .setEnabled(true)
@@ -151,6 +158,8 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
         HazelcastInstance hz = factory.newHazelcastInstance(config);
         HazelcastInstance hz2 = factory.newHazelcastInstance(config);
+
+        warmUpPartitions(hz, hz2);
 
         CacheManager cacheManager = HazelcastServerCachingProvider.createCachingProvider(hz).getCacheManager();
         final String cacheName = randomName();
@@ -189,49 +198,38 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
         // be sure that there is no migration on going.
         waitAllForSafeState(hz, hz2);
 
-        verifyUsedMemorySizes(cacheName, hz, hz2);
+        AssertionError assertionErrorOnVerifyUsedMemorySizes = null;
+        try {
+            verifyUsedMemorySizes(cacheName, hz, hz2);
+        } catch (AssertionError e) {
+            assertionErrorOnVerifyUsedMemorySizes = e;
+        }
 
         cache.destroy();
 
         try {
-            assertTrueEventually(new AssertFreeMemoryTask(hz, hz2), 10);
-        } catch (AssertionError e) {
+            assertTrueEventually(new AssertFreeMemoryTask(hz, hz2), 30);
+            if (assertionErrorOnVerifyUsedMemorySizes != null) {
+                throw assertionErrorOnVerifyUsedMemorySizes;
+            }
+        } catch (AssertionError assertionErrorOnVerifyFreeMemorySizes) {
             dumpNativeMemory(hz);
             dumpNativeMemory(hz2);
-            throw e;
+            if (assertionErrorOnVerifyUsedMemorySizes != null) {
+                assertionErrorOnVerifyUsedMemorySizes.printStackTrace();
+            }
+            throw assertionErrorOnVerifyFreeMemorySizes;
         }
     }
 
-    private void verifyUsedMemorySizes(String cacheName, HazelcastInstance ... hzInstances) {
+    private void verifyUsedMemorySizes(String cacheName, HazelcastInstance... hzInstances) {
         for (HazelcastInstance hzInstance : hzInstances) {
             verifyUsedMemorySize(cacheName, hzInstance);
         }
     }
 
     private void verifyUsedMemorySize(String cacheName, HazelcastInstance hzInstance) {
-        String cacheNameWithPrefix = "/hz/" + cacheName;
-        Node node = TestUtil.getNode(hzInstance);
-        int partitionCount = node.getPartitionService().getPartitionCount();
-        EnterpriseCacheService cacheService = node.getNodeEngine().getService(CacheService.SERVICE_NAME);
-        long actualUsedMemorySize = cacheService.getOrCreateHiDensityCacheInfo(cacheNameWithPrefix).getUsedMemory();
-        long expectedUsedMemorySize = 0L;
-        for (int i = 0; i < partitionCount; i++) {
-            HiDensityNativeMemoryCacheRecordStore cacheRecordStore =
-                    (HiDensityNativeMemoryCacheRecordStore) cacheService.getRecordStore(cacheNameWithPrefix, i);
-            if (cacheRecordStore != null) {
-                HiDensityRecordProcessor cacheRecordProcessor = cacheRecordStore.getRecordProcessor();
-                for (Map.Entry<Data, CacheRecord> entry : cacheRecordStore.getReadOnlyRecords().entrySet()) {
-                    NativeMemoryData key = (NativeMemoryData) entry.getKey();
-                    HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) entry.getValue();
-                    expectedUsedMemorySize += cacheRecordProcessor.getSize(key);
-                    expectedUsedMemorySize += cacheRecordProcessor.getSize(record);
-                    expectedUsedMemorySize += cacheRecordProcessor.getSize(record.getValue());
-                }
-            }
-        }
-
-        assertEquals("Expected and actual memory usage sizes are not equal on " + hzInstance,
-                expectedUsedMemorySize, actualUsedMemorySize);
+        assertTrueEventually(new CacheMemorySizeAssertTask(hzInstance, "/hz/" + cacheName));
     }
 
     private static CacheConfiguration createCacheConfiguration(Factory<ExpiryPolicy> expiryPolicyFactory) {
@@ -288,7 +286,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                     fail("Should not get this exception!");
                 }
 
-                if (++counter % 5000 == 0 && (start + TIMEOUT) < System.currentTimeMillis()) {
+                if (++counter % 1000 == 0 && (start + TIMEOUT) < System.currentTimeMillis()) {
                     break;
                 }
             }
@@ -511,7 +509,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry)
                         throws CacheWriterException {
                     Integer keyValue = entry.getKey().intValue();
-                    if (keyValue % 10 == 0) {
+                    if (keyValue % 1000 == 0) {
                         throw new CacheWriterException("Key value is invalid: " + keyValue);
                     }
                 }
@@ -527,7 +525,7 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
                 @Override
                 public void delete(Object key) throws CacheWriterException {
                     Integer keyValue = (Integer) key;
-                    if (keyValue % 10 == 0) {
+                    if (keyValue % 1000 == 0) {
                         throw new CacheWriterException("Key value is invalid: " + keyValue);
                     }
                 }
@@ -561,21 +559,102 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
 
     }
 
+    private static class CacheMemorySizeAssertTask extends AssertTask {
+
+        private final HazelcastInstance instance;
+        private final String cacheNameWithPrefix;
+        private final int partitionCount;
+        private final InternalOperationService operationService;
+        private final EnterpriseCacheService cacheService;
+
+        private CacheMemorySizeAssertTask(HazelcastInstance instance, String cacheNameWithPrefix) {
+            this.instance = instance;
+            this.cacheNameWithPrefix = cacheNameWithPrefix;
+
+            NodeEngineImpl nodeEngine = getNodeEngineImpl(instance);
+            this.partitionCount = nodeEngine.getPartitionService().getPartitionCount();
+            this.operationService = nodeEngine.getOperationService();
+            this.cacheService = nodeEngine.getService(EnterpriseCacheService.SERVICE_NAME);
+        }
+
+        @Override
+        public void run() throws Exception {
+            final AtomicLong actualMemorySize = new AtomicLong();
+            final CountDownLatch latch = new CountDownLatch(partitionCount);
+
+            for (int i = 0; i < partitionCount; i++) {
+                PartitionedCacheMemorySizeTask cacheMemorySizeTask =
+                        new PartitionedCacheMemorySizeTask(cacheService, cacheNameWithPrefix, i, actualMemorySize, latch);
+                operationService.execute(cacheMemorySizeTask);
+            }
+
+            assertTrue(latch.await(30, TimeUnit.SECONDS));
+
+            final long expectedMemorySize = cacheService.getOrCreateHiDensityCacheInfo(cacheNameWithPrefix).getUsedMemory();
+            assertEquals("Expected and actual memory usage sizes are not equal on " + instance,
+                    expectedMemorySize, actualMemorySize.get());
+        }
+
+    }
+
+    private static class PartitionedCacheMemorySizeTask implements PartitionSpecificRunnable {
+
+        private final EnterpriseCacheService cacheService;
+        private final String cacheNameWithPrefix;
+        private final int partitionId;
+        private final AtomicLong actualMemorySize;
+        private final CountDownLatch latch;
+
+        private PartitionedCacheMemorySizeTask(EnterpriseCacheService cacheService, String cacheNameWithPrefix, int partitionId,
+                                               AtomicLong actualMemorySize, CountDownLatch latch) {
+            this.cacheService = cacheService;
+            this.cacheNameWithPrefix = cacheNameWithPrefix;
+            this.partitionId = partitionId;
+            this.actualMemorySize = actualMemorySize;
+            this.latch = latch;
+        }
+
+        @Override
+        public void run() {
+            try {
+                HiDensityCacheRecordStore cacheRecordStore =
+                        (HiDensityCacheRecordStore) cacheService.getRecordStore(cacheNameWithPrefix, partitionId);
+                if (cacheRecordStore != null) {
+                    HiDensityRecordProcessor cacheRecordProcessor = cacheRecordStore.getRecordProcessor();
+                    for (Map.Entry<Data, CacheRecord> entry : cacheRecordStore.getReadOnlyRecords().entrySet()) {
+                        NativeMemoryData key = (NativeMemoryData) entry.getKey();
+                        HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) entry.getValue();
+                        actualMemorySize.addAndGet(cacheRecordProcessor.getSize(key));
+                        actualMemorySize.addAndGet(cacheRecordProcessor.getSize(record));
+                        actualMemorySize.addAndGet(cacheRecordProcessor.getSize(record.getValue()));
+                    }
+                }
+            } finally {
+                latch.countDown();
+            }
+        }
+
+        @Override
+        public int getPartitionId() {
+            return partitionId;
+        }
+
+    }
+
     private static class AssertFreeMemoryTask extends AssertTask {
 
-        final MemoryStats memoryStats;
-        final MemoryStats memoryStats2;
+        private final MemoryStats memoryStats;
+        private final MemoryStats memoryStats2;
 
-        public AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
+        private AssertFreeMemoryTask(HazelcastInstance hz, HazelcastInstance hz2) {
             memoryStats = getNode(hz).hazelcastInstance.getMemoryStats();
             memoryStats2 = getNode(hz2).hazelcastInstance.getMemoryStats();
         }
 
         @Override
         public void run() throws Exception {
-            String message =
-                    "Node1: " + toPrettyString(memoryStats.getUsedNativeMemory())
-                            + ", Node2: " + toPrettyString(memoryStats2.getUsedNativeMemory());
+            String message = "Node1: " + toPrettyString(memoryStats.getUsedNativeMemory())
+                    + ", Node2: " + toPrettyString(memoryStats2.getUsedNativeMemory());
 
             assertEquals(message, 0, memoryStats.getUsedNativeMemory());
             assertEquals(message, 0, memoryStats2.getUsedNativeMemory());
@@ -602,14 +681,15 @@ public class CacheNativeMemoryLeakStressTest extends HazelcastTestSupport {
             public void accept(long key, long value) {
                 if (value == HiDensityNativeMemoryCacheRecord.SIZE) {
                     HiDensityNativeMemoryCacheRecord record = new HiDensityNativeMemoryCacheRecord(null, key);
-                    System.err.println(
-                            (++k) + ". Record Address: " + key + " (Value Address: " + record.getValueAddress() + ")");
+                    System.err.println((++k) + ". Record Address: " + key
+                            + " (Value Address: " + record.getValueAddress() + ")");
                 } else if (value == 13) {
                     System.err.println((++k) + ". Key Address: " + key);
                 } else {
                     System.err.println((++k) + ". Value Address: " + key + ", size: " + value);
                 }
             }
+
         });
     }
 

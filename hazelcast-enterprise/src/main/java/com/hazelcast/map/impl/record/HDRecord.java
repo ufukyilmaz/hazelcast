@@ -3,15 +3,10 @@ package com.hazelcast.map.impl.record;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.Clock;
 
-import java.io.IOException;
-
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
-import static com.hazelcast.map.impl.record.HDRecordFactory.NOT_AVAILABLE;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -20,7 +15,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
  */
-public class HDRecord extends HiDensityRecord implements Record<Data>, RecordStatistics {
+public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     /*
      * Structure:
@@ -124,17 +119,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     }
 
     @Override
-    public RecordStatistics getStatistics() {
-        return this;
-    }
-
-    @Override
-    public void setStatistics(RecordStatistics recordStatistics) {
-        setLastStoredTime(recordStatistics.getLastStoredTime());
-        setExpirationTime(recordStatistics.getExpirationTime());
-    }
-
-    @Override
     public void onAccess(long now) {
         setHits(getHits() + 1);
 
@@ -151,18 +135,13 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
 
     @Override
     public void onStore() {
-        store();
-    }
-
-    @Override
-    public void store() {
         setLastStoredTime(Clock.currentTimeMillis());
     }
 
     @Override
     public long getCost() {
         // This is heap cost. For NATIVE we are not calculating this cost.
-        return getMemoryCost();
+        return 0L;
     }
 
     @Override
@@ -201,11 +180,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     @Override
     public void clear() {
         zero();
-    }
-
-    @Override
-    public long getMemoryCost() {
-        return 0L;
     }
 
     public long getKeyAddress() {
@@ -319,18 +293,6 @@ public class HDRecord extends HiDensityRecord implements Record<Data>, RecordSta
     @Override
     public void setExpirationTime(long expirationTime) {
         setWithCreationTime(EXPIRATION_TIME_OFFSET, expirationTime);
-    }
-
-    @Override
-    public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeLong(getLastStoredTime());
-        out.writeLong(getExpirationTime());
-    }
-
-    @Override
-    public void readData(ObjectDataInput in) throws IOException {
-        setLastStoredTime(in.readLong());
-        setExpirationTime(in.readLong());
     }
 
     @Override

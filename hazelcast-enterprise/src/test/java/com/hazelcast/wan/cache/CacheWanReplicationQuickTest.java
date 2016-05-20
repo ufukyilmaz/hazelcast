@@ -33,13 +33,12 @@ public class CacheWanReplicationQuickTest extends CacheWanReplicationTestSupport
     private static final String NO_DELAY_IMPL = WanNoDelayReplication.class.getName();
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
 
-
-    HazelcastInstance[] basicCluster = new HazelcastInstance[2];
-    TestHazelcastInstanceFactory factory;
+    private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
+    private TestHazelcastInstanceFactory factory;
 
     @Parameterized.Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {NO_DELAY_IMPL, NATIVE},
                 {NO_DELAY_IMPL, BINARY},
                 {BATCH_IMPL, NATIVE},

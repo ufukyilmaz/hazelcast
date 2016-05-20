@@ -5,13 +5,12 @@ import com.hazelcast.cache.impl.merge.policy.CacheMergePolicyProvider;
 import com.hazelcast.config.InvalidConfigurationException;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -23,15 +22,20 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class CacheMergePolicyProviderTest extends HazelcastTestSupport{
+public class CacheMergePolicyProviderTest extends HazelcastTestSupport {
 
-    HazelcastInstance instance;
-    TestHazelcastInstanceFactory factory;
+    private HazelcastInstance instance;
+    private TestHazelcastInstanceFactory factory;
 
     @Before
     public void setup() {
         factory = createHazelcastInstanceFactory(1);
         instance = factory.newHazelcastInstance();
+    }
+
+    @After
+    public void tearDown() {
+        factory.terminateAll();
     }
 
     @Test(expected = InvalidConfigurationException.class)
@@ -56,5 +60,4 @@ public class CacheMergePolicyProviderTest extends HazelcastTestSupport{
         CacheMergePolicy mergePolicy = cacheMergePolicyProvider.getMergePolicy(CustomCacheMergePolicy.class.getName());
         assertTrue(mergePolicy instanceof CustomCacheMergePolicy);
     }
-
 }

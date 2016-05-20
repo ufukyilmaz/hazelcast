@@ -9,7 +9,7 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.HazelcastInstanceManager;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
@@ -85,7 +85,7 @@ public abstract class AbstractHotRestartClusterStartTest {
             throw new IllegalStateException("Failed to create hot-restart directory!");
         }
         if (USE_NETWORK) {
-            HazelcastInstanceManager.terminateAll();
+            HazelcastInstanceFactory.terminateAll();
         }
     }
 
@@ -96,7 +96,7 @@ public abstract class AbstractHotRestartClusterStartTest {
             factory = null;
         }
         if (USE_NETWORK) {
-            HazelcastInstanceManager.terminateAll();
+            HazelcastInstanceFactory.terminateAll();
         }
         IOUtil.delete(hotRestartDir);
     }
@@ -207,7 +207,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         factory.terminateAll();
         factory = null;
         if (USE_NETWORK) {
-            HazelcastInstanceManager.terminateAll();
+            HazelcastInstanceFactory.terminateAll();
         }
     }
 
@@ -217,7 +217,7 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     protected Collection<HazelcastInstance> getAllInstances() {
         return USE_NETWORK
-                ? HazelcastInstanceManager.getAllHazelcastInstances()
+                ? HazelcastInstanceFactory.getAllHazelcastInstances()
                 : factory.getAllHazelcastInstances();
     }
 

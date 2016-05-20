@@ -8,7 +8,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
-import com.hazelcast.instance.HazelcastInstanceManager;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.TestUtil;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.tcp.SocketChannelWrapper;
@@ -50,7 +50,7 @@ public class SSLConnectionTest {
     @Before
     @After
     public void killAllHazelcastInstances() throws IOException {
-        HazelcastInstanceManager.terminateAll();
+        HazelcastInstanceFactory.terminateAll();
     }
 
     @Test(timeout = 1000 * 60)

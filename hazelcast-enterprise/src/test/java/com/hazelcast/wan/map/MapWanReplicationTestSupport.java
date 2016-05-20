@@ -57,9 +57,9 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
     }
 
-    protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+    void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         HazelcastInstance node = getNode(cluster);
-        IMap m = node.getMap(mapName);
+        IMap<Integer, String> m = node.getMap(mapName);
         for (; start < end; start++) {
             m.put(start, node.getConfig().getGroupConfig().getName() + start);
         }
@@ -109,7 +109,6 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         return true;
     }
 
-
     boolean checkKeysNotIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         IMap m = getMap(cluster, mapName);
         for (; start < end; start++) {
@@ -130,7 +129,6 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         });
     }
 
-
     void assertKeysIn(final HazelcastInstance[] cluster, final String mapName, final int start, final int end) {
         assertTrueEventually(new AssertTask() {
             public void run() {
@@ -139,7 +137,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
+    void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceGroupName));
@@ -181,7 +179,7 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }
     }
 
-    IMap getMap(HazelcastInstance[] cluster, String mapName) {
+    IMap<Integer, Integer> getMap(HazelcastInstance[] cluster, String mapName) {
         HazelcastInstance node = getNode(cluster);
         return node.getMap(mapName);
     }

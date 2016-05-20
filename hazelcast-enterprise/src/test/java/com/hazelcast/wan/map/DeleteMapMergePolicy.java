@@ -11,7 +11,7 @@ import java.io.IOException;
  * Custom {@link MapMergePolicy} that ignores merging and existing entries and returns null
  * that ends up with deletion of the related key.
  */
-public class DeleteMapMergePolicy implements MapMergePolicy {
+class DeleteMapMergePolicy implements MapMergePolicy {
 
     @Override
     public Object merge(String mapName, EntryView mergingEntry, EntryView existingEntry) {
@@ -25,6 +25,5 @@ public class DeleteMapMergePolicy implements MapMergePolicy {
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
-
     }
 }

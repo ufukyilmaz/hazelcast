@@ -48,5 +48,4 @@ public class EWRDataSerializerHookTest {
         EWRDataSerializerHook hook = new EWRDataSerializerHook();
         hook.createFactory().create(999);
     }
-
 }

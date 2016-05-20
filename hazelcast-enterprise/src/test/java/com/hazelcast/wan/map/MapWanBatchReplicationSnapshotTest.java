@@ -5,7 +5,6 @@ import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -28,7 +27,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
     }
 
     @Test
-    public void VTopo_2passiveReplicar_1producer_Test() {
+    public void VTopo_2passiveReplica_1producer() {
         String replicaName = "multiReplica";
         setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName());
@@ -49,7 +48,7 @@ public class MapWanBatchReplicationSnapshotTest extends MapWanReplicationTestSup
     }
 
     @Test
-    public void VTopo_1passiveReplicar_2producers_Test_PutIfAbsentMapMergePolicy() {
+    public void VTopo_1passiveReplica_2producers_withPutIfAbsentMapMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
         startAllClusters();

@@ -6,6 +6,7 @@ import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
@@ -21,7 +22,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -60,7 +60,7 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         joinConfig.getMulticastConfig().setEnabled(false);
         joinConfig.getTcpIpConfig().setEnabled(true);
         joinConfig.getTcpIpConfig().addMember("127.0.0.1");
-        if(isNativeMemoryEnabled()) {
+        if (isNativeMemoryEnabled()) {
             config.setNativeMemoryConfig(getMemoryConfig());
         }
         return config;
@@ -102,14 +102,13 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return cluster[random.nextInt(cluster.length)];
     }
 
-
     protected String getClusterEndPoints(Config config, int count) {
         StringBuilder ends = new StringBuilder();
 
         int port = config.getNetworkConfig().getPort();
 
         for (int i = 0; i < count; i++) {
-            ends.append(new String("127.0.0.1:" + port++ + ","));
+            ends.append("127.0.0.1:").append(port++).append(",");
         }
         return ends.toString();
     }
@@ -126,16 +125,14 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
         return target;
     }
 
-    protected void printReplicaConfig(Config c) {
-
-        Map m = c.getWanReplicationConfigs();
-        Set<Map.Entry> s = m.entrySet();
-        for (Map.Entry e : s) {
-            System.out.println(e.getKey() + " ==> " + e.getValue());
+    protected void printReplicaConfig(Config config) {
+        Map<String, WanReplicationConfig> configs = config.getWanReplicationConfigs();
+        for (Map.Entry<String, WanReplicationConfig> entry : configs.entrySet()) {
+            System.out.println(entry.getKey() + " ==> " + entry.getValue());
         }
     }
 
-    protected void printAllReplicarConfig() {
+    protected void printAllReplicaConfig() {
         System.out.println();
         System.out.println("==configA==");
         printReplicaConfig(configA);
@@ -166,19 +163,24 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
     private NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(128, MemoryUnit.MEGABYTES);
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                        .setSize(memorySize).setEnabled(true);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                .setSize(memorySize).setEnabled(true);
+    }
+
+    public void startGatedThread(GatedThread thread) {
+        thread.start();
     }
 
     public abstract class GatedThread extends Thread {
+
         private final CyclicBarrier gate;
 
-        public GatedThread(CyclicBarrier gate) {
+        protected GatedThread(CyclicBarrier gate) {
             this.gate = gate;
         }
 
+        @Override
         public void run() {
             try {
                 gate.await();
@@ -192,9 +194,4 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
 
         abstract public void go();
     }
-
-    public void startGatedThread(GatedThread t) {
-        t.start();
-    }
-
 }

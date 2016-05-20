@@ -19,6 +19,7 @@ import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
@@ -27,13 +28,11 @@ import com.hazelcast.util.MapUtil;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
@@ -49,9 +48,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         return config;
     }
 
-    // V topo config 1 passive replicar, 2 producers
     @Test
-    public void VTopo_1passiveReplicar_2producers_Test_PassThroughMergePolicy() {
+    public void VTopo_1passiveReplica_2producers_withPassThroughMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         startAllClusters();
@@ -78,7 +76,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertKeysNotIn(clusterC, "map", 0, 2000);
         assertDataSizeEventually(clusterC, "map", 0);
-
     }
 
     @Test
@@ -95,14 +92,15 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         startClusterB();
         assertKeysNotIn(clusterB, "map", 0, 1000);
 
-        EnterpriseWanReplicationService wanReplicationService = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
+        EnterpriseWanReplicationService wanReplicationService
+                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
         wanReplicationService.syncMap("atob", "B", "map");
 
         assertKeysIn(clusterB, "map", 0, 1000);
     }
 
     @Test
-    public void syncUsingRestApi() throws IOException {
+    public void syncUsingRestApi() throws Exception {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
@@ -144,9 +142,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertKeysNotIn(clusterC, "map", 0, 20);
     }
 
-    //"Issue #1371 this topology requested hear https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ")
+    // Issue #1371 this topology was requested here https://groups.google.com/forum/#!msg/hazelcast/73jJo9W_v4A/5obqKMDQAnoJ
     @Test
-    public void VTopo_1activeActiveReplicar_2producers_Test_PassThroughMergePolicy() {
+    public void VTopo_1activeActiveReplica_2producers_withPassThroughMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
 
@@ -155,7 +153,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         startAllClusters();
 
-        printAllReplicarConfig();
+        printAllReplicaConfig();
 
         createDataIn(clusterA, "map", 0, 100);
         createDataIn(clusterB, "map", 100, 200);
@@ -168,7 +166,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void VTopo_1passiveReplicar_2producers_Test_PutIfAbsentMapMergePolicy() {
+    public void VTopo_1passiveReplica_2producers_withPutIfAbsentMapMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PutIfAbsentMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PutIfAbsentMapMergePolicy.class.getName());
         startAllClusters();
@@ -185,9 +183,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertDataSizeEventually(clusterC, "map", 200);
     }
 
-
     @Test
-    public void VTopo_1passiveReplicar_2producers_Test_LatestUpdateMapMergePolicy() {
+    public void VTopo_1passiveReplica_2producers_withLatestUpdateMapMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", LatestUpdateMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", LatestUpdateMapMergePolicy.class.getName());
         startAllClusters();
@@ -210,7 +207,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void VTopo_1passiveReplicar_2producers_Test_HigherHitsMapMergePolicy() {
+    public void VTopo_1passiveReplica_2producers_withHigherHitsMapMergePolicy() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", HigherHitsMapMergePolicy.class.getName());
         startAllClusters();
@@ -228,9 +225,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertDataInFromWithSleep(clusterC, "map", 0, 10, clusterB);
     }
 
-    //("Issue #1368 multi replicar topology cluster A replicates to B and C")
+    // Issue #1368 multi replica topology cluster A replicates to B and C
     @Test
-    public void VTopo_2passiveReplicar_1producer_Test() {
+    public void VTopo_2passiveReplica_1producer() {
         String replicaName = "multiReplica";
         setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configA, configC, clusterC.length, replicaName, PassThroughMergePolicy.class.getName());
@@ -251,8 +248,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    @Ignore //see #linkTopo_ActiveActiveReplication_Threading_Test
-    public void linkTopo_ActiveActiveReplication_Test() {
+    @Ignore // see #linkTopo_ActiveActiveReplication_withThreading
+    public void linkTopo_ActiveActiveReplication() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -277,9 +274,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertDataSizeEventually(clusterB, "map", 1000);
     }
 
-
     @Test
-    public void linkTopo_ActiveActiveReplication_2clusters_Test_HigherHitsMapMergePolicy() {
+    public void linkTopo_ActiveActiveReplication_2clusters_withHigherHitsMapMergePolicy() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
         startClusterA();
@@ -295,8 +291,8 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    @Ignore //Same of replicationRing
-    public void chainTopo_2passiveReplicars_1producer() {
+    @Ignore // same of replicationRing
+    public void chainTopo_2passiveReplicas_1producer() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());
         startAllClusters();
@@ -341,7 +337,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void linkTopo_ActiveActiveReplication_Threading_Test() throws InterruptedException, BrokenBarrierException {
+    public void linkTopo_ActiveActiveReplication_withThreading() throws Exception {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configA, clusterA.length, "btoa", PassThroughMergePolicy.class.getName());
         startClusterA();
@@ -409,28 +405,28 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void putAllTest() {
+    public void putAll() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
-        Map<Object, Object> inputMap = MapUtil.createHashMap(10);
+        Map<Integer, Integer> inputMap = MapUtil.createHashMap(10);
         for (int i = 0; i < 10; i++) {
             inputMap.put(i, i);
         }
-        IMap map = getMap(clusterA, "map");
+        IMap<Integer, Integer> map = getMap(clusterA, "map");
         map.putAll(inputMap);
 
         assertKeysIn(clusterB, "map", 0, 10);
     }
 
     @Test
-    public void entryOperationTest() throws Exception {
+    public void entryOperation() throws Exception {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
 
-        IMap map = getMap(clusterA, "map");
+        IMap<Integer, Integer> map = getMap(clusterA, "map");
         for (int i = 0; i < 20; i++) {
             map.put(i, i);
         }
@@ -440,7 +436,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         MapOperationProvider operationProvider = mapServiceContext.getMapOperationProvider(mapProxy.getName());
 
         InternalSerializationService serializationService = getSerializationService(clusterA[0]);
-        Set keySet = new HashSet();
+        Set<Data> keySet = new HashSet<Data>();
         for (int i = 0; i < 10; i++) {
             keySet.add(serializationService.toData(i));
         }
@@ -464,19 +460,21 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         IPartitionService partitionService = getPartitionService(clusterA[0]);
 
-        MapOperation updatingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(), serializationService.toData(10), new UpdatingEntryProcessor());
+        MapOperation updatingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(),
+                serializationService.toData(10), new UpdatingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, updatingEntryOperation, partitionService.getPartitionId(10));
 
         checkDataInFrom(clusterB, "map", 10, 11, "EP");
 
-        MapOperation deletingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(), serializationService.toData(10), new DeletingEntryProcessor());
+        MapOperation deletingEntryOperation = operationProvider.createEntryOperation(mapProxy.getName(),
+                serializationService.toData(10), new DeletingEntryProcessor());
         operationService.invokeOnPartition(MapService.SERVICE_NAME, deletingEntryOperation, partitionService.getPartitionId(10));
 
         assertKeysNotIn(clusterB, "map", 10, 11);
     }
 
     @Test
-    public void putFromLoadAllTest() {
+    public void putFromLoadAll() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
 
         MapConfig mapConfig = configA.getMapConfig("stored-map");
@@ -502,8 +500,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertKeysIn(clusterB, "stored-map", 0, 10);
     }
 
-    private static class UpdatingEntryProcessor
-            implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
+    private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override
         public Object process(Map.Entry<Object, Object> entry) {
@@ -522,8 +519,7 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
     }
 
-    private static class DeletingEntryProcessor
-            implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
+    private static class DeletingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override
         public Object process(Map.Entry<Object, Object> entry) {
@@ -542,8 +538,9 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
     }
 
-    private static class SimpleStore implements MapStore {
-        private ConcurrentMap store = new ConcurrentHashMap();
+    private static class SimpleStore implements MapStore<Object, Object> {
+
+        private ConcurrentMap<Object, Object> store = new ConcurrentHashMap<Object, Object>();
 
         @Override
         public void store(Object key, Object value) {
@@ -551,24 +548,18 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
 
         @Override
-        public void storeAll(Map map) {
-            final Set<Map.Entry> entrySet = map.entrySet();
-            for (Map.Entry entry : entrySet) {
-                final Object key = entry.getKey();
-                final Object value = entry.getValue();
-                store(key, value);
+        public void storeAll(Map<Object, Object> map) {
+            for (Map.Entry<Object, Object> entry : map.entrySet()) {
+                store(entry.getKey(), entry.getValue());
             }
-
         }
 
         @Override
         public void delete(Object key) {
-
         }
 
         @Override
         public void deleteAll(Collection keys) {
-
         }
 
         @Override
@@ -577,17 +568,17 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         }
 
         @Override
-        public Map loadAll(Collection keys) {
-            final Map map = new HashMap();
+        public Map<Object, Object> loadAll(Collection<Object> keys) {
+            Map<Object, Object> map = new HashMap<Object, Object>();
             for (Object key : keys) {
-                final Object value = load(key);
+                Object value = load(key);
                 map.put(key, value);
             }
             return map;
         }
 
         @Override
-        public Set loadAllKeys() {
+        public Set<Object> loadAllKeys() {
             return store.keySet();
         }
     }

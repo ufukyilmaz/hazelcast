@@ -26,15 +26,14 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
     private static final String CUSTOM_PUBLISHER = CustomWanPublisher.class.getName();
     private static final String CUSTOM_CONSUMER = CustomWanConsumer.class.getName();
 
-
-    HazelcastInstance[] sourceCluster = new HazelcastInstance[2];
-    HazelcastInstance[] targetCluster = new HazelcastInstance[2];
-    TestHazelcastInstanceFactory factory;
+    private HazelcastInstance[] sourceCluster = new HazelcastInstance[2];
+    private HazelcastInstance[] targetCluster = new HazelcastInstance[2];
+    private TestHazelcastInstanceFactory factory;
 
     @Before
     public void setup() {
-        factory = createHazelcastInstanceFactory(4);
         super.setup();
+        factory = createHazelcastInstanceFactory(4);
     }
 
     @Test
@@ -52,7 +51,7 @@ public class MapCustomWanReplicationQuickTest extends MapWanReplicationTestSuppo
         assertDataInFrom(targetCluster, "map", 0, 100, configA.getGroupConfig().getName());
     }
 
-    private void initializeConsumerConfig(Config config){
+    private void initializeConsumerConfig(Config config) {
         WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
         wanReplicationConfig.setName("b");
 

@@ -33,7 +33,7 @@ import java.util.Set;
 
 public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation implements BackupAwareOperation {
 
-    private Set<Data> keys;
+    protected Set<Data> keys;
 
     public HDMultipleEntryOperation() {
     }
@@ -57,12 +57,15 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
 
         final Set<Data> keys = this.keys;
         for (Data dataKey : keys) {
-            if (keyNotOwnedByThisPartition(dataKey)) {
+            if (isKeyProcessable(dataKey)) {
                 continue;
             }
             final Object value = recordStore.get(dataKey, false);
 
             final Map.Entry entry = createMapEntry(dataKey, value);
+            if (!isEntryProcessable(entry)) {
+                continue;
+            }
 
             final Data response = process(entry);
 
@@ -89,7 +92,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
 
     @Override
     public boolean shouldBackup() {
-        return entryProcessor.getBackupProcessor() != null;
+        return mapContainer.getTotalBackupCount() > 0 && entryProcessor.getBackupProcessor() != null;
     }
 
     @Override

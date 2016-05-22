@@ -69,7 +69,9 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
         synchronized (mutex) {
             storage.clear(isDuringShutdown);
         }
-        hotRestartStore.clear(fsync, prefix);
+        if (!isDuringShutdown) {
+            hotRestartStore.clear(fsync, prefix);
+        }
     }
 
     @Override
@@ -77,7 +79,9 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
         synchronized (mutex) {
             storage.destroy(isDuringShutdown);
         }
-        hotRestartStore.clear(fsync, prefix);
+        if (!isDuringShutdown) {
+            hotRestartStore.clear(fsync, prefix);
+        }
     }
 
     @Override

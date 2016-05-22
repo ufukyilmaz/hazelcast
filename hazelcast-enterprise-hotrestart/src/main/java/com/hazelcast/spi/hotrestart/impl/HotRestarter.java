@@ -133,13 +133,13 @@ public final class HotRestarter {
         } catch (Throwable t) {
             localFailure = t;
         }
-        sendSubmitterGone(keySenders);
+        localFailure = firstNonNull(localFailure, sendSubmitterGone(keySenders));
         try {
             rebuilderThread.join(SECONDS.toMillis(2));
             if (localFailure == null && rebuilderThread.isAlive()) {
                 logger.warning("Timed out while joining Rebuilder thread");
             }
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException e) {
             currentThread().interrupt();
         }
         propagateLocalAndRebuilderFailure(localFailure);
@@ -229,19 +229,25 @@ public final class HotRestarter {
         }
     }
 
-    @SuppressWarnings("checkstyle:emptyblock")
-    static void sendSubmitterGone(ConcurrentConveyorSingleQueue<RestartItem>... conveyors) {
+    static ConcurrentConveyorException sendSubmitterGone(ConcurrentConveyorSingleQueue<RestartItem>... conveyors) {
         final RestartItem goneItem = conveyors[0].submitterGoneItem();
         for (ConcurrentConveyorSingleQueue<RestartItem> valueConveyor : conveyors) {
             try {
                 valueConveyor.submit(goneItem);
-            } catch (Exception ignored) { }
+            } catch (ConcurrentConveyorException e) {
+                return e;
+            }
         }
+        return null;
+    }
+
+    private static <T> T firstNonNull(T t1, T t2) {
+        return t1 != null ? t1 : t2;
     }
 
     private class RebuilderLoop implements Runnable {
         private final int submitterCount = keyHandleReceiver.queueCount();
-        private final List<RestartItem> drain = new ArrayList<RestartItem>(keyHandleReceiver.queue(0).capacity());
+        private final List<RestartItem> batch = new ArrayList<RestartItem>(keyHandleReceiver.queue(0).capacity());
         private final Map<Long, SetOfKeyHandle> tombKeys = new Long2ObjectHashMap<SetOfKeyHandle>();
         private final RestartItem submitterGoneItem = keyHandleReceiver.submitterGoneItem();
         private int submitterGoneCount;
@@ -290,8 +296,8 @@ public final class HotRestarter {
             for (long itemsDrained = 0; itemsDrained != recordCountInCurrentPhase;) {
                 checkSubmittersGone();
                 for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
-                    drain.clear();
-                    final int count = keyHandleReceiver.drainTo(i, drain);
+                    batch.clear();
+                    final int count = keyHandleReceiver.drainTo(i, batch);
                     if (count > 0) {
                         processTombstoneDrain();
                         itemsDrained += count;
@@ -309,8 +315,8 @@ public final class HotRestarter {
             for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained;) {
                 checkSubmittersGone();
                 for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
-                    drain.clear();
-                    final int count = keyHandleReceiver.drainTo(i, drain);
+                    batch.clear();
+                    final int count = keyHandleReceiver.drainTo(i, batch);
                     if (count > 0) {
                         processValueDrain(valueSenders[i]);
                         idleCount = 0;
@@ -327,7 +333,7 @@ public final class HotRestarter {
         }
 
         private void processTombstoneDrain() {
-            for (RestartItem item : drain) {
+            for (RestartItem item : batch) {
                 if (!item.isSpecialItem()) {
                     addTombKey(item.keyHandle, item.prefix);
                     rebuilder.preAccept(item.recordSeq, item.size);
@@ -339,7 +345,7 @@ public final class HotRestarter {
         }
 
         private void processValueDrain(ConcurrentConveyorSingleQueue<RestartItem> outConveyor) {
-            for (RestartItem item : drain) {
+            for (RestartItem item : batch) {
                 if (!item.isSpecialItem()) {
                     rebuilder.preAccept(item.recordSeq, item.size);
                     if (rebuilder.accept(item)) {

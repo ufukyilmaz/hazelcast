@@ -125,7 +125,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         @Override
         @SuppressWarnings("checkstyle:npathcomplexity")
         public void run() {
-            final List<RunnableWithStatus> workDrain = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> batch = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
             final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
             final List<RunnableWithStatus> nonblockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
             long drainCount = 0;
@@ -134,16 +134,16 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
                 long idleCount = 0;
                 persistenceConveyor.drainerArrived();
                 while (!askedToStop && !interrupted()) {
-                    workDrain.clear();
-                    persistenceConveyor.drainTo(workDrain);
-                    if (workDrain.isEmpty()) {
+                    batch.clear();
+                    persistenceConveyor.drainTo(batch);
+                    if (batch.isEmpty()) {
                         IDLER.idle(idleCount++);
                     } else {
                         idleCount = 0;
                     }
                     blockingTasks.clear();
                     nonblockingTasks.clear();
-                    for (RunnableWithStatus task : workDrain) {
+                    for (RunnableWithStatus task : batch) {
                         (task.submitterCanProceed ? nonblockingTasks : blockingTasks).add(task);
                     }
                     if (!blockingTasks.isEmpty()) {

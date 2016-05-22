@@ -22,33 +22,66 @@ public class DiContainerTest {
 
     @Test
     public void when_depInstance_then_getIt() {
+        // Given
         di.dep(new T1());
-        assertNotNull(di.get(T1.class));
+
+        // When
+        final T1 t1 = di.get(T1.class);
+
+        // Then
+        assertNotNull(t1);
+        assertEquals(t1, di.get(T1.class));
     }
 
     @Test
     public void when_depNamedInstance_then_getIt() {
+        // Given
         di.dep("t1", new T1());
-        assertNotNull(di.get("t1"));
+
+        // When
+        final Object t1 = di.get("t1");
+
+        // Then
+        assertNotNull(t1);
+        assertEquals(t1, di.get("t1"));
     }
 
     @Test
     public void when_depClass_then_getIt() {
+        // Given
         di.dep(T2.class);
-        assertNotNull(di.get(T2.class));
+
+        // When
+        final T2 t2 = di.get(T2.class);
+
+        // Then
+        assertNotNull(t2);
+        assertEquals(t2, di.get(T2.class));
     }
 
     @Test
     public void when_depNamedClass_then_getIt() {
+        // Given
         di.dep("t2", T2.class);
-        assertNotNull(di.get("t2"));
+
+        // When
+        final Object t2 = di.get("t2");
+
+        // Then
+        assertNotNull(t2);
+        assertEquals(t2, di.get("t2"));
     }
 
     @Test
     public void when_injectIntoCxor_then_getDep() {
+        // Given
         di.dep(new T1())
-          .dep(new T2())
-          .dep(T5.class);
+          .dep(new T2());
+
+        // When
+        di.dep(T5.class);
+
+        // Then
         final T5 t5 = di.get(T5.class);
         assertNotNull(t5);
         assertNotNull(t5.t1);
@@ -57,9 +90,14 @@ public class DiContainerTest {
 
     @Test
     public void when_injectIntoCxorByName_then_getDep() {
+        // Given
         di.dep("t1", new T1())
-          .dep("t2", new T2())
-          .dep(T4.class);
+          .dep("t2", new T2());
+
+        // When
+        di.dep(T4.class);
+
+        // Then
         final T4 t4 = di.get(T4.class);
         assertNotNull(t4);
         assertNotNull(t4.t1);
@@ -68,9 +106,14 @@ public class DiContainerTest {
 
     @Test
     public void when_injectIntoField_then_getDep() {
+        // Given
         di.dep(new T1())
-          .dep(new T2())
-          .wireAndInitializeAll();
+          .dep(new T2());
+
+        // When
+        di.wireAndInitializeAll();
+
+        // Then
         final T1 t1 = di.get(T1.class);
         assertNotNull(t1);
         assertNotNull(t1.t2);
@@ -78,9 +121,14 @@ public class DiContainerTest {
 
     @Test
     public void when_injectIntoFieldByName_then_getDep() {
+        // Given
         di.dep("t2", new T2())
-          .dep(new T3())
-          .wireAndInitializeAll();
+          .dep(new T3());
+
+        // When
+        di.wireAndInitializeAll();
+
+        // Then
         final T3 t3 = di.get(T3.class);
         assertNotNull(t3);
         assertNotNull(t3.t2);
@@ -88,10 +136,15 @@ public class DiContainerTest {
 
     @Test
     public void when_injectIntoMethod_then_getDep() {
+        // Given
         di.dep(new T1())
           .dep(new T2())
-          .dep(new T6())
-          .wireAndInitializeAll();
+          .dep(new T6());
+
+        // When
+        di.wireAndInitializeAll();
+
+        // Then
         final T6 t6 = di.get(T6.class);
         assertNotNull(t6);
         assertNotNull(t6.t1);
@@ -100,12 +153,17 @@ public class DiContainerTest {
 
     @Test
     public void when_injectIntoMethodByName_then_getDep() {
+        // Given
         final T2 t2a = new T2();
         final T2 t2b = new T2();
         di.dep("t2a", t2a)
           .dep("t2b", t2b)
-          .dep(new T7())
-          .wireAndInitializeAll();
+          .dep(new T7());
+
+        // When
+        di.wireAndInitializeAll();
+
+        // Then
         final T7 t7 = di.get(T7.class);
         assertNotNull(t7);
         assertSame(t2a, t7.t2a);
@@ -114,6 +172,7 @@ public class DiContainerTest {
 
     @Test
     public void when_hasInitialize_then_calledInRegistrationOrder() {
+        // Given
         final int depCount = 1000;
         final List<T8> deps = new ArrayList<T8>();
         for (int i = 0; i < depCount; i++) {
@@ -121,7 +180,12 @@ public class DiContainerTest {
             deps.add(dep);
             di.dep("t8_" + i, dep);
         }
-        di.dep(new Cntr()).wireAndInitializeAll();
+        di.dep(new Cntr());
+
+        // When
+        di.wireAndInitializeAll();
+
+        // Then
         int i = 1;
         for (T8 dep : deps) {
             assertEquals(i++, dep.initOrder);
@@ -130,9 +194,14 @@ public class DiContainerTest {
 
     @Test
     public void when_createSubContainer_then_seeItsContents() {
+        // Given
         di.dep(new T2());
+
+        // When
         final DiContainer di2 = new DiContainer(di);
         di2.dep(new T1()).wireAndInitializeAll();
+
+        // Then
         final T1 t1 = di2.get(T1.class);
         assertNotNull(t1);
         assertEquals(di.get(T2.class), t1.t2);

@@ -233,6 +233,9 @@ public class ConcurrentConveyor<E> {
      * @param t the drainer's failure
      */
     public final void drainerFailed(Throwable t) {
+        if (t == null) {
+            throw new NullPointerException("ConcurrentConveyor.drainerFailed(null)");
+        }
         drainer = null;
         drainerDepartureCause = t;
     }

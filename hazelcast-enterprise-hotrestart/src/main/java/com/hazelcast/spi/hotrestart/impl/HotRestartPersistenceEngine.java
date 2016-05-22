@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
@@ -21,7 +22,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
  */
 public final class HotRestartPersistenceEngine {
 
-    private final DiContainer di;
+    private final Disposable di;
     private final GcExecutor gcExec;
     private final GcHelper gcHelper;
     private final PrefixTombstoneManager pfixTombstoMgr;

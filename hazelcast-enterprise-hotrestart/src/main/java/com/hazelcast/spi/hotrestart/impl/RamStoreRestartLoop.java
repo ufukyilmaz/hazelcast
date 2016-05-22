@@ -90,8 +90,8 @@ public class RamStoreRestartLoop {
             ConcurrentConveyor<RestartItem> valueReceiver
     ) {
         final int capacity = keyReceiver.queue(0).capacity();
-        final Deque<RestartItem> keyDrain = new ArrayDeque<RestartItem>(capacity);
-        final List<RestartItem> valueDrain = new ArrayList<RestartItem>(capacity);
+        final Deque<RestartItem> keyBatch = new ArrayDeque<RestartItem>(capacity);
+        final List<RestartItem> valueBatch = new ArrayList<RestartItem>(capacity);
         final RestartItem keyHandleSubmitterGoneItem = keyHandleSender.submitterGoneItem();
         RestartItem danglingDownstreamItem = null;
         long idleCount = 0;
@@ -109,15 +109,15 @@ public class RamStoreRestartLoop {
                 DRAIN_IDLER.idle(idleCount++);
             }
             didWork = false;
-            valueDrain.clear();
-            valueReceiver.drainTo(valueDrain);
-            for (RestartItem item : valueDrain) {
+            valueBatch.clear();
+            valueReceiver.drainTo(valueBatch);
+            for (RestartItem item : valueBatch) {
                 if (consumeValueItem(item)) {
                     break mainLoop;
                 }
                 didWork = true;
             }
-            final int count = keyReceiver.drainTo(keyDrain, capacity - keyDrain.size());
+            final int count = keyReceiver.drainTo(keyBatch, capacity - keyBatch.size());
             // Maintain counters used to determine the mean queue size over the whole run:
             if (count > 0) {
                 keyCount += count;
@@ -131,7 +131,7 @@ public class RamStoreRestartLoop {
                     continue;
                 }
             }
-            for (RestartItem item; (item = keyDrain.pollFirst()) != null; ) {
+            for (RestartItem item; (item = keyBatch.pollFirst()) != null; ) {
                 final RestartItem downstreamItem = consumeKeyItem(item, keyHandleSubmitterGoneItem);
                 didWork = true;
                 // Offer to keyHandleSender instead of submitting. If we block trying to submit,

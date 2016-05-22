@@ -53,7 +53,7 @@ public class EnterpriseWanReplicationService
     private static final int DEFAULT_KEY_FOR_STRIPED_EXECUTORS = -1;
 
     private final Node node;
-    private WanSyncManager syncManager;
+    private volatile WanSyncManager syncManager;
     private final ILogger logger;
 
     private final Map<String, WanReplicationPublisherDelegate> wanReplications = initializeWanReplicationPublisherMapping();

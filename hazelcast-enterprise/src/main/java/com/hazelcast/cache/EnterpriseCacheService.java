@@ -42,7 +42,6 @@ import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
@@ -245,30 +244,29 @@ public class EnterpriseCacheService
      */
     @Override
     protected void destroySegments(String cacheName) {
-        OperationService operationService = nodeEngine.getOperationService();
-        //List<CacheDestroyOperation> ops = new ArrayList<CacheDestroyOperation>();
+        InternalOperationService operationService = (InternalOperationService) nodeEngine.getOperationService();
+        List<CacheSegmentDestroyOperation> ops = new ArrayList<CacheSegmentDestroyOperation>();
         for (CachePartitionSegment segment : segments) {
             if (segment.hasRecordStore(cacheName)) {
                 CacheSegmentDestroyOperation op = new CacheSegmentDestroyOperation(cacheName);
-                //ops.add(op);
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
-                operationService.executeOperation(op);
+                if (operationService.isRunAllowed(op)) {
+                    operationService.runOperationOnCallingThread(op);
+                } else {
+                    operationService.executeOperation(op);
+                    ops.add(op);
+                }
+            }
+        }
+        for (CacheSegmentDestroyOperation op : ops) {
+            try {
+                op.awaitCompletion(CACHE_SEGMENT_DESTROY_OPERATION_AWAIT_TIME_IN_SECS, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                nodeEngine.getLogger(getClass()).warning(e);
             }
         }
         hiDensityCacheInfoMap.remove(cacheName);
-        // TODO This is commented-out since
-        // there is a deadlock between HiDensity cache destroy and open-source destroy operations
-        // Currently operations are fire and forget :)
-        /*
-        for (CacheDestroyOperation op : ops) {
-            try {
-                op.awaitCompletion(30, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        */
     }
 
     /**
@@ -295,7 +293,6 @@ public class EnterpriseCacheService
                 CacheSegmentShutdownOperation op = new CacheSegmentShutdownOperation();
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
-
                 if (operationService.isRunAllowed(op)) {
                     operationService.runOperationOnCallingThread(op);
                 } else {
@@ -311,6 +308,7 @@ public class EnterpriseCacheService
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }
+        hiDensityCacheInfoMap.clear();
     }
 
     /**

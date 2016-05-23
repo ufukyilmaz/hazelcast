@@ -38,7 +38,6 @@ import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.util.Clock;
 
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -224,17 +223,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         return Clock.currentTimeMillis() - begin;
     }
 
-    protected void addToResponses(Data key, Data response) {
-        if (response == null) {
-            return;
-        }
-        if (responses == null) {
-            responses = new MapEntries();
-        }
-        // copy key from HD memory to heap memory.
-        responses.add(new AbstractMap.SimpleImmutableEntry<Data, Data>(toData(key), response));
-    }
-
     protected Data process(Map.Entry entry) {
         final Object result = entryProcessor.process(entry);
         return toData(result);
@@ -293,7 +281,6 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         public void setEventType(EntryEventType eventType) {
             this.eventType = eventType;
         }
-
     }
 
     @Override

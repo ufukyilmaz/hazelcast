@@ -172,7 +172,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         config.getServicesConfig().addServiceConfig(
                 new ServiceConfig().setEnabled(true)
                         .setName(MockHotRestartService.NAME)
-                        .setServiceImpl(service)
+                        .setImplementation(service)
         );
         return config;
     }

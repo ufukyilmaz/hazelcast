@@ -26,7 +26,6 @@ import com.hazelcast.util.MutableInteger;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_MAP_DS_FACTORY;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_MAP_DS_FACTORY_ID;
 
-
 /**
  * {@link DataSerializerHook} implementation for Enterprise Map operations
  */
@@ -77,12 +76,15 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
      */
     public static final int EVICT_BACKUP = CONSTRUCTOR_ARRAY_INDEX.value++;
 
+    /**
+     * Id of "PUT_ALL_PER_MEMBER" operation
+     */
+    public static final int PUT_ALL_PER_MEMBER = CONSTRUCTOR_ARRAY_INDEX.value++;
 
     @Override
     public int getFactoryId() {
         return F_ID;
     }
-
 
     @Override
     public DataSerializableFactory createFactory() {
@@ -99,6 +101,7 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                 constructors[REMOVE_BACKUP] = newRemoveBackupOperation();
                 constructors[GET] = newGetOperation();
                 constructors[EVICT_BACKUP] = newEvictBackupOperation();
+                constructors[PUT_ALL_PER_MEMBER] = newPutAllPerMemberOperation();
             }
 
             private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveBackupOperation() {
@@ -164,6 +167,15 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                 };
             }
 
+            private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutAllPerMemberOperation() {
+                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                    @Override
+                    public IdentifiedDataSerializable createNew(Integer arg) {
+                        return new HDPutAllPerMemberOperation();
+                    }
+                };
+            }
+
             @Override
             public IdentifiedDataSerializable create(int typeId) {
                 checkRange(typeId);
@@ -175,9 +187,7 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
 
                 return constructor.createNew(typeId);
             }
-
         };
-
     }
 
     private static void checkRange(int typeId) {
@@ -186,7 +196,6 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
             throw new IndexOutOfBoundsException(getExceptionMessage(typeId));
         }
     }
-
 
     private static String getExceptionMessage(int typeId) {
         return "No registered hook found for the type-id: " + typeId;

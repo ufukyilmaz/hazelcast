@@ -31,9 +31,7 @@ import com.hazelcast.spi.impl.MutatingOperation;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.core.EntryEventType.UPDATED;
@@ -45,8 +43,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         MutatingOperation {
 
     private MapEntries mapEntries;
-    private Iterator<Map.Entry<Data, Data>> iterator;
-    private Map.Entry<Data, Data> lastElement;
+    private int currentIndex;
 
     private boolean hasMapListener;
     private boolean hasWanReplication;
@@ -56,6 +53,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     private List<RecordInfo> backupRecordInfos;
     private List<Data> invalidationKeys;
 
+    @SuppressWarnings("unused")
     public HDPutAllOperation() {
     }
 
@@ -67,8 +65,6 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
     @Override
     public void beforeRun() throws Exception {
         super.beforeRun();
-
-        this.iterator = mapEntries.iterator();
 
         this.hasMapListener = mapEventPublisher.hasEventListener(name);
         this.hasWanReplication = hasWanReplication();
@@ -85,15 +81,11 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     protected void runInternal() {
-        // if lastElement is set this is a continuation of the operation after a NativeOOME
-        if (lastElement != null) {
-            put(lastElement);
-        }
-
-        while (iterator.hasNext()) {
-            lastElement = iterator.next();
-            put(lastElement);
-            lastElement = null;
+        // if currentIndex is not zero, this is a continuation of the operation after a NativeOOME
+        int size = mapEntries.size();
+        while (currentIndex < size) {
+            put(mapEntries.getKey(currentIndex), mapEntries.getValue(currentIndex));
+            currentIndex++;
         }
     }
 
@@ -105,10 +97,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         return (mapContainer.getTotalBackupCount() > 0);
     }
 
-    private void put(Map.Entry<Data, Data> entry) {
-        Data dataKey = entry.getKey();
-        Data dataValue = entry.getValue();
-
+    private void put(Data dataKey, Data dataValue) {
         Object oldValue = putToRecordStore(dataKey, dataValue);
         dataValue = getValueOrPostProcessedValue(dataKey, dataValue);
         mapServiceContext.interceptAfterPut(name, dataValue);

@@ -89,9 +89,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public long getExpirationTime() {
-            assert record.getStatistics() != null : "Stats cannot be null";
-
-            return record.getStatistics().getExpirationTime();
+            return record.getExpirationTime();
         }
 
         @Override
@@ -106,9 +104,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public long getLastStoredTime() {
-            assert record.getStatistics() != null : "Stats cannot be null";
-
-            return record.getStatistics().getLastStoredTime();
+            return record.getLastStoredTime();
         }
 
         @Override

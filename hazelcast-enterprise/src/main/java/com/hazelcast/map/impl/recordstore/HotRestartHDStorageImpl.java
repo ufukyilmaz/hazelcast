@@ -66,18 +66,18 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> {
     }
 
     @Override
-    public void clear() {
+    public void clear(boolean isDuringShutdown) {
         synchronized (mutex) {
-            storage.clear();
+            storage.clear(isDuringShutdown);
         }
         hotRestartStore.clear(prefix);
         fsyncIfRequired();
     }
 
     @Override
-    public void destroy() {
+    public void destroy(boolean isDuringShutdown) {
         synchronized (mutex) {
-            storage.destroy();
+            storage.destroy(isDuringShutdown);
         }
         hotRestartStore.clear(prefix);
         fsyncIfRequired();

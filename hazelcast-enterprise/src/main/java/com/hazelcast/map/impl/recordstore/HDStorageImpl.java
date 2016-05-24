@@ -105,7 +105,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     }
 
     @Override
-    public void clear() {
+    public void clear(boolean isDuringShutdown) {
         HazelcastMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV
@@ -130,7 +130,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     }
 
     @Override
-    public void destroy() {
+    public void destroy(boolean isDuringShutdown) {
 
         HazelcastMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {

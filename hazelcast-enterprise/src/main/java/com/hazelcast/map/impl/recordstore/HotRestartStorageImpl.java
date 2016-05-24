@@ -82,17 +82,21 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
-    public void clear() {
-        storage.clear();
-        hotRestartStore.clear(prefix);
-        fsyncIfRequired();
+    public void clear(boolean isDuringShutdown) {
+        storage.clear(isDuringShutdown);
+        if (!isDuringShutdown) {
+            hotRestartStore.clear(prefix);
+            fsyncIfRequired();
+        }
     }
 
     @Override
-    public void destroy() {
-        storage.destroy();
-        hotRestartStore.clear(prefix);
-        fsyncIfRequired();
+    public void destroy(boolean isDuringShutdown) {
+        storage.destroy(isDuringShutdown);
+        if (!isDuringShutdown) {
+            hotRestartStore.clear(prefix);
+            fsyncIfRequired();
+        }
     }
 
     @Override

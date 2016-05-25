@@ -74,7 +74,8 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
-                assertEquals(mergingValue, cqc.get(key).intValue());
+                Integer currentValue = cqc.get(key);
+                assertEquals(mergingValue, (Object)currentValue);
             }
         });
     }

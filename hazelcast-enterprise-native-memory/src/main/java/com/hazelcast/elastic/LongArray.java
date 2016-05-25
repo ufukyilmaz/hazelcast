@@ -84,6 +84,7 @@ public final class LongArray implements Disposable {
     }
 
     private long addressOfElement(long index) {
+        assert baseAddress != NULL_ADDRESS;
         assert index >= 0 && index < length : "Native array index out of bounds: " + index + " vs. length " + length;
         return baseAddress + lengthInBytes(index);
     }

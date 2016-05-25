@@ -1,187 +1,155 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryAllocator;
-import com.hazelcast.test.HazelcastParallelClassRunner;
+import com.hazelcast.internal.memory.MemoryManager;
+import com.hazelcast.internal.memory.impl.HeapMemoryManager;
+import com.hazelcast.internal.memory.impl.MemoryManagerBean;
+import com.hazelcast.nio.Disposable;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 import static org.junit.Assert.assertEquals;
 
 import static com.hazelcast.util.QuickMath.modPowerOfTwo;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author mdogan 02/06/14
- */
-@RunWith(HazelcastParallelClassRunner.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MemoryAllocatorTest {
 
-    @Test
-    public void testMallocFreeStandard() {
-        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testMallocFree(memoryManager);
-        memoryManager.dispose();
+    public enum ManagerType {
+        HEAP, STANDARD, SYSTEM, POOLED_GLOBAL, POOLED_THREADLOCAL
     }
 
-    @Test
-    public void testMallocFreeGlobalPooled() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testMallocFree(memoryManager);
-        memoryManager.dispose();
+    @Parameterized.Parameters(name = "managerType:{0}")
+    public static Collection<Object[]> parameters() {
+        return Arrays.asList(new Object[][]{
+                {ManagerType.HEAP},
+                {ManagerType.STANDARD},
+                {ManagerType.SYSTEM},
+                {ManagerType.POOLED_GLOBAL},
+                {ManagerType.POOLED_THREADLOCAL},
+        });
     }
 
-    @Test
-    public void testMallocFreeThreadLocalPooled() {
-        PoolingMemoryManager memoryManager = new PoolingMemoryManager(
-                new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        memoryManager.registerThread(Thread.currentThread());
-        testMallocFree(memoryManager);
-        memoryManager.dispose();
-    }
+    @Parameterized.Parameter
+    public ManagerType mgrType;
 
-    @Test
-    public void testMallocFreePooledSystem() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testMallocFree(memoryManager.getSystemAllocator());
-        memoryManager.dispose();
-    }
+    private MemoryManager memMgr;
+    private Disposable toDispose;
 
-    private static void testMallocFree(MemoryAllocator memoryAllocator) {
-        long address1 = memoryAllocator.allocate(5);
-        checkZero(address1, 5);
-        MEM.putInt(address1, -123);
-        memoryAllocator.free(address1, 5);
-
-        long address2 = memoryAllocator.allocate(11);
-        checkZero(address2, 11);
-        MEM.putLong(address2, -1234567L);
-        memoryAllocator.free(address2, 11);
-    }
-
-    private static void checkZero(long address, int len) {
-        for (int i = 0; i < len; i++) {
-            byte b = MEM.getByte(address + i);
-            assertEquals(0, b);
+    @Before
+    public void setup() {
+        switch (mgrType) {
+            case HEAP:
+                memMgr = new HeapMemoryManager(8 << 20);
+                toDispose = memMgr;
+                break;
+            case STANDARD:
+                memMgr = new MemoryManagerBean(
+                    new StandardMemoryManager(new MemorySize(1, MEGABYTES)), MEM);
+                toDispose = memMgr;
+                break;
+            case SYSTEM: {
+                final PoolingMemoryManager malloc = new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
+                memMgr = new MemoryManagerBean(malloc.getSystemAllocator(), MEM);
+                toDispose = malloc;
+                break;
+            }
+            case POOLED_GLOBAL:
+                memMgr = new MemoryManagerBean(
+                        new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20),
+                        MEM);
+                toDispose = memMgr;
+                break;
+            case POOLED_THREADLOCAL: {
+                final PoolingMemoryManager malloc = new PoolingMemoryManager(new MemorySize(8, MEGABYTES), 16, 1 << 20);
+                malloc.registerThread(Thread.currentThread());
+                memMgr = new MemoryManagerBean(malloc, MEM);
+                toDispose = memMgr;
+                break;
+            }
         }
     }
 
-    @Test
-    public void testReallocExpandStandard() {
-        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testReallocExpand(memoryManager);
-        memoryManager.dispose();
+    @After
+    public void teardown() {
+        toDispose.dispose();
+    }
+
+    @Test public void testMallocFree() {
+        final MemoryAllocator malloc = memMgr.getAllocator();
+        final MemoryAccessor mem = memMgr.getAccessor();
+        long address1 = malloc.allocate(5);
+        checkZero(mem, address1, 5);
+        mem.putInt(address1, -123);
+        malloc.free(address1, 5);
+        long address2 = malloc.allocate(11);
+        checkZero(mem, address2, 11);
+        mem.putLong(address2, -1234567L);
+        malloc.free(address2, 11);
     }
 
     @Test
-    public void testReallocExpandGlobalPooled() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocExpand(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testReallocExpandThreadLocalPooled() {
-        PoolingMemoryManager memoryManager = new PoolingMemoryManager(
-                new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        memoryManager.registerThread(Thread.currentThread());
-        testReallocExpand(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testReallocExpandPooledSystem() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocExpand(memoryManager.getSystemAllocator());
-        memoryManager.dispose();
-    }
-
-    private static void testReallocExpand(MemoryAllocator memoryAllocator) {
-        long address = memoryAllocator.allocate(8);
+    public void testReallocExpand() {
+        final MemoryAllocator malloc = memMgr.getAllocator();
+        final MemoryAccessor mem = memMgr.getAccessor();
+        long address = malloc.allocate(8);
         long value = -123;
-        MEM.putLong(address, value);
-        address = memoryAllocator.reallocate(address, 8, 16);
-        assertEquals(value, MEM.getLong(address));
-        checkZero(address + 8, 8);
+        mem.putLong(address, value);
+        address = malloc.reallocate(address, 8, 16);
+        assertEquals(value, mem.getLong(address));
+        checkZero(mem, address + 8, 8);
     }
 
     @Test
-    public void testReallocShrinkStandard() {
-        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testReallocShrink(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testReallocShrinkGlobalPooled() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocShrink(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testReallocShrinkThreadLocalPooled() {
-        PoolingMemoryManager memoryManager = new PoolingMemoryManager(
-                new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        memoryManager.registerThread(Thread.currentThread());
-        testReallocShrink(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testReallocShrinkPooledSystem() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testReallocShrink(memoryManager.getSystemAllocator());
-        memoryManager.dispose();
-    }
-
-    private static void testReallocShrink(MemoryAllocator memoryAllocator) {
-        long address1 = memoryAllocator.allocate(8);
+    public void testReallocShrink() {
+        final MemoryAllocator malloc = memMgr.getAllocator();
+        final MemoryAccessor mem = memMgr.getAccessor();
+        long address1 = malloc.allocate(8);
         int value = -123;
-        MEM.putInt(address1, value);
-        address1 = memoryAllocator.reallocate(address1, 8, 4);
-        assertEquals(value, MEM.getInt(address1));
+        mem.putInt(address1, value);
+        address1 = malloc.reallocate(address1, 8, 4);
+        assertEquals(value, mem.getInt(address1));
     }
 
     @Test
-    public void testMalloc_8bytes_Aligned_Standard() {
-        HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
-        testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.dispose();
+    public void testMalloc_8bytes_Aligned() {
+        if (memMgr.getAccessor() != MEM) {
+            return;
+        }
+        testMalloc_8bytes_Aligned(5);
+        testMalloc_8bytes_Aligned(55);
+        testMalloc_8bytes_Aligned(555);
+        testMalloc_8bytes_Aligned(5555);
+        testMalloc_8bytes_Aligned(55555);
     }
 
-    @Test
-    public void testMalloc_8bytes_Aligned_GlobalPooled() {
-        HazelcastMemoryManager memoryManager = new PoolingMemoryManager(new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.dispose();
-    }
-
-    @Test
-    public void testMalloc_8bytes_Aligned_ThreadLocalPooled() {
-        PoolingMemoryManager memoryManager = new PoolingMemoryManager(
-                new MemorySize(8, MemoryUnit.MEGABYTES), 16, 1 << 20);
-        memoryManager.registerThread(Thread.currentThread());
-        testMalloc_8bytes_Aligned(memoryManager);
-        memoryManager.dispose();
-    }
-
-    private static void testMalloc_8bytes_Aligned(MemoryAllocator memoryAllocator) {
-        testMalloc_8bytes_Aligned(memoryAllocator, 5);
-        testMalloc_8bytes_Aligned(memoryAllocator, 55);
-        testMalloc_8bytes_Aligned(memoryAllocator, 555);
-        testMalloc_8bytes_Aligned(memoryAllocator, 5555);
-        testMalloc_8bytes_Aligned(memoryAllocator, 55555);
-    }
-
-    private static void testMalloc_8bytes_Aligned(MemoryAllocator memoryAllocator, int size) {
-        long address = memoryAllocator.allocate(size);
+    private void testMalloc_8bytes_Aligned(int size) {
+        final MemoryAllocator malloc = memMgr.getAllocator();
+        long address = malloc.allocate(size);
         assertTrue("Address: " + address + " is not aligned!", modPowerOfTwo(address, 8) == 0);
-        memoryAllocator.free(address, size);
+        malloc.free(address, size);
     }
 
+    private static void checkZero(MemoryAccessor mem, long address, int len) {
+        for (int i = 0; i < len; i++) {
+            byte b = mem.getByte(address + i);
+            assertEquals(0, b);
+        }
+    }
 }

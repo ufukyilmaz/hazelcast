@@ -408,6 +408,7 @@
                                     <reuseForks>true</reuseForks>
                                     <!-- the argLine variable is needed for JaCoco -->
                                     <argLine>
+                                        ${extraVmArgs}
                                         -Xms1g -Xmx1g -XX:MaxPermSize=1024M
                                         -Dhazelcast.operation.thread.count=16
                                         -Dhazelcast.hidensity.check.freememory=false

@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.proxy;
 
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.QueryCache;
@@ -31,8 +32,8 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  */
 public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements IEnterpriseMap<K, V> {
 
-    public EnterpriseMapProxyImpl(String name, MapService mapService, NodeEngine nodeEngine) {
-        super(name, mapService, nodeEngine);
+    public EnterpriseMapProxyImpl(String name, MapService mapService, NodeEngine nodeEngine, MapConfig mapConfig) {
+        super(name, mapService, nodeEngine, mapConfig);
     }
 
     @Override

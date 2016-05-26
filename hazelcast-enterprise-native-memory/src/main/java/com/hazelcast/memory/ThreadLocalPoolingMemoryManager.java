@@ -315,14 +315,14 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         if (pageBase == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address " + address + " does not belong to this memory pool!");
         }
+        int pageOffset = (int) (address - pageBase);
+        assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
+
         int size = getSizeFromHeader(header);
         assert pageBase <= address && pageBase + pageSize >= address + size
                 : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
                 address, address + size - 1,
                 pageBase, pageBase + pageSize - 1);
-
-        int pageOffset = (int) (address - pageBase);
-        assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
 
         byte availableHeader = makeHeaderAvailable(header);
         availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);

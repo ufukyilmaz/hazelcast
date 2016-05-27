@@ -59,7 +59,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public Object getKey() {
-            assert !(Thread.currentThread() instanceof PartitionOperationThread);
+            assert Thread.currentThread() instanceof PartitionOperationThread;
 
             if (key == null) {
                 key = serializationService.toObject(record.getKey());
@@ -69,7 +69,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 
         @Override
         public Object getValue() {
-            assert !(Thread.currentThread() instanceof PartitionOperationThread);
+            assert Thread.currentThread() instanceof PartitionOperationThread;
 
             if (value == null) {
                 this.value = serializationService.toObject(record.getValue());

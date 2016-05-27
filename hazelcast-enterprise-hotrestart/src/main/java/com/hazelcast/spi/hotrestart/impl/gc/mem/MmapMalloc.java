@@ -8,7 +8,8 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import java.io.File;
 
 /**
- * Allocator based on memory-mapped files.
+ * Allocator based on memory-mapped files. Uses a set of {@link MmapSlabs}, one for each
+ * block size.
  */
 public class MmapMalloc implements MemoryAllocator, Disposable {
     private final File baseDir;
@@ -23,7 +24,8 @@ public class MmapMalloc implements MemoryAllocator, Disposable {
         this.baseDir = baseDir;
     }
 
-    @Override public long allocate(long size) {
+    @Override
+    public long allocate(long size) {
         MmapSlab slab = slabs.get(size);
         if (slab == null) {
             slab = new MmapSlab(baseDir, size);
@@ -32,11 +34,13 @@ public class MmapMalloc implements MemoryAllocator, Disposable {
         return slab.allocate();
     }
 
-    @Override public long reallocate(long address, long currentSize, long newSize) {
+    @Override
+    public long reallocate(long address, long currentSize, long newSize) {
         throw new UnsupportedOperationException("reallocate");
     }
 
-    @Override public void free(long address, long size) {
+    @Override
+    public void free(long address, long size) {
         final MmapSlab slab = slabs.get(size);
         if (slab.free(address) && deleteEmptySlab) {
             slab.dispose();
@@ -44,7 +48,8 @@ public class MmapMalloc implements MemoryAllocator, Disposable {
         }
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         for (MmapSlab slab : slabs.values()) {
             slab.dispose();
         }

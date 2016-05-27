@@ -1,10 +1,10 @@
 package com.hazelcast.cache.hidensity.impl.nativememory;
 
-import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
-import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.eviction.EvictionCandidate;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
@@ -144,9 +144,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
             hotRestartStore.remove(key, fsync);
         }
         evictedKeys.clear();
-        if (fsync) {
-            hotRestartStore.fsync();
-        }
     }
 
     @Override

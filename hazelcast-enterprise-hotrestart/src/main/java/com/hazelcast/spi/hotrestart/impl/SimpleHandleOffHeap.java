@@ -14,26 +14,31 @@ public class SimpleHandleOffHeap implements KeyHandleOffHeap {
         this.sequenceId = sequenceId;
     }
 
-    @Override public long address() {
+    @Override
+    public long address() {
         return address;
     }
 
-    @Override public long sequenceId() {
+    @Override
+    public long sequenceId() {
         return sequenceId;
     }
 
-    @Override public boolean equals(Object o) {
+    @Override
+    public boolean equals(Object o) {
         final KeyHandleOffHeap that;
         return this == o || o instanceof KeyHandleOffHeap
                 && this.address == (that = (KeyHandleOffHeap) o).address()
                 && this.sequenceId == that.sequenceId();
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return 31 * (int) (address ^ (address >>> 32)) + (int) (sequenceId ^ (sequenceId >>> 32));
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format("(%x,%x)", address, sequenceId);
     }
 }

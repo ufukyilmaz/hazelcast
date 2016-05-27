@@ -2,8 +2,7 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -55,7 +54,7 @@ public class SortedBySeqRecordCursorOnHeapTest {
     public void recordsShouldBeOrderedBySequence() {
         // GIVEN
         int count = 1 << 12;
-        GcExecutor.MutatorCatchup mc = mock(MutatorCatchup.class);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
         TestKeyHandleRecordPairs testPairs = new TestKeyHandleRecordPairs(count);
 
         // WHEN
@@ -76,7 +75,7 @@ public class SortedBySeqRecordCursorOnHeapTest {
     public void mutatorCatchupShouldBeCalledInCursorAtLeastCountTimes() {
         // GIVEN
         int count = 1 << 12;
-        GcExecutor.MutatorCatchup mc = mock(MutatorCatchup.class);
+        MutatorCatchup mc = mock(MutatorCatchup.class);
         TestKeyHandleRecordPairs testPairs = new TestKeyHandleRecordPairs(count);
 
         // WHEN

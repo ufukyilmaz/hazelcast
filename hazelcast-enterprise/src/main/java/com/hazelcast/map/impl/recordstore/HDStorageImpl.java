@@ -78,7 +78,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
         }
     }
 
-    // TODO remove unneeded ignored param.
     @Override
     public void updateRecordValue(Data ignored, HDRecord record, Object value) {
         Data oldValue = null;

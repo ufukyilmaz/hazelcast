@@ -27,4 +27,10 @@ public interface RamStoreRegistry {
      * destroyed before shutdown.
      */
     RamStore restartingRamStoreForPrefix(long prefix);
+
+    /**
+     * Returns the ID of the partition thread responsible for the given key prefix.
+     */
+    int prefixToThreadId(long prefix);
+
 }

@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
@@ -15,34 +15,30 @@ import java.util.Collection;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.positionInUnitsOfBufsize;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+/**
+ * Performs the TombGC procedure. Selected source chunk files are opened one at a time and all their live
+ * tombstones are copied to the survivor chunks.
+ */
 final class TombEvacuator {
     private final Collection<StableTombChunk> srcChunks;
-    private final GcLogger logger;
-    private final Long2ObjectHashMap<WriteThroughChunk> survivorMap;
-    private final TrackerMap recordTrackers;
-    private final GcHelper gcHelper;
-    private final MutatorCatchup mc;
+
+    @Inject private GcLogger logger;
+    @Inject private GcHelper gcHelper;
+    @Inject private MutatorCatchup mc;
+    @Inject private ChunkManager chunkMgr;
+
+    private Long2ObjectHashMap<WriteThroughChunk> survivorMap;
+    private TrackerMap trackers;
     private WriteThroughTombChunk survivor;
     private long start;
 
-    private TombEvacuator(Collection<StableTombChunk> srcChunks, ChunkManager chunkMgr,
-                          MutatorCatchup mc, GcLogger logger
-    ) {
+    TombEvacuator(Collection<StableTombChunk> srcChunks) {
         this.srcChunks = srcChunks;
-        this.logger = logger;
+    }
+
+    void evacuate() {
         this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
-        this.gcHelper = chunkMgr.gcHelper;
-        this.recordTrackers = chunkMgr.trackers;
-        this.mc = mc;
-    }
-
-    static void evacuate(
-            Collection<StableTombChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger
-    ) {
-        new TombEvacuator(srcChunks, chunkMgr, mc, logger).evacuateSrcChunks();
-    }
-
-    private void evacuateSrcChunks() {
+        this.trackers = chunkMgr.trackers;
         for (StableTombChunk chunk : srcChunks) {
             evacuate(chunk);
         }
@@ -64,7 +60,7 @@ final class TombEvacuator {
                 final long posBefore = positionInUnitsOfBufsize(survivor.size());
                 final boolean full = survivor.addStep1(tfa, filePos);
                 survivor.addStep2(tfa.keyPrefix(), kh, tfa.recordSeq(), tfa.recordSize());
-                recordTrackers.get(kh).moveToChunk(survivor.seq);
+                trackers.get(kh).moveToChunk(survivor.seq);
                 if (positionInUnitsOfBufsize(survivor.size()) != posBefore) {
                     mc.catchupNow();
                 }

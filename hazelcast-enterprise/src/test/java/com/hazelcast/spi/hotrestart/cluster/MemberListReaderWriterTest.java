@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class MemberListReaderWriterTest extends AbstractReaderWriterTest {
+public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
 
     private Address thisAddress;
 
@@ -50,13 +50,9 @@ public class MemberListReaderWriterTest extends AbstractReaderWriterTest {
         thisAddress = new Address("127.0.0.1", localAddress, 5000);
     }
 
-    @Override
-    void tearDownInternal() {
-    }
-
     @Test
     public void test_readNotExistingFolder() throws IOException {
-        MemberListReader reader = new MemberListReader(getNotExistingFolder());
+        MemberListReader reader = new MemberListReader(getNonExistingFolder());
         reader.read();
 
         assertNull(reader.getThisAddress());
@@ -74,7 +70,7 @@ public class MemberListReaderWriterTest extends AbstractReaderWriterTest {
 
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws IOException {
-        MemberListWriter writer = new MemberListWriter(getNotExistingFolder(), thisAddress);
+        MemberListWriter writer = new MemberListWriter(getNonExistingFolder(), thisAddress);
         writer.write(Collections.<Member>emptyList());
     }
 

@@ -1,7 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
+import com.hazelcast.internal.util.collection.LongCursor;
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.hotrestart.impl.di.Name;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
@@ -21,63 +27,68 @@ import java.io.IOException;
 import java.util.Map;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Manages tombstones that inter all entries under a given key prefix.
+ * Manages "prefix tombstones" which inter all entries under a given key prefix.
  * These tombstones are used to implement the Hot Restart store's
- * {@link com.hazelcast.spi.hotrestart.HotRestartStore#clear(long...)} operation.
+ * {@link com.hazelcast.spi.hotrestart.HotRestartStore#clear(boolean, long...)} operation.
  */
 @SuppressFBWarnings(value = "IS", justification =
         "All accesses of the map referred to by mutatorPrefixTombstones are synchronized."
       + " Setter doesn't need synchronization because it is called before GC thread is started.")
+// class non-final for the sake of Mockito
+@SuppressWarnings("checkstyle:finalclass")
 public class PrefixTombstoneManager {
     public static final String NEW_FILE_SUFFIX = ".new";
     public static final int SWEEPING_TIMESLICE_MS = 10;
-    private static final long[] EMPTY_LONGS = new long[0];
+
     long chunkSeqToStartSweep;
-    private final GcExecutor gcExec;
+
     private final GcLogger logger;
-    private ChunkManager chunkMgr;
+    private final GcHelper gcHelper;
+    private final ConcurrentConveyorSingleQueue<Runnable> conveyor;
+    private final ChunkManager chunkMgr;
+
     private Long2LongHashMap mutatorPrefixTombstones;
     private Long2LongHashMap collectorPrefixTombstones;
-    private final Long2LongHashMap dismissedActiveChunks;
+    private final Long2LongHashMap dismissedActiveChunks = new Long2LongHashMap(0);
     private Sweeper sweeper;
 
-    PrefixTombstoneManager(GcExecutor gcExec, GcLogger logger) {
-        this.gcExec = gcExec;
-        this.logger = logger;
-        this.dismissedActiveChunks = new Long2LongHashMap(0);
-    }
-
-    void setChunkManager(ChunkManager chunkMgr) {
+    @Inject
+    private PrefixTombstoneManager(
+            ChunkManager chunkMgr, GcHelper gcHelper, GcLogger logger,
+            @Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> conveyor
+    ) {
+        this.conveyor = conveyor;
         this.chunkMgr = chunkMgr;
+        this.gcHelper = gcHelper;
+        this.logger = logger;
     }
 
-    void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
+    /** Initializes this object with the existing prefix tombstones reloaded from a file. */
+    public void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
         this.mutatorPrefixTombstones = prefixTombstones;
         this.collectorPrefixTombstones = new Long2LongHashMap(prefixTombstones);
     }
 
-    // Called on the mutator thread
-    void addPrefixTombstones(long[] prefixes) {
-        final GcHelper gcHelper = chunkMgr.gcHelper;
+    /** Adds prefix tombstones for the given key prefixes. Called on the mutator thread. */
+    public void addPrefixTombstones(long[] prefixes) {
         final Long2LongHashMap tombstoneSnapshot;
         final long currRecordSeq = gcHelper.recordSeq();
         synchronized (this) {
             multiPut(mutatorPrefixTombstones, prefixes, currRecordSeq);
             tombstoneSnapshot = new Long2LongHashMap(mutatorPrefixTombstones);
         }
-        gcExec.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
-        persistTombstones(gcHelper, tombstoneSnapshot);
+        conveyor.submit(addedPrefixTombstones(prefixes, currRecordSeq, gcHelper.chunkSeq()));
+        persistTombstones(tombstoneSnapshot);
     }
 
     private Runnable addedPrefixTombstones(final long[] prefixes, final long recordSeq, final long startChunkSeq) {
         return new Runnable() {
             @Override public void run() {
                 multiPut(collectorPrefixTombstones, prefixes, recordSeq);
-                final Chunk activeChunk = chunkMgr.activeValChunk;
+                final ActiveValChunk activeChunk = chunkMgr.activeValChunk;
                 dismissGarbage(activeChunk, prefixes);
                 multiPut(dismissedActiveChunks, prefixes, activeChunk.seq);
                 for (StableChunk c : chunkMgr.chunks.values()) {
@@ -98,10 +109,15 @@ public class PrefixTombstoneManager {
         };
     }
 
+    /**
+     * Runs the chunk sweeping process for {@value SWEEPING_TIMESLICE_MS} milliseconds and then returns.
+     * Also returns as soon as there are no more chunks to sweep.
+     * @return whether any chunk was swept
+     */
     @SuppressFBWarnings(value = "QBA",
             justification = "sweptSome = true executes conditionally on sweepNextChunk() returning true."
                           + " sweptSome correctly tells whether some chunk was swept")
-    @SuppressWarnings("checkstyle:emptyblock")
+    @SuppressWarnings({"checkstyle:emptyblock", "ConstantConditions"})
     boolean sweepAsNeeded() {
         final long start = System.nanoTime();
         if (sweeper != null) {
@@ -134,7 +150,7 @@ public class PrefixTombstoneManager {
      *
      * @param prefixesToDismiss set of key prefixes for which tombstones were added
      */
-    void dismissGarbage(Chunk chunk, long[] prefixesToDismiss) {
+    void dismissGarbage(ActiveValChunk chunk, long[] prefixesToDismiss) {
         logger.fine("Dismiss garbage in active chunk #%03x", chunk.seq);
         final LongHashSet prefixSetToDismiss = new LongHashSet(prefixesToDismiss, 0);
         for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
@@ -150,7 +166,7 @@ public class PrefixTombstoneManager {
     /**
      * Propagates the effects of all prefix tombstones to the given chunk.
      * Avoids applying a prefix tombstone to the chunk which was active at the time the
-     * tombstone was added (that work was already done by {@link #dismissGarbage(Chunk, long[])}).
+     * tombstone was added (that work was already done by {@link #dismissGarbage(ActiveValChunk, long[])}).
      *
      * @return true if the chunk needed dismissing.
      */
@@ -173,6 +189,11 @@ public class PrefixTombstoneManager {
         return true;
     }
 
+    /**
+     * Removes the prefix tombstones contained in the supplied {@code garbageTombstones} map,
+     * but only if the record seq for a given tombstone in this map matches record seq in the
+     * "official" metadata map.
+     */
     private void collectGarbageTombstones(Long2LongHashMap garbageTombstones) {
         int collectedCount = 0;
         for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
@@ -194,7 +215,10 @@ public class PrefixTombstoneManager {
         }
     }
 
-    private void persistTombstones(GcHelper gcHelper, Long2LongHashMap tombstoneSnapshot) {
+    /**
+     * Writes a snapshot of prefix tombstones to a file.
+     */
+    private void persistTombstones(Long2LongHashMap tombstoneSnapshot) {
         final File homeDir = gcHelper.homeDir;
         final File newFile = new File(homeDir, PREFIX_TOMBSTONES_FILENAME + NEW_FILE_SUFFIX);
         FileOutputStream fileOut = null;
@@ -215,13 +239,13 @@ public class PrefixTombstoneManager {
             }
             logger.finest("Persisted prefix tombstones %s", tombstoneSnapshot);
         } catch (IOException e) {
-            closeIgnoringFailure(fileOut);
+            IOUtil.closeResource(fileOut);
             if (!newFile.delete()) {
                 logger.severe("Failed to delete " + newFile);
             }
             throw new HotRestartException("IO error while writing prefix tombstones", e);
         } finally {
-            closeIgnoringFailure(fileOut);
+            IOUtil.closeResource(fileOut);
         }
     }
 
@@ -231,6 +255,10 @@ public class PrefixTombstoneManager {
         }
     }
 
+    /**
+     * Manages the incremental sweeping process which visits each value chunk and propagates the effects
+     * of all prefix tombstones to it.
+     */
     private final class Sweeper {
         private final Long2LongHashMap garbageTombstones = new Long2LongHashMap(collectorPrefixTombstones);
         private final long lowChunkSeq;
@@ -250,6 +278,7 @@ public class PrefixTombstoneManager {
         }
 
         /**
+         * Sweeps a single chunk.
          * @return {@code true} if a chunk was swept;
          * {@code false} if there was no more chunk to sweep (current sweep cycle is done).
          */
@@ -266,12 +295,22 @@ public class PrefixTombstoneManager {
             return true;
         }
 
+        /**
+         * Finds all key prefixes present in the given chunk and marks their prefix tombstones as live.
+         * Live prefix tombstones must not be garbage-collected.
+         */
         private void markLiveTombstones(Chunk chunk) {
             for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
                 final Record r = cursor.asRecord();
                 final KeyHandle kh = cursor.toKeyHandle();
                 final long prefix = r.keyPrefix(kh);
                 garbageTombstones.remove(prefix);
+            }
+            if (!(chunk instanceof StableValChunk)) {
+                return;
+            }
+            for (LongCursor cursor = ((StableValChunk) chunk).clearedPrefixesFoundAtRestart.cursor(); cursor.advance();) {
+                garbageTombstones.remove(cursor.value());
             }
         }
 

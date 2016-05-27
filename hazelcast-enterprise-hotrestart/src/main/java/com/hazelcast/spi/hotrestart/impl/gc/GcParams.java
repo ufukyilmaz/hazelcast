@@ -5,9 +5,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 
-/**
- * Contains GC ergonomics logic: when to GC and how much to GC.
- */
+/** Contains GC ergonomics logic: when to GC and how much to GC. */
 final class GcParams {
     public static final double MIN_GARBAGE_RATIO = 0.05;
     public static final double HIGH_GARBAGE_RATIO = 0.2;
@@ -63,7 +61,8 @@ final class GcParams {
                 : new GcParams(garbage, liveData, ratio, currChunkSeq, chunkSize, forceGc);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format(
                 "(cost goal %,d, min cost %,d, max cost %,d, benefit goal %,d, min benefit/cost %.2f, forceGc %s)",
                 costGoal, minCost, maxCost, benefitGoal, minBenefitToCost, forceGc);
@@ -72,5 +71,4 @@ final class GcParams {
     private static long garbageExceedingThreshold(double thresholdRatio, long garbage, long liveData) {
         return 1 + garbage - (long) (thresholdRatio * liveData);
     }
-
 }

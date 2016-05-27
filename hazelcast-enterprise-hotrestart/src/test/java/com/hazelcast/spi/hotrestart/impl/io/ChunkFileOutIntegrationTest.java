@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordOnHeap;
 import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
 import com.hazelcast.test.HazelcastParallelClassRunner;

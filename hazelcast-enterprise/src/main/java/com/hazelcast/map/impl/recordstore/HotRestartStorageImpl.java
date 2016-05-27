@@ -78,15 +78,13 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         }
         storage.removeRecord(record);
         hotRestartStore.remove(createHotRestartKey(record), fsync);
-        fsyncIfRequired();
     }
 
     @Override
     public void clear(boolean isDuringShutdown) {
         storage.clear(isDuringShutdown);
         if (!isDuringShutdown) {
-            hotRestartStore.clear(prefix);
-            fsyncIfRequired();
+            hotRestartStore.clear(fsync, prefix);
         }
     }
 
@@ -94,8 +92,7 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     public void destroy(boolean isDuringShutdown) {
         storage.destroy(isDuringShutdown);
         if (!isDuringShutdown) {
-            hotRestartStore.clear(prefix);
-            fsyncIfRequired();
+            hotRestartStore.clear(fsync, prefix);
         }
     }
 
@@ -153,12 +150,5 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         HotRestartKey hotRestartKey = createHotRestartKey(record);
         Data value = mapServiceContext.toData(record.getValue());
         hotRestartStore.put(hotRestartKey, value.toByteArray(), fsync);
-        fsyncIfRequired();
-    }
-
-    protected final void fsyncIfRequired() {
-        if (fsync) {
-            hotRestartStore.fsync();
-        }
     }
 }

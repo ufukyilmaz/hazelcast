@@ -5,7 +5,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import java.util.Comparator;
 
 /**
- * Represents a tombstone chunk whose on-disk contents are stable (immutable).
+ * Represents a fully constructed chunk whose on-disk contents are stable (immutable). The only kind of
+ * update is the retirement of a live record. Not associated with any filesystem resources.
  */
 public abstract class StableChunk extends Chunk {
     public static final Comparator<StableChunk> BY_BENEFIT_COST_DESC = new Comparator<StableChunk>() {
@@ -16,7 +17,8 @@ public abstract class StableChunk extends Chunk {
         }
     };
 
-    public long size;
+    double benefitToCost;
+    private final long size;
 
     StableChunk(GrowingChunk from) {
         super(from);
@@ -30,9 +32,13 @@ public abstract class StableChunk extends Chunk {
         needsDismissing(needsDismissing);
     }
 
-    @Override public final long size() {
+    @Override
+    public final long size() {
         return size;
     }
 
-    public abstract double cachedBenefitToCost();
+    /** @return the cached value of the Cost/Benefit factor for this chunk. */
+    public final double cachedBenefitToCost() {
+        return benefitToCost;
+    }
 }

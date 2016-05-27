@@ -45,7 +45,6 @@ public class HotRestartStoreNightlyTest {
         p.offHeapMb = offHeap ? 1024 : 0;
         p.offHeapMetadataPercentage = 15f;
         p.restartCount = 0;
-        p.disableIo = false;
         try {
             new HotRestartStoreExerciser(testingHome, p).proceed();
         } finally {

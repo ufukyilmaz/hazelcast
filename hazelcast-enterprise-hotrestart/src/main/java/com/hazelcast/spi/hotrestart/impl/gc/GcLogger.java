@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 
 import java.util.logging.Level;
 
@@ -10,6 +11,7 @@ import java.util.logging.Level;
 public class GcLogger {
     private final ILogger logger;
 
+    @Inject
     GcLogger(ILogger logger) {
         this.logger = logger;
     }
@@ -38,6 +40,12 @@ public class GcLogger {
         }
     }
 
+    public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
+        if (logger.isFineEnabled()) {
+            fine(String.format(template, arg1, arg2, arg3, arg4));
+        }
+    }
+
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
         if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3, arg4, arg5));
@@ -53,6 +61,12 @@ public class GcLogger {
     public void info(String template, Object arg1) {
         if (logger.isLoggable(Level.INFO)) {
             info(String.format(template, arg1));
+        }
+    }
+
+    public void info(String template, Object arg1, Object arg2) {
+        if (logger.isLoggable(Level.INFO)) {
+            info(String.format(template, arg1, arg2));
         }
     }
 

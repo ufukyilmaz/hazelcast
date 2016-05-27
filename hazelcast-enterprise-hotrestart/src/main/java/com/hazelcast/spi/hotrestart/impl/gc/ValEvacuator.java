@@ -3,24 +3,25 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
+import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
-import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
 import java.util.Collection;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Evacuates source chunks into destination chunks by moving all live records.
+ * Evacuates source chunks into survivor chunks by moving all live records.
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class ValEvacuator {
@@ -30,43 +31,34 @@ final class ValEvacuator {
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
     private final Collection<StableValChunk> srcChunks;
-    private final GcLogger logger;
-    private final Long2ObjectHashMap<WriteThroughChunk> survivorMap;
-    private final TrackerMap recordTrackers;
-    private final GcHelper gcHelper;
-    private final PrefixTombstoneManager pfixTombstoMgr;
-    private final MutatorCatchup mc;
+
+    @Inject private GcLogger logger;
+    @Inject private RamStoreRegistry ramStoreRegistry;
+    @Inject private PrefixTombstoneManager pfixTombstoMgr;
+    @Inject private MutatorCatchup mc;
+    @Inject private GcHelper gcHelper;
+    @Inject private ChunkManager chunkMgr;
+    @Inject private RecordDataHolder recordDataHolder;
+
+    private Long2ObjectHashMap<WriteThroughChunk> survivorMap;
     private final StableValChunk firstSrcChunk;
     private long start;
     private SurvivorValChunk survivor;
 
-    private ValEvacuator(Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc,
-                         GcLogger logger, long start
-    ) {
+    ValEvacuator(Collection<StableValChunk> srcChunks, long start) {
         this.srcChunks = srcChunks;
-        this.firstSrcChunk = srcChunks.iterator().next();
-        this.logger = logger;
-        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
-        this.gcHelper = chunkMgr.gcHelper;
-        this.pfixTombstoMgr = chunkMgr.pfixTombstoMgr;
-        this.recordTrackers = chunkMgr.trackers;
-        this.mc = mc;
         this.start = start;
+        this.firstSrcChunk = srcChunks.iterator().next();
     }
 
-    static void evacuate(
-            Collection<StableValChunk> srcChunks, ChunkManager chunkMgr, MutatorCatchup mc, GcLogger logger, long start
-    ) {
-        new ValEvacuator(srcChunks, chunkMgr, mc, logger, start).evacuate();
-    }
-
-    private void evacuate() {
+    void evacuate() {
+        this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
         final SortedBySeqRecordCursor liveRecords = sortedLiveRecords();
         logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
-        moveToSurvivor(liveRecords);
+        moveToSurvivors(liveRecords);
         liveRecords.dispose();
-        // Apply clear operation to any dangling dest chunks. At the time the clear operation
-        // is issued, the highest chunk seq is recorded. Dest chunks created after that time
+        // Apply clear operation to any dangling survivor chunks. At the time the clear operation
+        // is issued, the highest chunk seq is recorded. Survivor chunks created after that time
         // will be missed by the Sweeper.
         for (Chunk c : survivorMap.values()) {
             pfixTombstoMgr.dismissGarbage(c);
@@ -86,8 +78,8 @@ final class ValEvacuator {
         return recordMaps[0].sortedBySeqCursor(liveRecordCount, recordMaps, mc);
     }
 
-    private void moveToSurvivor(SortedBySeqRecordCursor sortedCursor) {
-        final RecordDataHolder holder = gcHelper.recordDataHolder;
+    private void moveToSurvivors(SortedBySeqRecordCursor sortedCursor) {
+        final RecordDataHolder holder = recordDataHolder;
         while (sortedCursor.advance()) {
             applyClearOperation();
             final Record r = sortedCursor.asRecord();
@@ -95,7 +87,7 @@ final class ValEvacuator {
                 holder.clear();
                 final KeyHandle kh = sortedCursor.asKeyHandle();
                 final RamStore ramStore;
-                if ((ramStore = gcHelper.ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(kh))) != null
+                if ((ramStore = ramStoreRegistry.ramStoreForPrefix(r.keyPrefix(kh))) != null
                         && ramStore.copyEntry(kh, r.payloadSize(), holder)
                 ) {
                     // Invariant at this point: r.isAlive() and we have its data. Maintain this invariant by
@@ -107,7 +99,7 @@ final class ValEvacuator {
                     // With moveToChunk() the keyHandle's ownership is transferred to dest.
                     // With dest.add() the record is added to dest. Now its garbage count
                     // will be incremented if the keyHandle receives an update.
-                    recordTrackers.get(kh).moveToChunk(survivor.seq);
+                    chunkMgr.trackers.get(kh).moveToChunk(survivor.seq);
                     // catches up for each bufferful
                     survivor.add(r, kh, holder);
                     if (survivor.full()) {
@@ -120,10 +112,12 @@ final class ValEvacuator {
                     // keep catching up until we observe the event.
                     if (!catchUpUntilRetired(r, mc)) {
                         final String ramStoreName = ramStore != null ? ramStore.getClass().getSimpleName() : "null";
+                        holder.keyBuffer.flip();
                         throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired."
-                              + " Chunk #%03x, record #%03x, size %,d, RAM store was %s",
-                                survivor.seq, r.liveSeq(), r.size(), ramStoreName));
+                              + " Chunk #%03x, key %d:%x, record #%03x, size %,d, RAM store was %s",
+                                survivor != null ? survivor.seq : -1, r.keyPrefix(kh), holder.keyBuffer.getLong(),
+                                r.liveSeq(), r.size(), ramStoreName));
                     }
                 }
             }
@@ -165,8 +159,9 @@ final class ValEvacuator {
 
     @SuppressWarnings("checkstyle:emptyblock")
     private boolean catchUpUntilRetired(Record r, MutatorCatchup mc) {
+        long deadline = System.nanoTime() + SECONDS.toNanos(3);
         for (int eventCount = 0;
-             eventCount <= stuckDetectionThreshold && r.isAlive();
+             eventCount <= stuckDetectionThreshold && r.isAlive() && System.nanoTime() < deadline;
              eventCount += catchUpSafely(mc, r)
         ) { }
         return !r.isAlive();

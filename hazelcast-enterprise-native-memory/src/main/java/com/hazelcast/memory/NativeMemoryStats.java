@@ -61,10 +61,6 @@ class NativeMemoryStats extends DefaultMemoryStats implements MemoryStats {
         }
     }
 
-    final void addCommittedNative(long size) {
-        committedNative.addAndGet(size);
-    }
-
     final void removeCommittedNative(long size) {
         committedNative.addAndGet(-size);
     }

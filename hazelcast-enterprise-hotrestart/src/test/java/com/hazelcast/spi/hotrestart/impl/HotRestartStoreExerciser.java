@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.logging.LoggingService;
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.logging.LoggingService;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
@@ -90,9 +90,9 @@ public class HotRestartStoreExerciser {
                 reg = newStoreRegistry();
                 verifyRestartedStore(summary, reg);
             }
-        } finally {
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
+        } finally {
         }
     }
 

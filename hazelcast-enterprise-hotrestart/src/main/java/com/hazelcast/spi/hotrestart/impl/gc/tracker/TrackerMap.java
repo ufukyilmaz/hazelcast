@@ -4,7 +4,8 @@ import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 
 /**
- * Map for record trackers
+ * Special-purpose map from {@link KeyHandle} to {@link Tracker}, used to hold
+ * global GC-related metadata about all records in the Hot Restart Store.
  */
 public interface TrackerMap extends Disposable {
 
@@ -32,24 +33,38 @@ public interface TrackerMap extends Disposable {
     void removeLiveTombstone(KeyHandle kh);
 
     /**
-     * Removes the entry for {@code tr} if {@code tr} represents a
-     * dead record. {@code tr} must be the tracker mapped under {@code kh}, but
-     * this is not verified.
+     * Removes the entry for {@code tr} if {@code tr} represents a dead record.
+     * {@code tr} must be the tracker mapped under {@code kh}, but this is not verified.
      */
     void removeIfDead(KeyHandle kh, Tracker tr);
 
+    /** @return the number of entries in this map. */
     long size();
 
     Cursor cursor();
 
-    /** Cursor over tracker map's entries */
+    /** Cursor over tracker map's entries. A newly obtained cursor is positioned before the first item. */
     interface Cursor {
+
+        /**
+         * Attempts to advance the cursor to the next position.
+         * @return {@code true} if the cursor advanced; {@code false} otherwise.
+         */
         boolean advance();
 
+        /**
+         * Returns the key handle associated with the tracker at the current cursor position. May return
+         * the cursor object itself, therefore the returned object is valid only until the cursor is
+         * updated by calling {@link #advance()} or the owning map is updated.
+         */
         KeyHandle asKeyHandle();
 
+        /** @return the key handle associated with the tracker at the current cursor position */
         KeyHandle toKeyHandle();
 
+        /** @return the tracker at the current cursor position. May return the cursor object itself,
+         * therefore the returned object is valid only until the cursor is updated by calling
+         * {@link #advance()} or the owning map is updated. */
         Tracker asTracker();
     }
 }

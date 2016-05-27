@@ -7,32 +7,39 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
-/**
- * Destination chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}.
- */
+/** Survivor chunk used by the {@link com.hazelcast.spi.hotrestart.impl.gc.ValEvacuator}. */
 public final class SurvivorValChunk extends WriteThroughChunk {
 
     public SurvivorValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
     }
 
-    @Override public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int size, int ignored) {
+    @Override
+    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
         insertOrUpdateValue(prefix, kh, seq, size);
     }
 
-    @Override protected int determineSizeLimit() {
+    @Override
+    protected int determineSizeLimit() {
         return valChunkSizeLimit();
     }
 
+    /**
+     * Adds a record both to the survivor chunk file and to the chunk's record map.
+     * @param r the record
+     * @param kh record's key handle
+     * @param holder record's key and value blobs
+     */
     public void add(Record r, KeyHandle kh, RecordDataHolder holder) {
         final long prefix = r.keyPrefix(kh);
         records.putIfAbsent(prefix, kh, r.liveSeq(), r.size(), false, 0);
         liveRecordCount++;
-        size += r.size();
+        grow(r.size());
         out.writeValueRecord(r, prefix, holder.keyBuffer, holder.valueBuffer);
     }
 
-    @Override public StableValChunk toStableChunk() {
+    @Override
+    public StableValChunk toStableChunk() {
         return new StableValChunk(seq, records.toStable(), liveRecordCount, size(), garbage, needsDismissing());
     }
 }

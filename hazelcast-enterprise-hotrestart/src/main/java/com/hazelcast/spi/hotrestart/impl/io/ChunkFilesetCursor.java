@@ -2,8 +2,6 @@ package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 
 import java.io.File;
@@ -15,29 +13,40 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static java.lang.Long.parseLong;
 
+/**
+ * A cursor over all the records in a list of chunk files.
+ */
 public abstract class ChunkFilesetCursor {
-    static final byte[] NO_VALUE = new byte[0];
     private static final int HEX_RADIX = 16;
 
-    final GcHelper gcHelper;
-    final Rebuilder rebuilder;
     ChunkFileCursor currentChunkCursor;
     private final List<File> chunkFiles;
 
-    ChunkFilesetCursor(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
+    ChunkFilesetCursor(List<File> chunkFiles) {
         this.chunkFiles = chunkFiles;
-        this.rebuilder = rebuilder;
-        this.gcHelper = gcHelper;
     }
 
+    /**
+     * @param f a chunk {@code File}
+     * @return seq extracted from the file's name
+     */
     public static long seq(File f) {
         return parseLong(f.getName().substring(0, CHUNK_FNAME_LENGTH), HEX_RADIX);
     }
 
+    /**
+     * @param f a chunk {@code File}
+     * @return whether it was the active chunk file at the time of shutdown
+     */
     public static boolean isActiveChunkFile(File f) {
         return f.getName().endsWith(Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX);
     }
 
+    /**
+     * Attempts to advance to the next record.
+     * @return {@code true} if there was a next record to advance to
+     * @throws InterruptedException if the current thread was interrupted
+     */
     public final boolean advance() throws InterruptedException {
         while (true) {
             if (Thread.interrupted()) {
@@ -55,6 +64,10 @@ public abstract class ChunkFilesetCursor {
         }
     }
 
+    /**
+     * @return the record at which the cursor is currently positioned. May return the cursor object
+     * itself, therefore the returned object becomes invalid as soon as {@link #advance()} is called.
+     */
     public final ChunkFileRecord currentRecord() {
         return currentChunkCursor;
     }
@@ -68,7 +81,6 @@ public abstract class ChunkFilesetCursor {
                 return false;
             }
             this.currentChunkCursor = openCursor(chunkFile);
-            rebuilder.startNewChunk(seq(chunkFile));
             return true;
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -86,6 +98,9 @@ public abstract class ChunkFilesetCursor {
         return null;
     }
 
+    /**
+     * Removes the filename suffix that marks the file as the active chunk file.
+     */
     static void removeActiveSuffix(File activeChunkFile) {
         final String nameNow = activeChunkFile.getName();
         final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_CHUNK_SUFFIX.length());
@@ -95,24 +110,28 @@ public abstract class ChunkFilesetCursor {
     }
 
 
+    /** Specialization of {@code ChunkFileSetCursor} to value chunks */
     public static class Val extends ChunkFilesetCursor {
-        public Val(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
-            super(chunkFiles, rebuilder, gcHelper);
+        public Val(List<File> chunkFiles) {
+            super(chunkFiles);
         }
 
-        @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Val(chunkFile, gcHelper);
+        @Override
+        ChunkFileCursor openCursor(File chunkFile) throws IOException {
+            return new ChunkFileCursor.Val(chunkFile);
         }
     }
 
 
+    /** Specialization of {@code ChunkFileSetCursor} to tombstone chunks */
     public static class Tomb extends ChunkFilesetCursor {
-        public Tomb(List<File> chunkFiles, Rebuilder rebuilder, GcHelper gcHelper) {
-            super(chunkFiles, rebuilder, gcHelper);
+        public Tomb(List<File> chunkFiles) {
+            super(chunkFiles);
         }
 
-        @Override ChunkFileCursor openCursor(File chunkFile) throws IOException {
-            return new ChunkFileCursor.Tomb(chunkFile, gcHelper);
+        @Override
+        ChunkFileCursor openCursor(File chunkFile) throws IOException {
+            return new ChunkFileCursor.Tomb(chunkFile);
         }
     }
 }

@@ -5,9 +5,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 
 /**
- * A growing chunk which immediately writes added entries to the backing file.
- * <p>
- * Not thread-safe.
+ * Represents a chunk associated with an open file. Synchronously writes each record to the
+ * underlying file.
  */
 public abstract class WriteThroughChunk extends GrowingChunk {
     public final ChunkFileOut out;
@@ -37,6 +36,7 @@ public abstract class WriteThroughChunk extends GrowingChunk {
         out.fsync();
     }
 
+    // Called exclusively as "assert hasRoom()".
     final boolean hasRoom() {
         assert !full() : String.format("Attempted to write to a full %s file #%x", base(), seq);
         return true;

@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SimpleHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
 import static com.hazelcast.elastic.CapacityUtil.DEFAULT_LOAD_FACTOR;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
@@ -74,7 +74,8 @@ public final class RecordMapOffHeap implements RecordMap {
         }
     }
 
-    @Override public RecordOffHeap get(KeyHandle kh) {
+    @Override
+    public RecordOffHeap get(KeyHandle kh) {
         final KeyHandleOffHeap handle = (KeyHandleOffHeap) kh;
         final long addr = hsa.get(handle.address(), handle.sequenceId());
         if (addr == NULL_ADDRESS) {
@@ -84,11 +85,13 @@ public final class RecordMapOffHeap implements RecordMap {
         return rec;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
         return (int) hsa.size();
     }
 
-    @Override public SortedBySeqRecordCursor sortedBySeqCursor(
+    @Override
+    public SortedBySeqRecordCursor sortedBySeqCursor(
             int liveRecordCount, RecordMap[] recordMaps, MutatorCatchup mc
     ) {
         final LongArray seqsAndSlotBases = new LongArray(memMgr, 2L * liveRecordCount);
@@ -108,15 +111,18 @@ public final class RecordMapOffHeap implements RecordMap {
         return new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, i, memMgr, mc);
     }
 
-    @Override public CursorOffHeap cursor() {
+    @Override
+    public CursorOffHeap cursor() {
         return new CursorOffHeap();
     }
 
-    @Override public RecordMap toStable() {
+    @Override
+    public RecordMap toStable() {
         return stableMemMgr != null ? new RecordMapOffHeap(this) : this;
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         hsa.dispose();
     }
 
@@ -124,7 +130,8 @@ public final class RecordMapOffHeap implements RecordMap {
         private final HashSlotCursor16byteKey c = hsa.cursor();
         private final RecordOffHeap r = new RecordOffHeap();
 
-        @Override public boolean advance() {
+        @Override
+        public boolean advance() {
             if (!c.advance()) {
                 return false;
             }
@@ -132,11 +139,13 @@ public final class RecordMapOffHeap implements RecordMap {
             return true;
         }
 
-        @Override public KeyHandleOffHeap toKeyHandle() {
+        @Override
+        public KeyHandleOffHeap toKeyHandle() {
             return new SimpleHandleOffHeap(c.key1(), c.key2());
         }
 
-        @Override public Record asRecord() {
+        @Override
+        public Record asRecord() {
             return r;
         }
     }

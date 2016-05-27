@@ -134,7 +134,8 @@ public abstract class AbstractHotRestartClusterStartTest {
                         HazelcastInstance instance = newHazelcastInstance(address, listener);
                         instancesList.add(instance);
                     } catch (Exception e) {
-                        System.err.println("Node failed to start: " + address + "-> " + e);
+                        System.out.println("Node failed to start: " + address + "-> " + e);
+                        e.printStackTrace(System.out);
                     } finally {
                         latch.countDown();
                     }

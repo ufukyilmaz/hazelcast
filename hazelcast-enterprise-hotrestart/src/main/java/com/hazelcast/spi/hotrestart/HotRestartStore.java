@@ -1,35 +1,45 @@
 package com.hazelcast.spi.hotrestart;
 
+import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
+import com.hazelcast.spi.hotrestart.impl.RestartItem;
+
 /**
  * Persistent store of key-value mappings specifically tailored to support
  * the Hot Restart feature. Supports only update operations and no data lookup.
  * Data retrieval happens only during the hot restart procedure, when this
  * store pushes data to its associated RAM stores.
  * <p>
- * The store supports a batch operating mode where a number of updates are fsync'd
- * to the file system together instead of one by one. To achieve this,
- * <ol>
- *     <li>call {@link #fsync()} when all the updates in a batch are done;</li>
- *     <li>when calling {@link #put(HotRestartKey, byte[], boolean)} and {@link #remove(HotRestartKey, boolean)},
- *     make sure you pass {@code true} for the {@code boolean needsFsync} parameter to ensure that all chunk files
- *     that were active at some point during the batch operation are fsync'd before closing.</li>
- * </ol>
- * <p>
- * This class is not thread-safe. The caller must ensure a <i>happens-before</i>
- * relationship between any two method calls.
+ * Update operations (put/remove/clear) accept a "needs fsync" parameter which determines
+ * the perisistence semantics of the operation (immediate vs. eventual). For each given key
+ * prefix the value of this parameter must always be the same because the Hot Restart Store
+ * will group a batch of operations by the "needs fsync" value. Order within each group is
+ * preserved.
  */
 public interface HotRestartStore {
 
     /** The name of the log category used by the Hot Restart module */
     String LOG_CATEGORY = "com.hazelcast.spi.hotrestart";
 
+    /** Returns the store's name, which matches the name of its home directory. */
+    String name();
+
     /**
-     * Performs hot restart: reloads the data from persistent storage and
-     * pushes it to its associated {@link RamStoreRegistry}.
+     * Performs hot restart: reads the data from persistent storage and pushes it
+     * to its associated {@link RamStoreRegistry}.
      *
-     * @param failIfAnyData if true, the call will fail if any persistent data is found.
+     * @param failIfAnyData if true, the call will fail if any persistent data is found
+     * @param storeCount the number of Hot Restart stores associated with the Hazelcast instance
+     * @param keyConveyors convey keys from {@code HotRestartStore} to {@code RamStore}
+     * @param valueConveyors convey values from {@code HotRestartStore} to {@code RamStore}
+     * @param keyHandleConveyor conveys key handles from {@code RamStore} to {@code HotRestartStore}
+     * @throws InterruptedException
      */
-    void hotRestart(boolean failIfAnyData) throws InterruptedException;
+    void hotRestart(boolean failIfAnyData, int storeCount,
+                    ConcurrentConveyor<RestartItem>[] keyConveyors,
+                    ConcurrentConveyor<RestartItem> keyHandleConveyor,
+                    ConcurrentConveyor<RestartItem>[] valueConveyors
+    )
+            throws InterruptedException;
 
     /**
      * Establishes a persistent mapping from the supplied key to the supplied value.
@@ -64,39 +74,18 @@ public interface HotRestartStore {
     /**
      * Removes all mappings for the supplied list of key prefixes.
      * <p>
-     * The completion of this method must <i>happen-before</i> any call of
-     * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} which
-     * observes the effects of the clear operation on the RAM store.
-     * <p>
      * This method must not be called while holding a lock that can block the progress of
      * {@link RamStore#copyEntry(KeyHandle, int, RecordDataSink)} on any
      * {@code RamStore} which can be returned by the {@link RamStoreRegistry}
      * associated with this Hot Restart store.
      *
+     * @param needsFsync &mdash; has no effect on the semantics of persistence, but its
+     *                   value must match the "needs fsync" configuration of all supplied
+     *                   key prefixes
      * @param keyPrefixes The key prefixes whose data is to be cleared.
      * @throws HotRestartException
      */
-    void clear(long... keyPrefixes) throws HotRestartException;
-
-    /**
-     * @return the name of this Hot Restart store
-     */
-    String name();
-
-    /**
-     * When this method completes, it is guaranteed that the effects of all preceding
-     * calls to {@link #put(HotRestartKey, byte[], boolean)}, {@link #remove(HotRestartKey, boolean)},
-     * and {@link #clear(long...)} have become persistent. Note that calls to {@code put} and {@code remove}
-     * with {@code needsFsync == false} are excluded from this guarantee.
-     */
-    void fsync();
-
-    /**
-     * Reports whether this Hot Restart store is completely empty. The store is
-     * empty when it contains neither live nor dead (garbage) records. Usually
-     * this is the case only before the first update operation on it.
-     */
-    boolean isEmpty();
+    void clear(boolean needsFsync, long... keyPrefixes) throws HotRestartException;
 
     /**
      * Closes this Hot Restart store and releases any system resources it

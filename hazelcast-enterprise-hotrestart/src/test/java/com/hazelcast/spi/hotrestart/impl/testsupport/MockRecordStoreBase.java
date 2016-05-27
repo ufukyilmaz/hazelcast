@@ -8,49 +8,53 @@ import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle.KhCursor;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public abstract class MockRecordStoreBase implements MockRecordStore {
     final Long2bytesMap ramStore;
     final HotRestartStore hrStore;
     final long prefix;
+    private final boolean fsyncEnabled;
 
-    MockRecordStoreBase(long prefix, Long2bytesMap ramStore, HotRestartStore hrStore) {
+    MockRecordStoreBase(long prefix, Long2bytesMap ramStore, HotRestartStore hrStore, boolean fsyncEnabled) {
         this.ramStore = ramStore;
         this.prefix = prefix;
         this.hrStore = hrStore;
+        this.fsyncEnabled = fsyncEnabled;
     }
 
-    @Override public final Long2bytesMap ramStore() {
+    @Override
+    public final Long2bytesMap ramStore() {
         return ramStore;
     }
 
-    @Override public final void put(long key, byte[] value) {
+    @Override
+    public final void put(long key, byte[] value) {
         synchronized (ramStore) {
             ramStore.put(key, value);
         }
-        hrStore.put(hrKey(key), value, false);
+        hrStore.put(hrKey(key), value, fsyncEnabled);
     }
 
-    @Override public final void remove(long key) {
+    @Override
+    public final void remove(long key) {
         synchronized (ramStore) {
             if (!ramStore.containsKey(key)) {
                 return;
             }
             ramStore.remove(key);
         }
-        hrStore.remove(hrKey(key), false);
+        hrStore.remove(hrKey(key), fsyncEnabled);
     }
 
-    @Override public final void clear() {
+    @Override
+    public final void clear() {
         synchronized (ramStore) {
             ramStore.clear();
         }
     }
 
-    @Override public void removeNullEntries(SetOfKeyHandle keyHandles) {
+    @Override
+    public void removeNullEntries(SetOfKeyHandle keyHandles) {
         for (KhCursor cursor = keyHandles.cursor(); cursor.advance();) {
             final long key = unwrapKey(cursor.asKeyHandle());
             assert ramStore.valueSize(key) < 0;
@@ -58,19 +62,22 @@ public abstract class MockRecordStoreBase implements MockRecordStore {
         }
     }
 
-    @Override public final void dispose() {
+    @Override
+    public final void dispose() {
         ramStore.dispose();
     }
 
-    @Override public final boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) {
+    @Override
+    public final boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) {
         synchronized (ramStore) {
             return ramStore.copyEntry(unwrapKey(kh), expectedSize, sink);
         }
     }
 
-    @Override public final void accept(KeyHandle kh, byte[] value) {
+    @Override
+    public final void accept(KeyHandle kh, byte[] value) {
         assert kh != null : "accept() called with null key";
-        assert value != null : "accept called with null value";
+        assert value != null : "accept() called with null value";
         ramStore.put(unwrapKey(kh), value);
     }
 

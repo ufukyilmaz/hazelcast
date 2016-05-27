@@ -28,25 +28,30 @@ public class KeyOnHeap implements HotRestartKey, KeyHandle {
         this.hashCode = (int) (37 * prefix + MurmurHash3_x86_32(bytes, 0, bytes.length));
     }
 
-    @Override public long prefix() {
+    @Override
+    public long prefix() {
         return prefix;
     }
 
     @SuppressFBWarnings(value = "EI",
             justification = "bytes is an effectively immutable array (it is illegal to change its contents)")
-    @Override public byte[] bytes() {
+    @Override
+    public byte[] bytes() {
         return bytes;
     }
 
-    @Override public KeyHandle handle() {
+    @Override
+    public KeyHandle handle() {
         return this;
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return hashCode;
     }
 
-    @Override public boolean equals(Object obj) {
+    @Override
+    public boolean equals(Object obj) {
         final KeyOnHeap that;
         return this == obj || (
                 obj instanceof KeyOnHeap
@@ -54,7 +59,8 @@ public class KeyOnHeap implements HotRestartKey, KeyHandle {
                 && Arrays.equals(this.bytes, that.bytes));
     }
 
-    @Override public String toString() {
-        return new BigInteger(bytes).toString(MAX_RADIX);
+    @Override
+    public String toString() {
+        return prefix + ":" + new BigInteger(bytes).toString(MAX_RADIX);
     }
 }

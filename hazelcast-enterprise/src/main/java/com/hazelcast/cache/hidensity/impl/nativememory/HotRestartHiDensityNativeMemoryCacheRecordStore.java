@@ -52,8 +52,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
      */
     private final Object recordMapMutex;
 
-    private HiDensityNativeMemoryCacheRecord fetchedRecordDuringRestart;
-
     public HotRestartHiDensityNativeMemoryCacheRecordStore(
             int partitionId, String name, EnterpriseCacheService cacheService,
             NodeEngine nodeEngine, boolean fsync, long keyPrefix
@@ -165,12 +163,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    private void fsyncIfRequired() {
-        if (fsync) {
-            hotRestartStore.fsync();
-        }
-    }
-
     @Override
     protected void onOwn(Data key, Object value, long ttlMillis, HiDensityNativeMemoryCacheRecord record,
                          NativeMemoryData oldValueData, boolean isNewPut, boolean disableDeferredDispose) {
@@ -183,13 +175,11 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         assert value != null : "Value should not be null! -> " + record;
         byte[] valueBytes = value.toByteArray();
         hotRestartStore.put(newHotRestartKey(key, record), valueBytes, fsync);
-        fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key, HiDensityNativeMemoryCacheRecord record) {
         final KeyOffHeap hotRestartKey = newHotRestartKey(key, record);
         hotRestartStore.remove(hotRestartKey, fsync);
-        fsyncIfRequired();
     }
 
     private KeyOffHeap newHotRestartKey(Data key, HiDensityNativeMemoryCacheRecord record) {
@@ -229,67 +219,22 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         return newKeyHandle(heapKey);
     }
 
-    private KeyHandleOffHeap newKeyHandle(HeapData heapKey) {
-        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
-        NativeMemoryData nativeKey = (NativeMemoryData) recordProcessor.convertData(heapKey, NATIVE);
-        long recordSequence = newSequence();
-        // fetchedRecordDuringRestart will be used in #accept() method
-        fetchedRecordDuringRestart = acceptNewRecord(nativeKey, recordSequence);
-        return new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
-    }
-
-    private HiDensityNativeMemoryCacheRecord acceptNewRecord(NativeMemoryData key, long recordSequence) {
-        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
-        HiDensityNativeMemoryCacheRecord record = null;
-        try {
-            record = createRecordInternal(null, Clock.currentTimeMillis(), Long.MAX_VALUE, recordSequence);
-            boolean isNewRecord = records.set(key, record);
-            assert isNewRecord;
-        } catch (NativeOutOfMemoryError e) {
-            recordProcessor.disposeData(key);
-            if (record != null) {
-                recordProcessor.dispose(record);
-            }
-            throw e;
-        }
-        return record;
-    }
-
-    private KeyHandleOffHeap readExistingKeyHandle(long nativeKeyAddress) {
-        NativeMemoryData key = new NativeMemoryData().reset(nativeKeyAddress);
-        HiDensityNativeMemoryCacheRecord record = records.get(key);
-        assert record != null;
-        // fetchedRecordDuringRestart will be used in #accept() method
-        fetchedRecordDuringRestart = record;
-        return new SimpleHandleOffHeap(key.address(), record.getSequence());
-    }
-
     // called from PartitionOperationThread
     @Override
     public void accept(KeyHandle kh, byte[] valueBytes) {
-        assert valueBytes != null && valueBytes.length > 0;
+        assert kh != null : "accept() called with null KeyHandle";
+        assert valueBytes != null && valueBytes.length > 0 : "accept() called with null/empty value";
 
-        final KeyHandleOffHeap keyHandle = (KeyHandleOffHeap) kh;
-
-        HiDensityNativeMemoryCacheRecord record = fetchedRecordDuringRestart;
-        long recordSequence = keyHandle.sequenceId();
-
-        assert record != null;
-        assert recordSequence == record.getSequence()
-                : "Expected Seq: " + recordSequence + ", Actual Seq: " + record.getSequence();
-
+        final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
+        final HiDensityNativeMemoryCacheRecord record = records.get(new NativeMemoryData().reset(ohk.address()));
+        assert record != null : "accept() caled with unknown key";
+        assert ohk.sequenceId() == record.getSequence() : String.format(
+                "Sequence ID of the supplied keyHandle (%d) doesn't match the one in RamStore (%d)",
+                ohk.sequenceId(), record.getSequence());
         acceptNewValue(record, new HeapData(valueBytes));
-        fetchedRecordDuringRestart = null;
     }
 
-    private void acceptNewValue(HiDensityNativeMemoryCacheRecord record, HeapData value) {
-        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
-        NativeMemoryData nativeValue = (NativeMemoryData) recordProcessor.convertData(value, NATIVE);
-
-        recordProcessor.disposeValue(record);
-        record.setValue(nativeValue);
-    }
-
+    // called from PartitionOperationThread
     @Override
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
         SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();
@@ -311,15 +256,6 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    private void scanEmptyRecords() {
-        Iterator<HiDensityNativeMemoryCacheRecord> iter = records.valueIter();
-        while (iter.hasNext()) {
-            HiDensityNativeMemoryCacheRecord record = iter.next();
-            assert record != null;
-            assert record.getValueAddress() != NULL_PTR;
-        }
-    }
-
     @Override
     public void clear() {
         clearInternal(true);
@@ -327,8 +263,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     private void clearInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
-            hotRestartStore.clear(prefix);
-            fsyncIfRequired();
+            hotRestartStore.clear(fsync, prefix);
         }
         super.clear();
     }
@@ -340,5 +275,52 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
         records.dispose();
         closeListeners();
+    }
+
+    private KeyHandleOffHeap readExistingKeyHandle(long nativeKeyAddress) {
+        NativeMemoryData key = new NativeMemoryData().reset(nativeKeyAddress);
+        HiDensityNativeMemoryCacheRecord record = records.get(key);
+        assert record != null;
+        return new SimpleHandleOffHeap(key.address(), record.getSequence());
+    }
+
+    private KeyHandleOffHeap newKeyHandle(HeapData heapKey) {
+        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
+        NativeMemoryData nativeKey = (NativeMemoryData) recordProcessor.convertData(heapKey, NATIVE);
+        long recordSequence = newSequence();
+        acceptNewRecord(nativeKey, recordSequence);
+        return new SimpleHandleOffHeap(nativeKey.address(), recordSequence);
+    }
+
+    private void acceptNewRecord(NativeMemoryData key, long recordSequence) {
+        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
+        HiDensityNativeMemoryCacheRecord record = null;
+        try {
+            record = createRecordInternal(null, Clock.currentTimeMillis(), Long.MAX_VALUE, recordSequence);
+            boolean isNewRecord = records.set(key, record);
+            assert isNewRecord;
+        } catch (NativeOutOfMemoryError e) {
+            recordProcessor.disposeData(key);
+            if (record != null) {
+                recordProcessor.dispose(record);
+            }
+            throw e;
+        }
+    }
+
+    private void acceptNewValue(HiDensityNativeMemoryCacheRecord record, HeapData value) {
+        HiDensityRecordProcessor recordProcessor = getRecordProcessor();
+        NativeMemoryData nativeValue = (NativeMemoryData) recordProcessor.convertData(value, NATIVE);
+        recordProcessor.disposeValue(record);
+        record.setValue(nativeValue);
+    }
+
+    private void scanEmptyRecords() {
+        Iterator<HiDensityNativeMemoryCacheRecord> iter = records.valueIter();
+        while (iter.hasNext()) {
+            HiDensityNativeMemoryCacheRecord record = iter.next();
+            assert record != null;
+            assert record.getValueAddress() != NULL_PTR;
+        }
     }
 }

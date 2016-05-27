@@ -143,6 +143,11 @@ public class EnterpriseCacheService
         return (RamStore) getOrCreateRecordStore(name, toPartitionId(prefix));
     }
 
+    @Override
+    public int prefixToThreadId(long prefix) {
+        throw new UnsupportedOperationException();
+    }
+
     public HotRestartStore onHeapHotRestartStoreForCurrentThread() {
         return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
     }

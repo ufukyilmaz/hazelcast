@@ -10,7 +10,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.util.StringUtil.UTF8_CHARSET;
 
 /**
  * Abstract class for reading a single metadata from a specific file
@@ -18,42 +17,32 @@ import static com.hazelcast.util.StringUtil.UTF8_CHARSET;
  */
 abstract class AbstractMetadataReader {
 
-    private final File homeDir;
+    final File homeDir;
 
     AbstractMetadataReader(File homeDir) {
         this.homeDir = homeDir;
     }
 
     final void read() throws IOException {
-        File file = new File(homeDir, getFileName());
+        File file = new File(homeDir, getFilename());
         if (!file.exists()) {
             return;
         }
-
-        FileInputStream fileIn = null;
+        DataInputStream in = null;
         try {
-            fileIn = new FileInputStream(file);
-            DataInputStream in = new DataInputStream(new BufferedInputStream(fileIn));
-
+            in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
             doRead(in);
-
-            closeResource(in);
+            in.close();
         } finally {
-            closeResource(fileIn);
+            closeResource(in);
         }
     }
 
-    protected abstract void doRead(DataInputStream in) throws IOException;
+    abstract String getFilename();
 
-    protected abstract String getFileName();
+    abstract void doRead(DataInputStream in) throws IOException;
 
-    static Address readAddressFromStream(DataInput in) throws IOException {
-        int hostLen = in.readInt();
-        byte[] hostBytes = new byte[hostLen];
-        in.readFully(hostBytes);
-        String host = new String(hostBytes, 0, hostLen, UTF8_CHARSET);
-        int port = in.readInt();
-
-        return new Address(host, port);
+    static Address readAddress(DataInput in) throws IOException {
+        return new Address(in.readUTF(), in.readInt());
     }
 }

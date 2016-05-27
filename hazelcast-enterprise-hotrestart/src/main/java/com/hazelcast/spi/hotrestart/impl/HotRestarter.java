@@ -1,20 +1,22 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
+import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
+import com.hazelcast.util.collection.Long2ObjectHashMap;
 
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -24,31 +26,37 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
+import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
+import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.closeIgnoringFailure;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFileCursor.readFullyOrNothing;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
+import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
+import static java.lang.Thread.currentThread;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Reads the persistent state and:
  * <ol>
- *     <li>refills the in-memory stores</li>
+ *     <li>refills the RAM stores</li>
  *     <li>rebuilds the Hot Restart Store's metadata</li>
  * </ol>
  */
-class HotRestarter {
+public final class HotRestarter {
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
-        public int compare(File left, File right) {
+        @Override public int compare(File left, File right) {
             final long leftSeq = ChunkFilesetCursor.seq(left);
             final long rightSeq = ChunkFilesetCursor.seq(right);
             return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
@@ -56,89 +64,85 @@ class HotRestarter {
     };
     private static final Pattern RX_BUCKET_DIR = Pattern.compile(String.format("[0-9a-f]{%d}", BUCKET_DIRNAME_DIGITS));
     private static final FileFilter BUCKET_DIRS_ONLY = new FileFilter() {
-        public boolean accept(File f) {
+        @Override public boolean accept(File f) {
             return f.isDirectory() && RX_BUCKET_DIR.matcher(f.getName()).matches();
         }
     };
     private static final FileFilter CHUNK_FILES_ONLY = new FileFilter() {
-        public boolean accept(File f) {
-            return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX)
-                                  || ChunkFilesetCursor.isActiveChunkFile(f));
+        @Override public boolean accept(File f) {
+            return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX) || isActiveChunkFile(f));
         }
     };
+    private static final int RECORD_COUNT_NULL_SENTINEL = -2;
 
+    volatile long recordCountInCurrentPhase = RECORD_COUNT_NULL_SENTINEL;
+    volatile Throwable rebuilderFailure;
+
+    private final PrefixTombstoneManager pfixTombstoMgr;
     private final GcHelper gcHelper;
-    private final GcExecutor gcExec;
-    private final RamStoreRegistry reg;
-    private final Map<Long, SetOfKeyHandle> tombKeys = new HashMap<Long, SetOfKeyHandle>();
+    private final File homeDir;
+    private final String storeName;
+    private final Integer storeCount;
+    private final ConcurrentConveyorSingleQueue<RestartItem>[] keySenders;
+    private final ConcurrentConveyor<RestartItem> keyHandleReceiver;
+    private final ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders;
     private final GcLogger logger;
+    private final RamStoreRegistry reg;
+
     private Rebuilder rebuilder;
     private Long2LongHashMap prefixTombstones;
 
-    // These two are updated on each advancement of the chunk file cursor
-    private RamStore ramStore;
-    private KeyHandle keyHandle;
-
-    public HotRestarter(GcHelper gcHelper, GcExecutor gcExec) {
+    @Inject
+    @SuppressWarnings("checkstyle:parameternumber")
+    private HotRestarter(
+            Rebuilder rebuilder, PrefixTombstoneManager pfixTombstoMgr, GcHelper gcHelper, RamStoreRegistry reg, GcLogger logger,
+            @Name("homeDir") File homeDir, @Name("storeName") String storeName, @Name("storeCount") Integer storeCount,
+            @Name("keyConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] keySenders,
+            @Name("keyHandleConveyor") ConcurrentConveyor<RestartItem> keyHandleReceiver,
+            @Name("valueConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] valueSenders
+    ) {
+        this.rebuilder = rebuilder;
+        this.pfixTombstoMgr = pfixTombstoMgr;
         this.gcHelper = gcHelper;
-        this.gcExec = gcExec;
-        this.reg = gcHelper.ramStoreRegistry;
-        this.logger = gcHelper.logger;
+        this.reg = reg;
+        this.logger = logger;
+        this.homeDir = homeDir;
+        this.storeName = storeName;
+        this.storeCount = storeCount;
+        this.keySenders = keySenders;
+        this.keyHandleReceiver = keyHandleReceiver;
+        this.valueSenders = valueSenders;
     }
 
     public void restart(boolean failIfAnyData) throws InterruptedException {
-        final Long2LongHashMap prefixTombstones = restorePrefixTombstones(gcHelper.homeDir);
-        logger.finest("Reloaded prefix tombstones %s", prefixTombstones);
-        this.rebuilder = new Rebuilder(gcExec.chunkMgr, gcHelper.logger);
-        gcExec.setPrefixTombstones(prefixTombstones);
-        this.prefixTombstones = prefixTombstones;
-        final ChunkFilesetCursor tombCursor =
-                new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR), rebuilder, gcHelper);
-        final ChunkFilesetCursor valCursor =
-                new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR), rebuilder, gcHelper);
-        if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
-            throw new HotRestartException("failIfAnyData == true and there's data to reload");
-        }
+        final Thread rebuilderThread = new Thread(new RebuilderLoop(), "Rebuilder for " + storeName);
+        Throwable localFailure = null;
         try {
-            loadTombstones(tombCursor);
-            rebuilder.startValuePhase(tombKeys);
-            loadValues(valCursor);
-            gcHelper.initChunkSeq(rebuilder.maxChunkSeq());
-            rebuilder.done();
-            for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
-                reg.restartingRamStoreForPrefix(e.getKey()).removeNullEntries(e.getValue());
+            final Long2LongHashMap prefixTombstones = restorePrefixTombstones(homeDir);
+            logger.finest("Reloaded prefix tombstones %s", prefixTombstones);
+            pfixTombstoMgr.setPrefixTombstones(prefixTombstones);
+            this.prefixTombstones = prefixTombstones;
+            final ChunkFilesetCursor tombCursor = new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR));
+            final ChunkFilesetCursor valCursor = new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR));
+            if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {
+                throw new HotRestartException("failIfAnyData == true and there's data to reload");
             }
-        } finally {
-            for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
-                e.getValue().dispose();
-            }
+            rebuilderThread.start();
+            readRecords(tombCursor);
+            readRecords(valCursor);
+        } catch (Throwable t) {
+            localFailure = t;
         }
-    }
-
-    private void loadTombstones(ChunkFilesetCursor tombCursor) throws InterruptedException {
-        while (tombCursor.advance()) {
-            final ChunkFileRecord rec = tombCursor.currentRecord();
-            if (!loadStep1(rec)) {
-                continue;
+        localFailure = firstNonNull(localFailure, sendSubmitterGone(keySenders));
+        try {
+            rebuilderThread.join(SECONDS.toMillis(2));
+            if (localFailure == null && rebuilderThread.isAlive()) {
+                logger.warning("Timed out while joining Rebuilder thread");
             }
-            final long prefix = rec.prefix();
-            SetOfKeyHandle sokh = tombKeys.get(prefix);
-            if (sokh == null) {
-                sokh = gcHelper.newSetOfKeyHandle();
-                tombKeys.put(prefix, sokh);
-            }
-            sokh.add(keyHandle);
-            rebuilder.accept(prefix, keyHandle, rec.recordSeq(), rec.size());
+        } catch (InterruptedException e) {
+            currentThread().interrupt();
         }
-    }
-
-    private void loadValues(ChunkFilesetCursor valCursor) throws InterruptedException {
-        while (valCursor.advance()) {
-            final ChunkFileRecord rec = valCursor.currentRecord();
-            if (loadStep1(rec) && rebuilder.accept(rec.prefix(), keyHandle, rec.recordSeq(), rec.size())) {
-                ramStore.accept(keyHandle, rec.value());
-            }
-        }
+        propagateLocalAndRebuilderFailure(localFailure);
     }
 
     private static Long2LongHashMap restorePrefixTombstones(File homeDir) {
@@ -160,7 +164,7 @@ class HotRestarter {
                 prefixTombstones.put(byteBuf.getLong(0), byteBuf.getLong(LONG_SIZE_IN_BYTES));
             }
         } catch (IOException e) {
-            closeIgnoringFailure(in);
+            IOUtil.closeResource(in);
             throw new HotRestartException("Error restoring prefix tombstones", e);
         }
         return prefixTombstones;
@@ -168,7 +172,7 @@ class HotRestarter {
 
     private List<File> sortedChunkFiles(String base) {
         final List<File> files = new ArrayList<File>(128);
-        final File[] bucketDirs = new File(gcHelper.homeDir, base).listFiles(BUCKET_DIRS_ONLY);
+        final File[] bucketDirs = new File(homeDir, base).listFiles(BUCKET_DIRS_ONLY);
         if (bucketDirs == null) {
             return files;
         }
@@ -186,32 +190,203 @@ class HotRestarter {
         return files;
     }
 
-    private boolean loadStep1(ChunkFileRecord rec) {
-        rebuilder.preAccept(rec.recordSeq(), rec.size());
-        if (rec.recordSeq() <= prefixTombstones.get(rec.prefix())) {
-            // We are accepting a cleared record (interred by a prefix tombstone)
-            rebuilder.acceptCleared(rec.size());
-            return false;
-        }
-        this.ramStore = reg.restartingRamStoreForPrefix(rec.prefix());
-        assert ramStore != null : "RAM store registry failed to provide a store for prefix " + rec.prefix();
-        this.keyHandle = ramStore.toKeyHandle(rec.key());
-        return true;
-    }
-
-    static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
-        int bytesRead = 0;
-        do {
-            int count = in.read(b, bytesRead, b.length - bytesRead);
-            if (count < 0) {
-                if (bytesRead == 0) {
-                    return false;
-                }
-                throw new EOFException();
+    private void readRecords(ChunkFilesetCursor cursor) throws InterruptedException {
+        long count = 0;
+        while (cursor.advance()) {
+            count++;
+            final ChunkFileRecord rec = cursor.currentRecord();
+            final long prefix = rec.prefix();
+            try {
+                keySenders[reg.prefixToThreadId(prefix) / storeCount].submit(
+                        rec.recordSeq() > prefixTombstones.get(prefix) ? new RestartItem(rec) : clearedItem(rec));
+            } catch (ConcurrentConveyorException e) {
+                logger.severe("Failed to submit to threadIndex " + reg.prefixToThreadId(prefix));
+                throw e;
             }
-            bytesRead += count;
-        } while (bytesRead < b.length);
-        return true;
+        }
+        awaitDownstreamCompletion(count);
     }
 
+    private void awaitDownstreamCompletion(long count) {
+        recordCountInCurrentPhase = count;
+        for (long i = 0; recordCountInCurrentPhase != -1; i++) {
+            SUBMIT_IDLER.idle(i);
+            propagateLocalAndRebuilderFailure(null);
+        }
+    }
+
+    private void propagateLocalAndRebuilderFailure(Throwable localFailure) {
+        final Throwable rebuilderFailure = this.rebuilderFailure;
+        if (localFailure != null) {
+            if (rebuilderFailure != null && !(localFailure instanceof RebuilderFailure)) {
+                logger.severe("Both HotRestarter and Rebuilder loops failed. Reporting Rebuilder failure:",
+                        rebuilderFailure);
+            }
+            sneakyThrow(localFailure);
+        }
+        if (rebuilderFailure != null) {
+            throw new RebuilderFailure(rebuilderFailure);
+        }
+    }
+
+    static ConcurrentConveyorException sendSubmitterGone(ConcurrentConveyorSingleQueue<RestartItem>... conveyors) {
+        final RestartItem goneItem = conveyors[0].submitterGoneItem();
+        for (ConcurrentConveyorSingleQueue<RestartItem> valueConveyor : conveyors) {
+            try {
+                valueConveyor.submit(goneItem);
+            } catch (ConcurrentConveyorException e) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    private static <T> T firstNonNull(T t1, T t2) {
+        return t1 != null ? t1 : t2;
+    }
+
+    private class RebuilderLoop implements Runnable {
+        private final int submitterCount = keyHandleReceiver.queueCount();
+        private final List<RestartItem> batch = new ArrayList<RestartItem>(keyHandleReceiver.queue(0).capacity());
+        private final Map<Long, SetOfKeyHandle> tombKeys = new Long2ObjectHashMap<SetOfKeyHandle>();
+        private final RestartItem submitterGoneItem = keyHandleReceiver.submitterGoneItem();
+        private int submitterGoneCount;
+
+        @Override
+        public void run() {
+            try {
+                keyHandleReceiver.drainerArrived();
+                drainTombstones();
+                recordCountInCurrentPhase = -1;
+                rebuilder.startValuePhase(tombKeys);
+                conveyValues();
+                recordCountInCurrentPhase = -1;
+                for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
+                    valueSenders[reg.prefixToThreadId(e.getKey()) / storeCount]
+                            .submit(new RestartItem.WithSetOfKeyHandle(e.getKey(), e.getValue()));
+                }
+                gcHelper.initChunkSeq(rebuilder.maxChunkSeq());
+                rebuilder.done();
+            } catch (Throwable t) {
+                rebuilderFailure = t;
+            } finally {
+                try {
+                    sendSubmitterGone(valueSenders);
+                    for (ConcurrentConveyor<RestartItem> valueSender : valueSenders) {
+                        valueSender.awaitDrainerGone();
+                    }
+                    for (Entry<Long, SetOfKeyHandle> e : tombKeys.entrySet()) {
+                        e.getValue().dispose();
+                    }
+                } catch (Throwable t) {
+                    if (rebuilderFailure == null) {
+                        rebuilderFailure = t;
+                    }
+                }
+            }
+            if (rebuilderFailure == null) {
+                keyHandleReceiver.drainerDone();
+            } else {
+                keyHandleReceiver.drainerFailed(rebuilderFailure);
+            }
+        }
+
+        private void drainTombstones() {
+            long idleCount = 0;
+            for (long itemsDrained = 0; itemsDrained != recordCountInCurrentPhase;) {
+                checkSubmittersGone();
+                for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
+                    batch.clear();
+                    final int count = keyHandleReceiver.drainTo(i, batch);
+                    if (count > 0) {
+                        processTombstoneDrain();
+                        itemsDrained += count;
+                        idleCount = 0;
+                    } else {
+                        DRAIN_IDLER.idle(idleCount++);
+                    }
+                }
+            }
+        }
+
+        private void conveyValues() {
+            long drainOpCount = 0;
+            long idleCount = 0;
+            for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained;) {
+                checkSubmittersGone();
+                for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
+                    batch.clear();
+                    final int count = keyHandleReceiver.drainTo(i, batch);
+                    if (count > 0) {
+                        processValueDrain(valueSenders[i]);
+                        idleCount = 0;
+                        itemsDrained += count;
+                        drainOpCount++;
+                    } else {
+                        DRAIN_IDLER.idle(idleCount++);
+                    }
+                }
+            }
+            final int capacity = keyHandleReceiver.queue(0).capacity();
+            logger.fine("%s.conveyValues: drained %,d items, mean queue size was %.1f (capacity %,d)",
+                    storeName, recordCountInCurrentPhase, (double) recordCountInCurrentPhase / drainOpCount, capacity);
+        }
+
+        private void processTombstoneDrain() {
+            for (RestartItem item : batch) {
+                if (!item.isSpecialItem()) {
+                    addTombKey(item.keyHandle, item.prefix);
+                    rebuilder.preAccept(item.recordSeq, item.size);
+                    rebuilder.accept(item);
+                } else {
+                    processSpecialItem(item);
+                }
+            }
+        }
+
+        private void processValueDrain(ConcurrentConveyorSingleQueue<RestartItem> outConveyor) {
+            for (RestartItem item : batch) {
+                if (!item.isSpecialItem()) {
+                    rebuilder.preAccept(item.recordSeq, item.size);
+                    if (rebuilder.accept(item)) {
+                        outConveyor.submit(item);
+                    }
+                } else {
+                    processSpecialItem(item);
+                }
+            }
+        }
+
+        private void processSpecialItem(RestartItem item) {
+            if (item.isClearedItem()) {
+                rebuilder.preAccept(item.recordSeq, item.size);
+                rebuilder.acceptCleared(item);
+            } else {
+                assert item == submitterGoneItem;
+                submitterGoneCount++;
+            }
+        }
+
+        private void addTombKey(KeyHandle kh, long prefix) {
+            SetOfKeyHandle sokh = tombKeys.get(prefix);
+            if (sokh == null) {
+                sokh = gcHelper.newSetOfKeyHandle();
+                tombKeys.put(prefix, sokh);
+            }
+            sokh.add(kh);
+        }
+
+        private void checkSubmittersGone() {
+            if (submitterGoneCount == submitterCount) {
+                throw new HotRestartException(String.format(
+                        "All submitters left prematurely (there were %d)", submitterCount));
+            }
+        }
+    }
+
+    private static class RebuilderFailure extends RuntimeException {
+        RebuilderFailure(Throwable cause) {
+            super(cause);
+        }
+    }
 }

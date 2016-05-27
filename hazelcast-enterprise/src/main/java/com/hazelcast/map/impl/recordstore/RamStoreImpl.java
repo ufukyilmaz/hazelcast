@@ -29,14 +29,14 @@ public class RamStoreImpl implements RamStore {
     }
 
     @Override
-    public boolean copyEntry(KeyHandle keyHandle, int expectedSize, RecordDataSink sink) throws HotRestartException {
-        Data key = new HeapData(((KeyOnHeap) keyHandle).bytes());
+    public boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) throws HotRestartException {
+        Data key = new HeapData(((KeyOnHeap) kh).bytes());
         Record record = storage.get(key);
         if (record == null) {
             return false;
         }
         Data value = recordStore.toData(record.getValue());
-        return RamStoreHelper.copyEntry((KeyOnHeap) keyHandle, value, expectedSize, sink);
+        return RamStoreHelper.copyEntry((KeyOnHeap) kh, value, expectedSize, sink);
     }
 
     @Override

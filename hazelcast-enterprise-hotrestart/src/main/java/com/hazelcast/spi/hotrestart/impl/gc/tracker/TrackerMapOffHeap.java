@@ -28,7 +28,8 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
         trackers.gotoNew();
     }
 
-    @Override public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
+    @Override
+    public Tracker putIfAbsent(KeyHandle kh, long chunkSeq, boolean isTombstone) {
         final KeyHandleOffHeap ohk = (KeyHandleOffHeap) kh;
         final long addr = trackers.ensure(ohk.address(), ohk.sequenceId());
         if (addr > 0) {
@@ -43,7 +44,8 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
         }
     }
 
-    @Override public Tracker get(KeyHandle kh) {
+    @Override
+    public Tracker get(KeyHandle kh) {
         final KeyHandleOffHeap handle = (KeyHandleOffHeap) kh;
         final long addr = trackers.get(handle.address(), handle.sequenceId());
         if (addr == NULL_ADDRESS) {
@@ -53,20 +55,24 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
         return tr;
     }
 
-    @Override void doRemove(KeyHandle kh) {
+    @Override
+    void doRemove(KeyHandle kh) {
         final KeyHandleOffHeap handle = (KeyHandleOffHeap) kh;
         trackers.remove(handle.address(), handle.sequenceId());
     }
 
-    @Override public long size() {
+    @Override
+    public long size() {
         return trackers.size();
     }
 
-    @Override public Cursor cursor() {
+    @Override
+    public Cursor cursor() {
         return new CursorOffHeap();
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         trackers.dispose();
     }
 
@@ -74,7 +80,8 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
         private final HashSlotCursor16byteKey c = trackers.cursor();
         private final TrackerOffHeap r = new TrackerOffHeap();
 
-        @Override public boolean advance() {
+        @Override
+        public boolean advance() {
             if (!c.advance()) {
                 return false;
             }
@@ -82,23 +89,28 @@ public final class TrackerMapOffHeap extends TrackerMapBase {
             return true;
         }
 
-        @Override public KeyHandleOffHeap asKeyHandle() {
+        @Override
+        public KeyHandleOffHeap asKeyHandle() {
             return this;
         }
 
-        @Override public KeyHandle toKeyHandle() {
+        @Override
+        public KeyHandle toKeyHandle() {
             return new SimpleHandleOffHeap(address(), sequenceId());
         }
 
-        @Override public Tracker asTracker() {
+        @Override
+        public Tracker asTracker() {
             return r;
         }
 
-        @Override public long address() {
+        @Override
+        public long address() {
             return c.key1();
         }
 
-        @Override public long sequenceId() {
+        @Override
+        public long sequenceId() {
             return c.key2();
         }
     }

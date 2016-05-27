@@ -1,8 +1,11 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
+import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
+import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -14,32 +17,23 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.INITIAL_TOP_CHUNKS;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.diagnoseChunks;
-import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.selectChunksToCollect;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
 import static com.hazelcast.spi.hotrestart.impl.gc.StableChunkBuilder.chunkBuilder;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.INITIAL_TOP_CHUNKS;
+import static com.hazelcast.spi.hotrestart.impl.gc.ValChunkSelector.diagnoseChunks;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ValChunkSelectorTest {
 
-    private PrefixTombstoneManager pfixTombstoMgr;
-    private GcExecutor.MutatorCatchup mc;
-    private GcLogger logger;
+    private DiContainer di;
     private GcLogger loggerWithFinestEnabled;
 
     @Before public void setup() {
-        this.pfixTombstoMgr = mock(PrefixTombstoneManager.class, withSettings().stubOnly());
-        this.mc = mock(GcExecutor.MutatorCatchup.class, withSettings().stubOnly());
-        final ILogger ilogger = createLoggingService().getLogger("com.hazelcast.spi.hotrestart");
-        this.logger = new GcLogger(ilogger);
-        this.loggerWithFinestEnabled = new GcLoggerFinestEnabled(ilogger);
+        di = HotRestartTestUtil.mockDiContainer();
+        loggerWithFinestEnabled = di.instantiate(GcLoggerFinestEnabled.class);
     }
 
     @Test public void when_goalsAreHigh_then_selectAllChunks() {
@@ -126,15 +120,17 @@ public class ValChunkSelectorTest {
     }
 
     private Collection<StableValChunk> selectChunks(Collection<StableChunk> allChunks, GcParams gcp) {
-        return selectChunksToCollect(allChunks, gcp, pfixTombstoMgr, mc, logger);
+        return di.wire(new ValChunkSelector(allChunks, gcp)).select();
     }
 
     private static class GcLoggerFinestEnabled extends GcLogger {
-        GcLoggerFinestEnabled(ILogger logger) {
+        @Inject
+        private GcLoggerFinestEnabled(ILogger logger) {
             super(logger);
         }
 
-        @Override boolean isFinestEnabled() {
+        @Override
+        boolean isFinestEnabled() {
             return true;
         }
     }

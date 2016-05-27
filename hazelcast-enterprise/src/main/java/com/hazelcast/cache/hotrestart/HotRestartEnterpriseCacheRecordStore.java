@@ -110,20 +110,12 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         byte[] valueBytes = serializationService.toData(value).toByteArray();
         final KeyOnHeap kh = new KeyOnHeap(prefix, keyBytes);
         hotRestartStore.put(kh, valueBytes, fsync);
-        fsyncIfRequired();
     }
 
     private void removeFromHotRestart(Data key) {
         byte[] keyBytes = key.toByteArray();
         final KeyOnHeap kh = new KeyOnHeap(prefix, keyBytes);
         hotRestartStore.remove(kh, fsync);
-        fsyncIfRequired();
-    }
-
-    private void fsyncIfRequired() {
-        if (fsync) {
-            hotRestartStore.fsync();
-        }
     }
 
     @Override
@@ -138,8 +130,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
 
     private void clearInternal(boolean clearHotRestartStore) {
         if (clearHotRestartStore) {
-            hotRestartStore.clear(prefix);
-            fsyncIfRequired();
+            hotRestartStore.clear(fsync, prefix);
         }
         super.clear();
     }

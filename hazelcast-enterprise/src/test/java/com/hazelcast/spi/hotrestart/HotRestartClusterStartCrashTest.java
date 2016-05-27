@@ -276,8 +276,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         public void onHotRestartDataLoadComplete(HotRestartClusterInitializationStatus result) {
             final Node node = getNode(instance);
             final int portToStart = node.getThisAddress().getPort();
-            if (result == VERIFICATION_AND_LOAD_SUCCEEDED && !node.isMaster()
-                    && firstCrash.compareAndSet(false, true)) {
+            if (result == VERIFICATION_AND_LOAD_SUCCEEDED && !node.isMaster() && firstCrash.compareAndSet(false, true)) {
                 startNodeAfterTermination(node, portToStart);
                 throw new HotRestartException("hot restart is failed manually!");
             }

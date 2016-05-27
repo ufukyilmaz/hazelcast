@@ -177,7 +177,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             try {
                 hotRestartService.start();
             } catch (Throwable e) {
-                logger.severe("Hot-restart failed!", e);
+                logger.severe("Hot Restart procedure failed", e);
                 node.shutdown(true);
             }
         }

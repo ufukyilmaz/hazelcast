@@ -6,7 +6,7 @@ import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
-import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.MutatorCatchup;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey1At;
@@ -15,7 +15,8 @@ import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyIm
 import static java.lang.Math.min;
 
 /**
- * Off-heap implementation of {@link SortedBySeqRecordCursor}.
+ * Off-heap implementation of {@link SortedBySeqRecordCursor}. Contains pointers to record structures
+ * inside the {@link RecordMap}s, therefore becomes invalid as soon as any of the record maps is updated.
  */
 final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, KeyHandleOffHeap {
     private final LongArray seqsAndSlotBases;
@@ -30,7 +31,8 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, memMgr, mc);
     }
 
-    @Override public boolean advance() {
+    @Override
+    public boolean advance() {
         if (position != size - 1) {
             position += 2;
             r.address = addrOfValueAt(seqsAndSlotBases.get(position));
@@ -41,26 +43,31 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
         }
     }
 
-    @Override public Record asRecord() {
+    @Override
+    public Record asRecord() {
         return r;
     }
 
-    @Override public KeyHandle asKeyHandle() {
+    @Override
+    public KeyHandle asKeyHandle() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return this;
     }
 
-    @Override public long address() {
+    @Override
+    public long address() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return mem.getLong(addrOfKey1At(seqsAndSlotBases.get(position)));
     }
 
-    @Override public long sequenceId() {
+    @Override
+    public long sequenceId() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return mem.getLong(addrOfKey2At(seqsAndSlotBases.get(position)));
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         seqsAndSlotBases.dispose();
     }
 

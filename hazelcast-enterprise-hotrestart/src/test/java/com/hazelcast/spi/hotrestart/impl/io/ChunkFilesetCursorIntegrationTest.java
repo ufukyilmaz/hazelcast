@@ -1,7 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
-import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -20,7 +18,6 @@ import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.g
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.populateRecordFile;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.temporaryFile;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -52,8 +49,8 @@ public class ChunkFilesetCursorIntegrationTest {
         files.add(generateFileWithGivenRecords(recordsSecond, valueChunks));
 
         // WHEN
-        ChunkFilesetCursor cursor = valueChunks ? new ChunkFilesetCursor.Val(files, mock(Rebuilder.class), mock(GcHelper.class)) :
-                new ChunkFilesetCursor.Tomb(files, mock(Rebuilder.class), mock(GcHelper.class));
+        ChunkFilesetCursor cursor = valueChunks ? new ChunkFilesetCursor.Val(files) :
+                new ChunkFilesetCursor.Tomb(files);
 
         // THEN
         int count = 0;

@@ -141,12 +141,14 @@ public class Long2bytesMapTest {
         final ByteBuffer keyBuffer = ByteBuffer.allocate(16);
         final ByteBuffer valueBuffer = ByteBuffer.allocate(16);
 
-        @Override public ByteBuffer getKeyBuffer(int keySize) {
+        @Override
+        public ByteBuffer getKeyBuffer(int keySize) {
             assert keyBuffer.remaining() >= keySize;
             return keyBuffer;
         }
 
-        @Override public ByteBuffer getValueBuffer(int valueSize) {
+        @Override
+        public ByteBuffer getValueBuffer(int valueSize) {
             assert valueBuffer.remaining() >= valueSize;
             return valueBuffer;
         }

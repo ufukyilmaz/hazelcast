@@ -95,7 +95,7 @@ public class TrackerTest extends OnHeapOffHeapTestBase {
     @Test public void incrementGarbageCount_incrementsIt_andDecrement_decrementsIt() {
         tracker().incrementGarbageCount();
         assertEquals(1, tracker().garbageCount());
-        tracker().decrementGarbageCount(1);
+        tracker().reduceGarbageCount(1);
         assertEquals(0, tracker().garbageCount());
     }
 

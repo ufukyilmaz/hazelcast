@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.EOFException;
@@ -16,22 +15,26 @@ import java.nio.ByteBuffer;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
+import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.seq;
 
 /**
- * A cursor over a chunk file's contents.
+ * A cursor over a chunk file's contents. Common base class for tombstone and value chunk
+ * specializations, which are nested inside it.
  */
 public abstract class ChunkFileCursor implements ChunkFileRecord {
     final ByteBuffer headerBuf;
     byte[] key;
+    int truncationPoint;
     private final File chunkFile;
+    private final long chunkSeq;
     private final InputStream in;
     private long seq;
     private long prefix;
-    private long truncationPoint;
 
-    public ChunkFileCursor(int headerSize, File chunkFile, GcHelper gcHelper) {
+    public ChunkFileCursor(int headerSize, File chunkFile) {
         this.chunkFile = chunkFile;
         this.headerBuf = ByteBuffer.allocate(headerSize);
+        this.chunkSeq = seq(chunkFile);
         try {
             final FileInputStream fileIn = new FileInputStream(chunkFile);
             this.in = new BufferingInputStream(fileIn);
@@ -40,6 +43,12 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    /**
+     * Advances to the next record in the chunk file. If this was an active chunk file at the time
+     * of shutdown, and if a broken record is found (unable to read the amount of data indicated by
+     * the header), the file is automatically truncated to the last intact record.
+     * @return whether there was a next record to advance to
+     */
     public final boolean advance() {
         try {
             try {
@@ -62,31 +71,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-
-    @Override public final long recordSeq() {
-        return seq;
-    }
-
-    @Override public final long prefix() {
-        return prefix;
-    }
-
-    /**
-     * @return Number of bytes the current record occupies in this chunk file.
-     */
-    @Override public int size() {
-        return headerBuf.capacity() + key.length;
-    }
-
-    @SuppressFBWarnings(value = "EI", justification = "Returned array is never modified")
-    @Override public byte[] key() {
-        return key;
-    }
-
-    @Override public byte[] value() {
-        throw new UnsupportedOperationException("value");
-    }
-
     public final void close() {
         try {
             in.close();
@@ -98,10 +82,40 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-    abstract void loadRecord() throws IOException;
+
+    // Implementation of ChunkFileRecord
+
+    @Override
+    public final long chunkSeq() {
+        return chunkSeq;
+    }
+
+    @Override
+    public final long recordSeq() {
+        return seq;
+    }
+
+    @Override
+    public final long prefix() {
+        return prefix;
+    }
+
+    @Override
+    public int size() {
+        return headerBuf.capacity() + key.length;
+    }
+
+    @SuppressFBWarnings(value = "EI", justification = "Returned array is never modified")
+    @Override
+    public byte[] key() {
+        return key;
+    }
 
 
     // Begin private API
+
+
+    abstract void loadRecord() throws IOException;
 
     void loadCommonHeader() throws IOException {
         seq = headerBuf.getLong();
@@ -137,7 +151,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-    private static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
+    public static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
         int bytesRead = 0;
         do {
             int count = in.read(b, bytesRead, b.length - bytesRead);
@@ -158,25 +172,43 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
+    /**
+     * Specialization of {@code ChunkFileCursor} to tombstone chunk.
+     */
     public static final class Tomb extends ChunkFileCursor {
-        public Tomb(File chunkFile, GcHelper gcHelper) {
-            super(TOMB_HEADER_SIZE, chunkFile, gcHelper);
+        public Tomb(File chunkFile) {
+            super(TOMB_HEADER_SIZE, chunkFile);
         }
 
-        @Override void loadRecord() throws IOException {
+        @Override
+        void loadRecord() throws IOException {
             loadCommonHeader();
             key = readPayload(headerBuf.getInt());
         }
+
+        @Override
+        public int filePos() {
+            return truncationPoint - size();
+        }
+
+        @Override
+        public byte[] value() {
+            return null;
+        }
     }
 
+    /**
+     * Specialization of {@code ChunkFileCursor} to value chunk.
+     */
     static final class Val extends ChunkFileCursor {
         private byte[] value;
 
-        Val(File chunkFile, GcHelper gcHelper) {
-            super(VAL_HEADER_SIZE, chunkFile, gcHelper);
+        Val(File chunkFile) {
+            super(VAL_HEADER_SIZE, chunkFile);
         }
 
-        @Override void loadRecord() throws IOException {
+        @Override
+        void loadRecord() throws IOException {
             loadCommonHeader();
             final int keySize = headerBuf.getInt();
             final int valueSize = headerBuf.getInt();
@@ -184,11 +216,18 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
             value = readPayload(valueSize);
         }
 
-        @Override public byte[] value() {
+        @Override
+        public byte[] value() {
             return value;
         }
 
-        @Override public int size() {
+        @Override
+        public int filePos() {
+            return 0;
+        }
+
+        @Override
+        public int size() {
             return super.size() + value.length;
         }
     }

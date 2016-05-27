@@ -48,8 +48,8 @@ public abstract class Chunk implements Disposable {
     public final RecordMap records;
     public long garbage;
     public int liveRecordCount;
-    /** Will be true when a new prefix tombstone arrives and this chunk
-     * may contain records interred by it. */
+
+    /** Will be true when a new prefix tombstone arrives and this chunk may contain records interred by it. */
     private boolean needsDismissing;
 
     public Chunk(long seq, RecordMap records) {
@@ -72,20 +72,31 @@ public abstract class Chunk implements Disposable {
         this.garbage = garbage;
     }
 
+    /**
+     * @return whether the "dismiss prefix garbage" operation is pending for this chunk.
+     */
     public final boolean needsDismissing() {
         return needsDismissing;
     }
 
+    /**
+     * Sets whether the "dismiss prefix garbage" operation is needed for this chunk.
+     */
     public void needsDismissing(boolean needsDismissing) {
         this.needsDismissing = needsDismissing;
     }
 
+    /**
+     * @return size in bytes of the chunk file
+     */
     public abstract long size();
 
-    public boolean compressed() {
-        return false;
-    }
-
+    /**
+     * Retires a record in this chunk (makes it dead).
+     * @param kh key handle of the record
+     * @param r the record to retire
+     * @param mayIncrementGarbageCount whether it is appropriate to increment the garbage count for this key handle
+     */
     public void retire(KeyHandle kh, Record r, boolean mayIncrementGarbageCount) {
         assert records.get(kh).liveSeq() == r.liveSeq()
                 : String.format("%s.retire(%s, %s) but have %s", this, kh, r, records.get(kh));
@@ -98,10 +109,16 @@ public abstract class Chunk implements Disposable {
         retire(kh, r, true);
     }
 
+    /**
+     * @return the filename suffix for this chunk
+     */
     public String fnameSuffix() {
         return FNAME_SUFFIX;
     }
 
+    /**
+     * @return name of the base directory of this chunk (within the owning Hot Restart store's home dir)
+     */
     public String base() {
         return VAL_BASEDIR;
     }
@@ -110,15 +127,24 @@ public abstract class Chunk implements Disposable {
         records.dispose();
     }
 
+    /**
+     * Fetches the configured size limit in bytes for the value chunk from the system property
+     * {@value #SYSPROP_VAL_CHUNK_SIZE_LIMIT}.
+     */
     public static int valChunkSizeLimit() {
         return Integer.getInteger(SYSPROP_VAL_CHUNK_SIZE_LIMIT, VAL_SIZE_LIMIT_DEFAULT);
     }
 
+    /**
+     * Fetches the configured size limit in bytes for the tombstone chunk from the system property
+     * {@value #SYSPROP_TOMB_CHUNK_SIZE_LIMIT}.
+     */
     public static int tombChunkSizeLimit() {
         return Integer.getInteger(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, TOMB_SIZE_LIMIT_DEFAULT);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return String.format("%s(%03x,%,d,%,d)",
                 getClass().getSimpleName(), seq, liveRecordCount, garbage);
     }

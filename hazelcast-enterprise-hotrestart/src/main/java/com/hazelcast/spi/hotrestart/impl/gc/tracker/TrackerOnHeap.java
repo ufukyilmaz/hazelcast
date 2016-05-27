@@ -11,23 +11,28 @@ final class TrackerOnHeap extends Tracker {
         setLiveState(chunkSeq, isTombstone);
     }
 
-    @Override public long garbageCount() {
+    @Override
+    public long garbageCount() {
         return garbageCount;
     }
 
-    @Override public void setGarbageCount(long garbageCount) {
+    @Override
+    public void setGarbageCount(long garbageCount) {
         this.garbageCount = garbageCount;
     }
 
-    @Override public long rawChunkSeq() {
+    @Override
+    public long rawChunkSeq() {
         return chunkSeq;
     }
 
-    @Override public void setRawChunkSeq(long rawChunkSeqValue) {
+    @Override
+    public void setRawChunkSeq(long rawChunkSeqValue) {
         this.chunkSeq = rawChunkSeqValue;
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "(" + chunkSeq() + ',' + isTombstone() + ',' + garbageCount() + ')';
     }
 }

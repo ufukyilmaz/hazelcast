@@ -26,7 +26,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         hsa.gotoNew();
     }
 
-    @Override public void put(long key, byte[] value) {
+    @Override
+    public void put(long key, byte[] value) {
         final long vSlotAddr = vacateSlot(key);
         try {
             vblockAccessor.allocate(value);
@@ -37,7 +38,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         mem.putLong(vSlotAddr, vblockAccessor.address());
     }
 
-    @Override public void remove(long key) {
+    @Override
+    public void remove(long key) {
         final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return;
@@ -47,20 +49,24 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         hsa.remove(key);
     }
 
-    @Override public boolean containsKey(long key) {
+    @Override
+    public boolean containsKey(long key) {
         final long vSlotAddr = hsa.get(key);
         return vSlotAddr != NULL_ADDRESS;
     }
 
-    @Override public int size() {
+    @Override
+    public int size() {
         return (int) hsa.size();
     }
 
-    @Override public L2bCursor cursor() {
+    @Override
+    public L2bCursor cursor() {
         return new Cursor(hsa.cursor(), new ValueBlockAccessor(memMgr));
     }
 
-    @Override public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
+    @Override
+    public boolean copyEntry(long key, int expectedSize, RecordDataSink sink) {
         final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return false;
@@ -75,7 +81,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         return true;
     }
 
-    @Override public void clear() {
+    @Override
+    public void clear() {
         for (HashSlotCursor8byteKey cursor = hsa.cursor(); cursor.advance();) {
             vblockAccessor.reset(cursor.valueAddress());
             vblockAccessor.delete();
@@ -83,7 +90,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         hsa.clear();
     }
 
-    @Override public int valueSize(long key) {
+    @Override
+    public int valueSize(long key) {
         final long vSlotAddr = hsa.get(key);
         if (vSlotAddr == NULL_ADDRESS) {
             return -1;
@@ -92,7 +100,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
         return vblockAccessor.valueSize();
     }
 
-    @Override public void dispose() {
+    @Override
+    public void dispose() {
         if (isDisposed) {
             return;
         }
@@ -121,7 +130,8 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             this.vblockAccessor = vblockAccessor;
         }
 
-        @Override public boolean advance() {
+        @Override
+        public boolean advance() {
             if (cursor.advance()) {
                 vblockAccessor.reset(cursor.valueAddress());
                 return true;
@@ -129,11 +139,13 @@ public class Long2bytesMapOffHeap extends Long2bytesMapBase {
             return false;
         }
 
-        @Override public long key() {
+        @Override
+        public long key() {
             return cursor.key();
         }
 
-        @Override public int valueSize() {
+        @Override
+        public int valueSize() {
             return vblockAccessor.valueSize();
         }
     }

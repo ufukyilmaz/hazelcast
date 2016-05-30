@@ -28,11 +28,6 @@ import static com.hazelcast.util.RandomPicker.getInt;
 public class HDMapConfigValidatorTest extends HazelcastTestSupport {
 
     @Test(expected = IllegalArgumentException.class)
-    public void testMapEvictionPolicy_throwsException_whenRandom() throws Exception {
-        testSupportedMapEvictionPolicies(EvictionPolicy.RANDOM);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
     public void testMapMaxSizePolicy_throwsException_whenFreeHeapSize() throws Exception {
         testSupportedMapMaxSizePolicies(MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE);
     }

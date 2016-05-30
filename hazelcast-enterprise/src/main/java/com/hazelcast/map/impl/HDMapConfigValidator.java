@@ -41,9 +41,6 @@ public final class HDMapConfigValidator {
     private static final EnumSet<MaxSizeConfig.MaxSizePolicy> UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
 
-    private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_MAP_EVICTION_POLICIES
-            = EnumSet.of(RANDOM);
-
     private static final ILogger LOGGER = Logger.getLogger(MapConfig.class);
 
     private HDMapConfigValidator() {
@@ -60,8 +57,6 @@ public final class HDMapConfigValidator {
         }
 
         logIgnoredConfig(mapConfig);
-
-        checkEvictionPolicy(mapConfig);
 
         checkMaxSizePolicy(mapConfig);
 
@@ -87,15 +82,6 @@ public final class HDMapConfigValidator {
         }
     }
 
-    protected static void checkEvictionPolicy(MapConfig mapConfig) {
-        EvictionPolicy evictionPolicy = mapConfig.getEvictionPolicy();
-        if (UNSUPPORTED_HD_MAP_EVICTION_POLICIES.contains(evictionPolicy)) {
-            throw new IllegalArgumentException("Map eviction policy " + evictionPolicy
-                    + " cannot be used with NATIVE in memory format."
-                    + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_MAP_EVICTION_POLICIES));
-        }
-    }
-
     /**
      * When hot-restart is enabled we do want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
      * free HD space.
@@ -116,11 +102,11 @@ public final class HDMapConfigValidator {
         final int localSizeConfig = maxSizeConfig.getSize();
         if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
                 && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage
-        ) {
+                ) {
             throw new IllegalArgumentException(String.format(
                     "There is a global limit on the minimum free native memory, settable by the system property"
-                  + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
-                  + " with %d percent, lower than the allowed minimum.",
+                            + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
+                            + " with %d percent, lower than the allowed minimum.",
                     SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreeNativeMemoryPercentage,
                     mapConfig.getName(), localSizeConfig)
             );

@@ -21,6 +21,27 @@ public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolin
     }
 
     @Override
+    public long validateAndGetAllocatedSize(long address) {
+        synchronized (copyEntryMutex) {
+            return super.validateAndGetAllocatedSize(address);
+        }
+    }
+
+    @Override
+    protected long allocateExternalBlock(long size) {
+        synchronized (copyEntryMutex) {
+            return super.allocateExternalBlock(size);
+        }
+    }
+
+    @Override
+    protected void freeExternalBlock(long address, long size) {
+        synchronized (copyEntryMutex) {
+            super.freeExternalBlock(address, size);
+        }
+    }
+
+    @Override
     protected void onMallocPage(long pageAddress) {
         synchronized (copyEntryMutex) {
             super.onMallocPage(pageAddress);
@@ -33,5 +54,4 @@ public class HotRestartThreadLocalPoolingMemoryManager extends ThreadLocalPoolin
             super.dispose();
         }
     }
-
 }

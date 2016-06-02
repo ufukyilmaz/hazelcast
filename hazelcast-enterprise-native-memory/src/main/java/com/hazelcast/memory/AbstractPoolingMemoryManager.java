@@ -95,8 +95,8 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return addressQueues[ix];
     }
 
-    static void assertNotNullPtr(long address) {
-        assert address != NULL_ADDRESS : "Illegal memory address: " + address;
+    static void assertValidAddress(long address) {
+        assert address > NULL_ADDRESS : String.format("Illegal memory address %x", address);
     }
 
     protected long getHeaderAddressByOffset(long address, int offset) {
@@ -115,14 +115,14 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
             int memorySize = queue.getMemorySize();
             do {
                 address = acquireInternal(queue);
-                assertNotNullPtr(address);
+                assertValidAddress(address);
             } while (!markUnavailable(address, (int) size, memorySize));
 
             assert !isAvailable(address);
             memoryStats.addInternalFragmentation(memorySize - size);
             size = memorySize;
         } else {
-            address = allocateExternal(size);
+            address = allocateExternalBlock(size);
             memoryStats.addInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
             size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
@@ -139,7 +139,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
      * which doesn't contain external header size.
      * So it is `<allocated_memory_address + external_header_size>`.
      */
-    protected abstract long allocateExternal(long size);
+    protected abstract long allocateExternalBlock(long size);
 
     // TODO: loopify acquireInternal() & splitFromNextQueue() recursion
     protected final long acquireInternal(AddressQueue queue) {
@@ -180,7 +180,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
 
     @Override
     public final void free(long address, long size) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
         final AddressQueue queue = getAddressQueue(size);
         if (queue != null) {
             int memorySize = queue.getMemorySize();
@@ -197,7 +197,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
             releaseInternal(queue, address);
             size = memorySize;
         } else {
-            freeExternal(address, size);
+            freeExternalBlock(address, size);
             memoryStats.removeInternalFragmentation(EXTERNAL_BLOCK_HEADER_SIZE);
             size += EXTERNAL_BLOCK_HEADER_SIZE;
         }
@@ -213,10 +213,10 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
      *                of the external memory block to be free
      * @param size    the size of the external memory block to be free
      */
-    protected abstract void freeExternal(long address, long size);
+    protected abstract void freeExternalBlock(long address, long size);
 
     private static void zero(long address, long size) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
         assert size > 0 : "Invalid size: " + size;
 
         AMEM.setMemory(address, size, (byte) 0);
@@ -241,7 +241,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
             return false;
         }
 
-        int offset = getOffset(address);
+        int offset = getOffsetWithinPage(address);
         assert QuickMath.modPowerOfTwo(offset, memorySize) == 0 : "Offset: " + offset + " must be factor of " + memorySize;
         int buddyIndex = offset / memorySize;
         long buddyAddress = buddyIndex % 2 == 0 ? (address + memorySize) : (address - memorySize);
@@ -256,7 +256,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         }
 
         // need to read offset before invalidation
-        int buddyOffset = getOffset(buddyAddress);
+        int buddyOffset = getOffsetWithinPage(buddyAddress);
         if (!markInvalid(buddyAddress, memorySize, buddyOffset)) {
             // restore status of other buddy back..
             initialize(address, memorySize, offset);
@@ -330,7 +330,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
                             + " cannot acquire " + MemorySize.toPrettyString(memorySize));
                 }
 
-                offset = getOffset(address);
+                offset = getOffsetWithinPage(address);
             } while (!markInvalid(address, nextQ.getMemorySize(), offset));
 
             int offset2 = offset + memorySize;
@@ -406,7 +406,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
 
     protected abstract long getSizeInternal(long address);
 
-    protected abstract int getOffset(long address);
+    protected abstract int getOffsetWithinPage(long address);
 
     @Override
     public final MemoryStats getMemoryStats() {

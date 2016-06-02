@@ -286,7 +286,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected void onMallocPage(long pageAddress) {
-        assertNotNullPtr(pageAddress);
+        assertValidAddress(pageAddress);
         boolean added = pageAllocations.put(pageAddress, Boolean.TRUE) == null;
         if (added) {
             markPageLookup(pageAddress);
@@ -309,7 +309,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected void initialize(long address, int size, int offset) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
         assert QuickMath.isPowerOfTwo(size) : "Invalid size -> " + size + " is not power of two";
         assert size >= minBlockSize : "Invalid size -> "
                 + size + " cannot be smaller than minimum block size " + minBlockSize;
@@ -325,7 +325,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     }
 
     @Override
-    protected long allocateExternal(long size) {
+    protected long allocateExternalBlock(long size) {
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long address = pageAllocator.allocate(allocationSize);
 
@@ -343,7 +343,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     }
 
     @Override
-    protected void freeExternal(long address, long size) {
+    protected void freeExternalBlock(long address, long size) {
         long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
         long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
 
@@ -365,7 +365,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected void markAvailable(long address) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
 
         long headerAddress = getHeaderAddress(address);
         int header = AMEM.getIntVolatile(null, headerAddress);
@@ -393,7 +393,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected boolean markUnavailable(long address, int usedSize, int internalSize) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
 
         long headerAddress = getHeaderAddress(address);
         int header = AMEM.getIntVolatile(null, headerAddress);
@@ -416,7 +416,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
             unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
         }
         if (AMEM.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
-            int offset = getOffset(address);
+            int offset = getOffsetWithinPage(address);
             if (pageOffsetExist) {
                 // If page offset will be stored, write it to the unused part of the memory block.
                 AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
@@ -434,7 +434,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected boolean markInvalid(long address, int expectedSize, int offset) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
 
         long headerAddress = getHeaderAddress(address);
         int expectedHeader = initHeader(expectedSize);
@@ -448,7 +448,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     protected boolean isValidAndAvailable(long address, int expectedSize) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
 
         int header = getHeader(address);
 
@@ -462,7 +462,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
             return false;
         }
 
-        int offset = getOffset(address);
+        int offset = getOffsetWithinPage(address);
         if (offset < 0 || QuickMath.modPowerOfTwo(offset, size) != 0) {
             return false;
         }
@@ -496,7 +496,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     @Override
     public long validateAndGetAllocatedSize(long address) {
-        assertNotNullPtr(address);
+        assertValidAddress(address);
 
         int header = getHeader(address);
         long size = findSize(address, header);
@@ -513,7 +513,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     }
 
     @Override
-    protected int getOffset(long address) {
+    protected int getOffsetWithinPage(long address) {
         return AMEM.getIntVolatile(null, address);
     }
 

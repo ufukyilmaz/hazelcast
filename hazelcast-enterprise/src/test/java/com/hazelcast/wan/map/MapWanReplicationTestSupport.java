@@ -57,7 +57,8 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         fromConfig.getMapConfig("default").setWanReplicationRef(wanRef);
     }
 
-    void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
+    //Should be protected, used by hazelcast-solace
+    protected void createDataIn(HazelcastInstance[] cluster, String mapName, int start, int end) {
         HazelcastInstance node = getNode(cluster);
         IMap<Integer, String> m = node.getMap(mapName);
         for (; start < end; start++) {
@@ -137,7 +138,8 @@ public abstract class MapWanReplicationTestSupport extends WanReplicationTestSup
         }, ASSERT_TRUE_EVENTUALLY_TIMEOUT_VALUE);
     }
 
-    void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
+    //Should be protected, used by hazelcast-solace
+    protected void assertDataInFrom(final HazelcastInstance[] cluster, final String mapName, final int start, final int end, final String sourceGroupName) {
         assertTrueEventually(new AssertTask() {
             public void run() {
                 assertTrue(checkDataInFrom(cluster, mapName, start, end, sourceGroupName));

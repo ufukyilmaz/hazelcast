@@ -195,7 +195,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
 
         byte header = createAvailableHeader(size);
-        long headerAddress = getHeaderAddressByOffset(address, offset);
+        long headerAddress = toHeaderAddress(address, offset);
         AMEM.putByte(headerAddress, header);
         AMEM.putInt(address, offset);
     }
@@ -206,7 +206,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     }
 
     @Override
-    protected int getHeaderSize() {
+    protected int headerSize() {
         return HEADER_SIZE;
     }
 
@@ -323,7 +323,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
         final boolean canStorePageOffset = internalSize - usedSize >= MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
         final int offset = getOffsetWithinPage(address);
-        final long headerAddress = getHeaderAddressByOffset(address, offset);
+        final long headerAddress = toHeaderAddress(address, offset);
         final byte headerNow = AMEM.getByte(headerAddress);
         final byte headerToBe = makeHeaderUnavailable(headerNow, canStorePageOffset);
 
@@ -346,7 +346,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         assertValidAddress(address);
         assert expectedSize == getSizeInternal(address)
                 : "Invalid size -> actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
-        long headerAddress = getHeaderAddressByOffset(address, offset);
+        long headerAddress = toHeaderAddress(address, offset);
 
         AMEM.putByte(headerAddress, (byte) 0);
         AMEM.putInt(addressOfStoredPageOffset(address, expectedSize), 0);

@@ -280,7 +280,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     }
 
     @Override
-    protected int getHeaderSize() {
+    protected int headerSize() {
         return HEADER_SIZE;
     }
 
@@ -316,7 +316,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
 
         int header = initHeader(size);
-        long headerAddress = getHeaderAddressByOffset(address, offset);
+        long headerAddress = toHeaderAddress(address, offset);
         if (!AMEM.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
                     + ", Size: " + size + ", Header: " + getSizeFromAddress(address));

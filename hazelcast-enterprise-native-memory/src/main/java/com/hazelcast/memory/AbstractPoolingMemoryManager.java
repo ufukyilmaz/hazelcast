@@ -69,44 +69,6 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         sequenceGenerator = newCounter();
     }
 
-    protected abstract Counter newCounter();
-
-    final void initializeAddressQueues() {
-        for (int i = 0; i < addressQueues.length; i++) {
-            addressQueues[i] = createAddressQueue(i, 1 << (i + minBlockSizePower));
-        }
-    }
-
-    protected abstract AddressQueue createAddressQueue(int index, int memorySize);
-
-    protected abstract int getHeaderSize();
-
-    protected final AddressQueue getAddressQueue(long size) {
-        if (size <= 0) {
-            throw new IllegalArgumentException("Size must be positive: " + size);
-        }
-        size += getHeaderSize();
-        if (size > pageSize) {
-            return null;
-        }
-        int size32 = Math.max((int) size, minBlockSize);
-        int powerOfTwoSize = QuickMath.nextPowerOfTwo(size32);
-        int ix = log2(powerOfTwoSize) - minBlockSizePower;
-        return addressQueues[ix];
-    }
-
-    static void assertValidAddress(long address) {
-        assert address > NULL_ADDRESS : String.format("Illegal memory address %x", address);
-    }
-
-    protected long getHeaderAddressByOffset(long address, int offset) {
-        if (offset == 0) {
-            // If this is the first block, wrap around
-            return address + pageSize - getHeaderSize();
-        }
-        return address - getHeaderSize();
-    }
-
     @Override
     public final long allocate(long size) {
         AddressQueue queue = getAddressQueue(size);
@@ -130,39 +92,6 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return address;
     }
 
-    /**
-     * Allocates memory block, which is bigger than page size,
-     * through page allocator directly from OS.
-     *
-     * @param size memory size to be allocated which is bigger than page size
-     * @return the address of usable memory region
-     * which doesn't contain external header size.
-     * So it is `<allocated_memory_address + external_header_size>`.
-     */
-    protected abstract long allocateExternalBlock(long size);
-
-    // TODO: loopify acquireInternal() & splitFromNextQueue() recursion
-    protected final long acquireInternal(AddressQueue queue) {
-        long address;
-        int memorySize = queue.getMemorySize();
-        while ((address = queue.acquire()) != NULL_ADDRESS) {
-            if (isValidAndAvailable(address, memorySize)) {
-                break;
-            }
-        }
-        if (address == NULL_ADDRESS) {
-            try {
-                address = splitFromNextQueue(queue);
-            } catch (NativeOutOfMemoryError e) {
-                onOome(e);
-                throw e;
-            }
-        }
-        return address;
-    }
-
-    protected abstract void onOome(NativeOutOfMemoryError e);
-
     @Override
     public long reallocate(long address, long currentSize, long newSize) {
         long newAddress = allocate(newSize);
@@ -184,7 +113,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         final AddressQueue queue = getAddressQueue(size);
         if (queue != null) {
             int memorySize = queue.getMemorySize();
-            zero(address, size);
+            zeroOut(address, size);
             if (isAvailable(address)) {
                 throw new AssertionError("Double free() -> address: " + address + ", size: " + size);
             }
@@ -204,35 +133,210 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         memoryStats.removeUsedNativeMemory(size);
     }
 
+    @Override
+    public final MemoryStats getMemoryStats() {
+        return memoryStats;
+    }
+
+    @Override
+    public final MemoryAllocator getSystemAllocator() {
+        return systemAllocator;
+    }
+
+    @Override
+    public final void compact() {
+        for (AddressQueue queue : addressQueues) {
+            compact(queue);
+        }
+    }
+
+    @Override
+    public final long getAllocatedSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetAllocatedSize(address);
+        }
+        return getSizeInternal(address);
+    }
+
+    @Override
+    public final long getUsableSize(long address) {
+        if (ASSERTION_ENABLED) {
+            return validateAndGetUsableSize(address);
+        }
+        long allocatedSize = getAllocatedSize(address);
+        if (allocatedSize == SIZE_INVALID) {
+            return SIZE_INVALID;
+        }
+        if (allocatedSize > pageSize) {
+            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+        } else {
+            return allocatedSize - headerSize();
+        }
+    }
+
+    @Override
+    public final long validateAndGetUsableSize(long address) {
+        long allocatedSize = validateAndGetAllocatedSize(address);
+        return allocatedSize == SIZE_INVALID ? SIZE_INVALID
+             : allocatedSize <= pageSize ? allocatedSize - headerSize()
+             : allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
+    }
+
+    @Override
+    public final long newSequence() {
+        return sequenceGenerator.inc();
+    }
+
+    protected final AddressQueue getAddressQueue(long size) {
+        if (size <= 0) {
+            throw new IllegalArgumentException("Size must be positive: " + size);
+        }
+        size += headerSize();
+        if (size > pageSize) {
+            return null;
+        }
+        int size32 = Math.max((int) size, minBlockSize);
+        int powerOfTwoSize = QuickMath.nextPowerOfTwo(size32);
+        int ix = log2(powerOfTwoSize) - minBlockSizePower;
+        return addressQueues[ix];
+    }
+
+
+    protected final long acquireInternal(AddressQueue queue) {
+        long address;
+        int memorySize = queue.getMemorySize();
+        while ((address = queue.acquire()) != NULL_ADDRESS) {
+            if (isValidAndAvailable(address, memorySize)) {
+                break;
+            }
+        }
+        if (address == NULL_ADDRESS) {
+            try {
+                address = splitFromNextQueue(queue);
+            } catch (NativeOutOfMemoryError e) {
+                onOome(e);
+                throw e;
+            }
+        }
+        return address;
+    }
+
+    protected final long toHeaderAddress(long blockBase, int pageOffset) {
+        // Header of the block at zero offset is at the end of the page; otherwise it is just before the block
+        return pageOffset == 0 ? blockBase + pageSize - headerSize() : blockBase - headerSize();
+    }
+
+    protected final void compact(AddressQueue queue) {
+        int remaining = queue.remaining();
+        if (remaining == 0) {
+            return;
+        }
+
+        if (!queue.beforeCompaction()) {
+            return;
+        }
+
+        try {
+            for (int i = 0; i < remaining; i++) {
+                long address = queue.acquire();
+                if (address == NULL_ADDRESS) {
+                    break;
+                }
+                if (!isValidAndAvailable(address, queue.getMemorySize())) {
+                    continue;
+                }
+                if (!tryMergeBuddies(queue, address)) {
+                    queue.release(address);
+                }
+            }
+        } finally {
+            queue.afterCompaction();
+        }
+    }
+
+    protected final void freePage(long pageAddress) {
+        pageAllocator.free(pageAddress, pageSize);
+    }
+
+    protected abstract void initialize(long address, int size, int offset);
+
     /**
-     * Free memory block which is external.
-     * External memory block means that its size is bigger than page size
-     * and it was allocated through page allocator directly from OS.
+     * Allocates a memory block directly from the page allocator. Used for blocks larger than page size.
      *
-     * @param address the address (address of usable memory region)
-     *                of the external memory block to be free
-     * @param size    the size of the external memory block to be free
+     * @param size requested size of the block. The block actually allocated will be large enough to also
+     *             accomodate the external block header.
+     * @return address of the block of the requested size. It is preceded by the external block header.
+     */
+    protected abstract long allocateExternalBlock(long size);
+
+    /**
+     * Frees an external block, which was allocated directly from the page allocator.
+     *
+     * @param address address of the block. It is directly preceded by the external block header,
+     *                which is an integral part of the block actually allocated.
+     * @param size    size of the block (excludes header size)
      */
     protected abstract void freeExternalBlock(long address, long size);
 
-    private static void zero(long address, long size) {
-        assertValidAddress(address);
-        assert size > 0 : "Invalid size: " + size;
+    protected abstract AddressQueue createAddressQueue(int index, int memorySize);
 
-        AMEM.setMemory(address, size, (byte) 0);
-    }
+    protected abstract int headerSize();
 
-    private void releaseInternal(AddressQueue queue, long address) {
-        int remaining = queue.remaining();
-        if (remaining >= getQueueMergeThreshold(queue)) {
-            if (tryMergeBuddies(queue, address)) {
-                return;
-            }
-        }
-        queue.release(address);
-    }
+    protected abstract Counter newCounter();
 
     protected abstract int getQueueMergeThreshold(AddressQueue queue);
+
+    protected abstract void onOome(NativeOutOfMemoryError e);
+
+    protected abstract void onMallocPage(long address);
+
+    protected abstract void markAvailable(long address);
+
+    protected abstract boolean markUnavailable(long address, int usedSize, int internalSize);
+
+    protected abstract boolean isAvailable(long address);
+
+    protected abstract boolean markInvalid(long address, int expectedSize, int offset);
+
+    protected abstract boolean isValidAndAvailable(long address, int expectedSize);
+
+    protected abstract long getSizeInternal(long address);
+
+    protected abstract int getOffsetWithinPage(long address);
+
+    private long splitFromNextQueue(AddressQueue queue) {
+        int memorySize = queue.getMemorySize();
+        if (memorySize == pageSize) {
+            long address = pageAllocator.allocate(pageSize);
+            zeroOut(address, pageSize);
+            onMallocPage(address);
+            initialize(address, pageSize, 0);
+            return address;
+        } else {
+            AddressQueue nextQ = addressQueues[queue.getIndex() + 1];
+            long address;
+            int offset;
+
+            do {
+                address = acquireInternal(nextQ);
+                if (address == NULL_ADDRESS) {
+                    throw new NativeOutOfMemoryError("Not enough contiguous memory available,"
+                            + " cannot acquire " + MemorySize.toPrettyString(memorySize));
+                }
+
+                offset = getOffsetWithinPage(address);
+            } while (!markInvalid(address, nextQ.getMemorySize(), offset));
+
+            int offset2 = offset + memorySize;
+            long address2 = address + memorySize;
+
+            initialize(address, memorySize, offset);
+            initialize(address2, memorySize, offset2);
+            queue.release(address2);
+
+            return address;
+        }
+    }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
     private boolean tryMergeBuddies(AddressQueue queue, long address) {
@@ -275,143 +379,35 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return true;
     }
 
-    @Override
-    public final void compact() {
-        for (AddressQueue queue : addressQueues) {
-            compact(queue);
+    final void initializeAddressQueues() {
+        for (int i = 0; i < addressQueues.length; i++) {
+            addressQueues[i] = createAddressQueue(i, 1 << (i + minBlockSizePower));
         }
     }
 
-    protected final void compact(AddressQueue queue) {
+    private void releaseInternal(AddressQueue queue, long address) {
         int remaining = queue.remaining();
-        if (remaining == 0) {
-            return;
-        }
-
-        if (!queue.beforeCompaction()) {
-            return;
-        }
-
-        try {
-            for (int i = 0; i < remaining; i++) {
-                long address = queue.acquire();
-                if (address == NULL_ADDRESS) {
-                    break;
-                }
-                if (!isValidAndAvailable(address, queue.getMemorySize())) {
-                    continue;
-                }
-                if (!tryMergeBuddies(queue, address)) {
-                    queue.release(address);
-                }
+        if (remaining >= getQueueMergeThreshold(queue)) {
+            if (tryMergeBuddies(queue, address)) {
+                return;
             }
-        } finally {
-            queue.afterCompaction();
         }
+        queue.release(address);
     }
 
-    private long splitFromNextQueue(AddressQueue queue) {
-        int memorySize = queue.getMemorySize();
-        if (memorySize == pageSize) {
-            long address = pageAllocator.allocate(pageSize);
-            zero(address, pageSize);
-            onMallocPage(address);
-            initialize(address, pageSize, 0);
-            return address;
-        } else {
-            AddressQueue nextQ = addressQueues[queue.getIndex() + 1];
-            long address;
-            int offset;
+    private static void zeroOut(long address, long size) {
+        assertValidAddress(address);
+        assert size > 0 : "Invalid size: " + size;
 
-            do {
-                address = acquireInternal(nextQ);
-                if (address == NULL_ADDRESS) {
-                    throw new NativeOutOfMemoryError("Not enough contiguous memory available,"
-                            + " cannot acquire " + MemorySize.toPrettyString(memorySize));
-                }
-
-                offset = getOffsetWithinPage(address);
-            } while (!markInvalid(address, nextQ.getMemorySize(), offset));
-
-            int offset2 = offset + memorySize;
-            long address2 = address + memorySize;
-
-            initialize(address, memorySize, offset);
-            initialize(address2, memorySize, offset2);
-            queue.release(address2);
-
-            return address;
-        }
+        AMEM.setMemory(address, size, (byte) 0);
     }
 
-    @Override
-    public final long getAllocatedSize(long address) {
-        if (ASSERTION_ENABLED) {
-            return validateAndGetAllocatedSize(address);
-        }
-        return getSizeInternal(address);
+    static void assertValidAddress(long address) {
+        assert address > NULL_ADDRESS : String.format("Illegal memory address %x", address);
     }
 
-    @Override
-    public final long getUsableSize(long address) {
-        if (ASSERTION_ENABLED) {
-            return validateAndGetUsableSize(address);
-        }
-        long allocatedSize = getAllocatedSize(address);
-        if (allocatedSize == SIZE_INVALID) {
-            return SIZE_INVALID;
-        }
-        if (allocatedSize > pageSize) {
-            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
-        } else {
-            return allocatedSize - getHeaderSize();
-        }
-    }
 
-    @Override
-    public final long validateAndGetUsableSize(long address) {
-        long allocatedSize = validateAndGetAllocatedSize(address);
-        if (allocatedSize == SIZE_INVALID) {
-            return SIZE_INVALID;
-        }
-        if (allocatedSize > pageSize) {
-            return allocatedSize - EXTERNAL_BLOCK_HEADER_SIZE;
-        } else {
-            return allocatedSize - getHeaderSize();
-        }
-    }
-
-    @Override
-    public final long newSequence() {
-        return sequenceGenerator.inc();
-    }
-
-    protected final void freePage(long pageAddress) {
-        pageAllocator.free(pageAddress, pageSize);
-    }
-
-    protected abstract void onMallocPage(long address);
-
-    protected abstract void initialize(long address, int size, int offset);
-
-    protected abstract void markAvailable(long address);
-
-    protected abstract boolean markUnavailable(long address, int usedSize, int internalSize);
-
-    protected abstract boolean isAvailable(long address);
-
-    protected abstract boolean markInvalid(long address, int expectedSize, int offset);
-
-    protected abstract boolean isValidAndAvailable(long address, int expectedSize);
-
-    protected abstract long getSizeInternal(long address);
-
-    protected abstract int getOffsetWithinPage(long address);
-
-    @Override
-    public final MemoryStats getMemoryStats() {
-        return memoryStats;
-    }
+    // Diagnostic methods
 
     public final double getFragmentationRatio(int size) {
         if (size <= 0 || size > pageSize) {
@@ -458,11 +454,6 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
             sb.append(" ALL QUEUES ARE EMPTY!").append('\n');
         }
         return sb.toString();
-    }
-
-    @Override
-    public final MemoryAllocator getSystemAllocator() {
-        return systemAllocator;
     }
 
     // for internal pool and metadata usage

@@ -168,7 +168,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
 
     public int getHeaderSize() {
         AbstractPoolingMemoryManager manager = (AbstractPoolingMemoryManager) getMemoryManager();
-        return manager.getHeaderSize();
+        return manager.headerSize();
     }
 
     public GlobalPoolingMemoryManager getGlobalMemoryManager() {

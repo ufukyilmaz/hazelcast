@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static java.lang.Runtime.getRuntime;
+
 /**
  * @author sozal 24/02/15
  *
@@ -41,8 +43,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.nearCacheStats = new NearCacheStatsImpl();
         this.storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
 
-        int cores = Runtime.getRuntime().availableProcessors() * 8;
-        int concurrencyLevel = Math.max(cores, 16);
+        int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
         // Find power-of-two sizes best matching arguments
         int sShift = 0;
         int sSize = 1;

@@ -8,36 +8,24 @@ import com.hazelcast.util.QuickMath;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.QuickMath.log2;
 
+/**
+ * Common base class for pooling memory managers.
+ * @see PoolingMemoryManager
+ */
 @SuppressWarnings("checkstyle:methodcount")
 abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, MemoryAllocator {
-
-    // Size of the memory block header for external allocation when allocation size is bigger than page size
+    // Size of the external block header (allocated by Tier-1)
     protected static final int EXTERNAL_BLOCK_HEADER_SIZE = 8;
 
     static final boolean ASSERTION_ENABLED = AbstractPoolingMemoryManager.class.desiredAssertionStatus();
 
     private static final int STRING_BUILDER_DEFAULT_CAPACITY = 1024;
 
-    /**
-     * Power of two block sizes, using buddy memory allocation;
-     *
-     * 16, 32, 64, 128, 256, 512, 1024, 2k, .... 32k ... 256k ... 1M
-     *
-     * - All blocks are at least 8-byte aligned
-     * - If cache line is 64 bytes; except these sizes (16, 32), all blocks are cache line aligned.
-     * - If cache line is 128 bytes; except these sizes (16, 32, 64), all blocks are cache line aligned.
-     * - Block sizes lower than cache line size can cause un-aligned cache line access (access that spans 2 cache lines)
-     * Memory access that spans 2 cache lines has very bad performance characteristics.
-     * We have a trade-off here, between better memory usage vs performance...
-     *
-     * - See following blog series for more info about aligned/unaligned memory access:
-     * http://psy-lob-saw.blogspot.com.tr/2013/01/direct-memory-alignment-in-java.html
-     * http://psy-lob-saw.blogspot.com.tr/2013/07/atomicity-of-unaligned-memory-access-in.html
-     * http://psy-lob-saw.blogspot.com.tr/2013/09/diving-deeper-into-cache-coherency.html
-     */
-
-    // page allocator, to allocate MAX_SIZE memory block from system
+    // Tier-1 allocator (allocates pages for Tier-2 and directly allocates larger blocks)
     protected final MemoryAllocator pageAllocator;
+
+    // Separate allocator for metadata memory. This class only provides it to the client and never uses it directly.
+    final MetadataMemoryAllocator systemAllocator;
 
     final int minBlockSize;
     final int pageSize;
@@ -45,16 +33,9 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
     final AddressQueue[] addressQueues;
     final PooledNativeMemoryStats memoryStats;
 
-    // system memory allocator
-    // system allocations are not count in quota
-    // but total system allocations cannot exceed a predefined portion of max off-heap memory
-    final SystemMemoryAllocator systemAllocator;
-
     private final Counter sequenceGenerator;
 
-    AbstractPoolingMemoryManager(int minBlockSize, int pageSize,
-                                 LibMalloc malloc, PooledNativeMemoryStats stats) {
-
+    AbstractPoolingMemoryManager(int minBlockSize, int pageSize, LibMalloc malloc, PooledNativeMemoryStats stats) {
         PoolingMemoryManager.checkBlockAndPageSize(minBlockSize, pageSize);
 
         memoryStats = stats;
@@ -65,7 +46,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         int length = QuickMath.log2(pageSize) - minBlockSizePower + 1;
         addressQueues = new AddressQueue[length];
         pageAllocator = new StandardMemoryManager(malloc, stats);
-        systemAllocator = new SystemMemoryAllocator(malloc);
+        systemAllocator = new MetadataMemoryAllocator(malloc);
         sequenceGenerator = newCounter();
     }
 
@@ -223,7 +204,7 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
 
     protected final long toHeaderAddress(long blockBase, int pageOffset) {
         // Header of the block at zero offset is at the end of the page; otherwise it is just before the block
-        return pageOffset == 0 ? blockBase + pageSize - headerSize() : blockBase - headerSize();
+        return (pageOffset != 0 ? 0 : pageSize) + blockBase - headerSize();
     }
 
     protected final void compact(AddressQueue queue) {
@@ -456,13 +437,12 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return sb.toString();
     }
 
-    // for internal pool and metadata usage
-    protected final class SystemMemoryAllocator
+    protected final class MetadataMemoryAllocator
             implements MemoryAllocator {
 
         private final LibMalloc malloc;
 
-        public SystemMemoryAllocator(LibMalloc malloc) {
+        public MetadataMemoryAllocator(LibMalloc malloc) {
             this.malloc = malloc;
         }
 

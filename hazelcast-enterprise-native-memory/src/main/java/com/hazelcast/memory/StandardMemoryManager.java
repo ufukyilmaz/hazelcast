@@ -1,17 +1,15 @@
 package com.hazelcast.memory;
 
-import com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry;
-import com.hazelcast.internal.memory.GlobalMemoryAccessorType;
-import com.hazelcast.internal.memory.MemoryAccessor;
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
 import com.hazelcast.internal.util.counters.Counter;
 import com.hazelcast.internal.util.counters.MwCounter;
-import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
 
+import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
 public final class StandardMemoryManager implements HazelcastMemoryManager {
@@ -20,11 +18,6 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
      * System property to enable debug mode of {@link StandardMemoryManager}.
      */
     public static final String PROPERTY_DEBUG_ENABLED = "hazelcast.memory.manager.debug.enabled";
-
-    // We are using `STANDARD` memory accessor because we internally guarantee that
-    // every memory access is aligned.
-    private static final MemoryAccessor MEMORY_ACCESSOR =
-            GlobalMemoryAccessorRegistry.getGlobalMemoryAccessor(GlobalMemoryAccessorType.STANDARD);
 
     private final boolean isDebugEnabled;
 
@@ -80,7 +73,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
                 traceAllocation(address, size);
             }
 
-            MEMORY_ACCESSOR.setMemory(address, size, (byte) 0);
+            AMEM.setMemory(address, size, (byte) 0);
 
             return address;
         } catch (Throwable t) {
@@ -110,7 +103,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
 
             if (diff > 0) {
                 long startAddress = newAddress + currentSize;
-                MEMORY_ACCESSOR.setMemory(startAddress, diff, (byte) 0);
+                AMEM.setMemory(startAddress, diff, (byte) 0);
             }
 
             return newAddress;

@@ -44,7 +44,7 @@ public interface HazelcastMemoryManager extends MemoryAllocator {
     void free(long address, long size);
 
     /**
-     * @return the internally used native system memory allocator.
+     * @return the metadata memory allocator.
      */
     MemoryAllocator getSystemAllocator();
 

@@ -21,6 +21,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
+/**
+ * Singleton global memory manager used for all allocations requests done on a thread which was not
+ * registered with the {@link PoolingMemoryManager}. Concurrent allocation requests will contend for access
+ * and performance will suffer.
+ */
 @SuppressWarnings("checkstyle:methodcount")
 final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 

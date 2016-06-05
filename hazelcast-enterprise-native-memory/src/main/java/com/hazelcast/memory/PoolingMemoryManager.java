@@ -17,8 +17,34 @@ import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
- * {@link HazelcastMemoryManager} implementation which allocates native memory in fixed-size pages and
- * then internally manages application-level allocation within the pages.
+ * Implements a hierachical memory allocation scheme:
+ * <ol><li>
+ *     Tier-1 is the platform-native memory allocator. It is used to allocate <i>pages</i>
+ *     managed by Tier-2. Also, larger blocks will be allocated directly from this tier.
+ *     Size of the page is configurable and the default is
+ *     {@value com.hazelcast.config.NativeMemoryConfig#DEFAULT_PAGE_SIZE} bytes.
+ *     </li><li>
+ *     Tier-2 is the custom allocator which manages memory within the pages using the
+ *     <i>buddy allocation policy</i>. Size of the allocated blocks is always of a power of two and the base
+ *     address of each block is 8-byte aligned. The size of the smallest block that will be allocated is
+ *     configurable (but never below 8 bytes) and the default is
+ *     {@value com.hazelcast.config.NativeMemoryConfig#DEFAULT_MIN_BLOCK_SIZE} bytes. The client can request to
+ *     allocate a block of any size; this will result in the allocation of the next-larger power-of-two block which
+ *     will be only partially utilized by the client (resulting in <i>internal memory fragmentation</i>).
+ * </li></ol>
+ * This class is only the top-level coordinator of actual memory managers, which come in two flavors:
+ * <ol><li>
+ *     <i>Thread-local</i>: allocates pages for exclusive use within a single thread. Eliminates the issue
+ *     of concurrent contention on allocation/deallocation methods, but prevents the transfer of block ownership
+ *     to another thread. A block must be {@code free}d by the thread that {@code allocate}d it.
+ * </li><li>
+ *     <i>Global</i>: serves allocation requests done on any thread which was not previously registered for
+ *     thread-local allocation. Concurrent requests will have to contend for access, hurting performance.
+ * </li></ol>
+ * Which manager will serve a particular request is decided internally by this class: if the current thread was
+ * previously registered with this manager by calling {@link #registerThread(Thread)}, the thread-local manager
+ * dedicated to that thread will be looked up (or created); otherwise the request will be forwarded to the
+ * global manager.
  */
 public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageCollectable {
 

@@ -22,6 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
+/**
+ * Single-threaded implementation of a pooling memory manager. To use it, a thread must register itself
+ * by calling {@link PoolingMemoryManager#registerThread(Thread)}. After that, all requests from that thread
+ * will be forwarded to its own {@code ThreadLocalPoolingMemoryManager} instance. A request to {@code free} a
+ * block from a thread different than the one that {@code allocate}d it will result in an exception.
+ */
 @SuppressWarnings("checkstyle:methodcount")
 public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements HazelcastMemoryManager {
 

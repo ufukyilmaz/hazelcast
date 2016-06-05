@@ -201,7 +201,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
             if (key == null) {
                 return false;
             }
-            HiDensityNativeMemoryCacheRecord record = records.get(key);
+            HiDensityNativeMemoryCacheRecord record = records.getIfSameKey(key);
             return record != null && RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }

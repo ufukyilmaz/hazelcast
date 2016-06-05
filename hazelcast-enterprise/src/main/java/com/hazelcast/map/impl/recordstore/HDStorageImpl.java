@@ -104,6 +104,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     }
 
     @Override
+    public HDRecord getIfSameKey(Data key) {
+        return map.getIfSameKey(key);
+    }
+
+    @Override
     public void clear(boolean isDuringShutdown) {
         HazelcastMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {

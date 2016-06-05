@@ -438,6 +438,19 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     @Override
     public V get(Object k) {
+        return get0(k, false);
+    }
+
+    /**
+     * @param k must be {@code instanceof NativeMemoryData}
+     * @return same as {@link #get(Object)}, but with the additional constraint that the argument
+     * must refer to exactly the same blob (at the same address) as the one stored by the map.
+     */
+    public V getIfSameKey(Object k) {
+        return get0(k, true);
+    }
+
+    private V get0(Object k, boolean onlyIfSame) {
         ensureMemory();
 
         Data key = (Data) k;
@@ -445,8 +458,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         int slot = rehash(key, perturbation) & mask;
         final int wrappedAround = slot;
         while (accessor.isAssigned(slot)) {
-            long slotKey = accessor.getKey(slot);
-            if (NativeMemoryDataUtil.equals(slotKey, key)) {
+            long slotKeyAddr = accessor.getKey(slot);
+            if (onlyIfSame ? same(slotKeyAddr, (NativeMemoryData) key) : NativeMemoryDataUtil.equals(slotKeyAddr, key)) {
                 long value = accessor.getValue(slot);
                 return readV(value);
             }
@@ -456,6 +469,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             }
         }
         return null;
+    }
+
+    private boolean same(long addrOfKey1, NativeMemoryData key2) {
+        return addrOfKey1 == key2.address();
     }
 
     public long getNativeKeyAddress(Data key) {

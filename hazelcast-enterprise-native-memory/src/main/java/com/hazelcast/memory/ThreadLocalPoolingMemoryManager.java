@@ -22,22 +22,31 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 
+/**
+ * Single-threaded implementation of a pooling memory manager. To use it, a thread must register itself
+ * by calling {@link PoolingMemoryManager#registerThread(Thread)}. After that, all requests from that thread
+ * will be forwarded to its own {@code ThreadLocalPoolingMemoryManager} instance. A request to {@code free} a
+ * block from a thread different than the one that {@code allocate}d it will result in an exception.
+ */
 @SuppressWarnings("checkstyle:methodcount")
 public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManager implements HazelcastMemoryManager {
 
     // Size of the memory block header in bytes
-    private static final int HEADER_SIZE = 1;
-    // Using sign bit as block is allocated externally from page allocator (OS) directly.
-    // for allocations bigger than page size.
-    private static final int EXTERNAL_BLOCK_BIT = Byte.SIZE - 1;
-    // Using sign bit as available bit, since offset is already positive
-    // so the first bit represents that is this memory block is available or not (in use already)
-    private static final int AVAILABLE_BIT = EXTERNAL_BLOCK_BIT - 1;
-    // The second bit represents that is this memory block has offset value to its owner page
-    private static final int PAGE_OFFSET_EXIST_BIT = AVAILABLE_BIT - 1;
+    static final int HEADER_SIZE = 1;
     // Extra required native memory when page offset is stored.
     // Since page offset should be aligned to 4 byte and header is 1 byte, we have 3 byte padding before header.
-    private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = Bits.INT_SIZE_IN_BYTES + Bits.INT_SIZE_IN_BYTES;
+    static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = Bits.INT_SIZE_IN_BYTES + Bits.INT_SIZE_IN_BYTES;
+    // AND-mask to retrieve the encoded block size
+    @SuppressWarnings("checkstyle:magicnumber")
+    static final int BLOCK_SIZE_MASK = (1 << 5) - 1;
+    // The sign bit of the header signals that the block is allocated directly from the page allocator.
+    // For allocations bigger than page size.
+    static final int EXTERNAL_BLOCK_BIT = Byte.SIZE - 1;
+    // Using sign bit as available bit, since offset is already positive
+    // so the first bit represents that is this memory block is available or not (in use already)
+    static final int AVAILABLE_BIT = EXTERNAL_BLOCK_BIT - 1;
+    // The second bit represents that is this memory block has offset value to its owner page
+    static final int PAGE_OFFSET_EXIST_BIT = AVAILABLE_BIT - 1;
 
     // Initial capacity for various internal allocations such as page addresses, address queues, etc ...
     private static final int INITIAL_CAPACITY = 1024;
@@ -47,10 +56,10 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     private static final long SHRINK_INTERVAL = TimeUnit.MINUTES.toMillis(5);
 
     /*
-     * Internal Memory Block Header Structure: (1 byte = 8 bits)
+     * Internal Memory Block Header (1 byte = 8 bits, lowest bits shown at the top):
      *
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     * | Encoded size           |   5 bits             | ==> Size is encoded by logarithm of size
+     * | Encoded size           |   5 bits             | ==> log2 of size
      * +------------------------+----------------------+
      * | PAGE_OFFSET_EXIST_BIT  |   1 bit              |
      * +------------------------+----------------------+
@@ -137,355 +146,6 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         threadName = Thread.currentThread().getName();
     }
 
-    private static byte encodeSize(int size) {
-        return (byte) QuickMath.log2(size);
-    }
-
-    private static int decodeSize(byte size) {
-        return 1 << size;
-    }
-
-    private static byte initHeader(long address, int size, int offset) {
-        return Bits.setBit(encodeSize(size), AVAILABLE_BIT);
-    }
-
-    private long getHeaderAddress(long address) {
-        if (isPageBaseAddress(address)) {
-            // If this is the first block, wrap around
-            return address + pageSize - HEADER_SIZE;
-        }
-        return address - HEADER_SIZE;
-    }
-
-    private byte getHeader(long address) {
-        long headerAddress = getHeaderAddress(address);
-        return AMEM.getByte(headerAddress);
-    }
-
-    private static boolean isHeaderAvailable(byte header) {
-        return Bits.isBitSet(header, AVAILABLE_BIT);
-    }
-
-    private boolean isAddressAvailable(long address) {
-        byte header = getHeader(address);
-        return isHeaderAvailable(header);
-    }
-
-    private static int getSizeFromHeader(byte header) {
-        header = Bits.clearBit(header, AVAILABLE_BIT);
-        header = Bits.clearBit(header, PAGE_OFFSET_EXIST_BIT);
-        return decodeSize(header);
-    }
-
-    private int getSizeFromAddress(long address) {
-        byte header = getHeader(address);
-        return getSizeFromHeader(header);
-    }
-
-    private static byte makeHeaderAvailable(byte header) {
-        return Bits.setBit(header, AVAILABLE_BIT);
-    }
-
-    private static byte makeHeaderUnavailable(byte header) {
-        return Bits.clearBit(header, AVAILABLE_BIT);
-    }
-
-    private static long getPageOffsetAddressByHeader(long address, byte header) {
-        int size = getSizeFromHeader(header);
-        // We keep the page offset (if there is enough space) at the end of block as aligned
-        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
-    }
-
-    private static long getPageOffsetAddressBySize(long address, int size) {
-        // We keep the page offset (if there is enough space) at the end of block as aligned
-        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
-    }
-
-    private boolean isPageBaseAddress(long address) {
-        return pageAllocations.contains(address);
-    }
-
-    @Override
-    protected AddressQueue createAddressQueue(int index, int size) {
-        return new ThreadAddressQueue(index, size);
-    }
-
-    @Override
-    protected int getHeaderSize() {
-        return HEADER_SIZE;
-    }
-
-    @Override
-    protected void onMallocPage(long pageAddress) {
-        boolean added = pageAllocations.add(pageAddress);
-        if (added) {
-            try {
-                addSorted(pageAddress);
-            } catch (NativeOutOfMemoryError e) {
-                pageAllocations.remove(pageAddress);
-                freePage(pageAddress);
-                throw e;
-            }
-        }
-        assert added : "Duplicate malloc() for page address " + pageAddress;
-        lastFullCompaction = 0L;
-    }
-
-    private void addSorted(long address) {
-        long len = pageAllocations.size();
-        if (sortedPageAllocations.length() == len) {
-            long newArrayLen = sortedPageAllocations.length() << 1;
-            sortedPageAllocations.expand(newArrayLen);
-        }
-        sortedPageAllocations.set(len - 1, address);
-        pageAllocationsSorter.gotoAddress(sortedPageAllocations.address()).sort(0, len);
-    }
-
-    @Override
-    protected void onOome(NativeOutOfMemoryError e) {
-        long now = Clock.currentTimeMillis();
-        if (now > lastFullCompaction + GarbageCollector.GC_INTERVAL) {
-            compact();
-            lastFullCompaction = now;
-        }
-    }
-
-    @Override
-    protected void initialize(long address, int size, int offset) {
-        assertNotNullPtr(address);
-        assert QuickMath.isPowerOfTwo(size) : "Invalid size -> " + size + " is not power of two";
-        assert size >= minBlockSize : "Invalid size -> "
-                + size + " cannot be smaller than minimum block size " + minBlockSize;
-        assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
-
-        byte header = initHeader(address, size, offset);
-        long headerAddress = getHeaderAddressByOffset(address, offset);
-        AMEM.putByte(headerAddress, header);
-        AMEM.putInt(address, offset);
-    }
-
-    @Override
-    protected long allocateExternal(long size) {
-        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
-        long address = pageAllocator.allocate(allocationSize);
-
-        long existingAllocationSize = externalAllocations.putIfAbsent(address, allocationSize);
-        if (existingAllocationSize != SIZE_INVALID) {
-            pageAllocator.free(address, allocationSize);
-            throw new AssertionError("Duplicate malloc() for external address " + address);
-        }
-
-        byte header = Bits.setBit((byte) 0, EXTERNAL_BLOCK_BIT);
-        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
-        AMEM.putByte(null, internalHeaderAddress, header);
-
-        return address + EXTERNAL_BLOCK_HEADER_SIZE;
-    }
-
-    @Override
-    protected void freeExternal(long address, long size) {
-        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
-        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
-
-        long actualAllocationSize = externalAllocations.remove(allocationAddress);
-        if (actualAllocationSize == SIZE_INVALID) {
-            throw new AssertionError("Double free() -> external address: " + address + ", size: " + size);
-        } else {
-            long actualSize = actualAllocationSize - EXTERNAL_BLOCK_HEADER_SIZE;
-            if (actualSize != size) {
-                // Put it back
-                externalAllocations.put(allocationAddress, actualAllocationSize);
-                throw new AssertionError("Invalid size -> actual: " + actualSize + ", expected: " + size
-                        + " while free external address " + address);
-            } else {
-                pageAllocator.free(allocationAddress, allocationSize);
-            }
-        }
-    }
-
-    @Override
-    protected void markAvailable(long address) {
-        assertNotNullPtr(address);
-
-        long headerAddress = getHeaderAddress(address);
-        byte header = AMEM.getByte(headerAddress);
-        assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
-
-        long pageBase = getOwningPage(address, header);
-        if (pageBase == NULL_ADDRESS) {
-            throw new IllegalArgumentException("Address " + address + " does not belong to this memory pool!");
-        }
-        int pageOffset = (int) (address - pageBase);
-        assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
-
-        int size = getSizeFromHeader(header);
-        assert pageBase <= address && pageBase + pageSize >= address + size
-                : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
-                address, address + size - 1,
-                pageBase, pageBase + pageSize - 1);
-
-        byte availableHeader = makeHeaderAvailable(header);
-        availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
-
-        AMEM.putByte(headerAddress, availableHeader);
-        AMEM.putInt(getPageOffsetAddressBySize(address, size), 0);
-        AMEM.putInt(address, pageOffset);
-    }
-
-    @Override
-    protected boolean markUnavailable(long address, int usedSize, int internalSize) {
-        assertNotNullPtr(address);
-
-        int offset = getOffset(address);
-        long headerAddress = getHeaderAddressByOffset(address, offset);
-        byte header = AMEM.getByte(headerAddress);
-        byte unavailableHeader = makeHeaderUnavailable(header);
-
-        boolean pageOffsetExist = false;
-        if (internalSize - usedSize >= MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED) {
-            // If there is enough space for storing page offset,
-            // set the header as page offset is stored in the memory block.
-            unavailableHeader = Bits.setBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
-            pageOffsetExist = true;
-        } else {
-            unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
-        }
-
-        AMEM.putByte(headerAddress, unavailableHeader);
-        if (pageOffsetExist) {
-            // If page offset will be stored, write it to the unused part of the memory block.
-            AMEM.putInt(getPageOffsetAddressBySize(address, internalSize), offset);
-        }
-        AMEM.putInt(address, 0);
-
-        return true;
-    }
-
-    @Override
-    protected boolean isAvailable(long address) {
-        assertNotNullPtr(address);
-
-        return isAddressAvailable(address);
-    }
-
-    @Override
-    protected boolean markInvalid(long address, int expectedSize, int offset) {
-        assertNotNullPtr(address);
-        assert expectedSize == getSizeInternal(address)
-                : "Invalid size -> actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
-
-        long headerAddress = getHeaderAddressByOffset(address, offset);
-        AMEM.putByte(headerAddress, (byte) 0);
-        AMEM.putInt(getPageOffsetAddressBySize(address, expectedSize), 0);
-        AMEM.putInt(address, 0);
-
-        return true;
-    }
-
-    @Override
-    protected boolean isValidAndAvailable(long address, int expectedSize) {
-        assertNotNullPtr(address);
-
-        byte header = getHeader(address);
-
-        boolean available = isHeaderAvailable(header);
-        if (!available) {
-            return false;
-        }
-
-        int size = getSizeFromHeader(header);
-        if (size != expectedSize || size < minBlockSizePower) {
-            return false;
-        }
-
-        int offset = getOffset(address);
-        if (offset < 0 || QuickMath.modPowerOfTwo(offset, size) != 0) {
-            return false;
-        }
-
-        return isPageBaseAddress(address - offset);
-    }
-
-    private long findSizeExternal(long address) {
-        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
-        long allocationSize = externalAllocations.get(allocationAddress);
-        if (allocationSize == SIZE_INVALID) {
-            return SIZE_INVALID;
-        } else {
-            return allocationSize;
-        }
-    }
-
-    private long findSize(long address, byte header) {
-        if (Bits.isBitSet(header, EXTERNAL_BLOCK_BIT)) {
-            return findSizeExternal(address);
-        } else {
-            return getSizeFromHeader(header);
-        }
-    }
-
-    @Override
-    protected long getSizeInternal(long address) {
-        byte header = getHeader(address);
-        return findSize(address, header);
-    }
-
-    @Override
-    public long validateAndGetAllocatedSize(long address) {
-        assertNotNullPtr(address);
-
-        byte header = getHeader(address);
-        long size = findSize(address, header);
-
-        if (size > pageSize) {
-            return size;
-        } else {
-            if (isHeaderAvailable(header) || !QuickMath.isPowerOfTwo(size) || size < minBlockSize) {
-                return SIZE_INVALID;
-            }
-            long page = getOwningPage(address, header);
-            return page != NULL_ADDRESS && page + pageSize >= address + size ? size : SIZE_INVALID;
-        }
-    }
-
-    @Override
-    protected int getOffset(long address) {
-        return AMEM.getInt(address);
-    }
-
-    protected long getOwningPage(long address, byte header) {
-        if (Bits.isBitSet(header, PAGE_OFFSET_EXIST_BIT)) {
-            // If page offset is stored in the memory block, get the offset directly from there
-            // and calculate page address by using this offset.
-
-            int pageOffset = AMEM.getInt(getPageOffsetAddressByHeader(address, header));
-            if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
-                throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
-                        + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
-                        + " where pageSize is " + pageSize + " and minBlockSize is " + minBlockSize);
-            }
-            return address - pageOffset;
-        } else {
-            // Otherwise, find page address by binary search in sorted page allocations list.
-            long low = 0;
-            long high = pageAllocations.size() - 1;
-
-            while (low <= high) {
-                long middle = (low + high) >>> 1;
-                long pageBase = sortedPageAllocations.get(middle);
-                long pageEnd = pageBase + pageSize - 1;
-                if (address > pageEnd) {
-                    low = middle + 1;
-                } else if (address < pageBase) {
-                    high = middle - 1;
-                } else {
-                    return pageBase;
-                }
-            }
-            return NULL_ADDRESS;
-        }
-    }
-
     @Override
     public boolean isDisposed() {
         return addressQueues[0] == null;
@@ -508,6 +168,307 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         disposeExternalAllocations();
     }
 
+    @Override
+    @SuppressWarnings("checkstyle:booleanexpressioncomplexity")
+    public long validateAndGetAllocatedSize(long address) {
+        assertValidAddress(address);
+
+        final long pageBase = searchForOwningPage(address);
+        if (pageBase == NULL_ADDRESS) {
+            return findSizeOfExternalAllocation(address);
+        }
+        final byte header = getHeader(address);
+        final int decodedSize = decodeSizeFromHeader(header);
+        return !isHeaderAvailable(header)
+                && !isExternalBlockHeader(header)
+                && isLegalInternalBlockSize(decodedSize)
+                && pageBase + pageSize >= address + decodedSize
+                && (!hasStoredPageOffset(header) || getStoredPageOffset(address, decodedSize) == address - pageBase)
+            ? decodedSize : SIZE_INVALID;
+    }
+
+    @Override
+    public String toString() {
+        return "ThreadLocalPoolingMemoryManager [" + threadName + ']';
+    }
+
+    @Override
+    protected void initialize(long address, int size, int offset) {
+        assertValidAddress(address);
+        assert QuickMath.isPowerOfTwo(size) : "Invalid size -> " + size + " is not power of two";
+        assert size >= minBlockSize : "Invalid size -> "
+                + size + " cannot be smaller than minimum block size " + minBlockSize;
+        assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
+
+        byte header = createAvailableHeader(size);
+        long headerAddress = toHeaderAddress(address, offset);
+        AMEM.putByte(headerAddress, header);
+        AMEM.putInt(address, offset);
+    }
+
+    @Override
+    protected AddressQueue createAddressQueue(int index, int size) {
+        return new ThreadAddressQueue(index, size);
+    }
+
+    @Override
+    protected int headerSize() {
+        return HEADER_SIZE;
+    }
+
+    @Override
+    protected void onMallocPage(long pageAddress) {
+        boolean added = pageAllocations.add(pageAddress);
+        if (added) {
+            try {
+                addToSortedAllocations(pageAddress);
+            } catch (NativeOutOfMemoryError e) {
+                pageAllocations.remove(pageAddress);
+                freePage(pageAddress);
+                throw e;
+            }
+        }
+        assert added : "Duplicate malloc() for page address " + pageAddress;
+        lastFullCompaction = 0L;
+    }
+
+    @Override
+    protected void onOome(NativeOutOfMemoryError e) {
+        long now = Clock.currentTimeMillis();
+        if (now > lastFullCompaction + GarbageCollector.GC_INTERVAL) {
+            compact();
+            lastFullCompaction = now;
+        }
+    }
+
+    @Override
+    protected long allocateExternalBlock(long size) {
+        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
+        long address = pageAllocator.allocate(allocationSize);
+
+        long existingAllocationSize = externalAllocations.putIfAbsent(address, allocationSize);
+        if (existingAllocationSize != SIZE_INVALID) {
+            pageAllocator.free(address, allocationSize);
+            throw new AssertionError(String.format(
+                    "Page allocator returned an already allocated address %x. Existing size is %x, requested size is %x",
+                    address, existingAllocationSize, size));
+        }
+        final byte header = markAsExternalBlockHeader((byte) 0);
+        long internalHeaderAddress = address + EXTERNAL_BLOCK_HEADER_SIZE - HEADER_SIZE;
+        AMEM.putByte(null, internalHeaderAddress, header);
+        return address + EXTERNAL_BLOCK_HEADER_SIZE;
+    }
+
+    @Override
+    protected void freeExternalBlock(long address, long size) {
+        long allocationSize = size + EXTERNAL_BLOCK_HEADER_SIZE;
+        long allocationAddress = address - EXTERNAL_BLOCK_HEADER_SIZE;
+
+        long actualAllocationSize = externalAllocations.remove(allocationAddress);
+        if (actualAllocationSize == SIZE_INVALID) {
+            throw new AssertionError("Double free() -> external address: " + address + ", size: " + size);
+        } else {
+            long actualSize = actualAllocationSize - EXTERNAL_BLOCK_HEADER_SIZE;
+            if (actualSize != size) {
+                // Put it back
+                externalAllocations.put(allocationAddress, actualAllocationSize);
+                throw new AssertionError(String.format(
+                        "The call free(%x, %x) refers to an externally allocated block, but the supplied size is wrong."
+                        + " Actual block size is %x", address, size, actualSize
+                ));
+            } else {
+                pageAllocator.free(allocationAddress, allocationSize);
+            }
+        }
+    }
+
+    @Override
+    protected void markAvailable(long address) {
+        assertValidAddress(address);
+
+        final long headerAddress = toHeaderAddress(address);
+        final byte header = AMEM.getByte(headerAddress);
+        assert !isHeaderAvailable(header) : String.format(
+                "Block header at address %x is corrupt because it is already marked as available", address);
+        final int decodedSize = decodeSizeFromHeader(header);
+        assert isLegalInternalBlockSize(decodedSize) : String.format(
+                "Block header at address %x is corrupt because it encodes an invalid size %x", address, decodedSize);
+        final int pageOffset;
+        if (hasStoredPageOffset(header)) {
+            pageOffset = getStoredPageOffset(address, decodeSizeFromHeader(header));
+            assert isLegalPageOffsetAndSize(pageOffset, decodedSize)
+                    : String.format("Block at address %x, decoded size %x, with decoded offset %x within the owning page,"
+                    + " is corrupt because it cannot fit into a page of size %x",
+                    address, decodedSize, pageOffset, pageSize);
+            assert address > pageOffset : String.format(
+                    "Block header at address %x of decoded size %x, with decoded offset %x within the owning page, is"
+                    + " corrupt because the derived page base address is %x",
+                    address, decodedSize, pageOffset, address - pageOffset);
+        } else {
+            final long pageBase = searchForOwningPage(address);
+            assert pageBase > NULL_ADDRESS : String.format(
+                    "Block at address %x of decoded size %x is corrupt because it doesn't fit into any allocated page",
+                    address, decodedSize);
+            assert address + decodedSize <= pageBase + pageSize
+                    : String.format(
+                    "Block [%x, %x] (decoded size %x) is corrupt because its header belongs to the page [%x, %x],"
+                    + " but the rest of the block extends beyond the page end", address, address + decodedSize - 1,
+                    decodedSize, pageBase, pageBase + pageSize - 1);
+            pageOffset = (int) (address - pageBase);
+        }
+        final byte availableHeader = makeHeaderAvailable(header);
+
+        AMEM.putByte(headerAddress, availableHeader);
+        AMEM.putInt(addressOfStoredPageOffset(address, decodedSize), 0);
+        AMEM.putInt(address, pageOffset);
+    }
+
+    @Override
+    protected boolean markUnavailable(long address, int usedSize, int internalSize) {
+        assertValidAddress(address);
+
+        final boolean canStorePageOffset = internalSize - usedSize >= MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
+        final int offset = getOffsetWithinPage(address);
+        final long headerAddress = toHeaderAddress(address, offset);
+        final byte headerNow = AMEM.getByte(headerAddress);
+        final byte headerToBe = makeHeaderUnavailable(headerNow, canStorePageOffset);
+
+        AMEM.putByte(headerAddress, headerToBe);
+        if (canStorePageOffset) {
+            AMEM.putInt(addressOfStoredPageOffset(address, internalSize), offset);
+        }
+        AMEM.putInt(address, 0);
+        return true;
+    }
+
+    @Override
+    protected boolean isAvailable(long address) {
+        assertValidAddress(address);
+        return isAddressAvailable(address);
+    }
+
+    @Override
+    protected boolean markInvalid(long address, int expectedSize, int offset) {
+        assertValidAddress(address);
+        assert expectedSize == getSizeInternal(address)
+                : "Invalid size -> actual: " + getSizeInternal(address) + ", expected: " + expectedSize;
+        long headerAddress = toHeaderAddress(address, offset);
+
+        AMEM.putByte(headerAddress, (byte) 0);
+        AMEM.putInt(addressOfStoredPageOffset(address, expectedSize), 0);
+        AMEM.putInt(address, 0);
+
+        return true;
+    }
+
+    @Override
+    protected boolean isValidAndAvailable(long address, int expectedSize) {
+        assertValidAddress(address);
+
+        byte header = getHeader(address);
+        boolean available = isHeaderAvailable(header);
+        if (!available) {
+            return false;
+        }
+        int size = decodeSizeFromHeader(header);
+        if (size != expectedSize || size < minBlockSize) {
+            return false;
+        }
+        int offset = getOffsetWithinPage(address);
+        return offset >= 0 && QuickMath.modPowerOfTwo(offset, size) == 0 && isPageBaseAddress(address - offset);
+
+    }
+
+    @Override
+    protected long getSizeInternal(long address) {
+        byte header = getHeader(address);
+        return isExternalBlockHeader(header)
+                ? findSizeOfExternalAllocation(address)
+                : decodeSizeFromHeader(header);
+    }
+
+    @Override
+    protected int getOffsetWithinPage(long address) {
+        return AMEM.getInt(address);
+    }
+
+    @Override
+    protected int getQueueMergeThreshold(AddressQueue queue) {
+        return queue.capacity() / 3;
+    }
+
+    @Override
+    protected Counter newCounter() {
+        return new ThreadLocalCounter();
+    }
+
+    // package-private to support testing
+    long toHeaderAddress(long address) {
+        if (isPageBaseAddress(address)) {
+            // If this is the first block, wrap around
+            return address + pageSize - HEADER_SIZE;
+        }
+        return address - HEADER_SIZE;
+    }
+
+    private boolean isLegalInternalBlockSize(int size) {
+        return size >= minBlockSize && size <= pageSize;
+    }
+
+    private boolean isLegalPageOffsetAndSize(int pageOffset, int size) {
+        return pageOffset >= 0 && pageOffset + size <= pageSize;
+    }
+
+    private byte getHeader(long address) {
+        long headerAddress = toHeaderAddress(address);
+        return AMEM.getByte(headerAddress);
+    }
+
+    private boolean isAddressAvailable(long address) {
+        byte header = getHeader(address);
+        return isHeaderAvailable(header);
+    }
+
+    private boolean isPageBaseAddress(long address) {
+        return pageAllocations.contains(address);
+    }
+
+    private long findSizeOfExternalAllocation(long address) {
+        return externalAllocations.get(address - EXTERNAL_BLOCK_HEADER_SIZE);
+    }
+
+    private void addToSortedAllocations(long address) {
+        long len = pageAllocations.size();
+        if (sortedPageAllocations.length() == len) {
+            long newArrayLen = sortedPageAllocations.length() << 1;
+            sortedPageAllocations.expand(newArrayLen);
+        }
+        sortedPageAllocations.set(len - 1, address);
+        pageAllocationsSorter.gotoAddress(sortedPageAllocations.address()).sort(0, len);
+    }
+
+    private long searchForOwningPage(long address) {
+        // Find page address by binary search in sorted page allocations list.
+        long low = 0;
+        long high = pageAllocations.size() - 1;
+
+        while (low <= high) {
+            long middle = (low + high) >>> 1;
+            long pageBase = sortedPageAllocations.get(middle);
+            long pageEnd = pageBase + pageSize - 1;
+            if (address > pageEnd) {
+                low = middle + 1;
+            } else if (address < pageBase) {
+                high = middle - 1;
+            } else {
+                assert pageBase > NULL_ADDRESS : String.format(
+                        "sortedPageAllocations is corrupt because it contains address %x", pageBase);
+                return pageBase;
+            }
+        }
+        return NULL_ADDRESS;
+    }
+
     private void disposePageAllocations() {
         if (!pageAllocations.isEmpty()) {
             for (LongCursor cursor = pageAllocations.cursor(); cursor.advance();) {
@@ -528,14 +489,64 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         externalAllocations.dispose();
     }
 
-    @Override
-    protected int getQueueMergeThreshold(AddressQueue queue) {
-        return queue.capacity() / 3;
+    private int getStoredPageOffset(long address, int size) {
+        assert isLegalInternalBlockSize(size) : String.format(
+                "Header of block at address %x, with decoded size %x, is corrupt because the decoded size"
+                        + " is outside its legal range", address, size);
+        return AMEM.getInt(addressOfStoredPageOffset(address, size));
     }
 
-    @Override
-    protected Counter newCounter() {
-        return new ThreadLocalCounter();
+    // These static methods are used privately, but are package-private to support testing:
+
+    static byte setHasStoredPageOffset(byte unavailableHeader) {
+        return Bits.setBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
+    }
+
+    static byte unsetHasStoredPageOffset(byte header) {
+        return Bits.clearBit(header, PAGE_OFFSET_EXIST_BIT);
+    }
+
+    static byte encodeSize(int size) {
+        return (byte) QuickMath.log2(size);
+    }
+
+    static byte createAvailableHeader(int size) {
+        return Bits.setBit(encodeSize(size), AVAILABLE_BIT);
+    }
+
+    static byte makeHeaderAvailable(byte header) {
+        return unsetHasStoredPageOffset(Bits.setBit(header, AVAILABLE_BIT));
+    }
+
+    static byte makeHeaderUnavailable(byte header, boolean canStorePageOffset) {
+        final byte newHeader = canStorePageOffset ? setHasStoredPageOffset(header) : unsetHasStoredPageOffset(header);
+        return Bits.clearBit(newHeader, AVAILABLE_BIT);
+    }
+
+    static byte markAsExternalBlockHeader(byte header) {
+        return Bits.setBit(header, EXTERNAL_BLOCK_BIT);
+    }
+
+    // We keep the page offset (if there is enough space) at the end of the allocated block, aligned
+    static long addressOfStoredPageOffset(long blockBase, int blockSize) {
+        return blockBase + blockSize - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
+    }
+
+
+    private static boolean isHeaderAvailable(byte header) {
+        return Bits.isBitSet(header, AVAILABLE_BIT);
+    }
+
+    private static boolean isExternalBlockHeader(byte header) {
+        return Bits.isBitSet(header, EXTERNAL_BLOCK_BIT);
+    }
+
+    private static boolean hasStoredPageOffset(byte header) {
+        return Bits.isBitSet(header, PAGE_OFFSET_EXIST_BIT);
+    }
+
+    private static int decodeSizeFromHeader(byte header) {
+        return 1 << (header & BLOCK_SIZE_MASK);
     }
 
     private final class ThreadAddressQueue implements AddressQueue {
@@ -703,7 +714,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         }
     }
 
-    private static class ThreadLocalCounter implements Counter {
+    private static final class ThreadLocalCounter implements Counter {
         private long value;
 
         @Override
@@ -721,10 +732,5 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
             value += amount;
             return value;
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ThreadLocalPoolingMemoryManager [" + threadName + ']';
     }
 }

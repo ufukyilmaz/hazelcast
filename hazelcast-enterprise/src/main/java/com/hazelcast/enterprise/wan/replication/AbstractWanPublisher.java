@@ -262,8 +262,12 @@ public abstract class AbstractWanPublisher
         }
     }
 
-    public void shutdown() {
+    public final void shutdown() {
         running = false;
+        afterShutdown();
+    }
+
+    protected void afterShutdown() {
     }
 
     @Override

@@ -40,8 +40,7 @@ public class CustomWanPublisher extends AbstractWanPublisher implements Runnable
     }
 
     @Override
-    public void shutdown() {
-        super.shutdown();
+    protected void afterShutdown() {
         running = false;
     }
 }

@@ -5,6 +5,7 @@ import com.hazelcast.nio.Bits;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -48,6 +49,10 @@ public class ThreadLocalMgrPointerValidationTest {
         long maxMetadata = 1 << 20;
         mgr = new ThreadLocalPoolingMemoryManager(minBlockSize, pageSize, new UnsafeMalloc(),
                 new PooledNativeMemoryStats(maxNative, maxMetadata));
+    }
+
+    @After public void after() {
+        mgr.dispose();
     }
 
     private void setUpForTestWithStoredOffset() {

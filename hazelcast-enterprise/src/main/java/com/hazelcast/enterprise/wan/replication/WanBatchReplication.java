@@ -62,8 +62,7 @@ public class WanBatchReplication
     }
 
     @Override
-    public void shutdown() {
-        super.shutdown();
+    protected void afterShutdown() {
         StripedExecutor ex = executor;
         if (ex != null) {
             ex.shutdown();

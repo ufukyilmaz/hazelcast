@@ -87,7 +87,7 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
             }
             entryAddedOrUpdated(entry, dataKey, oldValue, now);
 
-            evict();
+            evict(dataKey);
         }
     }
 

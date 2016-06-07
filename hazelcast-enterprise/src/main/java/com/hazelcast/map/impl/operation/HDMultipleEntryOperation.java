@@ -84,7 +84,7 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
 
             entryAddedOrUpdated(entry, dataKey, value, now);
 
-            evict();
+            evict(dataKey);
         }
     }
 

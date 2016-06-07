@@ -64,7 +64,7 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
                 && mapContainer.isWanReplicationEnabled()) {
             mapEventPublisher.publishWanReplicationRemoveBackup(name, dataKey, Clock.currentTimeMillis());
         }
-        evict();
+        evict(dataKey);
     }
 
     @Override

@@ -102,7 +102,7 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     @Override
     public void afterRun() throws Exception {
-        evict();
+        evict(dataKey);
         disposeDeferredBlocks();
     }
 

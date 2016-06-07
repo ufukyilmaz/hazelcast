@@ -54,7 +54,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
         mapEventPublisher.publishEvent(getCallerAddress(), name, getEventType(), dataKey, dataOldValue, value);
         publishWANReplicationEvent(value);
         invalidateNearCache(dataKey);
-        evict();
+        evict(dataKey);
     }
 
 

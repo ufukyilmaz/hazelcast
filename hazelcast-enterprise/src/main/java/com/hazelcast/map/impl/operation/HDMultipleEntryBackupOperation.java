@@ -63,7 +63,7 @@ public class HDMultipleEntryBackupOperation extends AbstractHDMultipleEntryOpera
             }
             entryAddedOrUpdatedBackup(entry, dataKey);
 
-            evict();
+            evict(dataKey);
         }
     }
 

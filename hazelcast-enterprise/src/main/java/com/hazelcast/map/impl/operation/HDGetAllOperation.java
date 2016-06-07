@@ -58,12 +58,6 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
     }
 
     @Override
-    public void afterRun() throws Exception {
-        super.afterRun();
-        evict();
-    }
-
-    @Override
     public Object getResponse() {
         return entries;
     }

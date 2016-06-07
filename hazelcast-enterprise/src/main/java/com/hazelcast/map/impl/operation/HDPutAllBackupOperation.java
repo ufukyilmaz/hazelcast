@@ -64,7 +64,7 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
                 mapEventPublisher.publishWanReplicationUpdateBackup(name, entryView);
             }
 
-            evict();
+            evict(dataKey);
         }
     }
 

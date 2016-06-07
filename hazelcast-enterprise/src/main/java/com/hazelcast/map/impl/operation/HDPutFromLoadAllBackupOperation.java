@@ -64,8 +64,7 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
     @Override
     public void afterRun() throws Exception {
         super.afterRun();
-
-        disposeDeferredBlocks();
+        evict(null);
     }
 
     @Override

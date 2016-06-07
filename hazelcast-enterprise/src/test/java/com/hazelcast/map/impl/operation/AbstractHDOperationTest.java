@@ -196,7 +196,7 @@ abstract class AbstractHDOperationTest {
         verify(recordStore, times(partitionCount * itemCount + numberOfExceptions)).set(any(Data.class), any(), anyLong());
 
         verify(recordStore, times(partitionCount * itemCount * syncBackupCount)).getRecord(any(Data.class));
-        verify(recordStore, times(partitionCount * itemCount * backupFactor)).evictEntries();
+        verify(recordStore, times(partitionCount * itemCount * backupFactor)).evictEntries(any(Data.class));
         verify(recordStore, times(partitionCount * itemCount)).getMapDataStore();
 
         if (verifyBackups) {

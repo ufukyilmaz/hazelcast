@@ -63,7 +63,7 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
             }
             entryAddedOrUpdatedBackup(entry, dataKey);
 
-            evict();
+            evict(dataKey);
         }
     }
 

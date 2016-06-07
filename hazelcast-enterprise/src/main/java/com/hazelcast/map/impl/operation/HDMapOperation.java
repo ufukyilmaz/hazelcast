@@ -24,6 +24,7 @@ import com.hazelcast.map.impl.eviction.Evictor;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
@@ -265,9 +266,9 @@ public abstract class HDMapOperation extends MapOperation {
     }
 
     @Override
-    protected final void evict() {
+    protected final void evict(Data justAddedKey) {
         if (recordStore != null) {
-            recordStore.evictEntries();
+            recordStore.evictEntries(justAddedKey);
             disposeDeferredBlocks();
         }
     }

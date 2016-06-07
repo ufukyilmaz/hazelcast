@@ -117,7 +117,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
             backupRecordInfos.add(replicationInfo);
         }
 
-        evict();
+        evict(dataKey);
         if (hasInvalidation) {
             invalidationKeys.add(dataKey);
         }

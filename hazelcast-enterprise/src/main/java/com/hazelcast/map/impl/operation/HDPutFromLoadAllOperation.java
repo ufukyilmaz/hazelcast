@@ -114,6 +114,7 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
     @Override
     public void afterRun() throws Exception {
         invalidateNearCache(invalidationKeys);
+        evict(null);
 
         super.afterRun();
     }

@@ -78,7 +78,7 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     @Override
     public void afterRun() throws Exception {
         if (recordInfo != null) {
-            evict();
+            evict(dataKey);
         }
         if (!disableWanReplicationEvent) {
             publishWANReplicationEventBackup();

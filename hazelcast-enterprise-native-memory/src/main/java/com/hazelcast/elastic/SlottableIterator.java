@@ -7,7 +7,6 @@ import java.util.Iterator;
  */
 public interface SlottableIterator<E> extends Iterator<E> {
 
-    int advance(int start);
     int nextSlot();
     int getNextSlot();
     int getCurrentSlot();

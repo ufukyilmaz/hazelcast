@@ -991,6 +991,42 @@ public class BinaryElasticHashMapTest {
         assertEquals(0, map.capacity());
     }
 
+    @Test
+    public void testRandomKeyIterator_removeWillClearAllEntriesEventually() {
+        int entryCount = 1000;
+        for (int i = 0; i < entryCount; i++) {
+            Data key = newKey();
+            NativeMemoryData value = newValue();
+            map.set(key, value);
+        }
+
+        SlottableIterator<Data> dataSlottableIterator = map.newRandomEvictionKeyIterator();
+        while (dataSlottableIterator.hasNext()) {
+            dataSlottableIterator.next();
+            dataSlottableIterator.remove();
+        }
+
+        assertEquals(0, map.size());
+    }
+
+    @Test
+    public void testRandomValueIterator_removeWillClearAllEntriesEventually() {
+        int entryCount = 1000;
+        for (int i = 0; i < entryCount; i++) {
+            Data key = newKey();
+            NativeMemoryData value = newValue();
+            map.set(key, value);
+        }
+
+        SlottableIterator<NativeMemoryData> dataSlottableIterator = map.newRandomEvictionValueIterator();
+        while (dataSlottableIterator.hasNext()) {
+            dataSlottableIterator.next();
+            dataSlottableIterator.remove();
+        }
+
+        assertEquals(0, map.size());
+    }
+
     private Data newKey() {
         return serializationService.toData(random.nextLong());
     }

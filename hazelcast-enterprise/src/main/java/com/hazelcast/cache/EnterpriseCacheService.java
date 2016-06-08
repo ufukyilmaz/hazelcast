@@ -332,6 +332,9 @@ public class EnterpriseCacheService
      * @return the number of evicted records
      */
     public int forceEvict(String name, int originalPartitionId) {
+        if (logger.isFinestEnabled()) {
+            logger.finest("Forced eviction " + name + ", original partition id: " + originalPartitionId);
+        }
         int evicted = 0;
         int partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         int threadCount = getPartitionThreadCount();

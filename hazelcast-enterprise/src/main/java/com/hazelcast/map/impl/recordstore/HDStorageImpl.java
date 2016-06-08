@@ -13,6 +13,7 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.map.impl.SizeEstimators.createMapSizeEstimator;
@@ -22,7 +23,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  * HiDensity backed {@code Storage} impl. for {@link com.hazelcast.core.IMap}.
  * This implementation can be used under multi-thread access.
  */
-public class HDStorageImpl implements Storage<Data, HDRecord> {
+public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
     private final HDStorageSCHM map;
     private final HiDensityRecordProcessor recordProcessor;
@@ -116,6 +117,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord> {
     @Override
     public Collection<HDRecord> values() {
         return map.values();
+    }
+
+    @Override
+    public Iterator<HDRecord> newForcedEvictionValuesIterator() {
+        return map.newRandomEvictionValueIterator();
     }
 
     @Override

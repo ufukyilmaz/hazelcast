@@ -18,9 +18,11 @@ import com.hazelcast.util.ExceptionUtil;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.Set;
 
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
@@ -72,6 +74,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     private int perturbation;
 
     private final MemoryAllocator malloc;
+
+    private final Random random;
 
     /**
      * Creates a hash map with the default capacity of {@value CapacityUtil#DEFAULT_CAPACITY},
@@ -138,6 +142,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         this.loadFactor = loadFactor;
         this.memoryBlockProcessor = memoryBlockProcessor;
         this.malloc = memoryBlockProcessor.unwrapMemoryAllocator();
+        this.random = new Random();
 
         allocateBuffer(roundCapacity(initialCapacity));
     }
@@ -520,6 +525,148 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return false;
     }
 
+    /**
+     * Returns a key iterator indented to be used for forced evictions - iteration order is (pseudo-)random.
+     *
+     * It expects a caller will remove each visited entry - failing to do means one entry can be visited
+     * more than once and some other entry won't be visited at all.
+     *
+     */
+    public SlottableIterator<Data> newRandomEvictionKeyIterator() {
+        return new RandomKeyIter();
+    }
+
+    /**
+     * Returns a key iterator indented to be used for forced evictions - iteration order is (pseudo-)random.
+     *
+     * It expects a caller will remove each visited entry - failing to do means one entry can be visited
+     * multiple-times and some other entry won't be visited at all.
+     *
+     */
+    public SlottableIterator<V> newRandomEvictionValueIterator() {
+        return new RandomValueIter();
+    }
+
+    protected class RandomKeyIter extends RandomSlotIter<Data> {
+        @Override
+        public Data next() {
+            nextSlot();
+            return accessor.keyData(currentSlot);
+        }
+    }
+
+    protected class RandomValueIter extends RandomSlotIter<V> {
+        @Override
+        public V next() {
+            nextSlot();
+            long slotValue = accessor.getValue(currentSlot);
+            V value = readV(slotValue);
+            return value;
+        }
+    }
+
+    private abstract class RandomSlotIter<E> implements SlottableIterator<E> {
+        int currentSlot = -1;
+
+        private int iterationCount;
+        private int initialSize = assignedSlotCount;
+        private int nextSlot = -1;
+        private NativeMemoryData keyHolder = new NativeMemoryData();
+
+        RandomSlotIter() {
+            nextSlot = advanceAndIncrementIterations();
+        }
+
+        final int advanceAndIncrementIterations() {
+            ensureMemory();
+            if (iterationCount == initialSize) {
+                return -1;
+            }
+
+            int slot = advance();
+            iterationCount++;
+            return slot;
+        }
+
+        final int advance() {
+            ensureMemory();
+            int slot;
+            do {
+                slot = random.nextInt(capacity());
+            } while (!accessor.isAssigned(slot) || (slot == currentSlot));
+            return slot;
+        }
+
+        @Override
+        public final boolean hasNext() {
+            return nextSlot > -1;
+        }
+
+        @Override
+        public final int nextSlot() {
+            ensureMemory();
+            if (nextSlot < 0) {
+                throw new NoSuchElementException();
+            }
+            currentSlot = nextSlot;
+            if (!accessor.isAssigned(currentSlot)) {
+                currentSlot = advance();
+                if (currentSlot < 0) {
+                    throw new ConcurrentModificationException("Map was modified externally.");
+                }
+            }
+
+            nextSlot = advanceAndIncrementIterations();
+            return currentSlot;
+        }
+
+        @Override
+        public final void remove() {
+            removeInternal(true);
+        }
+
+        protected void removeInternal(boolean disposeKey) {
+            ensureMemory();
+            if (currentSlot < 0) {
+                throw new NoSuchElementException();
+            }
+
+            long key = accessor.getKey(currentSlot);
+            long value = accessor.getValue(currentSlot);
+
+            assignedSlotCount--;
+            shiftConflictingKeys(currentSlot);
+
+            if (disposeKey) {
+                keyHolder.reset(key);
+                memoryBlockProcessor.disposeData(keyHolder);
+            }
+
+            if (value != NULL_ADDRESS) {
+                memoryBlockProcessor.dispose(value);
+            }
+
+            // if current slot is assigned after
+            // removal and shift
+            // then it means entry in the next slot
+            // is moved to current slot
+            if (accessor.isAssigned(currentSlot)) {
+                nextSlot = currentSlot;
+            }
+        }
+
+        @Override
+        public int getNextSlot() {
+            return nextSlot;
+        }
+
+        @Override
+        public int getCurrentSlot() {
+            return currentSlot;
+        }
+
+    }
+
     private abstract class SlotIter<E> implements SlottableIterator<E> {
         int nextSlot = -1;
         int currentSlot = -1;
@@ -533,8 +680,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
             nextSlot = advance(startSlot);
         }
 
-        @Override
-        public final int advance(int start) {
+        final int advance(int start) {
             ensureMemory();
             for (int slot = start; slot < allocatedSlotCount; slot++) {
                 if (accessor.isAssigned(slot)) {

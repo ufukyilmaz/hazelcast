@@ -177,13 +177,14 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         if (pageBase == NULL_ADDRESS) {
             return findSizeOfExternalAllocation(address);
         }
-        final byte header = getHeader(address);
+        final int pageOffset = (int) (address - pageBase);
+        final byte header = AMEM.getByte(toHeaderAddress(address, pageOffset));
         final int decodedSize = decodeSizeFromHeader(header);
         return !isHeaderAvailable(header)
                 && !isExternalBlockHeader(header)
                 && isLegalInternalBlockSize(decodedSize)
                 && pageBase + pageSize >= address + decodedSize
-                && (!hasStoredPageOffset(header) || getStoredPageOffset(address, decodedSize) == address - pageBase)
+                && (!hasStoredPageOffset(header) || getStoredPageOffset(address, decodedSize) == pageOffset)
             ? decodedSize : SIZE_INVALID;
     }
 
@@ -295,7 +296,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
                 "Block header at address %x is corrupt because it encodes an invalid size %x", address, decodedSize);
         final int pageOffset;
         if (hasStoredPageOffset(header)) {
-            pageOffset = getStoredPageOffset(address, decodeSizeFromHeader(header));
+            pageOffset = getStoredPageOffset(address, decodedSize);
             assert isLegalPageOffsetAndSize(pageOffset, decodedSize)
                     : String.format("Block at address %x, decoded size %x, with decoded offset %x within the owning page,"
                     + " is corrupt because it cannot fit into a page of size %x",
@@ -365,7 +366,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
     protected boolean isValidAndAvailable(long address, int expectedSize) {
         assertValidAddress(address);
 
-        byte header = getHeader(address);
+        byte header = AMEM.getByte(toHeaderAddress(address));
         boolean available = isHeaderAvailable(header);
         if (!available) {
             return false;
@@ -381,7 +382,7 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
 
     @Override
     protected long getSizeInternal(long address) {
-        byte header = getHeader(address);
+        byte header = AMEM.getByte(toHeaderAddress(address));
         return isExternalBlockHeader(header)
                 ? findSizeOfExternalAllocation(address)
                 : decodeSizeFromHeader(header);
@@ -419,14 +420,8 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         return pageOffset >= 0 && pageOffset + size <= pageSize;
     }
 
-    private byte getHeader(long address) {
-        long headerAddress = toHeaderAddress(address);
-        return AMEM.getByte(headerAddress);
-    }
-
     private boolean isAddressAvailable(long address) {
-        byte header = getHeader(address);
-        return isHeaderAvailable(header);
+        return isHeaderAvailable(AMEM.getByte(toHeaderAddress(address)));
     }
 
     private boolean isPageBaseAddress(long address) {

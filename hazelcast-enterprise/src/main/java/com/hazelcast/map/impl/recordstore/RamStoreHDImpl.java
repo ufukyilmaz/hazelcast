@@ -47,7 +47,7 @@ public class RamStoreHDImpl implements RamStore {
             if (key == null) {
                 return false;
             }
-            HDRecord record = storage.get(key);
+            HDRecord record = storage.getIfSameKey(key);
             return record != null && RamStoreHelper.copyEntry(kh, key, record, expectedSize, sink);
         }
     }

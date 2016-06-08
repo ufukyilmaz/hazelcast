@@ -102,6 +102,11 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     }
 
     @Override
+    public R getIfSameKey(Data key) {
+        return storage.getIfSameKey(key);
+    }
+
+    @Override
     public final boolean containsKey(Data key) {
         return storage.containsKey(key);
     }

@@ -103,6 +103,16 @@ public class BinaryElasticHashMapTest {
     }
 
     @Test
+    public void testGetIfSameKey() throws Exception {
+        Data key = serializationService.toData(random.nextLong(), DataType.NATIVE);
+        NativeMemoryData value = newValue();
+        map.set(key, value);
+
+        NativeMemoryData currentValue = map.getIfSameKey(key);
+        assertEquals(value, currentValue);
+    }
+
+    @Test
     public void testPutIfAbsent_success() throws Exception {
         Data key = newKey();
         NativeMemoryData value = newValue();

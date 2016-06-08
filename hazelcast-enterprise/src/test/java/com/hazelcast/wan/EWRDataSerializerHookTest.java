@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-@Ignore
 public class EWRDataSerializerHookTest {
 
     @Test

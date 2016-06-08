@@ -34,11 +34,16 @@ public class WanSyncManager {
 
     public SyncResult initiateSyncOnAllPartitions(String wanReplicationName,
                                                   String targetGroupName,
-                                                  String mapName) {
+                                                  String mapName,
+                                                  boolean simulateMissingPartitions) {
         Set<Integer> partitionIds = getAllPartitionIds();
         SyncResult result = new SyncResult();
 
-        List<Future<SyncResult>> futures = startSyncOnMembers(wanReplicationName, targetGroupName, mapName);
+        Set<Member> members = new HashSet<Member>(clusterService.getMembers());
+        if (simulateMissingPartitions) {
+           members.clear();
+        }
+        List<Future<SyncResult>> futures = startSyncOnMembers(wanReplicationName, targetGroupName, mapName, members);
         addResultsOfOps(futures, result, partitionIds);
 
         if (partitionIds.isEmpty()) {
@@ -68,8 +73,8 @@ public class WanSyncManager {
 
     private List<Future<SyncResult>> startSyncOnMembers(String wanReplicationName,
                                                         String targetGroupName,
-                                                        String mapName) {
-        Set<Member> members = clusterService.getMembers();
+                                                        String mapName,
+                                                        Set<Member> members) {
         List<Future<SyncResult>> futures = new ArrayList<Future<SyncResult>>(members.size());
         for (Member member : members) {
             Operation operation = new MemberMapSyncOperation(wanReplicationName, targetGroupName, mapName);
@@ -92,7 +97,7 @@ public class WanSyncManager {
         return futures;
     }
 
-    public Set<Integer> getAllPartitionIds() {
+    private Set<Integer> getAllPartitionIds() {
         int partitionCount = partitionService.getPartitionCount();
         return createSetWithPopulatedPartitionIds(partitionCount);
     }

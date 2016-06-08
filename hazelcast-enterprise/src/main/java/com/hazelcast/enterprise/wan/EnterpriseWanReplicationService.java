@@ -462,7 +462,15 @@ public class EnterpriseWanReplicationService
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
         initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName);
+        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, false);
+    }
+
+    /**
+     * DO NOT USE: This method is for testing purposes only.
+     */
+    public void syncMapTestMissingPartitions(String wanReplicationName, String targetGroupName, String mapName) {
+        initializeSyncManagerIfNeeded();
+        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, true);
     }
 
     private void initializeSyncManagerIfNeeded() {

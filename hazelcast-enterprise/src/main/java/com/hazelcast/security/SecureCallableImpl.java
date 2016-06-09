@@ -7,6 +7,7 @@ import com.hazelcast.core.ClientService;
 import com.hazelcast.core.Cluster;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.DistributedObjectListener;
+import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.core.Endpoint;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
@@ -39,6 +40,7 @@ import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
 import com.hazelcast.security.permission.CachePermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
+import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
@@ -234,6 +236,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         public IExecutorService getExecutorService(final String name) {
             checkPermission(new ExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ExecutorServiceInvocationHandler(instance.getExecutorService(name)));
+        }
+
+        @Override
+        public DurableExecutorService getDurableExecutorService(final String name) {
+            checkPermission(new DurableExecutorServicePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new DurableExecutorServiceInvocationHandler(instance.getDurableExecutorService(name)));
         }
 
         @Override
@@ -616,6 +624,26 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public String getStructureName() {
             return "executorService";
+        }
+    }
+
+    private class DurableExecutorServiceInvocationHandler extends SecureInvocationHandler {
+
+        DurableExecutorServiceInvocationHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        @Override
+        public Permission getPermission(Method method, Object[] args) {
+            if (method.getName().equals("destroy")) {
+                return new ExecutorServicePermission(distributedObject.getName(), ActionConstants.ACTION_DESTROY);
+            }
+            return null;
+        }
+
+        @Override
+        public String getStructureName() {
+            return "durableExecutorService";
         }
     }
 

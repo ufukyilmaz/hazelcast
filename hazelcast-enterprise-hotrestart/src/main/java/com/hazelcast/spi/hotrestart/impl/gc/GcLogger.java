@@ -16,10 +16,18 @@ public class GcLogger {
         this.logger = logger;
     }
 
+    public void finest(String message) {
+        logger.finest(message);
+    }
+
     public void finest(String template, Object arg) {
-        if (isFinestEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg));
         }
+    }
+
+    public void fine(String message) {
+        logger.fine(message);
     }
 
     public void fine(String template, Object arg) {
@@ -56,6 +64,10 @@ public class GcLogger {
         if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6));
         }
+    }
+
+    public void info(String message) {
+        logger.info(message);
     }
 
     public void info(String template, Object arg1) {
@@ -106,31 +118,19 @@ public class GcLogger {
         }
     }
 
-    boolean isFineEnabled() {
-        return logger.isFineEnabled();
+    public void warning(String message) {
+        logger.warning(message);
     }
-    boolean isFinestEnabled() {
-        return logger.isFinestEnabled();
-    }
-    public void finest(String message) {
-        logger.finest(message);
-    }
-    public void fine(String message) {
-        logger.fine(message);
-    }
-    public void info(String message) {
-        logger.info(message);
-    }
-    public void severe(String message, Throwable thrown) {
-        logger.severe(message, thrown);
-    }
-    public void warning(String message, Throwable thrown) {
-        logger.warning(message, thrown);
-    }
+
     public void severe(String message) {
         logger.severe(message);
     }
-    public void warning(String message) {
-        logger.warning(message);
+
+    public void severe(String message, Throwable thrown) {
+        logger.severe(message, thrown);
+    }
+
+    boolean isFinestEnabled() {
+        return logger.isFinestEnabled();
     }
 }

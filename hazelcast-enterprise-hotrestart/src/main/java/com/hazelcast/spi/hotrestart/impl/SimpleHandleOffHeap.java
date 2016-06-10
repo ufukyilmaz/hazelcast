@@ -2,6 +2,8 @@ package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 
+import static com.hazelcast.util.HashUtil.fastLongMix;
+
 /**
  * Simple implementation of {@link KeyHandleOffHeap}.
  */
@@ -34,7 +36,7 @@ public class SimpleHandleOffHeap implements KeyHandleOffHeap {
 
     @Override
     public int hashCode() {
-        return 31 * (int) (address ^ (address >>> 32)) + (int) (sequenceId ^ (sequenceId >>> 32));
+        return (int) fastLongMix(fastLongMix(address()) + sequenceId());
     }
 
     @Override

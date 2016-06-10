@@ -17,21 +17,21 @@ public abstract class GrowingChunk extends Chunk {
     // record a tombstone's file offset when it's added to the chunk.
     private int addStep2FilePos;
 
-    protected GrowingChunk(long seq, RecordMap records) {
-        super(seq, records);
+    protected GrowingChunk(long chunkSeq, RecordMap records) {
+        super(chunkSeq, records);
     }
 
     /** Adds the record to this chunk's record map. Called by the collector thread. */
-    public final void addStep2(long prefix, KeyHandle kh, long seq, int size) {
-        insertOrUpdate(prefix, kh, seq, addStep2FilePos, size);
+    public final void addStep2(long recordSeq, long keyPrefix, KeyHandle kh, int size) {
+        insertOrUpdate(recordSeq, keyPrefix, kh, addStep2FilePos, size);
         addStep2FilePos += size;
         liveRecordCount++;
     }
 
     /** Called only by {@code Rebuilder}, which encounters records out of file order. Therefore
      * {@code addStep2FilePos} is unusable. */
-    public final void addStep2(long prefix, KeyHandle kh, long seq, int filePos, int size) {
-        insertOrUpdate(prefix, kh, seq, filePos, size);
+    public final void addStep2(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size) {
+        insertOrUpdate(recordSeq, keyPrefix, kh, filePos, size);
         liveRecordCount++;
     }
 
@@ -39,7 +39,7 @@ public abstract class GrowingChunk extends Chunk {
      * Inserts a new entry in the chunk's record map or updates the existing one under the same
      * key handle.
      */
-    public abstract void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size);
+    public abstract void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size);
 
     @Override
     public final long size() {
@@ -57,18 +57,18 @@ public abstract class GrowingChunk extends Chunk {
     }
 
     /** Implements {@code insertOrUpdate} for a value record. */
-    protected final void insertOrUpdateValue(long prefix, KeyHandle kh, long seq, int size) {
-        final Record existing = records.putIfAbsent(prefix, kh, seq, size, false, 0);
+    protected final void insertOrUpdateValue(long recordSeq, long keyPrefix, KeyHandle kh, int size) {
+        final Record existing = records.putIfAbsent(keyPrefix, kh, recordSeq, size, false, 0);
         if (existing != null) {
-            existing.update(seq, size);
+            existing.update(recordSeq, size);
         }
     }
 
     /** Implements {@code insertOrUpdate} for a tombstone record. */
-    protected final void insertOrUpdateTombstone(long prefix, KeyHandle kh, long seq, int filePos, int size) {
-        final Record existing = records.putIfAbsent(prefix, kh, seq, size, true, filePos);
+    protected final void insertOrUpdateTombstone(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size) {
+        final Record existing = records.putIfAbsent(keyPrefix, kh, recordSeq, size, true, filePos);
         if (existing != null) {
-            existing.update(seq, size);
+            existing.update(recordSeq, size);
             existing.setFilePosition(filePos);
         }
     }

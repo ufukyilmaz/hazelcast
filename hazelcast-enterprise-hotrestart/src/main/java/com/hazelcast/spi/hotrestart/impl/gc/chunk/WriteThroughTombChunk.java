@@ -45,8 +45,8 @@ public final class WriteThroughTombChunk extends WriteThroughChunk implements Ac
     }
 
     @Override
-    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size) {
-        insertOrUpdateTombstone(prefix, kh, seq, filePos, size);
+    public void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size) {
+        insertOrUpdateTombstone(recordSeq, keyPrefix, kh, filePos, size);
     }
 
     @Override

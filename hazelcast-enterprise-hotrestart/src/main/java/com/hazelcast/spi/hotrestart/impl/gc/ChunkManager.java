@@ -114,14 +114,14 @@ public final class ChunkManager implements Disposable {
     class AddRecord implements Runnable {
         private final long prefix;
         private final KeyHandle keyHandle;
-        private final long seq;
+        private final long recordSeq;
         private final int size;
         private final boolean isTombstone;
 
-        public AddRecord(HotRestartKey hrKey, long seq, int size, boolean isTombstone) {
+        public AddRecord(HotRestartKey hrKey, long recordSeq, int size, boolean isTombstone) {
             this.prefix = hrKey.prefix();
             this.keyHandle = hrKey.handle();
-            this.seq = seq;
+            this.recordSeq = recordSeq;
             this.size = size;
             this.isTombstone = isTombstone;
         }
@@ -139,12 +139,12 @@ public final class ChunkManager implements Disposable {
             } else {
                 assert !isTombstone : "Attempted to add a tombstone for non-existing key";
             }
-            activeChunk.addStep2(prefix, keyHandle, seq, size);
+            activeChunk.addStep2(recordSeq, prefix, keyHandle, size);
         }
 
         @Override
         public String toString() {
-            return String.format("(%s,%d,%d,%s)", keyHandle, seq, size, isTombstone);
+            return String.format("(%s,%d,%d,%s)", keyHandle, recordSeq, size, isTombstone);
         }
     }
 
@@ -168,6 +168,12 @@ public final class ChunkManager implements Disposable {
     void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
         final Tracker tr = trackers.get(kh);
         if (r.isAlive()) {
+            // If we're in the middle of a GC cycle, `r` can represent a record that was already
+            // moved to the survivor chunk. In that case `tr.chunkSeq() != chunk.seq`. In the
+            // survivor chunk the record may even be retired, but since the record in the
+            // source chunk is no longer being updated, it will still be marked "alive". Even
+            // the key handle can be removed from the tracker map, all while still within
+            // the same GC cycle. In that case `tr` will be null.
             if (tr == null || tr.chunkSeq() != chunk.seq) {
                 return;
             }

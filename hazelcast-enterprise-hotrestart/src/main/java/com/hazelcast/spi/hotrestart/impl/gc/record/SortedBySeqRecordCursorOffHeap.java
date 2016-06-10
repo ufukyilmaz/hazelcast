@@ -3,7 +3,6 @@ package com.hazelcast.spi.hotrestart.impl.gc.record;
 import com.hazelcast.elastic.LongArray;
 import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
-import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
@@ -15,8 +14,9 @@ import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyIm
 import static java.lang.Math.min;
 
 /**
- * Off-heap implementation of {@link SortedBySeqRecordCursor}. Contains pointers to record structures
- * inside the {@link RecordMap}s, therefore becomes invalid as soon as any of the record maps is updated.
+ * Off-heap implementation of {@link com.hazelcast.spi.hotrestart.impl.SortedBySeqRecordCursor}.
+ * Contains pointers to record structures inside the {@link RecordMap}s, therefore becomes
+ * invalid as soon as any of the record maps is updated.
  */
 final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, KeyHandleOffHeap {
     private final LongArray seqsAndSlotBases;
@@ -25,10 +25,10 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
     private final MemoryAccessor mem;
     private int position = -1;
 
-    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, int size, MemoryManager memMgr, MutatorCatchup mc) {
-        this.size = size;
+    SortedBySeqRecordCursorOffHeap(LongArray seqsAndSlotBases, int actualSize, MemoryManager memMgr, MutatorCatchup mc) {
+        this.size = actualSize;
         this.mem = memMgr.getAccessor();
-        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, size, memMgr, mc);
+        this.seqsAndSlotBases = sortedByRecordSeq(seqsAndSlotBases, actualSize, memMgr, mc);
     }
 
     @Override
@@ -49,7 +49,7 @@ final class SortedBySeqRecordCursorOffHeap implements SortedBySeqRecordCursor, K
     }
 
     @Override
-    public KeyHandle asKeyHandle() {
+    public KeyHandleOffHeap asKeyHandle() {
         assert r.address != NULL_ADDRESS : "Invalid cursor state";
         return this;
     }

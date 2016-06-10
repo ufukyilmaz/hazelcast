@@ -15,7 +15,8 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 /**
  * Read-only accessor of data inside a tombstone chunk file. Uses a {@code MappedByteBuffer}.
  */
-public final class TombFileAccessor implements Closeable {
+// Class non-final for Mockito's sake
+public class TombFileAccessor implements Closeable {
     private MappedByteBuffer buf;
 
     // These three variables are updated on each call to loadAndCopyTombstone()
@@ -42,8 +43,9 @@ public final class TombFileAccessor implements Closeable {
      * @return the size of the tombstone record
      * @throws IOException if an IO operation fails
      */
+    // Method non-final for Mockito's sake
     public int loadAndCopyTombstone(int pos, ChunkFileOut out) throws IOException {
-        assert buf != null : "tombstone chunk is empty or accessor has been closed";
+        assert buf != null : "Tombstone chunk is empty or accessor has been closed";
         buf.position(pos);
         recordSeq = buf.getLong();
         keyPrefix = buf.getLong();
@@ -54,28 +56,25 @@ public final class TombFileAccessor implements Closeable {
     }
 
     /** @return record seq of the most recently loaded tombstone */
-    public long recordSeq() {
+    public final long recordSeq() {
         return recordSeq;
     }
 
     /** @return key prefix of the most recently loaded tombstone */
-    public long keyPrefix() {
+    public final long keyPrefix() {
         return keyPrefix;
     }
 
     /** @return size of the most recently loaded tombstone */
-    public int recordSize() {
+    public final int recordSize() {
         return recordSize;
     }
 
-    /**
-     * Disposes the underlying {@code MappedByteBuffer}.
-     */
-    public void close() {
+    /** Disposes the underlying {@code MappedByteBuffer}. */
+    public final void close() {
         if (buf != null) {
             GcHelper.disposeMappedBuffer(buf);
         }
         buf = null;
     }
-
 }

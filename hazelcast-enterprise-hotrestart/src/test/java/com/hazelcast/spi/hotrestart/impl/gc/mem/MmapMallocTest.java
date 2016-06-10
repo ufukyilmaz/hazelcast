@@ -1,34 +1,48 @@
 package com.hazelcast.spi.hotrestart.impl.gc.mem;
 
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.util.Random;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class MmapMallocTest {
+    @Rule
+    public final ExpectedException exceptionRule = ExpectedException.none();
 
-    private final File baseDir = new File("test-mmap-malloc");
+    @Rule
+    public final TestName testName = new TestName();
+
+    private File baseDir;
 
     private MmapMalloc malloc;
 
     @Before
     public void setUp() {
+        baseDir = isolatedFolder(getClass(), testName);
         delete(baseDir);
         baseDir.mkdirs();
-        malloc = new MmapMalloc(baseDir, false);
+        malloc = new MmapMalloc(baseDir, true);
     }
 
     @After
@@ -37,6 +51,38 @@ public class MmapMallocTest {
         delete(baseDir);
     }
 
+    @Test
+    public void when_mkdirsFails_then_exception() {
+        // Given
+        final File mockFile = Mockito.mock(File.class);
+        Mockito.when(mockFile.exists()).thenReturn(false);
+        Mockito.when(mockFile.mkdirs()).thenReturn(false);
+
+        // Then
+        exceptionRule.expect(HotRestartException.class);
+
+        // When
+        malloc = new MmapMalloc(mockFile, false);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void reallocate_unsupported() {
+        malloc.reallocate(0, 0, 0);
+    }
+
+    @Test
+    public void when_allocateAndFree_thenSlabDeleted() {
+        // Given
+        final File slabFile = new File(baseDir, 30 + ".mmap");
+        final long address = malloc.allocate(30);
+        assertTrue(slabFile.exists());
+
+        // When
+        malloc.free(address, 30);
+
+        // Then
+        assertFalse(slabFile.exists());
+    }
 
     @Test
     public void testAllocateFree() {

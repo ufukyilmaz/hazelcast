@@ -20,14 +20,12 @@ import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
-import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
-import com.hazelcast.util.concurrent.ManyToOneConcurrentArrayQueue;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
@@ -64,30 +62,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.withSettings;
 
 public class HotRestartTestUtil {
+    public static final String LOGGER_NAME = "com.hazelcast.spi.hotrestart";
     public static ILogger logger;
-
-    public static File hotRestartHome(Class<?> testClass, TestName testName) {
-        return new File(toFileName(testClass.getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-    }
-
-    public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
-        final LoggingService loggingService = createLoggingService();
-        logger = loggingService.getLogger("hotrestart-test");
-        return new HotRestartStoreConfig()
-                .setHomeDir(new File(testingHome, "hr-store"))
-                .setLoggingService(loggingService)
-                .setMetricsRegistry(metricsRegistry(loggingService));
-    }
-
-    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc)
-            throws InterruptedException {
-        logger.info("Creating mock store registry");
-        final long start = System.nanoTime();
-        final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
-        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr, false);
-        logger.info("Started in " + NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
-        return cs;
-    }
 
     public static void fillStore(MockStoreRegistry reg, TestProfile profile) {
         final int totalPutCount = profile.keysetSize * profile.prefixCount;
@@ -240,27 +216,59 @@ public class HotRestartTestUtil {
         }
     }
 
+    public static File isolatedFolder(Class<?> testClass, TestName testName) {
+        return new File(toFileName(testClass.getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+    }
+
+    public static HotRestartStoreConfig hrStoreConfig(File testingHome) {
+        final LoggingService loggingService = createLoggingService();
+        logger = loggingService.getLogger(LOGGER_NAME);
+        return new HotRestartStoreConfig()
+                .setHomeDir(new File(testingHome, "hr-store"))
+                .setLoggingService(loggingService)
+                .setMetricsRegistry(metricsRegistry(loggingService));
+    }
+
+    public static MockStoreRegistry createStoreRegistry(HotRestartStoreConfig cfg, MemoryAllocator malloc) throws InterruptedException {
+        logger.info("Creating mock store registry");
+        final long start = System.nanoTime();
+        final MemoryManagerBean memMgr = malloc != null ? new MemoryManagerBean(malloc, AMEM) : null;
+        final MockStoreRegistry cs = new MockStoreRegistry(cfg, memMgr, false);
+        logger.info("Started in " + NANOSECONDS.toMillis(System.nanoTime() - start) + " ms");
+        return cs;
+    }
+
     public static LoggingService createLoggingService() {
         return new LoggingServiceImpl("group", "log4j", new BuildInfo("0", "0", "0", 0, true, (byte) 0));
+    }
+
+    public static ILogger createHotRestartLogger() {
+        return createLoggingService().getLogger(LOGGER_NAME);
     }
 
     public static MetricsRegistry metricsRegistry(LoggingService loggingService) {
         return new MetricsRegistryImpl(loggingService.getLogger("metrics"), MANDATORY);
     }
 
-    public static DiContainer mockDiContainer() {
-        return new DiContainer()
-                .dep(ILogger.class, createLoggingService().getLogger("com.hazelcast.spi.hotrestart"))
-                .dep("testGcMutex", new Object())
-                .dep(new RecordDataHolder())
-                .dep(GcLogger.class)
-                .dep("persistenceConveyor", concurrentConveyorSingleQueue(null,
-                        new ManyToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
-                .dep("gcConveyor", concurrentConveyorSingleQueue(null,
-                        new OneToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
+    public static MutatorCatchup createMutatorCatchup() {
+        return createBaseDiContainer()
+                .dep("gcConveyor", concurrentConveyorSingleQueue(null, new OneToOneConcurrentArrayQueue<Runnable>(1)))
                 .dep(MutatorCatchup.class)
-                .dep(PrefixTombstoneManager.class, mock(PrefixTombstoneManager.class, withSettings().stubOnly()))
-                .wireAndInitializeAll();
+                .wireAndInitializeAll()
+                .get(MutatorCatchup.class);
+    }
+
+    public static GcHelper createGcHelper(File homeDir) {
+        return createBaseDiContainer()
+                .dep("homeDir", homeDir)
+                .wireAndInitializeAll()
+                .instantiate(GcHelper.OnHeap.class);
+    }
+
+    public static DiContainer createBaseDiContainer() {
+        return new DiContainer()
+                .dep(ILogger.class, createHotRestartLogger())
+                .dep(GcLogger.class);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -303,38 +311,28 @@ public class HotRestartTestUtil {
         assertRecordEquals("", expected, actual, valueChunk);
     }
 
-    public static File temporaryFile(AtomicInteger counter) {
+    public static File populateChunkFile(File file, List<TestRecord> records, boolean wantValueChunk) {
         try {
-            File file = File.createTempFile(String.format("%016d", counter.incrementAndGet()), "hot-restart");
-            file.deleteOnExit();
-            return file;
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    public static File populateRecordFile(File file, List<TestRecord> records, boolean valueRecords) {
-        try {
-            final DiContainer di = mockDiContainer();
-            ChunkFileOut out = new ChunkFileOut(file, di.get(MutatorCatchup.class));
-            ActiveChunk chunk = valueRecords ? new ActiveValChunk(0, "testsuffix", null, out, di.get(GcHelper.class)) :
-                    new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
+            final ChunkFileOut out = new ChunkFileOut(file, createMutatorCatchup());
+            final ActiveChunk chunk = wantValueChunk
+                    ? new ActiveValChunk(0, null, out, mock(GcHelper.class))
+                    : new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
             for (TestRecord record : records) {
                 chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, record.valueBytes);
             }
-            chunk.fsync();
+            out.close();
             return file;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw ExceptionUtil.rethrow(e);
         }
     }
 
     public static File populateValueRecordFile(File file, List<TestRecord> records) {
-        return populateRecordFile(file, records, true);
+        return populateChunkFile(file, records, true);
     }
 
     public static File populateTombRecordFile(File file, List<TestRecord> records) {
-        return populateRecordFile(file, records, false);
+        return populateChunkFile(file, records, false);
     }
 
     public static List<TestRecord> generateRandomRecords(AtomicInteger counter, int count) {
@@ -348,14 +346,14 @@ public class HotRestartTestUtil {
     public static class TestRecord {
         public final long recordSeq;
         public final long keyPrefix;
-        public final byte[] keyBytes;
-        public final byte[] valueBytes;
+        public byte[] keyBytes;
+        public byte[] valueBytes;
 
         public TestRecord(AtomicInteger counter) {
             this.keyPrefix = counter.incrementAndGet();
             this.recordSeq = counter.incrementAndGet();
             this.keyBytes = new byte[8];
-            this.valueBytes = new byte[8];
+            this.valueBytes = new byte[80];
             for (int i = 0; i < 8; i++) {
                 this.keyBytes[i] = (byte) counter.incrementAndGet();
                 this.valueBytes[i] = (byte) counter.incrementAndGet();

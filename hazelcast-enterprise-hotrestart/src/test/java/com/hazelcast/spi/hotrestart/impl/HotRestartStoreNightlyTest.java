@@ -13,7 +13,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({NightlyTest.class, ParallelTest.class})
@@ -30,7 +30,7 @@ public class HotRestartStoreNightlyTest {
     }
 
     private void exercise(boolean offHeap) throws Exception {
-        final File testingHome = hotRestartHome(getClass(), testName);
+        final File testingHome = isolatedFolder(getClass(), testName);
         final TestProfile p = new TestProfile.Default();
         p.testCycleCount = 20;
         p.exerciseTimeSeconds = 30;

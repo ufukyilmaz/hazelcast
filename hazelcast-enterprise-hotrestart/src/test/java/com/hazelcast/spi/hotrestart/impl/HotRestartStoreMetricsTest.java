@@ -28,7 +28,7 @@ import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.SYSPROP_VAL_CHUNK
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createLoggingService;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.runWithPausedGC;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -53,7 +53,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         System.setProperty(SYSPROP_TOMB_CHUNK_SIZE_LIMIT, String.valueOf(8));
         System.setProperty(SYSPROP_VAL_CHUNK_SIZE_LIMIT, String.valueOf(8));
         value = new byte[valChunkSizeLimit()];
-        testingHome = hotRestartHome(getClass(), testName);
+        testingHome = isolatedFolder(getClass(), testName);
         delete(testingHome);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setHomeDir(new File(testingHome, storeName))

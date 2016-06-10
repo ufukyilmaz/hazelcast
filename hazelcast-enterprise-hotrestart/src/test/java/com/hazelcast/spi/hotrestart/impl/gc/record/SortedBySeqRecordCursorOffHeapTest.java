@@ -1,11 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.elastic.LongArray;
+import com.hazelcast.internal.memory.MemoryAccessor;
 import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.spi.hotrestart.KeyHandleOffHeap;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.test.AssertEnabledFilterRule;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -23,8 +25,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey1At;
+import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.addrOfKey2At;
 import static com.hazelcast.internal.util.hashslot.impl.HashSlotArray16byteKeyImpl.valueAddr2slotBase;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.mockDiContainer;
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createMutatorCatchup;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -45,16 +50,16 @@ public class SortedBySeqRecordCursorOffHeapTest {
 
     @Before
     public void before() {
-        mc = mockDiContainer().get(MutatorCatchup.class);
+        mc = createMutatorCatchup();
     }
 
     @Test(expected = NullPointerException.class)
-    public void seqsAndSlotBasesAreNull() {
+    public void when_seqsAndSlotBasesAreNull_then_NPE() {
         new SortedBySeqRecordCursorOffHeap(null, 8, memMgr, mock(MutatorCatchup.class));
     }
 
     @Test
-    public void initialisationAndIteration() {
+    public void advanceNonEmpty_returnsTrue() {
         LongArray seqsAndSlotBases = new LongArray(memMgr, 8);
         SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, memMgr,
                 mock(MutatorCatchup.class));
@@ -62,19 +67,43 @@ public class SortedBySeqRecordCursorOffHeapTest {
         assertTrue(cursor.advance());
     }
 
+    @Test
+    public void asKeyHandle_reflectsTheKeyHandleAtCursorPos() {
+        // Given
+        final long khAddress = 13;
+        final long khSequence = 17;
+
+        final long slotBase = memMgr.getAllocator().allocate(2 * LONG_SIZE_IN_BYTES);
+        final MemoryAccessor mem = memMgr.getAccessor();
+        mem.putLong(addrOfKey1At(slotBase), khAddress);
+        mem.putLong(addrOfKey2At(slotBase), khSequence);
+        final LongArray seqsAndSlotBases = new LongArray(memMgr, 2);
+        seqsAndSlotBases.set(1, slotBase);
+        final SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 2, memMgr, mc);
+        cursor.advance();
+
+        // When
+        final KeyHandleOffHeap kh = cursor.asKeyHandle();
+
+        // Then
+        assertEquals(khAddress, kh.address());
+        assertEquals(khSequence, kh.sequenceId());
+    }
+
     @Test(expected = AssertionError.class)
     @RequireAssertEnabled
-    public void initializeDisposeAndIterate() {
+    public void when_advanceAfterDispose_then_assertionError() {
+        // Given
         LongArray seqsAndSlotBases = new LongArray(memMgr, 8);
         SortedBySeqRecordCursorOffHeap cursor = new SortedBySeqRecordCursorOffHeap(seqsAndSlotBases, 8, memMgr, mc);
-
         cursor.dispose();
 
+        // When - Then
         cursor.advance();
     }
 
     @Test
-    public void recordsShouldBeOrderedBySequenceInCursor() {
+    public void advance_traversesInSequenceOrder() {
         // GIVEN
         int count = 1 << 11;
         LongArray seqsAndSlotBases = initSeqsAndSlotBases(memMgr, 1, count);
@@ -93,7 +122,7 @@ public class SortedBySeqRecordCursorOffHeapTest {
     }
 
     @Test
-    public void mutatorCatchupShouldBeCalledInCursorAtLeastCountTimes() {
+    public void mutatorCatchup_calledAtLeastCountTimes() {
         // GIVEN
         int count = 1 << 11;
         MutatorCatchup mc = mock(MutatorCatchup.class);

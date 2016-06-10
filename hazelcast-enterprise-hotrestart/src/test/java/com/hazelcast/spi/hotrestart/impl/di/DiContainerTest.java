@@ -1,10 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl.di;
 
+import com.hazelcast.nio.Disposable;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
@@ -13,10 +16,13 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class DiContainerTest {
+    @Rule
+    public final ExpectedException exceptionRule = ExpectedException.none();
 
     private final DiContainer di = new DiContainer();
 
@@ -29,8 +35,7 @@ public class DiContainerTest {
         final T1 t1 = di.get(T1.class);
 
         // Then
-        assertNotNull(t1);
-        assertEquals(t1, di.get(T1.class));
+        assertSame(t1, di.get(T1.class));
     }
 
     @Test
@@ -42,21 +47,43 @@ public class DiContainerTest {
         final Object t1 = di.get("t1");
 
         // Then
-        assertNotNull(t1);
-        assertEquals(t1, di.get("t1"));
+        assertSame(t1, di.get("t1"));
     }
 
     @Test
     public void when_depClass_then_getIt() {
         // Given
-        di.dep(T2.class);
+        di.dep((Object) T2.class); // upcast to exercise a codepath in dep(Object)
 
         // When
         final T2 t2 = di.get(T2.class);
 
         // Then
         assertNotNull(t2);
-        assertEquals(t2, di.get(T2.class));
+        assertSame(t2, di.get(T2.class));
+    }
+
+    @Test
+    public void when_depDeclaredClassWithInstanceOfDifferentClass_then_getIt() {
+        // Given
+        final T2 t2 = new T2();
+        di.dep(Object.class, t2);
+
+        // When - Then
+        assertSame(t2, di.get(Object.class));
+    }
+
+    @Test
+    public void when_depDeclaredClassAndActualClass_then_getIt() {
+        // Given
+        di.dep(T2.class, T2Sub.class);
+
+        // When
+        final T2 t2 = di.get(T2.class);
+
+        // Then
+        assertNotNull(t2);
+        assertSame(t2, di.get(T2.class));
     }
 
     @Test
@@ -69,7 +96,33 @@ public class DiContainerTest {
 
         // Then
         assertNotNull(t2);
-        assertEquals(t2, di.get("t2"));
+        assertSame(t2, di.get("t2"));
+    }
+
+    @Test
+    public void when_depAfterInitializeAll_then_wiredImmediately() {
+        // Given
+        di.dep(new T2());
+        di.wireAndInitializeAll();
+
+        // When
+        di.dep(new T1());
+
+        // Then
+        assertNotNull(di.get(T1.class).t2);
+    }
+
+    @Test
+    public void when_depDisposable_then_disposeCalled() {
+        // Given
+        final DisposableThing dt = new DisposableThing();
+        di.dep(dt).disposable();
+
+        // When
+        di.dispose();
+
+        // Then
+        assertTrue(dt.disposed);
     }
 
     @Test
@@ -120,6 +173,18 @@ public class DiContainerTest {
     }
 
     @Test
+    public void when_injectIntoField_butDepMissing_then_exception() {
+        // Given
+        di.dep(new T1());
+
+        // Then
+        exceptionRule.expect(DiException.class);
+
+        // When
+        di.wireAndInitializeAll();
+    }
+
+    @Test
     public void when_injectIntoFieldByName_then_getDep() {
         // Given
         di.dep("t2", new T2())
@@ -132,6 +197,19 @@ public class DiContainerTest {
         final T3 t3 = di.get(T3.class);
         assertNotNull(t3);
         assertNotNull(t3.t2);
+    }
+
+    @Test
+    public void when_injectIntoFieldByName_butNameMissing_then_Exception() {
+        // Given
+        di.dep("brokent2", new T2())
+          .dep(new T3());
+
+        // Then
+        exceptionRule.expect(DiException.class);
+
+        // When
+        di.wireAndInitializeAll();
     }
 
     @Test
@@ -149,6 +227,19 @@ public class DiContainerTest {
         assertNotNull(t6);
         assertNotNull(t6.t1);
         assertNotNull(t6.t2);
+    }
+
+    @Test
+    public void when_injectIntoMethod_butMethodFails_then_exception() {
+        // Given
+        di.dep(new WithDefectiveMethods(0))
+          .dep(new T2());
+
+        // Then
+        exceptionRule.expect(DiException.class);
+
+        // When
+        di.wireAndInitializeAll();
     }
 
     @Test
@@ -193,18 +284,85 @@ public class DiContainerTest {
     }
 
     @Test
+    public void when_instantiate_butCxorFails_then_exception() {
+        exceptionRule.expect(DiException.class);
+        di.instantiate(WithDefectiveMethods.class);
+    }
+
+    @Test
+    public void when_instantiateWithoutInjectCxor_then_exception() {
+        exceptionRule.expect(DiException.class);
+        di.instantiate(T1.class);
+    }
+
+    @Test
+    public void when_instantiateAbstractClass_then_exception() {
+        exceptionRule.expect(DiException.class);
+        di.instantiate(AbstractClass.class);
+    }
+
+    @Test
+    public void getByNameAssertingType() {
+        // Given
+        final T2 t2 = new T2();
+        di.dep("t2", t2);
+
+        // When - Then
+        assertSame(t2, di.get("t2", T2.class));
+    }
+
+    @Test
+    public void when_callWireAndInitializeAll_twice_thenFail() {
+        di.wireAndInitializeAll();
+        exceptionRule.expect(DiException.class);
+        di.wireAndInitializeAll();
+    }
+
+    @Test
     public void when_createSubContainer_then_seeItsContents() {
         // Given
-        di.dep(new T2());
+        final T2 t2ByType = new T2();
+        final T2 t2ByName = new T2();
+        final String t2Name = "t2";
+        di.dep(t2ByType);
+        di.dep(t2Name, t2ByName);
 
         // When
-        final DiContainer di2 = new DiContainer(di);
-        di2.dep(new T1()).wireAndInitializeAll();
+        final DiContainer subContainer = new DiContainer(di);
+        final T1 t1 = new T1();
+        subContainer.dep(t1).wireAndInitializeAll();
 
         // Then
-        final T1 t1 = di2.get(T1.class);
-        assertNotNull(t1);
-        assertEquals(di.get(T2.class), t1.t2);
+        assertSame(t2ByType, t1.t2);
+        assertSame(subContainer.get(t2Name), t2ByName);
+    }
+
+    @Test
+    public void invokeGivenMethod() {
+        // Given
+        final T2 t2 = new T2();
+        di.dep(t2);
+        final WithMethodToInvoke wmti = new WithMethodToInvoke();
+
+        // When
+        di.invoke(wmti, "invokeMe");
+
+        // Then
+        assertSame(t2, wmti.t2);
+    }
+
+    @Test
+    public void when_invokeGivenMethod_butMethodNotFound_then_exception() {
+        // Given
+        final T2 t2 = new T2();
+        di.dep(t2);
+        final WithMethodToInvoke wmti = new WithMethodToInvoke();
+
+        // Then
+        exceptionRule.expect(DiException.class);
+
+        // When
+        di.invoke(wmti, "dontInvokeMe");
     }
 }
 
@@ -214,6 +372,10 @@ class T1 {
 
 class T2 {
     @Inject T2() { }
+}
+
+class T2Sub extends T2 {
+    @Inject T2Sub() { }
 }
 
 class T3 {
@@ -274,6 +436,40 @@ class T8 {
     }
 }
 
+class DisposableThing implements Disposable {
+    boolean disposed;
+
+    @Override public void dispose() {
+        disposed = true;
+    }
+}
+
+class WithMethodToInvoke {
+    T2 t2;
+
+    public void invokeMe(T2 t2) {
+        this.t2 = t2;
+    }
+}
+
 class Cntr {
     int count;
+}
+
+class WithDefectiveMethods {
+    @Inject
+    WithDefectiveMethods() {
+        throw new UnsupportedOperationException("I am a defective constructor");
+    }
+
+    WithDefectiveMethods(int ignored) { }
+
+    @Inject
+    void defectiveMethod(T2 t2) {
+        throw new UnsupportedOperationException("I am a defective method");
+    }
+}
+
+abstract class AbstractClass {
+    @Inject AbstractClass() { }
 }

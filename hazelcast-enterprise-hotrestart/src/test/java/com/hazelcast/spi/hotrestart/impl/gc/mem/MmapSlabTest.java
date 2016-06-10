@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.mem;
 
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -17,7 +18,7 @@ import java.util.Random;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.fillBlock;
 import static com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMallocTest.verifyBlock;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -34,7 +35,7 @@ public class MmapSlabTest {
 
     @Before
     public void setUp() {
-        baseDir = hotRestartHome(getClass(), testName);
+        baseDir = isolatedFolder(getClass(), testName);
         delete(baseDir);
         baseDir.mkdirs();
         mm = new MmapSlab(baseDir, BLOCK_SIZE);
@@ -44,6 +45,17 @@ public class MmapSlabTest {
     public void tearDown() {
         mm.dispose();
         delete(baseDir);
+    }
+
+    @Test(expected = HotRestartException.class)
+    public void when_basedirDoesntExist_then_instantiationFails() {
+        mm = new MmapSlab(new File(baseDir, "bogusDirectory"), BLOCK_SIZE);
+    }
+
+    @Test
+    public void dispose_idempotent() {
+        mm.dispose();
+        mm.dispose();
     }
 
     @Test

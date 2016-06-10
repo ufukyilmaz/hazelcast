@@ -75,25 +75,22 @@ public class HotRestartStoreExerciser {
     private void testFullOperation() throws Exception {
         delete(cfg.homeDir());
         MockStoreRegistry reg = newStoreRegistry();
-        try {
-            if (reg.isEmpty()) {
-                logger.info("Store empty, filling");
-                Thread.sleep(200);
-                fillStore(reg, profile) ;
-            }
-            for (int i = 0; i < profile.testCycleCount; i++) {
-                exercise(reg, cfg, profile);
-                final Map<Long, Long2LongHashMap> summary = summarize(reg);
-                reg.closeHotRestartStore();
-                reg.disposeRecordStores();
-                logger.info("\n\nRestart\n");
-                reg = newStoreRegistry();
-                verifyRestartedStore(summary, reg);
-            }
+        if (reg.isEmpty()) {
+            logger.info("Store empty, filling");
+            Thread.sleep(200);
+            fillStore(reg, profile) ;
+        }
+        for (int i = 0; i < profile.testCycleCount; i++) {
+            exercise(reg, cfg, profile);
+            final Map<Long, Long2LongHashMap> summary = summarize(reg);
             reg.closeHotRestartStore();
             reg.disposeRecordStores();
-        } finally {
+            logger.info("\n\nRestart\n");
+            reg = newStoreRegistry();
+            verifyRestartedStore(summary, reg);
         }
+        reg.closeHotRestartStore();
+        reg.disposeRecordStores();
     }
 
     private MockStoreRegistry newStoreRegistry() throws InterruptedException {

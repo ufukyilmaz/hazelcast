@@ -9,7 +9,7 @@ import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
 import java.util.Map;
@@ -17,7 +17,7 @@ import java.util.Map;
 /**
  * Migration operation
  */
-public class EWRQueueReplicationOperation extends AbstractOperation implements IdentifiedDataSerializable {
+public class EWRQueueReplicationOperation extends Operation implements IdentifiedDataSerializable {
 
     private EWRMigrationContainer ewrMigrationContainer = new EWRMigrationContainer();
 
@@ -68,7 +68,7 @@ public class EWRQueueReplicationOperation extends AbstractOperation implements I
                 String publisherName = publisherEntry.getKey();
                 PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
                 WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
-                for (Map.Entry<String, WanReplicationEventQueue>  entry : eventQueueMap.entrySet()) {
+                for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
                     publisher.addMapQueue(entry.getKey(), getPartitionId(), entry.getValue());
                 }
             }
@@ -84,7 +84,7 @@ public class EWRQueueReplicationOperation extends AbstractOperation implements I
                 String publisherName = publisherEntry.getKey();
                 PartitionWanEventQueueMap eventQueueMap = publisherEntry.getValue();
                 WanReplicationEndpoint publisher = getEWRService().getEndpoint(wanRepName, publisherName);
-                for (Map.Entry<String, WanReplicationEventQueue>  entry : eventQueueMap.entrySet()) {
+                for (Map.Entry<String, WanReplicationEventQueue> entry : eventQueueMap.entrySet()) {
                     publisher.addCacheQueue(entry.getKey(), getPartitionId(), entry.getValue());
                 }
             }

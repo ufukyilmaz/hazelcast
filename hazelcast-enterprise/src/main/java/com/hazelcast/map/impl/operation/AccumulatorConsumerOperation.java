@@ -14,8 +14,8 @@ import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PublisherAccumulatorHandler;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
-import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.spi.partition.IPartitionService;
@@ -29,7 +29,7 @@ import static com.hazelcast.util.Preconditions.checkPositive;
  * Processes remaining items in {@link Accumulator} instances on a partition.
  * If the partition is not owned by this node, {@link Accumulator} will be removed.
  */
-public class AccumulatorConsumerOperation extends AbstractOperation implements PartitionAwareOperation {
+public class AccumulatorConsumerOperation extends Operation implements PartitionAwareOperation {
 
     private int maxProcessableAccumulatorCount;
     private Queue<Accumulator> accumulators;

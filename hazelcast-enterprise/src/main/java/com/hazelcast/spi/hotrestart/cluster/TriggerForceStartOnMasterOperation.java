@@ -2,13 +2,13 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 /**
  * Operation which is sent to master by members to initiate force start process on master
  */
-public class TriggerForceStartOnMasterOperation extends AbstractOperation implements JoinOperation {
+public class TriggerForceStartOnMasterOperation extends Operation implements JoinOperation {
 
     @Override
     public void run() throws Exception {

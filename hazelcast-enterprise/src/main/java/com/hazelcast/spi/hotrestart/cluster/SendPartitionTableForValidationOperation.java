@@ -4,7 +4,7 @@ import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -17,7 +17,7 @@ import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COU
  * during cluster-wide validation phase.
  */
 public class SendPartitionTableForValidationOperation
-        extends AbstractOperation
+        extends Operation
         implements JoinOperation {
 
     private Address[][] partitionTable;

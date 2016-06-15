@@ -1,24 +1,25 @@
 package com.hazelcast.enterprise.wan.operation;
 
-import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.internal.cluster.impl.operations.WanReplicationOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 
 import java.io.IOException;
 
 /**
  * Operation to be sent to target WAN members
  */
-public class WanOperation extends AbstractOperation implements WanReplicationOperation {
+public class WanOperation extends Operation implements WanReplicationOperation {
 
     private Data event;
     private WanAcknowledgeType acknowledgeType;
 
-    public WanOperation() { }
+    public WanOperation() {
+    }
 
     public WanOperation(Data event, WanAcknowledgeType acknowledgeType) {
         this.event = event;

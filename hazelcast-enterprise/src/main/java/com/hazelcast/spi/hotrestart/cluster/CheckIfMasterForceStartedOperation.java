@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
@@ -11,7 +11,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * Operation which is sent to master by members while waiting all members to join.
  * This operation is necessary since waiting members will not notice if force start is triggered while waiting all members to join
  */
-public class CheckIfMasterForceStartedOperation extends AbstractOperation implements JoinOperation {
+public class CheckIfMasterForceStartedOperation extends Operation implements JoinOperation {
 
     @Override
     public void run() throws Exception {

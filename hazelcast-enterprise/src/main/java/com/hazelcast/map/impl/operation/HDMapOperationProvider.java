@@ -26,7 +26,6 @@ import com.hazelcast.map.merge.MapMergePolicy;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.spi.OperationFactory;
-
 import java.util.List;
 import java.util.Set;
 
@@ -185,6 +184,16 @@ public class HDMapOperationProvider implements MapOperationProvider {
     @Override
     public MapOperation createLoadMapOperation(String name, boolean replaceExistingValues) {
         return new HDLoadMapOperation(name, replaceExistingValues);
+    }
+
+    @Override
+    public MapOperation createFetchKeysOperation(String name, int lastTableIndex, int fetchSize) {
+        return new HDMapFetchKeysOperation(name, lastTableIndex, fetchSize);
+    }
+
+    @Override
+    public MapOperation createFetchEntriesOperation(String name, int lastTableIndex, int fetchSize) {
+        return new HDMapFetchEntriesOperation(name, lastTableIndex, fetchSize);
     }
 
     @Override

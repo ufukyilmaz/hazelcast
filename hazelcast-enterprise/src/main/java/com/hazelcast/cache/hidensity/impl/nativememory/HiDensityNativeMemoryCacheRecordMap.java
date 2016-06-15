@@ -2,18 +2,19 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.cache.hidensity.SampleableHiDensityCacheRecordMap;
-import com.hazelcast.cache.impl.CacheKeyIteratorResult;
+import com.hazelcast.cache.impl.CacheEntryIterationResult;
+import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordMap;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.util.Clock;
-
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author sozal 11/02/14
@@ -72,13 +73,12 @@ public class HiDensityNativeMemoryCacheRecordMap
     }
 
     @Override
-    public CacheKeyIteratorResult fetchNext(int nextTableIndex, int size) {
+    public CacheKeyIterationResult fetchKeys(int nextTableIndex, int size) {
         long now = Clock.currentTimeMillis();
-        SlottableIterator<Map.Entry<Data, HiDensityNativeMemoryCacheRecord>> iter =
-                iterator(nextTableIndex);
-        List<Data> keys = new ArrayList<Data>();
+        SlottableIterator<Entry<Data, HiDensityNativeMemoryCacheRecord>> iter = iterator(nextTableIndex);
+        List<Data> keys = new ArrayList<Data>(size);
         for (int i = 0; i < size && iter.hasNext(); i++) {
-            Map.Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
+            Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
             Data key = entry.getKey();
             HiDensityNativeMemoryCacheRecord record = entry.getValue();
             if (record.isExpiredAt(now)) {
@@ -87,8 +87,29 @@ public class HiDensityNativeMemoryCacheRecordMap
             keys.add(recordProcessor.convertData(key, DataType.HEAP));
         }
 
-        return new CacheKeyIteratorResult(keys, iter.getNextSlot());
+        return new CacheKeyIterationResult(keys, iter.getNextSlot());
     }
+
+    @Override
+    public CacheEntryIterationResult fetchEntries(int nextTableIndex, int size) {
+        long now = Clock.currentTimeMillis();
+        SlottableIterator<Entry<Data, HiDensityNativeMemoryCacheRecord>> iter = iterator(nextTableIndex);
+        List<Entry<Data, Data>> entries = new ArrayList<Entry<Data, Data>>(size);
+        for (int i = 0; i < size && iter.hasNext(); i++) {
+            Entry<Data, HiDensityNativeMemoryCacheRecord> entry = iter.next();
+            Data nativeKey = entry.getKey();
+            HiDensityNativeMemoryCacheRecord record = entry.getValue();
+            if (record.isExpiredAt(now)) {
+                continue;
+            }
+            NativeMemoryData nativeValue = record.getValue();
+            Data key = recordProcessor.convertData(nativeKey, DataType.HEAP);
+            Data value = recordProcessor.convertData(nativeValue, DataType.HEAP);
+            entries.add(new AbstractMap.SimpleEntry<Data, Data>(key, value));
+        }
+        return new CacheEntryIterationResult(entries, iter.getNextSlot());
+    }
+
 
     private final class CacheEvictableSamplingEntry
             extends EvictableSamplingEntry

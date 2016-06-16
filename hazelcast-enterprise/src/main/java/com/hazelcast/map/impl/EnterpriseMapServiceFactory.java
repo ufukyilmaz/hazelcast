@@ -3,11 +3,11 @@ package com.hazelcast.map.impl;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublishingService;
 import com.hazelcast.spi.ClientAwareService;
 import com.hazelcast.spi.EventPublishingService;
-import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainHandlerService;
+import com.hazelcast.spi.impl.DelegatingMigrationAwareService;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.
@@ -28,9 +28,9 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     }
 
     @Override
-    MigrationAwareService createMigrationAwareService() {
+    DelegatingMigrationAwareService createMigrationAwareService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapMigrationAwareService(mapServiceContext);
+        return new DelegatingMigrationAwareService(new EnterpriseMapMigrationAwareService(mapServiceContext));
     }
 
     @Override

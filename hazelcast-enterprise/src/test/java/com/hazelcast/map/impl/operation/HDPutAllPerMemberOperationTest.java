@@ -125,10 +125,21 @@ public class HDPutAllPerMemberOperationTest extends AbstractHDOperationTest {
 
         @Override
         public void runOperationOnCallingThread(Operation op) {
+            run(op);
         }
 
         @Override
         public void executeOperation(Operation op) {
+            execute(op);
+        }
+
+        @Override
+        public void run(Operation op) {
+        }
+
+        @Override
+        public void execute(Operation op) {
+
         }
 
         @Override

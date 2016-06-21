@@ -12,6 +12,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.core.IAtomicReference;
+import com.hazelcast.core.ICacheManager;
 import com.hazelcast.core.ICountDownLatch;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IList;
@@ -141,6 +142,20 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         this.node = node;
     }
 
+    private class CacheManagerDelegate implements ICacheManager {
+        private final ICacheManager cacheManager;
+
+        CacheManagerDelegate(ICacheManager cacheManager) {
+            this.cacheManager = cacheManager;
+        }
+
+        @Override
+        public <K, V> ICache<K, V> getCache(String name) {
+            checkPermission(new CachePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new CacheInvocationHandler(cacheManager.getCache(name)));
+        }
+    }
+
     private class HazelcastInstanceDelegate implements HazelcastInstance {
         private final HazelcastInstance instance;
 
@@ -267,9 +282,8 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         }
 
         @Override
-        public <K, V> ICache<K, V> getCache(String name) {
-            checkPermission(new CachePermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new CacheInvocationHandler(instance.getCache(name)));
+        public ICacheManager getCacheManager() {
+            return new CacheManagerDelegate(instance.getCacheManager());
         }
 
         @Override

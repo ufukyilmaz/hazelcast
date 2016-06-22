@@ -15,7 +15,7 @@ import org.junit.runner.RunWith;
 import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hotRestartHome;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -28,7 +28,7 @@ public class HotRestartStoreQuickTest {
     private TestProfile profile;
 
     @Before public void setup() {
-        testingHome = hotRestartHome(getClass(), testName);
+        testingHome = isolatedFolder(getClass(), testName);
         delete(testingHome);
         profile = new TestProfile.Default();
     }

@@ -201,7 +201,7 @@ public final class Rebuilder {
 
         final void add(long prefix, KeyHandle kh, long seq, int filePos, int size) {
             grow(size);
-            addStep2(prefix, kh, seq, filePos, size);
+            addStep2(seq, prefix, kh, filePos, size);
         }
 
         abstract StableChunk toStableChunk();
@@ -245,8 +245,8 @@ public final class Rebuilder {
         }
 
         @Override
-        public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
-            insertOrUpdateValue(prefix, kh, seq, size);
+        public void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int ignored, int size) {
+            insertOrUpdateValue(recordSeq, keyPrefix, kh, size);
         }
 
         @Override
@@ -267,8 +267,8 @@ public final class Rebuilder {
         }
 
         @Override
-        public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int filePos, int size) {
-            insertOrUpdateTombstone(prefix, kh, seq, filePos, size);
+        public void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size) {
+            insertOrUpdateTombstone(recordSeq, keyPrefix, kh, filePos, size);
         }
 
         @Override

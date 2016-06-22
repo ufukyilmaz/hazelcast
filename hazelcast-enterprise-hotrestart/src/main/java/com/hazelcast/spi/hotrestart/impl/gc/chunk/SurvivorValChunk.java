@@ -14,16 +14,6 @@ public final class SurvivorValChunk extends WriteThroughChunk {
         super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
     }
 
-    @Override
-    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
-        insertOrUpdateValue(prefix, kh, seq, size);
-    }
-
-    @Override
-    protected int determineSizeLimit() {
-        return valChunkSizeLimit();
-    }
-
     /**
      * Adds a record both to the survivor chunk file and to the chunk's record map.
      * @param r the record
@@ -36,6 +26,16 @@ public final class SurvivorValChunk extends WriteThroughChunk {
         liveRecordCount++;
         grow(r.size());
         out.writeValueRecord(r, prefix, holder.keyBuffer, holder.valueBuffer);
+    }
+
+    @Override
+    public void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int ignored, int size) {
+        throw new UnsupportedOperationException("SurvivorValChunk#insertOrUpdate");
+    }
+
+    @Override
+    protected int determineSizeLimit() {
+        return valChunkSizeLimit();
     }
 
     @Override

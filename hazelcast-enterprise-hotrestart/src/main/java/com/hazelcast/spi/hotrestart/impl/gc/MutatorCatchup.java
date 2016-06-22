@@ -17,7 +17,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Instance of this class is passed around to allow catching up with the mutator thread
  * at any point along the GC cycle codepath.
  */
-// class non-final for the sake of Mockito
+// Class non-final for the sake of Mockito
 @SuppressWarnings("checkstyle:finalclass")
 public class MutatorCatchup {
     /** Base-2 log of the number of calls to {@link #catchupAsNeeded()} before deciding to catch up. */
@@ -71,7 +71,7 @@ public class MutatorCatchup {
     }
 
     /** @return whether the GC thread was asked to stop. */
-    public final boolean shutdownRequested() {
+    public boolean shutdownRequested() {
         return askedToStop;
     }
 

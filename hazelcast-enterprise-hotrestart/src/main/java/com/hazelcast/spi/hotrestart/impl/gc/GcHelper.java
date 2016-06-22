@@ -5,7 +5,6 @@ import com.hazelcast.internal.memory.MemoryManager;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.nio.Disposable;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
@@ -73,15 +72,13 @@ public abstract class GcHelper implements Disposable {
 
     /** Hot Restart Store's home directory. */
     final File homeDir;
-    final RamStoreRegistry ramStoreRegistry;
     final GcLogger logger;
 
     private final AtomicLong chunkSeq = new AtomicLong();
     private volatile long recordSeq;
 
-    GcHelper(File homeDir, RamStoreRegistry ramStoreRegistry, GcLogger logger) {
+    GcHelper(File homeDir, GcLogger logger) {
         this.homeDir = homeDir;
-        this.ramStoreRegistry = ramStoreRegistry;
         this.logger = logger;
     }
 
@@ -94,7 +91,7 @@ public abstract class GcHelper implements Disposable {
     /** Creates a new active value chunk file and returns an instance of {@link ActiveValChunk} that wraps it. */
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
-        return new ActiveValChunk(seq, ACTIVE_CHUNK_SUFFIX, newRecordMap(false),
+        return new ActiveValChunk(seq, newRecordMap(false),
                 chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true), null),
                 this);
     }
@@ -169,7 +166,8 @@ public abstract class GcHelper implements Disposable {
      * @param suffixNow chunk file's current filename suffix
      * @param suffixToBe desired new filename suffix
      */
-    public final void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
+    // method non-final as a courtesy to Mockito
+    public void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
         final File nameNow = chunkFile(base, seq, suffixNow, false);
         final File nameToBe = chunkFile(base, seq, suffixToBe, false);
         if (!nameNow.renameTo(nameToBe)) {
@@ -223,8 +221,8 @@ public abstract class GcHelper implements Disposable {
     public static final class OnHeap extends GcHelper {
 
         @Inject
-        private OnHeap(@Name("homeDir") File homeDir, RamStoreRegistry ramStoreRegistry, GcLogger logger) {
-            super(homeDir, ramStoreRegistry, logger);
+        private OnHeap(@Name("homeDir") File homeDir, GcLogger logger) {
+            super(homeDir, logger);
         }
 
         @Override
@@ -259,9 +257,8 @@ public abstract class GcHelper implements Disposable {
         private final MemoryManager mmapMgrWithCompaction;
 
         @Inject
-        private OffHeap(MemoryAllocator malloc, @Name("homeDir") File homeDir, RamStoreRegistry ramStoreRegistry,
-                        GcLogger logger) {
-            super(homeDir, ramStoreRegistry, logger);
+        private OffHeap(MemoryAllocator malloc, @Name("homeDir") File homeDir, GcLogger logger) {
+            super(homeDir, logger);
             this.ramMgr = wrapWithAmem(malloc);
             this.mmapMgr = wrapWithAmem(new MmapMalloc(new File(homeDir, "mmap"), false));
             this.mmapMgrWithCompaction =

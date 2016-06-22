@@ -57,7 +57,7 @@ public final class StableTombChunk extends StableChunk {
                 filePositions[i++] = r.filePosition();
             }
         }
-        assert i == liveRecordCount;
+        assert i == liveRecordCount : String.format("found %d live records, but liveRecordCount == %d", i, liveRecordCount);
         Arrays.sort(filePositions);
         return filePositions;
     }
@@ -90,6 +90,9 @@ public final class StableTombChunk extends StableChunk {
      */
     @SuppressWarnings("checkstyle:magicnumber")
     public static double benefitToCost(long garbage, long size) {
+        if (size == 0) {
+            return Double.POSITIVE_INFINITY;
+        }
         // Benefit is the amount of garbage to reclaim.
         // Cost is the I/O cost of copying live data (proportional to the amount of live data).
         // Benefit-to-cost the ratio of benefit to cost.

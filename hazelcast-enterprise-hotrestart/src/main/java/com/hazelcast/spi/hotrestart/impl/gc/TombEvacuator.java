@@ -59,7 +59,7 @@ final class TombEvacuator {
                 ensureSurvivor();
                 final long posBefore = positionInUnitsOfBufsize(survivor.size());
                 final boolean full = survivor.addStep1(tfa, filePos);
-                survivor.addStep2(tfa.keyPrefix(), kh, tfa.recordSeq(), tfa.recordSize());
+                survivor.addStep2(tfa.recordSeq(), tfa.keyPrefix(), kh, tfa.recordSize());
                 trackers.get(kh).moveToChunk(survivor.seq);
                 if (positionInUnitsOfBufsize(survivor.size()) != posBefore) {
                     mc.catchupNow();

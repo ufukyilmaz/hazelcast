@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.mockDiContainer;
+import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createMutatorCatchup;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +31,7 @@ public class TombChunkSelectorTest {
 
     @Before
     public void before() {
-        mc = mockDiContainer().get(MutatorCatchup.class);
+        mc = createMutatorCatchup();
     }
 
     @Test

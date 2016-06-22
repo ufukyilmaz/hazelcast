@@ -1,6 +1,5 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-import com.hazelcast.core.HazelcastException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 
@@ -105,7 +104,7 @@ public abstract class ChunkFilesetCursor {
         final String nameNow = activeChunkFile.getName();
         final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_CHUNK_SUFFIX.length());
         if (!activeChunkFile.renameTo(new File(activeChunkFile.getParent(), nameToBe))) {
-            throw new HazelcastException("Failed to rename " + nameNow + " to " + nameToBe);
+            throw new HotRestartException("Failed to rename " + nameNow + " to " + nameToBe);
         }
     }
 

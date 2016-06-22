@@ -25,7 +25,8 @@ public class OnHeapOffHeapTestBase {
         return asList(new Object[][] { {false}, {true} });
     }
 
-    @Parameter public boolean offHeap;
+    @Parameter
+    public boolean offHeap;
 
     protected final int keyPrefix = 1;
     protected final int tombstoneKeyPrefix = keyPrefix + 1;
@@ -34,13 +35,15 @@ public class OnHeapOffHeapTestBase {
     protected KeyHandle keyHandle;
     protected KeyHandle tombstoneKeyHandle;
 
-    @Before public void generalSetup() {
+    @Before
+    public void generalSetup() {
         memMgr = new MemoryManagerBean(new StandardMemoryManager(new MemorySize(64, KILOBYTES)), AMEM);
         keyHandle = keyHandle(keyPrefix);
         tombstoneKeyHandle = keyHandle(tombstoneKeyPrefix);
     }
 
-    @After public void destroy() {
+    @After
+    public void destroy() {
         memMgr.dispose();
     }
 

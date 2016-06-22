@@ -151,7 +151,7 @@ public final class DiContainer implements Disposable {
      * @param actualType the type to instantiate
      * @return {@code this}
      */
-    public DiContainer dep(Class<?> declaredType, Class<?> actualType) {
+    public <T> DiContainer dep(Class<? super T> declaredType, Class<T> actualType) {
         final Object dep = declaredType.cast(instantiate(actualType));
         depsByType.put(declaredType, dep);
         onRegistration(dep);

@@ -52,8 +52,8 @@ public final class RecordMapOffHeap implements RecordMap {
         return new RecordMapOffHeap(memMgr, stableMemMgr, false, DEFAULT_INITIAL_CAPACITY);
     }
 
-    public static RecordMapOffHeap newTombstoneMapOffHeap(MemoryManager malloc) {
-        return new RecordMapOffHeap(malloc, null, true, DEFAULT_INITIAL_CAPACITY);
+    public static RecordMapOffHeap newTombstoneMapOffHeap(MemoryManager memMgr) {
+        return new RecordMapOffHeap(memMgr, null, true, DEFAULT_INITIAL_CAPACITY);
     }
 
     @Override

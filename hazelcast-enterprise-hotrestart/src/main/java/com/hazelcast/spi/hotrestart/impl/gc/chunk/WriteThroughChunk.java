@@ -25,9 +25,6 @@ public abstract class WriteThroughChunk extends GrowingChunk {
     }
 
     public void close() {
-        if (out == null) {
-            return;
-        }
         out.close();
         gcHelper.changeSuffix(base(), seq, FNAME_SUFFIX + suffix, FNAME_SUFFIX);
     }

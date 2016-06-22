@@ -7,6 +7,14 @@ import com.hazelcast.internal.util.collection.LongSet;
  * Empty {@code LongSet}.
  */
 final class EmptyLongSet implements LongSet, LongCursor {
+    private static final EmptyLongSet INSTANCE = new EmptyLongSet();
+
+    private EmptyLongSet() { }
+
+    public static EmptyLongSet emptyLongSet() {
+        return INSTANCE;
+    }
+
     @Override
     public boolean add(long value) {
         throw new UnsupportedOperationException("EmptyLongSet.add");

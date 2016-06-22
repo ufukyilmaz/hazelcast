@@ -4,6 +4,8 @@ import com.hazelcast.internal.util.collection.LongSet;
 import com.hazelcast.spi.hotrestart.impl.RestartItem;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
 
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.EmptyLongSet.emptyLongSet;
+
 /**
  * Represents a chunk whose on-disk contents are stable (immutable).
  */
@@ -17,25 +19,28 @@ public final class StableValChunk extends StableChunk {
      * leading to the resurrection of dead records. To prevent that, this set holds the key prefixes of all
      * records in this chunk interred by a prefix tombstone and is consulted in
      * {@link com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager.Sweeper#markLiveTombstones(Chunk)}.
+     * <p>
+     * This set will be empty for all chunks except those that were constructed by {@code Rebuilder} during
+     * Hot Restart.
      */
     public final LongSet clearedPrefixesFoundAtRestart;
 
     public StableValChunk(ActiveValChunk from) {
         super(from);
-        this.clearedPrefixesFoundAtRestart = new EmptyLongSet();
+        this.clearedPrefixesFoundAtRestart = emptyLongSet();
     }
 
     public StableValChunk(
             long seq, RecordMap records, int liveRecordCount, long size, long garbage, boolean needsDismissing
     ) {
-        this(seq, records, new EmptyLongSet(), liveRecordCount, size, garbage, needsDismissing);
+        this(seq, records, emptyLongSet(), liveRecordCount, size, garbage, needsDismissing);
     }
 
     public StableValChunk(long seq, RecordMap records, LongSet clearedPrefixesFoundAtRestart, int liveRecordCount,
                           long size, long garbage, boolean needsDismissing) {
         super(seq, records, liveRecordCount, size, garbage, needsDismissing);
         this.clearedPrefixesFoundAtRestart = clearedPrefixesFoundAtRestart.isEmpty()
-                ? new EmptyLongSet() : clearedPrefixesFoundAtRestart;
+                ? emptyLongSet() : clearedPrefixesFoundAtRestart;
     }
 
     /** @return the GC cost of this chunk (amount of live data in it). */

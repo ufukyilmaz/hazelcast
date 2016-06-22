@@ -11,8 +11,8 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
  */
 public final class ActiveValChunk extends WriteThroughChunk implements ActiveChunk {
 
-    public ActiveValChunk(long seq, String suffix, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
-        super(seq, suffix, records, out, gcHelper);
+    public ActiveValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
+        super(seq, ACTIVE_CHUNK_SUFFIX, records, out, gcHelper);
     }
 
     @Override
@@ -29,8 +29,8 @@ public final class ActiveValChunk extends WriteThroughChunk implements ActiveChu
     }
 
     @Override
-    public void insertOrUpdate(long prefix, KeyHandle kh, long seq, int ignored, int size) {
-        insertOrUpdateValue(prefix, kh, seq, size);
+    public void insertOrUpdate(long recordSeq, long keyPrefix, KeyHandle kh, int ignored, int size) {
+        insertOrUpdateValue(recordSeq, keyPrefix, kh, size);
     }
 
     @Override

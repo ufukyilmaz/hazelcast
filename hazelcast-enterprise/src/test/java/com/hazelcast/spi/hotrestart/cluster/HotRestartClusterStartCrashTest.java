@@ -1,4 +1,4 @@
-package com.hazelcast.spi.hotrestart;
+package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
@@ -8,9 +8,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
-import com.hazelcast.spi.hotrestart.cluster.SendPartitionTableForValidationOperation;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;

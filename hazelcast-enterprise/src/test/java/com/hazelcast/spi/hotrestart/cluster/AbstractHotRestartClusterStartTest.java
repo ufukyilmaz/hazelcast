@@ -9,12 +9,12 @@ import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.After;
@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
@@ -194,14 +195,39 @@ public abstract class AbstractHotRestartClusterStartTest {
         return new Address("127.0.0.1", localAddress, port);
     }
 
-    protected void startAndCrashInstances(final List<Integer> ports)
+    protected void startAndCrashInstances(List<Integer> ports)
             throws InterruptedException {
-
         HazelcastInstance[] instances = startInstances(ports);
         assertInstancesJoined(ports.size(), instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
         warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
+
+        List<File> dirs = collectHotRestartClusterDirs(instances);
+
         terminateInstances();
+
+        for (File dir : dirs) {
+            final ClusterStateWriter writer = new ClusterStateWriter(dir);
+            try {
+                writer.write(ClusterState.ACTIVE);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private List<File> collectHotRestartClusterDirs(HazelcastInstance[] instances) {
+        List<File> dirs = new ArrayList<File>();
+        for (HazelcastInstance instance : instances) {
+            dirs.add(getHotRestartClusterDir(instance));
+        }
+        return dirs;
+    }
+
+    private File getHotRestartClusterDir(HazelcastInstance instance) {
+        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
+        return nodeExtension.getHotRestartService().getClusterMetadataManager().getHomeDir();
     }
 
     protected void terminateInstances() {
@@ -210,10 +236,6 @@ public abstract class AbstractHotRestartClusterStartTest {
         if (USE_NETWORK) {
             HazelcastInstanceFactory.terminateAll();
         }
-    }
-
-    protected HazelcastInstance getInstance(Address address) {
-        return factory.getInstance(address);
     }
 
     protected Collection<HazelcastInstance> getAllInstances() {

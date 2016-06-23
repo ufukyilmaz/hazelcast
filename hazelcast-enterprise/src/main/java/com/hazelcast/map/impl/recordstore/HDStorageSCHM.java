@@ -12,6 +12,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.serialization.SerializationService;
+
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -163,7 +164,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         //CHECKSTYLE:OFF
         @Override
         public boolean equals(Object o) {
-            if (this != o) {
+            if (this == o) {
                 return true;
             }
 

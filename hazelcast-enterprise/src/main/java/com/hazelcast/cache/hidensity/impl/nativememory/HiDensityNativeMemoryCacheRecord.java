@@ -161,9 +161,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
             if (recordAccessor != null) {
                 return recordAccessor.readData(valueAddress);
             } else {
-                NativeMemoryData nativeMemoryData = new NativeMemoryData();
-                nativeMemoryData.reset(valueAddress);
-                return nativeMemoryData;
+                return new NativeMemoryData().reset(valueAddress);
             }
         }
     }
@@ -225,14 +223,7 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
 
         HiDensityNativeMemoryCacheRecord record = (HiDensityNativeMemoryCacheRecord) o;
 
-        if (address != record.address) {
-            return false;
-        }
-        if (size != record.size) {
-            return false;
-        }
-
-        return true;
+        return address == record.address && size == record.size;
     }
 
     @Override

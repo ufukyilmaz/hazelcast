@@ -10,7 +10,8 @@ import java.io.IOException;
  * Writes cluster state to a specific file.
  */
 class ClusterStateWriter extends AbstractMetadataWriter<ClusterState> {
-    private static final String FILE_NAME = "cluster-state.txt";
+
+    static final String FILE_NAME = "cluster-state.txt";
 
     ClusterStateWriter(File homeDir) {
         super(homeDir);

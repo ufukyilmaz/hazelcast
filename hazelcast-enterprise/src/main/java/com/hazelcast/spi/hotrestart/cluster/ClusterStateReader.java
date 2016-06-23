@@ -11,7 +11,6 @@ import java.io.IOException;
  * Reads cluster state from a specific file.
  */
 class ClusterStateReader extends AbstractMetadataReader {
-    private static final String FILE_NAME = "cluster.state";
 
     private final ILogger logger;
 
@@ -30,7 +29,7 @@ class ClusterStateReader extends AbstractMetadataReader {
 
     @Override
     String getFilename() {
-        return FILE_NAME;
+        return ClusterStateWriter.FILE_NAME;
     }
 
     @Override

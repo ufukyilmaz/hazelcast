@@ -110,6 +110,8 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
 
         <li><a href="#getting-started">Getting Started</a></li>
         <li><a href="#mancenter">Management Center</a></li>
+	<li><a href="#clients-languages">Getting Clients and Language APIs</a></li>
+	<li><a href="#plugins">Hazelcast Plugins</a></li>
         <li><a href="#resources">Training, Tutorials and Events</a></li>
         <li><a href="#community">Hazelcast Community</a></li>
         <li><a href="#support">Support</a></li>
@@ -171,13 +173,6 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
                     native client library to be included on classpath for Hazelcast client. This library contains
                     clients which use the new Hazelcast Binary Client Protocol, introduced in the Hazelcast 3.5 Release.
                 </li>
-                <li><strong>hazelcast-cloud&ndash;<i>${project.version}</i>.jar</strong> &mdash; To connect to a
-                    Hazelcast cluster on AWS as a client or node, include this library.
-                </li>
-                <li><strong>hazelcast-jclouds&ndash;<i>${project.version}</i>.jar</strong> &mdash; To connect to a
-                    Hazelcast cluster with jclouds as a client or node, include this library.
-                </li>
-
                 <li><strong>hazelcast&ndash;enterprise&ndash;<i>${project.version}</i>.jar</strong> &mdash; This library
                     includes Hazelcast (open source) and Hazelcast Enterprise features.
                 </li>
@@ -185,18 +180,8 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
                     is the combination of hazelcast&ndash;enterprise&ndash;<i>version</i>.jar and Hazelcast Enterprise
                     client extensions.
                 </li>
-                <li><strong>hazelcast-hibernate<i>(Hibernate
-                    version)</i>&ndash;<i>${project.version}</i>.jar</strong> &mdash; These are the libraries that
-                    enable Hazelcast to be used as a Hibernate 2nd Level Cache, for Hibernate 3 and 4.
-                </li>
-                <li><strong>hazelcast-jca&ndash;<i>${project.version}</i>.jar</strong> and <strong>hazelcast-jca-rar&ndash;<i>${project.version}</i>.rar</strong> &mdash;
-                    These are the libraries when you want to use a Hazelcast Resource Adapter implementation.
-                </li>
                 <li><strong>hazelcast-spring&ndash;<i>${project.version}</i>.jar</strong> &mdash; This is the library to
                     integrate Hazelcast with Spring based applications.
-                </li>
-                <li><strong>hazelcast-wm&ndash;<i>${project.version}</i>.jar</strong> &mdash; This is the Hazelcast's
-                    session replication module library.
                 </li>
             </ul>
         </li>
@@ -211,7 +196,7 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
             <ul>
                 <li><strong>mancenter&ndash;<i>version</i>.war</strong> &mdash; Hazelcast Management Center. This WAR
                     file is executable (double click on it) to start Management Center or can be deployed as a web
-                    application. Please see the <a href="docs/manual/html/managementcenter.html">Management Center
+                    application. Please see the <a href="docs/manual/html-single/index.html#management-center">Management Center
                         chapter</a> for more information.
                 </li>
                 <li><strong>startManCenter.bat</strong> &mdash; Starts the management center for Windows users.</li>
@@ -237,16 +222,16 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
     <p>Hazelcast Enterprise requires a valid license key. If you are evaluating Hazelcast Enterprise, you should have
         been emailed a trial key. If you are a customer, <a href="mailto:sales@hazelcast.com">Hazelcast Sales</a> will
         provide the key to you. Once you have your key please read <a
-                href="docs/manual/html-single/hazelcast-documentation.html#setting-the-license-key-for-hazelcast-enterprise">Setting
+                href="docs/manual/html-single/index.html#setting-the-license-key">Setting
             the License Key for Hazelcast Enterprise</a> to install it.</p>
 
 
     <h2 id="getting-started">Getting Started</h2>
 
-    <p>First, go through the included <a href="docs/manual/html-single/hazelcast-documentation.html#getting-started">Getting
+    <p>First, go through the included <a href="docs/manual/html-single/index.html#getting-started">Getting
         Started guide</a> to get Hazelcast up and running. Don't miss the sections on <a
-            href="docs/manual/html-single/hazelcast-documentation.html#starting-the-cluster-and-client">starting the
-        cluster and client</a> and <a href="docs/manual/html-single/hazelcast-documentation.html#configuring-hazelcast">configuring
+            href="docs/manual/html-single/index.html#starting-the-member-and-client">starting a
+        Hazelcast member and client</a> and <a href="docs/manual/html-single/index.html.html#understanding-configuration">configuring
         Hazelcast</a>.<br/>
 
     <p>The <a href="http://hazelcast.org/getting-started/">online Getting Started guide</a> includes video tutorials to
@@ -255,8 +240,26 @@ iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
 
     <h2 id="mancenter">Management Center</h2>
 
-    <p>See the included <a href="docs/manual/html/managementcenter.html#management-center">Management Center chapter</a>
+    <p>See the included <a href="docs/manual/html-single/index.html#management-center">Management Center chapter</a>
         for installation instructions and an overview of Management Center.</p>
+
+
+    <h2 id="clients-languages">Getting Clients and Language APIs</h2>
+    <p>All of the following clients and language APIs are open source and supported by Hazelcast. Click on a client or language, and you will be directed to its release page.</p>
+    <ul>
+	<li><a href="http://hazelcast.org/clients/java/" target="_blank">Java Client 3.6.3</a></li>
+	<li><a href="http://hazelcast.org/clients/net/" target="_blank">.NET Client 3.6.3</a></li>
+	<li><a href="http://hazelcast.org/clients/cplusplus/" target="_blank">C++ Client 3.6.3</a></li>
+	<li><a href="http://hazelcast.org/clients/node-js/" target="_blank">Node.js Client 0.3.0</a></li>
+	<li><a href="http://hazelcast.org/clients/python/" target="_blank">Python Client 0.3</a></li>
+	<li><a href="http://hazelcast.org/clients/scala/" target="_blank">Scala Client Binding 0.0.1.12</a></li>
+	<li><a href="http://hazelcast.org/clients/scala/" target="_blank">Scala Member Binding 0.0.1.12</a></li>
+    </ul>
+
+    <p>See <a href="http://hazelcast.org/clients-languages/" target="_blank">Clients & Languages page</a> to see the client/language feature comparison table.</p>
+
+    <h2 id="plugins">Hazelcast Plugins</h2>
+    <p>You can extend Hazelcast's functionality by adding its plugins. Please see <a href="http://hazelcast.org/plugins/">Plugins page</a> to learn about Hazelcast plugins you can use.</p>
 
 
     <h2 id="resources">Training, Tutorials and Events</h2>

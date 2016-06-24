@@ -1,5 +1,5 @@
 
-package com.hazelcast.spi.hotrestart;
+package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
@@ -15,8 +15,13 @@ import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
+import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.KeyHandle;
+import com.hazelcast.spi.hotrestart.RamStore;
+import com.hazelcast.spi.hotrestart.RamStoreRegistry;
+import com.hazelcast.spi.hotrestart.RecordDataSink;
 import com.hazelcast.spi.hotrestart.impl.KeyOnHeap;
 import com.hazelcast.spi.hotrestart.impl.SetOfKeyHandle;
 import com.hazelcast.spi.impl.NodeEngineImpl;

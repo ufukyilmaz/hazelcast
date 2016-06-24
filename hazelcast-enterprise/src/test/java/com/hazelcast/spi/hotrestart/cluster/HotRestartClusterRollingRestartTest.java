@@ -1,4 +1,4 @@
-package com.hazelcast.spi.hotrestart;
+package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;

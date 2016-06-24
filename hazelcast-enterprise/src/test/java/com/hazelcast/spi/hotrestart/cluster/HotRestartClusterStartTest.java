@@ -1,4 +1,4 @@
-package com.hazelcast.spi.hotrestart;
+package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
@@ -6,12 +6,11 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.IOUtil;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -32,7 +31,6 @@ import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/879")
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
 
     private int partitionCount = 271;
@@ -71,7 +69,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestart_afterClusterShutdown_whenClusterState_ACTIVE()
+    public void test_hotRestart_afterClusterCrash_whenClusterState_PASSIVE()
             throws IOException, InterruptedException {
         final List<Integer> ports = acquirePorts(4);
         HazelcastInstance[] instances = startInstances(ports);

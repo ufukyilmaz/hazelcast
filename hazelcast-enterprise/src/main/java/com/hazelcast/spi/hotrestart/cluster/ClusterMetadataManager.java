@@ -207,6 +207,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         return hotRestartStatus.get();
     }
 
+    File getHomeDir() {
+        return homeDir;
+    }
+
     public void receiveForceStartFromMaster(final Address sender) {
         if (!sender.equals(node.getMasterAddress())) {
             logger.warning("Force restart command received from non-master member: " + sender);

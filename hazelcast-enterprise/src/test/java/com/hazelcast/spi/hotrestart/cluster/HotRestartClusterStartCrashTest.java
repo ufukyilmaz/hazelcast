@@ -1,4 +1,4 @@
-package com.hazelcast.spi.hotrestart;
+package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
@@ -8,15 +8,12 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
-import com.hazelcast.spi.hotrestart.cluster.SendPartitionTableForValidationOperation;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -44,7 +41,6 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-@Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/879")
 public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterStartTest {
 
     private Future startNodeFuture;

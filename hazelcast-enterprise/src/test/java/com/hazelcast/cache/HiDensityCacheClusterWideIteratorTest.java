@@ -1,6 +1,9 @@
 package com.hazelcast.cache;
 
+import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
@@ -24,6 +27,15 @@ public class HiDensityCacheClusterWideIteratorTest extends CacheClusterWideItera
                 .setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
         return config;
+    }
+
+    @Override
+    protected CacheConfig createCacheConfig() {
+        CacheConfig cacheConfig = super.createCacheConfig();
+        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        cacheConfig.getEvictionConfig().setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        cacheConfig.getEvictionConfig().setSize(99);
+        return cacheConfig;
     }
 
 }

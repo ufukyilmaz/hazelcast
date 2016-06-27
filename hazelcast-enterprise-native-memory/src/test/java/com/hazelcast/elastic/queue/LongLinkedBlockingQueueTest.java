@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class LongLinkedBlockingQueueTest extends LongQueueTestSupport {
+public class LongLinkedBlockingQueueTest extends LongBlockingQueueTestSupport {
 
     @Override
     protected LongQueue createQueue(HazelcastMemoryManager memoryManager) {

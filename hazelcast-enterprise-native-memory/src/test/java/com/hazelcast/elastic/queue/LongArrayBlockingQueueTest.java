@@ -8,7 +8,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
-public class LongArrayBlockingQueueTest extends LongQueueTestSupport {
+public class LongArrayBlockingQueueTest extends LongBlockingQueueTestSupport {
 
     @Override
     protected LongQueue createQueue(HazelcastMemoryManager memoryManager) {

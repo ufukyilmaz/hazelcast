@@ -13,7 +13,10 @@ import java.util.Map;
 
 /**
  * @author mdogan 15/05/14
+ *
+ * @deprecated Not used
  */
+@Deprecated
 public class CacheIteratorOperation
         extends AbstractHiDensityCacheOperation
         implements ReadonlyOperation {

@@ -17,7 +17,11 @@ import java.util.Map;
 
 /**
  * @author sozal 25/10/14
+ *
+ * @deprecated OSS version ({@link com.hazelcast.cache.impl.operation.CacheKeyIteratorOperation}) is enough,
+ *             no need this EE version
  */
+@Deprecated
 public class CacheKeyIteratorOperation
         extends AbstractHiDensityCacheOperation
         implements ReadonlyOperation {

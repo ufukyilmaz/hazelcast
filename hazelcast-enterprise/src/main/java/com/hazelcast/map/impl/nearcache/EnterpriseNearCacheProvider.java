@@ -16,7 +16,6 @@
 
 package com.hazelcast.map.impl.nearcache;
 
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheExecutor;
@@ -26,6 +25,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.concurrent.ScheduledFuture;
@@ -45,7 +45,8 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
 
     public EnterpriseNearCacheProvider(final MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.serializationService = mapServiceContext.getNodeEngine().getSerializationService();
+        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        this.serializationService = nodeEngine.getSerializationService();
         this.executor = new NearCacheExecutor() {
 
             @Override
@@ -55,12 +56,12 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
                         delay, unit);
             }
         };
-        this.nearCacheManager = new HiDensityNearCacheManager();
+        this.nearCacheManager = new HDMapNearCacheManager(nodeEngine.getPartitionService().getPartitionCount());
         this.nearCacheContext =
                 new NearCacheContext(nearCacheManager,
-                                     serializationService,
-                                     executor,
-                                     mapServiceContext.getNodeEngine().getConfigClassLoader());
+                        serializationService,
+                        executor,
+                        mapServiceContext.getNodeEngine().getConfigClassLoader());
     }
 
     @Override

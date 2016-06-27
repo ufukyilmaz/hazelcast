@@ -20,6 +20,7 @@ import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.map.impl.nearcache.ClientHDNearCacheRegistry;
 import com.hazelcast.client.spi.ClientExecutionService;
+import com.hazelcast.client.spi.ClientPartitionService;
 import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NearCacheConfig;
@@ -39,9 +40,11 @@ public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
 
     public EnterpriseMapClientProxyFactory(ClientExecutionService executionService,
                                            SerializationService serializationService,
-                                           ClientConfig clientConfig) {
+                                           ClientConfig clientConfig, ClientPartitionService partitionService) {
         this.clientConfig = clientConfig;
-        this.hdNearCacheRegistry = new ClientHDNearCacheRegistry(executionService, serializationService, clientConfig);
+
+        this.hdNearCacheRegistry
+                = new ClientHDNearCacheRegistry(executionService, serializationService, clientConfig, partitionService);
     }
 
     @Override

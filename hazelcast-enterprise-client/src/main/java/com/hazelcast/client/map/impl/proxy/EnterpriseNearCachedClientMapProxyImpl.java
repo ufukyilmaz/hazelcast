@@ -10,6 +10,7 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.QueryCache;
+import com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.subscriber.InternalQueryCache;
 import com.hazelcast.map.impl.querycache.subscriber.QueryCacheEndToEndProvider;
@@ -67,6 +68,8 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         InMemoryFormat nearCacheInMemoryFormat = getNearCacheInMemoryFormat();
         if (NATIVE == nearCacheInMemoryFormat) {
             nearCache = hdNearCacheRegistry.getOrCreate(name);
+            keyStateMarker = ((StaleReadPreventerNearCacheWrapper) nearCache).getKeyStateMarker();
+
             if (nearCache.isInvalidateOnChange()) {
                 addNearCacheInvalidateListener();
             }

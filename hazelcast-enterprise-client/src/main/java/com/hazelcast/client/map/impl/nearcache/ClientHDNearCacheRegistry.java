@@ -23,6 +23,7 @@ import com.hazelcast.cache.impl.nearcache.NearCacheExecutor;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.spi.ClientExecutionService;
+import com.hazelcast.client.spi.ClientPartitionService;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.map.impl.utils.AbstractRegistry;
 import com.hazelcast.spi.serialization.SerializationService;
@@ -31,22 +32,27 @@ import com.hazelcast.util.ConstructorFunction;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper.wrapAsStaleReadPreventerNearCache;
+
 public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCache> {
 
     private final NearCacheManager nearCacheManager;
     private final NearCacheContext nearCacheContext;
     private final ClientConfig clientConfig;
+    private final ClientPartitionService partitionService;
 
     public ClientHDNearCacheRegistry(ClientExecutionService executionService,
                                      SerializationService serializationService,
-                                     ClientConfig clientConfig) {
+                                     ClientConfig clientConfig, ClientPartitionService partitionService) {
         this.clientConfig = clientConfig;
         this.nearCacheManager = new HiDensityNearCacheManager();
         this.nearCacheContext = new NearCacheContext(nearCacheManager,
                 serializationService,
                 createNearCacheExecutor(executionService),
                 clientConfig.getClassLoader());
+        this.partitionService = partitionService;
     }
+
 
     protected NearCacheExecutor createNearCacheExecutor(final ClientExecutionService executionService) {
         return new NearCacheExecutor() {
@@ -65,7 +71,8 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
             @Override
             public NearCache createNew(String mapName) {
                 NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(mapName);
-                return nearCacheManager.getOrCreateNearCache(mapName, nearCacheConfig, nearCacheContext);
+                NearCache nearCache = nearCacheManager.getOrCreateNearCache(mapName, nearCacheConfig, nearCacheContext);
+                return wrapAsStaleReadPreventerNearCache(nearCache, partitionService.getPartitionCount());
             }
         };
     }

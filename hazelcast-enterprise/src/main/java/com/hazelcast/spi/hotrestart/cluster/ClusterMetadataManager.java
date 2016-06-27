@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
+import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -21,6 +22,7 @@ import com.hazelcast.util.Clock;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -170,16 +172,16 @@ public final class ClusterMetadataManager implements PartitionListener {
             throw new HotRestartException("Cluster-wide load failed!", failure);
         }
         logger.info("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
-        writeMembers();
-        writePartitions();
+        persistMembers();
+        persistPartitions();
         memberListRef.set(null);
         partitionTableRef.set(null);
         localLoadResult.set(null);
     }
 
     public void onMembershipChange() {
-        if (node.getClusterService().getClusterState() == ClusterState.ACTIVE) {
-            writeMembers();
+        if (isClusterActive()) {
+            persistMembers();
         }
     }
 
@@ -188,7 +190,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (logger.isFinestEnabled()) {
             logger.finest("Persisting partition table after " + event);
         }
-        writePartitions();
+        persistPartitions();
     }
 
     // operation thread
@@ -257,10 +259,14 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     public void shutdown() {
-        if (node.getClusterService().getClusterState() == ClusterState.ACTIVE) {
-            writeMembers();
-            writePartitions();
+        persistActiveAndPassiveMembers();
+        if (isClusterActive()) {
+            persistPartitions();
         }
+    }
+
+    private boolean isClusterActive() {
+        return node.getClusterService().getClusterState() == ClusterState.ACTIVE;
     }
 
     // operation thread
@@ -687,19 +693,37 @@ public final class ClusterMetadataManager implements PartitionListener {
         sendOperationToOthers(new AskForLoadCompletionStatusOperation());
     }
 
-    private void writeMembers() {
+    private void persistMembers() {
         if (logger.isFineEnabled()) {
-            logger.fine("Persisting member list...");
+            logger.fine("Persisting members.");
         }
         final ClusterServiceImpl clusterService = node.getClusterService();
         try {
             memberListWriter.write(clusterService.getMembers());
         } catch (IOException e) {
-            logger.severe("While persisting member list", e);
+            logger.severe("While persisting members", e);
         }
     }
 
-    private void writePartitions() {
+    private void persistActiveAndPassiveMembers() {
+        if (logger.isFineEnabled()) {
+            logger.fine("Persisting (active & passive) members.");
+        }
+        try {
+            ClusterServiceImpl clusterService = node.getClusterService();
+            Set<Member> members = clusterService.getMembers();
+            Collection<MemberImpl> removedMembers = clusterService.getMembersRemovedWhileClusterIsNotActive();
+            Collection<Member> allMembers = new ArrayList<Member>(members.size() + removedMembers.size());
+            allMembers.addAll(members);
+            allMembers.addAll(removedMembers);
+
+            memberListWriter.write(allMembers);
+        } catch (IOException e) {
+            logger.severe("While persisting members", e);
+        }
+    }
+
+    private void persistPartitions() {
         if (logger.isFinestEnabled()) {
             logger.finest("Persisting partition table...");
         }

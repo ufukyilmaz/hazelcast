@@ -228,8 +228,8 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createPutAllPerMemberOperation(String name, int[] partitions, MapEntries[] mapEntries) {
-        return new HDPutAllPerMemberOperation(name, partitions, mapEntries);
+    public OperationFactory createPutAllOperationFactory(String name, int[] partitions, MapEntries[] mapEntries) {
+        return new HDPutAllPartitionAwareOperationFactory(name, partitions, mapEntries);
     }
 
     @Override

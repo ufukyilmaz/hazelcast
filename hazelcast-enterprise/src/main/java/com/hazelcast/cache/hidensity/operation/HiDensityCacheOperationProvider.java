@@ -91,11 +91,6 @@ public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationPro
     }
 
     @Override
-    public Operation createKeyIteratorOperation(int lastTableIndex, int fetchSize) {
-        return new CacheKeyIteratorOperation(nameWithPrefix, lastTableIndex, fetchSize);
-    }
-
-    @Override
     public Operation createWanRemoveOperation(String origin, Data key, int completionId) {
         return new WanCacheRemoveOperation(nameWithPrefix, origin, key, completionId);
     }

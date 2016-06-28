@@ -9,7 +9,10 @@ import java.io.IOException;
 
 /**
  * @author mdogan 15/05/14
+ *
+ * @deprecated Not used
  */
+@Deprecated
 public final class CacheIterationResult
         implements IdentifiedDataSerializable {
 

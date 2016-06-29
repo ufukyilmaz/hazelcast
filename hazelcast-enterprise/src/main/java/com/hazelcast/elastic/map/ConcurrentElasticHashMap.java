@@ -337,13 +337,25 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
         }
     }
 
-
     @Override
     public V put(K key, V value) {
         NativeMemoryData k = ss.toData(key, DataType.NATIVE);
         try {
             Segment<V> segment = segmentFor(k);
-            return segment.put(k, value);
+            V oldValue = segment.put(k, value);
+            if (oldValue != null && k != key) {
+                /*
+                 * Since old value is not null, this put is an update and
+                 * because of passed key was not native-memory backed, it has been converted.
+                 * This means that key is already exist and newly allocated key is redundant.
+                 * Therefore dispose it.
+                 *
+                 * Note that, in here if key is already native-memory backed,
+                 * responsibility of disposing redundant key allocation belongs to caller.
+                 */
+                ss.disposeData(k);
+            }
+            return oldValue;
         } catch (NativeOutOfMemoryError e) {
             ss.disposeData(k);
             throw e;
@@ -362,7 +374,20 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
         NativeMemoryData k = ss.toData(key, DataType.NATIVE);
         try {
             Segment<V> segment = segmentFor(k);
-            return segment.set(k, value);
+            boolean added = segment.set(k, value);
+            if (!added && k != key) {
+                /*
+                 * Since it is not adding but updating, this set is an update and
+                 * because of passed key was not native-memory backed, it has been converted.
+                 * This means that key is already exist and newly allocated key is redundant.
+                 * Therefore dispose it.
+                 *
+                 * Note that, in here if key is already native-memory backed,
+                 * responsibility of disposing redundant key allocation belongs to caller.
+                 */
+                ss.disposeData(k);
+            }
+            return added;
         } catch (NativeOutOfMemoryError e) {
             ss.disposeData(k);
             throw e;
@@ -374,7 +399,20 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
         NativeMemoryData k = ss.toData(key, DataType.NATIVE);
         try {
             Segment<V> segment = segmentFor(k);
-            return segment.putIfAbsent(k, value);
+            V oldValue = segment.putIfAbsent(k, value);
+            if (oldValue != null && k != key) {
+                /*
+                 * Since old value is not null, this put is not successful and
+                 * because of passed key was not native-memory backed, it has been converted.
+                 * This means that newly allocated key is redundant.
+                 * Therefore dispose it.
+                 *
+                 * Note that, in here if key is already native-memory backed,
+                 * responsibility of disposing redundant key allocation belongs to caller.
+                 */
+                ss.disposeData(k);
+            }
+            return oldValue;
         } catch (NativeOutOfMemoryError e) {
             ss.disposeData(k);
             throw e;

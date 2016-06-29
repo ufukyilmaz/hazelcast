@@ -3,6 +3,8 @@ package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 
@@ -25,6 +27,12 @@ public class HiDensityNativeMemoryNearCacheRecordAccessor
 
     @Override
     public boolean isEqual(long address1, long address2) {
+        if (address1 == address2) {
+            return true;
+        }
+        if (address1 == NULL_ADDRESS || address2 == NULL_ADDRESS) {
+            return false;
+        }
         long valueAddress1 = AMEM.getLong(address1 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
         long valueAddress2 = AMEM.getLong(address2 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);

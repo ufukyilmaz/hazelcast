@@ -263,8 +263,8 @@ public abstract class CacheWanReplicationTestSupport extends WanReplicationTestS
     }
 
     private CacheManagerClassLoader createCacheManagerClassLoader() {
-        URLClassLoader currentClassLoader = (URLClassLoader) getClass().getClassLoader();
-        return new CacheManagerClassLoader(currentClassLoader.getURLs(), currentClassLoader);
+        ClassLoader currentClassLoader = getClass().getClassLoader();
+        return new CacheManagerClassLoader(new URL[0], currentClassLoader);
     }
 
     private static class CacheManagerClassLoader extends URLClassLoader {

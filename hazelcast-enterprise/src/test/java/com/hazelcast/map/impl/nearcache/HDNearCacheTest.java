@@ -25,13 +25,13 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.enterprise.EnterpriseParameterizedTestRunner;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.map.nearcache.NearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.test.AssertTask;
-import com.hazelcast.test.HazelcastTestRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.test.annotation.RunParallel;
@@ -47,7 +47,7 @@ import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 import static junit.framework.TestCase.assertTrue;
 
 @RunParallel
-@RunWith(HazelcastTestRunner.class)
+@RunWith(EnterpriseParameterizedTestRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDNearCacheTest extends NearCacheTest {
 

@@ -222,14 +222,12 @@ public class ClientSecurityTest {
         addPermission(config, PermissionType.EXECUTOR_SERVICE, "test", "dev")
                 .addAction(ActionConstants.ACTION_CREATE);
 
-        addPermission(config, PermissionType.LIST, "list", null)
-                .addAction(ActionConstants.ACTION_ADD).addAction(ActionConstants.ACTION_CREATE)
-                .addAction(ActionConstants.ACTION_READ);
+        addNonExecutorPermissions(config);
 
         factory.newHazelcastInstance(config);
         HazelcastInstance client = createHazelcastClient();
         try {
-            assertEquals(new Integer(1), client.getExecutorService("test").submit(new DummyCallable()).get());
+            assertEquals(new Integer(11), client.getExecutorService("test").submit(new DummyCallable()).get());
         } finally {
             client.shutdown();
         }
@@ -296,8 +294,44 @@ public class ClientSecurityTest {
         transient HazelcastInstance hz;
 
         public Integer call() throws Exception {
+            int result = 0;
+
+            hz.getMap("map").put("key", "value");
+            result += hz.getMap("map").size(); // +1
+
+            hz.getQueue("queue").add("value");
+            result += hz.getQueue("queue").size(); // +1
+
+            hz.getTopic("topic").publish("value");
+            result++; // +1
+
+            hz.getMultiMap("multimap").put("key", "value");
+            result += hz.getMultiMap("multimap").size(); // +1
+
             hz.getList("list").add("value");
-            return hz.getList("list").size();
+            result += hz.getList("list").size(); // +1
+
+            hz.getSet("set").add("value");
+            result += hz.getSet("set").size(); // +1
+
+            hz.getIdGenerator("id_generator").init(0);
+            result += hz.getIdGenerator("id_generator").newId(); // +1
+
+            hz.getLock("lock").lock();
+            hz.getLock("lock").unlock();
+            result++; // +1
+
+            result += hz.getAtomicLong("atomic_long").incrementAndGet(); // +1
+
+            hz.getCountDownLatch("countdown_latch").trySetCount(2);
+            hz.getCountDownLatch("countdown_latch").countDown();
+            result += hz.getCountDownLatch("countdown_latch").getCount(); // +1
+
+            hz.getSemaphore("semaphore").init(2);
+            hz.getSemaphore("semaphore").acquire();
+            result += hz.getSemaphore("semaphore").availablePermits(); // +1
+
+            return result;
         }
 
         public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
@@ -342,4 +376,23 @@ public class ClientSecurityTest {
         config.getSecurityConfig().addClientPermissionConfig(perm);
         return perm;
     }
+
+    private PermissionConfig addAllPermission(Config config, PermissionType type, String name) {
+        return addPermission(config, type, name, null).addAction(ActionConstants.ACTION_ALL);
+    }
+
+    private void addNonExecutorPermissions(Config config) {
+        addAllPermission(config, PermissionType.MAP, "map");
+        addAllPermission(config, PermissionType.QUEUE, "queue");
+        addAllPermission(config, PermissionType.TOPIC, "topic");
+        addAllPermission(config, PermissionType.MULTIMAP, "multimap");
+        addAllPermission(config, PermissionType.LIST, "list");
+        addAllPermission(config, PermissionType.SET, "set");
+        addAllPermission(config, PermissionType.ID_GENERATOR, "id_generator");
+        addAllPermission(config, PermissionType.LOCK, "lock");
+        addAllPermission(config, PermissionType.ATOMIC_LONG, "atomic_long");
+        addAllPermission(config, PermissionType.COUNTDOWN_LATCH, "countdown_latch");
+        addAllPermission(config, PermissionType.SEMAPHORE, "semaphore");
+    }
+
 }

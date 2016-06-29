@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
+import static com.hazelcast.nio.IOUtil.rename;
 
 /**
  * Abstract class for writing a single metadata to a specific file
@@ -37,9 +38,7 @@ abstract class AbstractMetadataWriter<T> {
             out.flush();
             fileOut.getFD().sync();
             out.close();
-            if (!tmpFile.renameTo(new File(homeDir, getFilename()))) {
-                throw new IOException("Failed to rename " + tmpFile.getAbsolutePath());
-            }
+            rename(tmpFile, new File(homeDir, getFilename()));
         } finally {
             closeResource(out);
         }

@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
+import com.hazelcast.core.HazelcastException;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
@@ -86,7 +87,7 @@ public class ChunkFilesetCursorIntegrationTest {
         assertFalse(emptyFile.exists());
     }
 
-    @Test(expected = HotRestartException.class)
+    @Test(expected = HazelcastException.class)
     public void whenCannotRemoveActiveSuffix_thenException() {
         removeActiveSuffix(new File("fakeName.chunk.active"));
     }

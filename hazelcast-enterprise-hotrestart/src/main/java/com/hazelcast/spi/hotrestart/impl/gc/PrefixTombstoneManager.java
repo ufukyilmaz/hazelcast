@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
+import static com.hazelcast.nio.IOUtil.rename;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -233,10 +234,7 @@ public class PrefixTombstoneManager {
             fileOut.getFD().sync();
             out.close();
             fileOut = null;
-            if (!newFile.renameTo(new File(homeDir, PREFIX_TOMBSTONES_FILENAME))) {
-                throw new HotRestartException("Failed to rename the prefix tombstones file "
-                        + newFile.getAbsolutePath());
-            }
+            rename(newFile, new File(homeDir, PREFIX_TOMBSTONES_FILENAME));
             logger.finest("Persisted prefix tombstones %s", tombstoneSnapshot);
         } catch (IOException e) {
             IOUtil.closeResource(fileOut);

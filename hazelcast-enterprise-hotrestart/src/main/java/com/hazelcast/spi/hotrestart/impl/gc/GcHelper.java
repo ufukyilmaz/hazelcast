@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
+import static com.hazelcast.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
@@ -170,9 +171,7 @@ public abstract class GcHelper implements Disposable {
     public void changeSuffix(String base, long seq, String suffixNow, String suffixToBe) {
         final File nameNow = chunkFile(base, seq, suffixNow, false);
         final File nameToBe = chunkFile(base, seq, suffixToBe, false);
-        if (!nameNow.renameTo(nameToBe)) {
-            throw new HotRestartException("Failed to rename " + nameNow + " to " + nameToBe);
-        }
+        rename(nameNow, nameToBe);
     }
 
     /**

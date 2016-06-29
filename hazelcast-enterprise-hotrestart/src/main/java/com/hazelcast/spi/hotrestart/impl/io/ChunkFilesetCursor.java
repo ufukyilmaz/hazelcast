@@ -9,6 +9,7 @@ import java.util.List;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
+import static com.hazelcast.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
 import static java.lang.Long.parseLong;
 
@@ -103,9 +104,7 @@ public abstract class ChunkFilesetCursor {
     static void removeActiveSuffix(File activeChunkFile) {
         final String nameNow = activeChunkFile.getName();
         final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_CHUNK_SUFFIX.length());
-        if (!activeChunkFile.renameTo(new File(activeChunkFile.getParent(), nameToBe))) {
-            throw new HotRestartException("Failed to rename " + nameNow + " to " + nameToBe);
-        }
+        rename(activeChunkFile, new File(activeChunkFile.getParent(), nameToBe));
     }
 
 

@@ -2,7 +2,6 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.MapService;
@@ -23,7 +22,6 @@ import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.List;
 
-import static com.hazelcast.logging.Logger.getLogger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -41,8 +39,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 abstract class AbstractHDOperationTest {
-
-    static final ILogger LOGGER = getLogger(AbstractHDOperationTest.class);
 
     int syncBackupCount;
     boolean throwNativeOOME;
@@ -178,8 +174,8 @@ abstract class AbstractHDOperationTest {
     }
 
     /**
-     * Verifies the {@link RecordStore} mock after a call of {@link HDPutAllOperation#run()},
-     * {@link HDPutAllBackupOperation#run()} or {@link HDPutAllPerMemberOperation#run()}.
+     * Verifies the {@link RecordStore} mock after a call of {@link HDPutAllOperation#run()} or
+     * {@link HDPutAllBackupOperation#run()}.
      *
      * @param isBackupDone {@code true} if backup operation has been called, {@code false} otherwise
      */

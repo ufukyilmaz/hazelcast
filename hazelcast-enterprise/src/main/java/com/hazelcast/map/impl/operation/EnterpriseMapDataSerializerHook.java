@@ -76,11 +76,6 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
      */
     public static final int EVICT_BACKUP = CONSTRUCTOR_ARRAY_INDEX.value++;
 
-    /**
-     * Id of "PUT_ALL_PER_MEMBER" operation
-     */
-    public static final int PUT_ALL_PER_MEMBER = CONSTRUCTOR_ARRAY_INDEX.value++;
-
     @Override
     public int getFactoryId() {
         return F_ID;
@@ -101,7 +96,6 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                 constructors[REMOVE_BACKUP] = newRemoveBackupOperation();
                 constructors[GET] = newGetOperation();
                 constructors[EVICT_BACKUP] = newEvictBackupOperation();
-                constructors[PUT_ALL_PER_MEMBER] = newPutAllPerMemberOperation();
             }
 
             private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveBackupOperation() {
@@ -163,15 +157,6 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
                     @Override
                     public IdentifiedDataSerializable createNew(Integer arg) {
                         return new HDGetOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutAllPerMemberOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDPutAllPerMemberOperation();
                     }
                 };
             }

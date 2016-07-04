@@ -16,7 +16,7 @@
 
 package com.hazelcast.map.impl;
 
-import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.Config;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
@@ -48,8 +48,8 @@ public class EnterpriseMapContainer extends MapContainer {
 
     private final HiDensityStorageInfo storageInfo;
 
-    public EnterpriseMapContainer(final String name, final MapConfig mapConfig, MapServiceContext mapServiceContext) {
-        super(name, mapConfig, mapServiceContext);
+    public EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
+        super(name, config, mapServiceContext);
         storageInfo = new HiDensityStorageInfo(name);
     }
 

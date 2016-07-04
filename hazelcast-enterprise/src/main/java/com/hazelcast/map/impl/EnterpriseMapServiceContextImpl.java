@@ -73,8 +73,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         public MapContainer createNew(String mapName) {
             final MapServiceContext mapServiceContext = getService().getMapServiceContext();
             final Config config = mapServiceContext.getNodeEngine().getConfig();
-            final MapConfig mapConfig = config.findMapConfig(mapName);
-            return new EnterpriseMapContainer(mapName, mapConfig, mapServiceContext);
+            return new EnterpriseMapContainer(mapName, config, mapServiceContext);
         }
     };
 

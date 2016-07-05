@@ -271,14 +271,14 @@ public final class ChunkManager implements Disposable {
         if (srcChunks.isEmpty()) {
             return false;
         }
-        logger.fine("ValChunk selection took %,d us", NANOSECONDS.toMicros(System.nanoTime() - start));
+        logger.finest("ValChunk selection took %,d us", NANOSECONDS.toMicros(System.nanoTime() - start));
         final long garbage = valGarbage.get();
         final long live = valOccupancy.get() - garbage;
         final double garbagePercent = UNIT_PERCENTAGE * garbage / live;
-        logger.fine("Start ValueGC: g/l %2.0f%% (%,d/%,d); costGoal %,d; benefitGoal %,d",
+        logger.finest("Start ValueGC: g/l %2.0f%% (%,d/%,d); costGoal %,d; benefitGoal %,d",
                 garbagePercent, garbage, live, gcp.costGoal, gcp.benefitGoal);
         if (gcp.forceGc) {
-            logger.info("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
+            logger.fine("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
         }
         di.wire(new ValEvacuator(srcChunks, start)).evacuate();
         afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start, mc);
@@ -294,7 +294,7 @@ public final class ChunkManager implements Disposable {
         }
         final long garbage = tombGarbage.get();
         final long live = tombOccupancy.get() - garbage;
-        logger.fine("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
+        logger.finest("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
         di.wire(new TombEvacuator(srcChunks)).evacuate();
         afterEvacuation("Tomb", srcChunks, tombGarbage, tombOccupancy, start, mc);
         return true;
@@ -324,7 +324,7 @@ public final class ChunkManager implements Disposable {
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = garbage.inc(-reclaimed);
         final long liveAfterGc = occupancy.inc(-reclaimed) - garbageAfterGc;
-        logger.info("%nDone %sGC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
+        logger.fine("%nDone %sGC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
                 gcKind, NANOSECONDS.toMillis(System.nanoTime() - start),
                 (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
                 reclaimed, sizeAfter, garbageAfterGc, liveAfterGc);

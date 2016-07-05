@@ -62,7 +62,7 @@ public final class GcMainLoop implements Runnable {
                 }
             }
             gcConveyor.drainerDone();
-            logger.info("GC thread done. ");
+            logger.fine("GC thread done. ");
         } catch (Throwable t) {
             gcConveyor.drainerFailed(t);
             logger.severe("GC thread terminated by exception", t);

@@ -9,112 +9,107 @@ import java.util.logging.Level;
  * Adds lazy-evaluating methods to Hazelcast logger.
  */
 public class GcLogger {
+    public static final String VERBOSE_FINEST_LOGGING = "hazelcast.hotrestart.gc.verboseFinestLogging";
+
     private final ILogger logger;
+    private final boolean finestVerboseEnabled = Boolean.getBoolean(VERBOSE_FINEST_LOGGING);
 
     @Inject
     GcLogger(ILogger logger) {
         this.logger = logger;
     }
 
+    public void finestVerbose(String message) {
+        if (finestVerboseEnabled) {
+            logger.finest(message);
+        }
+    }
+
+    public void finestVerbose(String template, Object arg) {
+        if (finestVerboseEnabled && logger.isFinestEnabled()) {
+            logger.finest(String.format(template, arg));
+        }
+    }
+
     public void finest(String message) {
-        logger.finest(message);
+        logger.fine(message);
     }
 
     public void finest(String template, Object arg) {
-        if (logger.isFinestEnabled()) {
+        if (logger.isFineEnabled()) {
             finest(String.format(template, arg));
         }
     }
 
-    public void fine(String message) {
-        logger.fine(message);
+    public void finest(String template, Object arg1, Object arg2) {
+        if (logger.isFineEnabled()) {
+            finest(String.format(template, arg1, arg2));
+        }
     }
 
-    public void fine(String template, Object arg) {
+    public void finest(String template, Object arg1, Object arg2, Object arg3) {
         if (logger.isFineEnabled()) {
-            fine(String.format(template, arg));
+            finest(String.format(template, arg1, arg2, arg3));
+        }
+    }
+
+    public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
+        if (logger.isFineEnabled()) {
+            finest(String.format(template, arg1, arg2, arg3, arg4));
+        }
+    }
+
+    public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
+        if (logger.isFineEnabled()) {
+            finest(String.format(template, arg1, arg2, arg3, arg4, arg5));
+        }
+    }
+
+    public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6) {
+        if (logger.isFineEnabled()) {
+            finest(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6));
+        }
+    }
+
+    public void fine(String message) {
+        logger.info(message);
+    }
+
+    public void fine(String template, Object arg1) {
+        if (logger.isLoggable(Level.INFO)) {
+            fine(String.format(template, arg1));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2) {
-        if (logger.isFineEnabled()) {
+        if (logger.isLoggable(Level.INFO)) {
             fine(String.format(template, arg1, arg2));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3) {
-        if (logger.isFineEnabled()) {
+        if (logger.isLoggable(Level.INFO)) {
             fine(String.format(template, arg1, arg2, arg3));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
-        if (logger.isFineEnabled()) {
+        if (logger.isLoggable(Level.INFO)) {
             fine(String.format(template, arg1, arg2, arg3, arg4));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
-        if (logger.isFineEnabled()) {
+        if (logger.isLoggable(Level.INFO)) {
             fine(String.format(template, arg1, arg2, arg3, arg4, arg5));
         }
     }
 
-    public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6) {
-        if (logger.isFineEnabled()) {
-            fine(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6));
-        }
-    }
-
-    public void info(String message) {
-        logger.info(message);
-    }
-
-    public void info(String template, Object arg1) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1));
-        }
-    }
-
-    public void info(String template, Object arg1, Object arg2) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2));
-        }
-    }
-
-    public void info(String template, Object arg1, Object arg2, Object arg3) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3));
-        }
-    }
-
-    public void info(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3, arg4));
-        }
-    }
-
-    public void info(String template,
-                     Object arg1, Object arg2, Object arg3, Object arg4, Object arg5
-    ) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3, arg4, arg5));
-        }
-    }
-
     @SuppressWarnings("checkstyle:parameternumber")
-    public void info(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6,
+    public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6,
                      Object arg7, Object arg8) {
         if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
-        }
-    }
-
-    @SuppressWarnings("checkstyle:parameternumber")
-    public void info(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6,
-                     Object arg7, Object arg8, Object arg9) {
-        if (logger.isLoggable(Level.INFO)) {
-            info(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9));
+            fine(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
         }
     }
 

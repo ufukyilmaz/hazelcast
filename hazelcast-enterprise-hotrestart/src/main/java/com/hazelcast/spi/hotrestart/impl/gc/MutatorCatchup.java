@@ -103,7 +103,7 @@ public class MutatorCatchup {
             final String trace = sw.toString();
             final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
             m.find();
-            logger.fine("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+            logger.finest("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
         }
     }
 

@@ -87,7 +87,7 @@ final class TombEvacuator {
     private void closeSurvivor() {
         survivor.close();
         mc.catchupNow();
-        logger.fine("Wrote tombstone chunk #%03x (%,d bytes) in %d ms", survivor.seq, survivor.size(),
+        logger.finest("Wrote tombstone chunk #%03x (%,d bytes) in %d ms", survivor.seq, survivor.size(),
                 NANOSECONDS.toMillis(System.nanoTime() - start));
         survivor = null;
         mc.catchupNow();

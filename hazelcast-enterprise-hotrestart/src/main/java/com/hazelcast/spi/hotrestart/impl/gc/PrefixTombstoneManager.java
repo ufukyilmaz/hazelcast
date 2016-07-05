@@ -152,7 +152,7 @@ public class PrefixTombstoneManager {
      * @param prefixesToDismiss set of key prefixes for which tombstones were added
      */
     void dismissGarbage(ActiveValChunk chunk, long[] prefixesToDismiss) {
-        logger.fine("Dismiss garbage in active chunk #%03x", chunk.seq);
+        logger.finest("Dismiss garbage in active chunk #%03x", chunk.seq);
         final LongHashSet prefixSetToDismiss = new LongHashSet(prefixesToDismiss, 0);
         for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();
@@ -175,7 +175,7 @@ public class PrefixTombstoneManager {
         if (!chunk.needsDismissing()) {
             return false;
         }
-        logger.fine("Dismiss garbage in #%03x", chunk.seq);
+        logger.finest("Dismiss garbage in #%03x", chunk.seq);
         for (Cursor cursor = chunk.records.cursor(); cursor.advance();) {
             final Record r = cursor.asRecord();
             final KeyHandle kh = cursor.toKeyHandle();
@@ -205,7 +205,7 @@ public class PrefixTombstoneManager {
             }
         }
         if (collectedCount > 0) {
-            logger.info("Collected %,d garbage prefix tombstones", collectedCount);
+            logger.fine("Collected %,d garbage prefix tombstones", collectedCount);
         }
         synchronized (this) {
             for (LongLongCursor cursor = garbageTombstones.cursor(); cursor.advance();) {
@@ -235,7 +235,7 @@ public class PrefixTombstoneManager {
             out.close();
             fileOut = null;
             rename(newFile, new File(homeDir, PREFIX_TOMBSTONES_FILENAME));
-            logger.finest("Persisted prefix tombstones %s", tombstoneSnapshot);
+            logger.finestVerbose("Persisted prefix tombstones %s", tombstoneSnapshot);
         } catch (IOException e) {
             IOUtil.closeResource(fileOut);
             if (!newFile.delete()) {

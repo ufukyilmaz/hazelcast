@@ -119,7 +119,7 @@ public final class HotRestarter {
         Throwable localFailure = null;
         try {
             final Long2LongHashMap prefixTombstones = restorePrefixTombstones(homeDir);
-            logger.finest("Reloaded prefix tombstones %s", prefixTombstones);
+            logger.finestVerbose("Reloaded prefix tombstones %s", prefixTombstones);
             pfixTombstoMgr.setPrefixTombstones(prefixTombstones);
             this.prefixTombstones = prefixTombstones;
             final ChunkFilesetCursor tombCursor = new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR));
@@ -328,7 +328,7 @@ public final class HotRestarter {
                 }
             }
             final int capacity = keyHandleReceiver.queue(0).capacity();
-            logger.fine("%s.conveyValues: drained %,d items, mean queue size was %.1f (capacity %,d)",
+            logger.finest("%s.conveyValues: drained %,d items, mean queue size was %.1f (capacity %,d)",
                     storeName, recordCountInCurrentPhase, (double) recordCountInCurrentPhase / drainOpCount, capacity);
         }
 

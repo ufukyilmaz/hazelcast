@@ -123,14 +123,14 @@ final class ValChunkSelector {
             if (chunksToFind < Integer.MAX_VALUE >> 1) {
                 chunksToFind <<= 1;
             }
-            logger.finest("Finding " + chunksToFind + " more top chunks");
+            logger.finestVerbose("Finding " + chunksToFind + " more top chunks");
         }
         if ((double) benefit / cost < gcp.minBenefitToCost) {
             srcChunks.clear();
             return srcChunks;
         }
         diagnoseChunks(allChunks, srcChunks, gcp, logger);
-        logger.fine("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
+        logger.finest("GC: %s; about to reclaim %,d B at cost %,d B from %,d chunks out of %,d",
                 status, benefit, cost, srcChunks.size(), allChunks.size());
         return srcChunks;
     }
@@ -236,7 +236,7 @@ final class ValChunkSelector {
                     selectedSeqs.contains(c.seq) ? "X" : " ",
                     visualizedChunk(c.garbage, c.size(), valChunkSizeLimit()));
         }
-        logger.finest(sw.toString());
+        logger.finestVerbose(sw.toString());
     }
 
     @SuppressWarnings("checkstyle:magicnumber")

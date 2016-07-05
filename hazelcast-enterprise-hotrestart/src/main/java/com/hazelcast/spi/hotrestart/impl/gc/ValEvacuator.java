@@ -25,8 +25,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Dismisses the garbage thus collected and deletes the evacuated source chunks.
  */
 final class ValEvacuator {
-    public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD =
-            "hazelcast.hotrestart.gc.stuck.detect.threshold";
+    public static final String SYSPROP_GC_STUCK_DETECT_THRESHOLD = "hazelcast.hotrestart.gc.stuckDetectThreshold";
 
     private final int stuckDetectionThreshold =
             Integer.getInteger(SYSPROP_GC_STUCK_DETECT_THRESHOLD, 1000 * 1000);
@@ -54,7 +53,7 @@ final class ValEvacuator {
     void evacuate() {
         this.survivorMap = chunkMgr.survivors = new Long2ObjectHashMap<WriteThroughChunk>();
         final SortedBySeqRecordCursor liveRecords = sortedLiveRecords();
-        logger.fine("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
+        logger.finest("ValueGC preparation took %,d ms ", NANOSECONDS.toMillis(System.nanoTime() - start));
         moveToSurvivors(liveRecords);
         liveRecords.dispose();
         // Apply clear operation to any dangling survivor chunks. At the time the clear operation
@@ -151,7 +150,7 @@ final class ValEvacuator {
         mc.catchupNow();
         survivor.close();
         mc.catchupNow();
-        logger.fine("Wrote chunk #%03x (%,d bytes) in %d ms", survivor.seq, survivor.size(),
+        logger.finest("Wrote chunk #%03x (%,d bytes) in %d ms", survivor.seq, survivor.size(),
                 NANOSECONDS.toMillis(System.nanoTime() - start));
         survivor = null;
         mc.catchupNow();

@@ -77,7 +77,6 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             final long value = accessor.getValue(slot);
             return readV(value);
         }
-
     }
 
     /**
@@ -134,7 +133,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             return Collections.emptyList();
         }
 
-        return new LazySamplingEntryIterableIterator(sampleCount);
+        return new LazySamplingEntryIterableIterator<E>(sampleCount);
     }
 
     /**
@@ -263,5 +262,4 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     protected boolean isValidForSampling(int slot) {
         return accessor.isAssigned(slot);
     }
-
 }

@@ -26,15 +26,13 @@ import static com.hazelcast.map.impl.SizeEstimators.createMapSizeEstimator;
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
-    private final HDStorageSCHM map;
     private final HiDensityRecordProcessor recordProcessor;
     private final SizeEstimator sizeEstimator;
+    private final HDStorageSCHM map;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
         this.sizeEstimator = createMapSizeEstimator(NATIVE);
-
-
         this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
 
@@ -142,7 +140,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     @Override
     public void destroy(boolean isDuringShutdown) {
-
         HazelcastMemoryManager memoryManager = ((DefaultHiDensityRecordProcessor) recordProcessor).getMemoryManager();
         if (memoryManager == null || memoryManager.isDisposed()) {
             // otherwise will cause a SIGSEGV

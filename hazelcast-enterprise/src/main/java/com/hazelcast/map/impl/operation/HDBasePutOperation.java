@@ -82,7 +82,7 @@ public abstract class HDBasePutOperation extends HDLockAwareOperation implements
     @Override
     public boolean shouldBackup() {
         Record record = recordStore.getRecord(dataKey);
-        return record != null;
+        return (record != null);
     }
 
     @Override

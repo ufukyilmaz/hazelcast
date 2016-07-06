@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
 import com.hazelcast.map.impl.MapService;
@@ -16,21 +17,31 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.BackupAwareOperation;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.impl.operationservice.InternalOperationService;
+import com.hazelcast.spi.partition.IPartitionService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT;
+import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT_ALL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,8 +51,15 @@ import static org.mockito.Mockito.when;
 
 abstract class AbstractHDOperationTest {
 
+    enum OperationType {
+        PUT_ALL,
+        PUT
+    }
+
     int syncBackupCount;
     boolean throwNativeOOME;
+
+    private int numberOfNativeOOME;
 
     private MapService mapService;
     private MapContainer mapContainer;
@@ -49,6 +67,8 @@ abstract class AbstractHDOperationTest {
     private RecordStore recordStore;
     private HDEvictorImpl hdEvictor;
     private NearCacheInvalidator nearCacheInvalidator;
+
+    private NodeEngine nodeEngine;
 
     public void setUp() {
         MapConfig mapConfig = new MapConfig();
@@ -71,10 +91,12 @@ abstract class AbstractHDOperationTest {
         when(recordStore.getMapContainer()).thenReturn(mapContainer);
         when(recordStore.getRecord(any(Data.class))).thenReturn(record);
         when(recordStore.putBackup(any(Data.class), any())).thenReturn(record);
+        when(recordStore.putBackup(any(Data.class), any(Data.class), anyInt(), anyBoolean())).thenReturn(record);
 
         PartitionContainer partitionContainer = mock(PartitionContainer.class);
         when(partitionContainer.getRecordStore(eq(getMapName()))).thenReturn(recordStore);
         when(partitionContainer.getExistingRecordStore(eq(getMapName()))).thenReturn(recordStore);
+        when(partitionContainer.getMaps()).thenReturn(new ConcurrentHashMap<String, RecordStore>());
 
         MapEventPublisher mapEventPublisher = mock(MapEventPublisher.class);
         when(mapEventPublisher.hasEventListener(eq(getMapName()))).thenReturn(false);
@@ -92,6 +114,17 @@ abstract class AbstractHDOperationTest {
 
         mapService = mock(MapService.class);
         when(mapService.getMapServiceContext()).thenReturn(mapServiceContext);
+
+        IPartitionService partitionService = mock(IPartitionService.class);
+        when(partitionService.getPartitionCount()).thenReturn(getPartitionCount());
+
+        InternalOperationService operationService = mock(InternalOperationService.class);
+        when(operationService.getPartitionThreadCount()).thenReturn(getPartitionCount());
+
+        nodeEngine = mock(NodeEngine.class);
+        when(nodeEngine.getLogger(any(Class.class))).thenReturn(Logger.getLogger(getClass()));
+        when(nodeEngine.getPartitionService()).thenReturn(partitionService);
+        when(nodeEngine.getOperationService()).thenReturn(operationService);
     }
 
     /**
@@ -121,21 +154,44 @@ abstract class AbstractHDOperationTest {
     /**
      * Configures the {@link RecordStore} mock.
      */
-    void configureRecordStore() {
-        OngoingStubbing<Boolean> stub = when(recordStore.set(any(Data.class), any(), anyLong()));
-        if (throwNativeOOME) {
-            stub.thenReturn(true, true, true).thenThrow(new NativeOutOfMemoryError()).thenReturn(true);
-        } else {
-            stub.thenReturn(true);
+    void configureRecordStore(OperationType operationType) {
+        NativeOutOfMemoryError exception = new NativeOutOfMemoryError();
+        switch (operationType) {
+            case PUT_ALL:
+                OngoingStubbing<Boolean> setStub = when(recordStore.set(any(Data.class), any(), anyLong()));
+                if (throwNativeOOME) {
+                    setStub.thenReturn(true, true, true).thenThrow(exception).thenReturn(true);
+                    numberOfNativeOOME = 1;
+                } else {
+                    setStub.thenReturn(true);
+                    numberOfNativeOOME = 0;
+                }
+                return;
+
+            case PUT:
+                OngoingStubbing<Object> putStub = when(recordStore.put(any(Data.class), any(Data.class), anyLong()));
+                if (throwNativeOOME) {
+                    putStub.thenReturn(null, null, null)
+                            .thenThrow(exception, exception, exception, exception, exception, exception)
+                            .thenReturn(null);
+                    numberOfNativeOOME = 6;
+                } else {
+                    putStub.thenReturn(null);
+                    numberOfNativeOOME = 0;
+                }
+                return;
+
+            default:
+                numberOfNativeOOME = 0;
         }
     }
 
     /**
-     * Asserts the backup configuration of the {@link HDPutAllOperation}.
+     * Asserts the backup configuration of a {@link BackupAwareOperation}.
      *
-     * @param operation the {@link HDPutAllOperation} to check
+     * @param operation the {@link BackupAwareOperation} to check
      */
-    void assertBackupConfiguration(HDPutAllOperation operation) {
+    void assertBackupConfiguration(BackupAwareOperation operation) {
         if (syncBackupCount > 0) {
             assertTrue(operation.shouldBackup());
             assertEquals(syncBackupCount, operation.getSyncBackupCount());
@@ -162,8 +218,7 @@ abstract class AbstractHDOperationTest {
      * @throws Exception if {@link MapOperation#beforeRun()} or {@link MapOperation#afterRun()} throws an exception
      */
     void executeMapOperation(MapOperation operation, int partitionId) throws Exception {
-        operation.setMapService(mapService);
-        operation.setService(mapService);
+        prepareOperation(operation);
         if (partitionId != 0) {
             operation.setPartitionId(partitionId);
         }
@@ -173,30 +228,42 @@ abstract class AbstractHDOperationTest {
         operation.afterRun();
     }
 
+    void prepareOperation(MapOperation operation) {
+        operation.setMapService(mapService);
+        operation.setService(mapService);
+        operation.setNodeEngine(nodeEngine);
+    }
+
     /**
      * Verifies the {@link RecordStore} mock after a call of {@link HDPutAllOperation#run()} or
      * {@link HDPutAllBackupOperation#run()}.
      *
      * @param isBackupDone {@code true} if backup operation has been called, {@code false} otherwise
      */
-    void verifyRecordStoreAfterOperation(boolean isBackupDone) {
+    void verifyRecordStoreAfterOperation(OperationType operationType, boolean isBackupDone) {
         boolean verifyBackups = syncBackupCount > 0 && isBackupDone;
-        int numberOfExceptions = (throwNativeOOME ? 1 : 0);
         int backupFactor = (verifyBackups ? 2 : 1);
-        int partitionCount = getPartitionCount();
         int itemCount = getItemCount();
 
-        // RecordStore.getMapContainer() is called again for each NativeOOME during the forced eviction
-        verify(recordStore, times(partitionCount * backupFactor + numberOfExceptions)).getMapContainer();
-        // RecordStore.set() is called again for each entry which threw a NativeOOME
-        verify(recordStore, times(partitionCount * itemCount + numberOfExceptions)).set(any(Data.class), any(), anyLong());
+        if (operationType == PUT_ALL) {
+            // RecordStore.set() is called again for each entry which threw a NativeOOME
+            verify(recordStore, times(itemCount + numberOfNativeOOME)).set(any(Data.class), any(), anyLong());
+        } else if (operationType == PUT) {
+            // RecordStore.put() is called again for each entry which threw a NativeOOME
+            verify(recordStore, times(itemCount + numberOfNativeOOME)).put(any(Data.class), any(), anyLong());
+        }
 
-        verify(recordStore, times(partitionCount * itemCount * syncBackupCount)).getRecord(any(Data.class));
-        verify(recordStore, times(partitionCount * itemCount * backupFactor)).evictEntries(any(Data.class));
-        verify(recordStore, times(partitionCount * itemCount)).getMapDataStore();
+        verify(recordStore, times(itemCount * syncBackupCount)).getRecord(any(Data.class));
+        verify(recordStore, times(itemCount * backupFactor)).evictEntries(any(Data.class));
+        verify(recordStore, atLeast(itemCount)).getMapDataStore();
+        verify(recordStore, atLeastOnce()).getMapContainer();
 
         if (verifyBackups) {
-            verify(recordStore, times(partitionCount * itemCount)).putBackup(any(Data.class), any());
+            if (operationType == PUT_ALL) {
+                verify(recordStore, times(itemCount)).putBackup(any(Data.class), any());
+            } else {
+                verify(recordStore, times(itemCount)).putBackup(any(Data.class), any(Data.class), anyInt(), anyBoolean());
+            }
         }
 
         verifyNoMoreInteractions(recordStore);
@@ -208,7 +275,7 @@ abstract class AbstractHDOperationTest {
     @SuppressWarnings("unchecked")
     void verifyNearCacheInvalidatorAfterOperation() {
         ArgumentCaptor<List<Data>> keysCaptor = ArgumentCaptor.forClass((Class) List.class);
-        verify(nearCacheInvalidator, times(getPartitionCount())).invalidate(eq(getMapName()), keysCaptor.capture(), anyString());
+        verify(nearCacheInvalidator, times(1)).invalidate(eq(getMapName()), keysCaptor.capture(), anyString());
         verifyNoMoreInteractions(nearCacheInvalidator);
 
         List<Data> keys = keysCaptor.getAllValues().get(0);
@@ -218,9 +285,10 @@ abstract class AbstractHDOperationTest {
     /**
      * Verifies that there is a single forced eviction if a NativeOOME has been thrown
      */
-    void verifyHDEvictor() {
+    void verifyHDEvictor(OperationType operationType) {
         if (throwNativeOOME) {
-            verify(hdEvictor).forceEvict(eq(recordStore));
+            int expectedCount = (operationType == PUT) ? getItemCount() : 1;
+            verify(hdEvictor, times(expectedCount)).forceEvict(eq(recordStore));
             verifyNoMoreInteractions(hdEvictor);
         } else {
             verifyZeroInteractions(hdEvictor);

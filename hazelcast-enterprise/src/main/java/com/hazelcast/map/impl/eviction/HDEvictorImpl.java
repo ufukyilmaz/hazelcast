@@ -29,11 +29,10 @@ import com.hazelcast.spi.partition.IPartitionService;
 
 import java.util.Iterator;
 
-
 /**
- * {@link Evictor} for maps which has {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
+ * An {@link Evictor} for maps which have the {@link com.hazelcast.config.InMemoryFormat#NATIVE NATIVE} in-memory-format.
  * <p>
- * This evictor is sampling based evictor. So independent of the size of record-store, eviction works in constant time.
+ * This evictor is sampling based, so it's independent of the size of the {@link RecordStore} (it works in constant time).
  */
 public class HDEvictorImpl extends EvictorImpl {
 
@@ -41,8 +40,8 @@ public class HDEvictorImpl extends EvictorImpl {
     private static final int FORCED_EVICTION_PERCENTAGE = 20;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
-    public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy,
-                         EvictionChecker evictionChecker, IPartitionService partitionService) {
+    public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy, EvictionChecker evictionChecker,
+                         IPartitionService partitionService) {
         super(mapEvictionPolicy, evictionChecker, partitionService);
     }
 

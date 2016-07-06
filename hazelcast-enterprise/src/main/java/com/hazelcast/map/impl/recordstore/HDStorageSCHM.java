@@ -42,6 +42,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected <E extends SamplingEntry> E createSamplingEntry(int slot) {
         return (E) new LazyEntryViewFromRecord(slot, serializationService);
     }
@@ -77,23 +78,33 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
      * Mainly :
      * - Wraps a {@link Record} and reaches all {@link EntryView} specific info over it
      * - Lazily de-serializes key and value.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
      */
-    public class LazyEntryViewFromRecord extends SampleableElasticHashMap.SamplingEntry implements EntryView {
+    public class LazyEntryViewFromRecord<K, V> extends SampleableElasticHashMap<HDRecord>.SamplingEntry
+            implements EntryView<K, V> {
 
-        private Object key;
-        private Object value;
-        private Record record;
+        private K key;
+        private V value;
+        private HDRecord record;
 
         private SerializationService serializationService;
 
         public LazyEntryViewFromRecord(int slot, SerializationService serializationService) {
             super(slot);
-            this.record = (HDRecord) super.getEntryValue();
+            this.record = super.getEntryValue();
+            this.serializationService = serializationService;
+        }
+
+        LazyEntryViewFromRecord(int slot, SerializationService serializationService, HDRecord record) {
+            super(slot);
+            this.record = record;
             this.serializationService = serializationService;
         }
 
         @Override
-        public Object getKey() {
+        public K getKey() {
             assert Thread.currentThread() instanceof PartitionOperationThread;
 
             if (key == null) {
@@ -103,7 +114,7 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
         }
 
         @Override
-        public Object getValue() {
+        public V getValue() {
             assert Thread.currentThread() instanceof PartitionOperationThread;
 
             if (value == null) {
@@ -161,8 +172,8 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             return record;
         }
 
-        //CHECKSTYLE:OFF
         @Override
+        @SuppressWarnings("checkstyle:cyclomaticcomplexity")
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
@@ -173,7 +184,6 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
             }
 
             EntryView that = (EntryView) o;
-
             return getKey().equals(that.getKey())
                     && getValue().equals(that.getValue())
                     && getVersion() == that.getVersion()
@@ -186,7 +196,6 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
                     && getLastUpdateTime() == that.getLastUpdateTime()
                     && getTtl() == that.getTtl();
         }
-        // CHECKSTYLE:ON
 
         @Override
         public int hashCode() {
@@ -232,6 +241,4 @@ public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
                     + '}';
         }
     }
-
-
 }

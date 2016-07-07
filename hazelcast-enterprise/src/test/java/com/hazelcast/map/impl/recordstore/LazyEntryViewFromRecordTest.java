@@ -45,6 +45,7 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     private HDStorageSCHM.LazyEntryViewFromRecord entryView;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewSameAttributes;
 
+    private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordValue;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordVersion;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordCost;
     private HDStorageSCHM.LazyEntryViewFromRecord entryViewOtherRecordCreationTime;
@@ -59,11 +60,15 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     public void setUp() {
         Data key = mock(Data.class);
         HDRecord value = mock(HDRecord.class);
+        HDRecord otherValue = mock(HDRecord.class);
 
         Data dataKey = mock(Data.class);
         Data dataValue = mock(Data.class);
+        Data otherDataValue = mock(Data.class);
 
         record = getHDRecord(dataKey, dataValue);
+
+        HDRecord recordOtherValue = getHDRecord(dataKey, otherDataValue);
 
         HDRecord recordOtherVersion = getHDRecord(dataKey, dataValue);
         when(recordOtherVersion.getVersion()).thenReturn(23L);
@@ -95,12 +100,14 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
         SerializationService serializationService = mock(SerializationService.class);
         when(serializationService.toObject(eq(dataKey))).thenReturn(key);
         when(serializationService.toObject(eq(dataValue))).thenReturn(value);
+        when(serializationService.toObject(eq(otherDataValue))).thenReturn(otherValue);
 
         HDStorageSCHM hdStorageSCHM = mock(HDStorageSCHM.class);
 
         entryView = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, record);
         entryViewSameAttributes = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, record);
 
+        entryViewOtherRecordValue = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherValue);
         entryViewOtherRecordVersion = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherVersion);
         entryViewOtherRecordCost = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService, recordOtherCost);
         entryViewOtherRecordCreationTime = hdStorageSCHM.new LazyEntryViewFromRecord(0, serializationService,
@@ -153,6 +160,7 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
                 assertNotEquals(entryView, null);
                 assertNotEquals(entryView, new Object());
 
+                assertNotEquals(entryView, entryViewOtherRecordValue);
                 assertNotEquals(entryView, entryViewOtherRecordVersion);
                 assertNotEquals(entryView, entryViewOtherRecordCost);
                 assertNotEquals(entryView, entryViewOtherRecordCreationTime);
@@ -175,6 +183,7 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
                 // the hash code of super.hashCode() is not the same
                 assertNotEquals(entryView.hashCode(), entryViewSameAttributes.hashCode());
 
+                assertNotEquals(entryView.hashCode(), entryViewOtherRecordValue.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordVersion.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordCost.hashCode());
                 assertNotEquals(entryView.hashCode(), entryViewOtherRecordCreationTime.hashCode());
@@ -209,10 +218,10 @@ public class LazyEntryViewFromRecordTest extends HazelcastTestSupport {
     }
 
     private static HDRecord getHDRecord(Data dataKey, Data dataValue) {
-        HDRecord otherRecord = mock(HDRecord.class);
-        when(otherRecord.getKey()).thenReturn(dataKey);
-        when(otherRecord.getValue()).thenReturn(dataValue);
-        return otherRecord;
+        HDRecord hdRecord = mock(HDRecord.class);
+        when(hdRecord.getKey()).thenReturn(dataKey);
+        when(hdRecord.getValue()).thenReturn(dataValue);
+        return hdRecord;
     }
 
     private abstract class TestRunnable implements Runnable {

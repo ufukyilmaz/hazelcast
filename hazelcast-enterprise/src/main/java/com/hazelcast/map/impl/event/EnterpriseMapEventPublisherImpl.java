@@ -145,6 +145,19 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         addEventToQueryCache(eventData);
     }
 
+    @Override
+    protected void postPublishEvent(Collection<EntryEventData> eventDataIncludingValues,
+                                    Collection<EntryEventData> eventDataExcludingValues) {
+        // Publish event data of interest to query caches; since query cache listener registrations
+        // include values (as these are required to properly filter according to the query cache's predicate),
+        // we do not take into account eventDataExcludingValues, if any were generated.
+        if (eventDataIncludingValues != null) {
+            for (EntryEventData entryEventData : eventDataIncludingValues) {
+                addEventToQueryCache(entryEventData);
+            }
+        }
+    }
+
     public void addEventToQueryCache(Object eventData) {
         checkInstanceOf(EventData.class, eventData, "eventData");
 
@@ -192,7 +205,20 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                                                                  int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
         EntryEventType eventType = EntryEventType.getByType(eventTypeId);
-        eventType = getCQCEventTypeOrNull(eventType, eventFilter, dataKey, dataNewValue, dataOldValue);
+        // when using Hazelcast default event filtering strategy, then let the CQC workaround kick-in
+        // otherwise just deliver the event if it matches the registry's predicate according to the configured
+        // filtering strategy
+        if (filteringStrategy instanceof DefaultEntryEventFilteringStrategy) {
+            eventType = getCQCEventTypeOrNull(eventType, eventFilter, dataKey, dataNewValue, dataOldValue);
+        } else {
+            int producedEventTypeId = filteringStrategy.doFilter(eventFilter, dataKey, dataOldValue, dataNewValue,
+                    eventType, null);
+            if (producedEventTypeId == FilteringStrategy.FILTER_DOES_NOT_MATCH) {
+                eventType = null;
+            } else {
+                eventType = EntryEventType.getByType(producedEventTypeId);
+            }
+        }
         if (eventType == null) {
             return null;
         }
@@ -206,13 +232,19 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 .withDataOldValue(dataOldValue).build();
     }
 
+    // This method processes UPDATED events and may morph them into ADDED/REMOVED events
+    // depending on old/new value matching the EventFilter. Fixes an issue that prevents proper CQC
+    // implementation when DefaultEntryEventFilteringStrategy is in use. It is not used when any
+    // other filtering strategy is in place.
     private EntryEventType getCQCEventTypeOrNull(EntryEventType eventType, EventFilter eventFilter,
                                                  Data dataKey, Data dataNewValue, Data dataOldValue) {
+        boolean newValueMatching = filteringStrategy.doFilter(eventFilter, dataKey, dataOldValue, dataNewValue,
+                eventType, null) != FilteringStrategy.FILTER_DOES_NOT_MATCH;
         if (eventType == UPDATED) {
             // UPDATED event has a special handling as it might result in either ADDING or REMOVING an entry from CQC
             // depending on a predicate
-            boolean newValueMatching = doFilter(eventFilter, dataKey, null, dataNewValue, EntryEventType.ADDED, null);
-            boolean oldValueMatching = doFilter(eventFilter, dataKey, null, dataOldValue, EntryEventType.ADDED, null);
+            boolean oldValueMatching = filteringStrategy.doFilter(eventFilter, dataKey, null, dataOldValue,
+                    EntryEventType.ADDED, null) != FilteringStrategy.FILTER_DOES_NOT_MATCH;
             if (oldValueMatching) {
                 if (!newValueMatching) {
                     eventType = REMOVED;
@@ -225,7 +257,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                     return null;
                 }
             }
-        } else if (!doFilter(eventFilter, dataKey, dataOldValue, dataNewValue, eventType, null)) {
+        } else if (!newValueMatching) {
             return null;
         }
         return eventType;

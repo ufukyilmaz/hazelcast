@@ -3,19 +3,25 @@ package com.hazelcast.map.impl.querycache;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.MapEvent;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.map.listener.EntryRemovedListener;
 import com.hazelcast.mapreduce.helpers.Employee;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
+import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,9 +29,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(Parameterized.class)
+@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
+
+    @Parameterized.Parameters(name = "query cache natural filtering: {0}")
+    public static Collection<Object> parameters() {
+        return Arrays.asList(new Object[] {"false", "true"});
+    }
+
+    @Parameterized.Parameter()
+    public String useNaturalFilteringStrategy;
+
+    @Override
+    void prepare() {
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
+        config.setProperty("hazelcast.map.entry.filtering.natural.event.types", useNaturalFilteringStrategy);
+    }
 
     @Test
     public void listen_withPredicate_afterQueryCacheCreation() throws Exception {

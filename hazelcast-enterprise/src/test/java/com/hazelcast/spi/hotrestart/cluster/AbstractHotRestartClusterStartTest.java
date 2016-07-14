@@ -150,7 +150,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 
-    protected HazelcastInstance startInstance(int port) {
+    HazelcastInstance startInstance(int port) {
         assertNotNull(factory);
 
         Address address = newAddress(port);
@@ -159,7 +159,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         return newHazelcastInstance(address, null);
     }
 
-    private HazelcastInstance newHazelcastInstance(Address address, ClusterHotRestartEventListener listener) {
+    HazelcastInstance newHazelcastInstance(Address address, ClusterHotRestartEventListener listener) {
 
         Config config = newConfig(listener);
         if (USE_NETWORK) {

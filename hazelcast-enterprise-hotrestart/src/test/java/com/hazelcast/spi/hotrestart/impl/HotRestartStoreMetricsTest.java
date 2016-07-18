@@ -64,6 +64,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
     }
 
     @After public void tearDown() {
+        store.closeHotRestartStore();
         delete(testingHome);
     }
 

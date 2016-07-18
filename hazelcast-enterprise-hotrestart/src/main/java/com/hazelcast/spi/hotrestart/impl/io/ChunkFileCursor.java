@@ -77,7 +77,8 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         } catch (IOException e) {
             throw new HotRestartException("Failed to close chunk file " + chunkFile, e);
         }
-        if (isActiveChunkFile(chunkFile)) {
+        // close() must be idempotent, therefore check that the file still exists
+        if (isActiveChunkFile(chunkFile) && chunkFile.exists()) {
             ChunkFilesetCursor.removeActiveSuffix(chunkFile);
         }
     }

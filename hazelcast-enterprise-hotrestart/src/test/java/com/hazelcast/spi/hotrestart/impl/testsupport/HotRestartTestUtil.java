@@ -8,6 +8,7 @@ import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
@@ -52,6 +53,7 @@ import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
+import static java.lang.System.out;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -312,8 +314,9 @@ public class HotRestartTestUtil {
     }
 
     public static File populateChunkFile(File file, List<TestRecord> records, boolean wantValueChunk) {
+        ChunkFileOut out = null;
         try {
-            final ChunkFileOut out = new ChunkFileOut(file, createMutatorCatchup());
+            out = new ChunkFileOut(file, createMutatorCatchup());
             final ActiveChunk chunk = wantValueChunk
                     ? new ActiveValChunk(0, null, out, mock(GcHelper.class))
                     : new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
@@ -323,12 +326,9 @@ public class HotRestartTestUtil {
             out.close();
             return file;
         } catch (IOException e) {
+            IOUtil.closeResource(out);
             throw ExceptionUtil.rethrow(e);
         }
-    }
-
-    public static File populateValueRecordFile(File file, List<TestRecord> records) {
-        return populateChunkFile(file, records, true);
     }
 
     public static File populateTombRecordFile(File file, List<TestRecord> records) {

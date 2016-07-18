@@ -110,12 +110,16 @@ public class ChunkFilesetCursorIntegrationTest {
         // THEN
         int count = 0;
         List<TestRecord> recordsAllInOrder = null;
-        while (cursor.advance()) {
-            if (recordsAllInOrder == null) {
-                recordsAllInOrder = buildListWillAllRecordsInIterationOrder(cursor.currentRecord(), recordsFirst, recordsSecond);
+        try {
+            while (cursor.advance()) {
+                if (recordsAllInOrder == null) {
+                    recordsAllInOrder = buildListWillAllRecordsInIterationOrder(cursor.currentRecord(), recordsFirst, recordsSecond);
+                }
+                assertRecordEquals(recordsAllInOrder.get(count), cursor.currentRecord(), createValueChunks);
+                count++;
             }
-            assertRecordEquals(recordsAllInOrder.get(count), cursor.currentRecord(), createValueChunks);
-            count++;
+        } finally {
+            cursor.close();
         }
         assertEquals(recordSizeFirst + recordSizeSecond, count);
     }

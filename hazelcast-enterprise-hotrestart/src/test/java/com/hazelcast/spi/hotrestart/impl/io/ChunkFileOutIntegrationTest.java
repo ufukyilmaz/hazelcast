@@ -50,6 +50,7 @@ public class ChunkFileOutIntegrationTest {
 
     private GcHelper gcHelper;
     private File homeDir;
+    private DataInputStream input;
 
     @Before
     public void before() {
@@ -58,7 +59,10 @@ public class ChunkFileOutIntegrationTest {
     }
 
     @After
-    public void after() {
+    public void after() throws IOException {
+        if (input != null) {
+            input.close();
+        }
         IOUtil.delete(homeDir);
     }
 
@@ -211,7 +215,7 @@ public class ChunkFileOutIntegrationTest {
     }
 
     private DataInputStream input(File file) throws FileNotFoundException {
-        return new DataInputStream(new FileInputStream(file));
+        return input = new DataInputStream(new FileInputStream(file));
     }
 
 }

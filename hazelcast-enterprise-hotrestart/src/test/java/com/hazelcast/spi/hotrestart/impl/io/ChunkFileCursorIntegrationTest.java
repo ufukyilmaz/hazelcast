@@ -47,6 +47,7 @@ public class ChunkFileCursorIntegrationTest {
 
     private GcHelper gcHelper;
     private File homeDir;
+    private ChunkFileCursor cursor;
 
     @Before
     public void before() {
@@ -56,6 +57,9 @@ public class ChunkFileCursorIntegrationTest {
 
     @After
     public void after() {
+        if (cursor != null) {
+            cursor.close();
+        }
         IOUtil.delete(homeDir);
     }
 
@@ -64,7 +68,7 @@ public class ChunkFileCursorIntegrationTest {
         // GIVEN
         File file = populateTombRecordFile(gcHelper.chunkFile("testing", 1, ".chunk", true),
                 singletonList(new TestRecord(counter)));
-        ChunkFileCursor.Tomb cursor = new ChunkFileCursor.Tomb(file);
+        cursor = new ChunkFileCursor.Tomb(file);
         assertTrue(cursor.advance());
 
         // WHEN - THEN
@@ -95,7 +99,7 @@ public class ChunkFileCursorIntegrationTest {
 
         // When
         removeLastByte(chunkFile);
-        final ChunkFileCursor cursor = new ChunkFileCursor.Val(chunkFile);
+        cursor = new ChunkFileCursor.Val(chunkFile);
 
         // Then
         assertTrue(cursor.advance());
@@ -112,7 +116,7 @@ public class ChunkFileCursorIntegrationTest {
 
         // When
         removeLastByte(chunkFile);
-        final ChunkFileCursor cursor = new ChunkFileCursor.Val(chunkFile);
+        cursor = new ChunkFileCursor.Val(chunkFile);
 
         // Then
         assertTrue(cursor.advance());
@@ -134,7 +138,7 @@ public class ChunkFileCursorIntegrationTest {
         File file = populateChunkFile(gcHelper.chunkFile("testing", chunkSeq, ".chunk", true), recs, wantValueChunk);
 
         // THEN
-        ChunkFileCursor cursor = wantValueChunk ? new ChunkFileCursor.Val(file) : new ChunkFileCursor.Tomb(file);
+        cursor = wantValueChunk ? new ChunkFileCursor.Val(file) : new ChunkFileCursor.Tomb(file);
         assertEquals(chunkSeq, cursor.chunkSeq());
         for (TestRecord rec : recs) {
             assertTrue(cursor.advance());

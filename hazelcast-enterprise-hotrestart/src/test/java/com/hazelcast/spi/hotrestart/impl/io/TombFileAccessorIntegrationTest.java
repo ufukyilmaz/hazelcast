@@ -110,7 +110,6 @@ public class TombFileAccessorIntegrationTest {
         File file = gcHelper.chunkFile("testing", 1, ".chunk", true);
         List<TestRecord> records = asList(new TestRecord(counter), new TestRecord(counter), new TestRecord(counter));
         TombFileAccessor accessor = new TombFileAccessor(populateTombRecordFile(file, records));
-
         for (int pos = 0, recordSize, index = 0; index < records.size(); index++) {
             // GIVEN
             final TestRecord record = records.get(index);
@@ -127,6 +126,7 @@ public class TombFileAccessorIntegrationTest {
                     any(ByteBuffer.class), eq(record.keyBytes.length));
             assertRecordEqualToAccessorRecord("wrong record read at position " + pos, record, accessor);
         }
+        accessor.close();
     }
 
     private static Answer<Void> assertTombstoneByteBuffer(final TestRecord record) {

@@ -3,11 +3,15 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.MembershipAdapter;
+import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.util.RandomPicker;
@@ -20,10 +24,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
+import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
+import static com.hazelcast.test.HazelcastTestSupport.assertTrueAllTheTime;
+import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -220,6 +229,62 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
             fail("Hot restart should fail!");
         } catch (HotRestartException expected) {
         }
+    }
+
+    @Test
+    public void test_cannotChangeClusterState_beforeHotRestartProcessCompletes()
+            throws IOException, InterruptedException {
+
+        List<Integer> ports = acquirePorts(4);
+        HazelcastInstance[] instances = startInstances(ports);
+        assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
+
+        HazelcastInstance restartingInstance = instances[instances.length - 1];
+        final Address address = getAddress(restartingInstance);
+        restartingInstance.getLifecycleService().terminate();
+
+        final CountDownLatch dataLoadLatch = new CountDownLatch(1);
+        spawn(new Runnable() {
+            @Override
+            public void run() {
+                newHazelcastInstance(address, new ClusterHotRestartEventListener() {
+                    @Override
+                    public void onDataLoadStart(Address address) {
+                        try {
+                            dataLoadLatch.await();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                });
+            }
+        });
+
+        final CountDownLatch memberAddedLatch = new CountDownLatch(1);
+        final HazelcastInstance masterInstance = instances[0];
+        masterInstance.getCluster().addMembershipListener(new MembershipAdapter() {
+            @Override
+            public void memberAdded(MembershipEvent membershipEvent) {
+                memberAddedLatch.countDown();
+            }
+        });
+        assertOpenEventually(memberAddedLatch);
+
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                try {
+                    masterInstance.getCluster().changeClusterState(ClusterState.ACTIVE);
+                    fail("Should not be able to change cluster state when hot restart is not completed yet!");
+                } catch (IllegalStateException expected) {
+                }
+            }
+        }, 5);
+
+        dataLoadLatch.countDown();
     }
 
     @Override

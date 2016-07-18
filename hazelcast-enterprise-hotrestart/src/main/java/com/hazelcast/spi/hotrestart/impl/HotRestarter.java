@@ -201,6 +201,7 @@ public final class HotRestarter {
                         rec.recordSeq() > prefixTombstones.get(prefix) ? new RestartItem(rec) : clearedItem(rec));
             } catch (ConcurrentConveyorException e) {
                 logger.severe("Failed to submit to threadIndex " + reg.prefixToThreadId(prefix));
+                cursor.close();
                 throw e;
             }
         }

@@ -4,6 +4,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -16,7 +17,7 @@ import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_S
 /**
  * Encapsulates chunk file writing code.
  */
-public class ChunkFileOut {
+public class ChunkFileOut implements Closeable {
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
     public final File file;

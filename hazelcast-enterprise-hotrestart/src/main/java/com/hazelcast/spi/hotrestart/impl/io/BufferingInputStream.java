@@ -42,6 +42,11 @@ public class BufferingInputStream extends InputStream {
         return transferredCount;
     }
 
+    @Override
+    public void close() throws IOException {
+        in.close();
+    }
+
     private boolean ensureDataInBuffer() throws IOException {
         if (position != limit) {
             return true;

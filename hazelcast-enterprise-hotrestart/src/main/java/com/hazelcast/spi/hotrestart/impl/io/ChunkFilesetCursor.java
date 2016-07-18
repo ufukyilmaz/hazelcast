@@ -72,6 +72,14 @@ public abstract class ChunkFilesetCursor {
         return currentChunkCursor;
     }
 
+    public final void close() {
+        if (currentChunkCursor != null) {
+            currentChunkCursor.close();
+            currentChunkCursor = null;
+        }
+        chunkFiles.clear();
+    }
+
     abstract ChunkFileCursor openCursor(File chunkFile) throws IOException;
 
     private boolean tryOpenNextChunk() {

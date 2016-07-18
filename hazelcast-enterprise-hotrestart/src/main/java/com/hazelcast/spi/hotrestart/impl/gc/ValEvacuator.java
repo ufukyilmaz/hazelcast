@@ -18,7 +18,6 @@ import com.hazelcast.util.collection.Long2ObjectHashMap;
 import java.util.Collection;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Evacuates source chunks into survivor chunks by moving all live records.
@@ -114,9 +113,8 @@ final class ValEvacuator {
                         holder.keyBuffer.flip();
                         throw new HotRestartException(String.format(
                                 "Stuck while waiting for a record to be retired."
-                              + " Chunk #%03x, key %d:%x, record #%03x, size %,d, RAM store was %s",
-                                survivor != null ? survivor.seq : -1, r.keyPrefix(kh), holder.keyBuffer.getLong(),
-                                r.liveSeq(), r.size(), ramStoreName));
+                              + " Chunk #%03x, key prefix %x, record #%03x, size %,d, RAM store was %s",
+                            survivor != null ? survivor.seq : -1, r.keyPrefix(kh), r.liveSeq(), r.size(), ramStoreName));
                     }
                 }
             }
@@ -158,9 +156,8 @@ final class ValEvacuator {
 
     @SuppressWarnings("checkstyle:emptyblock")
     private boolean catchUpUntilRetired(Record r, MutatorCatchup mc) {
-        long deadline = System.nanoTime() + SECONDS.toNanos(3);
         for (int eventCount = 0;
-             eventCount <= stuckDetectionThreshold && r.isAlive() && System.nanoTime() < deadline;
+             eventCount <= stuckDetectionThreshold && r.isAlive();
              eventCount += catchUpSafely(mc, r)
         ) { }
         return !r.isAlive();

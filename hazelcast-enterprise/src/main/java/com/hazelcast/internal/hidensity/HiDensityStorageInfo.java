@@ -16,7 +16,11 @@
 
 package com.hazelcast.internal.hidensity;
 
+import com.hazelcast.internal.metrics.Probe;
+
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 
 /**
  * Holds information about Hi-Density storage such as entry count, used memory, etc ...
@@ -75,6 +79,7 @@ public class HiDensityStorageInfo {
         return forceEvictionCount.incrementAndGet();
     }
 
+    @Probe(name = "forceEvictionCount", level = MANDATORY)
     public long getForceEvictionCount() {
         return forceEvictionCount.get();
     }

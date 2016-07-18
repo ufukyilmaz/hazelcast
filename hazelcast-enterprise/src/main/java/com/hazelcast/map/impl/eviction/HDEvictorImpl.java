@@ -17,6 +17,8 @@
 package com.hazelcast.map.impl.eviction;
 
 import com.hazelcast.core.EntryView;
+import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.ForcedEvictable;
@@ -25,6 +27,7 @@ import com.hazelcast.map.impl.recordstore.HotRestartHDStorageImpl;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.map.impl.recordstore.Storage;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.partition.IPartitionService;
 
 import java.util.Iterator;
@@ -40,9 +43,14 @@ public class HDEvictorImpl extends EvictorImpl {
     private static final int FORCED_EVICTION_PERCENTAGE = 20;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 
+    private final HiDensityStorageInfo storageInfo;
+    private final ILogger logger;
+
     public HDEvictorImpl(MapEvictionPolicy mapEvictionPolicy, EvictionChecker evictionChecker,
-                         IPartitionService partitionService) {
+                         IPartitionService partitionService, HiDensityStorageInfo storageInfo, NodeEngine nodeEngine) {
         super(mapEvictionPolicy, evictionChecker, partitionService);
+        this.storageInfo = storageInfo;
+        this.logger = nodeEngine.getLogger(getClass());
     }
 
     @Override
@@ -78,6 +86,11 @@ public class HDEvictorImpl extends EvictorImpl {
         }
 
         recordStore.disposeDeferredBlocks();
+
+        if (storageInfo.increaseForceEvictionCount() == 1) {
+            logger.warning("Forced eviction invoked for the first time for IMap[name=" + recordStore.getName() + "]");
+        }
+        storageInfo.increaseForceEvictedEntryCount(removedEntryCount);
     }
 
     @Override

@@ -21,8 +21,9 @@ import com.hazelcast.elastic.SlottableIterator;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.memory.MemoryBlock;
+import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.nio.serialization.Data;
@@ -53,10 +54,12 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected HiDensityRecordProcessor<HiDensityNativeMemoryCacheRecord> cacheRecordProcessor;
     protected HiDensityStorageInfo cacheInfo;
     protected HazelcastMemoryManager memoryManager;
+    private final ILogger logger;
 
     public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
                                                  EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
         super(name, partitionId, nodeEngine, cacheService);
+        this.logger = nodeEngine.getLogger(getClass());
         ensureInitialized();
     }
 
@@ -303,7 +306,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     final HiDensityNativeMemoryCacheRecord createRecordInternal(Object value, long creationTime,
-            long expiryTime, long sequence) {
+                                                                long expiryTime, long sequence) {
 
         NativeMemoryData data = null;
         HiDensityNativeMemoryCacheRecord record;
@@ -773,25 +776,25 @@ public class HiDensityNativeMemoryCacheRecordStore
         try {
             if (record == null || isExpired) {
                 merged = createRecordWithExpiry(key, value, expiryTime,
-                                                now, true, completionId, origin) != null;
+                        now, true, completionId, origin) != null;
             } else {
                 NativeMemoryData existingValue = record.getValue();
                 Object newValue =
                         mergePolicy.merge(name,
-                                          cacheEntryView,
-                                          new DefaultCacheEntryView(key,
-                                                                    existingValue,
-                                                                    record.getCreationTime(),
-                                                                    record.getExpirationTime(),
-                                                                    record.getLastAccessTime(),
-                                                                    record.getAccessHit()));
+                                cacheEntryView,
+                                new DefaultCacheEntryView(key,
+                                        existingValue,
+                                        record.getCreationTime(),
+                                        record.getExpirationTime(),
+                                        record.getLastAccessTime(),
+                                        record.getAccessHit()));
                 if (existingValue != newValue) {
                     merged = updateRecordWithExpiry(key, newValue, record, expiryTime,
-                                                    now, true, completionId, caller, origin);
+                            now, true, completionId, caller, origin);
                 }
                 publishEvent(createCacheCompleteEvent(toHeapData(key),
-                                                      CacheRecord.TIME_NOT_AVAILABLE,
-                                                      origin, completionId));
+                        CacheRecord.TIME_NOT_AVAILABLE,
+                        origin, completionId));
             }
 
             onMerge(cacheEntryView, mergePolicy, caller, true, record, isExpired, merged);
@@ -827,7 +830,9 @@ public class HiDensityNativeMemoryCacheRecordStore
         if (isStatisticsEnabled() && evictedCount > 0) {
             statistics.increaseCacheEvictions(evictedCount);
         }
-        cacheInfo.increaseForceEvictionCount();
+        if (cacheInfo.increaseForceEvictionCount() == 1) {
+            logger.warning("Forced eviction invoked for the first time for Cache[name=" + getName() + "]");
+        }
         cacheInfo.increaseForceEvictedEntryCount(evictedCount);
         return evictedCount;
     }

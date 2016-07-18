@@ -8,6 +8,9 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.instance.HazelcastInstanceProxy;
+import com.hazelcast.internal.metrics.LongGauge;
+import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -16,6 +19,9 @@ import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({SlowTest.class})
@@ -30,6 +36,7 @@ public class ForcedEvictionTest extends CacheTestSupport {
     protected HazelcastInstance getHazelcastInstance() {
         return hazelcastInstance;
     }
+
     protected TestHazelcastInstanceFactory getInstanceFactory(int instanceCount) {
         return createHazelcastInstanceFactory(instanceCount);
     }
@@ -57,8 +64,25 @@ public class ForcedEvictionTest extends CacheTestSupport {
         for (int i = 0; System.currentTimeMillis() < deadLine; i++) {
             cache.put(i, i);
         }
+        LongGauge forceEvictionCount = getMetricsRegistry().newLongGauge(
+                findMetricWithGivenStringAndSuffix(cache.getName(), ".forceEvictionCount"));
+        assertThat(forceEvictionCount.read(), greaterThan(0L));
 
-        //intentionally no assert. It's enough when the test does not throw NativeOutOfMemoryError
+        //intentionally no other assert. It's enough when the test does not throw NativeOutOfMemoryError
+    }
+
+    private MetricsRegistry getMetricsRegistry() {
+        return ((HazelcastInstanceProxy) hazelcastInstance).getOriginal().node.nodeEngine.getMetricsRegistry();
+    }
+
+    private String findMetricWithGivenStringAndSuffix(String string, String suffix) {
+        MetricsRegistry registry = getMetricsRegistry();
+        for (String name : registry.getNames()) {
+            if (name.endsWith(suffix) && name.contains(string)) {
+                return name;
+            }
+        }
+        throw new IllegalArgumentException("Could not find a metric with the given suffix " + suffix);
     }
 
     @Override

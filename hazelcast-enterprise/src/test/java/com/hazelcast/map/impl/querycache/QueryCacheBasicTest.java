@@ -17,6 +17,7 @@
 package com.hazelcast.map.impl.querycache;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.config.PredicateConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
@@ -65,13 +66,20 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
     @Parameterized.Parameter(1)
     public boolean useQueryCacheNaturalFilteringStrategy;
 
-    @Parameterized.Parameters(name = "includeValues: {0}, useQueryCacheFilteringStrategy: {1}")
+    @Parameterized.Parameter(2)
+    public boolean useNearCache;
+
+    @Parameterized.Parameters(name = "includeValues: {0}, useQueryCacheFilteringStrategy: {1}, nearCache: {2}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
-                {false, false},
-                {false, true},
-                {true, false},
-                {true, true}
+                {false, false, false},
+                {false, false, true},
+                {false, true, false},
+                {false, true, true},
+                {true, false, false},
+                {true, false, true},
+                {true, true, false},
+                {true, true, true}
         });
     }
 
@@ -84,6 +92,10 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
                 new QueryCacheConfig(QUERY_CACHE_NAME).setPredicateConfig(new PredicateConfig(predicate))
                                                       .setIncludeValue(includeValues)
         );
+        if (useNearCache) {
+            cfg.getMapConfig(TEST_MAP_NAME).setNearCacheConfig(new NearCacheConfig());
+            cfg.getMapConfig(TEST_MAP_NAME).getNearCacheConfig().setCacheLocalEntries(true);
+        }
         cfg.setProperty(MapEventPublisherImpl.LISTENER_WITH_PREDICATE_PRODUCES_NATURAL_EVENT_TYPES.getName(),
                 Boolean.toString(useQueryCacheNaturalFilteringStrategy));
         instance = createHazelcastInstance(cfg);

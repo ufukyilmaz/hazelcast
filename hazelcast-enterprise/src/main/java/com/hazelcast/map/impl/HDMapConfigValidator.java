@@ -63,7 +63,7 @@ public final class HDMapConfigValidator {
         checkHotRestartSpecificConfig(mapConfig);
     }
 
-    protected static void logIgnoredConfig(MapConfig mapConfig) {
+    private static void logIgnoredConfig(MapConfig mapConfig) {
         if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
                 || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
 
@@ -72,7 +72,7 @@ public final class HDMapConfigValidator {
         }
     }
 
-    protected static void checkMaxSizePolicy(MapConfig mapConfig) {
+    private static void checkMaxSizePolicy(MapConfig mapConfig) {
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
         if (UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES.contains(maxSizePolicy)) {

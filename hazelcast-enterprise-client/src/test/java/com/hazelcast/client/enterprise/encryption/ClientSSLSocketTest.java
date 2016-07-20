@@ -26,11 +26,12 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.test.annotation.QuickTest;
+import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -47,27 +48,31 @@ import static org.junit.Assert.assertNull;
 @Category(QuickTest.class)
 public class ClientSSLSocketTest {
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @After
-    @Before
     public void cleanup() throws Exception {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }
 
-    @Test(expected = IllegalStateException.class, timeout = 60000)
-    @Ignore //https://github.com/hazelcast/hazelcast-enterprise/issues/597
+    @Test(timeout = 60000)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Properties serverSslProps = TestKeyStoreUtil.createSslProperties();
         Config cfg = new Config();
         cfg.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
         cfg.getNetworkConfig().getJoin().getTcpIpConfig().setEnabled(true).addMember("127.0.0.1");
         cfg.getNetworkConfig().setSSLConfig(new SSLConfig().setEnabled(true).setProperties(serverSslProps));
-        final HazelcastInstance hz1 = Hazelcast.newHazelcastInstance(cfg);
-        final HazelcastInstance hz2 = Hazelcast.newHazelcastInstance(cfg);
+        Hazelcast.newHazelcastInstance(cfg);
+        Hazelcast.newHazelcastInstance(cfg);
 
         ClientConfig config = new ClientConfig();
         config.getNetworkConfig().addAddress("127.0.0.1");
-        final HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
+
+        expectedException.expect(IllegalStateException.class);
+        expectedException.expectMessage(Matchers.containsString("Unable to connect"));
+        HazelcastClient.newHazelcastClient(config);
     }
 
     @Test

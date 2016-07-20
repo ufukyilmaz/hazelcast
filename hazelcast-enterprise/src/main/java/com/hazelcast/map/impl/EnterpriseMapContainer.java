@@ -33,6 +33,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ConstructorFunction;
@@ -46,21 +47,23 @@ import static com.hazelcast.map.impl.eviction.Evictor.NULL_EVICTOR;
  */
 public class EnterpriseMapContainer extends MapContainer {
 
-    private final HiDensityStorageInfo storageInfo;
+    private HiDensityStorageInfo storageInfo;
 
     public EnterpriseMapContainer(final String name, final Config config, MapServiceContext mapServiceContext) {
         super(name, config, mapServiceContext);
-        storageInfo = new HiDensityStorageInfo(name);
     }
 
     @Override
     public void initEvictor() {
+        // this can't be located in the constructor since the superclass constructor calls initEvictor() at its end.
+        initStorageInfoAndRegisterMapProbes();
         if (NATIVE == mapConfig.getInMemoryFormat()) {
             MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
             if (mapEvictionPolicy != null) {
                 HDEvictionChecker evictionChecker = new HDEvictionChecker(new RuntimeMemoryInfoAccessor(), mapServiceContext);
                 IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
-                evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService);
+                evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService, storageInfo,
+                        mapServiceContext.getNodeEngine());
             } else {
                 evictor = NULL_EVICTOR;
             }
@@ -113,5 +116,22 @@ public class EnterpriseMapContainer extends MapContainer {
 
         return super.newQueryEntry(key, value);
     }
+
+    @Override
+    public void onDestroy() {
+        deregisterMapProbes();
+    }
+
+    private void initStorageInfoAndRegisterMapProbes() {
+        storageInfo = new HiDensityStorageInfo(name);
+        ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
+                .scanAndRegister(storageInfo, "map[" + name + "]");
+    }
+
+    private void deregisterMapProbes() {
+        ((NodeEngineImpl) mapServiceContext.getNodeEngine()).getMetricsRegistry()
+                .deregister(storageInfo);
+    }
+
 }
 

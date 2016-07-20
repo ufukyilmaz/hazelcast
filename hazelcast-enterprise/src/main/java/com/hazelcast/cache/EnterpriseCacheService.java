@@ -102,7 +102,9 @@ public class EnterpriseCacheService
                                 + " is already destroyed or not created yet, on " + nodeEngine.getLocalMember());
                     }
                     CacheContext cacheContext = getOrCreateCacheContext(cacheNameWithPrefix);
-                    return new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
+                    HiDensityCacheStorageInfo storageInfo = new HiDensityCacheStorageInfo(cacheNameWithPrefix, cacheContext);
+                    registerCacheProbes(storageInfo, cacheNameWithPrefix);
+                    return storageInfo;
                 }
             };
 
@@ -271,7 +273,18 @@ public class EnterpriseCacheService
                 nodeEngine.getLogger(getClass()).warning(e);
             }
         }
-        hiDensityCacheInfoMap.remove(cacheName);
+        HiDensityStorageInfo storageInfo = hiDensityCacheInfoMap.remove(cacheName);
+        if (storageInfo != null) {
+            deregisterCacheProbes(storageInfo);
+        }
+    }
+
+    private void registerCacheProbes(HiDensityStorageInfo cacheInfo, String cacheName) {
+        ((NodeEngineImpl) nodeEngine).getMetricsRegistry().scanAndRegister(cacheInfo, "cache[" + cacheName + "]");
+    }
+
+    private void deregisterCacheProbes(HiDensityStorageInfo cacheInfo) {
+        ((NodeEngineImpl) nodeEngine).getMetricsRegistry().deregister(cacheInfo);
     }
 
     /**

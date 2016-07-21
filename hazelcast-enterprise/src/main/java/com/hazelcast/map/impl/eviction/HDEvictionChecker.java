@@ -30,6 +30,7 @@ import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 
 /**
  * Checks whether a specific threshold is exceeded or not
@@ -93,12 +94,12 @@ public class HDEvictionChecker extends EvictionChecker {
         return checkMinFreeNativeMemoryPercentage(hotRestartMinFreeNativeMemoryPercentage);
     }
 
-    protected boolean checkMaxUsedNativeMemorySize(double maxUsedSize, HiDensityStorageInfo storageInfo) {
-        long currentUsedSize = storageInfo.getUsedMemory();
-        return maxUsedSize < (1D * currentUsedSize / ONE_MEGABYTE);
+    protected boolean checkMaxUsedNativeMemorySize(int maxUsedMB, HiDensityStorageInfo storageInfo) {
+        long currentUsedBytes = storageInfo.getUsedMemory();
+        return MEGABYTES.toBytes(maxUsedMB) < currentUsedBytes;
     }
 
-    protected boolean checkMaxUsedNativeMemoryPercentage(double maxUsedPercentage, HiDensityStorageInfo storageInfo) {
+    protected boolean checkMaxUsedNativeMemoryPercentage(int maxUsedPercentage, HiDensityStorageInfo storageInfo) {
         long currentUsedSize = storageInfo.getUsedMemory();
 
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
@@ -108,7 +109,7 @@ public class HDEvictionChecker extends EvictionChecker {
         return maxUsedPercentage < (1D * ONE_HUNDRED_PERCENT * currentUsedSize / maxUsableSize);
     }
 
-    protected boolean checkMinFreeNativeMemoryPercentage(double minFreePercentage) {
+    protected boolean checkMinFreeNativeMemoryPercentage(int minFreePercentage) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
@@ -118,13 +119,13 @@ public class HDEvictionChecker extends EvictionChecker {
         return minFreePercentage > (1D * ONE_HUNDRED_PERCENT * currentFreeSize / maxUsableSize);
     }
 
-    protected boolean checkMinFreeNativeMemorySize(double minFreeSize) {
+    protected boolean checkMinFreeNativeMemorySize(int minFreeMB) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         HazelcastMemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        long currentFreeSize = memoryManager.getMemoryStats().getFreeNative();
+        long currentFreeBytes = memoryManager.getMemoryStats().getFreeNative();
 
-        return minFreeSize > (1D * currentFreeSize / ONE_MEGABYTE);
+        return MEGABYTES.toBytes(minFreeMB) > currentFreeBytes;
     }
 }
 

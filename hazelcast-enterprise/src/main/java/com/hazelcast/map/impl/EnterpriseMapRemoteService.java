@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.map.impl.proxy.EnterpriseMapProxyImpl;
@@ -20,11 +21,12 @@ class EnterpriseMapRemoteService extends MapRemoteService {
 
     @Override
     public DistributedObject createDistributedObject(String name) {
-        MapConfig mapConfig = nodeEngine.getConfig().findMapConfig(name);
-        checkHDConfig(mapConfig);
+        Config config = nodeEngine.getConfig();
+        MapConfig mapConfig = config.findMapConfig(name);
+        checkHDConfig(mapConfig, config.getNativeMemoryConfig());
 
         if (mapConfig.isNearCacheEnabled()) {
-            checkHDConfig(mapConfig.getNearCacheConfig());
+            checkHDConfig(mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig());
 
             return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {

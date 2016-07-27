@@ -11,7 +11,6 @@ public class HDMapFetchEntriesOperation extends HDMapOperation {
     private int fetchSize;
     private transient MapEntriesWithCursor result;
 
-
     public HDMapFetchEntriesOperation() {
     }
 
@@ -45,4 +44,3 @@ public class HDMapFetchEntriesOperation extends HDMapOperation {
         out.writeInt(fetchSize);
     }
 }
-

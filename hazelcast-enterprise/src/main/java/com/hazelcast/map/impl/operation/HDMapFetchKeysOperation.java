@@ -44,4 +44,3 @@ public class HDMapFetchKeysOperation extends HDMapOperation {
         out.writeInt(fetchSize);
     }
 }
-

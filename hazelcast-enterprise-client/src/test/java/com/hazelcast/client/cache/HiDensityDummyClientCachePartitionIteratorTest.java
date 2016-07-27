@@ -14,7 +14,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HiDensityClientCachePartitionIteratorTest extends ClientCachePartitionIteratorTest {
+public class HiDensityDummyClientCachePartitionIteratorTest extends DummyClientCachePartitionIteratorTest {
 
     @Override
     protected Config getConfig() {

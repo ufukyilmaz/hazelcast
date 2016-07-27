@@ -12,14 +12,10 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @author mdogan 15/05/14
- *
  * @deprecated Not used
  */
 @Deprecated
-public class CacheIteratorOperation
-        extends AbstractHiDensityCacheOperation
-        implements ReadonlyOperation {
+public class CacheIteratorOperation extends AbstractHiDensityCacheOperation implements ReadonlyOperation {
 
     private int slot;
     private int batch;
@@ -74,5 +70,4 @@ public class CacheIteratorOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.ITERATE;
     }
-
 }

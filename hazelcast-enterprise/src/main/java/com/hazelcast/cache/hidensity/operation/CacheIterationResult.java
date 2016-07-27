@@ -8,13 +8,10 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import java.io.IOException;
 
 /**
- * @author mdogan 15/05/14
- *
  * @deprecated Not used
  */
 @Deprecated
-public final class CacheIterationResult
-        implements IdentifiedDataSerializable {
+public final class CacheIterationResult implements IdentifiedDataSerializable {
 
     private Data[] keys;
     private Data[] values;
@@ -96,5 +93,4 @@ public final class CacheIterationResult
         sb.append('}');
         return sb.toString();
     }
-
 }

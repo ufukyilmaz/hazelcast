@@ -16,15 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author sozal 25/10/14
- *
  * @deprecated OSS version ({@link com.hazelcast.cache.impl.operation.CacheKeyIteratorOperation}) is enough,
- *             no need this EE version
+ * no need for this EE version
  */
 @Deprecated
-public class CacheKeyIteratorOperation
-        extends AbstractHiDensityCacheOperation
-        implements ReadonlyOperation {
+public class CacheKeyIteratorOperation extends AbstractHiDensityCacheOperation implements ReadonlyOperation {
 
     private int slot;
     private int batch;
@@ -81,5 +77,4 @@ public class CacheKeyIteratorOperation
     public int getId() {
         return HiDensityCacheDataSerializerHook.ITERATE;
     }
-
 }

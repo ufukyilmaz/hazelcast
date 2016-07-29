@@ -180,11 +180,12 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     public void onMembershipChange() {
-        if (isClusterActive()) {
+        if (isClusterActive() && node.joined()) {
             persistMembers();
         }
     }
 
+    // replicaChanged(event) is called synchronously
     @Override
     public void replicaChanged(PartitionReplicaChangeEvent event) {
         if (logger.isFinestEnabled()) {

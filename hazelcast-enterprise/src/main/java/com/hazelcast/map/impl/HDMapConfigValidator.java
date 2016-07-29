@@ -6,6 +6,7 @@ import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
+import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
@@ -25,6 +26,8 @@ import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENT
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.util.Preconditions.checkTrue;
+import static java.lang.String.format;
 import static java.util.EnumSet.complementOf;
 
 /**
@@ -49,12 +52,16 @@ public final class HDMapConfigValidator {
     /**
      * Checks preconditions to create a map proxy.
      *
-     * @param mapConfig the mapConfig
+     * @param mapConfig          the mapConfig
+     * @param nativeMemoryConfig the nativeMemoryConfig
      */
-    public static void checkHDConfig(MapConfig mapConfig) {
+    public static void checkHDConfig(MapConfig mapConfig, NativeMemoryConfig nativeMemoryConfig) {
         if (NATIVE != mapConfig.getInMemoryFormat()) {
             return;
         }
+
+        checkTrue(nativeMemoryConfig.isEnabled(),
+                format("Enable native memory config to use NATIVE in-memory-format for the map [%s]", mapConfig.getName()));
 
         logIgnoredConfig(mapConfig);
 
@@ -103,7 +110,7 @@ public final class HDMapConfigValidator {
         if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
                 && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage
                 ) {
-            throw new IllegalArgumentException(String.format(
+            throw new IllegalArgumentException(format(
                     "There is a global limit on the minimum free native memory, settable by the system property"
                             + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
                             + " with %d percent, lower than the allowed minimum.",
@@ -118,11 +125,14 @@ public final class HDMapConfigValidator {
      *
      * @param nearCacheConfig the nearCacheConfig
      */
-    public static void checkHDConfig(NearCacheConfig nearCacheConfig) {
+    public static void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
         InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE != inMemoryFormat) {
             return;
         }
+
+        checkTrue(nativeMemoryConfig.isEnabled(),
+                "Enable native memory config to use NATIVE in-memory-format for near cache");
 
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
 

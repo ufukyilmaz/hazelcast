@@ -36,11 +36,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.publishCacheWideEvent;
 import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.publishEntryEvent;
 import static com.hazelcast.util.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * Default implementation of {@link com.hazelcast.map.QueryCache QueryCache} interface which holds actual data.
@@ -121,11 +122,8 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
         if (brokenSequences.isEmpty()) {
             return true;
         }
-        boolean forcingSucceeded = isTryRecoverSucceeded(brokenSequences);
-        if (forcingSucceeded) {
-            brokenSequences.clear();
-        }
-        return forcingSucceeded;
+
+        return isTryRecoverSucceeded(brokenSequences);
     }
 
     /**
@@ -150,12 +148,11 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
             futures.add(future);
         }
 
-        Collection<Object> results = FutureUtil.returnWithDeadline(futures, 1, TimeUnit.MINUTES);
+        Collection<Object> results = FutureUtil.returnWithDeadline(futures, 1, MINUTES);
         int successCount = 0;
         for (Object object : results) {
-            subscriberContextSupport.resolveResponseForRecoveryOperation(results);
-            Boolean result = (Boolean) context.toObject(object);
-            if (Boolean.TRUE.equals(result)) {
+            Boolean resolvedResponse = subscriberContextSupport.resolveResponseForRecoveryOperation(object);
+            if (TRUE.equals(resolvedResponse)) {
                 successCount++;
             }
         }

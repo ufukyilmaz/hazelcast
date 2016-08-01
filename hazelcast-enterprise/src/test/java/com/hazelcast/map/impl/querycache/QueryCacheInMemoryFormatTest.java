@@ -7,7 +7,7 @@ import com.hazelcast.config.PredicateConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
-import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseParallelJUnitClassRunner.class)
+// keep serial runner, test operates on statics.
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheInMemoryFormatTest extends HazelcastTestSupport {
 

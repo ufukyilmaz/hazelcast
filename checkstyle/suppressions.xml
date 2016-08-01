@@ -23,8 +23,5 @@
 
     <!-- Hot restart module -->
     <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl" />
-
-    <!-- temp suppression, there is another PR to clean this up -->
-    <suppress checks="" files="com/hazelcast/util/concurrent/AbstractConcurrentArrayQueue" />
-
+    <suppress checks="OuterTypeNumber" files="com/hazelcast/internal/util/collection/AbstractConcurrentArrayQueue\.java"/>
 </suppressions>

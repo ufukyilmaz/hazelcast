@@ -1,11 +1,11 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 
+import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.util.concurrent.QueuedPipe;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class ConcurrentConveyorTest {
 
     @Before
     public void before() {
-        final AbstractConcurrentArrayQueue<Item>[] qs = new AbstractConcurrentArrayQueue[queueCount];
+        final QueuedPipe<Item>[] qs = new QueuedPipe[queueCount];
         defaultQ = new OneToOneConcurrentArrayQueue<Item>(queueCapacity);
         qs[0] = defaultQ;
         qs[1] = new OneToOneConcurrentArrayQueue<Item>(queueCapacity);

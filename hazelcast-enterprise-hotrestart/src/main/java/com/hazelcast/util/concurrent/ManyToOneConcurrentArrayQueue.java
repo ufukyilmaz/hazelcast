@@ -1,6 +1,6 @@
 /*
  * Original work Copyright 2015 Real Logic Ltd.
- * Modified work Copyright (c) 2015, Hazelcast, Inc. All Rights Reserved.
+ * Modified work Copyright (c) 2016, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,111 +14,104 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hazelcast.util.concurrent;
 
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import com.hazelcast.util.function.Consumer;
 
-import java.util.Collection;
-
-import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-
 /**
- * Many producer to one consumer concurrent queue that is array backed. The algorithm is a variation of Fast Flow
- * consumer
- * adapted to work with the Java Memory Model on arrays by using {@link sun.misc.Unsafe}.
+ * Many producers to single consumer concurrent queue backed by an array. Adapted from the Agrona project.
  *
- * @param <E> type of the elements stored in the {@link java.util.Queue}.
+ * @param <E> type of the elements stored in the queue.
  */
 public class ManyToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueue<E> {
-    public ManyToOneConcurrentArrayQueue(final int requestedCapacity) {
+    public ManyToOneConcurrentArrayQueue(int requestedCapacity) {
         super(requestedCapacity);
     }
 
-    public boolean offer(final E e) {
-        if (null == e) {
-            throw new NullPointerException("element cannot be null");
-        }
+    @Override
+    public boolean offer(E e) {
+        assert e != null : "attempt to offer a null element";
 
-        long currentTail;
-        final long bufferLimit = head + capacity;
+        final int capacity = this.capacity;
+
+        long acquiredHead = sharedHeadCache;
+        long bufferLimit = acquiredHead + capacity;
+        long acquiredTail;
         do {
-            currentTail = tail;
-
-            if (currentTail >= bufferLimit) {
-                return false;
+            acquiredTail = tail;
+            if (acquiredTail >= bufferLimit) {
+                acquiredHead = head;
+                bufferLimit = acquiredHead + capacity;
+                if (acquiredTail >= bufferLimit) {
+                    return false;
+                }
+                SHARED_HEAD_CACHE.lazySet(this, acquiredHead);
             }
-        } while (!AMEM.compareAndSwapLong(this, TAIL_OFFSET, currentTail, currentTail + 1));
-
-        AMEM.putOrderedObject(buffer, sequenceToOffset(currentTail, mask), e);
-
+        } while (!TAIL.compareAndSet(this, acquiredTail, acquiredTail + 1));
+        buffer.lazySet(seqToArrayIndex(acquiredTail, capacity - 1), e);
         return true;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public E poll() {
-        final long currentHead = head;
-        final long elementOffset = sequenceToOffset(currentHead, mask);
-        final Object[] buffer = this.buffer;
-        final E item = (E) AMEM.getObjectVolatile(buffer, elementOffset);
-
-        if (null != item) {
-            AMEM.putObject(buffer, elementOffset, null);
-            AMEM.putOrderedLong(this, HEAD_OFFSET, currentHead + 1);
+        final long head = this.head;
+        final AtomicReferenceArray<E> buffer = this.buffer;
+        final int arrayIndex = seqToArrayIndex(head, capacity - 1);
+        final E item = buffer.get(arrayIndex);
+        if (item != null) {
+            buffer.lazySet(arrayIndex, null);
+            HEAD.lazySet(this, head + 1);
         }
-
         return item;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public int drain(final Consumer<E> elementHandler) {
-        final Object[] buffer = this.buffer;
-        final long mask = this.mask;
-        final long currentHead = head;
-        long nextSequence = currentHead;
+    @SuppressWarnings("unchecked")
+    public int drain(Consumer<E> elementHandler) {
+        final AtomicReferenceArray<E> buffer = this.buffer;
+        final long mask = capacity - 1;
+        final long acquiredHead = head;
+        final long limit = acquiredHead + mask + 1;
 
-        try {
-            do {
-                final long elementOffset = sequenceToOffset(nextSequence, mask);
-                final Object item = AMEM.getObjectVolatile(buffer, elementOffset);
-                if (null == item) {
-                    break;
-                }
-
-                AMEM.putObject(buffer, elementOffset, null);
-                nextSequence++;
-                elementHandler.accept((E) item);
-            } while (true);
-        } finally {
-            AMEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
+        long nextSequence = acquiredHead;
+        while (nextSequence < limit) {
+            final int arrayIndex = seqToArrayIndex(nextSequence, mask);
+            final E item = buffer.get(arrayIndex);
+            if (item == null) {
+                break;
+            }
+            buffer.lazySet(arrayIndex, null);
+            nextSequence++;
+            HEAD.lazySet(this, nextSequence);
+            elementHandler.accept(item);
         }
-
-        return (int) (nextSequence - currentHead);
+        return (int) (nextSequence - acquiredHead);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public int drainTo(final Collection<? super E> target, final int limit) {
-        final Object[] buffer = this.buffer;
-        final long mask = this.mask;
+    public int drainTo(Collection<? super E> target, int limit) {
+        final AtomicReferenceArray<E> buffer = this.buffer;
+        final long mask = capacity - 1;
+
         long nextSequence = head;
         int count = 0;
-
         while (count < limit) {
-            final long elementOffset = sequenceToOffset(nextSequence, mask);
-            final Object item = AMEM.getObjectVolatile(buffer, elementOffset);
-            if (null == item) {
+            final int arrayIndex = seqToArrayIndex(nextSequence, mask);
+            final E item = buffer.get(arrayIndex);
+            if (item == null) {
                 break;
             }
-
-            AMEM.putObject(buffer, elementOffset, null);
+            buffer.lazySet(arrayIndex, null);
             nextSequence++;
+            HEAD.lazySet(this, nextSequence);
             count++;
-            target.add((E) item);
+            target.add(item);
         }
-
-        AMEM.putOrderedLong(this, HEAD_OFFSET, nextSequence);
-
         return count;
     }
 }

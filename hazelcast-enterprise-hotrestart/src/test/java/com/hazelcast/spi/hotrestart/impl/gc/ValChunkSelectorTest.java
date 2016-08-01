@@ -5,7 +5,6 @@ import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
-import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;

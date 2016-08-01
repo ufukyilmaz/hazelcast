@@ -1,6 +1,6 @@
 /*
  * Original work Copyright 2015 Real Logic Ltd.
- * Modified work Copyright (c) 2015, Hazelcast, Inc. All Rights Reserved.
+ * Modified work Copyright (c) 2016, Hazelcast, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,14 @@
  * limitations under the License.
  */
 
-/**
- * Contains concurrent APIs backported from Agrona.
- */
 package com.hazelcast.util.concurrent;
+
+import java.util.Queue;
+
+/**
+ * Composed interface for concurrent queues and sequenced containers.
+ *
+ * @param <E> type of the elements stored in the {@link java.util.Queue}.
+ */
+public interface QueuedPipe<E> extends Queue<E>, Pipe<E> {
+}

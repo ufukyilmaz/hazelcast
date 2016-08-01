@@ -1,13 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.util.concurrent.QueuedPipe;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.RestartItem.WithSetOfKeyHandle;
-import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class RamStoreRestartLoop {
         final int quotient = threadIndex / storeCount;
         final ConcurrentConveyor<RestartItem> keyReceiver = keyReceivers[remainder][quotient];
         final ConcurrentConveyor<RestartItem> keyHandleSender = keyHandleSenders[remainder];
-        final AbstractConcurrentArrayQueue<RestartItem> keyHandleSendQ = keyHandleSender.queue(quotient);
+        final QueuedPipe<RestartItem> keyHandleSendQ = keyHandleSender.queue(quotient);
         final ConcurrentConveyor<RestartItem> valueReceiver = valueReceivers[remainder][quotient];
         try {
             keyReceiver.drainerArrived();
@@ -86,7 +86,7 @@ public class RamStoreRestartLoop {
     @SuppressWarnings("checkstyle:npathcomplexity")
     private void mainLoop(
             int threadIndex, ConcurrentConveyor<RestartItem> keyReceiver,
-            ConcurrentConveyor<RestartItem> keyHandleSender, AbstractConcurrentArrayQueue<RestartItem> sendQ,
+            ConcurrentConveyor<RestartItem> keyHandleSender, QueuedPipe<RestartItem> sendQ,
             ConcurrentConveyor<RestartItem> valueReceiver
     ) {
         final int capacity = keyReceiver.queue(0).capacity();

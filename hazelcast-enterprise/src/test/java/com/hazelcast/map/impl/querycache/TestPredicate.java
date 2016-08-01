@@ -4,6 +4,8 @@ import com.hazelcast.query.Predicate;
 
 import java.util.Map;
 
+
+// used by QueryCachePredicateConfigTest$test_whenClassNameIsSet
 public class TestPredicate implements Predicate {
 
     @Override

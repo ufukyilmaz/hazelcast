@@ -16,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.publishEventLost;
+import static java.lang.String.format;
+import static java.util.logging.Level.WARNING;
 
 
 /**
@@ -37,16 +39,30 @@ public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData>
 
     public SubscriberAccumulator(QueryCacheContext context, AccumulatorInfo info) {
         super(context, info);
-        this.handler = createAccumulatorHandler(context);
+
+        this.handler = createAccumulatorHandler();
         this.sequenceProvider = createSequencerProvider();
         this.brokenSequences = new ConcurrentHashMap<Integer, Long>();
     }
 
     @Override
     public void accumulate(QueryCacheEventData event) {
+        if (logger.isFinestEnabled()) {
+            logger.finest("Received event=" + event);
+        }
+
         if (!isApplicable(event)) {
+            if (logger.isFinestEnabled()) {
+                logger.finest("Event was not inserted to queryCache=" + event);
+            }
+
             return;
         }
+
+        if (logger.isFinestEnabled()) {
+            logger.finest("Event was added to queryCache=" + event);
+        }
+
         addQueryCache(event);
     }
 
@@ -54,43 +70,100 @@ public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData>
      * Checks whether the event data is applicable to the query cache.
      */
     private boolean isApplicable(QueryCacheEventData event) {
-        return getInfo().isPublishable()
-                && hasNextSequence(event);
-    }
-
-    private boolean hasNextSequence(Sequenced event) {
-        int partitionId = event.getPartitionId();
-        long newSequence = event.getSequence();
-
-        // if sequence is -1, it means an instance sequence should be reset.
-        if (newSequence == -1L) {
-            sequenceProvider.reset(partitionId);
+        if (!getInfo().isPublishable()) {
             return false;
         }
+
+        final int partitionId = event.getPartitionId();
+
+        if (isEndEvent(event)) {
+            sequenceProvider.reset(partitionId);
+            removeFromBrokenSequences(event);
+            return false;
+        }
+
+        if (isNextEvent(event)) {
+            long currentSequence = sequenceProvider.getSequence(partitionId);
+            sequenceProvider.compareAndSetSequence(currentSequence, event.getSequence(), partitionId);
+
+            removeFromBrokenSequences(event);
+            return true;
+        }
+
+        handleUnexpectedEvent(event);
+
+        return false;
+    }
+
+    private void removeFromBrokenSequences(QueryCacheEventData event) {
+        if (brokenSequences.isEmpty()) {
+            return;
+        }
+
+        int partitionId = event.getPartitionId();
+        long sequence = event.getSequence();
+
+        if (sequence == -1L) {
+            brokenSequences.remove(partitionId);
+        } else {
+            Long expected = brokenSequences.get(partitionId);
+            if (expected != null && expected == event.getSequence()) {
+                brokenSequences.remove(partitionId);
+            }
+        }
+
+        if (logger.isFinestEnabled()) {
+            logger.finest(format("Size of broken sequences=%d", brokenSequences.size()));
+        }
+    }
+
+    private void handleUnexpectedEvent(QueryCacheEventData event) {
+        addEventSequenceToBrokenSequences(event);
+        publishEventLost(context, info.getMapName(), info.getCacheName(), event.getPartitionId());
+    }
+
+    private void addEventSequenceToBrokenSequences(QueryCacheEventData event) {
+        Long prev = brokenSequences.putIfAbsent(event.getPartitionId(), event.getSequence());
+
+        if (prev == null && logger.isFinestEnabled()) {
+            logger.finest(format("Added unexpected event sequence to broken sequences "
+                            + "[partitionId=%d, expected-sequence=%d, broken-sequences-size=%d]",
+                    event.getPartitionId(), event.getSequence(), brokenSequences.size()));
+        }
+    }
+
+    protected boolean isNextEvent(Sequenced event) {
+        int partitionId = event.getPartitionId();
         long currentSequence = sequenceProvider.getSequence(partitionId);
 
-        // if new-sequence is not the next-expected-sequence.
+        long foundSequence = event.getSequence();
         long expectedSequence = currentSequence + 1L;
-        if (newSequence != expectedSequence) {
-            logger.warning("Event lost detected for partitionId = " + partitionId
-                    + ", expected sequence = " + expectedSequence
-                    + " but found = " + newSequence);
-            Long prev = brokenSequences.putIfAbsent(partitionId, expectedSequence);
-            if (prev == null) {
-                publishEventLost(context, info.getMapName(), info.getCacheName(), partitionId);
+
+        boolean isNextSequence = foundSequence == expectedSequence;
+
+        if (!isNextSequence) {
+            if (logger.isLoggable(WARNING)) {
+                logger.warning(format("Event lost detected for partitionId=%d, expectedSequence=%d "
+                                + "but foundSequence=%d, cacheSize=%d",
+                        partitionId, expectedSequence, foundSequence, getQueryCache().size()));
             }
-            return false;
         }
-        return sequenceProvider.compareAndSetSequence(currentSequence, newSequence, partitionId);
+
+        return isNextSequence;
     }
 
-    private SubscriberAccumulatorHandler createAccumulatorHandler(QueryCacheContext context) {
+    private InternalQueryCache getQueryCache() {
         AccumulatorInfo info = getInfo();
-        boolean includeValue = info.isIncludeValue();
         String cacheName = info.getCacheName();
         SubscriberContext subscriberContext = context.getSubscriberContext();
         QueryCacheFactory queryCacheFactory = subscriberContext.getQueryCacheFactory();
-        InternalQueryCache queryCache = queryCacheFactory.getOrNull(cacheName);
+        return queryCacheFactory.getOrNull(cacheName);
+    }
+
+    private SubscriberAccumulatorHandler createAccumulatorHandler() {
+        AccumulatorInfo info = getInfo();
+        boolean includeValue = info.isIncludeValue();
+        InternalQueryCache queryCache = getQueryCache();
         InternalSerializationService serializationService = context.getSerializationService();
         return new SubscriberAccumulatorHandler(includeValue, queryCache, serializationService);
     }
@@ -105,6 +178,10 @@ public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData>
 
     public ConcurrentMap<Integer, Long> getBrokenSequences() {
         return brokenSequences;
+    }
+
+    public boolean isEndEvent(QueryCacheEventData event) {
+        return event.getSequence() == -1L;
     }
 }
 

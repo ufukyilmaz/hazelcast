@@ -1,8 +1,7 @@
 package com.hazelcast.client.map.querycache;
 
-import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.core.EntryEvent;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
@@ -14,6 +13,7 @@ import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,20 +28,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
+
+    private static TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @BeforeClass
     public static void setUp() throws Exception {
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+        factory.shutdownAll();
     }
 
     @Test
@@ -49,7 +50,7 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance instance = HazelcastClient.newHazelcastClient();
+        HazelcastInstance instance = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
 
         CountDownLatch numberOfCaughtEvents = new CountDownLatch(10);
@@ -71,7 +72,7 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance instance = HazelcastClient.newHazelcastClient();
+        HazelcastInstance instance = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
 
 
@@ -95,7 +96,7 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance instance = HazelcastClient.newHazelcastClient();
+        HazelcastInstance instance = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
 
         CountDownLatch additionCount = new CountDownLatch(2);
@@ -152,7 +153,7 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
 
         final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);

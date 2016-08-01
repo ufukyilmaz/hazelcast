@@ -6,18 +6,22 @@ import com.hazelcast.map.impl.query.QueryResult;
 import com.hazelcast.map.impl.query.QueryResultRow;
 import com.hazelcast.map.impl.querycache.InvokerWrapper;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
-import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
+import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.FutureUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+
+import static com.hazelcast.util.FutureUtil.returnWithDeadline;
+import static com.hazelcast.util.FutureUtil.waitWithDeadline;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * Node-side implementation of {@code QueryCacheEndToEndConstructor}.
@@ -35,7 +39,13 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
         // create publishers and execute initial population query in one go.
         Collection<QueryResult> results = createPublishersAndGetQueryResults(info);
         setResults(queryCache, results);
-        if (info.isPopulate()) {
+        boolean populate = info.isPopulate();
+
+        if (logger.isFinestEnabled()) {
+            logger.finest(format("Pre population is %s", populate ? "enabled" : "disabled"));
+        }
+
+        if (populate) {
             madePublishable(info.getMapName(), info.getCacheName());
         }
     }
@@ -49,14 +59,21 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
             Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), address);
             futures.add(future);
         }
-        return FutureUtil.returnWithDeadline(futures, PUBLISHER_CREATE_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+        return returnWithDeadline(futures, OPERATION_WAIT_TIMEOUT_MINUTES, MINUTES);
     }
 
     private void madePublishable(String mapName, String cacheName) throws Exception {
         InvokerWrapper invokerWrapper = context.getInvokerWrapper();
-        MadePublishableOperationFactory operationFactory = new MadePublishableOperationFactory(mapName, cacheName);
-        // TODO what if some operations return FALSE?
-        invokerWrapper.invokeOnAllPartitions(operationFactory);
+
+        Collection<Member> memberList = context.getMemberList();
+        List<Future> futures = new ArrayList<Future>(memberList.size());
+        for (Member member : memberList) {
+            Operation operation = new MadePublishableOperation(mapName, cacheName);
+            Future future = invokerWrapper.invokeOnTarget(operation, member.getAddress());
+            futures.add(future);
+        }
+
+        waitWithDeadline(futures, OPERATION_WAIT_TIMEOUT_MINUTES, MINUTES);
     }
 
     private void setResults(InternalQueryCache queryCache, Collection<QueryResult> results) {

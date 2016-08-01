@@ -79,7 +79,13 @@ public class BatchEventData implements Sequenced, EventData {
 
     @Override
     public String toString() {
-        return "BatchEventData{}";
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("BatchEventData{");
+        for (QueryCacheEventData event : events) {
+            stringBuilder.append(event);
+        }
+        stringBuilder.append("}");
+        return stringBuilder.toString();
     }
 
     @Override

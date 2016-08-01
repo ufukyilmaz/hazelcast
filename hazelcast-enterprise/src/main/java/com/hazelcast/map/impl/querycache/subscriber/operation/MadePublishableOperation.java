@@ -1,5 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber.operation;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.operation.MapOperation;
@@ -9,7 +11,6 @@ import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.utils.QueryCacheUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.PartitionAwareOperation;
 
 import java.io.IOException;
 
@@ -17,7 +18,9 @@ import java.io.IOException;
  * Sets {@link AccumulatorInfo#publishable} to {@code true}.
  * After enabling that, accumulators becomes available to send events in their buffers to subscriber-side.
  */
-public class MadePublishableOperation extends MapOperation implements PartitionAwareOperation {
+public class MadePublishableOperation extends MapOperation {
+
+    private final ILogger logger = Logger.getLogger(getClass());
 
     private String cacheName;
 
@@ -44,6 +47,10 @@ public class MadePublishableOperation extends MapOperation implements PartitionA
 
         AccumulatorInfo info = registry.getInfo();
         info.setPublishable(true);
+
+        if (logger.isFinestEnabled()) {
+            logger.finest("Accumulator was made publishable for map=" + getName());
+        }
         this.done = true;
     }
 

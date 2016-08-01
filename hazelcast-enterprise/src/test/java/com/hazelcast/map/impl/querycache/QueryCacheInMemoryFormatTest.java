@@ -10,6 +10,7 @@ import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheInMemoryFormatTest extends HazelcastTestSupport {
 
     @Test

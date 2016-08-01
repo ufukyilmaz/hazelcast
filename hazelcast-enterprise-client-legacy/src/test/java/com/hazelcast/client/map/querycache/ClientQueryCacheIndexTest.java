@@ -1,14 +1,13 @@
 package com.hazelcast.client.map.querycache;
 
-import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.QueryCacheConfig;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.mapreduce.helpers.Employee;
 import com.hazelcast.query.Predicate;
@@ -16,6 +15,7 @@ import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
@@ -29,22 +29,24 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
+
+    private TestHazelcastFactory factory;
 
     @Before
     public void setUp() throws Exception {
         Config config = new Config();
-        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
 
-        Hazelcast.newHazelcastInstance(config);
+        factory = new TestHazelcastFactory();
+        factory.newHazelcastInstance(config);
     }
 
     @After
     public void tearDown() throws Exception {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+        factory.shutdownAll();
     }
 
     @Test
@@ -52,7 +54,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         // populate map before construction of query cache.
@@ -88,7 +90,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.addQueryCacheConfig(mapName, queryCacheConfig);
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         // populate map before construction of query cache.
@@ -118,7 +120,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         final int putCount = 111;
@@ -146,7 +148,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         final int putCount = 111;
@@ -172,7 +174,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         final int putCount = 111;
@@ -200,7 +202,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         final int putCount = 111;
@@ -226,7 +228,7 @@ public class ClientQueryCacheIndexTest extends HazelcastTestSupport {
         String mapName = randomString();
         String cacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) client.getMap(mapName);
 
         final int putCount = 111;

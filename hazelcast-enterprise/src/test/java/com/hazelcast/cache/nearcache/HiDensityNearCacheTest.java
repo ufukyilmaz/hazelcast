@@ -13,11 +13,14 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.QuickMath;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+
+import static java.lang.Runtime.getRuntime;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
@@ -150,9 +153,14 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Test
     public void createEntryBiggerThanNativeMemory() {
-        MemorySize memorySize = new MemorySize(32, MemoryUnit.MEGABYTES);
-        NearCacheConfig nearCacheConfig =
-                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+        // Given
+        final int estimatedNearCacheConcurrencyLevel = QuickMath.nextPowerOfTwo(8 * getRuntime().availableProcessors());
+        final int metaKbPerEmptyNearCacheSegment = 4;
+        final int metadataSizeToTotalNativeSizeFactor = 8;
+        MemorySize memorySize = new MemorySize(
+                estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor
+                        * 2, MemoryUnit.KILOBYTES);
+        NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
         try {
             NearCacheContext nearCacheContext = createNearCacheContext(mm);
@@ -162,6 +170,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                             nearCacheConfig,
                             nearCacheContext);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
+
+            // When - Then (just don't fail)
             nearCache.put(1, value);
         } finally {
             mm.destroy();

@@ -1,30 +1,26 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
+import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
-import com.hazelcast.map.impl.querycache.QueryCacheContext;
-import com.hazelcast.map.impl.querycache.event.sequence.SubscriberSequencerProvider;
-import com.hazelcast.util.ConcurrencyUtil;
-import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.map.impl.querycache.event.DefaultQueryCacheEventData;
+import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class TestSubscriberContext extends NodeSubscriberContext {
 
     private final MapSubscriberRegistry mapSubscriberRegistry;
     private final int eventCount;
-    private final boolean allowEventLoss;
+    private final boolean enableEventLoss;
 
-    public TestSubscriberContext(QueryCacheContext context, int eventCount, boolean allowEventLoss) {
+    public TestSubscriberContext(QueryCacheContext context, int eventCount, boolean enableEventLoss) {
         super(context);
         this.eventCount = eventCount;
-        this.allowEventLoss = allowEventLoss;
+        this.enableEventLoss = enableEventLoss;
         this.mapSubscriberRegistry = new TestMapSubscriberRegistry(context);
     }
 
@@ -76,89 +72,37 @@ public class TestSubscriberContext extends NodeSubscriberContext {
 
     private class TestSubscriberAccumulator extends SubscriberAccumulator {
 
+        private final Set<Long> lostSequenceNumber = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+
         public TestSubscriberAccumulator(QueryCacheContext context, AccumulatorInfo info) {
             super(context, info);
+
+            if (enableEventLoss) {
+                // just pick a sequence number to mimic out of order events.
+                lostSequenceNumber.add(new Random().nextInt(eventCount) + 1L);
+            }
         }
 
         @Override
-        protected SubscriberSequencerProvider createSequencerProvider() {
-            return new RandomPartitionSequencer(eventCount, allowEventLoss);
+        protected boolean isNextEvent(Sequenced event) {
+            DefaultQueryCacheEventData eventData = (DefaultQueryCacheEventData) event;
+
+            if (lostSequenceNumber.remove(event.getSequence())) {
+
+                // create an out of order event by changing actual sequence.
+                DefaultQueryCacheEventData copy = new DefaultQueryCacheEventData();
+                copy.setSequence(eventData.getSequence() * 2);
+                copy.setPartitionId(eventData.getPartitionId());
+                copy.setEventType(eventData.getEventType());
+                copy.setKey(eventData.getKey());
+                copy.setValue(eventData.getValue());
+
+                eventData = copy;
+
+            }
+
+            return super.isNextEvent(eventData);
         }
     }
 
-
-    /**
-     * Used in tests.
-     */
-    public class RandomPartitionSequencer implements SubscriberSequencerProvider {
-
-        private final ConstructorFunction<Integer, Deque<Long>> sequenceConstructor
-                = new ConstructorFunction<Integer, Deque<Long>>() {
-            @Override
-            public Deque<Long> createNew(Integer arg) {
-                return createUnorderedSequence(allowEventLoss);
-            }
-        };
-
-        private final ConcurrentMap<Integer, Deque<Long>> sequences = new ConcurrentHashMap<Integer, Deque<Long>>();
-
-        private final int eventCount;
-        private final boolean allowEventLoss;
-
-        public RandomPartitionSequencer(int eventCount, boolean allowEventLoss) {
-            this.eventCount = eventCount;
-            this.allowEventLoss = allowEventLoss;
-        }
-
-        @Override
-        public synchronized boolean compareAndSetSequence(long expect, long update, int partitionId) {
-            Deque<Long> sequence = getPartitionSequence(partitionId);
-            Long nexSequence = sequence.peek();
-            if (nexSequence.equals(expect)) {
-                sequence.remove(nexSequence);
-                return sequence.add(update);
-            } else {
-                return false;
-            }
-        }
-
-        @Override
-        public synchronized long getSequence(int partitionId) {
-            Deque<Long> sequence = getPartitionSequence(partitionId);
-            return sequence.peek();
-        }
-
-        @Override
-        public synchronized void reset(int partitionId) {
-            Deque<Long> sequence = getPartitionSequence(partitionId);
-            sequence.clear();
-        }
-
-        private Deque<Long> createUnorderedSequence(boolean allowEventLoss) {
-            int lostEventCounter = 0;
-            List<Long> sequence = new ArrayList<Long>();
-            for (int i = 1; i <= eventCount; i++) {
-                if (allowEventLoss && lostEventCounter < 1) {
-                    lostEventCounter++;
-                    sequence.add(i + 1L);
-                } else {
-                    sequence.add(Long.valueOf(i));
-                }
-            }
-            Collections.shuffle(sequence);
-            return new ArrayDeque<Long>(sequence);
-        }
-
-        private Deque<Long> getPartitionSequence(int partitionId) {
-            return ConcurrencyUtil.getOrPutIfAbsent(sequences, partitionId, sequenceConstructor);
-        }
-
-        @Override
-        public String toString() {
-            return "RandomPartitionSequencer{"
-                    + "sequences=" + sequences
-                    + '}';
-        }
-
-    }
 }

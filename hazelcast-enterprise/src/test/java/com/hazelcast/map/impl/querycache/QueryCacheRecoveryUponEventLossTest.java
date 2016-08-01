@@ -6,39 +6,40 @@ import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.GroupProperty;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.querycache.subscriber.InternalQueryCache;
 import com.hazelcast.map.impl.querycache.subscriber.TestSubscriberContext;
 import com.hazelcast.map.listener.EventLostListener;
 import com.hazelcast.query.SqlPredicate;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.concurrent.CountDownLatch;
+import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
-@Ignore
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
 
     @Test
     public void testForceConsistency() throws Exception {
+        TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
+
         String mapName = randomString();
         String queryCacheName = randomString();
-        TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
+
         Config config = new Config();
-        config.setProperty(GroupProperty.PARTITION_COUNT, "1");
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);
         queryCacheConfig.setBatchSize(1111);
@@ -59,14 +60,11 @@ public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
         //set test sequencer to subscribers.
         int count = 30;
 
-        //expecting one lost event per partition.
-        final CountDownLatch lossCount = new CountDownLatch(10);
         final QueryCache queryCache = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
         queryCache.addEntryListener(new EventLostListener() {
             @Override
             public void eventLost(EventLostEvent event) {
-                ((InternalQueryCache) queryCache).tryRecover();
-                lossCount.countDown();
+                queryCache.tryRecover();
 
             }
         }, false);
@@ -75,15 +73,25 @@ public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
             map.put(i, i);
         }
 
-        assertOpenEventually(lossCount, 10);
+        AssertTask task = new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assertEquals(9, queryCache.size());
+            }
+        };
+
+        assertTrueEventually(task);
     }
+
 
     private void setTestSequencer(HazelcastInstance instance, int eventCount) {
         Node node = getNode(instance);
-        MapService service = (MapService) node.getNodeEngine().getService(MapService.SERVICE_NAME);
+        MapService service = node.getNodeEngine().getService(MapService.SERVICE_NAME);
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) service.getMapServiceContext();
         QueryCacheContext queryCacheContext = mapServiceContext.getQueryCacheContext();
         queryCacheContext.setSubscriberContext(new TestSubscriberContext(queryCacheContext, eventCount, true));
     }
+
+
 }

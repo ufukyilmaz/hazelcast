@@ -12,7 +12,7 @@
     <groupId>com.hazelcast</groupId>
     <artifactId>hazelcast-enterprise-root</artifactId>
     <packaging>pom</packaging>
-    <version>3.7-SNAPSHOT</version>
+    <version>3.8-SNAPSHOT</version>
 
     <properties>
         <main.basedir>${project.basedir}</main.basedir>

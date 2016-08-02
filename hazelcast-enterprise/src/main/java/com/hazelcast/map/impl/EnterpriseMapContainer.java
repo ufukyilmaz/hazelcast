@@ -36,6 +36,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.util.ConstructorFunction;
+import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
@@ -54,7 +55,8 @@ public class EnterpriseMapContainer extends MapContainer {
     @Override
     Evictor createEvictor(MapServiceContext mapServiceContext) {
         if (NATIVE.equals(mapConfig.getInMemoryFormat())) {
-            EvictionChecker evictionChecker = new HDEvictionCheckerImpl(mapServiceContext);
+            MemoryInfoAccessor memoryInfoAccessor = getMemoryInfoAccessor();
+            EvictionChecker evictionChecker = new HDEvictionCheckerImpl(memoryInfoAccessor, mapServiceContext);
             return new HDEvictorImpl(evictionChecker, mapServiceContext);
         }
         return super.createEvictor(mapServiceContext);

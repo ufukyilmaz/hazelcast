@@ -1,12 +1,11 @@
 package com.hazelcast.client.map.querycache;
 
 
-import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.client.config.ClientConfig;
+import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IFunction;
@@ -18,6 +17,7 @@ import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,20 +33,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
-@Category(QuickTest.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheTest extends HazelcastTestSupport {
+
+    private static TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @BeforeClass
     public static void setUp() throws Exception {
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+        factory.shutdownAll();
     }
 
     @Test
@@ -86,7 +87,7 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
     public void testQueryCache_withLocalListener() throws Exception {
         String mapName = randomString();
         String queryCacheName = randomString();
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
 
         for (int i = 0; i < 30; i++) {
@@ -172,7 +173,7 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
 
     private IEnterpriseMap<Integer, Integer> getMap() {
         String mapName = randomString();
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         return (IEnterpriseMap) client.getMap(mapName);
     }
 
@@ -200,6 +201,7 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertQueryCacheSizeEventually(0, clear, queryCache);
     }
 
+
     @Test
     public void testDestroy_emptiesQueryCache() throws Exception {
         int entryCount = 1000;
@@ -225,13 +227,14 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertEquals(0, queryCache.size());
     }
 
+
     private void testWithInitialPopulation(boolean enableInitialPopulation,
                                            int expectedSize, int numberOfElementsToPut) {
         String mapName = randomString();
         String cacheName = randomName();
 
         ClientConfig config = getConfig(cacheName, enableInitialPopulation, mapName);
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(config);
+        HazelcastInstance client = factory.newHazelcastClient(config);
 
         IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
         for (int i = 0; i < numberOfElementsToPut; i++) {
@@ -246,7 +249,7 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         String mapName = randomString();
         String queryCacheName = randomString();
 
-        HazelcastInstance client = HazelcastClient.newHazelcastClient();
+        HazelcastInstance client = factory.newHazelcastClient();
         IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
 
         for (int i = 0; i < 50; i++) {

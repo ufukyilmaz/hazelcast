@@ -1,6 +1,8 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.config.QueryCacheConfig;
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.querycache.QueryCacheConfigurator;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
@@ -22,12 +24,13 @@ import static com.hazelcast.map.impl.querycache.subscriber.NullQueryCache.NULL_Q
  */
 public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCacheEndToEndConstructor {
 
-    protected static final int PUBLISHER_CREATE_TIMEOUT_MINUTES = 5;
+    protected static final int OPERATION_WAIT_TIMEOUT_MINUTES = 5;
 
     protected final String mapName;
     protected final QueryCacheRequest request;
     protected final QueryCacheContext context;
     protected final SubscriberContext subscriberContext;
+    protected final ILogger logger = Logger.getLogger(getClass());
 
     protected Predicate predicate;
     protected boolean includeValue;

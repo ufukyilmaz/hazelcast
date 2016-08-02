@@ -1,10 +1,9 @@
 package com.hazelcast.client.map.querycache;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.core.Hazelcast;
+import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.mapreduce.helpers.Employee;
 import com.hazelcast.query.Predicate;
@@ -12,6 +11,7 @@ import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
+import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -25,23 +25,24 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
-@Category(QuickTest.class)
+@RunWith(EnterpriseParallelJUnitClassRunner.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSupport {
 
     private static final int DEFAULT_TEST_TIMEOUT = 120;
 
+    private static TestHazelcastFactory factory = new TestHazelcastFactory();
+
     @BeforeClass
     public static void setUp() throws Exception {
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
-        Hazelcast.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
+        factory.newHazelcastInstance();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+        factory.shutdownAll();
     }
 
 
@@ -339,6 +340,6 @@ public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSuppo
     }
 
     private HazelcastInstance getInstance() {
-        return HazelcastClient.newHazelcastClient();
+        return factory.newHazelcastClient();
     }
 }

@@ -11,13 +11,15 @@ import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOpe
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.util.FutureUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+
+import static com.hazelcast.util.FutureUtil.returnWithDeadline;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 /**
  * Node-side implementation of {@code QueryCacheEndToEndConstructor}.
@@ -35,8 +37,15 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
         // create publishers and execute initial population query in one go.
         Collection<QueryResult> results = createPublishersAndGetQueryResults(info);
         setResults(queryCache, results);
-        if (info.isPopulate()) {
+        boolean populate = info.isPopulate();
+
+        if (logger.isFinestEnabled()) {
+            logger.finest(format("Pre population is %s", populate ? "enabled" : "disabled"));
+        }
+
+        if (populate) {
             madePublishable(info.getMapName(), info.getCacheName());
+            info.setPublishable(true);
         }
     }
 
@@ -49,7 +58,7 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
             Future future = invokerWrapper.invokeOnTarget(new PublisherCreateOperation(info), address);
             futures.add(future);
         }
-        return FutureUtil.returnWithDeadline(futures, PUBLISHER_CREATE_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+        return returnWithDeadline(futures, OPERATION_WAIT_TIMEOUT_MINUTES, MINUTES);
     }
 
     private void madePublishable(String mapName, String cacheName) throws Exception {

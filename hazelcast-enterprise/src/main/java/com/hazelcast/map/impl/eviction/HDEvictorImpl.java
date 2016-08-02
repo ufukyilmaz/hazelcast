@@ -41,7 +41,6 @@ public class HDEvictorImpl extends EvictorImpl {
 
     private static final int SAMPLE_COUNT = 15;
     private static final int MAX_EVICTED_ENTRY_COUNT_IN_ONE_ROUND = 1;
-    private static final int ONE_HUNDRED_PERCENT = 100;
     private static final int FORCED_EVICTION_PERCENTAGE = 20;
     private static final int MIN_FORCED_EVICTION_ENTRY_REMOVE_COUNT = 20;
 

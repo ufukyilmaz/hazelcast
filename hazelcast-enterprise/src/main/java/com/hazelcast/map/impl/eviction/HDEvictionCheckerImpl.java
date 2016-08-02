@@ -27,8 +27,10 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.MemoryManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.util.MemoryInfoAccessor;
 
 import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 
 /**
  * Checks whether a specific threshold is exceeded or not
@@ -43,8 +45,8 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
 
     private final int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
 
-    public HDEvictionCheckerImpl(MapServiceContext mapServiceContext) {
-        super(mapServiceContext);
+    public HDEvictionCheckerImpl(MemoryInfoAccessor givenMemoryInfoAccessor, MapServiceContext mapServiceContext) {
+        super(givenMemoryInfoAccessor, mapServiceContext);
     }
 
     @Override
@@ -94,10 +96,11 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
         return checkMinFreeNativeMemoryPercentage(hotRestartMinFreeNativeMemoryPercentage);
     }
 
-    protected boolean checkMaxUsedNativeMemorySize(double maxUsedSize, HiDensityStorageInfo storageInfo) {
-        long currentUsedSize = storageInfo.getUsedMemory();
-        return maxUsedSize < (1D * currentUsedSize / ONE_MEGABYTE);
+    protected boolean checkMaxUsedNativeMemorySize(int maxUsedMB, HiDensityStorageInfo storageInfo) {
+        long currentUsedBytes = storageInfo.getUsedMemory();
+        return MEGABYTES.toBytes(maxUsedMB) < currentUsedBytes;
     }
+
 
     protected boolean checkMaxUsedNativeMemoryPercentage(double maxUsedPercentage, HiDensityStorageInfo storageInfo) {
         long currentUsedSize = storageInfo.getUsedMemory();
@@ -119,13 +122,13 @@ public class HDEvictionCheckerImpl extends EvictionCheckerImpl {
         return minFreePercentage > (1D * ONE_HUNDRED_PERCENT * currentFreeSize / maxUsableSize);
     }
 
-    protected boolean checkMinFreeNativeMemorySize(double minFreeSize) {
+    protected boolean checkMinFreeNativeMemorySize(int minFreeMB) {
         SerializationService serializationService = mapServiceContext.getNodeEngine().getSerializationService();
         MemoryManager memoryManager = ((EnterpriseSerializationService) serializationService).getMemoryManager();
 
-        long currentFreeSize = memoryManager.getMemoryStats().getFreeNativeMemory();
+        long currentFreeBytes = memoryManager.getMemoryStats().getFreeNativeMemory();
 
-        return minFreeSize > (1D * currentFreeSize / ONE_MEGABYTE);
+        return MEGABYTES.toBytes(minFreeMB) > currentFreeBytes;
     }
 }
 

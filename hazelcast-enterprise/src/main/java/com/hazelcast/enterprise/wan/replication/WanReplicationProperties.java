@@ -9,7 +9,7 @@ import com.hazelcast.config.properties.ValueValidator;
 import java.util.Map;
 
 /**
- * Property definitions for {@link WanNoDelayReplication} and {@link WanBatchReplication} implementations
+ * Property definitions for  {@link WanBatchReplication} implementation
  */
 public final class WanReplicationProperties {
 

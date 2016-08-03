@@ -7,7 +7,6 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
-import com.hazelcast.enterprise.wan.replication.WanNoDelayReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -30,7 +29,6 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 @Category({QuickTest.class, ParallelTest.class})
 public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
-    private static final String NO_DELAY_IMPL = WanNoDelayReplication.class.getName();
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
 
     private HazelcastInstance[] basicCluster = new HazelcastInstance[2];
@@ -39,8 +37,6 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
     @Parameterized.Parameters(name = "replicationImpl:{0},memoryFormat:{1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {NO_DELAY_IMPL, NATIVE},
-                {NO_DELAY_IMPL, BINARY},
                 {BATCH_IMPL, NATIVE},
                 {BATCH_IMPL, BINARY}
         });

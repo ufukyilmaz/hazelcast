@@ -13,4 +13,6 @@ public final class SecurityConstants {
     public static final String DEFAULT_POLICY_CLASS = "com.hazelcast.security.impl.DefaultPermissionPolicy";
     public static final String DEFAULT_CREDENTIALS_FACTORY_CLASS = "com.hazelcast.security.impl.DefaultCredentialsFactory";
 
+    private SecurityConstants() {
+    }
 }

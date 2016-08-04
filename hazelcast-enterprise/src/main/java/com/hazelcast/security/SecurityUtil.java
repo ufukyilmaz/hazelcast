@@ -18,31 +18,19 @@ import com.hazelcast.security.permission.TopicPermission;
 import com.hazelcast.security.permission.TransactionPermission;
 import com.hazelcast.util.AddressUtil;
 
+import java.util.Set;
+
 public final class SecurityUtil {
 
     private static final ThreadLocal<Boolean> SECURE_CALL = new ThreadLocal<Boolean>();
 
-    static void setSecureCall() {
-        if (isSecureCall()) {
-            throw new SecurityException("Not allowed! <SECURE_CALL> flag is already set!");
-        }
-        SECURE_CALL.set(Boolean.TRUE);
+    private SecurityUtil() {
     }
 
-    static void resetSecureCall() {
-        if (!isSecureCall()) {
-            throw new SecurityException("Not allowed! <SECURE_CALL> flag is not set!");
-        }
-        SECURE_CALL.remove();
-    }
-
-    private static boolean isSecureCall() {
-        final Boolean value = SECURE_CALL.get();
-        return value != null && value.booleanValue();
-    }
-
+    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:returncount"})
     public static ClusterPermission createPermission(PermissionConfig permissionConfig) {
-        final String[] actions = permissionConfig.getActions().toArray(new String[0]);
+        final Set<String> actionSet = permissionConfig.getActions();
+        final String[] actions = actionSet.toArray(new String[actionSet.size()]);
         switch (permissionConfig.getType()) {
             case MAP:
                 return new MapPermission(permissionConfig.getName(), actions);
@@ -77,6 +65,25 @@ public final class SecurityUtil {
         }
     }
 
+    static void setSecureCall() {
+        if (isSecureCall()) {
+            throw new SecurityException("Not allowed! <SECURE_CALL> flag is already set!");
+        }
+        SECURE_CALL.set(Boolean.TRUE);
+    }
+
+    static void resetSecureCall() {
+        if (!isSecureCall()) {
+            throw new SecurityException("Not allowed! <SECURE_CALL> flag is not set!");
+        }
+        SECURE_CALL.remove();
+    }
+
+    private static boolean isSecureCall() {
+        final Boolean value = SECURE_CALL.get();
+        return value != null && value.booleanValue();
+    }
+
     public static boolean addressMatches(final String address, final String pattern) {
         return AddressUtil.matchInterface(address, pattern);
     }
@@ -86,8 +93,5 @@ public final class SecurityUtil {
             return null;
         }
         return credentials.getPrincipal() + '@' + credentials.getEndpoint();
-    }
-
-    private SecurityUtil() {
     }
 }

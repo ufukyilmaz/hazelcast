@@ -15,6 +15,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
  */
+@SuppressWarnings("checkstyle:methodcount")
 public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     /*

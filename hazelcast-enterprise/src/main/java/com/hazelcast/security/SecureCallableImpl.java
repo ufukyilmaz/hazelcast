@@ -79,7 +79,42 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
 
+@SuppressWarnings({
+        "checkstyle:methodcount",
+        "checkstyle:classdataabstractioncoupling",
+        "checkstyle:classfanoutcomplexity"})
 public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSerializable {
+
+    private static final Map<String, Map<String, String>> SERVICE_TO_METHODMAP = new HashMap<String, Map<String, String>>();
+
+    static {
+        final Properties properties = new Properties();
+        final ClassLoader cl = SecureCallableImpl.class.getClassLoader();
+        final InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
+        try {
+            properties.load(stream);
+        } catch (IOException e) {
+            ExceptionUtil.rethrow(e);
+        } finally {
+            closeResource(stream);
+        }
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            final String key = (String) entry.getKey();
+            final String action = (String) entry.getValue();
+            final int dotIndex = key.indexOf('.');
+            if (dotIndex == -1) {
+                continue;
+            }
+            final String structure = key.substring(0, dotIndex);
+            final String method = key.substring(dotIndex + 1);
+            Map<String, String> methodMap = SERVICE_TO_METHODMAP.get(structure);
+            if (methodMap == null) {
+                methodMap = new HashMap<String, String>();
+                SERVICE_TO_METHODMAP.put(structure, methodMap);
+            }
+            methodMap.put(method, action);
+        }
+    }
 
     private transient Node node;
     private Subject subject;
@@ -144,18 +179,27 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         this.node = node;
     }
 
-    private class CacheManagerDelegate implements ICacheManager {
-        private final ICacheManager cacheManager;
+    private <T> T getProxy(SecureInvocationHandler handler) {
+        final DistributedObject distributedObject = handler.getDistributedObject();
+        final Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), getAllInterfaces(distributedObject), handler);
+        return (T) proxy;
+    }
 
-        CacheManagerDelegate(ICacheManager cacheManager) {
-            this.cacheManager = cacheManager;
-        }
+    public void checkPermission(Permission permission) {
+        node.securityContext.checkPermission(subject, permission);
+    }
 
-        @Override
-        public <K, V> ICache<K, V> getCache(String name) {
-            checkPermission(new CachePermission(name, ActionConstants.ACTION_CREATE));
-            return getProxy(new CacheInvocationHandler(cacheManager.getCache(name)));
+    public static Class[] getAllInterfaces(Object instance) {
+        Class clazz = instance.getClass();
+        Set<Class> all = new HashSet<Class>();
+        while (clazz != null) {
+            final Class[] interfaces = clazz.getInterfaces();
+            for (int i = 0; i < interfaces.length; i++) {
+                all.add(interfaces[i]);
+            }
+            clazz = clazz.getSuperclass();
         }
+        return all.toArray(new Class[all.size()]);
     }
 
     private class HazelcastInstanceDelegate implements HazelcastInstance {
@@ -380,63 +424,18 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         }
     }
 
-    private <T> T getProxy(SecureInvocationHandler handler) {
-        final DistributedObject distributedObject = handler.getDistributedObject();
-        final Object proxy = Proxy.newProxyInstance(getClass().getClassLoader(), getAllInterfaces(distributedObject), handler);
-        return (T) proxy;
-    }
+    private class CacheManagerDelegate implements ICacheManager {
+        private final ICacheManager cacheManager;
 
-    public void checkPermission(Permission permission) {
-        node.securityContext.checkPermission(subject, permission);
-    }
-
-    public static Class[] getAllInterfaces(Object instance) {
-        Class clazz = instance.getClass();
-        Set<Class> all = new HashSet<Class>();
-        while (clazz != null) {
-            final Class[] interfaces = clazz.getInterfaces();
-            for (int i = 0; i < interfaces.length; i++) {
-                all.add(interfaces[i]);
-            }
-            clazz = clazz.getSuperclass();
+        CacheManagerDelegate(ICacheManager cacheManager) {
+            this.cacheManager = cacheManager;
         }
-        return (Class[]) all.toArray(new Class[all.size()]);
-    }
 
-    static final Map<String, Map<String, String>> structureMethodMap = new HashMap<String, Map<String, String>>();
-
-    static {
-        final Properties properties = new Properties();
-        final ClassLoader cl = SecureCallableImpl.class.getClassLoader();
-        final InputStream stream = cl.getResourceAsStream("permission-mapping.properties");
-        try {
-            properties.load(stream);
-        } catch (IOException e) {
-            ExceptionUtil.rethrow(e);
-        } finally {
-            closeResource(stream);
+        @Override
+        public <K, V> ICache<K, V> getCache(String name) {
+            checkPermission(new CachePermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new CacheInvocationHandler(cacheManager.getCache(name)));
         }
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            final String key = (String) entry.getKey();
-            final String action = (String) entry.getValue();
-            final int dotIndex = key.indexOf('.');
-            if (dotIndex == -1) {
-                continue;
-            }
-            final String structure = key.substring(0, dotIndex);
-            final String method = key.substring(dotIndex + 1);
-            Map<String, String> methodMap = structureMethodMap.get(structure);
-            if (methodMap == null) {
-                methodMap = new HashMap<String, String>();
-                structureMethodMap.put(structure, methodMap);
-            }
-            methodMap.put(method, action);
-        }
-    }
-
-    public static void main(String[] args) {
-        final String s = structureMethodMap.get("lock").get("isLocked");
-        System.err.println("s: " + s);
     }
 
     private abstract class SecureInvocationHandler implements InvocationHandler {
@@ -446,7 +445,7 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
 
         SecureInvocationHandler(DistributedObject distributedObject) {
             this.distributedObject = distributedObject;
-            methodMap = structureMethodMap.get(getStructureName());
+            methodMap = SERVICE_TO_METHODMAP.get(getStructureName());
         }
 
         public DistributedObject getDistributedObject() {

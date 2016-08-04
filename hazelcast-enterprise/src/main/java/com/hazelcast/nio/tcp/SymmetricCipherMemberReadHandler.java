@@ -41,6 +41,7 @@ public class SymmetricCipherMemberReadHandler extends MemberReadHandler {
     }
 
     @Override
+    @SuppressWarnings({"checkstyle:npathcomplexity"})
     public void onRead(ByteBuffer src) throws Exception {
         while (src.hasRemaining()) {
             try {

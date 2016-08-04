@@ -17,13 +17,15 @@ import static com.hazelcast.security.SecurityUtil.getCredentialsFullName;
 public abstract class ClusterLoginModule implements LoginModule {
 
     protected final ILogger logger = Logger.getLogger(getClass().getName());
-    private CallbackHandler callbackHandler;
+
     protected Credentials credentials;
     protected Subject subject;
     protected Map options;
     protected Map sharedState;
-    protected boolean loginSucceeded = false;
-    protected boolean commitSucceeded = false;
+    protected boolean loginSucceeded;
+    protected boolean commitSucceeded;
+
+    private CallbackHandler callbackHandler;
 
     @Override
     public final void initialize(Subject subject, CallbackHandler callbackHandler,
@@ -49,7 +51,8 @@ public abstract class ClusterLoginModule implements LoginModule {
         }
         logger.log(Level.FINEST, "Authenticating " + getCredentialsFullName(credentials));
         sharedState.put(SecurityConstants.ATTRIBUTE_CREDENTIALS, credentials);
-        return loginSucceeded = onLogin();
+        loginSucceeded = onLogin();
+        return loginSucceeded;
     }
 
     @Override
@@ -63,7 +66,8 @@ public abstract class ClusterLoginModule implements LoginModule {
         final Principal principal = new ClusterPrincipal(credentials);
         subject.getPrincipals().add(principal);
         sharedState.put(SecurityConstants.ATTRIBUTE_PRINCIPAL, principal);
-        return commitSucceeded = onCommit();
+        commitSucceeded = onCommit();
+        return commitSucceeded;
     }
 
     @Override

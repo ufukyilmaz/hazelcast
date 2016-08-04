@@ -30,6 +30,8 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.Clock;
 
 import static com.hazelcast.cache.impl.nearcache.NearCache.NULL_OBJECT;
+import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
 
 /**
@@ -38,8 +40,8 @@ import static com.hazelcast.cache.impl.nearcache.NearCache.NULL_OBJECT;
  * @author sozal 26/10/14
  */
 public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
-        extends AbstractNearCacheRecordStore<K, V, Data, HiDensityNativeMemoryNearCacheRecord,
-        HiDensityNativeMemoryNearCacheRecordMap>
+        extends AbstractNearCacheRecordStore<K, V, Data,
+                                     HiDensityNativeMemoryNearCacheRecord, HiDensityNativeMemoryNearCacheRecordMap>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
@@ -53,71 +55,54 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                      NearCacheContext nearCacheContext) {
-        this(nearCacheConfig,
-             nearCacheContext,
-             new NearCacheStatsImpl(),
-             new HiDensityStorageInfo(nearCacheConfig.getName()));
+        this(nearCacheConfig, nearCacheContext, new NearCacheStatsImpl(), new HiDensityStorageInfo(nearCacheConfig.getName()));
     }
 
 
-    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
-                                                     NearCacheContext nearCacheContext,
-                                                     NearCacheStatsImpl nearCacheStats,
-                                                     HiDensityStorageInfo storageInfo) {
-        super(nearCacheConfig,
-              new HiDensityNearCacheContext(nearCacheContext, storageInfo),
-              nearCacheStats);
+    public HiDensityNativeMemoryNearCacheRecordStore(
+            NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
+            NearCacheStatsImpl nearCacheStats, HiDensityStorageInfo storageInfo
+    ) {
+        super(nearCacheConfig, new HiDensityNearCacheContext(nearCacheContext, storageInfo), nearCacheStats);
     }
 
-    private void ensureInitialized(NearCacheConfig nearCacheConfig,
-                                   NearCacheContext nearCacheContext) {
-        EnterpriseSerializationService serializationService =
+    @SuppressWarnings("checkstyle:npathcomplexity")
+    private void ensureInitialized(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
+        final EnterpriseSerializationService serializationService =
                 (EnterpriseSerializationService) nearCacheContext.getSerializationService();
-
         if (memoryManager == null) {
             HazelcastMemoryManager mm = serializationService.getMemoryManager();
-            if (mm instanceof PoolingMemoryManager) {
-                this.memoryManager = ((PoolingMemoryManager) mm).getGlobalMemoryManager();
-            } else {
-                this.memoryManager = mm;
-            }
+            this.memoryManager = mm instanceof PoolingMemoryManager
+                    ? ((PoolingMemoryManager) mm).getGlobalMemoryManager() : mm;
         }
 
         if (storageInfo == null) {
-            if (nearCacheContext instanceof HiDensityNearCacheContext) {
-                storageInfo = ((HiDensityNearCacheContext) nearCacheContext).getStorageInfo();
-            }
-            if (storageInfo == null) {
-                storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
-            }
+            storageInfo = nearCacheContext instanceof HiDensityNearCacheContext
+                    ? ((HiDensityNearCacheContext) nearCacheContext).getStorageInfo()
+                    : new HiDensityStorageInfo(nearCacheConfig.getName());
         }
-
         if (recordAccessor == null) {
-            this.recordAccessor =
-                    new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
+            this.recordAccessor = new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
         }
-
         if (recordProcessor == null) {
-            this.recordProcessor =
-                    new CacheHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
-                            serializationService, recordAccessor,
-                            memoryManager, storageInfo);
+            this.recordProcessor = new CacheHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
+                    serializationService, recordAccessor,
+                    memoryManager, storageInfo);
         }
     }
 
     @Override
-    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(NearCacheConfig nearCacheConfig,
-                                                                               NearCacheContext nearCacheContext) {
+    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(
+            NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext
+    ) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
-
         return new HiDensityNativeMemoryNearCacheRecordMap(DEFAULT_INITIAL_CAPACITY, recordProcessor, storageInfo);
     }
 
-    //CHECKSTYLE:OFF
     @Override
-    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig,
-                                                           NearCacheConfig nearCacheConfig,
-                                                           NearCacheContext nearCacheContext) {
+    protected MaxSizeChecker createNearCacheMaxSizeChecker(
+            EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext
+    ) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
 
         EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
@@ -153,7 +138,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                         + " are supported.");
         }
     }
-    //CHECKSTYLE:ON
 
     private NativeMemoryData toNativeMemoryData(Object data) {
         NativeMemoryData nativeMemoryData;
@@ -168,25 +152,24 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     private static boolean isMemoryBlockValid(MemoryBlock memoryBlock) {
-        return memoryBlock != null && memoryBlock.address() != HazelcastMemoryManager.NULL_ADDRESS;
+        return memoryBlock != null && memoryBlock.address() != NULL_ADDRESS;
     }
 
-    private HiDensityNativeMemoryNearCacheRecord createRecord(Object value, long creationTime,
-                                                              long expiryTime) {
+    private HiDensityNativeMemoryNearCacheRecord createRecord(
+            Object value, long creationTime, long expiryTime
+    ) {
         return createRecordInternal(value, creationTime, expiryTime, false, true);
     }
 
-    private HiDensityNativeMemoryNearCacheRecord createRecordInternal(Object value, long creationTime,
-                                                                      long expiryTime, boolean forceEvict,
-                                                                      boolean retryOnOutOfMemoryError) {
+    private HiDensityNativeMemoryNearCacheRecord createRecordInternal(
+            Object value, long creationTime, long expiryTime, boolean forceEvict, boolean retryOnOutOfMemoryError
+    ) {
         if (forceEvict) {
             forceEvict();
         }
-
         NativeMemoryData data = null;
         HiDensityNativeMemoryNearCacheRecord record;
-        long recordAddress = HazelcastMemoryManager.NULL_ADDRESS;
-
+        long recordAddress = NULL_ADDRESS;
         try {
             recordAddress = recordProcessor.allocate(HiDensityNativeMemoryNearCacheRecord.SIZE);
             record = recordProcessor.newRecord();
@@ -202,20 +185,19 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                 data = toNativeMemoryData(value);
                 record.setValueAddress(data.address());
             } else {
-                record.setValueAddress(HazelcastMemoryManager.NULL_ADDRESS);
+                record.setValueAddress(NULL_ADDRESS);
             }
 
             return record;
         } catch (NativeOutOfMemoryError e) {
             // If any memory region is allocated for record, dispose it
-            if (recordAddress != HazelcastMemoryManager.NULL_ADDRESS) {
+            if (recordAddress != NULL_ADDRESS) {
                 recordProcessor.dispose(recordAddress);
             }
             // If any data is allocated for record, dispose it
             if (isMemoryBlockValid(data)) {
                 recordProcessor.disposeData(data);
             }
-
             if (retryOnOutOfMemoryError) {
                 return createRecordInternal(value, creationTime, expiryTime, true, false);
             } else {
@@ -226,14 +208,9 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
-        if (key instanceof Data) {
-            // Because key will saved as native memory data with native memory data header
-            // and this is not covered at "totalSize()" method.
-            return NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize();
-        } else {
-            // Memory cost for non-data typed instance is not supported.
-            return 0L;
-        }
+        // Because key will saved as native memory data with native memory data header
+        // and this is not covered at "totalSize()" method.
+        return key instanceof Data ? NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize() : 0L;
     }
 
     @Override
@@ -244,11 +221,9 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected HiDensityNativeMemoryNearCacheRecord valueToRecord(V value) {
         long creationTime = Clock.currentTimeMillis();
-        if (timeToLiveMillis > 0) {
-            return createRecord(value, creationTime, creationTime + timeToLiveMillis);
-        } else {
-            return createRecord(value, creationTime, NearCacheRecord.TIME_NOT_SET);
-        }
+        return timeToLiveMillis > 0
+                ? createRecord(value, creationTime, creationTime + timeToLiveMillis)
+                : createRecord(value, creationTime, NearCacheRecord.TIME_NOT_SET);
     }
 
     @Override
@@ -257,7 +232,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             nearCacheStats.incrementMisses();
             return (V) NULL_OBJECT;
         }
-
         if (!isMemoryBlockValid(record)) {
             return null;
         }
@@ -328,7 +302,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         // If record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
-            return;
         }
     }
 
@@ -362,15 +335,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public int forceEvict() {
         checkAvailable();
-
-        return records.forceEvict(HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE,
-                recordEvictionListener);
+        return records.forceEvict(HiDensityRecordStore.DEFAULT_FORCED_EVICTION_PERCENTAGE, recordEvictionListener);
     }
 
     @Override
     public void doExpiration() {
         checkAvailable();
-
         records.evictExpiredRecords(recordEvictionListener, recordExpirationChecker);
     }
 

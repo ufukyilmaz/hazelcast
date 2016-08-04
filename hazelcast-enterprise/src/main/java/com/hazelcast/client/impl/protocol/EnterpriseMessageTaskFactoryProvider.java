@@ -13,11 +13,12 @@ public class EnterpriseMessageTaskFactoryProvider implements MessageTaskFactoryP
 
     private final Node node;
 
-    public  EnterpriseMessageTaskFactoryProvider (NodeEngine nodeEngine) {
-        this.node = ((NodeEngineImpl)nodeEngine).getNode();
+    public EnterpriseMessageTaskFactoryProvider(NodeEngine nodeEngine) {
+        this.node = ((NodeEngineImpl) nodeEngine).getNode();
         initFactories();
     }
 
+    @SuppressWarnings("checkstyle:linelength")
     public void initFactories() {
 //region ----------  REGISTRATION FOR com.hazelcast.client.impl.protocol.task.enterprisemap
         factories[com.hazelcast.client.impl.protocol.codec.EnterpriseMapDestroyCacheCodec.RequestParameters.TYPE.id()] = new MessageTaskFactory() {

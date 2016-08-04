@@ -38,11 +38,9 @@ public class AccumulatorInfo implements Portable {
      */
     private volatile boolean publishable;
 
-    public AccumulatorInfo() {
-    }
-
-    public static AccumulatorInfo createAccumulatorInfo(QueryCacheConfig config, String mapName,
-                                                        String cacheName, Predicate predicate) {
+    public static AccumulatorInfo createAccumulatorInfo(
+            QueryCacheConfig config, String mapName, String cacheName, Predicate predicate
+    ) {
         checkNotNull(config, "config cannot be null");
 
         AccumulatorInfo info = new AccumulatorInfo();
@@ -59,9 +57,11 @@ public class AccumulatorInfo implements Portable {
         return info;
     }
 
-    public static AccumulatorInfo createAccumulatorInfo(String mapName, String cacheName, Predicate predicate,
-                                                        int batchSize, int bufferSize, long delaySeconds,
-                                                        boolean includeValue, boolean populate, boolean coalesce) {
+    @SuppressWarnings("checkstyle:parameternumber")
+    public static AccumulatorInfo createAccumulatorInfo(
+            String mapName, String cacheName, Predicate predicate, int batchSize, int bufferSize, long delaySeconds,
+            boolean includeValue, boolean populate, boolean coalesce
+    ) {
         AccumulatorInfo info = new AccumulatorInfo();
         info.mapName = mapName;
         info.cacheName = cacheName;
@@ -93,11 +93,7 @@ public class AccumulatorInfo implements Portable {
         // batchSize can not be higher than bufferSize.
         int batchSize = config.getBatchSize();
         int bufferSize = config.getBufferSize();
-        if (batchSize > bufferSize) {
-            return bufferSize;
-        } else {
-            return batchSize;
-        }
+        return batchSize > bufferSize ? bufferSize : batchSize;
     }
 
     public int getBatchSize() {

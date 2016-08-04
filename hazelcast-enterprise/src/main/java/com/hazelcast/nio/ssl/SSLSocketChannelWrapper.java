@@ -41,9 +41,12 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         netInBuffer = ByteBuffer.allocate(netBufferMax);
     }
 
-    /**
-     * TODO sleep in sync block
-     */
+    @SuppressWarnings({
+            "checkstyle:cyclomaticcomplexity",
+            "checkstyle:npathcomplexity",
+            "checkstyle:methodlength",
+            "checkstyle:magicnumber"
+    })
     private void handshake() throws IOException {
         if (handshakeCompleted) {
             return;
@@ -132,6 +135,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
         System.err.println(getClass().getSimpleName() + "[" + socketChannel.socket().getLocalSocketAddress() + "]: " + log);
     }
 
+    @SuppressWarnings({"checkstyle:cyclomaticcomplexity", "checkstyle:npathcomplexity"})
     private ByteBuffer unwrap(ByteBuffer b) throws SSLException {
         if (DEBUG) {
             log(" ----------- unwrap enter ---------------- ");
@@ -209,6 +213,11 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     @Override
+    @SuppressWarnings({
+            "checkstyle:cyclomaticcomplexity",
+            "checkstyle:npathcomplexity",
+            "checkstyle:methodlength"
+    })
     public int read(ByteBuffer output) throws IOException {
         if (DEBUG) {
             log("######  read enter #########");
@@ -296,15 +305,7 @@ public class SSLSocketChannelWrapper extends DefaultSocketChannelWrapper {
     }
 
     @Override
-    public void close() throws IOException {
-        socketChannel.close();
-    }
-
-    @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("SSLSocketChannelWrapper{");
-        sb.append("socketChannel=").append(socketChannel);
-        sb.append('}');
-        return sb.toString();
+        return "SSLSocketChannelWrapper{" + "socketChannel=" + socketChannel + '}';
     }
 }

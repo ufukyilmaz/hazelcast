@@ -40,6 +40,7 @@ public class SymmetricCipherMemberWriteHandler implements WriteHandler<Packet> {
     }
 
     @Override
+    @SuppressWarnings({"checkstyle:npathcomplexity"})
     public boolean onWrite(Packet packet, ByteBuffer dst) throws Exception {
         if (!packetWritten) {
             if (dst.remaining() < Bits.INT_SIZE_IN_BYTES) {

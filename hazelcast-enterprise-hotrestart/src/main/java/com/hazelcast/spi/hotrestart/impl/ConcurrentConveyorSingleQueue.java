@@ -1,15 +1,15 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.QueuedPipe;
 
 /**
  * Specialization of {@link ConcurrentConveyor} to a single queue.
  */
 @SuppressWarnings("checkstyle:interfaceistype")
 public final class ConcurrentConveyorSingleQueue<E> extends ConcurrentConveyor<E> {
-    private final AbstractConcurrentArrayQueue<E> queue;
+    private final QueuedPipe<E> queue;
 
-    private ConcurrentConveyorSingleQueue(E submitterGoneItem, AbstractConcurrentArrayQueue<E> queue) {
+    private ConcurrentConveyorSingleQueue(E submitterGoneItem, QueuedPipe<E> queue) {
         super(submitterGoneItem, queue);
         this.queue = queue;
     }
@@ -20,7 +20,7 @@ public final class ConcurrentConveyorSingleQueue<E> extends ConcurrentConveyor<E
      * @param queue the concurrent queue the conveyor will manage
      */
     public static <E1> ConcurrentConveyorSingleQueue<E1> concurrentConveyorSingleQueue(
-            E1 submitterGoneItem, AbstractConcurrentArrayQueue<E1> queue
+            E1 submitterGoneItem, QueuedPipe<E1> queue
     ) {
         return new ConcurrentConveyorSingleQueue<E1>(submitterGoneItem, queue);
     }

@@ -1,9 +1,11 @@
 package com.hazelcast.util.concurrent;
 
+import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.QueuedPipe;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -36,7 +38,7 @@ public class ConcurrentArrayQueueTest {
 
     @Parameter public boolean manyToOne;
 
-    private AbstractConcurrentArrayQueue<Integer> q;
+    private QueuedPipe<Integer> q;
 
     @Before public void setup() {
         this.q = manyToOne ? new ManyToOneConcurrentArrayQueue<Integer>(2)
@@ -67,18 +69,6 @@ public class ConcurrentArrayQueueTest {
         q.offer(2);
         final List<Integer> drained = new ArrayList<Integer>();
         q.drainTo(drained, 2);
-        assertEquals(drained, asList(1, 2));
-    }
-
-    @Test public void when_offer_then_drainToConsumer() {
-        q.offer(1);
-        q.offer(2);
-        final List<Integer> drained = new ArrayList<Integer>();
-        q.drain(new Consumer<Integer>() {
-            @Override public void accept(Integer e) {
-                drained.add(e);
-            }
-        });
         assertEquals(drained, asList(1, 2));
     }
 

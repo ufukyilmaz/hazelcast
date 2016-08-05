@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.util.concurrent.AbstractConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.QueuedPipe;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 
@@ -13,7 +13,7 @@ import static java.util.concurrent.locks.LockSupport.unpark;
 
 /**
  * A many-to-one conveyor of interthread messages. Allows a setup where communication from N submitter threads
- * to 1 drainer thread happens over N one-to-one concurrent queues. Queues are numbered fro 0 to N-1 and the
+ * to 1 drainer thread happens over N one-to-one concurrent queues. Queues are numbered from 0 to N-1 and the
  * queue at index 0 is the <i>default</i> queue. There are some convenience methods which assume the usage of
  * the default queue.
  * <p>
@@ -37,7 +37,7 @@ import static java.util.concurrent.locks.LockSupport.unpark;
  *
  * final int queueCapacity = 128;
  * final Runnable doneItem = new Runnable() { public void run() {} };
- * final AbstractConcurrentArrayQueue<Runnable>[] qs = new AbstractConcurrentArrayQueue[2];
+ * final QueuedPipe<Runnable>[] qs = new QueuedPipe[2];
  * qs[0] = new OneToOneConcurrentArrayQueue<Runnable>(queueCapacity);
  * qs[1] = new OneToOneConcurrentArrayQueue<Runnable>(queueCapacity);
  * final ConcurrentConveyor<Runnable> conveyor = concurrentConveyor(doneItem, qs);
@@ -71,11 +71,11 @@ import static java.util.concurrent.locks.LockSupport.unpark;
  *
  * // 3. Set up the submitter threads
  *
- * for (final int submitterIndex : new int[] { 0, 1 }) {
+ * for (final int submitterIndex : new int[] { 0, 1, 2, 3 }) {
  *     new Thread(new Runnable() {
  *         @Override
  *         public void run() {
- *             final AbstractConcurrentArrayQueue<Runnable> q = conveyor.queue(submitterIndex);
+ *             final QueuedPipe<Runnable> q = conveyor.queue(submitterIndex);
  *             try {
  *                 while (!askedToStop) {
  *                     conveyor.submit(q, new Item());
@@ -106,14 +106,14 @@ public class ConcurrentConveyor<E> {
 
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private static final Throwable REGULAR_DEPARTURE = regularDeparture();
-    private final AbstractConcurrentArrayQueue<E>[] queues;
+    private final QueuedPipe<E>[] queues;
     private final E submitterGoneItem;
 
     private volatile boolean backpressure;
     private volatile Thread drainer;
     private volatile Throwable drainerDepartureCause;
 
-    ConcurrentConveyor(E submitterGoneItem, AbstractConcurrentArrayQueue<E>... queues) {
+    ConcurrentConveyor(E submitterGoneItem, QueuedPipe<E>... queues) {
         if (queues.length == 0) {
             throw new IllegalArgumentException("No concurrent queues supplied");
         }
@@ -127,7 +127,7 @@ public class ConcurrentConveyor<E> {
      * @param queues the concurrent queues the conveyor will manage
      */
     public static <E1> ConcurrentConveyor<E1> concurrentConveyor(
-            E1 submitterGoneItem, AbstractConcurrentArrayQueue<E1>... queues
+            E1 submitterGoneItem, QueuedPipe<E1>... queues
     ) {
         return new ConcurrentConveyor<E1>(submitterGoneItem, queues);
     }
@@ -143,7 +143,7 @@ public class ConcurrentConveyor<E> {
     }
 
     /** @return the concurrent queue at the given index */
-    public final AbstractConcurrentArrayQueue<E> queue(int index) {
+    public final QueuedPipe<E> queue(int index) {
         return queues[index];
     }
 
@@ -281,7 +281,7 @@ public class ConcurrentConveyor<E> {
         backpressure = false;
     }
 
-    private int drain(AbstractConcurrentArrayQueue<E> q, Collection<? super E> drain, int limit) {
+    private int drain(QueuedPipe<E> q, Collection<? super E> drain, int limit) {
         return q.drainTo(drain, limit);
     }
 

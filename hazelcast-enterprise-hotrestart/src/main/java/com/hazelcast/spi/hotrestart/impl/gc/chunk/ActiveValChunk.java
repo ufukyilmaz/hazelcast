@@ -12,7 +12,7 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 public final class ActiveValChunk extends WriteThroughChunk implements ActiveChunk {
 
     public ActiveValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
-        super(seq, ACTIVE_CHUNK_SUFFIX, records, out, gcHelper);
+        super(seq, ACTIVE_FNAME_SUFFIX, records, out, gcHelper);
     }
 
     @Override

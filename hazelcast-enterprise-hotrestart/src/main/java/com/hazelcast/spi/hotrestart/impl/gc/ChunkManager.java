@@ -47,16 +47,20 @@ public final class ChunkManager implements Disposable {
 
     // temporary storage during GC
     Long2ObjectHashMap<WriteThroughChunk> survivors;
+
     ActiveValChunk activeValChunk;
     WriteThroughTombChunk activeTombChunk;
 
     private final DiContainer di;
     private final GcLogger logger;
     private final GcHelper gcHelper;
+    @Inject
+    private Snapshotter snapshotter;
 
     @Inject
     private ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
-                         GcLogger logger, DiContainer di) {
+                         GcLogger logger, DiContainer di
+    ) {
         this.di = di;
         this.logger = logger;
         this.gcHelper = gcHelper;
@@ -271,6 +275,7 @@ public final class ChunkManager implements Disposable {
         if (srcChunks.isEmpty()) {
             return false;
         }
+        snapshotter.initSrcChunkSeqs(srcChunks);
         logger.finest("ValChunk selection took %,d us", NANOSECONDS.toMicros(System.nanoTime() - start));
         final long garbage = valGarbage.get();
         final long live = valOccupancy.get() - garbage;
@@ -292,6 +297,7 @@ public final class ChunkManager implements Disposable {
         if (srcChunks.isEmpty()) {
             return false;
         }
+        snapshotter.initSrcChunkSeqs(srcChunks);
         final long garbage = tombGarbage.get();
         final long live = tombOccupancy.get() - garbage;
         logger.finest("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
@@ -320,7 +326,8 @@ public final class ChunkManager implements Disposable {
             chunks.put(survivor.seq, survivor.toStableChunk());
             mc.catchupNow();
         }
-        this.survivors = null;
+        survivors = null;
+        snapshotter.resetSrcChunkSeqs();
         final long reclaimed = sizeBefore - sizeAfter;
         final long garbageAfterGc = garbage.inc(-reclaimed);
         final long liveAfterGc = occupancy.inc(-reclaimed) - garbageAfterGc;

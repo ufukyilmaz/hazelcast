@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.rename;
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.DEST_FNAME_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.SURVIVOR_FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
@@ -93,7 +93,7 @@ public abstract class GcHelper implements Disposable {
     public final ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new ActiveValChunk(seq, newRecordMap(false),
-                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, true), null),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_FNAME_SUFFIX, true), null),
                 this);
     }
 
@@ -101,14 +101,14 @@ public abstract class GcHelper implements Disposable {
     public final SurvivorValChunk newSurvivorValChunk(MutatorCatchup mc) {
         final long seq = chunkSeq.incrementAndGet();
         return new SurvivorValChunk(seq, newRecordMap(true),
-                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + DEST_FNAME_SUFFIX, true), mc),
+                chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + SURVIVOR_FNAME_SUFFIX, true), mc),
                 this);
     }
 
     /** Creates a new active tombstone chunk file and returns an instance of
      * {@link WriteThroughTombChunk} that wraps it. */
     public final WriteThroughTombChunk newActiveTombChunk() {
-        return newWriteThroughTombChunk(ACTIVE_CHUNK_SUFFIX);
+        return newWriteThroughTombChunk(ACTIVE_FNAME_SUFFIX);
     }
 
     /** Creates a new tombstone chunk file with the given filename suffix and returns an instance of

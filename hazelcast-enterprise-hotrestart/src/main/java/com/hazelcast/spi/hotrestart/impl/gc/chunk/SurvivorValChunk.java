@@ -11,7 +11,7 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 public final class SurvivorValChunk extends WriteThroughChunk {
 
     public SurvivorValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
-        super(seq, DEST_FNAME_SUFFIX, records, out, gcHelper);
+        super(seq, SURVIVOR_FNAME_SUFFIX, records, out, gcHelper);
     }
 
     /**

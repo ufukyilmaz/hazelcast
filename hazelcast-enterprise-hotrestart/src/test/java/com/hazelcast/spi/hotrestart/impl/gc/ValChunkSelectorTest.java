@@ -15,6 +15,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -39,6 +40,8 @@ public class ValChunkSelectorTest {
     @Before public void setup() {
         di = createBaseDiContainer()
                 .dep("gcConveyor", concurrentConveyorSingleQueue(null, new OneToOneConcurrentArrayQueue<Runnable>(1)))
+                .dep("homeDir", new File(""))
+                .dep(Snapshotter.class, mock(Snapshotter.class))
                 .dep(MutatorCatchup.class)
                 .dep(PrefixTombstoneManager.class, mock(PrefixTombstoneManager.class, withSettings().stubOnly()))
                 .wireAndInitializeAll();

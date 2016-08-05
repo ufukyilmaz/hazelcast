@@ -79,7 +79,7 @@ final class TombEvacuator {
             return;
         }
         start = System.nanoTime();
-        survivor = gcHelper.newWriteThroughTombChunk(Chunk.DEST_FNAME_SUFFIX);
+        survivor = gcHelper.newWriteThroughTombChunk(Chunk.SURVIVOR_FNAME_SUFFIX);
         survivor.flagForFsyncOnClose(true);
         survivorMap.put(survivor.seq, survivor);
     }

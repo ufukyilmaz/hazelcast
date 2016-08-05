@@ -19,7 +19,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.FNAME_SUFFIX;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
 import static org.junit.Assert.assertEquals;
@@ -173,6 +173,6 @@ public class ActiveValChunkTest {
 
         // Then
         Mockito.verify(gcHelper, times(1)).changeSuffix(
-                activeValChunk.base(), activeValChunk.seq, FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX, FNAME_SUFFIX);
+                activeValChunk.base(), activeValChunk.seq, FNAME_SUFFIX + ACTIVE_FNAME_SUFFIX, FNAME_SUFFIX);
     }
 }

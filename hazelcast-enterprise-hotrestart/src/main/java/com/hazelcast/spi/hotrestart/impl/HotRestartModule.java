@@ -13,6 +13,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.GcMainLoop;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
+import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.util.concurrent.ManyToOneConcurrentArrayQueue;
 import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
@@ -69,6 +70,7 @@ public final class HotRestartModule {
           .dep("gcConveyor", concurrentConveyorSingleQueue(null,
                   new OneToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
           .dep(ChunkManager.class).disposable()
+          .dep(Snapshotter.class)
           .dep(MutatorCatchup.class)
           .dep(PrefixTombstoneManager.class)
           .dep(GcMainLoop.class)

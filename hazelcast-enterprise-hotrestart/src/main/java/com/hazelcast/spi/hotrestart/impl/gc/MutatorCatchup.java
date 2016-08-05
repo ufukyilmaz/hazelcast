@@ -28,18 +28,22 @@ public class MutatorCatchup {
     boolean askedToStop;
 
     private final ConcurrentConveyor<Runnable> conveyor;
+    private final Snapshotter snapshotter;
     private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY);
     private final GcLogger logger;
 
     // counts the number of calls to catchupAsNeeded since last catchupNow
     private long i;
+    // when initialized to a negative value, "late catchup diagnostics" are disabled
     private long lastCaughtUp = -1;
-    // private long lastCaughtUp = logger.isFineEnabled() ? 0 : -1;
 
     @Inject
-    private MutatorCatchup(GcLogger logger, @Name("gcConveyor") ConcurrentConveyor<Runnable> conveyor) {
+    private MutatorCatchup(
+            GcLogger logger, @Name("gcConveyor") ConcurrentConveyor<Runnable> conveyor, Snapshotter snapshotter
+    ) {
         this.logger = logger;
         this.conveyor = conveyor;
+        this.snapshotter = snapshotter;
     }
 
     /**
@@ -80,6 +84,9 @@ public class MutatorCatchup {
         if (lastCaughtUp >= 0) {
             diagnoseLateCatchup();
         }
+        if (snapshotter.enabled) {
+            snapshotter.takeChunkSnapshotAsNeeded();
+        }
         if (workCount == 0) {
             return 0;
         }
@@ -94,17 +101,18 @@ public class MutatorCatchup {
         final long now = System.nanoTime();
         final long sinceLastCatchup = now - lastCaughtUp;
         lastCaughtUp = now;
-        if (sinceLastCatchup > MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
-            && sinceLastCatchup < MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
+        if (sinceLastCatchup <= MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
+            || sinceLastCatchup >= MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
         ) {
-            final StringWriter sw = new StringWriter(512);
-            final PrintWriter w = new PrintWriter(sw);
-            new Exception().printStackTrace(w);
-            final String trace = sw.toString();
-            final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
-            m.find();
-            logger.finest("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+            return;
         }
+        final StringWriter sw = new StringWriter(512);
+        final PrintWriter w = new PrintWriter(sw);
+        new Exception().printStackTrace(w);
+        final String trace = sw.toString();
+        final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
+        m.find();
+        logger.finest("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
     }
 
 

@@ -30,11 +30,11 @@ public abstract class Chunk implements Disposable {
      * is the only one whose last entry may be incomplete. If the system failed while
      * it was being written out, the caller did not receive a successful response,
      * therefore that entry doesn't actually exist. */
-    public static final String ACTIVE_CHUNK_SUFFIX = ".active";
+    public static final String ACTIVE_FNAME_SUFFIX = ".active";
 
     /** Suffix added to a chunk file while it is being written to during a GC cycle.
      * If system fails during GC, such file should not be considered during restart. */
-    public static final String DEST_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".dest";
+    public static final String SURVIVOR_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".survivor";
 
     /** Name of the base directory for value records. */
     public static final String VAL_BASEDIR = "value";

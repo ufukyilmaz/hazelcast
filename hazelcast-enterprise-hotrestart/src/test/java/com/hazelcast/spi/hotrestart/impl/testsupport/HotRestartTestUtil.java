@@ -17,7 +17,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
-import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
+import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
@@ -52,8 +52,8 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
-import static java.lang.System.out;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,7 +61,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 
 public class HotRestartTestUtil {
     public static final String LOGGER_NAME = "com.hazelcast.spi.hotrestart";
@@ -104,7 +103,7 @@ public class HotRestartTestUtil {
                 if (took > outlierThresholdNanos && took < outlierCutoffNanos) {
                     logger.info(String.format("Recording outlier: %d ms", NANOSECONDS.toMillis(took)));
                 }
-                if (iterCount % 10 == 0) {
+                if (iterCount % 3 == 0) {
                     LockSupport.parkNanos(1);
                 }
                 hist.recordValue(took);
@@ -255,6 +254,7 @@ public class HotRestartTestUtil {
     public static MutatorCatchup createMutatorCatchup() {
         return createBaseDiContainer()
                 .dep("gcConveyor", concurrentConveyorSingleQueue(null, new OneToOneConcurrentArrayQueue<Runnable>(1)))
+                .dep(Snapshotter.class, mock(Snapshotter.class))
                 .dep(MutatorCatchup.class)
                 .wireAndInitializeAll()
                 .get(MutatorCatchup.class);
@@ -319,13 +319,13 @@ public class HotRestartTestUtil {
             out = new ChunkFileOut(file, createMutatorCatchup());
             final ActiveChunk chunk = wantValueChunk
                     ? new ActiveValChunk(0, null, out, mock(GcHelper.class))
-                    : new WriteThroughTombChunk(0, "testsuffix", null, out, mock(GcHelper.class));
+                    : new WriteThroughTombChunk(0, ACTIVE_FNAME_SUFFIX, null, out, mock(GcHelper.class));
             for (TestRecord record : records) {
                 chunk.addStep1(record.recordSeq, record.keyPrefix, record.keyBytes, record.valueBytes);
             }
             out.close();
             return file;
-        } catch (IOException e) {
+        } catch (Exception e) {
             IOUtil.closeResource(out);
             throw ExceptionUtil.rethrow(e);
         }

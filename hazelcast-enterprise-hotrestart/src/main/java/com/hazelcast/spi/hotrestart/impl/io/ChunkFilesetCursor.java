@@ -10,7 +10,7 @@ import java.util.List;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.CHUNK_FNAME_LENGTH;
 import static com.hazelcast.nio.IOUtil.rename;
-import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_CHUNK_SUFFIX;
+import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.ACTIVE_FNAME_SUFFIX;
 import static java.lang.Long.parseLong;
 
 /**
@@ -39,7 +39,7 @@ public abstract class ChunkFilesetCursor {
      * @return whether it was the active chunk file at the time of shutdown
      */
     public static boolean isActiveChunkFile(File f) {
-        return f.getName().endsWith(Chunk.FNAME_SUFFIX + ACTIVE_CHUNK_SUFFIX);
+        return f.getName().endsWith(Chunk.FNAME_SUFFIX + ACTIVE_FNAME_SUFFIX);
     }
 
     /**
@@ -111,7 +111,7 @@ public abstract class ChunkFilesetCursor {
      */
     static void removeActiveSuffix(File activeChunkFile) {
         final String nameNow = activeChunkFile.getName();
-        final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_CHUNK_SUFFIX.length());
+        final String nameToBe = nameNow.substring(0, nameNow.length() - ACTIVE_FNAME_SUFFIX.length());
         rename(activeChunkFile, new File(activeChunkFile.getParent(), nameToBe));
     }
 

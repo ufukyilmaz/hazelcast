@@ -27,7 +27,7 @@ import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
 

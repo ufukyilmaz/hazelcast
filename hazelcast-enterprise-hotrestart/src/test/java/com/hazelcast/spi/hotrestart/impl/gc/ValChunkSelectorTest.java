@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

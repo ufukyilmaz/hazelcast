@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.util.concurrent.QueuedPipe;
+import com.hazelcast.internal.util.collection.QueuedPipe;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 

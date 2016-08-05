@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
-import com.hazelcast.util.concurrent.QueuedPipe;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.QueuedPipe;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;

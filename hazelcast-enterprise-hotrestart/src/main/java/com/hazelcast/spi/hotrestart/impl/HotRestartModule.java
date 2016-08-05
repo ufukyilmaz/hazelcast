@@ -15,8 +15,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
-import com.hazelcast.util.concurrent.ManyToOneConcurrentArrayQueue;
-import com.hazelcast.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 

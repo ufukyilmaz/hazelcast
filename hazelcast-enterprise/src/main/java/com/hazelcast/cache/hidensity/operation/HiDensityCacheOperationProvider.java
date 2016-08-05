@@ -19,6 +19,7 @@ import java.util.Set;
 /**
  * Provide operations for {@link InMemoryFormat#NATIVE}
  */
+@SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationProvider {
 
     public HiDensityCacheOperationProvider(String nameWithPrefix) {

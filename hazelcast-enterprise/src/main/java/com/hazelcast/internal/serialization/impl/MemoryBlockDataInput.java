@@ -52,10 +52,11 @@ import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
-/**
- * @author mdogan 06/16/13
- */
+@SuppressWarnings("checkstyle:methodcount")
 final class MemoryBlockDataInput extends InputStream implements EnterpriseBufferObjectDataInput {
+
+    private static final int LOWER_BYTE_MASK = (1 << Byte.SIZE) - 1;
+    private static final int LOWER_SHORT_MASK = (1 << Short.SIZE) - 1;
 
     private MemoryBlock memory;
 
@@ -532,7 +533,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      */
     @Override
     public int readUnsignedByte() throws IOException {
-        return readByte() & 0xFF;
+        return readByte() & LOWER_BYTE_MASK;
     }
 
     /**
@@ -550,9 +551,10 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
      */
     @Override
     public int readUnsignedShort() throws IOException {
-        return readShort() & 0xffff;
+        return readShort() & LOWER_SHORT_MASK;
     }
 
+    @Override
     @Deprecated
     public String readLine() throws IOException {
         throw new UnsupportedOperationException();
@@ -584,11 +586,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         byte b;
         for (int i = 0; i < charCount; i++) {
             b = readByte();
-            if (b < 0) {
-                charBuffer[i] = Bits.readUtf8Char(this, b);
-            } else {
-                charBuffer[i] = (char) b;
-            }
+            charBuffer[i] = b < 0 ? Bits.readUtf8Char(this, b) : (char) b;
         }
         return new String(charBuffer, 0, charCount);    }
 
@@ -692,13 +690,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("MemoryBlockDataInput");
-        sb.append("{size=").append(size);
-        sb.append(", pos=").append(pos);
-        sb.append(", mark=").append(mark);
-        sb.append(", byteOrder=").append(getByteOrder());
-        sb.append('}');
-        return sb.toString();
+        return "MemoryBlockDataInput{size=" + size + ", pos=" + pos
+                + ", mark=" + mark + ", byteOrder=" + getByteOrder() + '}';
     }
 }

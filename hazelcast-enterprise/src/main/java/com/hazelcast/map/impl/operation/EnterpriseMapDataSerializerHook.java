@@ -83,96 +83,7 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
 
     @Override
     public DataSerializableFactory createFactory() {
-        return new DataSerializableFactory() {
-
-            private final ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors
-                    = new ConstructorFunction[CONSTRUCTOR_ARRAY_INDEX.value];
-
-            {
-                constructors[PUT] = newPutOperation();
-                constructors[PUT_BACKUP] = newPutBackupOperation();
-                constructors[SET] = newSetOperation();
-                constructors[REMOVE] = newRemoveOperation();
-                constructors[REMOVE_BACKUP] = newRemoveBackupOperation();
-                constructors[GET] = newGetOperation();
-                constructors[EVICT_BACKUP] = newEvictBackupOperation();
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveBackupOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDRemoveBackupOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newEvictBackupOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDEvictBackupOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDPutOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutBackupOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDPutBackupOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newSetOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDSetOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDRemoveOperation();
-                    }
-                };
-            }
-
-            private ConstructorFunction<Integer, IdentifiedDataSerializable> newGetOperation() {
-                return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-                    @Override
-                    public IdentifiedDataSerializable createNew(Integer arg) {
-                        return new HDGetOperation();
-                    }
-                };
-            }
-
-            @Override
-            public IdentifiedDataSerializable create(int typeId) {
-                checkRange(typeId);
-
-                ConstructorFunction<Integer, IdentifiedDataSerializable> constructor = constructors[typeId];
-                if (constructor == null) {
-                    throw new IllegalArgumentException(getExceptionMessage(typeId));
-                }
-
-                return constructor.createNew(typeId);
-            }
-        };
+        return new Factory();
     }
 
     private static void checkRange(int typeId) {
@@ -184,5 +95,96 @@ public class EnterpriseMapDataSerializerHook implements DataSerializerHook {
 
     private static String getExceptionMessage(int typeId) {
         return "No registered hook found for the type-id: " + typeId;
+    }
+
+    private static class Factory implements DataSerializableFactory {
+
+        private final ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors
+                = new ConstructorFunction[CONSTRUCTOR_ARRAY_INDEX.value];
+
+        {
+            constructors[PUT] = newPutOperation();
+            constructors[PUT_BACKUP] = newPutBackupOperation();
+            constructors[SET] = newSetOperation();
+            constructors[REMOVE] = newRemoveOperation();
+            constructors[REMOVE_BACKUP] = newRemoveBackupOperation();
+            constructors[GET] = newGetOperation();
+            constructors[EVICT_BACKUP] = newEvictBackupOperation();
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveBackupOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDRemoveBackupOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newEvictBackupOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDEvictBackupOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDPutOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newPutBackupOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDPutBackupOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newSetOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDSetOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newRemoveOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDRemoveOperation();
+                }
+            };
+        }
+
+        private ConstructorFunction<Integer, IdentifiedDataSerializable> newGetOperation() {
+            return new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+                @Override
+                public IdentifiedDataSerializable createNew(Integer arg) {
+                    return new HDGetOperation();
+                }
+            };
+        }
+
+        @Override
+        public IdentifiedDataSerializable create(int typeId) {
+            checkRange(typeId);
+
+            ConstructorFunction<Integer, IdentifiedDataSerializable> constructor = constructors[typeId];
+            if (constructor == null) {
+                throw new IllegalArgumentException(getExceptionMessage(typeId));
+            }
+
+            return constructor.createNew(typeId);
+        }
     }
 }

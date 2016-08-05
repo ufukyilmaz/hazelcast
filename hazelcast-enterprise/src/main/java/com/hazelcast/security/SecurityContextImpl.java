@@ -26,7 +26,7 @@ import java.util.logging.Level;
 
 public class SecurityContextImpl implements SecurityContext {
 
-    private static ThreadLocal<ParametersImpl> threadLocal = new ThreadLocal<ParametersImpl>();
+    private static final ThreadLocal<ParametersImpl> PARAMS_THREADLOCAL = new ThreadLocal<ParametersImpl>();
 
     private final ILogger logger;
     private final Node node;
@@ -37,6 +37,7 @@ public class SecurityContextImpl implements SecurityContext {
     private final List<SecurityInterceptor> interceptors;
     private final Parameters emptyParameters = new EmptyParametersImpl();
 
+    @SuppressWarnings("checkstyle:executablestatementcount")
     public SecurityContextImpl(Node node) {
         super();
         this.node = node;
@@ -56,56 +57,26 @@ public class SecurityContextImpl implements SecurityContext {
         policy = tmpPolicy;
         policy.configure(node.config, policyConfig.getProperties());
 
-        CredentialsFactoryConfig credentialsFactoryConfig = securityConfig.getMemberCredentialsConfig();
-        if (credentialsFactoryConfig.getClassName() == null) {
-            credentialsFactoryConfig.setClassName(SecurityConstants.DEFAULT_CREDENTIALS_FACTORY_CLASS);
+        CredentialsFactoryConfig credsCfg = securityConfig.getMemberCredentialsConfig();
+        if (credsCfg.getClassName() == null) {
+            credsCfg.setClassName(SecurityConstants.DEFAULT_CREDENTIALS_FACTORY_CLASS);
         }
-        ICredentialsFactory tmpCredentialsFactory = credentialsFactoryConfig.getImplementation();
-        if (tmpCredentialsFactory == null) {
-            tmpCredentialsFactory = (ICredentialsFactory) createImplInstance(node.getConfigClassLoader(), credentialsFactoryConfig.getClassName());
+        ICredentialsFactory credsFact = credsCfg.getImplementation();
+        if (credsFact == null) {
+            credsFact = (ICredentialsFactory) createImplInstance(node.getConfigClassLoader(), credsCfg.getClassName());
         }
-        credentialsFactory = tmpCredentialsFactory;
-        credentialsFactory.configure(node.config.getGroupConfig(), credentialsFactoryConfig.getProperties());
+        credentialsFactory = credsFact;
+        credentialsFactory.configure(node.config.getGroupConfig(), credsCfg.getProperties());
 
-        memberConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
-        clientConfiguration = new LoginConfigurationDelegate(node.config, getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
+        memberConfiguration = new LoginConfigurationDelegate(node.config,
+                getLoginModuleConfigs(securityConfig.getMemberLoginModuleConfigs()));
+        clientConfiguration = new LoginConfigurationDelegate(node.config,
+                getLoginModuleConfigs(securityConfig.getClientLoginModuleConfigs()));
         final List<SecurityInterceptorConfig> interceptorConfigs = securityConfig.getSecurityInterceptorConfigs();
         interceptors = new ArrayList<SecurityInterceptor>(interceptorConfigs.size());
         for (SecurityInterceptorConfig interceptorConfig : interceptorConfigs) {
             addInterceptors(interceptorConfig);
         }
-    }
-
-    void addInterceptors(SecurityInterceptorConfig interceptorConfig) {
-        SecurityInterceptor interceptor = interceptorConfig.getImplementation();
-        final String className = interceptorConfig.getClassName();
-        if (interceptor == null && className != null) {
-            try {
-                interceptor = ClassLoaderUtil.newInstance(node.getConfigClassLoader(), className);
-            } catch (Exception e) {
-                throw ExceptionUtil.rethrow(e);
-            }
-        }
-        if (interceptor != null) {
-            interceptors.add(interceptor);
-        }
-    }
-
-    Parameters getArguments(Object[] args) {
-        if (args == null) {
-            return emptyParameters;
-        }
-        ParametersImpl arguments = threadLocal.get();
-        if (arguments == null) {
-            arguments = new ParametersImpl(node.getSerializationService());
-            threadLocal.set(arguments);
-        }
-        arguments.setArgs(args);
-        return arguments;
-    }
-
-    Parameters getArguments() {
-        return threadLocal.get();
     }
 
     @Override
@@ -139,6 +110,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
     }
 
+    @Override
     public LoginContext createMemberLoginContext(Credentials credentials) throws LoginException {
         logger.log(Level.FINEST, "Creating Member LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
         Thread thread = Thread.currentThread();
@@ -153,6 +125,7 @@ public class SecurityContextImpl implements SecurityContext {
         }
     }
 
+    @Override
     public LoginContext createClientLoginContext(Credentials credentials) throws LoginException {
         logger.log(Level.FINEST, "Creating Client LoginContext for: " + SecurityUtil.getCredentialsFullName(credentials));
         Thread thread = Thread.currentThread();
@@ -164,6 +137,68 @@ public class SecurityContextImpl implements SecurityContext {
         } finally {
             thread.setContextClassLoader(tccl);
         }
+    }
+
+    @Override
+    public ICredentialsFactory getCredentialsFactory() {
+        return credentialsFactory;
+    }
+
+    @Override
+    public void checkPermission(Subject subject, Permission permission) throws SecurityException {
+        PermissionCollection coll = policy.getPermissions(subject, permission.getClass());
+        final boolean b = coll != null && coll.implies(permission);
+        if (!b) {
+            throw new AccessControlException("Permission " + permission + " denied!", permission);
+        }
+    }
+
+    @Override
+    public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {
+        return new SecureCallableImpl<V>(subject, callable);
+    }
+
+    @Override
+    public void destroy() {
+        logger.log(Level.INFO, "Destroying Hazelcast Enterprise security context.");
+        policy.destroy();
+        credentialsFactory.destroy();
+    }
+
+    public ILogger getLogger(String name) {
+        return node.getLogger(name);
+    }
+
+    void addInterceptors(SecurityInterceptorConfig interceptorConfig) {
+        SecurityInterceptor interceptor = interceptorConfig.getImplementation();
+        final String className = interceptorConfig.getClassName();
+        if (interceptor == null && className != null) {
+            try {
+                interceptor = ClassLoaderUtil.newInstance(node.getConfigClassLoader(), className);
+            } catch (Exception e) {
+                throw ExceptionUtil.rethrow(e);
+            }
+        }
+        if (interceptor != null) {
+            interceptors.add(interceptor);
+        }
+    }
+
+    Parameters getArguments(Object[] args) {
+        if (args == null) {
+            return emptyParameters;
+        }
+        ParametersImpl params = PARAMS_THREADLOCAL.get();
+        if (params == null) {
+            params = new ParametersImpl(node.getSerializationService());
+            PARAMS_THREADLOCAL.set(params);
+        }
+        params.setArgs(args);
+        return params;
+    }
+
+    static Parameters getArguments() {
+        return PARAMS_THREADLOCAL.get();
     }
 
     private Object createImplInstance(ClassLoader cl, final String className) {
@@ -189,35 +224,5 @@ public class SecurityContextImpl implements SecurityContext {
         module.getProperties().setProperty(SecurityConstants.ATTRIBUTE_CONFIG_GROUP, groupConfig.getName());
         module.getProperties().setProperty(SecurityConstants.ATTRIBUTE_CONFIG_PASS, groupConfig.getPassword());
         return module;
-    }
-
-    @Override
-    public ICredentialsFactory getCredentialsFactory() {
-        return credentialsFactory;
-    }
-
-    @Override
-    public void checkPermission(Subject subject, Permission permission) throws SecurityException {
-        PermissionCollection coll = policy.getPermissions(subject, permission.getClass());
-        final boolean b = coll != null && coll.implies(permission);
-        if (!b) {
-            throw new AccessControlException("Permission " + permission + " denied!", permission);
-        }
-    }
-
-    @Override
-    public <V> SecureCallable<V> createSecureCallable(Subject subject, Callable<V> callable) {
-        return new SecureCallableImpl<V>(subject, callable);
-    }
-
-    public ILogger getLogger(String name) {
-        return node.getLogger(name);
-    }
-
-    @Override
-    public void destroy() {
-        logger.log(Level.INFO, "Destroying Hazelcast Enterprise security context.");
-        policy.destroy();
-        credentialsFactory.destroy();
     }
 }

@@ -49,6 +49,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
  * @param <K> the key type for this {@link InternalQueryCache}
  * @param <V> the value type for this {@link InternalQueryCache}
  */
+@SuppressWarnings("checkstyle:methodcount")
 class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
 
     public DefaultQueryCache(String cacheName, String userGivenCacheName, IMap delegate, QueryCacheContext context) {

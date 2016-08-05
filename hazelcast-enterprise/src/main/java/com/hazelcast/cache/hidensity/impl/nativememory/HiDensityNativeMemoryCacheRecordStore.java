@@ -40,9 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheCompleteEvent;
 
-/**
- * @author sozal 14/10/14
- */
+@SuppressWarnings("checkstyle:methodcount")
 public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<HiDensityNativeMemoryCacheRecord, HiDensityNativeMemoryCacheRecordMap>
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
@@ -145,6 +143,7 @@ public class HiDensityNativeMemoryCacheRecordStore
     }
 
     @Override
+    @SuppressWarnings("checkstyle:npathcomplexity")
     protected HiDensityNativeMemoryCacheRecordMap createRecordCacheMap() {
         if (records != null) {
             return records;
@@ -432,6 +431,7 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     private HiDensityNativeMemoryCacheRecord putRecordInternal(Data key, CacheRecord record) {
         if (!records.containsKey(key)) {
             evictIfRequired();
@@ -506,8 +506,12 @@ public class HiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    @SuppressWarnings("checkstyle:parameternumber")
     @Override
+    @SuppressWarnings({
+            "checkstyle:parameternumber",
+            "checkstyle:cyclomaticcomplexity",
+            "checkstyle:npathcomplexity"
+    })
     protected void onPut(Data key, Object value, ExpiryPolicy expiryPolicy, String caller,
                          boolean getValue, boolean disableWriteThrough, HiDensityNativeMemoryCacheRecord record,
                          Object oldValue, boolean isExpired, boolean isNewPut, boolean isSaveSucceed) {

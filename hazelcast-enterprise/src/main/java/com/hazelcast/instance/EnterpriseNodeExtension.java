@@ -61,7 +61,11 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
  */
-@SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount"})
+@SuppressWarnings({
+        "checkstyle:classdataabstractioncoupling",
+        "checkstyle:classfanoutcomplexity",
+        "checkstyle:methodcount"
+})
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
@@ -89,7 +93,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         logger.log(Level.INFO, "Checking Hazelcast Enterprise license...");
 
         String licenseKey = node.getProperties().getString(GroupProperty.ENTERPRISE_LICENSE_KEY);
-        if (licenseKey == null || "".equals(licenseKey)) {
+        if (licenseKey == null || licenseKey.isEmpty()) {
             licenseKey = node.getConfig().getLicenseKey();
         }
         license = LicenseHelper.getLicense(licenseKey, buildInfo.getVersion());

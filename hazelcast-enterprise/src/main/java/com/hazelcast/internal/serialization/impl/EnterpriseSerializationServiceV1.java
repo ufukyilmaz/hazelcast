@@ -42,6 +42,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     private final HazelcastMemoryManager memoryManager;
     private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();
 
+    @SuppressWarnings("checkstyle:parameternumber")
     public EnterpriseSerializationServiceV1(
             InputOutputFactory inputOutputFactory, byte version, int portableVersion, ClassLoader classLoader,
             Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,

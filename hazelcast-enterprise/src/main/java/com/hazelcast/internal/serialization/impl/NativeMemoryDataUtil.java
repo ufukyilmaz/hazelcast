@@ -25,9 +25,6 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
-/**
- * @author mdogan 12/10/13
- */
 public final class NativeMemoryDataUtil {
 
     private static final boolean BIG_ENDIAN = ByteOrder.BIG_ENDIAN == ByteOrder.nativeOrder();
@@ -79,33 +76,25 @@ public final class NativeMemoryDataUtil {
         return MEM.getInt(address + NativeMemoryData.SIZE_OFFSET);
     }
 
+    @SuppressWarnings("checkstyle:npathcomplexity")
     public static boolean equals(long address1, long address2) {
         if (address1 == address2) {
             return true;
         }
-        if (address1 == NULL_ADDRESS) {
+        if (address1 == NULL_ADDRESS || address2 == NULL_ADDRESS) {
             return false;
         }
-        if (address2 == NULL_ADDRESS) {
+        if (readType(address1) != readType(address2)) {
             return false;
         }
-
-        int type1 = readType(address1);
-        int type2 = readType(address2);
-        if (type1 != type2) {
-            return false;
-        }
-
         int bufferSize1 = readDataSize(address1);
         int bufferSize2 = readDataSize(address2);
         if (bufferSize1 != bufferSize2) {
             return false;
         }
-
         if (bufferSize1 == 0) {
             return true;
         }
-
         return equals(address1, address2, bufferSize1);
     }
 
@@ -113,16 +102,11 @@ public final class NativeMemoryDataUtil {
         if (address1 == address2) {
             return true;
         }
-        if (address1 == NULL_ADDRESS) {
+        if (address1 == NULL_ADDRESS || address2 == NULL_ADDRESS) {
             return false;
         }
-        if (address2 == NULL_ADDRESS) {
-            return false;
-        }
-
-        int noOfLongs = bufferSize / LONG_SIZE_IN_BYTES;
+        int numLongs = bufferSize / LONG_SIZE_IN_BYTES;
         int remaining = bufferSize % LONG_SIZE_IN_BYTES;
-
         final int lastAddress = NativeMemoryData.DATA_OFFSET + bufferSize - 1;
         for (int i = 0; i < remaining; i++) {
             byte k1 = MEM.getByte(address1 + lastAddress - i);
@@ -131,7 +115,7 @@ public final class NativeMemoryDataUtil {
                 return false;
             }
         }
-        for (int i = 0; i < noOfLongs; i++) {
+        for (int i = 0; i < numLongs; i++) {
             long k1 = MEM.getLong(address1 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
             long k2 = MEM.getLong(address2 + NativeMemoryData.DATA_OFFSET + (i * LONG_SIZE_IN_BYTES));
             if (k1 != k2) {

@@ -65,6 +65,7 @@ import static com.hazelcast.query.impl.predicates.QueryOptimizerFactory.newOptim
  *
  * @see MapServiceContext
  */
+@SuppressWarnings("checkstyle:classfanoutcomplexity")
 class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         implements EnterpriseMapServiceContext, RamStoreRegistry {
 

@@ -79,7 +79,11 @@ import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitio
  *
  * @author mdogan 05/02/14
  */
-@SuppressWarnings("checkstyle:methodcount")
+@SuppressWarnings({
+        "checkstyle:methodcount",
+        "checkstyle:classdataabstractioncoupling",
+        "checkstyle:classfanoutcomplexity"
+})
 public class EnterpriseCacheService
         extends CacheService
         implements ReplicationSupportingService, RamStoreRegistry {

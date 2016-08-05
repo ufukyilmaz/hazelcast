@@ -17,6 +17,7 @@
 package com.hazelcast.nio;
 
 import com.hazelcast.config.SymmetricEncryptionConfig;
+import com.hazelcast.internal.memory.impl.EndiannessUtil;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 
@@ -39,6 +40,7 @@ import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.KeySpec;
 
+import static com.hazelcast.internal.memory.impl.EndiannessUtil.BYTE_ARRAY_ACCESS;
 import static com.hazelcast.util.StringUtil.stringToBytes;
 
 public final class CipherHelper {
@@ -98,24 +100,19 @@ public final class CipherHelper {
             keyBytes = sec.getKey();
         }
 
-        byte[] createSalt(String saltStr) {
+        private static byte[] createSalt(String saltStr) {
             long hash = 0;
+            final int prime = 31;
             char[] chars = saltStr.toCharArray();
             for (char c : chars) {
-                hash = 31 * hash + c;
+                hash = prime * hash + c;
             }
-            byte[] theSalt = new byte[8];
-            theSalt[0] = (byte) (hash >>> 56);
-            theSalt[1] = (byte) (hash >>> 48);
-            theSalt[2] = (byte) (hash >>> 40);
-            theSalt[3] = (byte) (hash >>> 32);
-            theSalt[4] = (byte) (hash >>> 24);
-            theSalt[5] = (byte) (hash >>> 16);
-            theSalt[6] = (byte) (hash >>> 8);
-            theSalt[7] = (byte) (hash);
-            return theSalt;
+            byte[] result = new byte[Bits.LONG_SIZE_IN_BYTES];
+            EndiannessUtil.writeLongB(BYTE_ARRAY_ACCESS, result, 0, hash);
+            return result;
         }
 
+        @SuppressWarnings("checkstyle:magicnumber")
         public Cipher create(boolean encryptMode) {
             try {
                 int mode = (encryptMode) ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
@@ -153,8 +150,10 @@ public final class CipherHelper {
             }
         }
 
-        private AlgorithmParameterSpec buildFinalAlgorithmParameterSpec(byte[] saltDigest, int ivLength,
-                                                                        AlgorithmParameterSpec paramSpec) {
+        @SuppressWarnings("checkstyle:magicnumber")
+        private AlgorithmParameterSpec buildFinalAlgorithmParameterSpec(
+                byte[] saltDigest, int ivLength, AlgorithmParameterSpec paramSpec
+        ) {
             boolean isCBC = algorithm.contains("/CBC/");
             if (isCBC) {
                 byte[] iv = (ivLength == 8) ? salt : saltDigest;
@@ -171,8 +170,8 @@ public final class CipherHelper {
             return keyAlgorithm;
         }
 
-        private byte[] buildKeyBytes()
-                throws NoSuchAlgorithmException {
+        @SuppressWarnings("checkstyle:magicnumber")
+        private byte[] buildKeyBytes() throws NoSuchAlgorithmException {
             // 32-bit digest key=pass+salt
             ByteBuffer bbPass = ByteBuffer.allocate(32);
             MessageDigest md = MessageDigest.getInstance("MD5");

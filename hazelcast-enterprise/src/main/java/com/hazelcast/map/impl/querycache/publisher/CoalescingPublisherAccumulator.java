@@ -5,13 +5,17 @@ import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorProcessor;
 import com.hazelcast.map.impl.querycache.accumulator.BasicAccumulator;
+import com.hazelcast.map.impl.querycache.event.BatchEventData;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 import com.hazelcast.nio.serialization.Data;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@link com.hazelcast.map.impl.querycache.accumulator.Accumulator Accumulator} which coalesces
@@ -22,11 +26,10 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
     /**
      * Index map to hold last unpublished event sequence per key.
      */
-    private final Map<Data, Long> index;
+    private final Map<Data, Long> index = new HashMap<Data, Long>();
 
     public CoalescingPublisherAccumulator(QueryCacheContext context, AccumulatorInfo info) {
         super(context, info);
-        index = new HashMap<Data, Long>();
     }
 
     @Override
@@ -40,7 +43,7 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
         }
 
         poll(handler, info.getBatchSize());
-        poll(handler, info.getDelaySeconds(), TimeUnit.SECONDS);
+        poll(handler, info.getDelaySeconds(), SECONDS);
     }
 
     private void setSequence(QueryCacheEventData eventData) {
@@ -52,6 +55,13 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
             long nextSequence = partitionSequencer.nextSequence();
             eventData.setSequence(nextSequence);
             index.put(dataKey, nextSequence);
+        }
+
+        if (logger.isFinestEnabled()) {
+            if (logger.isFinestEnabled()) {
+                logger.finest(format("Added to index key=%s, sequence=%d, indexSize=%d",
+                        eventData.getKey(), eventData.getSequence(), index.size()));
+            }
         }
     }
 
@@ -74,9 +84,33 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
         public void process(Sequenced sequenced) {
             super.process(sequenced);
 
-            QueryCacheEventData eventData = (QueryCacheEventData) sequenced;
+            if (sequenced instanceof BatchEventData) {
+                Collection<QueryCacheEventData> events = ((BatchEventData) sequenced).getEvents();
+                for (QueryCacheEventData event : events) {
+                    removeFromIndex(event);
+                }
+                return;
+            }
+
+            if (sequenced instanceof QueryCacheEventData) {
+                removeFromIndex((QueryCacheEventData) sequenced);
+                return;
+            }
+
+            throw new IllegalArgumentException(format("Expected an instance of %s but found %s",
+                    QueryCacheEventData.class.getSimpleName(),
+                    sequenced == null ? "null" : sequenced.getClass().getSimpleName()));
+
+        }
+
+        private void removeFromIndex(QueryCacheEventData eventData) {
             Data dataKey = eventData.getDataKey();
             index.remove(dataKey);
+
+            if (logger.isFinestEnabled()) {
+                logger.finest(format("Removed from index key=%s, sequence=%d, indexSize=%d",
+                        eventData.getKey(), eventData.getSequence(), index.size()));
+            }
         }
     }
 }

@@ -4,7 +4,7 @@ import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.io.IOException;
  * by master member to all cluster after cluster-wide validation phase completes.
  */
 public class SendPartitionTableValidationResultOperation
-        extends AbstractOperation implements JoinOperation {
+        extends Operation implements JoinOperation {
 
     private HotRestartClusterInitializationStatus result;
 

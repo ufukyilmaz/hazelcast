@@ -3,8 +3,8 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
-import com.hazelcast.spi.AbstractOperation;
 import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
@@ -19,7 +19,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * will not send their partition table as they started loading hot restart data. Master sends this operation to other nodes to
  * check if there is a status change it missed.
  */
-public class AskForPartitionTableValidationStatusOperation extends AbstractOperation implements JoinOperation  {
+public class AskForPartitionTableValidationStatusOperation extends Operation implements JoinOperation {
 
     @Override
     public void run() throws Exception {

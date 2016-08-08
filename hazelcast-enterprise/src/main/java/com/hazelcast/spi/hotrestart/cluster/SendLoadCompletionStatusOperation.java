@@ -5,7 +5,7 @@ import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.spi.AbstractOperation;
+import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 import java.io.IOException;
@@ -17,7 +17,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * by master member to all cluster after cluster-wide load completes.
  */
 public class SendLoadCompletionStatusOperation
-        extends AbstractOperation implements JoinOperation {
+        extends Operation implements JoinOperation {
 
     private HotRestartClusterInitializationStatus result;
     private ClusterState loadedState;

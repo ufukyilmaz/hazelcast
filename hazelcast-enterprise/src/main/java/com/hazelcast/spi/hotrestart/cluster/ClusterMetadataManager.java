@@ -59,6 +59,12 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private static final String DIR_NAME = "cluster";
 
+    // A very long timeout to observe volatile write of finalClusterStateSet
+    // after successful CAS of hotRestartStatus is observed.
+    // This timeout to avoid a possible infinite loop and see the failure
+    // when the logic here is broken erroneously.
+    private static final long FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT = TimeUnit.MINUTES.toNanos(5);
+
     private final Node node;
     private final MemberListWriter memberListWriter;
     private final PartitionTableWriter partitionTableWriter;
@@ -79,6 +85,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private volatile boolean startWithHotRestart = true;
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
+    private volatile boolean finalClusterStateSet;
     private int partitionTableVersion;
     private long validationStartTime;
     private long loadStartTime;
@@ -357,6 +364,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     void setFinalClusterState(ClusterState newState) {
         logger.info("Setting final cluster state to: " + newState);
         setClusterState(node.getClusterService(), newState, true);
+        finalClusterStateSet = true;
     }
 
     private void setInitialPartitionTable() {
@@ -622,7 +630,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
             if (!node.getThisAddress().equals(sender)) {
-                final ClusterState clusterState = node.getClusterService().getClusterState();
+                final ClusterState clusterState = getCurrentClusterState();
                 logger.info("Sending cluster-wide load-completion result " + status + " and cluster state: "
                         + clusterState + " to: " + sender);
                 operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
@@ -633,6 +641,23 @@ public final class ClusterMetadataManager implements PartitionListener {
                 operationService.send(new ForceStartMemberOperation(), sender);
             }
         }
+    }
+
+    ClusterState getCurrentClusterState() {
+        if (hotRestartStatus.get() == VERIFICATION_AND_LOAD_SUCCEEDED) {
+            long start = System.nanoTime();
+            while (!finalClusterStateSet) {
+                // Spin until finalClusterStateSet flag is set.
+                // finalClusterStateSet will be set after hotRestartStatus becomes `VERIFICATION_AND_LOAD_SUCCEEDED`.
+                Thread.yield();
+
+                if ((System.nanoTime() - start) > FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT) {
+                    throw new HotRestartException("Final cluster-state flag is not set even though "
+                            + "hotRestartStatus = VERIFICATION_AND_LOAD_SUCCEEDED");
+                }
+            }
+        }
+        return node.getClusterService().getClusterState();
     }
 
     private void processFailedLoadCompletionStatus(Address sender) {
@@ -667,10 +692,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (notLoadedAddresses.isEmpty()) {
             if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED)) {
                 logger.info("Cluster wide hot restart status is set to " + VERIFICATION_AND_LOAD_SUCCEEDED);
+                setFinalClusterState(clusterState);
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onHotRestartDataLoadComplete(VERIFICATION_AND_LOAD_SUCCEEDED);
                 }
-                setFinalClusterState(clusterState);
             } else if (logger.isFineEnabled()) {
                 logger.fine("Cluster wide hot restart status is: " + hotRestartStatus.get()
                         + " successful when load completion received from: " + sender);

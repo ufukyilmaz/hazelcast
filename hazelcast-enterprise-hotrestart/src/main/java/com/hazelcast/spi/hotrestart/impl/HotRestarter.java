@@ -44,19 +44,20 @@ import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveCh
 import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
 import static java.lang.Thread.currentThread;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Reads the persistent state and:
  * <ol>
- *     <li>refills the RAM stores</li>
- *     <li>rebuilds the Hot Restart Store's metadata</li>
+ * <li>refills the RAM stores</li>
+ * <li>rebuilds the Hot Restart Store's metadata</li>
  * </ol>
  */
 public final class HotRestarter {
+    private static final int REBUILDER_JOIN_TIMEOUT_IN_MILLIS = 5000;
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
-        @Override public int compare(File left, File right) {
+        @Override
+        public int compare(File left, File right) {
             final long leftSeq = ChunkFilesetCursor.seq(left);
             final long rightSeq = ChunkFilesetCursor.seq(right);
             return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
@@ -64,12 +65,14 @@ public final class HotRestarter {
     };
     private static final Pattern RX_BUCKET_DIR = Pattern.compile(String.format("[0-9a-f]{%d}", BUCKET_DIRNAME_DIGITS));
     private static final FileFilter BUCKET_DIRS_ONLY = new FileFilter() {
-        @Override public boolean accept(File f) {
+        @Override
+        public boolean accept(File f) {
             return f.isDirectory() && RX_BUCKET_DIR.matcher(f.getName()).matches();
         }
     };
     private static final FileFilter CHUNK_FILES_ONLY = new FileFilter() {
-        @Override public boolean accept(File f) {
+        @Override
+        public boolean accept(File f) {
             return f.isFile() && (f.getName().endsWith(Chunk.FNAME_SUFFIX) || isActiveChunkFile(f));
         }
     };
@@ -135,14 +138,14 @@ public final class HotRestarter {
         }
         localFailure = firstNonNull(localFailure, sendSubmitterGone(keySenders));
         try {
-            rebuilderThread.join(SECONDS.toMillis(2));
-            if (localFailure == null && rebuilderThread.isAlive()) {
-                logger.warning("Timed out while joining Rebuilder thread");
-            }
+            do {
+                rebuilderThread.join(REBUILDER_JOIN_TIMEOUT_IN_MILLIS);
+                propagateLocalAndRebuilderFailure(localFailure);
+                logger.fine("Waiting to join the Rebuilder thread");
+            } while (rebuilderThread.isAlive());
         } catch (InterruptedException e) {
             currentThread().interrupt();
         }
-        propagateLocalAndRebuilderFailure(localFailure);
     }
 
     private static Long2LongHashMap restorePrefixTombstones(File homeDir) {
@@ -294,7 +297,7 @@ public final class HotRestarter {
 
         private void drainTombstones() {
             long idleCount = 0;
-            for (long itemsDrained = 0; itemsDrained != recordCountInCurrentPhase;) {
+            for (long itemsDrained = 0; itemsDrained != recordCountInCurrentPhase; ) {
                 checkSubmittersGone();
                 for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
                     batch.clear();
@@ -313,7 +316,7 @@ public final class HotRestarter {
         private void conveyValues() {
             long drainOpCount = 0;
             long idleCount = 0;
-            for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained;) {
+            for (long itemsDrained = 0; recordCountInCurrentPhase != itemsDrained; ) {
                 checkSubmittersGone();
                 for (int i = 0; i < keyHandleReceiver.queueCount(); i++) {
                     batch.clear();

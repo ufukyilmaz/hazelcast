@@ -38,7 +38,7 @@ public class AskForLoadCompletionStatusOperation extends AbstractOperation imple
 
         HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
-            final ClusterState clusterState = getNodeEngine().getClusterService().getClusterState();
+            final ClusterState clusterState = clusterMetadataManager.getCurrentClusterState();
             if (logger.isFineEnabled()) {
                 logger.fine("Sending hot restart status: " + status + " and cluster state: " + clusterState + " to: " + caller
                         + " as response for " + getClass().getSimpleName());

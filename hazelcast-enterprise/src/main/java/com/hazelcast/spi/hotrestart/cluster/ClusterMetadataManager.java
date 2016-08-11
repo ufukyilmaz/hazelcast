@@ -3,7 +3,6 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
-import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -22,7 +21,6 @@ import com.hazelcast.util.Clock;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -59,6 +57,12 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private static final String DIR_NAME = "cluster";
 
+    // A very long timeout to observe volatile write of finalClusterStateSet
+    // after successful CAS of hotRestartStatus is observed.
+    // This timeout to avoid a possible infinite loop and see the failure
+    // when the logic here is broken erroneously.
+    private static final long FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT = TimeUnit.MINUTES.toNanos(5);
+
     private final Node node;
     private final MemberListWriter memberListWriter;
     private final PartitionTableWriter partitionTableWriter;
@@ -79,6 +83,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private volatile boolean startWithHotRestart = true;
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
+    private volatile boolean finalClusterStateSet;
     private int partitionTableVersion;
     private long validationStartTime;
     private long loadStartTime;
@@ -357,6 +362,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     void setFinalClusterState(ClusterState newState) {
         logger.info("Setting final cluster state to: " + newState);
         setClusterState(node.getClusterService(), newState, true);
+        finalClusterStateSet = true;
     }
 
     private void setInitialPartitionTable() {
@@ -371,6 +377,9 @@ public final class ClusterMetadataManager implements PartitionListener {
         final Address[][] table = partitionTableReader.getTable();
         partitionTableRef.set(table);
         partitionTableVersion = partitionTableReader.getPartitionVersion();
+        if (logger.isFineEnabled()) {
+            logger.fine("Restored partition table version " + partitionTableVersion);
+        }
         return table;
     }
 
@@ -389,6 +398,9 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (thisAddress == null) {
             logger.info("Cluster state not found on disk. Will not load hot-restart data.");
             startWithHotRestart = false;
+        }
+        if (logger.isFineEnabled()) {
+            logger.fine("Restored " + addresses.size() + " members -> " + addresses);
         }
         memberListRef.set(addresses);
         notValidatedAddresses.addAll(addresses);
@@ -622,7 +634,7 @@ public final class ClusterMetadataManager implements PartitionListener {
 
         if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
             if (!node.getThisAddress().equals(sender)) {
-                final ClusterState clusterState = node.getClusterService().getClusterState();
+                final ClusterState clusterState = getCurrentClusterState();
                 logger.info("Sending cluster-wide load-completion result " + status + " and cluster state: "
                         + clusterState + " to: " + sender);
                 operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
@@ -633,6 +645,23 @@ public final class ClusterMetadataManager implements PartitionListener {
                 operationService.send(new ForceStartMemberOperation(), sender);
             }
         }
+    }
+
+    ClusterState getCurrentClusterState() {
+        if (hotRestartStatus.get() == VERIFICATION_AND_LOAD_SUCCEEDED) {
+            long start = System.nanoTime();
+            while (!finalClusterStateSet) {
+                // Spin until finalClusterStateSet flag is set.
+                // finalClusterStateSet will be set after hotRestartStatus becomes `VERIFICATION_AND_LOAD_SUCCEEDED`.
+                Thread.yield();
+
+                if ((System.nanoTime() - start) > FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT) {
+                    throw new HotRestartException("Final cluster-state flag is not set even though "
+                            + "hotRestartStatus = VERIFICATION_AND_LOAD_SUCCEEDED");
+                }
+            }
+        }
+        return node.getClusterService().getClusterState();
     }
 
     private void processFailedLoadCompletionStatus(Address sender) {
@@ -667,10 +696,10 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (notLoadedAddresses.isEmpty()) {
             if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED)) {
                 logger.info("Cluster wide hot restart status is set to " + VERIFICATION_AND_LOAD_SUCCEEDED);
+                setFinalClusterState(clusterState);
                 for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                     listener.onHotRestartDataLoadComplete(VERIFICATION_AND_LOAD_SUCCEEDED);
                 }
-                setFinalClusterState(clusterState);
             } else if (logger.isFineEnabled()) {
                 logger.fine("Cluster wide hot restart status is: " + hotRestartStatus.get()
                         + " successful when load completion received from: " + sender);
@@ -695,29 +724,25 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     private void persistMembers() {
-        if (logger.isFineEnabled()) {
-            logger.fine("Persisting members.");
-        }
-        final ClusterServiceImpl clusterService = node.getClusterService();
         try {
-            memberListWriter.write(clusterService.getMembers());
+            ClusterServiceImpl clusterService = node.getClusterService();
+            Set<Member> members = clusterService.getMembers();
+            if (logger.isFineEnabled()) {
+                logger.fine("Persisting " + members.size() + " members -> " + members);
+            }
+            memberListWriter.write(members);
         } catch (IOException e) {
             logger.severe("While persisting members", e);
         }
     }
 
     private void persistActiveAndPassiveMembers() {
-        if (logger.isFineEnabled()) {
-            logger.fine("Persisting (active & passive) members.");
-        }
         try {
             ClusterServiceImpl clusterService = node.getClusterService();
-            Set<Member> members = clusterService.getMembers();
-            Collection<MemberImpl> removedMembers = clusterService.getMembersRemovedWhileClusterIsNotActive();
-            Collection<Member> allMembers = new ArrayList<Member>(members.size() + removedMembers.size());
-            allMembers.addAll(members);
-            allMembers.addAll(removedMembers);
-
+            Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive();
+            if (logger.isFineEnabled()) {
+                logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
+            }
             memberListWriter.write(allMembers);
         } catch (IOException e) {
             logger.severe("While persisting members", e);
@@ -725,12 +750,13 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     private void persistPartitions() {
-        if (logger.isFinestEnabled()) {
-            logger.finest("Persisting partition table...");
-        }
         try {
             InternalPartitionService partitionService = node.getPartitionService();
-            partitionTableWriter.setPartitionVersion(partitionService.getPartitionStateVersion());
+            int partitionStateVersion = partitionService.getPartitionStateVersion();
+            if (logger.isFinestEnabled()) {
+                logger.finest("Persisting partition table version: " + partitionStateVersion);
+            }
+            partitionTableWriter.setPartitionVersion(partitionStateVersion);
             partitionTableWriter.write(partitionService.getInternalPartitions());
         } catch (IOException e) {
             logger.severe("While persisting partition table", e);

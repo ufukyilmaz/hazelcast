@@ -2,6 +2,7 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.HiDensityCacheRecordStore;
+import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.ICacheRecordStore;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
@@ -176,6 +177,7 @@ abstract class AbstractHiDensityCacheOperation
                 }
                 // If still there is OOME, clear current record store and try again.
                 cache.clear();
+                cacheService.sendInvalidationEvent(cache.getName(), null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
                 runInternal();
                 oome = null;
             } catch (NativeOutOfMemoryError e) {

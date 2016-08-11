@@ -8,6 +8,7 @@ import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
+import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
@@ -438,6 +439,7 @@ public class EnterpriseCacheService
                     ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
                     if (cache != null) {
                         cache.clear();
+                        sendInvalidationEvent(cacheName, null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
                     }
                 }
             }

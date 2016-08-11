@@ -11,8 +11,11 @@ import com.hazelcast.cache.hidensity.operation.CacheReplaceOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSizeOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSizeOperationFactory;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheDataSerializerHook;
+import com.hazelcast.cache.impl.CacheEventListener;
 import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
+import com.hazelcast.cache.impl.ICacheService;
+import com.hazelcast.cache.impl.client.CacheSingleInvalidationMessage;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
 import com.hazelcast.config.Config;
@@ -22,6 +25,8 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.instance.HazelcastInstanceProxy;
+import com.hazelcast.instance.Node;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.AssertTask;
@@ -50,6 +55,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
@@ -195,6 +201,82 @@ public class CacheTest extends AbstractCacheTest {
         }
         cache.removeAll();
         assertEquals(0, cache.size());
+    }
+
+    @Test
+    public void testInvalidationListenerCallCount() {
+        final ICache<String, String> cache = createCache();
+        Map<String, String> entries = createAndFillEntries();
+
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            cache.put(entry.getKey(), entry.getValue());
+        }
+
+        // Verify that put works
+        for (Map.Entry<String, String> entry : entries.entrySet()) {
+            String key = entry.getKey();
+            String expectedValue = entries.get(key);
+            String actualValue = cache.get(key);
+            assertEquals(expectedValue, actualValue);
+        }
+
+        final AtomicInteger counter = new AtomicInteger(0);
+
+        final CacheConfig config = cache.getConfiguration(CacheConfig.class);
+
+        registerInvalidationListener(new CacheEventListener() {
+            @Override
+            public void handleEvent(Object eventObject) {
+                if (eventObject instanceof CacheSingleInvalidationMessage) {
+                    CacheSingleInvalidationMessage event = (CacheSingleInvalidationMessage) eventObject;
+                    if (null == event.getKey() && config.getNameWithPrefix().equals(event.getName())) {
+                        counter.incrementAndGet();
+                    }
+                }
+            }
+        }, config.getNameWithPrefix());
+
+        cache.clear();
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertEquals(1, counter.get());
+            }
+        }, 2);
+
+        // Make sure that the callback is not called for a while
+        assertTrueAllTheTime(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                assertTrue(counter.get() <= 1);
+            }
+        }, 3);
+    }
+
+    protected Map<String, String> createAndFillEntries() {
+        final int ENTRY_COUNT_PER_PARTITION = 3;
+        Node node = getNode(instance);
+        int partitionCount = node.getPartitionService().getPartitionCount();
+        Map<String, String> entries = new HashMap<String, String>(partitionCount * ENTRY_COUNT_PER_PARTITION);
+
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
+            for (int i = 0; i < ENTRY_COUNT_PER_PARTITION; i++) {
+                String key = generateKeyForPartition(instance, partitionId);
+                String value = generateRandomString(16);
+                entries.put(key, value);
+            }
+        }
+
+        return entries;
+    }
+
+    private void registerInvalidationListener(CacheEventListener cacheEventListener, String name) {
+        HazelcastInstanceProxy hzInstance = (HazelcastInstanceProxy) this.instance;
+        hzInstance.getOriginal().node.getNodeEngine().getEventService()
+                                     .registerListener(ICacheService.SERVICE_NAME, name, cacheEventListener);
     }
 
     protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {

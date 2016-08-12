@@ -1,5 +1,7 @@
 package com.hazelcast.map.impl.querycache.accumulator;
 
+import com.hazelcast.logging.ILogger;
+import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheEventService;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
@@ -23,6 +25,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  */
 public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E> {
 
+    protected final ILogger logger = Logger.getLogger(getClass());
     protected final AccumulatorHandler handler;
 
     public BasicAccumulator(QueryCacheContext context, AccumulatorInfo info) {

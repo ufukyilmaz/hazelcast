@@ -1,8 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
 import com.hazelcast.internal.serialization.InternalSerializationService;
-import com.hazelcast.logging.ILogger;
-import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorHandler;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
@@ -29,7 +27,6 @@ import static java.util.logging.Level.WARNING;
  */
 public class SubscriberAccumulator extends BasicAccumulator<QueryCacheEventData> {
 
-    private final ILogger logger = Logger.getLogger(getClass());
     private final AccumulatorHandler handler;
     private final SubscriberSequencerProvider sequenceProvider;
     /**

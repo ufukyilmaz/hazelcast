@@ -4,6 +4,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.MapContainer;
@@ -229,7 +230,8 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 .withDataKey(dataKey)
                 .withDataNewValue(dataNewValue)
                 .withEventType(eventType.getType())
-                .withDataOldValue(dataOldValue).build();
+                .withDataOldValue(dataOldValue)
+                .withSerializationService(((InternalSerializationService) serializationService)).build();
     }
 
     // This method processes UPDATED events and may morph them into ADDED/REMOVED events

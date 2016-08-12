@@ -84,6 +84,10 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
         public void process(Sequenced sequenced) {
             super.process(sequenced);
 
+            clearIndexes(sequenced);
+        }
+
+        private void clearIndexes(Sequenced sequenced) {
             if (sequenced instanceof BatchEventData) {
                 Collection<QueryCacheEventData> events = ((BatchEventData) sequenced).getEvents();
                 for (QueryCacheEventData event : events) {
@@ -98,9 +102,7 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
             }
 
             throw new IllegalArgumentException(format("Expected an instance of %s but found %s",
-                    QueryCacheEventData.class.getSimpleName(),
-                    sequenced == null ? "null" : sequenced.getClass().getSimpleName()));
-
+                    QueryCacheEventData.class.getSimpleName(), sequenced.getClass().getSimpleName()));
         }
 
         private void removeFromIndex(QueryCacheEventData eventData) {

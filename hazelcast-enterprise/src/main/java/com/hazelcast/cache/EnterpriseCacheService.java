@@ -47,6 +47,7 @@ import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -130,6 +131,18 @@ public class EnterpriseCacheService
         hotRestartService = getHotRestartService();
         if (hotRestartService != null) {
             hotRestartService.registerRamStoreRegistry(SERVICE_NAME, this);
+            hotRestartService.registerLoadedConfigurationListener(new LoadedConfigurationListener() {
+                @Override
+                public void onConfigurationLoaded(String serviceName, String name, Object config) {
+                    if (SERVICE_NAME.equals(serviceName)) {
+                        if (config instanceof CacheConfig) {
+                            configs.putIfAbsent(name, (CacheConfig) config);
+                        } else {
+                            logger.warning("Configuration " + config + " has an unknown type " + config.getClass());
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -238,15 +251,6 @@ public class EnterpriseCacheService
             throw new NativeOutOfMemoryError("Cannot create internal cache map, "
                     + "not enough contiguous memory available! -> " + e.getMessage(), e);
         }
-    }
-
-    @Override
-    public CacheConfig getCacheConfig(String name) {
-        CacheConfig cacheConfig = configs.get(name);
-        if (cacheConfig == null && hotRestartService != null) {
-            cacheConfig = hotRestartService.getProvisionalConfiguration(SERVICE_NAME, name);
-        }
-        return cacheConfig;
     }
 
     /**
@@ -527,9 +531,15 @@ public class EnterpriseCacheService
     @Override
     public CacheConfig putCacheConfigIfAbsent(CacheConfig config) {
         CacheConfig localConfig = super.putCacheConfigIfAbsent(config);
-        if (localConfig != null) {
+        if (localConfig == null) {
+            if (hotRestartService != null && config.getHotRestartConfig().isEnabled()) {
+                hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(), config);
+            }
+        } else {
+            //there already is a configuration object for a given cache. let's use it instead
             config = localConfig;
         }
+
         WanReplicationRef wanReplicationRef = config.getWanReplicationRef();
         if (wanReplicationRef != null) {
             WanReplicationService wanReplicationService = nodeEngine.getWanReplicationService();

@@ -1,7 +1,7 @@
 package com.hazelcast.cache.hotrestart;
 
+import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.ICache;
-import com.hazelcast.cache.impl.CacheService;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -158,8 +158,9 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {
         Address address = getNode(hz).getThisAddress();
+        Config config = hz.getConfig();
         hz.shutdown();
-        hz = factory.newHazelcastInstance(address, makeConfig());
+        hz = factory.newHazelcastInstance(address, config);
         return hz;
     }
 
@@ -226,7 +227,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return cache.unwrap(ICache.class);
     }
 
-    CacheService getCacheService(HazelcastInstance hz) {
+    EnterpriseCacheService getCacheService(HazelcastInstance hz) {
         NodeEngineImpl nodeEngine = getNodeEngineImpl(hz);
         return nodeEngine.getService("hz:impl:cacheService");
     }

@@ -132,7 +132,7 @@ public class EnterpriseCacheService
                 public void onConfigurationLoaded(String serviceName, String name, Object config) {
                     if (SERVICE_NAME.equals(serviceName)) {
                         if (config instanceof CacheConfig) {
-                            configs.putIfAbsent(name, (CacheConfig) config);
+                            putCacheConfigIfAbsent((CacheConfig) config);
                         } else {
                             logger.warning("Configuration " + config + " has an unknown type " + config.getClass());
                         }

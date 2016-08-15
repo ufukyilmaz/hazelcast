@@ -43,7 +43,7 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
 
     @Override
     protected void runInternal() {
-        clearNearCache(true);
+        clearLocalNearCache();
 
         if (recordStore != null) {
             numberOfClearedEntries = recordStore.clear();

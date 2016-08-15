@@ -1,5 +1,6 @@
 package com.hazelcast.cache.hotrestart;
 
+import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.ICache;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.CacheConfig;
@@ -15,6 +16,7 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -108,6 +110,10 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return factory.newHazelcastInstance(makeConfig());
     }
 
+    HazelcastInstance newHazelcastInstance(Config config) {
+        return factory.newHazelcastInstance(config);
+    }
+
     HazelcastInstance[] newInstances(int clusterSize) {
         return factory.newInstances(makeConfig(), clusterSize);
     }
@@ -152,8 +158,9 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {
         Address address = getNode(hz).getThisAddress();
+        Config config = hz.getConfig();
         hz.shutdown();
-        hz = factory.newHazelcastInstance(address, makeConfig());
+        hz = factory.newHazelcastInstance(address, config);
         return hz;
     }
 
@@ -218,5 +225,10 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         CacheManager cacheManager = createCachingProvider(hz).getCacheManager();
         Cache<Integer, V> cache = cacheManager.createCache(cacheName, cacheConfig);
         return cache.unwrap(ICache.class);
+    }
+
+    EnterpriseCacheService getCacheService(HazelcastInstance hz) {
+        NodeEngineImpl nodeEngine = getNodeEngineImpl(hz);
+        return nodeEngine.getService("hz:impl:cacheService");
     }
 }

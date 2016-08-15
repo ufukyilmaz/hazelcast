@@ -11,6 +11,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,7 +32,6 @@ public class PersistentCacheDescriptors {
 
     private final Map<String, CacheDescriptor> nameToDesc = new ConcurrentHashMap<String, CacheDescriptor>();
     private final Map<Integer, CacheDescriptor> idToDesc = new ConcurrentHashMap<Integer, CacheDescriptor>();
-    private final Map<String, Object> provisionalConfigurations = new ConcurrentHashMap<String, Object>();
     private final File configsDir;
     private volatile int cacheIdSeq;
 
@@ -94,7 +94,8 @@ public class PersistentCacheDescriptors {
         return toFileName(serviceName) + '-' + toFileName(name) + CONFIG_SUFFIX;
     }
 
-    void restore(InternalSerializationService serializationService) {
+    void restore(InternalSerializationService serializationService,
+                 List<LoadedConfigurationListener> loadedConfigurationListeners) {
         if (cacheIdSeq != 0) {
             return;
         }
@@ -129,28 +130,26 @@ public class PersistentCacheDescriptors {
                     IOUtil.closeResource(in);
                 }
                 maxId = max(maxId, desc.getId());
-
                 String key = toCacheKey(desc.getServiceName(), desc.getName());
                 nameToDesc.put(key, desc);
                 idToDesc.put(desc.getId(), desc);
                 if (config != null) {
-                    provisionalConfigurations.put(key, config);
+                    notifyListeners(loadedConfigurationListeners, desc, config);
                 }
             }
             cacheIdSeq = maxId;
         }
     }
 
+    private void notifyListeners(List<LoadedConfigurationListener> loadedConfigurationListeners,
+                                 CacheDescriptor desc, Object config) {
+        for (LoadedConfigurationListener listener : loadedConfigurationListeners) {
+            listener.onConfigurationLoaded(desc.getServiceName(), desc.getName(), config);
+        }
+    }
+
     private static String toCacheKey(String serviceName, String name) {
         return serviceName + "::" + name;
-    }
-
-    void clearProvisionalConfigs() {
-        provisionalConfigurations.clear();
-    }
-
-    public Object getProvisionalConfig(String serviceName, String name) {
-        return provisionalConfigurations.get(toCacheKey(serviceName, name));
     }
 
     public static int toPartitionId(long prefix) {

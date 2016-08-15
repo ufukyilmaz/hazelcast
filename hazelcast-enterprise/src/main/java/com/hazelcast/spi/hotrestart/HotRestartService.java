@@ -29,7 +29,9 @@ import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -79,6 +81,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private HotRestartStore[] onHeapStores;
     private HotRestartStore[] offHeapStores;
     private int partitionThreadCount;
+    private final List<LoadedConfigurationListener> loadedConfigurationListeners;
 
     public HotRestartService(Node node) {
         this.node = node;
@@ -90,6 +93,11 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
         this.persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
+        this.loadedConfigurationListeners = new ArrayList<LoadedConfigurationListener>();
+    }
+
+    public void registerLoadedConfigurationListener(LoadedConfigurationListener listener) {
+        loadedConfigurationListeners.add(listener);
     }
 
     @Override
@@ -127,10 +135,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     public void ensureHasConfiguration(String serviceName, String name, Object config) {
         persistentCacheDescriptors.ensureHas(node.getSerializationService(), serviceName, name, config);
-    }
-
-    public <C> C getProvisionalConfiguration(String serviceName, String name) {
-        return (C) persistentCacheDescriptors.getProvisionalConfig(serviceName, name);
     }
 
     public String getCacheName(long prefix) {
@@ -194,7 +198,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         try {
             logger.info("Starting hot-restart service...");
             clusterMetadataManager.start();
-            persistentCacheDescriptors.restore(node.getSerializationService());
+            persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
             logger.info(allowData ? "Starting the Hot Restart procedure."
                                   : "Initializing Hot Restart stores, not expecting to reload any data.");
@@ -208,7 +212,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             } catch (Throwable t) {
                 failure = t;
             }
-            persistentCacheDescriptors.clearProvisionalConfigs();
             clusterMetadataManager.loadCompletedLocal(failure);
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));

@@ -78,10 +78,9 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
         HazelcastInstance node = createHazelcastInstance(config);
 
         thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("Enable native memory config to use NATIVE in-memory-format for near cache");
+        thrown.expectMessage("Enable native memory config to use NATIVE in-memory-format for Near Cache");
 
         node.getMap(mapName);
-
     }
 
     @Test(expected = IllegalArgumentException.class)

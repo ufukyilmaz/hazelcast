@@ -85,7 +85,7 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     }
 
     /**
-     * HD backed near cache does not support NONE eviction policy.
+     * HD backed Near Cache does not support NONE eviction policy.
      */
     @Test(expected = IllegalArgumentException.class)
     @Override
@@ -103,7 +103,7 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     }
 
     /**
-     * HD backed near cache does not support RANDOM eviction policy.
+     * HD backed Near Cache does not support RANDOM eviction policy.
      */
     @Test(expected = IllegalArgumentException.class)
     @Override

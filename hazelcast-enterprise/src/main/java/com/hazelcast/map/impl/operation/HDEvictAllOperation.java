@@ -49,7 +49,7 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
 
     @Override
     protected void runInternal() {
-        // TODO this also clears locked keys from near cache which should be preserved.
+        // TODO: this also clears locked keys from Near Cache which should be preserved
         clearLocalNearCache();
 
         if (recordStore != null) {

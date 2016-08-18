@@ -18,10 +18,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.lang.Runtime.getRuntime;
 
 /**
- * @author sozal 24/02/15
- *
- * @param <K> the type of the key stored in near-cache
- * @param <V> the type of the value stored in near-cache
+ * @param <K> the type of the key stored in Near Cache
+ * @param <V> the type of the value stored in Near Cache
  */
 public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
@@ -44,7 +42,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
-        // Find power-of-two sizes best matching arguments
+        // find power-of-two sizes best matching arguments
         int sShift = 0;
         int sSize = 1;
         while (sSize < concurrencyLevel) {
@@ -76,8 +74,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     private void checkAvailable() {
         if (segments == null) {
-            throw new IllegalStateException(nearCacheConfig.getName()
-                    + " named near cache record store is not available");
+            throw new IllegalStateException(nearCacheConfig.getName() + " named Near Cache record store is not available");
         }
     }
 
@@ -166,7 +163,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
                 // Give priority to Data typed candidate.
-                // So there will be no extra convertion from Object to Data.
+                // So there will be no extra conversion from Object to Data.
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;
@@ -258,7 +255,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     /**
-     * Represents a segment block (lockable by a thread) in this near-cache storage
+     * Represents a segment block (lockable by a thread) in this Near Cache storage
      */
     private class HiDensityNativeMemoryNearCacheRecordStoreSegment
             extends HiDensityNativeMemoryNearCacheRecordStore<K, V> {
@@ -369,7 +366,5 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
                 lock.unlock();
             }
         }
-
     }
-
 }

@@ -29,7 +29,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 
 /**
- * Test publishing of near-cache invalidation events, when the cache is configured with NATIVE in-memory format.
+ * Test publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format.
  */
 public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
 

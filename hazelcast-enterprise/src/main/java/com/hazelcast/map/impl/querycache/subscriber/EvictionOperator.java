@@ -15,7 +15,7 @@ import static com.hazelcast.internal.eviction.EvictionStrategyProvider.getEvicti
 import static com.hazelcast.internal.eviction.impl.EvictionConfigHelper.checkEvictionConfig;
 
 /**
- * Contains eviction specific functionality of a {@link QueryCacheRecordStore}
+ * Contains eviction specific functionality of a {@link QueryCacheRecordStore}.
  */
 public class EvictionOperator {
 

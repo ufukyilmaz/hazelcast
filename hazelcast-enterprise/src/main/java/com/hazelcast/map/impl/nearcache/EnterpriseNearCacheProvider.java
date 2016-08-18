@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 /**
- * Provides near cache specific functionality.
+ * Provides Near Cache specific functionality.
  */
 public class EnterpriseNearCacheProvider extends NearCacheProvider {
 

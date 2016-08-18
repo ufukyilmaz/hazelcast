@@ -5,17 +5,14 @@ import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
- * <p>
- * Represents {@link NearCacheRecord} implementations for Hi-Density cache.
- * </p>
+ * Represents {@link NearCacheRecord} implementations for Hi-Density Near Cache.
+ *
  * Record of {@link com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore}.
  *
  * @see com.hazelcast.internal.hidensity.HiDensityRecord
  * @see com.hazelcast.cache.impl.nearcache.NearCacheRecord
  * @see NativeMemoryData
  * @see com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore
- *
- * @author sozal 26/10/14
  */
 public abstract class HiDensityNearCacheRecord
         extends HiDensityRecord
@@ -57,5 +54,4 @@ public abstract class HiDensityNearCacheRecord
      * @param ttl the TTL value for this {@link HiDensityNearCacheRecord} in milliseconds.
      */
     public abstract void setTtlMillis(int ttl);
-
 }

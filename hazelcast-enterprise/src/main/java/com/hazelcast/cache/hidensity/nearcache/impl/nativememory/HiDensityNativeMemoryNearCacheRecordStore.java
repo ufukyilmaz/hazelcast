@@ -35,9 +35,8 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
 /**
- * @param <K> the type of the key stored in near-cache
- * @param <V> the type of the value stored in near-cache
- * @author sozal 26/10/14
+ * @param <K> the type of the key stored in Near Cache
+ * @param <V> the type of the value stored in Near Cache
  */
 public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         extends AbstractNearCacheRecordStore<K, V, Data, HiDensityNativeMemoryNearCacheRecord,
@@ -94,7 +93,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig,
+    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig,
+                                                           NearCacheConfig nearCacheConfig,
                                                            NearCacheContext nearCacheContext) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
 
@@ -145,15 +145,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         return memoryBlock != null && memoryBlock.address() != NULL_ADDRESS;
     }
 
-    private HiDensityNativeMemoryNearCacheRecord createRecord(
-            Object value, long creationTime, long expiryTime
-    ) {
+    private HiDensityNativeMemoryNearCacheRecord createRecord(Object value, long creationTime, long expiryTime) {
         return createRecordInternal(value, creationTime, expiryTime, false, true);
     }
 
     private HiDensityNativeMemoryNearCacheRecord createRecordInternal(
-            Object value, long creationTime, long expiryTime, boolean forceEvict, boolean retryOnOutOfMemoryError
-    ) {
+            Object value, long creationTime, long expiryTime, boolean forceEvict, boolean retryOnOutOfMemoryError) {
         if (forceEvict) {
             forceEvict();
         }
@@ -180,11 +177,11 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
             return record;
         } catch (NativeOutOfMemoryError e) {
-            // If any memory region is allocated for record, dispose it
+            // if any memory region is allocated for record, dispose it
             if (recordAddress != NULL_ADDRESS) {
                 recordProcessor.dispose(recordAddress);
             }
-            // If any data is allocated for record, dispose it
+            // if any data is allocated for record, dispose it
             if (isMemoryBlockValid(data)) {
                 recordProcessor.disposeData(data);
             }
@@ -198,8 +195,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
-        // Because key will saved as native memory data with native memory data header
-        // and this is not covered at "totalSize()" method.
+        // because the key will be saved as native memory data with native memory data header
+        // and this is not covered at "totalSize()" method
         return key instanceof Data ? NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize() : 0L;
     }
 
@@ -371,6 +368,5 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         public boolean isExpired(HiDensityNativeMemoryNearCacheRecord record) {
             return isRecordExpired(record);
         }
-
     }
 }

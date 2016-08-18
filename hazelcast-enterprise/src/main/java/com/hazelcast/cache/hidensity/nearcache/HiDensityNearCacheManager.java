@@ -7,8 +7,6 @@ import com.hazelcast.config.NearCacheConfig;
 
 /**
  * {@link com.hazelcast.cache.impl.nearcache.NearCacheManager} implementation for Hi-Density cache.
- *
- * @author sozal 26/10/14
  */
 public class HiDensityNearCacheManager extends DefaultNearCacheManager {
 
@@ -17,5 +15,4 @@ public class HiDensityNearCacheManager extends DefaultNearCacheManager {
                                                      NearCacheContext nearCacheContext) {
         return new HiDensityNearCache<K, V>(name, nearCacheConfig, nearCacheContext);
     }
-
 }

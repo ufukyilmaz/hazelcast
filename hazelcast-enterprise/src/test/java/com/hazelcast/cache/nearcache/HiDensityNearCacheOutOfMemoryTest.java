@@ -90,13 +90,13 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         int smallValuePutCount = (int) ((memoryManager.getMemoryStats().getMaxNative() / smallValue.length) * 2);
         int bigValuePutCount = (int) ((memoryManager.getMemoryStats().getMaxNative() / bigValue.length) * 2);
 
-        // fill up memory with Near-Cache-1
+        // fill up memory with Near Cache 1
         for (int i = 0; i < smallValuePutCount; i++) {
             nearCache1.put(i, smallValue);
         }
 
-        // then put a big value to Near-Cache-2 and there should not be OOME
-        // since eviction is done on other near-caches until there is enough space for new put
+        // then put a big value to Near Cache 2 and there should not be OOME
+        // since eviction is done on other Near Caches until there is enough space for new put
         for (int i = 0; i < bigValuePutCount; i++) {
             nearCache2.put(i, bigValue);
         }

@@ -21,6 +21,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.BackupAwareOperation;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
+import com.hazelcast.spi.ReadonlyOperation;
 import com.hazelcast.spi.partition.IPartitionService;
 
 import java.io.IOException;
@@ -30,7 +31,8 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 /**
  * Calculates local map stats for NATIVE in-memory-formatted maps.
  */
-public class HDLocalMapStatsOperation extends HDMapOperation implements PartitionAwareOperation, BackupAwareOperation {
+public class HDLocalMapStatsOperation extends HDMapOperation
+        implements PartitionAwareOperation, BackupAwareOperation, ReadonlyOperation {
 
     private MapStatsHolder mapStatsHolder;
 

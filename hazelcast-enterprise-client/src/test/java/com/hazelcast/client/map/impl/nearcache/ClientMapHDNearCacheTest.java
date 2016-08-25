@@ -31,7 +31,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @BeforeClass
-    public static void setup() throws Exception {
+    public static void setup() {
         MAX_CACHE_SIZE = 50000;
     }
 
@@ -75,11 +75,9 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     /**
      * HD backed near cache does not support NONE eviction policy.
-     *
-     * @throws Exception
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testNearCacheInvalidation_WithNone_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WithNone_whenMaxSizeExceeded() {
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
         getNearCachedMapFromClient(nearCacheConfig);
@@ -87,11 +85,9 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     /**
      * HD backed near cache does not support RANDOM eviction policy.
-     *
-     * @throws Exception
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() {
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.RANDOM);
         getNearCachedMapFromClient(nearCacheConfig);
@@ -110,5 +106,4 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
             }
         });
     }
-
 }

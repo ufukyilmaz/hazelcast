@@ -41,10 +41,12 @@ public class HDNearCacheStaleReadTest extends NearCacheStaleReadTest {
     @Override
     protected NearCacheConfig getNearCacheConfig() {
         NearCacheConfig nearCacheConfig = new NearCacheConfig();
+        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
         evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(90);
-        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+
         return nearCacheConfig;
     }
 }

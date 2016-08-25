@@ -53,25 +53,21 @@ public class HDNearCacheTest extends NearCacheTest {
 
     /**
      * HD backed near cache does not support NONE eviction policy.
-     *
-     * @throws Exception
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testNearCacheInvalidation_WitNone_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WitNone_whenMaxSizeExceeded() {
         testEvictionPolicyInternal(NONE);
     }
 
     /**
      * HD backed near cache does not support RANDOM eviction policy.
-     *
-     * @throws Exception
      */
     @Test(expected = IllegalArgumentException.class)
-    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() {
         testEvictionPolicyInternal(RANDOM);
     }
 
-    protected void testEvictionPolicyInternal(EvictionPolicy evictionPolicy) {
+    private void testEvictionPolicyInternal(EvictionPolicy evictionPolicy) {
         String mapName = randomMapName();
 
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
@@ -99,16 +95,16 @@ public class HDNearCacheTest extends NearCacheTest {
     }
 
     @Test
-    public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() {
         testNearCacheInvalidationInternal("LFU");
     }
 
     @Test
-    public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() throws Exception {
+    public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() {
         testNearCacheInvalidationInternal("LRU");
     }
 
-    protected void testNearCacheInvalidationInternal(String evictionPolicy) {
+    private void testNearCacheInvalidationInternal(String evictionPolicy) {
         String mapName = randomMapName();
         final int putCount = 2000;
 
@@ -118,7 +114,7 @@ public class HDNearCacheTest extends NearCacheTest {
         Config config = newNativeMemoryConfig();
         config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
 
-        final IMap map = createHazelcastInstance(config).getMap(mapName);
+        final IMap<Integer, Integer> map = createHazelcastInstance(config).getMap(mapName);
         pullEntriesToNearCache(map, putCount);
 
         assertTrueEventually(new AssertTask() {
@@ -166,6 +162,4 @@ public class HDNearCacheTest extends NearCacheTest {
         config.setNativeMemoryConfig(memoryConfig);
         return config;
     }
-
-
 }

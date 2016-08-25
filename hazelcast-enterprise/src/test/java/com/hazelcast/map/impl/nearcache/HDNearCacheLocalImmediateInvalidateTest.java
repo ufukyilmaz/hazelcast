@@ -20,18 +20,17 @@ public class HDNearCacheLocalImmediateInvalidateTest extends NearCacheLocalImmed
 
     @Override
     protected Config createConfig() {
-        // create config
-        Config config = HDTestSupport.getHDConfig();
-
-        // configure near cache
-        MapConfig mapConfig = config.getMapConfig(mapName + "*");
         NearCacheConfig nearCacheConfig = new NearCacheConfig();
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
         evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(90);
         nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+
+        Config config = HDTestSupport.getHDConfig();
+
+        MapConfig mapConfig = config.getMapConfig(MAP_NAME + "*");
         mapConfig.setNearCacheConfig(nearCacheConfig);
+
         return config;
     }
-
 }

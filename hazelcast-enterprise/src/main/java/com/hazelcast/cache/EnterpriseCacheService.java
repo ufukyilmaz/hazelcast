@@ -8,7 +8,6 @@ import com.hazelcast.cache.hidensity.operation.CacheReplicationOperation;
 import com.hazelcast.cache.hidensity.operation.CacheSegmentShutdownOperation;
 import com.hazelcast.cache.hidensity.operation.HiDensityCacheOperationProvider;
 import com.hazelcast.cache.hotrestart.HotRestartEnterpriseCacheRecordStore;
-import com.hazelcast.cache.impl.AbstractCacheRecordStore;
 import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.cache.impl.CacheEventContext;
 import com.hazelcast.cache.impl.CacheEventType;
@@ -66,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static com.hazelcast.cache.impl.AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 
 /**
@@ -300,6 +300,7 @@ public class EnterpriseCacheService
     @Override
     public void destroyDistributedObject(String objectName) {
         destroySegments(objectName);
+        sendInvalidationEvent(objectName, null, SOURCE_NOT_AVAILABLE);
     }
 
     /**
@@ -443,7 +444,7 @@ public class EnterpriseCacheService
                     ICacheRecordStore cache = getRecordStore(cacheName, partitionId);
                     if (cache != null) {
                         cache.clear();
-                        sendInvalidationEvent(cacheName, null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
+                        sendInvalidationEvent(cacheName, null, SOURCE_NOT_AVAILABLE);
                     }
                 }
             }

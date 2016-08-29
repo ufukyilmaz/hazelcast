@@ -99,7 +99,7 @@ public class CoalescingPublisherAccumulator extends BasicAccumulator<QueryCacheE
 
             throw new IllegalArgumentException(format("Expected an instance of %s but found %s",
                     QueryCacheEventData.class.getSimpleName(),
-                    sequenced == null ? "null" : sequenced.getClass().getSimpleName()));
+                    sequenced.getClass().getSimpleName()));
 
         }
 

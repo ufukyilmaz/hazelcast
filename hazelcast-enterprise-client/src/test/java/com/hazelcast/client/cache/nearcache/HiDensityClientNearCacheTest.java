@@ -34,7 +34,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class ClientHiDensityNearCacheTest extends ClientNearCacheTestSupport {
+public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
 
     private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(256, MemoryUnit.MEGABYTES);
     private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(128, MemoryUnit.MEGABYTES);

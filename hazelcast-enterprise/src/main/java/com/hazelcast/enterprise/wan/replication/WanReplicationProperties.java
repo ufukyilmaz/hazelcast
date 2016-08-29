@@ -18,14 +18,14 @@ public final class WanReplicationProperties {
      * valid when used with {@link WanBatchReplication} implementation
      */
     public static final PropertyDefinition BATCH_SIZE
-            = property("batch.size", PropertyTypeConverter.STRING);
+            = property("batch.size", PropertyTypeConverter.INTEGER);
 
     /**
      * Property to define maximum amount of time to be waited before sending a batch of events to target cluster
      * if {@link #BATCH_SIZE} of events are not arrived within this duration
      */
     public static final PropertyDefinition BATCH_MAX_DELAY_MILLIS
-            = property("batch.max.delay.millis", PropertyTypeConverter.STRING);
+            = property("batch.max.delay.millis", PropertyTypeConverter.LONG);
 
     /**
      * This property is only valid when used with {@link WanBatchReplication} implementation
@@ -39,7 +39,7 @@ public final class WanReplicationProperties {
      * in case of acknowledge is not arrived.
      */
     public static final PropertyDefinition RESPONSE_TIMEOUT_MILLIS
-            = property("response.timeout.millis", PropertyTypeConverter.STRING);
+            = property("response.timeout.millis", PropertyTypeConverter.LONG);
 
     /**
      * Determines acknowledge waiting type of wan replication operation invocation.
@@ -87,6 +87,6 @@ public final class WanReplicationProperties {
             }
             return defaultValue;
         }
-        return (T) propertyDefinition.typeConverter().convert(value);
+        return (T) propertyDefinition.typeConverter().convert(value.toString());
     }
 }

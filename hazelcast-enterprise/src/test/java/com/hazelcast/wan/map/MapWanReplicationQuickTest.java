@@ -1,5 +1,6 @@
 package com.hazelcast.wan.map;
 
+import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
@@ -7,6 +8,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -20,6 +22,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
@@ -62,6 +65,23 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA, factory);
+        createDataIn(basicCluster, "map", 0, 1000);
+    }
+
+    @Test
+    public void testPublisherProperties() {
+        Config propTestConfig = getConfig();
+        propTestConfig.setNetworkConfig(configA.getNetworkConfig());
+        propTestConfig.setNativeMemoryConfig(configA.getNativeMemoryConfig());
+        propTestConfig.setInstanceName("propTestConfA");
+        setupReplicateFrom(propTestConfig, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        WanReplicationConfig wanConfig = propTestConfig.getWanReplicationConfig("atob");
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
+        Map<String, Comparable> properties = targetClusterConfig.getProperties();
+        properties.put(WanReplicationProperties.BATCH_SIZE.key(), "500");
+        properties.put(WanReplicationProperties.BATCH_MAX_DELAY_MILLIS.key(), 1000);
+        properties.put(WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS.key(), "500");
+        initCluster(basicCluster, propTestConfig, factory);
         createDataIn(basicCluster, "map", 0, 1000);
     }
 

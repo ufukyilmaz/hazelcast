@@ -109,11 +109,17 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
 
     @Test
     public void testNearCacheTTLRecordsEvicted() {
-        // this test doesn't work for the HD implementation, so we override it with an empty one
+        // TODO: this test doesn't work for the HD implementation, so we override it with an empty one
     }
 
     @Test
     public void testNearCacheIdleRecordsEvicted() {
-        // this test doesn't work for the HD implementation, so we override it with an empty one
+        // TODO: this test doesn't work for the HD implementation, so we override it with an empty one
+    }
+
+    @Test
+    public void testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException() {
+        // this test expects an IllegalArgumentException in OS, but should not throw any exception in EE
+        super.testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException();
     }
 }

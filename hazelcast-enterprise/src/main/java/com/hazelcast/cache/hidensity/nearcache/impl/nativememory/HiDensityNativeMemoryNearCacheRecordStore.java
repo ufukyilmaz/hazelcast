@@ -1,6 +1,7 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.CacheHiDensityRecordProcessor;
+import com.hazelcast.cache.hidensity.maxsize.HiDensityEntryCountMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
@@ -40,8 +41,8 @@ import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_
  * @author sozal 26/10/14
  */
 public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
-        extends AbstractNearCacheRecordStore<K, V, Data,
-                                     HiDensityNativeMemoryNearCacheRecord, HiDensityNativeMemoryNearCacheRecordMap>
+        extends AbstractNearCacheRecordStore<K, V, Data, HiDensityNativeMemoryNearCacheRecord,
+        HiDensityNativeMemoryNearCacheRecordMap>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
@@ -53,16 +54,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     private final RecordEvictionListener recordEvictionListener = new RecordEvictionListener();
     private final RecordExpirationChecker recordExpirationChecker = new RecordExpirationChecker();
 
-    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
-                                                     NearCacheContext nearCacheContext) {
+    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
         this(nearCacheConfig, nearCacheContext, new NearCacheStatsImpl(), new HiDensityStorageInfo(nearCacheConfig.getName()));
     }
 
-
-    public HiDensityNativeMemoryNearCacheRecordStore(
-            NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
-            NearCacheStatsImpl nearCacheStats, HiDensityStorageInfo storageInfo
-    ) {
+    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
+                                                     NearCacheStatsImpl nearCacheStats, HiDensityStorageInfo storageInfo) {
         super(nearCacheConfig, new HiDensityNearCacheContext(nearCacheContext, storageInfo), nearCacheStats);
     }
 
@@ -86,51 +83,45 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         }
         if (recordProcessor == null) {
             this.recordProcessor = new CacheHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
-                    serializationService, recordAccessor,
-                    memoryManager, storageInfo);
+                    serializationService, recordAccessor, memoryManager, storageInfo);
         }
     }
 
     @Override
-    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(
-            NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext
-    ) {
+    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(NearCacheConfig nearCacheConfig,
+                                                                               NearCacheContext nearCacheContext) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
         return new HiDensityNativeMemoryNearCacheRecordMap(DEFAULT_INITIAL_CAPACITY, recordProcessor, storageInfo);
     }
 
     @Override
-    protected MaxSizeChecker createNearCacheMaxSizeChecker(
-            EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext
-    ) {
+    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig,
+                                                           NearCacheContext nearCacheContext) {
         ensureInitialized(nearCacheConfig, nearCacheContext);
 
         EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
         if (maxSizePolicy == null) {
-            throw new IllegalArgumentException("Max-Size policy cannot be null");
+            throw new IllegalArgumentException("Max-size policy cannot be null");
         }
 
-        final long maxNativeMemory =
-                ((EnterpriseSerializationService) nearCacheContext.getSerializationService())
-                        .getMemoryManager().getMemoryStats().getMaxNative();
+        int size = evictionConfig.getSize();
+        long maxNativeMemory = ((EnterpriseSerializationService) nearCacheContext.getSerializationService())
+                .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
+            case ENTRY_COUNT:
+                return new HiDensityEntryCountMaxSizeChecker(storageInfo, size);
             case USED_NATIVE_MEMORY_SIZE:
-                return new HiDensityUsedNativeMemorySizeMaxSizeChecker(storageInfo,
-                        evictionConfig.getSize());
+                return new HiDensityUsedNativeMemorySizeMaxSizeChecker(storageInfo, size);
             case USED_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityUsedNativeMemoryPercentageMaxSizeChecker(storageInfo,
-                        evictionConfig.getSize(),
-                        maxNativeMemory);
+                return new HiDensityUsedNativeMemoryPercentageMaxSizeChecker(storageInfo, size, maxNativeMemory);
             case FREE_NATIVE_MEMORY_SIZE:
-                return new HiDensityFreeNativeMemorySizeMaxSizeChecker(memoryManager,
-                        evictionConfig.getSize());
+                return new HiDensityFreeNativeMemorySizeMaxSizeChecker(memoryManager, size);
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager,
-                        evictionConfig.getSize(),
-                        maxNativeMemory);
+                return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
                 throw new IllegalArgumentException("Invalid max-size policy "
-                        + '(' + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                        + '(' + maxSizePolicy + ") for " + getClass().getName() + "! Only "
+                        + EvictionConfig.MaxSizePolicy.ENTRY_COUNT + ", "
                         + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
                         + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
                         + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "

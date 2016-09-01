@@ -5,7 +5,7 @@ import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.MemoryUnit;
 
 /**
- * @author sozal 20/11/14
+ * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#USED_NATIVE_MEMORY_SIZE}.
  */
 public class HiDensityUsedNativeMemorySizeMaxSizeChecker implements MaxSizeChecker {
 
@@ -21,5 +21,4 @@ public class HiDensityUsedNativeMemorySizeMaxSizeChecker implements MaxSizeCheck
     public boolean isReachedToMaxSize() {
         return storageInfo.getUsedMemory() >= maxUsedMemorySize;
     }
-
 }

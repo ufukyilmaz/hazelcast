@@ -5,7 +5,7 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryUnit;
 
 /**
- * @author sozal 20/11/14
+ * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_SIZE}.
  */
 public class HiDensityFreeNativeMemorySizeMaxSizeChecker implements MaxSizeChecker {
 
@@ -21,5 +21,4 @@ public class HiDensityFreeNativeMemorySizeMaxSizeChecker implements MaxSizeCheck
     public boolean isReachedToMaxSize() {
         return memoryManager.getMemoryStats().getFreeNative() < minFreeMemorySize;
     }
-
 }

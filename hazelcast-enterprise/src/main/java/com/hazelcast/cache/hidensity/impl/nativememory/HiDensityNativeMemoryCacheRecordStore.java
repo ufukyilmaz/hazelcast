@@ -45,7 +45,6 @@ public class HiDensityNativeMemoryCacheRecordStore
         extends AbstractCacheRecordStore<HiDensityNativeMemoryCacheRecord, HiDensityNativeMemoryCacheRecordMap>
         implements HiDensityCacheRecordStore<HiDensityNativeMemoryCacheRecord> {
 
-    // DEFAULT_INITIAL_CAPACITY;
     private static final int NATIVE_MEMORY_DEFAULT_INITIAL_CAPACITY = 128;
 
     protected EnterpriseSerializationService serializationService;
@@ -54,18 +53,17 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected HazelcastMemoryManager memoryManager;
     private final ILogger logger;
 
-    public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name,
-                                                 EnterpriseCacheService cacheService, NodeEngine nodeEngine) {
+    public HiDensityNativeMemoryCacheRecordStore(int partitionId, String name, EnterpriseCacheService cacheService,
+                                                 NodeEngine nodeEngine) {
         super(name, partitionId, nodeEngine, cacheService);
         this.logger = nodeEngine.getLogger(getClass());
         ensureInitialized();
     }
 
     private static boolean isInvalidMaxSizePolicyExceptionDisabled() {
-        // By default this property does not exist.
-        // This property can be set to "true" for such as TCK tests.
-        // Because there is no max-size policy.
-        // For example: -DdisableInvalidMaxSizePolicyException=true
+        // by default this property does not exist, but it can be set to "true" e.g. for TCK tests
+        // or other scenarios which don't have a max-size policy
+        // example: -DdisableInvalidMaxSizePolicyException=true
         return Boolean.getBoolean(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION);
     }
 
@@ -73,16 +71,15 @@ public class HiDensityNativeMemoryCacheRecordStore
     protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {
             if (isInvalidMaxSizePolicyExceptionDisabled()) {
-                // Don't throw exception, just ignore max-size policy
+                // don't throw exception, just ignore max-size policy
                 return null;
             } else {
-                throw new IllegalArgumentException("Max-Size policy cannot be null");
+                throw new IllegalArgumentException("Max-size policy cannot be null");
             }
         }
 
-        final long maxNativeMemory =
-                ((EnterpriseSerializationService) nodeEngine.getSerializationService())
-                        .getMemoryManager().getMemoryStats().getMaxNative();
+        long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
+                .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
             case USED_NATIVE_MEMORY_SIZE:
                 return new HiDensityUsedNativeMemorySizeMaxSizeChecker(cacheInfo, size);
@@ -94,7 +91,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                 return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
             default:
                 if (isInvalidMaxSizePolicyExceptionDisabled()) {
-                    // Don't throw exception, just ignore max-size policy
+                    // don't throw exception, just ignore max-size policy
                     return null;
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "

@@ -6,7 +6,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
- * @author sozal 20/11/14
+ * Max-size policy implementation for {@link com.hazelcast.config.EvictionConfig.MaxSizePolicy#USED_NATIVE_MEMORY_PERCENTAGE}.
  */
 public class HiDensityUsedNativeMemoryPercentageMaxSizeChecker implements MaxSizeChecker {
 
@@ -14,14 +14,14 @@ public class HiDensityUsedNativeMemoryPercentageMaxSizeChecker implements MaxSiz
     private final long maxUsedMemorySize;
 
     public HiDensityUsedNativeMemoryPercentageMaxSizeChecker(HiDensityStorageInfo storageInfo,
-                                                             int size, long maxNativeMemory) {
-        this.storageInfo = storageInfo;
-        final int maxSizePercentage = size;
+                                                             int maxSizePercentage, long maxNativeMemory) {
         if (maxSizePercentage < 0 || maxSizePercentage > HiDensityRecordStore.HUNDRED_PERCENT) {
             throw new IllegalArgumentException("\"maxSize\" can only be 0-100 for "
                     + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + " max-size policy !");
         }
-        final double maxSizeRatio = (double) maxSizePercentage / (double) HiDensityRecordStore.HUNDRED_PERCENT;
+        double maxSizeRatio = (double) maxSizePercentage / (double) HiDensityRecordStore.HUNDRED_PERCENT;
+
+        this.storageInfo = storageInfo;
         this.maxUsedMemorySize = (long) (maxNativeMemory * maxSizeRatio);
     }
 
@@ -29,5 +29,4 @@ public class HiDensityUsedNativeMemoryPercentageMaxSizeChecker implements MaxSiz
     public boolean isReachedToMaxSize() {
         return storageInfo.getUsedMemory() >= maxUsedMemorySize;
     }
-
 }

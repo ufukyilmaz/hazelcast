@@ -39,7 +39,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.EvictionPolicy.RANDOM;
@@ -72,20 +71,6 @@ public class HDNearCacheTest extends NearCacheTest {
 
         NearCacheConfig nearCacheConfig = newNearCacheConfig();
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(evictionPolicy);
-
-        Config config = getConfig();
-        config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
-
-        HazelcastInstance node = createHazelcastInstance(config);
-        node.getMap(mapName);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testEntryCountMaxSizePolicy_isNotSupportedByNearCache_whenInMemoryFormatIsNative() throws Exception {
-        String mapName = randomMapName();
-
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
-        nearCacheConfig.getEvictionConfig().setMaximumSizePolicy(ENTRY_COUNT);
 
         Config config = getConfig();
         config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);

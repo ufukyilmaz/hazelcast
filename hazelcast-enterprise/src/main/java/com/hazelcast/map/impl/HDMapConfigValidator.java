@@ -13,7 +13,6 @@ import com.hazelcast.logging.Logger;
 
 import java.util.EnumSet;
 
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
@@ -37,9 +36,6 @@ public final class HDMapConfigValidator {
 
     private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES
             = EnumSet.of(NONE, RANDOM);
-
-    private static final EnumSet<EvictionConfig.MaxSizePolicy> UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES
-            = EnumSet.of(ENTRY_COUNT);
 
     private static final EnumSet<MaxSizeConfig.MaxSizePolicy> UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
@@ -85,7 +81,7 @@ public final class HDMapConfigValidator {
         if (UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES.contains(maxSizePolicy)) {
             throw new IllegalArgumentException("Map maximum size policy " + maxSizePolicy
                     + " cannot be used with NATIVE in memory format."
-                    + " Supported maximum size policies are : " + complementOf(UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES));
+                    + " Supported maximum size policies are: " + complementOf(UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES));
         }
     }
 
@@ -106,10 +102,8 @@ public final class HDMapConfigValidator {
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
 
         int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
-        final int localSizeConfig = maxSizeConfig.getSize();
-        if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy
-                && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage
-                ) {
+        int localSizeConfig = maxSizeConfig.getSize();
+        if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage) {
             throw new IllegalArgumentException(format(
                     "There is a global limit on the minimum free native memory, settable by the system property"
                             + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
@@ -142,13 +136,5 @@ public final class HDMapConfigValidator {
                     + " cannot be used with NATIVE in memory format."
                     + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES));
         }
-
-        EvictionConfig.MaxSizePolicy maximumSizePolicy = evictionConfig.getMaximumSizePolicy();
-        if (UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES.contains(maximumSizePolicy)) {
-            throw new IllegalArgumentException("Near-cache maximum size policy " + maximumSizePolicy
-                    + " cannot be used with NATIVE in memory format."
-                    + " Supported maximum size policies are : " + complementOf(UNSUPPORTED_HD_NEAR_CACHE_MAXSIZE_POLICIES));
-        }
     }
-
 }

@@ -42,5 +42,4 @@ public class ClientHiDensityCacheEvictionPolicyComparatorTest extends HiDensityC
     public void tearDown() {
         instanceFactory.shutdownAll();
     }
-
 }

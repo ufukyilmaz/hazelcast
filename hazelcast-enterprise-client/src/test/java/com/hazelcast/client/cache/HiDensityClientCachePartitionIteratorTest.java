@@ -1,7 +1,6 @@
 package com.hazelcast.client.cache;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -18,11 +17,12 @@ public class HiDensityClientCachePartitionIteratorTest extends ClientCachePartit
 
     @Override
     protected Config getConfig() {
-        Config config = new Config();
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig
+        Config config = super.getConfig();
+
+        config.getNativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
+
         return config;
     }
 }

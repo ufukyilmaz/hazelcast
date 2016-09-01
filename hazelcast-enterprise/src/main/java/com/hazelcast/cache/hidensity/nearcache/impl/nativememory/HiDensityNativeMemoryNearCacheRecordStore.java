@@ -34,7 +34,6 @@ import static com.hazelcast.cache.impl.nearcache.NearCache.NULL_OBJECT;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
-
 /**
  * @param <K> the type of the key stored in near-cache
  * @param <V> the type of the value stored in near-cache
@@ -336,8 +335,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    public void onEvict(Data key, HiDensityNativeMemoryNearCacheRecord record) {
-        super.onEvict(key, record);
+    public void onEvict(Data key, HiDensityNativeMemoryNearCacheRecord record, boolean wasExpired) {
+        super.onEvict(key, record, wasExpired);
         nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
     }
 
@@ -352,7 +351,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     private class RecordEvictionListener implements EvictionListener<Data, HiDensityNativeMemoryNearCacheRecord> {
 
         @Override
-        public void onEvict(Data key, HiDensityNativeMemoryNearCacheRecord record) {
+        public void onEvict(Data key, HiDensityNativeMemoryNearCacheRecord record, boolean wasExpired) {
+            if (wasExpired) {
+                nearCacheStats.incrementExpirations();
+            } else {
+                nearCacheStats.incrementEvictions();
+            }
             nearCacheStats.decrementOwnedEntryCount();
             nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) key, record));
         }

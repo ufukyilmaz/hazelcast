@@ -65,8 +65,8 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
     }
 
     @Override
-    public void onEvict(Data key, CacheRecord record) {
-        super.onEvict(key, record);
+    public void onEvict(Data key, CacheRecord record, boolean wasExpired) {
+        super.onEvict(key, record, wasExpired);
         removeFromHotRestart(key);
     }
 

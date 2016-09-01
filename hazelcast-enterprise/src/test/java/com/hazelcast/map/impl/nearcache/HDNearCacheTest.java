@@ -17,7 +17,6 @@
 package com.hazelcast.map.impl.nearcache;
 
 import com.hazelcast.config.Config;
-import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -28,7 +27,6 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.map.nearcache.NearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
-import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
@@ -39,7 +37,9 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
@@ -51,17 +51,19 @@ import static junit.framework.TestCase.assertTrue;
 public class HDNearCacheTest extends NearCacheTest {
 
     /**
-     * HD backed near cache does not support NONE eviction policy.
+     * HD backed Near Cache doesn't support NONE eviction policy.
      */
     @Test(expected = IllegalArgumentException.class)
+    @Override
     public void testNearCacheInvalidation_WitNone_whenMaxSizeExceeded() {
         testEvictionPolicyInternal(NONE);
     }
 
     /**
-     * HD backed near cache does not support RANDOM eviction policy.
+     * HD backed Near Cache doesn't support RANDOM eviction policy.
      */
     @Test(expected = IllegalArgumentException.class)
+    @Override
     public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() {
         testEvictionPolicyInternal(RANDOM);
     }
@@ -80,81 +82,92 @@ public class HDNearCacheTest extends NearCacheTest {
     }
 
     @Test
+    @Override
     public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() {
         testNearCacheInvalidationInternal("LFU");
     }
 
     @Test
+    @Override
     public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() {
         testNearCacheInvalidationInternal("LRU");
     }
 
-    @Test
-    public void testNearCacheTTLRecordsEvicted() {
-        // TODO: this test doesn't work for the HD implementation, so we override it with an empty one
-    }
-
-    @Test
-    public void testNearCacheIdleRecordsEvicted() {
-        // TODO: this test doesn't work for the HD implementation, so we override it with an empty one
-    }
-
     private void testNearCacheInvalidationInternal(String evictionPolicy) {
+        final int mapSize = 2000;
         String mapName = randomMapName();
-        final int putCount = 2000;
 
         NearCacheConfig nearCacheConfig = newNearCacheConfig().setInvalidateOnChange(false);
         nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.valueOf(evictionPolicy));
 
-        Config config = newNativeMemoryConfig();
+        Config config = getConfig();
         config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
 
         final IMap<Integer, Integer> map = createHazelcastInstance(config).getMap(mapName);
-        pullEntriesToNearCache(map, putCount);
+        populateNearCache(map, mapSize);
 
         assertTrueEventually(new AssertTask() {
             @Override
             public void run() throws Exception {
-                NearCacheStats stats = map.getLocalMapStats().getNearCacheStats();
-                long ownedEntryCount = stats.getOwnedEntryCount();
+                long ownedEntryCount = getNearCacheStats(map).getOwnedEntryCount();
                 triggerNearCacheEviction(map);
-                assertTrue("owned entry count " + ownedEntryCount, putCount > ownedEntryCount);
+                assertTrue("owned entry count " + ownedEntryCount, mapSize > ownedEntryCount);
             }
         });
     }
 
     @Override
     protected Config getConfig() {
-        return newNativeMemoryConfig();
-    }
+        MapConfig mapConfig = new MapConfig()
+                .setName("default")
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
 
-    @Override
-    protected NearCacheConfig newNearCacheConfig() {
-        NearCacheConfig nearCacheConfig = new NearCacheConfig();
-        EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
-        evictionConfig.setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(90);
-        nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        nearCacheConfig.setInvalidateOnChange(true);
-        nearCacheConfig.setCacheLocalEntries(false);
-        return nearCacheConfig;
-    }
-
-    private static Config newNativeMemoryConfig() {
-        MapConfig mapConfig = new MapConfig();
-        mapConfig.setName("default");
-        mapConfig.setEvictionPolicy(EvictionPolicy.LRU);
-        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-
-        NativeMemoryConfig memoryConfig = new NativeMemoryConfig();
-        memoryConfig.setEnabled(true);
-        memoryConfig.setSize(new MemorySize(8, MemoryUnit.MEGABYTES));
-        memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(new MemorySize(32, MemoryUnit.MEGABYTES))
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), UNLIMITED_LICENSE);
         config.addMapConfig(mapConfig);
         config.setNativeMemoryConfig(memoryConfig);
         return config;
+    }
+
+    @Override
+    protected NearCacheConfig newNearCacheConfig() {
+        NearCacheConfig nearCacheConfig = super.newNearCacheConfig()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setInvalidateOnChange(true)
+                .setCacheLocalEntries(false);
+
+        nearCacheConfig.getEvictionConfig()
+                .setEvictionPolicy(LRU)
+                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(90);
+
+        return nearCacheConfig;
+    }
+
+    @Override
+    protected NearCacheConfig newNearCacheConfigWithEntryCountEviction(EvictionPolicy evictionPolicy, int size) {
+        NearCacheConfig nearCacheConfig = newNearCacheConfig()
+                .setCacheLocalEntries(true);
+
+        nearCacheConfig.getEvictionConfig()
+                .setEvictionPolicy(evictionPolicy)
+                .setMaximumSizePolicy(ENTRY_COUNT)
+                .setSize(size);
+
+        return nearCacheConfig;
+    }
+
+    /**
+     * The EE Near Cache evicts a single entry per eviction.
+     */
+    @Override
+    protected int getExpectedEvictionCount(int size) {
+        return 1;
     }
 }

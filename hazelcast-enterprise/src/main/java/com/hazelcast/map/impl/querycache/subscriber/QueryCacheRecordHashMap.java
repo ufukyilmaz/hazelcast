@@ -102,7 +102,7 @@ public class QueryCacheRecordHashMap extends SampleableConcurrentHashMap<Data, Q
             if (remove(evictionCandidate.getAccessor()) != null) {
                 actualEvictedCount++;
                 if (evictionListener != null) {
-                    evictionListener.onEvict(evictionCandidate.getAccessor(), evictionCandidate.getEvictable());
+                    evictionListener.onEvict(evictionCandidate.getAccessor(), evictionCandidate.getEvictable(), false);
                 }
             }
         }

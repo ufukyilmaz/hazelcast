@@ -22,7 +22,7 @@ import com.hazelcast.util.QuickMath;
  */
 public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
         extends DefaultHiDensityRecordMap<R>
-        implements EvictableStore<Data, R> {
+        implements EvictableStore<Data, R>, EvictionListener<Data, R> {
 
     protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int MIN_EVICTION_ELEMENT_COUNT = 10;
@@ -68,10 +68,10 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             int slot = iterator.getCurrentSlot();
             keyHolder.reset(accessor.getKey(slot));
             R value = recordProcessor.read(accessor.getValue(slot));
-            onEvict(keyHolder, value);
+            onEvict(keyHolder, value, false);
 
             if (evictionListener != null) {
-                evictionListener.onEvict(keyHolder, value);
+                evictionListener.onEvict(keyHolder, value, false);
             }
 
             iterator.remove();
@@ -128,9 +128,9 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     evict = expirationChecker.isExpired(value);
                 }
                 if (evict) {
-                    onEvict(keyData, value);
+                    onEvict(keyData, value, true);
                     if (evictionListener != null) {
-                        evictionListener.onEvict(keyData, value);
+                        evictionListener.onEvict(keyData, value, true);
                     }
                     delete(keyData);
                     recordProcessor.disposeData(keyData);
@@ -163,9 +163,9 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
             R removedRecord = remove(key);
             if (removedRecord != null) {
                 actualEvictedCount++;
-                onEvict(key, removedRecord);
+                onEvict(key, removedRecord, false);
                 if (evictionListener != null) {
-                    evictionListener.onEvict(key, removedRecord);
+                    evictionListener.onEvict(key, removedRecord, false);
                 }
                 recordProcessor.dispose(removedRecord);
             }
@@ -174,6 +174,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         return actualEvictedCount;
     }
 
-    protected void onEvict(Data key, R record) {
+    @Override
+    public void onEvict(Data evictedEntryAccessor, R evictedEntry, boolean wasExpired) {
     }
 }

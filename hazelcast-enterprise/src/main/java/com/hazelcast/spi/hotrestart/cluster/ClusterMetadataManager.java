@@ -131,7 +131,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         try {
             PartitionThreadCountWriter.writePartitionThreadCount(homeDir, count);
         } catch (IOException e) {
-            logger.severe("While persisting partition thread count: " + count, e);
+            e.printStackTrace();
         }
     }
 

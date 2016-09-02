@@ -20,9 +20,7 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
-import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -32,6 +30,7 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 
+import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 
@@ -39,11 +38,10 @@ import static com.hazelcast.nio.IOUtil.toFileName;
  * Test publishing of near-cache invalidation events, when the cache is configured with NATIVE in-memory format and
  * with hot restart enabled.
  */
-public class HotRestartClientNearCacheInvalidationTest
-        extends ClientNearCacheInvalidationTest {
+public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
 
-    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(64, MemoryUnit.MEGABYTES);
-    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
+    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
+    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
 
     @Rule
     public TestName testName = new TestName();
@@ -70,23 +68,30 @@ public class HotRestartClientNearCacheInvalidationTest
 
     @Override
     protected Config getConfig() {
-        Config cfg = new Config();
-        NativeMemoryConfig nativeMemoryConfig =
-                new NativeMemoryConfig()
-                        .setSize(SERVER_NATIVE_MEMORY_SIZE)
-                        .setEnabled(true);
-        cfg.setNativeMemoryConfig(nativeMemoryConfig);
-        cfg.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-        HotRestartPersistenceConfig hotRestartPersistenceConfig = cfg.getHotRestartPersistenceConfig();
-        hotRestartPersistenceConfig.setEnabled(true);
-        hotRestartPersistenceConfig.setBaseDir(folder);
-        return cfg;
+        Config config = super.getConfig();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
+        config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
+
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(SERVER_NATIVE_MEMORY_SIZE);
+
+        config.getHotRestartPersistenceConfig()
+                .setEnabled(true)
+                .setBaseDir(folder);
+
+        return config;
     }
 
     @Override
     protected ClientConfig createClientConfig() {
         ClientConfig clientConfig = super.createClientConfig();
-        clientConfig.setNativeMemoryConfig(new NativeMemoryConfig().setSize(CLIENT_NATIVE_MEMORY_SIZE).setEnabled(true));
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
+
+        clientConfig.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(CLIENT_NATIVE_MEMORY_SIZE);
+
         return clientConfig;
     }
 
@@ -97,11 +102,13 @@ public class HotRestartClientNearCacheInvalidationTest
 
     @Override
     protected CacheConfig createCacheConfig(InMemoryFormat inMemoryFormat) {
-        CacheConfig cacheConfig = super.createCacheConfig(InMemoryFormat.NATIVE);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
+
+        CacheConfig cacheConfig = super.createCacheConfig(InMemoryFormat.NATIVE);
         cacheConfig.setEvictionConfig(evictionConfig);
+
         // enable hot restart
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);
         cacheConfig.setHotRestartConfig(hrConfig);

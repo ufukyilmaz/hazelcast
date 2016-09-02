@@ -22,22 +22,22 @@ public class HiDensityClientCacheHazelcastInstanceAwareTest extends ClientCacheH
     @Override
     protected Config createConfig() {
         Config config = super.createConfig();
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig.setEnabled(true)
-                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                .setSize(MEMORY_SIZE);
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(MEMORY_SIZE)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED);
         return config;
     }
 
     @Override
     protected CacheConfig createCacheConfig(String cacheName) {
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setSize(99);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
         CacheConfig cacheConfig = super.createCacheConfig(cacheName);
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheConfig.setEvictionConfig(
-                new EvictionConfig()
-                        .setSize(99)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE));
+        cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }
-
 }

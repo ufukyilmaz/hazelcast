@@ -4,7 +4,6 @@ import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -37,5 +36,4 @@ public class HiDensityNearCacheManagerTest extends NearCacheManagerTestSupport {
     public void destroyNearCacheAndDestroyAllNearCaches() {
         doDestroyNearCacheAndDestroyAllNearCaches();
     }
-
 }

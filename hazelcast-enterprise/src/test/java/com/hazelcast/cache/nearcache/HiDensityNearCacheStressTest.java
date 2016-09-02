@@ -7,11 +7,12 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.util.Clock;
 import org.junit.After;
@@ -58,30 +59,29 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
     }
 
     protected NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
-        return new NearCacheContext(
-                new EnterpriseSerializationServiceBuilder()
-                        .setMemoryManager(memoryManager)
-                        .build(),
-                createNearCacheExecutor(), null);
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+
+        return new NearCacheContext(serializationService, createNearCacheExecutor(), null);
     }
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
+
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         nearCacheConfig.setEvictionConfig(evictionConfig);
+
         return nearCacheConfig;
     }
 
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HiDensityNearCache<Integer, String>(name,
-                nearCacheConfig,
-                createNearCacheContext(),
-                nearCacheRecordStore);
+        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, createNearCacheContext(), nearCacheRecordStore);
     }
 
     private String getValuePrefix() {
@@ -93,17 +93,15 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     @Test
     public void putAndGetOnSoManyRecordsWithoutOOME() {
-        NearCacheConfig nearCacheConfig =
-                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+        NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         NearCacheContext nearCacheContext = createNearCacheContext();
-        NearCache<Integer, String> nearCache =
-                new HiDensityNearCache<Integer, String>(
-                        DEFAULT_NEAR_CACHE_NAME,
-                        nearCacheConfig,
-                        nearCacheContext);
+        NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(
+                DEFAULT_NEAR_CACHE_NAME,
+                nearCacheConfig,
+                nearCacheContext);
 
-        final String VALUE_PREFIX = getValuePrefix();
-        final long finishTime = Clock.currentTimeMillis() + TIMEOUT;
+        String VALUE_PREFIX = getValuePrefix();
+        long finishTime = Clock.currentTimeMillis() + TIMEOUT;
         for (int i = 0; Clock.currentTimeMillis() < finishTime; i++) {
             String value = VALUE_PREFIX + i;
             nearCache.put(i, value);
@@ -119,14 +117,12 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         try {
             mm.registerThread(Thread.currentThread());
 
-            NearCacheConfig nearCacheConfig =
-                    createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
             NearCacheContext nearCacheContext = createNearCacheContext(mm);
-            NearCache<Integer, byte[]> nearCache =
-                    new HiDensityNearCache<Integer, byte[]>(
-                            DEFAULT_NEAR_CACHE_NAME,
-                            nearCacheConfig,
-                            nearCacheContext);
+            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
+                    DEFAULT_NEAR_CACHE_NAME,
+                    nearCacheConfig,
+                    nearCacheContext);
 
             byte[] value = new byte[(int) valueSize.bytes()];
             int iterationCount = (int) (2 * (memorySize.bytes() / valueSize.bytes()));
@@ -140,38 +136,36 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
 
     @Test
     public void putRemoveAndGetOnSoManyRecordsFromMultipleThreadsWithoutOOME() {
-        NearCacheConfig nearCacheConfig =
-                createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+        NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         NearCacheContext nearCacheContext = createNearCacheContext();
-        final NearCache<Integer, String> nearCache =
-                new HiDensityNearCache<Integer, String>(
-                        DEFAULT_NEAR_CACHE_NAME,
-                        nearCacheConfig,
-                        nearCacheContext);
+        final NearCache<Integer, String> nearCache = new HiDensityNearCache<Integer, String>(
+                DEFAULT_NEAR_CACHE_NAME,
+                nearCacheConfig,
+                nearCacheContext);
 
-        final int THREAD_COUNT = 9;
-        final int MAX_RECORD_COUNT = 10000000;
-        final String VALUE_PREFIX = getValuePrefix();
+        final int threadCount = 9;
+        final int maxRecordCount = 10000000;
+        final String valuePrefix = getValuePrefix();
 
         final long finishTime1 = Clock.currentTimeMillis() + TIMEOUT;
         // Do initial load from main thread
-        for (int i = 0; i < MAX_RECORD_COUNT / 10 && Clock.currentTimeMillis() < finishTime1; i++) {
-            String value = VALUE_PREFIX + "value-" + i;
+        for (int i = 0; i < maxRecordCount / 10 && Clock.currentTimeMillis() < finishTime1; i++) {
+            String value = valuePrefix + "value-" + i;
             nearCache.put(i, value);
             assertEquals(value, nearCache.get(i));
         }
 
-        ExecutorService ex = Executors.newFixedThreadPool(THREAD_COUNT);
+        ExecutorService ex = Executors.newFixedThreadPool(threadCount);
         final long finishTime2 = Clock.currentTimeMillis() + TIMEOUT;
-        for (int i = 0; i < THREAD_COUNT; i++) {
+        for (int i = 0; i < threadCount; i++) {
             if (i % 3 == 0) {
                 ex.execute(new Runnable() {
                     @Override
                     public void run() {
                         Random random = new Random();
                         while (Clock.currentTimeMillis() < finishTime2) {
-                            int key = random.nextInt(MAX_RECORD_COUNT);
-                            String value = VALUE_PREFIX + "value-" + key;
+                            int key = random.nextInt(maxRecordCount);
+                            String value = valuePrefix + "value-" + key;
                             nearCache.put(key, value);
                             sleepMillis(10);
                         }
@@ -183,7 +177,7 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                     public void run() {
                         Random random = new Random();
                         while (Clock.currentTimeMillis() < finishTime2) {
-                            int key = random.nextInt(MAX_RECORD_COUNT);
+                            int key = random.nextInt(maxRecordCount);
                             nearCache.remove(key);
                             sleepMillis(100);
                         }
@@ -195,8 +189,8 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
                     public void run() {
                         while (Clock.currentTimeMillis() < finishTime2) {
                             Random random = new Random();
-                            int key = random.nextInt(MAX_RECORD_COUNT);
-                            String expectedValue = VALUE_PREFIX + "value-" + key;
+                            int key = random.nextInt(maxRecordCount);
+                            String expectedValue = valuePrefix + "value-" + key;
                             String value = nearCache.get(key);
                             if (value != null) {
                                 assertEquals(expectedValue, value);
@@ -214,5 +208,4 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
             e.printStackTrace();
         }
     }
-
 }

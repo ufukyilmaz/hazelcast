@@ -7,6 +7,12 @@ import com.hazelcast.security.UsernamePasswordCredentials;
 
 import java.util.Properties;
 
+/**
+ * The default {@link ICredentialsFactory}.
+ *
+ * This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#DEFAULT_CREDENTIALS_FACTORY_CLASS}.
+ */
+@SuppressWarnings("unused")
 public class DefaultCredentialsFactory implements ICredentialsFactory {
 
     private Credentials credentials;

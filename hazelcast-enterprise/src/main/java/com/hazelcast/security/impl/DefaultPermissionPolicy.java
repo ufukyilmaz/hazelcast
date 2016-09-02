@@ -32,40 +32,47 @@ import static com.hazelcast.security.SecurityUtil.addressMatches;
 import static com.hazelcast.security.SecurityUtil.createPermission;
 import static java.lang.Thread.currentThread;
 
-
+/**
+ * The default {@link IPermissionPolicy}.
+ *
+ * This class is not unused, it's set via {@link com.hazelcast.security.SecurityConstants#DEFAULT_POLICY_CLASS}.
+ */
+@SuppressWarnings("unused")
 public class DefaultPermissionPolicy implements IPermissionPolicy {
 
     private static final ILogger LOGGER = Logger.getLogger(DefaultPermissionPolicy.class.getName());
     private static final PermissionCollection DENY_ALL = new DenyAllPermissionCollection();
     private static final PermissionCollection ALLOW_ALL = new AllPermissionsCollection(true);
 
-    // Configured permissions
-    final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions =
-            new ConcurrentHashMap<PrincipalKey, PermissionCollection>();
+    // configured permissions
+    final ConcurrentMap<PrincipalKey, PermissionCollection> configPermissions
+            = new ConcurrentHashMap<PrincipalKey, PermissionCollection>();
 
-    // Principal permissions
-    final ConcurrentMap<String, PrincipalPermissionsHolder> principalPermissions =
-            new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
+    // principal permissions
+    final ConcurrentMap<String, PrincipalPermissionsHolder> principalPermissions
+            = new ConcurrentHashMap<String, PrincipalPermissionsHolder>();
 
     volatile ConfigPatternMatcher configPatternMatcher;
 
     @Override
     public void configure(Config config, Properties properties) {
         LOGGER.log(Level.FINEST, "Configuring and initializing policy.");
-        this.configPatternMatcher = config.getConfigPatternMatcher();
+        configPatternMatcher = config.getConfigPatternMatcher();
+
         SecurityConfig securityConfig = config.getSecurityConfig();
         final Set<PermissionConfig> permissionConfigs = securityConfig.getClientPermissionConfigs();
         for (PermissionConfig permCfg : permissionConfigs) {
             final ClusterPermission permission = createPermission(permCfg);
             // allow all principals
             final String principal = permCfg.getPrincipal() != null ? permCfg.getPrincipal() : "*";
-            final Set<String> endpoints = permCfg.getEndpoints();
-            PermissionCollection coll = null;
 
+            final Set<String> endpoints = permCfg.getEndpoints();
             if (endpoints.isEmpty()) {
                 // allow all endpoints
                 endpoints.add("*.*.*.*");
             }
+
+            PermissionCollection coll;
             for (final String endpoint : endpoints) {
                 final PrincipalKey key = new PrincipalKey(principal, endpoint);
                 coll = configPermissions.get(key);
@@ -213,7 +220,7 @@ public class DefaultPermissionPolicy implements IPermissionPolicy {
             }
             final PrincipalKey other = (PrincipalKey) obj;
             return (endpoint != null ? endpoint.equals(other.endpoint) : other.endpoint == null)
-                && (principal != null ? principal.equals(other.principal) : other.principal == null);
+                    && (principal != null ? principal.equals(other.principal) : other.principal == null);
         }
     }
 

@@ -7,7 +7,7 @@ import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainHandlerService;
-import com.hazelcast.spi.impl.DelegatingMigrationAwareService;
+import com.hazelcast.spi.impl.CountingMigrationAwareService;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.
@@ -28,9 +28,9 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     }
 
     @Override
-    DelegatingMigrationAwareService createMigrationAwareService() {
+    CountingMigrationAwareService createMigrationAwareService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new DelegatingMigrationAwareService(new EnterpriseMapMigrationAwareService(mapServiceContext));
+        return new CountingMigrationAwareService(new EnterpriseMapMigrationAwareService(mapServiceContext));
     }
 
     @Override

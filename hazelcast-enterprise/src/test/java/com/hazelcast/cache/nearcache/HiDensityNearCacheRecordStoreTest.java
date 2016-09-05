@@ -4,15 +4,16 @@ import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNative
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,8 +25,7 @@ import org.junit.runner.RunWith;
 public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestSupport {
 
     private static final int DEFAULT_MEMORY_SIZE_IN_MEGABYTES = 256;
-    private static final MemorySize DEFAULT_MEMORY_SIZE =
-            new MemorySize(DEFAULT_MEMORY_SIZE_IN_MEGABYTES, MemoryUnit.MEGABYTES);
+    private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(DEFAULT_MEMORY_SIZE_IN_MEGABYTES, MemoryUnit.MEGABYTES);
 
     private PoolingMemoryManager memoryManager;
 
@@ -46,19 +46,22 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     @Override
     protected NearCacheContext createNearCacheContext() {
-        return new NearCacheContext(
-                new EnterpriseSerializationServiceBuilder()
-                        .setMemoryManager(memoryManager)
-                        .build(), null, null);
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+
+        return new NearCacheContext(serializationService, null, null);
     }
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        evictionConfig.setMaximumSizePolicy(MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
+
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         nearCacheConfig.setEvictionConfig(evictionConfig);
+
         return nearCacheConfig;
     }
 
@@ -126,37 +129,26 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     @Test(expected = IllegalArgumentException.class)
     public void cannotCreateHiDensityNativeMemoryNearCacheRecordStoreWithEntryCountMaxSizePolicy() {
-        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE,
-                                         EvictionConfig.MaxSizePolicy.ENTRY_COUNT,
-                                         1000);
+        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.ENTRY_COUNT, 1000);
     }
 
     @Test
     public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithUsedNativeMemorySizeMaxSizePolicy() {
-        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE,
-                                         EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE,
-                                         1000000);
+        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.USED_NATIVE_MEMORY_SIZE, 1000000);
     }
 
     @Test
     public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithFreeNativeMemorySizeMaxSizePolicy() {
-        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE,
-                                         EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE,
-                                         1000000);
+        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE, 1000000);
     }
 
     @Test
     public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithUsedNativeMemoryPercentageMaxSizePolicy() {
-        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE,
-                                         EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE,
-                                         99);
+        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE, 99);
     }
 
     @Test
     public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithFreeNativeMemoryPercentageMaxSizePolicy() {
-        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE,
-                                         EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,
-                                         1);
+        createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE, 1);
     }
-
 }

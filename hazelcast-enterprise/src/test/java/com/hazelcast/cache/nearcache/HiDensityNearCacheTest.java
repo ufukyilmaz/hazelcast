@@ -12,14 +12,15 @@ import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.util.QuickMath;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 import static java.lang.Runtime.getRuntime;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -47,40 +48,37 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Override
     protected NearCacheContext createNearCacheContext() {
-        return new NearCacheContext(
-                new EnterpriseSerializationServiceBuilder()
-                        .setMemoryManager(memoryManager)
-                        .build(),
-                createNearCacheExecutor(),
-                null);
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+
+        return new NearCacheContext(serializationService, createNearCacheExecutor(), null);
     }
 
     private NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
-        return new NearCacheContext(
-                new EnterpriseSerializationServiceBuilder()
-                        .setMemoryManager(memoryManager)
-                        .build(),
-                createNearCacheExecutor(),
-                null);
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+
+        return new NearCacheContext(serializationService, createNearCacheExecutor(), null);
     }
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
+
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         nearCacheConfig.setEvictionConfig(evictionConfig);
+
         return nearCacheConfig;
     }
 
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HiDensityNearCache<Integer, String>(name,
-                nearCacheConfig,
-                createNearCacheContext(),
-                nearCacheRecordStore);
+        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, createNearCacheContext(), nearCacheRecordStore);
     }
 
     @Test
@@ -155,29 +153,26 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @Test
     public void createEntryBiggerThanNativeMemory() {
-        // Given
-        final int estimatedNearCacheConcurrencyLevel = QuickMath.nextPowerOfTwo(8 * getRuntime().availableProcessors());
-        final int metaKbPerEmptyNearCacheSegment = 4;
-        final int metadataSizeToTotalNativeSizeFactor = 8;
-        MemorySize memorySize = new MemorySize(
-                estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor
-                    * 2, MemoryUnit.KILOBYTES);
+        // given
+        int estimatedNearCacheConcurrencyLevel = nextPowerOfTwo(8 * getRuntime().availableProcessors());
+        int metaKbPerEmptyNearCacheSegment = 4;
+        int metadataSizeToTotalNativeSizeFactor = 8;
+        int size = estimatedNearCacheConcurrencyLevel * metaKbPerEmptyNearCacheSegment * metadataSizeToTotalNativeSizeFactor;
+        MemorySize memorySize = new MemorySize(2 * size, MemoryUnit.KILOBYTES);
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
         try {
             NearCacheContext nearCacheContext = createNearCacheContext(mm);
-            NearCache<Integer, byte[]> nearCache =
-                    new HiDensityNearCache<Integer, byte[]>(
-                            DEFAULT_NEAR_CACHE_NAME,
-                            nearCacheConfig,
-                            nearCacheContext);
+            NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
+                    DEFAULT_NEAR_CACHE_NAME,
+                    nearCacheConfig,
+                    nearCacheContext);
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
 
-            // When - Then (just don't fail)
+            // when - then (just don't fail)
             nearCache.put(1, value);
         } finally {
             mm.dispose();
         }
     }
-
 }

@@ -9,12 +9,12 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,22 +50,22 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
     @Override
     protected NearCacheContext createNearCacheContext() {
-        return new NearCacheContext(
-                nearCacheManager,
-                new EnterpriseSerializationServiceBuilder()
-                        .setMemoryManager(memoryManager)
-                        .build(),
-                createNearCacheExecutor(),
-                null);
+        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+
+        return new NearCacheContext(nearCacheManager, serializationService, createNearCacheExecutor(), null);
     }
 
     @Override
     protected NearCacheConfig createNearCacheConfig(String name, InMemoryFormat inMemoryFormat) {
-        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         evictionConfig.setSize(99);
+
+        NearCacheConfig nearCacheConfig = super.createNearCacheConfig(name, inMemoryFormat);
         nearCacheConfig.setEvictionConfig(evictionConfig);
+
         return nearCacheConfig;
     }
 
@@ -73,35 +73,32 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         return createNearCacheConfig(name, InMemoryFormat.NATIVE);
     }
 
-    private NearCache<Integer, String> createNearCache(String name) {
+    private NearCache<Integer, Object> createNearCache(String name) {
         return nearCacheManager.getOrCreateNearCache(name,
-                                                     createNearCacheConfig(name),
-                                                     createNearCacheContext());
+                createNearCacheConfig(name),
+                createNearCacheContext());
     }
 
     @Test
     public void putToNearCacheShouldNotGetOOMEIfNativeMemoryIsFullAndThereIsNoRecordToEvict() {
-        NearCache nearCache1 = createNearCache("Near-Cache-1");
-        NearCache nearCache2 = createNearCache("Near-Cache-2");
+        NearCache<Integer, Object> nearCache1 = createNearCache("Near-Cache-1");
+        NearCache<Integer, Object> nearCache2 = createNearCache("Near-Cache-2");
 
         byte[] smallValue = new byte[8 * 1024];
         byte[] bigValue = new byte[NativeMemoryConfig.DEFAULT_PAGE_SIZE / 2]; // 2 MB = Smaller than page size (4 MB)
 
-        int smallValuePutCount =
-                (int) ((memoryManager.getMemoryStats().getMaxNative() / smallValue.length) * 2);
-        int bigValuePutCount =
-                (int) ((memoryManager.getMemoryStats().getMaxNative() / bigValue.length) * 2);
+        int smallValuePutCount = (int) ((memoryManager.getMemoryStats().getMaxNative() / smallValue.length) * 2);
+        int bigValuePutCount = (int) ((memoryManager.getMemoryStats().getMaxNative() / bigValue.length) * 2);
 
-        // Fill up memory with Near-Cache-1
+        // fill up memory with Near-Cache-1
         for (int i = 0; i < smallValuePutCount; i++) {
             nearCache1.put(i, smallValue);
         }
 
-        // Then put a big value to Near-Cache-2 and there should not be OOME
+        // then put a big value to Near-Cache-2 and there should not be OOME
         // since eviction is done on other near-caches until there is enough space for new put
         for (int i = 0; i < bigValuePutCount; i++) {
             nearCache2.put(i, bigValue);
         }
     }
-
 }

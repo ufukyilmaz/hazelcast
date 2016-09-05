@@ -24,29 +24,35 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
+import com.hazelcast.spi.properties.GroupProperty;
+
+import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 
 /**
  * Test publishing of near-cache invalidation events, when the cache is configured with NATIVE in-memory format.
  */
 public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {
 
-    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(64, MemoryUnit.MEGABYTES);
-    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(32, MemoryUnit.MEGABYTES);
+    private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
+    private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
 
     @Override
     protected Config getConfig() {
-        Config cfg = new Config();
-        NativeMemoryConfig nativeMemoryConfig =
-                new NativeMemoryConfig()
-                        .setSize(SERVER_NATIVE_MEMORY_SIZE)
-                        .setEnabled(true);
-        cfg.setNativeMemoryConfig(nativeMemoryConfig);
-        return cfg;
+        Config config = super.getConfig();
+        config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
+
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(SERVER_NATIVE_MEMORY_SIZE)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
+
+        return config;
     }
 
     @Override
     protected ClientConfig createClientConfig() {
         ClientConfig clientConfig = super.createClientConfig();
+        clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_HD_LICENSE);
         clientConfig.setNativeMemoryConfig(new NativeMemoryConfig().setSize(CLIENT_NATIVE_MEMORY_SIZE).setEnabled(true));
         return clientConfig;
     }

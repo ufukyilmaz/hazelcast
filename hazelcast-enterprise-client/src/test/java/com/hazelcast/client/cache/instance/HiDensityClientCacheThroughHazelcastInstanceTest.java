@@ -23,21 +23,23 @@ public class HiDensityClientCacheThroughHazelcastInstanceTest extends ClientCach
     @Override
     protected Config createConfig() {
         Config config = super.createConfig();
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig.setEnabled(true)
-                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                .setSize(MEMORY_SIZE);
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(MEMORY_SIZE)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED);
         return config;
     }
 
     @Override
     protected CacheSimpleConfig createCacheSimpleConfig(String cacheName) {
+        EvictionConfig evictionConfig = new EvictionConfig();
+        evictionConfig.setSize(99);
+        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
         CacheSimpleConfig cacheSimpleConfig = super.createCacheSimpleConfig(cacheName);
         cacheSimpleConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheSimpleConfig.setEvictionConfig(
-                new EvictionConfig()
-                        .setSize(99)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE));
+        cacheSimpleConfig.setEvictionConfig(evictionConfig);
+
         return cacheSimpleConfig;
     }
 
@@ -51,5 +53,4 @@ public class HiDensityClientCacheThroughHazelcastInstanceTest extends ClientCach
                         .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE));
         return cacheConfig;
     }
-
 }

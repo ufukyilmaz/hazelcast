@@ -127,8 +127,8 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         expiredRecordsCleanedUpSuccessfully(InMemoryFormat.NATIVE, true);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void cannotCreateHiDensityNativeMemoryNearCacheRecordStoreWithEntryCountMaxSizePolicy() {
+    @Test
+    public void canCreateHiDensityNativeMemoryNearCacheRecordStoreWithEntryCountMaxSizePolicy() {
         createNearCacheWithMaxSizePolicy(InMemoryFormat.NATIVE, MaxSizePolicy.ENTRY_COUNT, 1000);
     }
 

@@ -48,8 +48,10 @@ import java.util.concurrent.locks.LockSupport;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.instance.TestUtil.warmUpPartitions;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
+import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.spawn;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -170,6 +172,37 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         instances = startInstances(ports, listeners);
         assertInstancesJoined(ports.size(), instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+    }
+
+    @Test
+    public void testForceStart_thenGracefulRestart() throws Exception {
+        AtomicBoolean forceStartFlag = new AtomicBoolean();
+        Map<Integer, ClusterHotRestartEventListener> listeners = new HashMap<Integer, ClusterHotRestartEventListener>();
+        for (Integer port : ports) {
+            listeners.put(port, new TriggerForceStartOnAllMembersJoin(true, forceStartFlag));
+        }
+
+        HazelcastInstance[] instances = startInstances(ports);
+        warmUpPartitions(instances);
+        changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
+        terminateInstances();
+
+        instances = startInstances(ports, listeners);
+        assertInstancesJoined(ports.size(), instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+
+        HazelcastInstance instanceToRestart = null;
+        for (HazelcastInstance instance :getAllInstances() ) {
+            if (!getNode(instance).isMaster()) {
+                instanceToRestart = instance;
+                break;
+            }
+        }
+
+        assertNotNull(instanceToRestart);
+
+        final Address address = getAddress(instanceToRestart);
+        instanceToRestart.getLifecycleService().terminate();
+        newHazelcastInstance(address, null);
     }
 
     @Override

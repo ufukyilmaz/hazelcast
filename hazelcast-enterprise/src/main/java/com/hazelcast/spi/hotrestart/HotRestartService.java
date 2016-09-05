@@ -405,6 +405,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         node.nodeEngine.reset();
         logger.fine("Resetting hot restart cluster metadata");
         clusterMetadataManager.reset();
+        clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
         logger.fine("Resetting cluster state to ACTIVE");

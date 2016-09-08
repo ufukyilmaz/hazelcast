@@ -597,7 +597,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         return MwCounter.newMwCounter();
     }
 
-    @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF" })
+    @SuppressFBWarnings({"BC_IMPOSSIBLE_CAST", "BC_IMPOSSIBLE_INSTANCEOF"})
     private final class GlobalAddressQueue implements AddressQueue, GarbageCollectable {
 
         private final int index;

@@ -147,8 +147,8 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
     }
 
     @Override
-    protected void onEvict(Data key, HiDensityNativeMemoryCacheRecord record) {
-        super.onEvict(key, record);
+    public void onEvict(Data key, HiDensityNativeMemoryCacheRecord record, boolean wasExpired) {
+        super.onEvict(key, record, wasExpired);
 
         NativeMemoryData nativeKey = (NativeMemoryData) key;
         assert nativeKey.address() != NULL_PTR;

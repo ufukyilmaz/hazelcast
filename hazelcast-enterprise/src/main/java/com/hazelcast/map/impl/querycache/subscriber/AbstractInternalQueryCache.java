@@ -1,10 +1,9 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.config.QueryCacheConfig;
-import com.hazelcast.core.EntryEventType;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.PartitioningStrategy;
+import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.proxy.MapProxyImpl;
 import com.hazelcast.map.impl.querycache.QueryCacheConfigurator;
@@ -14,12 +13,14 @@ import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.impl.CachedQueryEntry;
-import com.hazelcast.query.impl.getters.Extractors;
 import com.hazelcast.query.impl.Indexes;
+import com.hazelcast.query.impl.getters.Extractors;
 
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
+
+import static com.hazelcast.core.EntryEventType.EVICTED;
 
 /**
  * Contains helper methods for {@link InternalQueryCache} main implementation.
@@ -52,7 +53,6 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         this.partitioningStrategy = getPartitioningStrategy();
         this.recordStore = new DefaultQueryCacheRecordStore(serializationService,
                 indexes, getQueryCacheConfig(), getEvictionListener());
-
     }
 
     protected Predicate getPredicate() {
@@ -67,13 +67,11 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
     private EvictionListener getEvictionListener() {
         return new EvictionListener<Data, QueryCacheRecord>() {
             @Override
-            public void onEvict(Data dataKey, QueryCacheRecord record) {
-                EventPublisherHelper.publishEntryEvent(context, mapName,
-                        cacheName, dataKey, null, record, EntryEventType.EVICTED);
+            public void onEvict(Data dataKey, QueryCacheRecord record, boolean wasExpired) {
+                EventPublisherHelper.publishEntryEvent(context, mapName, cacheName, dataKey, null, record, EVICTED);
             }
         };
     }
-
 
     PartitioningStrategy getPartitioningStrategy() {
         if (delegate instanceof MapProxyImpl) {
@@ -152,7 +150,6 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         return subscriberContext.getEventService();
     }
 
-
     protected <T> T toObject(Object valueInRecord) {
         return serializationService.toObject(valueInRecord);
     }
@@ -161,6 +158,7 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         return serializationService.toData(key, partitioningStrategy);
     }
 
+    @Override
     public void clear() {
         recordStore.clear();
         indexes.clearIndexes();

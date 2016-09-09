@@ -1,9 +1,9 @@
 package com.hazelcast.internal.util.collection;
 
-import java.util.Collection;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import com.hazelcast.util.function.Consumer;
 
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Single producer to single consumer concurrent queue backed by an array. Adapted from the Agrona project.
@@ -11,6 +11,7 @@ import com.hazelcast.util.function.Consumer;
  * @param <E> type of the elements stored in the queue.
  */
 public class OneToOneConcurrentArrayQueue<E> extends AbstractConcurrentArrayQueue<E> {
+
     public OneToOneConcurrentArrayQueue(final int requestedCapacity) {
         super(requestedCapacity);
     }

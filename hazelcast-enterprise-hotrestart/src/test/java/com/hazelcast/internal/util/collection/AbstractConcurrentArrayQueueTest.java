@@ -6,6 +6,8 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -18,10 +20,77 @@ public abstract class AbstractConcurrentArrayQueueTest {
 
     AbstractConcurrentArrayQueue<Integer> queue;
 
+    private List<Integer> emptyList = emptyList();
+
+    @Test
+    public void testIsEmpty_whenEmpty() {
+        assertTrue(queue.isEmpty());
+    }
+
+    @Test
+    public void testIsEmpty_whenNotEmpty() {
+        queue.offer(1);
+
+        assertFalse(queue.isEmpty());
+    }
+
+    @Test
+    public void testContains_whenContains() {
+        queue.offer(23);
+
+        assertTrue(queue.contains(23));
+    }
+
+    @Test
+    public void testContains_whenNotContains() {
+        assertFalse(queue.contains(42));
+    }
+
+    @Test
+    public void testContainsAll_whenContainsAll() {
+        queue.offer(1);
+        queue.offer(23);
+        queue.offer(42);
+        queue.offer(95);
+
+        assertTrue(queue.containsAll(asList(23, 42)));
+    }
+
+    @Test
+    public void testContainsAll_whenNotContainsAll() {
+        queue.offer(1);
+        queue.offer(95);
+
+        assertFalse(queue.containsAll(asList(23, 42)));
+    }
+
+    @Test
+    public void testAddAll() {
+        queue.addAll(asList(23, 42));
+
+        assertEquals(2, queue.size());
+        assertTrue(queue.contains(23));
+        assertTrue(queue.contains(42));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testAddAll_whenOverCapacity_thenThrowException() {
+        queue.addAll(asList(1, 2, 3, 4, 5, 6));
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testRemoveAll() {
+        queue.removeAll(emptyList);
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testRetainAll() {
+        queue.retainAll(emptyList);
+    }
+
     @Test
     public void testOffer() {
-        boolean result = queue.offer(1);
-        assertTrue(result);
+        assertTrue(queue.offer(1));
     }
 
     @Test
@@ -30,8 +99,7 @@ public abstract class AbstractConcurrentArrayQueueTest {
             queue.offer(i);
         }
 
-        boolean result = queue.offer(23);
-        assertFalse(result);
+        assertFalse(queue.offer(23));
     }
 
     @Test
@@ -41,8 +109,7 @@ public abstract class AbstractConcurrentArrayQueueTest {
         }
         queue.poll();
 
-        boolean result = queue.offer(23);
-        assertTrue(result);
+        assertTrue(queue.offer(23));
     }
 
     @Test(expected = AssertionError.class)

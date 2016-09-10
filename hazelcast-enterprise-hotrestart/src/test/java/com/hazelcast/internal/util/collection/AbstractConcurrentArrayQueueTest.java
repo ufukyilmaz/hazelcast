@@ -48,6 +48,11 @@ public abstract class AbstractConcurrentArrayQueueTest {
     }
 
     @Test
+    public void testContains_whenNull() {
+        assertFalse(queue.contains(null));
+    }
+
+    @Test
     public void testContainsAll_whenContainsAll() {
         queue.offer(1);
         queue.offer(23);

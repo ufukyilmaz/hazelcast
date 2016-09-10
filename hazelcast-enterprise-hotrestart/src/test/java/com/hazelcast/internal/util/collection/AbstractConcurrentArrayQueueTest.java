@@ -1,5 +1,6 @@
 package com.hazelcast.internal.util.collection;
 
+import com.hazelcast.test.RequireAssertEnabled;
 import com.hazelcast.util.function.Consumer;
 import org.junit.Test;
 
@@ -112,6 +113,7 @@ public abstract class AbstractConcurrentArrayQueueTest {
         assertTrue(queue.offer(23));
     }
 
+    @RequireAssertEnabled
     @Test(expected = AssertionError.class)
     public void testOffer_whenNull_thenAssert() {
         queue.offer(null);

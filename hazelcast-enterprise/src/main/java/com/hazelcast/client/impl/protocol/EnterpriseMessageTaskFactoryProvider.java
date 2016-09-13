@@ -1,15 +1,15 @@
 package com.hazelcast.client.impl.protocol;
 
-import com.hazelcast.instance.Node;
-import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.nio.Connection;
-import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.client.impl.protocol.task.MessageTask;
+import com.hazelcast.instance.Node;
+import com.hazelcast.nio.Connection;
+import com.hazelcast.spi.NodeEngine;
+import com.hazelcast.spi.impl.NodeEngineImpl;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class EnterpriseMessageTaskFactoryProvider implements MessageTaskFactoryProvider {
 
     private final MessageTaskFactory[] factories = new MessageTaskFactory[Short.MAX_VALUE];
-
 
     private final Node node;
 
@@ -52,14 +52,11 @@ public class EnterpriseMessageTaskFactoryProvider implements MessageTaskFactoryP
             }
         };
 //endregion
-
     }
 
-    @edu.umd.cs.findbugs.annotations.SuppressWarnings({"MS_EXPOSE_REP", "EI_EXPOSE_REP"})
+    @SuppressFBWarnings({"MS_EXPOSE_REP", "EI_EXPOSE_REP"})
     @Override
     public MessageTaskFactory[] getFactories() {
         return factories;
     }
 }
-
-

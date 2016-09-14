@@ -28,21 +28,21 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     private final NearCacheConfig nearCacheConfig;
     private final NearCacheStatsImpl nearCacheStats;
-    private final HiDensityStorageInfo storageInfo;
     private final HazelcastMemoryManager memoryManager;
 
-    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
     private final int hashSeed;
     private final int segmentMask;
     private final int segmentShift;
 
-    //CHECKSTYLE:OFF
+    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
+
+    @SuppressWarnings("checkstyle:magicnumber")
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                               NearCacheContext nearCacheContext) {
         this.nearCacheConfig = nearCacheConfig;
         this.nearCacheStats = new NearCacheStatsImpl();
-        this.storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
 
+        HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
         // Find power-of-two sizes best matching arguments
         int sShift = 0;
@@ -73,7 +73,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             this.memoryManager = mm;
         }
     }
-    //CHECKSTYLE:ON
 
     private void checkAvailable() {
         if (segments == null) {
@@ -82,7 +81,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         }
     }
 
-    //CHECKSTYLE:OFF
+    @SuppressWarnings("checkstyle:magicnumber")
     private int hash(Object o) {
         int h = hashSeed;
 
@@ -90,19 +89,13 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
-    }
-    //CHECKSTYLE:ON
-
-    private HiDensityNativeMemoryNearCacheRecordStore segmentFor(K key) {
-        int hash = hash(key);
-        return segments[(hash >>> segmentShift) & segmentMask];
     }
 
     @Override
@@ -127,6 +120,11 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
         HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.remove(key);
+    }
+
+    private HiDensityNativeMemoryNearCacheRecordStore<K, V> segmentFor(K key) {
+        int hash = hash(key);
+        return segments[(hash >>> segmentShift) & segmentMask];
     }
 
     @Override

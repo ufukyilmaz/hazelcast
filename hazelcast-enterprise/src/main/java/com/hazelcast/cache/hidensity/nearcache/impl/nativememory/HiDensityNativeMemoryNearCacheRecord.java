@@ -27,13 +27,13 @@ public class HiDensityNativeMemoryNearCacheRecord
      */
     public static final int VALUE_OFFSET;
 
-    static final int CREATION_TIME_OFFSET = 0;
-    static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
+    private static final int CREATION_TIME_OFFSET = 0;
+    private static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
     // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is same for near-cache record
     // since these fields (access hit count and access time) are not used at same time.
     // Because their usage scenario is based on eviction type (LRU or LFU).
-    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+    private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
+    private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
 
     static {
         VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;

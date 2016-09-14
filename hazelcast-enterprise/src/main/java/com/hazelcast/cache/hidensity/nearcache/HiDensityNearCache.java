@@ -31,9 +31,9 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     private final ILogger logger = Logger.getLogger(getClass());
     private HazelcastMemoryManager memoryManager;
 
-    public HiDensityNearCache(String s, NearCacheConfig nearCacheConfig,
+    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig,
                               NearCacheContext nearCacheContext) {
-        super(s, nearCacheConfig, nearCacheContext);
+        super(name, nearCacheConfig, nearCacheContext);
         this.nearCacheManager = nearCacheContext.getNearCacheManager();
     }
 

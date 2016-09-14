@@ -39,6 +39,7 @@ import org.junit.runners.Parameterized;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
+import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.EvictionPolicy.NONE;
 import static com.hazelcast.config.EvictionPolicy.RANDOM;
@@ -84,21 +85,21 @@ public class HDNearCacheTest extends NearCacheTest {
     @Test
     @Override
     public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() {
-        testNearCacheInvalidationInternal("LFU");
+        testNearCacheInvalidationInternal(LFU);
     }
 
     @Test
     @Override
     public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() {
-        testNearCacheInvalidationInternal("LRU");
+        testNearCacheInvalidationInternal(LRU);
     }
 
-    private void testNearCacheInvalidationInternal(String evictionPolicy) {
+    private void testNearCacheInvalidationInternal(EvictionPolicy evictionPolicy) {
         final int mapSize = 2000;
         String mapName = randomMapName();
 
         NearCacheConfig nearCacheConfig = newNearCacheConfig().setInvalidateOnChange(false);
-        nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.valueOf(evictionPolicy));
+        nearCacheConfig.getEvictionConfig().setEvictionPolicy(evictionPolicy);
 
         Config config = getConfig();
         config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);

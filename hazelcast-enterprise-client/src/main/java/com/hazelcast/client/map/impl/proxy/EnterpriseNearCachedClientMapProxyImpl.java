@@ -70,7 +70,7 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
             nearCache = hdNearCacheRegistry.getOrCreate(name);
             keyStateMarker = ((StaleReadPreventerNearCacheWrapper) nearCache).getKeyStateMarker();
 
-            if (nearCache.isInvalidateOnChange()) {
+            if (nearCache.isInvalidatedOnChange()) {
                 addNearCacheInvalidateListener();
             }
         } else {

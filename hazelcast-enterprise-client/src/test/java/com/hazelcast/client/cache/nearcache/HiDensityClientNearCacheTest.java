@@ -82,27 +82,82 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
     }
 
     @Test
-    public void putAndGetFromCacheAndThenGetFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
+    public void whenEmptyMapThenPopulatedNearCacheShouldReturnNull_neverNULL_OBJECT() {
+        whenEmptyMapThenPopulatedNearCacheShouldReturnNullNeverNULL_OBJECT(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putAndGetFromCacheAndThenGetFromClientHiDensityNearCache() {
         putAndGetFromCacheAndThenGetFromClientNearCache(InMemoryFormat.NATIVE);
     }
 
     @Test
-    public void putToCacheAndThenGetFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
+    public void putToCacheAndThenGetFromClientHiDensityNearCache() {
         putToCacheAndThenGetFromClientNearCache(InMemoryFormat.NATIVE);
     }
 
     @Test
-    public void putToCacheAndUpdateFromOtherNodeThenGetUpdatedFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
+    public void putIfAbsentToCacheAndThenGetFromClientNearCache() {
+        putIfAbsentToCacheAndThenGetFromClientNearCache(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putAsyncToCacheAndThenGetFromClientNearCacheImmediately() throws Exception {
+        putAsyncToCacheAndThenGetFromClientNearCacheImmediately(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putToCacheAndUpdateFromOtherNodeThenGetUpdatedFromClientHiDensityNearCache() {
         putToCacheAndUpdateFromOtherNodeThenGetUpdatedFromClientNearCache(InMemoryFormat.NATIVE);
     }
 
     @Test
-    public void putToCacheAndRemoveFromOtherNodeThenCantGetUpdatedFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
+    public void putToCacheAndGetInvalidationEventWhenNodeShutdown() {
+        putToCacheAndGetInvalidationEventWhenNodeShutdown(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putToCacheAndRemoveFromOtherNodeThenCantGetUpdatedFromClientHiDensityNearCache() {
         putToCacheAndRemoveFromOtherNodeThenCantGetUpdatedFromClientNearCache(InMemoryFormat.NATIVE);
     }
 
     @Test
-    public void putToCacheAndClearOrDestroyThenCantGetAnyRecordFromClientHiDensityNearCacheWithNativeInMemoryFormat() {
+    public void testLoadAllNearCacheInvalidation() throws Exception {
+        testLoadAllNearCacheInvalidation(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putToCacheAndClearOrDestroyThenCantGetAnyRecordFromClientHiDensityNearCache() {
         putToCacheAndClearOrDestroyThenCantGetAnyRecordFromClientNearCache(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void putToCacheAndDontInvalidateFromClientNearCacheWhenPerEntryInvalidationIsDisabled() {
+        putToCacheAndDontInvalidateFromClientNearCacheWhenPerEntryInvalidationIsDisabled(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void testNearCacheEviction() {
+        testNearCacheEviction(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void testNearCacheExpiration_withTTL() {
+        testNearCacheExpiration_withTTL(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void testNearCacheExpiration_withMaxIdle() {
+        testNearCacheExpiration_withMaxIdle(InMemoryFormat.NATIVE);
+    }
+
+    @Test
+    public void testNearCacheMemoryCostCalculation() {
+        testNearCacheMemoryCostCalculation(InMemoryFormat.NATIVE, 1);
+    }
+
+    @Test
+    public void testNearCacheMemoryCostCalculation_withConcurrentCacheMisses() {
+        testNearCacheMemoryCostCalculation(InMemoryFormat.NATIVE, 10);
     }
 }

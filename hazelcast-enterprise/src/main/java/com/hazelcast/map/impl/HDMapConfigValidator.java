@@ -30,7 +30,7 @@ import static java.lang.String.format;
 import static java.util.EnumSet.complementOf;
 
 /**
- * Responsible for validating supported configurations of HD backed IMap and its NearCache.
+ * Responsible for validating supported configurations of HD backed IMap and its Near Cache.
  */
 public final class HDMapConfigValidator {
 
@@ -115,7 +115,7 @@ public final class HDMapConfigValidator {
     }
 
     /**
-     * Checks preconditions to create a near-cached map proxy.
+     * Checks preconditions to create a map proxy with Near Cache.
      *
      * @param nearCacheConfig the nearCacheConfig
      */
@@ -125,8 +125,7 @@ public final class HDMapConfigValidator {
             return;
         }
 
-        checkTrue(nativeMemoryConfig.isEnabled(),
-                "Enable native memory config to use NATIVE in-memory-format for near cache");
+        checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
 
         EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
 

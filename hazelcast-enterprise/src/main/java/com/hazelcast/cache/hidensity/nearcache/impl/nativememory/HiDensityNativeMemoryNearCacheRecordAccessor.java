@@ -1,15 +1,15 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
+import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
 import com.hazelcast.memory.HazelcastMemoryManager;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
-
 /**
- * Near-Cache record accessor for {@link HiDensityNativeMemoryNearCacheRecord}
+ * {@link com.hazelcast.map.impl.nearcache.NearCacheRecord} accessor for {@link HiDensityNativeMemoryNearCacheRecord}
  * to create, read, dispose record or its data.
  */
 public class HiDensityNativeMemoryNearCacheRecordAccessor
@@ -37,5 +37,4 @@ public class HiDensityNativeMemoryNearCacheRecordAccessor
         long valueAddress2 = AMEM.getLong(address2 + HiDensityNativeMemoryNearCacheRecord.VALUE_OFFSET);
         return NativeMemoryDataUtil.equals(valueAddress1, valueAddress2);
     }
-
 }

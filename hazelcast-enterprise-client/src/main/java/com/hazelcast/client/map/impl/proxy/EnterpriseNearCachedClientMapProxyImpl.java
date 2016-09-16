@@ -18,6 +18,7 @@ import com.hazelcast.map.impl.querycache.subscriber.QueryCacheRequest;
 import com.hazelcast.map.impl.querycache.subscriber.SubscriberContext;
 import com.hazelcast.map.impl.utils.Registry;
 import com.hazelcast.map.listener.MapListener;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.util.ConstructorFunction;
@@ -41,7 +42,7 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
 public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         extends NearCachedClientMapProxy<K, V> implements IEnterpriseMap<K, V> {
 
-    private final Registry<String, NearCache> hdNearCacheRegistry;
+    private final Registry<String, NearCache<Data, Object>> hdNearCacheRegistry;
     /**
      * Holds {@link QueryCacheContext} for this proxy.
      * There should be only one {@link QueryCacheContext} instance exist.
@@ -58,7 +59,7 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
     };
 
     public EnterpriseNearCachedClientMapProxyImpl(String serviceName, String name,
-                                                  Registry<String, NearCache> hdNearCacheRegistry) {
+                                                  Registry<String, NearCache<Data, Object>> hdNearCacheRegistry) {
         super(serviceName, name);
         this.hdNearCacheRegistry = hdNearCacheRegistry;
     }
@@ -78,26 +79,25 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         }
     }
 
-    private InMemoryFormat getNearCacheInMemoryFormat() {
-        ClientConfig clientConfig = getContext().getClientConfig();
-        NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(name);
-        return nearCacheConfig.getInMemoryFormat();
-    }
-
-    public QueryCacheContext getQueryContext() {
-        return getOrPutIfAbsent(queryCacheContextHolder,
-                "QueryCacheContext", queryCacheContextConstructorFunction);
+    @Override
+    protected void onDestroy() {
+        if (NATIVE == nearCache.getInMemoryFormat()) {
+            removeNearCacheInvalidationListener();
+            hdNearCacheRegistry.remove(name);
+        } else {
+            super.onDestroy();
+        }
     }
 
     @Override
-    public QueryCache getQueryCache(String name) {
+    public QueryCache<K, V> getQueryCache(String name) {
         checkNotNull(name, "name cannot be null");
 
         return getQueryCacheInternal(name, null, null, null, this);
     }
 
     @Override
-    public QueryCache getQueryCache(String name, Predicate predicate, boolean includeValue) {
+    public QueryCache<K, V> getQueryCache(String name, Predicate predicate, boolean includeValue) {
         checkNotNull(name, "name cannot be null");
         checkNotNull(predicate, "predicate cannot be null");
         checkNotInstanceOf(PagingPredicate.class, predicate, "predicate");
@@ -106,7 +106,7 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
     }
 
     @Override
-    public QueryCache getQueryCache(String name, MapListener mapListener, Predicate predicate, boolean includeValue) {
+    public QueryCache<K, V> getQueryCache(String name, MapListener mapListener, Predicate predicate, boolean includeValue) {
         checkNotNull(name, "name cannot be null");
         checkNotNull(predicate, "predicate cannot be null");
         checkNotInstanceOf(PagingPredicate.class, predicate, "predicate");
@@ -114,8 +114,14 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         return getQueryCacheInternal(name, mapListener, predicate, includeValue, this);
     }
 
-    protected QueryCache getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
-                                               Boolean includeValue, IMap map) {
+    private InMemoryFormat getNearCacheInMemoryFormat() {
+        ClientConfig clientConfig = getContext().getClientConfig();
+        NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(name);
+        return nearCacheConfig.getInMemoryFormat();
+    }
+
+    private QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
+                                                   Boolean includeValue, IMap map) {
         QueryCacheContext context = getQueryContext();
         QueryCacheRequest request = newQueryCacheRequest()
                 .withUserGivenCacheName(name)
@@ -129,22 +135,16 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         return createQueryCache(request);
     }
 
-    private QueryCache createQueryCache(QueryCacheRequest request) {
+    private QueryCacheContext getQueryContext() {
+        return getOrPutIfAbsent(queryCacheContextHolder, "QueryCacheContext", queryCacheContextConstructorFunction);
+    }
+
+    private QueryCache<K, V> createQueryCache(QueryCacheRequest request) {
         ConstructorFunction<String, InternalQueryCache> constructorFunction
                 = new ClientQueryCacheEndToEndConstructor(request);
         SubscriberContext subscriberContext = getQueryContext().getSubscriberContext();
         QueryCacheEndToEndProvider queryCacheEndToEndProvider = subscriberContext.getEndToEndQueryCacheProvider();
         return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
                 request.getUserGivenCacheName(), constructorFunction);
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (NATIVE == nearCache.getInMemoryFormat()) {
-            removeNearCacheInvalidationListener();
-            hdNearCacheRegistry.remove(name);
-        } else {
-            super.onDestroy();
-        }
     }
 }

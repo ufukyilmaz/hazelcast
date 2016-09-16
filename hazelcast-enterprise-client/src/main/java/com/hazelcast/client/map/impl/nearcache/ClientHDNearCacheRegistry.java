@@ -53,8 +53,7 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
         this.partitionService = partitionService;
     }
 
-
-    protected NearCacheExecutor createNearCacheExecutor(final ClientExecutionService executionService) {
+    private NearCacheExecutor createNearCacheExecutor(final ClientExecutionService executionService) {
         return new NearCacheExecutor() {
 
             @Override
@@ -63,7 +62,6 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
             }
         };
     }
-
 
     @Override
     public ConstructorFunction<String, NearCache> getConstructorFunction() {

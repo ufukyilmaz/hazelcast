@@ -38,5 +38,4 @@ public class HiDensityNearCacheContext extends NearCacheContext {
     public HiDensityStorageInfo getStorageInfo() {
         return storageInfo;
     }
-
 }

@@ -35,7 +35,7 @@ import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 
 /**
- * Test publishing of near-cache invalidation events, when the cache is configured with NATIVE in-memory format and
+ * Test publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format and
  * with hot restart enabled.
  */
 public class HotRestartClientNearCacheInvalidationTest extends ClientNearCacheInvalidationTest {

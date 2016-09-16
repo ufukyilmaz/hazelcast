@@ -10,18 +10,15 @@ import com.hazelcast.memory.HazelcastMemoryManager;
  *
  * @param <K> the type of the key
  * @param <V> the type of the value
- * @param <R> Type of the hi-density near-cache record to be stored
- *
- * @author sozal 26/10/14
+ * @param <R> Type of the hi-density Near Cache record to be stored
  */
 public interface HiDensityNearCacheRecordStore<K, V, R extends HiDensityNearCacheRecord>
         extends HiDensityRecordStore<R>, NearCacheRecordStore<K, V> {
 
-    /*
-     * Gets underlying {@link MemoryManager} implementation.
+    /**
+     * Gets underlying {@link com.hazelcast.internal.memory.MemoryManager} implementation.
      *
-     * @return the underlying {@link MemoryManager} implementation
+     * @return the underlying {@link com.hazelcast.internal.memory.MemoryManager} implementation
      */
     HazelcastMemoryManager getMemoryManager();
-
 }

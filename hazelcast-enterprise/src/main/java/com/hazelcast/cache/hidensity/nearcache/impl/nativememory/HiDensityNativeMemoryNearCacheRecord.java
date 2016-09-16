@@ -8,32 +8,29 @@ import com.hazelcast.nio.Bits;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 
-/**
- * @author sozal 26/10/14
- */
 public class HiDensityNativeMemoryNearCacheRecord
         extends HiDensityNearCacheRecord {
 
     /**
-     * Size of a HD near-cache record
+     * Size of a HD Near Cache record
      */
     public static final int SIZE;
     /**
-     * Size of a HD near-cache record's header
+     * Size of a HD Near Cache record's header
      */
     public static final int HEADER_SIZE = 8;
     /**
-     * Location of the value pointer in a HD near-cache record
+     * Location of the value pointer in a HD Near Cache record
      */
     public static final int VALUE_OFFSET;
 
-    static final int CREATION_TIME_OFFSET = 0;
-    static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
-    // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is same for near-cache record
-    // since these fields (access hit count and access time) are not used at same time.
-    // Because their usage scenario is based on eviction type (LRU or LFU).
-    static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+    private static final int CREATION_TIME_OFFSET = 0;
+    private static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
+    // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is the same for NearCacheRecord
+    // since these fields (access hit count and access time) are not used at same time
+    // (their usage scenario is based on eviction type (LRU or LFU))
+    private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
+    private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
 
     static {
         VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;
@@ -67,7 +64,7 @@ public class HiDensityNativeMemoryNearCacheRecord
     @Override
     public long getLastAccessTime() {
         int accessTimeDiff = getAccessTimeDiff();
-        // Not accessed yet
+        // not accessed yet
         if (accessTimeDiff <= 0) {
             return -1;
         }
@@ -252,5 +249,4 @@ public class HiDensityNativeMemoryNearCacheRecord
             return "HiDensityNearCacheNativeMemoryRecord{ NULL }";
         }
     }
-
 }

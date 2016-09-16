@@ -1,34 +1,37 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.internal.eviction.EvictionChecker;
-import com.hazelcast.internal.eviction.EvictionListener;
-import com.hazelcast.internal.eviction.EvictionPolicyEvaluator;
-import com.hazelcast.internal.eviction.EvictionPolicyEvaluatorProvider;
-import com.hazelcast.internal.eviction.EvictionStrategy;
-import com.hazelcast.internal.eviction.EvictionStrategyProvider;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.QueryCacheConfig;
-import com.hazelcast.internal.eviction.impl.EvictionConfigHelper;
+import com.hazelcast.internal.eviction.EvictionChecker;
+import com.hazelcast.internal.eviction.EvictionListener;
+import com.hazelcast.internal.eviction.EvictionPolicyEvaluator;
+import com.hazelcast.internal.eviction.EvictionStrategy;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 
+import static com.hazelcast.internal.eviction.EvictionPolicyEvaluatorProvider.getEvictionPolicyEvaluator;
+import static com.hazelcast.internal.eviction.EvictionStrategyProvider.getEvictionStrategy;
+import static com.hazelcast.internal.eviction.impl.EvictionConfigHelper.checkEvictionConfig;
+
 /**
- * Contains eviction specific functionality of a {@link QueryCacheRecordStore}
+ * Contains eviction specific functionality of a {@link QueryCacheRecordStore}.
  */
 public class EvictionOperator {
 
+    private final QueryCacheRecordHashMap cache;
     private final EvictionConfig evictionConfig;
     private final MaxSizeChecker maxSizeChecker;
     private final EvictionPolicyEvaluator<Data, QueryCacheRecord> evictionPolicyEvaluator;
     private final EvictionChecker evictionChecker;
     private final EvictionStrategy<Data, QueryCacheRecord, QueryCacheRecordHashMap> evictionStrategy;
-    private final QueryCacheRecordHashMap cache;
-    private final EvictionListener listener;
+    private final EvictionListener<Data, QueryCacheRecord> listener;
     private final ClassLoader classLoader;
 
-    public EvictionOperator(QueryCacheRecordHashMap cache, QueryCacheConfig config,
-                            EvictionListener listener, ClassLoader classLoader) {
+    public EvictionOperator(QueryCacheRecordHashMap cache,
+                            QueryCacheConfig config,
+                            EvictionListener<Data, QueryCacheRecord> listener,
+                            ClassLoader classLoader) {
         this.cache = cache;
         this.evictionConfig = config.getEvictionConfig();
         this.maxSizeChecker = createCacheMaxSizeChecker();
@@ -51,7 +54,6 @@ public class EvictionOperator {
         return evictedCount;
     }
 
-
     private MaxSizeChecker createCacheMaxSizeChecker() {
         return new MaxSizeChecker() {
             @Override
@@ -62,12 +64,12 @@ public class EvictionOperator {
     }
 
     private EvictionPolicyEvaluator<Data, QueryCacheRecord> createEvictionPolicyEvaluator() {
-        EvictionConfigHelper.checkEvictionConfig(evictionConfig);
-        return EvictionPolicyEvaluatorProvider.getEvictionPolicyEvaluator(evictionConfig, classLoader);
+        checkEvictionConfig(evictionConfig);
+        return getEvictionPolicyEvaluator(evictionConfig, classLoader);
     }
 
     private EvictionStrategy<Data, QueryCacheRecord, QueryCacheRecordHashMap> createEvictionStrategy() {
-        return EvictionStrategyProvider.getEvictionStrategy(evictionConfig);
+        return getEvictionStrategy(evictionConfig);
     }
 
     private EvictionChecker createEvictionChecker() {
@@ -82,11 +84,7 @@ public class EvictionOperator {
 
         @Override
         public boolean isEvictionRequired() {
-            if (maxSizeChecker != null) {
-                return maxSizeChecker.isReachedToMaxSize();
-            } else {
-                return false;
-            }
+            return maxSizeChecker != null && maxSizeChecker.isReachedToMaxSize();
         }
     }
 }

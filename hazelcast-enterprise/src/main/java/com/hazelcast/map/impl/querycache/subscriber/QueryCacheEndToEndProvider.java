@@ -1,19 +1,19 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.util.ConcurrencyUtil;
 import com.hazelcast.util.ConstructorFunction;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.hazelcast.map.impl.querycache.subscriber.NullQueryCache.NULL_QUERY_CACHE;
+import static com.hazelcast.util.ConcurrencyUtil.getOrPutIfAbsent;
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutSynchronized;
 
 /**
  * Provides construction of whole {@link com.hazelcast.map.QueryCache QueryCache}
  * sub-system. As a result of that construction we can have a ready to use {@link com.hazelcast.map.QueryCache QueryCache}.
  */
-public class QueryCacheEndToEndProvider<K, V>  {
+public class QueryCacheEndToEndProvider<K, V> {
 
     private static final int MUTEX_COUNT = 16;
     private static final int MASK = MUTEX_COUNT - 1;
@@ -52,9 +52,9 @@ public class QueryCacheEndToEndProvider<K, V>  {
     }
 
     public InternalQueryCache<K, V> getOrCreateQueryCache(String mapName, String cacheName,
-                                                    ConstructorFunction<String, InternalQueryCache<K, V>> constructor) {
-        ConcurrentMap<String, InternalQueryCache<K, V>> queryCachesOfMap = ConcurrencyUtil.getOrPutIfAbsent(queryCaches, mapName,
-                constructorFunction);
+                                                          ConstructorFunction<String, InternalQueryCache<K, V>> constructor) {
+        ConcurrentMap<String, InternalQueryCache<K, V>> queryCachesOfMap
+                = getOrPutIfAbsent(queryCaches, mapName, constructorFunction);
         Object mutex = getMutex(cacheName);
         synchronized (mutex) {
             InternalQueryCache<K, V> cache = getOrPutSynchronized(queryCachesOfMap, cacheName, mutex, constructor);

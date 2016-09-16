@@ -40,7 +40,7 @@ import static com.hazelcast.util.Preconditions.checkNotInstanceOf;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * A server-side {@code IEnterpriseMap} implementation which is fronted by a near-cache.
+ * A server-side {@code IEnterpriseMap} implementation which is fronted by a Near Cache.
  *
  * @param <K> the key type for this {@code IMap} proxy.
  * @param <V> the value type for this {@code IMap} proxy.

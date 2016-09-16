@@ -101,7 +101,12 @@ public abstract class AbstractWanPublisher
     }
 
     protected int getPartitionId(Object key) {
-        return  node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.nodeEngine.getPartitionService().getPartitionId(key);
+    }
+
+    // return true if given partition ID is owned by the local member, otherwise false
+    protected boolean isPartitionIdLocal(int partitionId) {
+        return node.nodeEngine.getPartitionService().getPartition(partitionId).isLocal();
     }
 
     @Override
@@ -113,7 +118,11 @@ public abstract class AbstractWanPublisher
                 replicationEventObject.getGroupNames().add(localGroupName);
                 WanReplicationEvent replicationEvent = new WanReplicationEvent(serviceName, eventObject);
                 int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
-                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
+                // check if this partition ID is owned by the local member; if not, do not publish
+                if (!isPartitionIdLocal(partitionId)) {
+                    return;
+                }
+                boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, false);
                 if (eventPublished) {
                     currentElementCount.incrementAndGet();
                 }

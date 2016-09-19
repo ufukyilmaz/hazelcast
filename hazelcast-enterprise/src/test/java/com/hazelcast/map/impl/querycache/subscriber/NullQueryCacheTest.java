@@ -67,5 +67,4 @@ public class NullQueryCacheTest extends HazelcastTestSupport {
     public void testGetName() throws Exception {
         assertNull(NULL_QUERY_CACHE.getName());
     }
-
 }

@@ -9,6 +9,7 @@ import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryUpdatedListener;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -20,6 +21,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
 import static org.junit.Assert.assertEquals;
 
@@ -27,17 +29,20 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheCoalescingTest extends HazelcastTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     @Test
-    public void testCoalescingModeWorks() throws Exception {
+    public void testCoalescingModeWorks() {
         String mapName = randomString();
         String cacheName = randomString();
 
         Config config = getConfig(mapName, cacheName);
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
 
         final CountDownLatch updateEventCount = new CountDownLatch(1);
-        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addEntryListener(new EntryUpdatedListener() {
             @Override
             public void entryUpdated(EntryEvent event) {
@@ -75,5 +80,4 @@ public class QueryCacheCoalescingTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(cacheConfig);
         return config;
     }
-
 }

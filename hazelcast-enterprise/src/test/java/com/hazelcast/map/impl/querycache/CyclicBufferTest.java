@@ -20,29 +20,29 @@ import static org.junit.Assert.assertTrue;
 public class CyclicBufferTest {
 
     @Test(expected = IllegalArgumentException.class)
-    public void testBufferCapacity_whenZero() throws Exception {
+    public void testBufferCapacity_whenZero() {
         new DefaultCyclicBuffer(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void testBufferCapacity_whenNegative() throws Exception {
+    public void testBufferCapacity_whenNegative() {
         new DefaultCyclicBuffer(-1);
     }
 
     @Test
-    public void testBufferSize_whenEmpty() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(10);
+    public void testBufferSize_whenEmpty() {
+        int maxCapacity = nextPowerOfTwo(10);
         CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
 
         assertEquals("item count should be = " + 0, 0, buffer.size());
     }
 
     @Test
-    public void testBufferSize_whenAddedOneItem() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(10);
-        final int itemCount = 1;
+    public void testBufferSize_whenAddedOneItem() {
+        int maxCapacity = nextPowerOfTwo(10);
+        int itemCount = 1;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
         }
@@ -51,11 +51,11 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testBufferSize_whenFilledLessThanCapacity() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(10);
-        final int itemCount = 4;
+    public void testBufferSize_whenFilledLessThanCapacity() {
+        int maxCapacity = nextPowerOfTwo(10);
+        int itemCount = 4;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
         }
@@ -64,11 +64,11 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testBufferSize_whenFilledMoreThanCapacity() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(4);
-        final int itemCount = 40;
+    public void testBufferSize_whenFilledMoreThanCapacity() {
+        int maxCapacity = nextPowerOfTwo(4);
+        int itemCount = 40;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
         }
@@ -78,10 +78,10 @@ public class CyclicBufferTest {
 
 
     @Test
-    public void testBufferRead_withSequence() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(10);
-        final int itemCount = 4;
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+    public void testBufferRead_withSequence() {
+        int maxCapacity = nextPowerOfTwo(10);
+        int itemCount = 4;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
@@ -103,10 +103,10 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testSetHead_returnsTrue_whenSuppliedSequenceInBuffer() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(16);
-        final int itemCount = 40;
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+    public void testSetHead_returnsTrue_whenSuppliedSequenceInBuffer() {
+        int maxCapacity = nextPowerOfTwo(16);
+        int itemCount = 40;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
@@ -120,10 +120,10 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testSetHead_returnsFalse_whenSuppliedSequenceIsNotInBuffer() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(16);
-        final int itemCount = 40;
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+    public void testSetHead_returnsFalse_whenSuppliedSequenceIsNotInBuffer() {
+        int maxCapacity = nextPowerOfTwo(16);
+        int itemCount = 40;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
@@ -137,10 +137,10 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testSetHead_changesBufferSize_whenSucceeded() throws Exception {
-        final int itemCount = 40;
-        final int maxCapacity = nextPowerOfTwo(16);
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+    public void testSetHead_changesBufferSize_whenSucceeded() {
+        int itemCount = 40;
+        int maxCapacity = nextPowerOfTwo(16);
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
@@ -152,10 +152,10 @@ public class CyclicBufferTest {
     }
 
     @Test
-    public void testSetHead_doesNotChangeBufferSize_whenFailed() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(16);
-        final int itemCount = 40;
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+    public void testSetHead_doesNotChangeBufferSize_whenFailed() {
+        int maxCapacity = nextPowerOfTwo(16);
+        int itemCount = 40;
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 1; i <= itemCount; i++) {
             buffer.add(new TestSequenced(i));
@@ -168,8 +168,8 @@ public class CyclicBufferTest {
 
     @Test
     public void test_size() throws Exception {
-        final int maxCapacity = nextPowerOfTwo(10);
-        CyclicBuffer buffer = new DefaultCyclicBuffer(maxCapacity);
+        int maxCapacity = nextPowerOfTwo(10);
+        CyclicBuffer<TestSequenced> buffer = new DefaultCyclicBuffer<TestSequenced>(maxCapacity);
 
         for (int i = 0; i < 1; i++) {
             buffer.add(new TestSequenced(i));
@@ -182,7 +182,7 @@ public class CyclicBufferTest {
 
         private long sequence;
 
-        public TestSequenced(long seq) {
+        TestSequenced(long seq) {
             this.sequence = seq;
         }
 
@@ -203,9 +203,9 @@ public class CyclicBufferTest {
 
         @Override
         public String toString() {
-            return "TestSequenced{" +
-                    "sequence=" + sequence +
-                    '}';
+            return "TestSequenced{"
+                    + "sequence=" + sequence
+                    + '}';
         }
     }
 }

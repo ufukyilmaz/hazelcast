@@ -5,6 +5,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.EntryAdapter;
 import com.hazelcast.core.EntryEvent;
+import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.IFunction;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
@@ -24,46 +25,54 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheTest extends AbstractQueryCacheTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Employee> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     @Test
+    @SuppressWarnings("ConstantConditions")
     public void testQueryCache_whenIncludeValue_enabled() throws Exception {
         boolean includeValue = true;
         testQueryCache(includeValue);
     }
 
     @Test
+    @SuppressWarnings("ConstantConditions")
     public void testQueryCache_whenIncludeValue_disabled() throws Exception {
         boolean includeValue = false;
         testQueryCache(includeValue);
     }
 
     @Test
+    @SuppressWarnings("ConstantConditions")
     public void testQueryCache_whenInitialPopulation_enabled() throws Exception {
         boolean enableInitialPopulation = true;
         int numberOfElementsToBePutToIMap = 1000;
         int expectedSizeOfQueryCache = numberOfElementsToBePutToIMap;
 
-        testWithInitialPopulation(enableInitialPopulation,
-                expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
+        testWithInitialPopulation(enableInitialPopulation, expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
     }
 
     @Test
+    @SuppressWarnings("ConstantConditions")
     public void testQueryCache_whenInitialPopulation_disabled() throws Exception {
         boolean enableInitialPopulation = false;
         int numberOfElementsToBePutToIMap = 1000;
         int expectedSizeOfQueryCache = 0;
 
-        testWithInitialPopulation(enableInitialPopulation,
-                expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
+        testWithInitialPopulation(enableInitialPopulation, expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
     }
 
     @Test
-    public void testQueryCache_withLocalListener() throws Exception {
+    public void testQueryCache_withLocalListener() {
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(instances[0], mapName);
+
         String cacheName = randomString();
         config = new Config().setProperty(GroupProperty.PARTITION_COUNT.getName(), "1");
 
@@ -110,16 +119,9 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
     }
 
     @Test
-    public void testQueryCacheCleared_afterCalling_IMap_evictAll() throws Exception {
+    public void testQueryCacheCleared_afterCalling_IMap_evictAll() {
         String cacheName = randomString();
-        QueryCache<Integer, Employee> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
-
-        queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
-
-        queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         populateMap(map, 1000);
 
@@ -135,10 +137,9 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
     }
 
     @Test
-    public void testQueryCacheCleared_afterCalling_IMap_clear() throws Exception {
+    public void testQueryCacheCleared_afterCalling_IMap_clear() {
         String cacheName = randomString();
-        final QueryCache<Integer, Employee> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        final QueryCache<Integer, Employee> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         populateMap(map, 1000);
 
@@ -155,31 +156,27 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
     }
 
     @Test
-    public void test_getName() throws Exception {
+    public void test_getName() {
         String cacheName = "cache-name";
-        QueryCache<Integer, Employee> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         assertEquals(cacheName, queryCache.getName());
-
     }
 
     @Test
-    public void testDestroy_emptiesQueryCache() throws Exception {
+    public void testDestroy_emptiesQueryCache() {
         int entryCount = 1000;
         final CountDownLatch numberOfAddEvents = new CountDownLatch(entryCount);
         String cacheName = randomString();
-        QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(cacheName, new EntryAddedListener<Integer, Integer>() {
+        QueryCache<Integer, Employee> queryCache
+                = map.getQueryCache(cacheName, new EntryAddedListener<Integer, Employee>() {
             @Override
-            public void entryAdded(EntryEvent<Integer, Integer> event) {
+            public void entryAdded(EntryEvent<Integer, Employee> event) {
                 numberOfAddEvents.countDown();
             }
-        }, TruePredicate.INSTANCE, false);
+        }, TRUE_PREDICATE, false);
 
-        for (int i = 0; i < entryCount; i++) {
-            map.put(i, i);
-        }
+        populateMap(map, entryCount);
 
         assertOpenEventually(numberOfAddEvents);
 
@@ -188,27 +185,25 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
         assertEquals(0, queryCache.size());
     }
 
-    private void testWithInitialPopulation(boolean enableInitialPopulation,
-                                           int expectedSize, int numberOfElementsToPut) {
+    private void testWithInitialPopulation(boolean enableInitialPopulation, int expectedSize, int numberOfElementsToPut) {
         String cacheName = randomString();
         getConfig(mapName, cacheName, enableInitialPopulation);
 
-        for (int i = 0; i < numberOfElementsToPut; i++) {
-            map.put(i, i);
-        }
-        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName,
-                TruePredicate.INSTANCE, true);
+        populateMap(map, numberOfElementsToPut);
+        QueryCache<Integer, Employee> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         assertEquals(expectedSize, queryCache.size());
     }
 
     private void testQueryCache(boolean includeValue) {
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(instances[0], mapName);
+
         String cacheName = randomString();
 
         for (int i = 0; i < 50; i++) {
             map.put(i, i);
         }
-        Predicate predicate = new SqlPredicate("this > 5 AND this < 100");
+        Predicate<Integer, Integer> predicate = new SqlPredicate("this > 5 AND this < 100");
         QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, predicate, includeValue);
 
         for (int i = 50; i < 100; i++) {
@@ -235,7 +230,7 @@ public class QueryCacheTest extends AbstractQueryCacheTestSupport {
         return config.addMapConfig(mapConfig);
     }
 
-    private void assertQueryCacheSizeEventually(final int expected, final IFunction function, final QueryCache queryCache) {
+    private void assertQueryCacheSizeEventually(final int expected, final IFunction<?, ?> function, final QueryCache queryCache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {

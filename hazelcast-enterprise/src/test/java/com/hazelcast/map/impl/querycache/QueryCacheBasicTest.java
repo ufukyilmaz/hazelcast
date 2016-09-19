@@ -43,6 +43,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
+
 /**
  * Test basic QueryCache operation: create a map, put/update/remove values and assert size of query cache.
  * Parametrized with QueryCache option includeValues true/false & using default and query-cache-natural filtering strategies.
@@ -71,7 +73,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
 
     @Parameterized.Parameters(name = "includeValues: {0}, useQueryCacheFilteringStrategy: {1}, nearCache: {2}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {false, false, false},
                 {false, false, true},
                 {false, true, false},
@@ -86,20 +88,20 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
     // setup a map with 2 query caches, same predicate, one includes values, the other excludes values
     @Before
     public void setup() {
-        Config cfg = new Config();
-        cfg.setProperty("hazelcast.enterprise.license.key", SampleLicense.ENTERPRISE_HD_LICENSE);
-        cfg.getMapConfig(TEST_MAP_NAME).addQueryCacheConfig(
+        Config config = new Config();
+        config.setProperty("hazelcast.enterprise.license.key", SampleLicense.ENTERPRISE_HD_LICENSE);
+        config.getMapConfig(TEST_MAP_NAME).addQueryCacheConfig(
                 new QueryCacheConfig(QUERY_CACHE_NAME).setPredicateConfig(new PredicateConfig(predicate))
-                                                      .setIncludeValue(includeValues)
+                        .setIncludeValue(includeValues)
         );
         if (useNearCache) {
-            cfg.getMapConfig(TEST_MAP_NAME).setNearCacheConfig(new NearCacheConfig());
-            cfg.getMapConfig(TEST_MAP_NAME).getNearCacheConfig().setCacheLocalEntries(true);
+            config.getMapConfig(TEST_MAP_NAME).setNearCacheConfig(new NearCacheConfig()
+                    .setCacheLocalEntries(true));
         }
-        cfg.setProperty(MapEventPublisherImpl.LISTENER_WITH_PREDICATE_PRODUCES_NATURAL_EVENT_TYPES.getName(),
+        config.setProperty(MapEventPublisherImpl.LISTENER_WITH_PREDICATE_PRODUCES_NATURAL_EVENT_TYPES.getName(),
                 Boolean.toString(useQueryCacheNaturalFilteringStrategy));
-        instance = createHazelcastInstance(cfg);
-        map = (IEnterpriseMap) instance.getMap("EntryListenerEventTypesTestMap");
+        instance = createHazelcastInstance(config);
+        map = getEnterpriseMap(instance, "EntryListenerEventTypesTestMap");
         queryCache = map.getQueryCache(QUERY_CACHE_NAME);
     }
 

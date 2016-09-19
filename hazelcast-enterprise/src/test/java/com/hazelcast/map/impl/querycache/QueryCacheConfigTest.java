@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -23,8 +24,7 @@ import static org.junit.Assert.assertEquals;
 public class QueryCacheConfigTest extends HazelcastTestSupport {
 
     @Test
-    public void testDifferentQueryCacheInstancesObtained_whenIMapConfiguredWithWildCard() throws Exception {
-
+    public void testDifferentQueryCacheInstancesObtained_whenIMapConfiguredWithWildCard() {
         QueryCacheConfig cacheConfig = new QueryCacheConfig();
         cacheConfig.setName("cache");
         cacheConfig.getPredicateConfig().setSql("__key > 10");
@@ -37,12 +37,11 @@ public class QueryCacheConfigTest extends HazelcastTestSupport {
         config.addMapConfig(mapConfig);
 
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map1 = (IEnterpriseMap) node.getMap("test1");
-        IEnterpriseMap<Integer, Integer> map2 = (IEnterpriseMap) node.getMap("test2");
+        IEnterpriseMap<Integer, Integer> map1 = getEnterpriseMap(node, "test1");
+        IEnterpriseMap<Integer, Integer> map2 = getEnterpriseMap(node, "test2");
 
         QueryCache<Integer, Integer> queryCache1 = map1.getQueryCache("cache");
         QueryCache<Integer, Integer> queryCache2 = map2.getQueryCache("cache");
-
 
         for (int i = 0; i < 20; i++) {
             map1.put(i, i);
@@ -51,7 +50,6 @@ public class QueryCacheConfigTest extends HazelcastTestSupport {
         for (int i = 0; i < 30; i++) {
             map2.put(i, i);
         }
-
 
         assertQueryCacheSizeEventually(9, queryCache1);
         assertQueryCacheSizeEventually(19, queryCache2);

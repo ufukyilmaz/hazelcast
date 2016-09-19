@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
 
     @Test
-    public void continuesToReceiveEvents_afterNodeJoins() throws Exception {
+    public void continuesToReceiveEvents_afterNodeJoins() {
         String mapName = randomString();
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
@@ -47,10 +48,9 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(queryCacheConfig);
 
         HazelcastInstance node = instanceFactory.newHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
 
-        final QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
+        final QueryCache<Integer, Integer> queryCache = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
 
         for (int i = 0; i < 30; i++) {
             map.put(i, i);
@@ -79,7 +79,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void continuesToReceiveEvents_afterNodeShutdown() throws Exception {
+    public void continuesToReceiveEvents_afterNodeShutdown() {
         String mapName = randomString();
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
@@ -93,10 +93,9 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(queryCacheConfig);
 
         HazelcastInstance node = instanceFactory.newHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap<Integer, Integer>) node.<Integer, Integer>getMap(mapName);
 
-        final QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
+        final QueryCache<Integer, Integer> queryCache = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
 
         for (int i = 0; i < 30; i++) {
             map.put(i, i);

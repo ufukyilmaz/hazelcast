@@ -9,9 +9,12 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import org.junit.Before;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
+
 public abstract class AbstractQueryCacheTestSupport extends HazelcastTestSupport {
 
-    protected IEnterpriseMap map;
+    protected HazelcastInstance[] instances;
+    protected IEnterpriseMap<Integer, Employee> map;
     protected Config config = new Config();
     protected String mapName = randomString();
 
@@ -26,9 +29,8 @@ public abstract class AbstractQueryCacheTestSupport extends HazelcastTestSupport
 
     private <K, V> IEnterpriseMap<K, V> getMap() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(3);
-        HazelcastInstance[] instances = factory.newInstances(config);
-        HazelcastInstance node = instances[0];
-        return (IEnterpriseMap) node.getMap(mapName);
+        instances = factory.newInstances(config);
+        return getEnterpriseMap(instances[0], mapName);
     }
 
     protected void populateMap(IMap<Integer, Employee> map, int count) {

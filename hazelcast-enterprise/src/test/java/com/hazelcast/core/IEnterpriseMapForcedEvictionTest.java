@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
@@ -28,6 +29,7 @@ import static org.hamcrest.Matchers.greaterThan;
 public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
 
     private static final String MAP_NAME = "enterpriseMap";
+
     private HazelcastInstance hazelcastInstance;
 
     @Before
@@ -53,7 +55,7 @@ public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
         int testDurationSeconds = 30;
 
         long deadLine = System.currentTimeMillis() + (testDurationSeconds * 1000);
-        IEnterpriseMap map = (IEnterpriseMap) hazelcastInstance.getMap(MAP_NAME);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(hazelcastInstance, MAP_NAME);
         for (int i = 0; System.currentTimeMillis() < deadLine; i++) {
             map.put(i, i);
         }
@@ -61,21 +63,7 @@ public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
                 findMetricWithGivenStringAndSuffix(MAP_NAME, ".forceEvictionCount"));
         assertThat(forceEvictionCount.read(), greaterThan(0L));
 
-        //intentionally no other assert. It's enough when the test does not throw NativeOutOfMemoryError
-    }
-
-    private MetricsRegistry getMetricsRegistry() {
-        return ((HazelcastInstanceProxy) hazelcastInstance).getOriginal().node.nodeEngine.getMetricsRegistry();
-    }
-
-    private String findMetricWithGivenStringAndSuffix(String string, String suffix) {
-        MetricsRegistry registry = getMetricsRegistry();
-        for (String name : registry.getNames()) {
-            if (name.endsWith(suffix) && name.contains(string)) {
-                return name;
-            }
-        }
-        throw new IllegalArgumentException("Could not find a metric with the given suffix " + suffix);
+        // intentionally no other assert, it's enough when the test does not throw NativeOutOfMemoryError
     }
 
     private MapConfig createMapConfig() {
@@ -92,4 +80,17 @@ public class IEnterpriseMapForcedEvictionTest extends HazelcastTestSupport {
         return mapConfig;
     }
 
+    private MetricsRegistry getMetricsRegistry() {
+        return ((HazelcastInstanceProxy) hazelcastInstance).getOriginal().node.nodeEngine.getMetricsRegistry();
+    }
+
+    private String findMetricWithGivenStringAndSuffix(String string, String suffix) {
+        MetricsRegistry registry = getMetricsRegistry();
+        for (String name : registry.getNames()) {
+            if (name.endsWith(suffix) && name.contains(string)) {
+                return name;
+            }
+        }
+        throw new IllegalArgumentException("Could not find a metric with the given suffix " + suffix);
+    }
 }

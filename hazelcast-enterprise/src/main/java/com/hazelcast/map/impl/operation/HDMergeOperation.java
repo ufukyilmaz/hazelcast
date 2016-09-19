@@ -103,6 +103,7 @@ public class HDMergeOperation extends HDBasePutOperation {
         super.writeInternal(out);
         out.writeObject(mergingEntry);
         out.writeObject(mergePolicy);
+        out.writeBoolean(disableWanReplicationEvent);
     }
 
     @Override
@@ -110,5 +111,6 @@ public class HDMergeOperation extends HDBasePutOperation {
         super.readInternal(in);
         mergingEntry = in.readObject();
         mergePolicy = in.readObject();
+        disableWanReplicationEvent = in.readBoolean();
     }
 }

@@ -23,187 +23,182 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Employee> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     private static final int DEFAULT_TEST_TIMEOUT = 120;
 
     private static TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUp() {
         factory.newHazelcastInstance();
         factory.newHazelcastInstance();
         factory.newHazelcastInstance();
     }
 
     @AfterClass
-    public static void tearDown() throws Exception {
+    public static void tearDown() {
         factory.shutdownAll();
     }
 
-
     @Test
-    public void test_keySet() throws Exception {
+    public void test_keySet() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
         // populate map before construction of query cache.
-        final int count = 111;
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
-        // populate map after construction of query cache.
+        // populate map after construction of query cache
         for (int i = count; i < 2 * count; i++) {
             map.put(i, new Employee(i));
         }
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
 
-
     @Test
-    public void test_keySet_whenIncludeValueFalse() throws Exception {
+    public void test_keySet_whenIncludeValueFalse() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        // populate map before construction of query cache.
-        final int count = 111;
+        // populate map before construction of query cache
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         cache.addIndex("__key", true);
 
-        // populate map after construction of query cache.
+        // populate map after construction of query cache
         for (int i = count; i < 2 * count; i++) {
             map.put(i, new Employee(i));
         }
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("__key >= " + equalsOrBiggerThan), cache);
-
     }
 
-
     @Test
-    public void test_keySet_onRemovedIndexes() throws Exception {
+    public void test_keySet_onRemovedIndexes() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        final int count = 111;
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
         for (int i = 17; i < count; i++) {
             map.remove(i);
         }
 
-        // Just choose arbitrary numbers to prove whether #keySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #keySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("id < " + smallerThan), cache);
-
     }
 
-
     @Test
-    public void test_entrySet() throws Exception {
+    public void test_entrySet() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        // populate map before construction of query cache.
+        // populate map before construction of query cache
         final int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
-        // populate map after construction of query cache.
+        // populate map after construction of query cache
         for (int i = count; i < 2 * count; i++) {
             map.put(i, new Employee(i));
         }
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
 
-
     @Test
-    public void test_entrySet_whenIncludeValueFalse() throws Exception {
+    public void test_entrySet_whenIncludeValueFalse() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        final int count = 111;
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         cache.addIndex("id", true);
 
         for (int i = 17; i < count; i++) {
             map.remove(i);
         }
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 0;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("id < " + smallerThan), cache);
     }
 
     @Test
-    public void test_entrySet_withIndexedKeys_whenIncludeValueFalse() throws Exception {
+    public void test_entrySet_withIndexedKeys_whenIncludeValueFalse() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        final int count = 111;
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         // here adding key index. (key --> integer; value --> Employee)
         cache.addIndex("__key", true);
 
@@ -211,96 +206,92 @@ public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSuppo
             map.remove(i);
         }
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // ust choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
-
     @Test
-    public void test_values() throws Exception {
+    public void test_values() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        // populate map before construction of query cache.
-        final int count = 111;
+        // populate map before construction of query cache
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
-        // populate map after construction of query cache.
+        // populate map after construction of query cache
         for (int i = count; i < 2 * count; i++) {
             map.put(i, new Employee(i));
         }
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
 
     @Test
-    public void test_values_withoutIndex() throws Exception {
+    public void test_values_withoutIndex() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        final int count = 111;
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         for (int i = 17; i < count; i++) {
             map.remove(i);
         }
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
     @Test
-    public void test_values_withoutIndex_whenIncludeValueFalse() throws Exception {
+    public void test_values_withoutIndex_whenIncludeValueFalse()  {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = getInstance();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
-        final int count = 111;
+         int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+         QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         for (int i = 17; i < count; i++) {
             map.remove(i);
         }
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 0;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
-    private void assertKeySetSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertKeySetSizeEventually(final int expectedSize, final Predicate predicate,
+                                            final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -313,7 +304,8 @@ public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSuppo
         assertTrueEventually(task, DEFAULT_TEST_TIMEOUT);
     }
 
-    private void assertEntrySetSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertEntrySetSizeEventually(final int expectedSize, final Predicate predicate,
+                                              final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -326,7 +318,8 @@ public class ClientQueryCacheMethodsWithPredicateTest extends HazelcastTestSuppo
         assertTrueEventually(task, DEFAULT_TEST_TIMEOUT);
     }
 
-    private void assertValuesSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertValuesSizeEventually(final int expectedSize, final Predicate predicate,
+                                            final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {

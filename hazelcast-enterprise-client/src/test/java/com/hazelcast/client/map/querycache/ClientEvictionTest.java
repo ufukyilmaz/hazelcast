@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -60,7 +61,7 @@ public class ClientEvictionTest extends HazelcastTestSupport {
         clientConfig.addQueryCacheConfig(mapName, cacheConfig);
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
 
         // expecting at least populationCount - maxSize + 10 evicted entries according to max size.
         // 10 states an error margin since eviction does not sweep precise number of entries.
@@ -88,5 +89,4 @@ public class ClientEvictionTest extends HazelcastTestSupport {
         int size = cache.size();
         assertTrue("cache size = " + size + ", should be smaller than max size = " + maxSize, size < maxSize + margin);
     }
-
 }

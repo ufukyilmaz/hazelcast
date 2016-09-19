@@ -16,6 +16,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 public class QueryCachePredicateConfigTest extends HazelcastTestSupport {
 
     @Test
-    public void test_whenSqlIsSet() throws Exception {
+    public void test_whenSqlIsSet() {
         String mapName = randomString();
         String cacheName = randomString();
 
@@ -37,7 +38,7 @@ public class QueryCachePredicateConfigTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(cacheConfig);
 
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(node, mapName);
 
         for (int i = 0; i < 15; i++) {
             map.put(i, new Employee(i));
@@ -46,11 +47,10 @@ public class QueryCachePredicateConfigTest extends HazelcastTestSupport {
         QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName);
 
         assertEquals(4, cache.size());
-
     }
 
     @Test
-    public void test_whenClassNameIsSet() throws Exception {
+    public void test_whenClassNameIsSet() {
         String mapName = randomString();
         String cacheName = randomString();
 
@@ -64,7 +64,7 @@ public class QueryCachePredicateConfigTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(cacheConfig);
 
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(node, mapName);
 
         for (int i = 0; i < 15; i++) {
             map.put(i, new Employee(i));
@@ -74,9 +74,4 @@ public class QueryCachePredicateConfigTest extends HazelcastTestSupport {
 
         assertEquals(0, cache.size());
     }
-
-
-
-
-
 }

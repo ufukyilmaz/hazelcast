@@ -28,6 +28,7 @@ import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.impl.NodeEngineImpl;
@@ -44,6 +45,7 @@ import org.mockito.Mockito;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static com.hazelcast.map.impl.EntryViews.createSimpleEntryView;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -53,16 +55,19 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     @Test
     public void testEvent_MERGED() throws Exception {
         HazelcastInstance member = createHazelcastInstance();
         String mapName = randomMapName();
-        IEnterpriseMap map = (IEnterpriseMap) member.getMap(mapName);
-        final QueryCache<Integer, Integer> cqc = map.getQueryCache("cqc", TruePredicate.INSTANCE, true);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(member, mapName);
+        QueryCache<Integer, Integer> cqc = map.getQueryCache("cqc", TRUE_PREDICATE, true);
 
-        final int key = 1;
-        final int existingValue = 1;
-        final int mergingValue = 2;
+        int key = 1;
+        int existingValue = 1;
+        int mergingValue = 2;
 
         map.put(key, existingValue);
 
@@ -76,12 +81,12 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
             @Override
             public void run() throws Exception {
                 Integer currentValue = cqc.get(key);
-                assertEquals(mergingValue, (Object)currentValue);
+                assertEquals(mergingValue, (Object) currentValue);
             }
         });
     }
 
-    protected void executeMergeOperation(HazelcastInstance member, String mapName, int key, int mergedValue) throws Exception {
+    private void executeMergeOperation(HazelcastInstance member, String mapName, int key, int mergedValue) throws Exception {
         Node node = getNode(member);
         NodeEngineImpl nodeEngine = node.nodeEngine;
         OperationServiceImpl operationService = (OperationServiceImpl) nodeEngine.getOperationService();
@@ -89,7 +94,7 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
 
         Data keyData = serializationService.toData(key);
         Data valueData = serializationService.toData(mergedValue);
-        EntryView entryView = createSimpleEntryView(keyData, valueData, Mockito.mock(Record.class));
+        EntryView<Data, Data> entryView = createSimpleEntryView(keyData, valueData, Mockito.mock(Record.class));
 
         MergeOperation mergeOperation = new MergeOperation(mapName, keyData, entryView, new PassThroughMergePolicy());
         int partitionId = nodeEngine.getPartitionService().getPartitionId(key);
@@ -97,13 +102,12 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
         future.get();
     }
 
-
     @Test
     public void testEvent_EXPIRED() throws Exception {
         HazelcastInstance member = createHazelcastInstance();
         String mapName = randomMapName();
-        IEnterpriseMap map = (IEnterpriseMap) member.getMap(mapName);
-        final QueryCache<Integer, Integer> cqc = map.getQueryCache("cqc", TruePredicate.INSTANCE, true);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(member, mapName);
+        final QueryCache<Integer, Integer> cqc = map.getQueryCache("cqc", TRUE_PREDICATE, true);
 
         int key = 1;
         int value = 1;
@@ -121,7 +125,7 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
         latch.await();
         sleepSeconds(1);
 
-        // map#get creates EXPIRED event.
+        // map#get creates EXPIRED event
         map.get(key);
 
         assertTrueEventually(new AssertTask() {
@@ -131,5 +135,4 @@ public class QueryCacheIMapEventHandlingTest extends HazelcastTestSupport {
             }
         });
     }
-
 }

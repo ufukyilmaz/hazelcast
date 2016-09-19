@@ -29,9 +29,7 @@ public class TestSubscriberContext extends NodeSubscriberContext {
         return mapSubscriberRegistry;
     }
 
-
     private class TestMapSubscriberRegistry extends MapSubscriberRegistry {
-
 
         public TestMapSubscriberRegistry(QueryCacheContext context) {
             super(context);
@@ -42,7 +40,6 @@ public class TestSubscriberContext extends NodeSubscriberContext {
             return new TestSubscriberRegistry(getContext(), mapName);
         }
     }
-
 
     private class TestSubscriberRegistry extends SubscriberRegistry {
 
@@ -56,7 +53,6 @@ public class TestSubscriberContext extends NodeSubscriberContext {
         }
     }
 
-
     private class TestSubscriberAccumulatorFactory extends SubscriberAccumulatorFactory {
 
         public TestSubscriberAccumulatorFactory(QueryCacheContext context) {
@@ -69,7 +65,6 @@ public class TestSubscriberContext extends NodeSubscriberContext {
         }
     }
 
-
     private class TestSubscriberAccumulator extends SubscriberAccumulator {
 
         private final Set<Long> lostSequenceNumber = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
@@ -78,7 +73,7 @@ public class TestSubscriberContext extends NodeSubscriberContext {
             super(context, info);
 
             if (enableEventLoss) {
-                // just pick a sequence number to mimic out of order events.
+                // just pick a sequence number to mimic out of order events
                 lostSequenceNumber.add(new Random().nextInt(eventCount) + 1L);
             }
         }
@@ -86,19 +81,15 @@ public class TestSubscriberContext extends NodeSubscriberContext {
         @Override
         protected boolean isNextEvent(Sequenced event) {
             DefaultQueryCacheEventData eventData = (DefaultQueryCacheEventData) event;
-
             if (lostSequenceNumber.remove(event.getSequence())) {
 
-                // create an out of order event by changing actual sequence.
+                // create an out of order event by changing actual sequence
                 DefaultQueryCacheEventData copy = new DefaultQueryCacheEventData(eventData);
                 copy.setSequence(eventData.getSequence() * 2);
 
                 eventData = copy;
-
             }
-
             return super.isNextEvent(eventData);
         }
     }
-
 }

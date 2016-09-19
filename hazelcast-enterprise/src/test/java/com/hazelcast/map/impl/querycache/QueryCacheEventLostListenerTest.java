@@ -5,7 +5,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.EventLostEvent;
@@ -26,12 +25,14 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
+
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheEventLostListenerTest extends HazelcastTestSupport {
 
     @Test
-    public void testListenerNotified_uponEventLoss() throws Exception {
+    public void testListenerNotified_uponEventLoss() {
         String mapName = randomString();
         String queryCacheName = randomString();
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
@@ -52,13 +53,13 @@ public class QueryCacheEventLostListenerTest extends HazelcastTestSupport {
         setTestSequencer(node, 9);
         setTestSequencer(node2, 9);
 
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
-        IMap<Integer, Integer> map2 = node2.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
+        node2.getMap(mapName);
 
-        //set test sequencer to all nodes.
+        // set test sequencer to all nodes
         int count = 30;
 
-        //expecting one lost event per partition.
+        // expecting one lost event per partition
         final CountDownLatch lossCount = new CountDownLatch(1);
         final QueryCache queryCache = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
         queryCache.addEntryListener(new EventLostListener() {
@@ -69,7 +70,6 @@ public class QueryCacheEventLostListenerTest extends HazelcastTestSupport {
             }
         }, false);
 
-
         for (int i = 0; i < count; i++) {
             map.put(i, i);
         }
@@ -79,9 +79,8 @@ public class QueryCacheEventLostListenerTest extends HazelcastTestSupport {
 
     private void setTestSequencer(HazelcastInstance instance, int eventCount) {
         Node node = getNode(instance);
-        MapService service = (MapService) node.getNodeEngine().getService(MapService.SERVICE_NAME);
-        EnterpriseMapServiceContext mapServiceContext
-                = (EnterpriseMapServiceContext) service.getMapServiceContext();
+        MapService service = node.getNodeEngine().getService(MapService.SERVICE_NAME);
+        EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) service.getMapServiceContext();
         QueryCacheContext queryCacheContext = mapServiceContext.getQueryCacheContext();
         queryCacheContext.setSubscriberContext(new TestSubscriberContext(queryCacheContext, eventCount, true));
     }

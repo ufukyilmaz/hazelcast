@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -28,22 +29,22 @@ import static org.junit.Assert.assertTrue;
 public class EvictionTest extends HazelcastTestSupport {
 
     @Test
-    public void testMaxSizeEvictionWorks() throws Exception {
-        final int maxSize = 100;
-        final int populationCount = 500;
+    public void testMaxSizeEvictionWorks() {
+        int maxSize = 100;
+        int populationCount = 500;
 
         String mapName = randomString();
         String cacheName = randomString();
 
         Config config = getConfig(maxSize, mapName, cacheName);
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
 
         // expecting at least populationCount - maxSize - 50 evicted entries according to max size.
         // 50 states an error margin since eviction does not sweep precise number of entries.
         int margin = 50;
         final CountDownLatch evictedCount = new CountDownLatch(populationCount - maxSize - margin);
-        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
         String listener = cache.addEntryListener(new EntryEvictedListener() {
             @Override
             public void entryEvicted(EntryEvent event) {

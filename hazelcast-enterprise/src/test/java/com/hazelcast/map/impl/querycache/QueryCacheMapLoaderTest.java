@@ -24,6 +24,7 @@ import com.hazelcast.core.IEnterpriseMap;
 import com.hazelcast.core.MapStoreAdapter;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.map.QueryCache;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -48,6 +50,8 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> TRUE_PREDICATE = TruePredicate.INSTANCE;
 
     @Test
     public void testQueryCache_includesLoadedEntries_after_get() {
@@ -56,9 +60,9 @@ public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
 
         Config config = getConfig(mapName, cacheName);
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
 
-        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         map.get(1);
         map.get(2);
@@ -72,7 +76,6 @@ public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
         });
     }
 
-
     @Test
     public void testQueryCache_includesLoadedEntries_after_getAll() {
         String mapName = randomString();
@@ -80,9 +83,9 @@ public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
 
         Config config = getConfig(mapName, cacheName);
         HazelcastInstance node = createHazelcastInstance(config);
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
 
-        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         map.getAll(new HashSet<Integer>(asList(1, 2, 3)));
 
@@ -92,7 +95,6 @@ public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
                 assertEquals(3, cache.size());
             }
         });
-
     }
 
     private Config getConfig(String mapName, String cacheName) {
@@ -107,7 +109,6 @@ public class QueryCacheMapLoaderTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(cacheConfig);
         return config;
     }
-
 
     private static class TestMapLoader extends MapStoreAdapter<Integer, Integer> {
 

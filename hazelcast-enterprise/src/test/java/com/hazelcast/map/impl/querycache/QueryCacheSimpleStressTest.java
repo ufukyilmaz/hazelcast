@@ -11,6 +11,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.map.EventLostEvent;
 import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EventLostListener;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -21,11 +22,15 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class QueryCacheSimpleStressTest extends HazelcastTestSupport {
+
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> TRUE_PREDICATE = TruePredicate.INSTANCE;
 
     private final String mapName = randomString();
     private final String cacheName = randomString();
@@ -33,8 +38,7 @@ public class QueryCacheSimpleStressTest extends HazelcastTestSupport {
     private final int numberOfElementsToPut = 10000;
 
     @Before
-    public void setUp() throws Exception {
-
+    public void setUp() {
         EvictionConfig evictionConfig = new EvictionConfig();
         evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
         evictionConfig.setSize(Integer.MAX_VALUE);
@@ -70,7 +74,7 @@ public class QueryCacheSimpleStressTest extends HazelcastTestSupport {
         Thread thread = new Thread(runnable);
         thread.start();
 
-        final QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         queryCache.addEntryListener(new EventLostListener() {
             @Override
             public void eventLost(EventLostEvent event) {
@@ -87,7 +91,7 @@ public class QueryCacheSimpleStressTest extends HazelcastTestSupport {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(3);
         HazelcastInstance[] instances = factory.newInstances(config);
         HazelcastInstance node = instances[0];
-        return (IEnterpriseMap) node.getMap(mapName);
+        return getEnterpriseMap(node, mapName);
     }
 
     private void assertQueryCacheSizeEventually(final int expected, final QueryCache queryCache) {

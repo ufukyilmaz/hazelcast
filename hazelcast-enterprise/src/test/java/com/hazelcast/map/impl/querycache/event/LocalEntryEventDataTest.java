@@ -21,10 +21,10 @@ public class LocalEntryEventDataTest extends HazelcastTestSupport {
 
     private InternalSerializationService serializationService;
 
-    // passed params are type of OBJECT to this event.
+    // passed params are type of OBJECT to this event
     private LocalEntryEventData objectEvent;
 
-    // passed params are type of DATA to this event.
+    // passed params are type of DATA to this event
     private LocalEntryEventData dataEvent;
 
     @Before

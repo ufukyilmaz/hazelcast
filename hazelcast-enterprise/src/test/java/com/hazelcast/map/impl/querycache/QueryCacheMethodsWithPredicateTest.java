@@ -23,180 +23,171 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheMethodsWithPredicateTest extends AbstractQueryCacheTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Employee> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     @Test
-    public void test_keySet_onIndexedField() throws Exception {
-        final int count = 111;
+    public void test_keySet_onIndexedField() {
+        int count = 111;
         populateMap(map, count);
 
         String cacheName = randomString();
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
         populateMap(map, count, 2 * count);
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
 
     @Test
-    public void test_keySet_onIndexedField_whenIncludeValueFalse() throws Exception {
-        final int count = 111;
+    public void test_keySet_onIndexedField_whenIncludeValueFalse() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         cache.addIndex("__key", true);
 
         populateMap(map, count, 2 * count);
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("__key >= " + equalsOrBiggerThan), cache);
-
     }
 
-
     @Test
-    public void test_keySet_onIndexedField_afterRemovalOfSomeIndexes() throws Exception {
-        final int count = 111;
+    public void test_keySet_onIndexedField_afterRemovalOfSomeIndexes() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
         populateMap(map, 17, count);
 
-        // Just choose arbitrary numbers to prove whether #keySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #keySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertKeySetSizeEventually(expectedSize, new SqlPredicate("id < " + smallerThan), cache);
-
     }
 
-
     @Test
-    public void test_entrySet() throws Exception {
-        final int count = 1;
+    public void test_entrySet() {
+        int count = 1;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
         populateMap(map, count, 2 * count);
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 0;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
-
 
     @Test
     public void test_entrySet_whenIncludeValueFalse() throws Exception {
-        final int count = 111;
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         cache.addIndex("id", true);
 
         removeEntriesFromMap(map, 17, count);
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 0;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("id < " + smallerThan), cache);
     }
 
-
     @Test
-    public void test_entrySet_withIndexedKeys_whenIncludeValueFalse() throws Exception {
-        final int count = 111;
+    public void test_entrySet_withIndexedKeys_whenIncludeValueFalse() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
         // here adding key index. (key --> integer; value --> Employee)
         cache.addIndex("__key", true);
 
         removeEntriesFromMap(map, 17, count);
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertEntrySetSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
     @Test
-    public void test_values() throws Exception {
-        final int count = 111;
+    public void test_values() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addIndex("id", true);
 
         populateMap(map, count, 2 * count);
 
-        // Just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working.
+        // just choose arbitrary numbers for querying in order to prove whether #keySet with predicate is correctly working
         int equalsOrBiggerThan = 27;
         int expectedSize = 2 * count - equalsOrBiggerThan;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("id >= " + equalsOrBiggerThan), cache);
-
     }
 
-
     @Test
-    public void test_values_withoutIndex() throws Exception {
-        final int count = 111;
+    public void test_values_withoutIndex() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         removeEntriesFromMap(map, 17, count);
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 17;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
     @Test
-    public void test_values_withoutIndex_whenIncludeValueFalse() throws Exception {
-        final int count = 111;
+    public void test_values_withoutIndex_whenIncludeValueFalse() {
+        int count = 111;
         String cacheName = randomString();
 
         populateMap(map, count);
 
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         removeEntriesFromMap(map, 17, count);
 
-        // Just choose arbitrary numbers to prove whether #entrySet with predicate is working.
+        // just choose arbitrary numbers to prove whether #entrySet with predicate is working
         int smallerThan = 17;
         int expectedSize = 0;
         assertValuesSizeEventually(expectedSize, new SqlPredicate("__key < " + smallerThan), cache);
-
     }
 
-    private void assertKeySetSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertKeySetSizeEventually(final int expectedSize, final Predicate predicate,
+                                            final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -209,7 +200,8 @@ public class QueryCacheMethodsWithPredicateTest extends AbstractQueryCacheTestSu
         assertTrueEventually(task, 10);
     }
 
-    private void assertEntrySetSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertEntrySetSizeEventually(final int expectedSize, final Predicate predicate,
+                                              final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {
@@ -222,7 +214,8 @@ public class QueryCacheMethodsWithPredicateTest extends AbstractQueryCacheTestSu
         assertTrueEventually(task);
     }
 
-    private void assertValuesSizeEventually(final int expectedSize, final Predicate predicate, final QueryCache<Integer, Employee> cache) {
+    private void assertValuesSizeEventually(final int expectedSize, final Predicate predicate,
+                                            final QueryCache<Integer, Employee> cache) {
         AssertTask task = new AssertTask() {
             @Override
             public void run() throws Exception {

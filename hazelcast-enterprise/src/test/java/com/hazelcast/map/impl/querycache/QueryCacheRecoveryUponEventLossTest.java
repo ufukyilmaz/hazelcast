@@ -5,7 +5,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IEnterpriseMap;
-import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
 import com.hazelcast.instance.Node;
 import com.hazelcast.map.EventLostEvent;
@@ -25,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
 
     @Test
-    public void testForceConsistency() throws Exception {
+    public void testForceConsistency() {
         TestHazelcastInstanceFactory instanceFactory = createHazelcastInstanceFactory(3);
 
         String mapName = randomString();
@@ -54,8 +54,8 @@ public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
         setTestSequencer(node, 9);
         setTestSequencer(node2, 9);
 
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) node.getMap(mapName);
-        IMap<Integer, Integer> map2 = node2.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(node, mapName);
+        node2.getMap(mapName);
 
         //set test sequencer to subscribers.
         int count = 30;
@@ -83,15 +83,11 @@ public class QueryCacheRecoveryUponEventLossTest extends HazelcastTestSupport {
         assertTrueEventually(task);
     }
 
-
     private void setTestSequencer(HazelcastInstance instance, int eventCount) {
         Node node = getNode(instance);
         MapService service = node.getNodeEngine().getService(MapService.SERVICE_NAME);
-        EnterpriseMapServiceContext mapServiceContext
-                = (EnterpriseMapServiceContext) service.getMapServiceContext();
+        EnterpriseMapServiceContext mapServiceContext = (EnterpriseMapServiceContext) service.getMapServiceContext();
         QueryCacheContext queryCacheContext = mapServiceContext.getQueryCacheContext();
         queryCacheContext.setSubscriberContext(new TestSubscriberContext(queryCacheContext, eventCount, true));
     }
-
-
 }

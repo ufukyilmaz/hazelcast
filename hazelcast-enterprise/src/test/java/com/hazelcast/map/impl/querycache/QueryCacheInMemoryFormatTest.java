@@ -20,25 +20,25 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
-// keep serial runner, test operates on statics.
+// keep serial runner, test operates on statistics
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class QueryCacheInMemoryFormatTest extends HazelcastTestSupport {
 
     @Test
-    public void testObjectFormat_deserializeOneTime() throws Exception {
+    public void testObjectFormat_deserializeOneTime() {
         int expectedDeserializationCount = 1;
         testInMemoryFormat(InMemoryFormat.OBJECT, expectedDeserializationCount);
     }
 
     @Test
-    public void testBinaryFormat_deserializeMoreTime() throws Exception {
+    public void testBinaryFormat_deserializeMoreTime() {
         int expectedDeserializationCount = 10;
         testInMemoryFormat(InMemoryFormat.BINARY, expectedDeserializationCount);
     }
-
 
     private void testInMemoryFormat(InMemoryFormat inMemoryFormat, int expectedDeserializationCount) {
         SerializableObject.deserializationCount.set(0);
@@ -57,12 +57,11 @@ public class QueryCacheInMemoryFormatTest extends HazelcastTestSupport {
 
         HazelcastInstance node = createHazelcastInstance(config);
 
-        IEnterpriseMap<Integer, SerializableObject> map = (IEnterpriseMap) node.getMap(mapName);
+        IEnterpriseMap<Integer, SerializableObject> map = getEnterpriseMap(node, mapName);
 
         map.put(1, new SerializableObject());
 
         QueryCache<Integer, SerializableObject> cache = map.getQueryCache(cacheName);
-
 
         for (int i = 0; i < 10; i++) {
             cache.get(1);
@@ -71,13 +70,11 @@ public class QueryCacheInMemoryFormatTest extends HazelcastTestSupport {
         assertEquals(expectedDeserializationCount, SerializableObject.deserializationCount.get());
     }
 
-
     private static final class SerializableObject implements Serializable {
 
         private static final AtomicInteger deserializationCount = new AtomicInteger();
 
-        private void readObject(java.io.ObjectInputStream stream)
-                throws IOException, ClassNotFoundException {
+        private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
             deserializationCount.incrementAndGet();
         }
     }

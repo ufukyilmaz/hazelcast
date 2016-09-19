@@ -27,11 +27,11 @@ public class HiDensityNearCacheContext extends NearCacheContext {
 
     private HiDensityStorageInfo storageInfo;
 
-    public HiDensityNearCacheContext(NearCacheContext nearCacheContext,
-                                     HiDensityStorageInfo storageInfo) {
-        super(nearCacheContext.getSerializationService(),
-              nearCacheContext.getNearCacheExecutor(),
-              nearCacheContext.getClassLoader());
+    public HiDensityNearCacheContext(NearCacheContext nearCacheContext, HiDensityStorageInfo storageInfo) {
+        super(null,
+                nearCacheContext.getSerializationService(),
+                nearCacheContext.getNearCacheExecutor(),
+                nearCacheContext.getClassLoader());
         this.storageInfo = storageInfo;
     }
 

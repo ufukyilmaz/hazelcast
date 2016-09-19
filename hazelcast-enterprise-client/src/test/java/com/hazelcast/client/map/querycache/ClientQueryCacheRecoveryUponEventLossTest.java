@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static com.hazelcast.spi.properties.GroupProperty.PARTITION_COUNT;
 import static org.junit.Assert.assertEquals;
 
@@ -34,18 +35,18 @@ public class ClientQueryCacheRecoveryUponEventLossTest extends HazelcastTestSupp
     private TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         factory.shutdownAll();
     }
 
     @Test
-    public void testForceConsistency() throws Exception {
+    public void testForceConsistency() {
         String mapName = randomMapName("map");
         String queryCacheName = randomMapName("cache");
         Config config = new Config();
 
         config.setProperty(PARTITION_COUNT.getName(), "1");
-        HazelcastInstance node = factory.newHazelcastInstance(config);
+        factory.newHazelcastInstance(config);
 
         QueryCacheConfig queryCacheConfig = new QueryCacheConfig(queryCacheName);
         queryCacheConfig.setBatchSize(1111);
@@ -56,8 +57,8 @@ public class ClientQueryCacheRecoveryUponEventLossTest extends HazelcastTestSupp
 
         HazelcastInstance client = factory.newHazelcastClient(clientConfig);
 
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
-        //set test sequencer to subscriber.
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
+        // set test sequencer to subscriber
         int count = 30;
         setTestSequencer(map, 9);
 

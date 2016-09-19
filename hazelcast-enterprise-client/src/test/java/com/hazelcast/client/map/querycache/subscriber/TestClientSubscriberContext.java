@@ -34,11 +34,9 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
         return mapSubscriberRegistry;
     }
 
-
     private class TestMapSubscriberRegistry extends MapSubscriberRegistry {
 
-
-        public TestMapSubscriberRegistry(QueryCacheContext context) {
+        TestMapSubscriberRegistry(QueryCacheContext context) {
             super(context);
         }
 
@@ -48,10 +46,9 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
         }
     }
 
-
     private class TestSubscriberRegistry extends SubscriberRegistry {
 
-        public TestSubscriberRegistry(QueryCacheContext context, String mapName) {
+        TestSubscriberRegistry(QueryCacheContext context, String mapName) {
             super(context, mapName);
         }
 
@@ -61,10 +58,9 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
         }
     }
 
-
     private class TestSubscriberAccumulatorFactory extends SubscriberAccumulatorFactory {
 
-        public TestSubscriberAccumulatorFactory(QueryCacheContext context) {
+        TestSubscriberAccumulatorFactory(QueryCacheContext context) {
             super(context);
         }
 
@@ -74,16 +70,15 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
         }
     }
 
-
     private class TestSubscriberAccumulator extends SubscriberAccumulator {
 
         private final Set<Long> lostSequenceNumber = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
 
-        public TestSubscriberAccumulator(QueryCacheContext context, AccumulatorInfo info) {
+        TestSubscriberAccumulator(QueryCacheContext context, AccumulatorInfo info) {
             super(context, info);
 
             if (allowEventLoss) {
-                // just pick a sequence number to mimic out of order events.
+                // just pick a sequence number to mimic out of order events
                 lostSequenceNumber.add(new Random().nextInt(eventCount) + 1L);
             }
         }
@@ -91,19 +86,16 @@ public class TestClientSubscriberContext extends ClientSubscriberContext {
         @Override
         protected boolean isNextEvent(Sequenced event) {
             DefaultQueryCacheEventData eventData = (DefaultQueryCacheEventData) event;
-
             if (lostSequenceNumber.remove(event.getSequence())) {
 
-                // create an out of order event by changing actual sequence.
+                // create an out of order event by changing actual sequence
                 DefaultQueryCacheEventData copy = new DefaultQueryCacheEventData(eventData);
                 copy.setSequence(eventData.getSequence() * 2);
 
                 eventData = copy;
 
             }
-
             return super.isNextEvent(eventData);
         }
     }
-
 }

@@ -18,6 +18,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
@@ -31,7 +32,7 @@ public class ClientQueryCacheSimpleStressTest extends HazelcastTestSupport {
     private HazelcastInstance instance;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         Hazelcast.newHazelcastInstance();
         Hazelcast.newHazelcastInstance();
         Hazelcast.newHazelcastInstance();
@@ -54,18 +55,14 @@ public class ClientQueryCacheSimpleStressTest extends HazelcastTestSupport {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }
 
-    private <K, V> IEnterpriseMap<K, V> getMap() {
-        return (IEnterpriseMap) instance.getMap(mapName);
-    }
-
     @Test
     public void testStress() throws Exception {
-        final IEnterpriseMap<Integer, Integer> map = getMap();
+        final IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(instance, mapName);
 
         Runnable runnable = new Runnable() {
             @Override

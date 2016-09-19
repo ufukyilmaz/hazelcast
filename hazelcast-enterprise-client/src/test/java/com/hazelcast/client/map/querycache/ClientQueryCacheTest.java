@@ -1,6 +1,5 @@
 package com.hazelcast.client.map.querycache;
 
-
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.test.TestHazelcastFactory;
 import com.hazelcast.config.QueryCacheConfig;
@@ -30,11 +29,15 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheTest extends HazelcastTestSupport {
+
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> TRUE_PREDICATE = TruePredicate.INSTANCE;
 
     private static TestHazelcastFactory factory = new TestHazelcastFactory();
 
@@ -51,44 +54,45 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testQueryCache_whenIncludeValueEnabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void testQueryCache_whenIncludeValueEnabled() {
         boolean includeValue = true;
         testQueryCache(includeValue);
     }
 
     @Test
-    public void testQueryCache_whenIncludeValueDisabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void testQueryCache_whenIncludeValueDisabled() {
         boolean includeValue = false;
         testQueryCache(includeValue);
     }
 
     @Test
-    public void testQueryCache_whenInitialPopulationEnabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void testQueryCache_whenInitialPopulationEnabled() {
         boolean enableInitialPopulation = true;
         int numberOfElementsToBePutToIMap = 1000;
         int expectedSizeOfQueryCache = numberOfElementsToBePutToIMap;
 
-        testWithInitialPopulation(enableInitialPopulation,
-                expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
+        testWithInitialPopulation(enableInitialPopulation, expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
     }
 
     @Test
-    public void testQueryCache_whenInitialPopulationDisabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void testQueryCache_whenInitialPopulationDisabled() {
         boolean enableInitialPopulation = false;
         int numberOfElementsToBePutToIMap = 1000;
         int expectedSizeOfQueryCache = 0;
 
-        testWithInitialPopulation(enableInitialPopulation,
-                expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
+        testWithInitialPopulation(enableInitialPopulation, expectedSizeOfQueryCache, numberOfElementsToBePutToIMap);
     }
 
-
     @Test
-    public void testQueryCache_withLocalListener() throws Exception {
+    public void testQueryCache_withLocalListener() {
         String mapName = randomString();
         String queryCacheName = randomString();
         HazelcastInstance client = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
 
         for (int i = 0; i < 30; i++) {
             map.put(i, i);
@@ -107,7 +111,6 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
                 countRemoveEvent.incrementAndGet();
             }
         }, new SqlPredicate("this > 20"), true);
-
 
         for (int i = 0; i < 30; i++) {
             map.remove(i);
@@ -134,13 +137,11 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         });
     }
 
-
     @Test
-    public void testQueryCacheCleared_afterCalling_IMap_evictAll() throws Exception {
+    public void testQueryCacheCleared_afterCalling_IMap_evictAll() {
         String cacheName = randomString();
-        final IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) getMap();
-        final QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        final IEnterpriseMap<Integer, Integer> map = getMap();
+        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         for (int i = 0; i < 1000; i++) {
             map.put(i, i);
@@ -157,33 +158,11 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertQueryCacheSizeEventually(0, evictAll, queryCache);
     }
 
-    private void assertQueryCacheSizeEventually(final int expected, final IFunction function, final QueryCache queryCache) {
-        AssertTask task = new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                if (function != null) {
-                    function.apply(null);
-                }
-                assertEquals(expected, queryCache.size());
-            }
-        };
-
-        assertTrueEventually(task);
-    }
-
-    private IEnterpriseMap<Integer, Integer> getMap() {
-        String mapName = randomString();
-        HazelcastInstance client = factory.newHazelcastClient();
-        return (IEnterpriseMap) client.getMap(mapName);
-    }
-
-
     @Test
-    public void testQueryCacheCleared_afterCalling_IMap_clear() throws Exception {
+    public void testQueryCacheCleared_afterCalling_IMap_clear() {
         String cacheName = randomString();
         final IEnterpriseMap<Integer, Integer> map = getMap();
-        final QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(cacheName, TruePredicate.INSTANCE, false);
+        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, false);
 
         for (int i = 0; i < 1000; i++) {
             map.put(i, i);
@@ -201,20 +180,18 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertQueryCacheSizeEventually(0, clear, queryCache);
     }
 
-
     @Test
-    public void testDestroy_emptiesQueryCache() throws Exception {
+    public void testDestroy_emptiesQueryCache() {
         int entryCount = 1000;
         final CountDownLatch numberOfAddEvents = new CountDownLatch(entryCount);
         String cacheName = randomString();
         IEnterpriseMap<Integer, Integer> map = getMap();
-        QueryCache<Integer, Integer> queryCache
-                = map.getQueryCache(cacheName, new EntryAddedListener<Integer, Integer>() {
+        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, new EntryAddedListener<Integer, Integer>() {
             @Override
             public void entryAdded(EntryEvent<Integer, Integer> event) {
                 numberOfAddEvents.countDown();
             }
-        }, TruePredicate.INSTANCE, false);
+        }, TRUE_PREDICATE, false);
 
         for (int i = 0; i < entryCount; i++) {
             map.put(i, i);
@@ -227,20 +204,18 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         assertEquals(0, queryCache.size());
     }
 
-
-    private void testWithInitialPopulation(boolean enableInitialPopulation,
-                                           int expectedSize, int numberOfElementsToPut) {
+    private void testWithInitialPopulation(boolean enableInitialPopulation, int expectedSize, int numberOfElementsToPut) {
         String mapName = randomString();
         String cacheName = randomName();
 
         ClientConfig config = getConfig(cacheName, enableInitialPopulation, mapName);
         HazelcastInstance client = factory.newHazelcastClient(config);
 
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
         for (int i = 0; i < numberOfElementsToPut; i++) {
             map.put(i, i);
         }
-        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        QueryCache<Integer, Integer> queryCache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
 
         assertEquals(expectedSize, queryCache.size());
     }
@@ -250,12 +225,12 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         String queryCacheName = randomString();
 
         HazelcastInstance client = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
 
         for (int i = 0; i < 50; i++) {
             map.put(i, i);
         }
-        Predicate predicate = new SqlPredicate("this > 5 AND this < 100");
+        Predicate<Integer, Integer> predicate = new SqlPredicate("this > 5 AND this < 100");
         QueryCache<Integer, Integer> cache = map.getQueryCache(queryCacheName, predicate, includeValue);
 
         for (int i = 50; i < 100; i++) {
@@ -287,6 +262,12 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
         return clientConfig;
     }
 
+    private IEnterpriseMap<Integer, Integer> getMap() {
+        String mapName = randomString();
+        HazelcastInstance client = factory.newHazelcastClient();
+        return getEnterpriseMap(client, mapName);
+    }
+
     private void assertQueryCacheSize(final int expected, final QueryCache cache) {
         assertTrueEventually(new AssertTask() {
             @Override
@@ -294,5 +275,19 @@ public class ClientQueryCacheTest extends HazelcastTestSupport {
                 assertEquals(expected, cache.size());
             }
         }, 20);
+    }
+
+    private void assertQueryCacheSizeEventually(final int expected, final IFunction<?, ?> function, final QueryCache queryCache) {
+        AssertTask task = new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                if (function != null) {
+                    function.apply(null);
+                }
+                assertEquals(expected, queryCache.size());
+            }
+        };
+
+        assertTrueEventually(task);
     }
 }

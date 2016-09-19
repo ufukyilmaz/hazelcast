@@ -9,6 +9,7 @@ import com.hazelcast.map.QueryCache;
 import com.hazelcast.map.listener.EntryAddedListener;
 import com.hazelcast.map.listener.EntryRemovedListener;
 import com.hazelcast.mapreduce.helpers.Employee;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.SqlPredicate;
 import com.hazelcast.query.TruePredicate;
 import com.hazelcast.test.AssertTask;
@@ -23,6 +24,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.map.HDTestSupport.getEnterpriseMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,30 +33,36 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
 
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Employee> TRUE_PREDICATE = TruePredicate.INSTANCE;
+
+    @SuppressWarnings("unchecked")
+    private static final Predicate<Integer, Integer> INTEGER_TRUE_PREDICATE = TruePredicate.INSTANCE;
+
     private static TestHazelcastFactory factory = new TestHazelcastFactory();
 
     @BeforeClass
-    public static void setUp() throws Exception {
+    public static void setUp() {
         factory.newHazelcastInstance();
         factory.newHazelcastInstance();
         factory.newHazelcastInstance();
     }
 
     @AfterClass
-    public static void tearDown() throws Exception {
+    public static void tearDown() {
         factory.shutdownAll();
     }
 
     @Test
-    public void shouldReceiveEvent_whenListening_withPredicate() throws Exception {
+    public void shouldReceiveEvent_whenListening_withPredicate() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
         CountDownLatch numberOfCaughtEvents = new CountDownLatch(10);
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
         cache.addEntryListener(new QueryCacheAdditionListener(numberOfCaughtEvents), new SqlPredicate("id > 100"), true);
 
         final int putCount = 111;
@@ -63,51 +71,48 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         }
 
         assertOpenEventually(numberOfCaughtEvents, 10);
-
     }
 
-
     @Test
-    public void shouldReceiveEvent_whenListeningKey_withPredicate() throws Exception {
+    public void shouldReceiveEvent_whenListeningKey_withPredicate() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
 
         CountDownLatch numberOfCaughtEvents = new CountDownLatch(1);
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
-        final int keyToListen = 109;
-        cache.addEntryListener(new QueryCacheAdditionListener(numberOfCaughtEvents),
-                new SqlPredicate("id > 100"), keyToListen, true);
+        QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
+        int keyToListen = 109;
+        cache.addEntryListener(new QueryCacheAdditionListener(numberOfCaughtEvents), new SqlPredicate("id > 100"), keyToListen,
+                true);
 
-        final int putCount = 111;
+        int putCount = 111;
         for (int i = 0; i < putCount; i++) {
             map.put(i, new Employee(i));
         }
 
         assertOpenEventually(numberOfCaughtEvents, 10);
-
     }
 
     @Test
-    public void shouldReceiveEvent_whenListeningKey_withMultipleListener() throws Exception {
+    public void shouldReceiveEvent_whenListeningKey_withMultipleListener() {
         String mapName = randomString();
         String cacheName = randomString();
 
         HazelcastInstance instance = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Employee> map = (IEnterpriseMap) instance.getMap(mapName);
+        IEnterpriseMap<Integer, Employee> map = getEnterpriseMap(instance, mapName);
 
         CountDownLatch additionCount = new CountDownLatch(2);
         CountDownLatch removalCount = new CountDownLatch(2);
-        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
-        final int keyToListen = 109;
+        final QueryCache<Integer, Employee> cache = map.getQueryCache(cacheName, TRUE_PREDICATE, true);
+        int keyToListen = 109;
         cache.addEntryListener(new QueryCacheAdditionListener(additionCount), new SqlPredicate("id > 100"), keyToListen, true);
         cache.addEntryListener(new QueryCacheRemovalListener(removalCount), new SqlPredicate("id > 100"), keyToListen, true);
 
-        // populate map before construction of query cache.
-        final int count = 111;
+        // populate map before construction of query cache
+        int count = 111;
         for (int i = 0; i < count; i++) {
             map.put(i, new Employee(i));
         }
@@ -134,17 +139,18 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         assertTrueEventually(task);
         assertOpenEventually(cache.size() + "", additionCount, 10);
         assertOpenEventually(cache.size() + "", removalCount, 10);
-
     }
 
     @Test
-    public void shouldReceiveValue_whenIncludeValue_enabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void shouldReceiveValue_whenIncludeValue_enabled() {
         boolean includeValue = true;
         testIncludeValue(includeValue);
     }
 
     @Test
-    public void shouldNotReceiveValue_whenIncludeValue_disabled() throws Exception {
+    @SuppressWarnings("ConstantConditions")
+    public void shouldNotReceiveValue_whenIncludeValue_disabled() {
         boolean includeValue = false;
         testIncludeValue(includeValue);
     }
@@ -154,9 +160,9 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         String cacheName = randomString();
 
         HazelcastInstance client = factory.newHazelcastClient();
-        IEnterpriseMap<Integer, Integer> map = (IEnterpriseMap) client.getMap(mapName);
+        IEnterpriseMap<Integer, Integer> map = getEnterpriseMap(client, mapName);
 
-        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, TruePredicate.INSTANCE, true);
+        final QueryCache<Integer, Integer> cache = map.getQueryCache(cacheName, INTEGER_TRUE_PREDICATE, true);
         final TestIncludeValueListener listener = new TestIncludeValueListener();
         cache.addEntryListener(listener, includeValue);
 
@@ -189,12 +195,11 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         }
     }
 
-
     private class QueryCacheAdditionListener implements EntryAddedListener {
 
         private final CountDownLatch numberOfCaughtEvents;
 
-        public QueryCacheAdditionListener(CountDownLatch numberOfCaughtEvents) {
+        QueryCacheAdditionListener(CountDownLatch numberOfCaughtEvents) {
             this.numberOfCaughtEvents = numberOfCaughtEvents;
         }
 
@@ -204,12 +209,11 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
         }
     }
 
-
     private class QueryCacheRemovalListener implements EntryRemovedListener {
 
         private final CountDownLatch numberOfCaughtEvents;
 
-        public QueryCacheRemovalListener(CountDownLatch numberOfCaughtEvents) {
+        QueryCacheRemovalListener(CountDownLatch numberOfCaughtEvents) {
             this.numberOfCaughtEvents = numberOfCaughtEvents;
         }
 
@@ -218,6 +222,4 @@ public class ClientQueryCacheListenerTest extends HazelcastTestSupport {
             numberOfCaughtEvents.countDown();
         }
     }
-
-
 }

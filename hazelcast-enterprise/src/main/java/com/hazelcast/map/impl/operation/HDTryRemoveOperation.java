@@ -76,4 +76,9 @@ public class HDTryRemoveOperation extends HDBaseRemoveOperation {
         super.readInternal(in);
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.TRY_REMOVE;
+    }
+
 }

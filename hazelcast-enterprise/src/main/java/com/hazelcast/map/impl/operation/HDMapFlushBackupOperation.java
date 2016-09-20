@@ -20,4 +20,9 @@ public class HDMapFlushBackupOperation extends HDMapOperation implements BackupO
     protected void runInternal() {
         recordStore.softFlush();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.FLUSH_BACKUP;
+    }
 }

@@ -43,4 +43,9 @@ public class HDMapFetchEntriesOperation extends HDMapOperation {
         out.writeInt(lastTableIndex);
         out.writeInt(fetchSize);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.FETCH_ENTRIES;
+    }
 }

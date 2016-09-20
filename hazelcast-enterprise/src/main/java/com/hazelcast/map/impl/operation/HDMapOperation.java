@@ -282,4 +282,8 @@ public abstract class HDMapOperation extends MapOperation {
             }
         }
     }
+
+    public final int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
 }

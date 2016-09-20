@@ -64,4 +64,9 @@ public class HDContainsValueOperation extends HDMapOperation implements Partitio
         super.readInternal(in);
         testValue = in.readData();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.CONTAINS_VALUE;
+    }
 }

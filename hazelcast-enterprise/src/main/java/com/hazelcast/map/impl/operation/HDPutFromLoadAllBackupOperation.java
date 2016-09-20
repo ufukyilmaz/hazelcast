@@ -93,4 +93,9 @@ public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements B
             keyValueSequence = tmpKeyValueSequence;
         }
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_FROM_LOAD_ALL_BACKUP;
+    }
 }

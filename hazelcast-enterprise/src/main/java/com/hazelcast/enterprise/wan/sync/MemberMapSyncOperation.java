@@ -4,6 +4,7 @@ import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.map.impl.EntryViews;
 import com.hazelcast.map.impl.PartitionContainer;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
@@ -91,5 +92,15 @@ public class MemberMapSyncOperation extends MapOperation implements ReadonlyOper
         super.readInternal(in);
         this.wanReplicationName = in.readUTF();
         this.targetGroupName = in.readUTF();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MEMBER_MAP_SYNC;
     }
 }

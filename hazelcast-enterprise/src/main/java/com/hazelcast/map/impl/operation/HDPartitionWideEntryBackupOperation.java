@@ -95,4 +95,9 @@ public class HDPartitionWideEntryBackupOperation extends AbstractHDMultipleEntry
         super.writeInternal(out);
         out.writeObject(backupProcessor);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PARTITION_WIDE_ENTRY_BACKUP;
+    }
 }

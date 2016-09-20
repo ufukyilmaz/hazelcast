@@ -137,4 +137,9 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
         }
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MULTIPLE_ENTRY;
+    }
+
 }

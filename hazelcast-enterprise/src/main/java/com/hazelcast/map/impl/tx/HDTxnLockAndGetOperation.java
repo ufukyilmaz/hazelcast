@@ -16,6 +16,7 @@
 
 package com.hazelcast.map.impl.tx;
 
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.HDLockAwareOperation;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.nio.ObjectDataInput;
@@ -97,5 +98,10 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
                 + "timeout=" + getWaitTimeout()
                 + ", thread=" + getThreadId()
                 + '}');
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.TXN_LOCK_AND_GET;
     }
 }

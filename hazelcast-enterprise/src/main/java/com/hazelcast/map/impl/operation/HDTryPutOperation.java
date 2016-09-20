@@ -48,4 +48,9 @@ public class HDTryPutOperation extends HDBasePutOperation {
         return true;
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.TRY_PUT;
+    }
+
 }

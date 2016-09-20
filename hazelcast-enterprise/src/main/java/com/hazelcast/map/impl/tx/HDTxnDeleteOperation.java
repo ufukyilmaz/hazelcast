@@ -16,6 +16,7 @@
 
 package com.hazelcast.map.impl.tx;
 
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDRemoveBackupOperation;
 import com.hazelcast.map.impl.record.Record;
@@ -139,5 +140,10 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
                 + ", successful=" + successful
                 + ", ownerUuid='" + ownerUuid + '\''
                 + '}');
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.TXN_DELETE;
     }
 }

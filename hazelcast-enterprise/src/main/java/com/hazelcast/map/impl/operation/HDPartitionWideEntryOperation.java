@@ -148,4 +148,9 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
         out.writeObject(entryProcessor);
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PARTITION_WIDE_ENTRY;
+    }
+
 }

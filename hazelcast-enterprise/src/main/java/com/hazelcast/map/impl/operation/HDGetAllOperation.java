@@ -86,4 +86,9 @@ public class HDGetAllOperation extends HDMapOperation implements ReadonlyOperati
             }
         }
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.GET_ALL;
+    }
 }

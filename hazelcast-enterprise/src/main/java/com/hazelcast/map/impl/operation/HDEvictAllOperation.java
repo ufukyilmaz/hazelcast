@@ -109,4 +109,9 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
         super.readInternal(in);
         numberOfEvictedEntries = in.readInt();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.EVICT_ALL;
+    }
 }

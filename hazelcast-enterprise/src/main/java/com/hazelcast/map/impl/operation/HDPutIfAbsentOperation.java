@@ -54,4 +54,9 @@ public class HDPutIfAbsentOperation extends HDBasePutOperation {
     public boolean shouldBackup() {
         return successful && recordStore.getRecord(dataKey) != null;
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_IF_ABSENT;
+    }
 }

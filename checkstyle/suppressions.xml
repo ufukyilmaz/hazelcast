@@ -24,4 +24,10 @@
     <!-- Hot restart module -->
     <suppress checks="VisibilityModifier|InnerAssignment" files="com/hazelcast/spi/hotrestart/impl" />
     <suppress checks="OuterTypeNumber" files="com/hazelcast/internal/util/collection/AbstractConcurrentArrayQueue\.java"/>
+
+    <!-- SerializerHook -->
+    <suppress checks="MethodCount|MethodLength|ReturnCount|AnonInnerLength" files="SerializerHook\.java$"/>
+    <suppress checks="CyclomaticComplexityCheck|ClassFanOutComplexityCheck|ClassDataAbstractionCoupling"
+              files="SerializerHook\.java$"/>
+
 </suppressions>

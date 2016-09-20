@@ -49,11 +49,6 @@ public class HDRemoveOperation extends HDBaseRemoveOperation implements Identifi
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.REMOVE;
     }

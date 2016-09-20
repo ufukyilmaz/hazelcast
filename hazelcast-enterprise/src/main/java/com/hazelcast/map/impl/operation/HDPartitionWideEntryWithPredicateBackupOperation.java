@@ -51,4 +51,9 @@ public class HDPartitionWideEntryWithPredicateBackupOperation extends HDPartitio
         super.writeInternal(out);
         out.writeObject(predicate);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PARTITION_WIDE_PREDICATE_ENTRY_BACKUP;
+    }
 }

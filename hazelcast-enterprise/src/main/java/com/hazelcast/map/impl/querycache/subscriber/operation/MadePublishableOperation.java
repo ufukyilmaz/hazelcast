@@ -4,6 +4,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
@@ -76,5 +77,15 @@ public class MadePublishableOperation extends MapOperation {
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
         cacheName = in.readUTF();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MADE_PUBLISHABLE;
     }
 }

@@ -36,4 +36,9 @@ public class HDLoadMapOperation extends HDMapOperation {
         super.readInternal(in);
         replaceExistingValues = in.readBoolean();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.LOAD_MAP;
+    }
 }

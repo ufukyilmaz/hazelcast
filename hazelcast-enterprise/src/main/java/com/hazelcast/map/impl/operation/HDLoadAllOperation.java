@@ -132,4 +132,9 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
         sb.append("HDLoadAllOperation{");
         sb.append("replaceExistingValues=" + replaceExistingValues + '}');
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.LOAD_ALL;
+    }
 }

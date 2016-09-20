@@ -45,4 +45,9 @@ public class HDClearBackupOperation extends HDMapOperation implements BackupOper
     public void afterRun() throws Exception {
         disposeDeferredBlocks();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.CLEAR_BACKUP;
+    }
 }

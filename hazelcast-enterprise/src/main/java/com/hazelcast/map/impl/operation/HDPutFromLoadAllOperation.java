@@ -170,4 +170,9 @@ public class HDPutFromLoadAllOperation extends HDMapOperation implements Partiti
             keyValueSequence = tmpKeyValueSequence;
         }
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_FROM_LOAD_ALL;
+    }
 }

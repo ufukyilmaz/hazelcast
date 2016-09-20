@@ -210,4 +210,9 @@ public class HDLocalMapStatsOperation extends HDMapOperation
     protected void readInternal(ObjectDataInput in) throws IOException {
         throw new UnsupportedOperationException("This is a local operation");
     }
+
+    @Override
+    public int getId() {
+        throw new UnsupportedOperationException("This is a local operation");
+    }
 }

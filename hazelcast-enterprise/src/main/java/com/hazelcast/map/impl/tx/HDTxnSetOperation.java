@@ -19,6 +19,7 @@ package com.hazelcast.map.impl.tx;
 import com.hazelcast.core.EntryEventType;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.MapServiceContext;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
 import com.hazelcast.map.impl.operation.HDPutBackupOperation;
 import com.hazelcast.map.impl.record.Record;
@@ -148,5 +149,10 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
                 + ", shouldBackup=" + shouldBackup
                 + ", ownerUuid='" + ownerUuid + '\''
                 + '}');
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.TXN_SET;
     }
 }

@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.query.MapQueryEngine;
 import com.hazelcast.map.impl.query.QueryResult;
@@ -245,6 +246,16 @@ public class PublisherCreateOperation extends MapOperation {
     private static Collection<Object> getResult(List<Future<Object>> lsFutures) {
         return returnWithDeadline(lsFutures, ACCUMULATOR_READ_OPERATION_TIMEOUT_MINUTES,
                 TimeUnit.MINUTES, FutureUtil.RETHROW_EVERYTHING);
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUBLISHER_CREATE;
     }
 
 }

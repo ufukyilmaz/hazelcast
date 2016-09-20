@@ -69,7 +69,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         this.hasMapListener = mapEventPublisher.hasEventListener(name);
         this.hasWanReplication = hasWanReplication();
         this.hasBackups = hasBackups();
-        this.hasInvalidation = mapContainer.isInvalidationEnabled();
+        this.hasInvalidation = mapContainer.hasInvalidationListener();
 
         if (hasBackups) {
             this.backupRecordInfos = new ArrayList<RecordInfo>(mapEntries.size());

@@ -34,8 +34,6 @@ public class HDClearBackupOperation extends HDMapOperation implements BackupOper
 
     @Override
     protected void runInternal() {
-        clearLocalNearCache();
-
         if (recordStore != null) {
             recordStore.clear();
         }

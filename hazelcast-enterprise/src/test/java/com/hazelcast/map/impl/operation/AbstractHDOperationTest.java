@@ -11,8 +11,8 @@ import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
-import com.hazelcast.map.impl.nearcache.NearCacheInvalidator;
 import com.hazelcast.map.impl.nearcache.NearCacheProvider;
+import com.hazelcast.map.impl.nearcache.invalidation.NearCacheInvalidator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -25,7 +25,6 @@ import com.hazelcast.spi.partition.IPartitionService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.OngoingStubbing;
 
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT;
@@ -80,7 +79,7 @@ abstract class AbstractHDOperationTest {
         when(mapContainer.getWanReplicationPublisher()).thenReturn(null);
         when(mapContainer.getMapConfig()).thenReturn(mapConfig);
         when(mapContainer.getEvictor()).thenReturn(hdEvictor);
-        when(mapContainer.isInvalidationEnabled()).thenReturn(true);
+        when(mapContainer.hasInvalidationListener()).thenReturn(true);
 
         MapDataStore mapDataStore = mock(MapDataStore.class);
 
@@ -274,12 +273,12 @@ abstract class AbstractHDOperationTest {
      */
     @SuppressWarnings("unchecked")
     void verifyNearCacheInvalidatorAfterOperation() {
-        ArgumentCaptor<List<Data>> keysCaptor = ArgumentCaptor.forClass((Class) List.class);
-        verify(nearCacheInvalidator, times(1)).invalidate(eq(getMapName()), keysCaptor.capture(), anyString());
+        final int itemCount = getItemCount();
+        ArgumentCaptor<Data> keysCaptor = ArgumentCaptor.forClass((Class) Data.class);
+        verify(nearCacheInvalidator, times(itemCount)).invalidate(keysCaptor.capture(), eq(getMapName()), anyString());
         verifyNoMoreInteractions(nearCacheInvalidator);
 
-        List<Data> keys = keysCaptor.getAllValues().get(0);
-        assertEquals("NearCacheInvalidator should have received all keys", getItemCount(), keys.size());
+        assertEquals("NearCacheInvalidator should have received all keys", itemCount, keysCaptor.getAllValues().size());
     }
 
     /**

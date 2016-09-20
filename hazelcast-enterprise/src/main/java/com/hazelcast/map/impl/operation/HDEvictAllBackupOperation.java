@@ -21,8 +21,6 @@ public class HDEvictAllBackupOperation extends HDMapOperation implements BackupO
 
     @Override
     public void runInternal() {
-        clearLocalNearCache();
-
         if (recordStore != null) {
             recordStore.evictAll(true);
         }

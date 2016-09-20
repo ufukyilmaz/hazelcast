@@ -33,6 +33,15 @@ import static com.hazelcast.core.EntryEventType.MERGED;
 
 public class HDMergeOperation extends HDBasePutOperation {
 
+    /**
+     * This is a flag to understand if the MergeOperation is created by a WAN event and setting
+     * {@link #disableWanReplicationEvent}.
+     * It's needed to not to break backward compatibility by adding {@link #disableWanReplicationEvent}
+     * to {@link #writeInternal(ObjectDataOutput)} and {@link #readInternal(ObjectDataInput)} methods.
+     */
+    private static final long WAN_TTL = -999L;
+    private static final long DEFAULT_TTL = -1L;
+
     private MapMergePolicy mergePolicy;
     private EntryView<Data, Data> mergingEntry;
     private boolean merged;
@@ -100,6 +109,9 @@ public class HDMergeOperation extends HDBasePutOperation {
 
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
+        if (disableWanReplicationEvent) {
+            ttl = WAN_TTL;
+        }
         super.writeInternal(out);
         out.writeObject(mergingEntry);
         out.writeObject(mergePolicy);
@@ -110,5 +122,10 @@ public class HDMergeOperation extends HDBasePutOperation {
         super.readInternal(in);
         mergingEntry = in.readObject();
         mergePolicy = in.readObject();
+        if (ttl == WAN_TTL) {
+            disableWanReplicationEvent = true;
+            //reset ttl to its default value
+            ttl = DEFAULT_TTL;
+        }
     }
 }

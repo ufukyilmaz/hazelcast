@@ -79,4 +79,9 @@ public class HDReplaceIfSameOperation extends HDBasePutOperation {
         expect = in.readData();
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.REPLACE_IF_SAME;
+    }
+
 }

@@ -71,4 +71,9 @@ public class HDMultipleEntryWithPredicateOperation extends HDMultipleEntryOperat
 
         predicate = in.readObject();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MULTIPLE_ENTRY_PREDICATE;
+    }
 }

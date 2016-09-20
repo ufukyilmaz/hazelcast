@@ -73,11 +73,6 @@ public class HDRemoveBackupOperation extends HDKeyBasedMapOperation implements B
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.REMOVE_BACKUP;
     }

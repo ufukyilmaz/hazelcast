@@ -75,4 +75,9 @@ public class HDGetEntryViewOperation extends HDKeyBasedMapOperation implements R
     public Object getResponse() {
         return result;
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.GET_ENTRY_VIEW;
+    }
 }

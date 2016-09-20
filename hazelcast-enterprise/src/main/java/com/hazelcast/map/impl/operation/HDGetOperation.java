@@ -74,11 +74,6 @@ public final class HDGetOperation extends HDKeyBasedMapOperation
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.GET;
     }

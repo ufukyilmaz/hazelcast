@@ -187,4 +187,9 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
         super.readInternal(in);
         mapEntries = in.readObject();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_ALL;
+    }
 }

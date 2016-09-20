@@ -54,4 +54,9 @@ public class HDReplaceOperation extends HDBasePutOperation {
     public Object getResponse() {
         return dataOldValue;
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.REPLACE;
+    }
 }

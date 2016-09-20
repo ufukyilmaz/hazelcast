@@ -113,4 +113,9 @@ public class HDMergeOperation extends HDBasePutOperation {
         mergePolicy = in.readObject();
         disableWanReplicationEvent = in.readBoolean();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MERGE;
+    }
 }

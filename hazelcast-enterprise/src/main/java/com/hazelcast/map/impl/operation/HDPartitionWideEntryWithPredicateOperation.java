@@ -71,4 +71,9 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
                 + "', predicate='" + predicate.toString()
                 + "'}");
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PARTITION_WIDE_PREDICATE_ENTRY;
+    }
 }

@@ -257,4 +257,9 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         super.writeInternal(out);
         out.writeObject(entryProcessor);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.ENTRY;
+    }
 }

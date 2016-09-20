@@ -27,4 +27,9 @@ public class HDPutTransientOperation extends HDBasePutOperation {
         sendResponse(null);
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_TRANSIENT;
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
@@ -95,5 +96,15 @@ public class DestroyQueryCacheOperation extends MapOperation {
 
     private EnterpriseMapServiceContext getEnterpriseMapServiceContext() {
         return (EnterpriseMapServiceContext) mapService.getMapServiceContext();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.DESTROY_QUERY_CACHE;
     }
 }

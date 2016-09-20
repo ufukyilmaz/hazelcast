@@ -107,4 +107,9 @@ public class HDEvictOperation extends HDLockAwareOperation implements MutatingOp
         super.readInternal(in);
         asyncBackup = in.readBoolean();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.EVICT;
+    }
 }

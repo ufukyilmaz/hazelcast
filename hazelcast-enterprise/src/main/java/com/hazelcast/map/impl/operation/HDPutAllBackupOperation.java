@@ -97,4 +97,9 @@ public class HDPutAllBackupOperation extends HDMapOperation implements Partition
             recordInfos.add(recordInfo);
         }
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_ALL_BACKUP;
+    }
 }

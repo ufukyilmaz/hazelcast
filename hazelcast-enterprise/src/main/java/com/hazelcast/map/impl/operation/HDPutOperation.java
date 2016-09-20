@@ -39,11 +39,6 @@ public class HDPutOperation extends HDBasePutOperation implements IdentifiedData
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.PUT;
     }

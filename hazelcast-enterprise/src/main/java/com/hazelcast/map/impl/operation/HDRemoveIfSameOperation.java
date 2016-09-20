@@ -76,4 +76,9 @@ public class HDRemoveIfSameOperation extends HDBaseRemoveOperation {
         super.readInternal(in);
         testValue = in.readData();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.REMOVE_IF_SAME;
+    }
 }

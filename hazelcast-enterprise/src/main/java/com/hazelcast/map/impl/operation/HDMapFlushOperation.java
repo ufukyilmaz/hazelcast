@@ -52,4 +52,9 @@ public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOp
     public Operation getBackupOperation() {
         return new HDMapFlushBackupOperation(name);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.FLUSH;
+    }
 }

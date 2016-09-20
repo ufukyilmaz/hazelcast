@@ -72,4 +72,9 @@ public class HDContainsKeyOperation extends HDKeyBasedMapOperation implements Re
     public void onWaitExpire() {
         sendResponse(new OperationTimeoutException("Cannot read transactionally locked entry!"));
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.CONTAINS_KEY;
+    }
 }

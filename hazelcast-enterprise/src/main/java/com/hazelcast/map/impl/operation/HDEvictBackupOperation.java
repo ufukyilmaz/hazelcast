@@ -57,11 +57,6 @@ public class HDEvictBackupOperation extends HDKeyBasedMapOperation implements Ba
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.EVICT_BACKUP;
     }

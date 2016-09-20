@@ -147,4 +147,9 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
         super.writeInternal(out);
         out.writeObject(entryProcessor);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.ENTRY_BACKUP;
+    }
 }

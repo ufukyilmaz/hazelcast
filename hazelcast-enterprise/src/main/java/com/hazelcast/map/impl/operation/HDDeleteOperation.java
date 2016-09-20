@@ -56,4 +56,9 @@ public class HDDeleteOperation extends HDBaseRemoveOperation {
     public void onWaitExpire() {
         sendResponse(false);
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.DELETE;
+    }
 }

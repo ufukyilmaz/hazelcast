@@ -27,4 +27,9 @@ public class HDEvictAllBackupOperation extends HDMapOperation implements BackupO
             recordStore.evictAll(true);
         }
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.EVICT_ALL_BACKUP;
+    }
 }

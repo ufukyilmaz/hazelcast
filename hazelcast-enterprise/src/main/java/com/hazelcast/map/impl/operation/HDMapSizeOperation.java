@@ -32,4 +32,9 @@ public class HDMapSizeOperation extends HDMapOperation implements PartitionAware
         return size;
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.SIZE;
+    }
+
 }

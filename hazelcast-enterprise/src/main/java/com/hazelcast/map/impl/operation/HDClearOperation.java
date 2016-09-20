@@ -91,4 +91,8 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
         return clearBackupOperation;
     }
 
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.CLEAR;
+    }
 }

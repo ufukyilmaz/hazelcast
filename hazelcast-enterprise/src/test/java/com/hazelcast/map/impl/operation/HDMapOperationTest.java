@@ -68,5 +68,10 @@ public class HDMapOperationTest extends AbstractHDOperationTest {
         @Override
         protected void runInternal() {
         }
+
+        @Override
+        public int getId() {
+            return 0;
+        }
     }
 }

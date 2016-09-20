@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.querycache.subscriber.operation;
 
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.map.impl.operation.MapOperation;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.querycache.accumulator.Accumulator;
@@ -81,5 +82,15 @@ public class ReadAndResetAccumulatorOperation extends MapOperation implements Pa
         EnterpriseMapServiceContext mapServiceContext
                 = (EnterpriseMapServiceContext) mapService.getMapServiceContext();
         return mapServiceContext.getQueryCacheContext();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.READ_AND_RESET_ACCUMULATOR;
     }
 }

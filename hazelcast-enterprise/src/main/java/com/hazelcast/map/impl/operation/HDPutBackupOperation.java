@@ -109,11 +109,6 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
     }
 
     @Override
-    public int getFactoryId() {
-        return EnterpriseMapDataSerializerHook.F_ID;
-    }
-
-    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.PUT_BACKUP;
     }
@@ -144,4 +139,5 @@ public final class HDPutBackupOperation extends HDKeyBasedMapOperation implement
         putTransient = in.readBoolean();
         disableWanReplicationEvent = in.readBoolean();
     }
+
 }

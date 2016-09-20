@@ -59,4 +59,9 @@ public class HDMultipleEntryWithPredicateBackupOperation extends HDMultipleEntry
 
         predicate = in.readObject();
     }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MULTIPLE_ENTRY_PREDICATE_BACKUP;
+    }
 }

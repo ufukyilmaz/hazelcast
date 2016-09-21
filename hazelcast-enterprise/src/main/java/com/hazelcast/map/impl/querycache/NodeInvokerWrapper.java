@@ -61,6 +61,6 @@ public class NodeInvokerWrapper implements InvokerWrapper {
     public void executeOperation(Operation operation) {
         checkNotNull(operation, "operation cannot be null");
 
-        operationService.executeOperation(operation);
+        operationService.execute(operation);
     }
 }

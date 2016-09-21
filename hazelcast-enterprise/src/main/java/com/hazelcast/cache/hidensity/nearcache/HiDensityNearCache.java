@@ -26,21 +26,28 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  */
 public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
-    private final NearCacheManager nearCacheManager;
     private final ILogger logger = Logger.getLogger(getClass());
-    private HazelcastMemoryManager memoryManager;
+    private final NearCacheManager nearCacheManager;
+    private final HazelcastMemoryManager memoryManager;
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig,
-                              NearCacheContext nearCacheContext) {
+    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
         super(name, nearCacheConfig, nearCacheContext);
         this.nearCacheManager = nearCacheContext.getNearCacheManager();
+        this.memoryManager = createMemoryManager();
     }
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig,
-                              NearCacheContext nearCacheContext,
+    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
                               NearCacheRecordStore<K, V> nearCacheRecordStore) {
         super(name, nearCacheConfig, nearCacheContext, nearCacheRecordStore);
         this.nearCacheManager = nearCacheContext.getNearCacheManager();
+        this.memoryManager = createMemoryManager();
+    }
+
+    private HazelcastMemoryManager createMemoryManager() {
+        if (nearCacheRecordStore instanceof HiDensityNearCacheRecordStore) {
+            return ((HiDensityNearCacheRecordStore) nearCacheRecordStore).getMemoryManager();
+        }
+        return null;
     }
 
     @Override
@@ -51,14 +58,6 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
             return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, nearCacheContext);
         }
         return super.createNearCacheRecordStore(nearCacheConfig, nearCacheContext);
-    }
-
-    @Override
-    protected void init() {
-        super.init();
-        if (nearCacheRecordStore instanceof HiDensityNearCacheRecordStore) {
-            memoryManager = ((HiDensityNearCacheRecordStore) nearCacheRecordStore).getMemoryManager();
-        }
     }
 
     @Override

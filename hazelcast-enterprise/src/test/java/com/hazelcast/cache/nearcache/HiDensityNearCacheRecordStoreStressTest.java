@@ -65,7 +65,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(serializationService, null, null);
+        return new NearCacheContext(null, serializationService, null, null);
     }
 
     @Override

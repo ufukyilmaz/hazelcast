@@ -79,7 +79,7 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
 
             if (completableFuture != null
                     && replicationEvent.getAcknowledgeType() == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-                completableFuture.getSafely();
+                completableFuture.join();
             }
         }
     }

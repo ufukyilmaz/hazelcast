@@ -62,7 +62,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                 InternalCompletableFuture future =
                         nodeEngine.getOperationService()
                                 .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
-                future.getSafely();
+                future.join();
             }
 
             WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
@@ -79,7 +79,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
             if (completableFuture != null
                     && replicationEvent.getAcknowledgeType() == WanAcknowledgeType.ACK_ON_OPERATION_COMPLETE) {
-                completableFuture.getSafely();
+                completableFuture.join();
             }
         }
     }

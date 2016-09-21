@@ -79,7 +79,7 @@ public abstract class AbstractWanReplication
         InternalCompletableFuture<Boolean> future = invocationBuilder.setTryCount(1)
                 .setCallTimeout(responseTimeoutMillis)
                 .invoke();
-        return future.getSafely();
+        return future.join();
     }
 
     @Override

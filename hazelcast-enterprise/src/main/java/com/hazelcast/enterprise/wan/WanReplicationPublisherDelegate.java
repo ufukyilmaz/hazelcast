@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Delegating replication publisher implementation
  */
-final class WanReplicationPublisherDelegate
+public final class WanReplicationPublisherDelegate
         implements WanReplicationPublisher {
 
     final String name;

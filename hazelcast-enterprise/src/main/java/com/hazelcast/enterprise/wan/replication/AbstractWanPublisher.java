@@ -101,7 +101,7 @@ public abstract class AbstractWanPublisher
     }
 
     protected int getPartitionId(Object key) {
-        return  node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 
     @Override

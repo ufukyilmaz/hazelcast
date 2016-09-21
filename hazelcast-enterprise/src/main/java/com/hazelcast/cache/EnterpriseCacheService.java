@@ -268,9 +268,9 @@ public class EnterpriseCacheService
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
                 if (operationService.isRunAllowed(op)) {
-                    operationService.runOperationOnCallingThread(op);
+                    operationService.run(op);
                 } else {
-                    operationService.executeOperation(op);
+                    operationService.execute(op);
                     ops.add(op);
                 }
             }
@@ -322,9 +322,9 @@ public class EnterpriseCacheService
                 op.setPartitionId(segment.getPartitionId());
                 op.setNodeEngine(nodeEngine).setService(this);
                 if (operationService.isRunAllowed(op)) {
-                    operationService.runOperationOnCallingThread(op);
+                    operationService.run(op);
                 } else {
-                    operationService.executeOperation(op);
+                    operationService.execute(op);
                     ops.add(op);
                 }
             }

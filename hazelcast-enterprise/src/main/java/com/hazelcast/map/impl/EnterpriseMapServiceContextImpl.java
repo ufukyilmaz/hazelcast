@@ -256,9 +256,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
                     .setService(getService());
 
             if (operationService.isRunAllowed(operation)) {
-                operationService.runOperationOnCallingThread(operation);
+                operationService.run(operation);
             } else {
-                operationService.executeOperation(operation);
+                operationService.execute(operation);
                 operations.add(operation);
             }
         }

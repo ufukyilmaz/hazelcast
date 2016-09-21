@@ -21,7 +21,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
-import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.EvictionPolicy.LRU;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
@@ -38,8 +37,8 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
         nearCacheConfig.setInMemoryFormat(NATIVE);
         nearCacheConfig.getEvictionConfig()
                 .setEvictionPolicy(LRU)
-                .setMaximumSizePolicy(USED_NATIVE_MEMORY_PERCENTAGE)
-                .setSize(90);
+                .setMaximumSizePolicy(ENTRY_COUNT)
+                .setSize(MAX_CACHE_SIZE);
 
         return nearCacheConfig;
     }

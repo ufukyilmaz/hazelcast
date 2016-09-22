@@ -4,8 +4,10 @@ import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.PermissionConfig;
 import com.hazelcast.security.permission.AllPermissions;
 import com.hazelcast.security.permission.AtomicLongPermission;
+import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.ClusterPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
+import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
 import com.hazelcast.security.permission.ListPermission;
 import com.hazelcast.security.permission.LockPermission;
@@ -20,6 +22,7 @@ import com.hazelcast.util.AddressUtil;
 
 import java.util.Set;
 
+@SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public final class SecurityUtil {
 
     private static final ThreadLocal<Boolean> SECURE_CALL = new ThreadLocal<Boolean>();
@@ -58,6 +61,10 @@ public final class SecurityUtil {
                 return new AtomicLongPermission(IdGeneratorService.ATOMIC_LONG_NAME + permissionConfig.getName(), actions);
             case TRANSACTION:
                 return new TransactionPermission();
+            case DURABLE_EXECUTOR_SERVICE:
+                return new DurableExecutorServicePermission(permissionConfig.getName(), actions);
+            case CARDINALITY_ESTIMATOR:
+                return new CardinalityEstimatorPermission(permissionConfig.getName(), actions);
             case ALL:
                 return new AllPermissions();
             default:

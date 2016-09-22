@@ -1,6 +1,7 @@
 package com.hazelcast.security;
 
 import com.hazelcast.cache.ICache;
+import com.hazelcast.cardinality.CardinalityEstimator;
 import com.hazelcast.concurrent.idgen.IdGeneratorService;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.ClientService;
@@ -40,6 +41,7 @@ import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
 import com.hazelcast.security.permission.CachePermission;
+import com.hazelcast.security.permission.CardinalityEstimatorPermission;
 import com.hazelcast.security.permission.CountDownLatchPermission;
 import com.hazelcast.security.permission.DurableExecutorServicePermission;
 import com.hazelcast.security.permission.ExecutorServicePermission;
@@ -331,6 +333,12 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         public ISemaphore getSemaphore(final String name) {
             checkPermission(new SemaphorePermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new ISemaphoreInvocationHandler(instance.getSemaphore(name)));
+        }
+
+        @Override
+        public CardinalityEstimator getCardinalityEstimator(String name) {
+            checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));
         }
 
         @Override
@@ -819,6 +827,28 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public String getStructureName() {
             return "cache";
+        }
+    }
+
+    private class CardinalityEstimatorHandler extends SecureInvocationHandler {
+
+        CardinalityEstimatorHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+
+        @Override
+        public Permission getPermission(Method method, Object[] args) {
+            String action = getAction(method.getName());
+            if (action == null) {
+                return null;
+            }
+
+            return new CardinalityEstimatorPermission(distributedObject.getName(), action);
+        }
+
+        @Override
+        public String getStructureName() {
+            return "cardinalityEstimator";
         }
     }
 }

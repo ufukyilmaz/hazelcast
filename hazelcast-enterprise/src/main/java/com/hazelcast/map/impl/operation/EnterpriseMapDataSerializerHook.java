@@ -23,6 +23,7 @@ import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperation;
+import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
 import com.hazelcast.map.impl.querycache.subscriber.operation.PublisherCreateOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.ReadAndResetAccumulatorOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.SetReadCursorOperation;
@@ -99,6 +100,17 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int DESTROY_QUERY_CACHE = ID.value++;
     public static final int MEMBER_MAP_SYNC = ID.value++;
     public static final int PARTITION_MAP_SYNC = ID.value++;
+    public static final int CLEAR_FACTORY = ID.value++;
+    public static final int CONTAINES_VALUE_FACTORY = ID.value++;
+    public static final int EVICT_ALL_FACTORY = ID.value++;
+    public static final int FLUSH_FACTORY = ID.value++;
+    public static final int GET_ALL_FACTORY = ID.value++;
+    public static final int LOAD_ALL_FACTORY = ID.value++;
+    public static final int MULTIPLE_ENTRY_FACTORY = ID.value++;
+    public static final int PARTITION_WIDE_ENTRY_FACTORY = ID.value++;
+    public static final int PARTITION_WIDE_PREDICATE_ENTRY_FACTORY = ID.value++;
+    public static final int SIZE_FACTORY = ID.value++;
+    public static final int MADE_PUBLISHABLE_FACTORY = ID.value++;
 
     private static final int LEN = ID.value;
 
@@ -390,6 +402,61 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[PARTITION_MAP_SYNC] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new PartitionMapSyncOperation();
+            }
+        };
+        constructors[CLEAR_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDClearOperationFactory();
+            }
+        };
+        constructors[CONTAINES_VALUE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDContainsValueOperationFactory();
+            }
+        };
+        constructors[EVICT_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDEvictAllOperationFactory();
+            }
+        };
+        constructors[FLUSH_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMapFlushOperationFactory();
+            }
+        };
+        constructors[GET_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMapGetAllOperationFactory();
+            }
+        };
+        constructors[LOAD_ALL_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMapLoadAllOperationFactory();
+            }
+        };
+        constructors[MULTIPLE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDMultipleEntryOperationFactory();
+            }
+        };
+        constructors[PARTITION_WIDE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDPartitionWideEntryOperationFactory();
+            }
+        };
+        constructors[PARTITION_WIDE_PREDICATE_ENTRY_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDPartitionWideEntryWithPredicateOperationFactory();
+            }
+        };
+        constructors[SIZE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDSizeOperationFactory();
+            }
+        };
+        constructors[MADE_PUBLISHABLE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new MadePublishableOperationFactory();
             }
         };
 

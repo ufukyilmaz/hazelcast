@@ -53,4 +53,14 @@ public class HDPartitionWideEntryOperationFactory implements OperationFactory {
         name = in.readUTF();
         entryProcessor = in.readObject();
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PARTITION_WIDE_ENTRY_FACTORY;
+    }
 }

@@ -53,4 +53,14 @@ public final class HDContainsValueOperationFactory implements OperationFactory {
         name = in.readUTF();
         value = in.readData();
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.CONTAINES_VALUE_FACTORY;
+    }
 }

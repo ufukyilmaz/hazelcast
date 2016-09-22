@@ -75,4 +75,14 @@ public class HDMapLoadAllOperationFactory implements OperationFactory {
         }
         replaceExistingValues = in.readBoolean();
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.LOAD_ALL_FACTORY;
+    }
 }

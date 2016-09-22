@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl.querycache.subscriber.operation;
 
+import com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
@@ -45,6 +46,16 @@ public class MadePublishableOperationFactory implements OperationFactory {
     public void readData(ObjectDataInput in) throws IOException {
         mapName = in.readUTF();
         cacheName = in.readUTF();
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MADE_PUBLISHABLE_FACTORY;
     }
 }
 

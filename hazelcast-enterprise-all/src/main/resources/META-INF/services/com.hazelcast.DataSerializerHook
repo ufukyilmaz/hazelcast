@@ -34,3 +34,4 @@ com.hazelcast.ringbuffer.impl.RingbufferDataSerializerHook
 com.hazelcast.wan.impl.WanDataSerializerHook
 com.hazelcast.query.impl.predicates.PredicateDataSerializerHook
 com.hazelcast.cardinality.impl.CardinalityEstimatorDataSerializerHook
+com.hazelcast.durableexecutor.impl.DurableExecutorDataSerializerHook

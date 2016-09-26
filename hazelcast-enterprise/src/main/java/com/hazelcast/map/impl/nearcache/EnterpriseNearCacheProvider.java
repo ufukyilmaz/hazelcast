@@ -19,84 +19,66 @@ package com.hazelcast.map.impl.nearcache;
 import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheExecutor;
-import com.hazelcast.cache.impl.nearcache.NearCacheManager;
+import com.hazelcast.config.EvictionConfigAccessor;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper.wrapAsStaleReadPreventerNearCache;
 
 /**
  * Provides Near Cache specific functionality.
  */
 public class EnterpriseNearCacheProvider extends NearCacheProvider {
 
-    private final SerializationService serializationService;
-    private final NearCacheExecutor executor;
-    private final NearCacheManager nearCacheManager;
     private final NearCacheContext nearCacheContext;
 
-    public EnterpriseNearCacheProvider(final MapServiceContext mapServiceContext) {
-        super(mapServiceContext);
-        NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        this.serializationService = nodeEngine.getSerializationService();
-        this.executor = new NearCacheExecutor() {
+    public EnterpriseNearCacheProvider(MapServiceContext mapServiceContext) {
+        super(mapServiceContext, new HDMapNearCacheManager(
+                mapServiceContext.getNodeEngine().getPartitionService().getPartitionCount()));
 
+        final NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
+        NearCacheExecutor executor = new NearCacheExecutor() {
             @Override
-            public ScheduledFuture<?> scheduleWithRepetition(Runnable command, long initialDelay,
-                                                             long delay, TimeUnit unit) {
-                return mapServiceContext.getNodeEngine().getExecutionService().scheduleWithRepetition(command, initialDelay,
-                        delay, unit);
+            public ScheduledFuture<?> scheduleWithRepetition(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+                return nodeEngine.getExecutionService().scheduleWithRepetition(command, initialDelay, delay, unit);
             }
         };
-        this.nearCacheManager = new HDMapNearCacheManager(nodeEngine.getPartitionService().getPartitionCount());
-        this.nearCacheContext =
-                new NearCacheContext(nearCacheManager,
-                        serializationService,
-                        executor,
-                        mapServiceContext.getNodeEngine().getConfigClassLoader());
+
+        this.nearCacheContext = new NearCacheContext(
+                nodeEngine.getSerializationService(),
+                executor,
+                nearCacheManager,
+                nodeEngine.getConfigClassLoader());
     }
 
     @Override
-    public NearCache getOrNullNearCache(String mapName) {
+    public <K, V> NearCache<K, V> getOrCreateNearCache(String mapName) {
         NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName);
         InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE == inMemoryFormat) {
-            return nearCacheManager.getNearCache(mapName);
-        } else {
-            return nearCacheMap.get(mapName);
-        }
-    }
+            NearCache<K, V> nearCache = nearCacheManager.getOrCreateNearCache(mapName, nearCacheConfig, nearCacheContext);
 
-
-    @Override
-    public NearCache getOrCreateNearCache(String mapName) {
-        NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName);
-        InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
-        if (NATIVE == inMemoryFormat) {
-            return nearCacheManager.getOrCreateNearCache(mapName, nearCacheConfig, nearCacheContext);
+            int partitionCount = mapServiceContext.getNodeEngine().getPartitionService().getPartitionCount();
+            return wrapAsStaleReadPreventerNearCache(nearCache, partitionCount);
         } else {
             return super.getOrCreateNearCache(mapName);
         }
     }
 
-    protected NearCacheConfig getNearCacheConfig(String mapName) {
+    private NearCacheConfig getNearCacheConfig(String mapName) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         MapConfig mapConfig = mapContainer.getMapConfig();
-        return mapConfig.getNearCacheConfig();
-    }
+        NearCacheConfig nearCacheConfig = mapConfig.getNearCacheConfig();
+        EvictionConfigAccessor.initDefaultMaxSize(nearCacheConfig.getEvictionConfig());
 
-    @Override
-    public void destroyNearCache(String mapName) {
-        super.destroyNearCache(mapName);
-        nearCacheManager.destroyNearCache(mapName);
+        return nearCacheConfig;
     }
 }
-

@@ -46,9 +46,10 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
                                      ClientConfig clientConfig, ClientPartitionService partitionService) {
         this.clientConfig = clientConfig;
         this.nearCacheManager = new HiDensityNearCacheManager();
-        this.nearCacheContext = new NearCacheContext(nearCacheManager,
+        this.nearCacheContext = new NearCacheContext(
                 serializationService,
                 createNearCacheExecutor(executionService),
+                nearCacheManager,
                 clientConfig.getClassLoader());
         this.partitionService = partitionService;
     }

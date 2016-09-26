@@ -258,6 +258,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
+    protected boolean containsRecordKey(K key) {
+        Data keyData = toData(key);
+        return records.containsKey(keyData);
+    }
+
+    @Override
     protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                          HiDensityNativeMemoryNearCacheRecord oldRecord) {
         // If old record is available, dispose it since it is replaced

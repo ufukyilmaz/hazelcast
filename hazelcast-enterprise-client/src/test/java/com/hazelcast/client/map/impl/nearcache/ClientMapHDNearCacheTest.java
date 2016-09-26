@@ -5,12 +5,10 @@ import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.core.IMap;
 import com.hazelcast.map.HDTestSupport;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -75,25 +73,6 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
         return nearCacheConfig;
     }
 
-    /**
-     * The EE Near Cache evicts a single entry per eviction.
-     */
-    @Override
-    protected int getExpectedEvictionCount(int size) {
-        return 1;
-    }
-
-    /**
-     * HD backed Near Cache does not support NONE eviction policy.
-     */
-    @Test(expected = IllegalArgumentException.class)
-    @Override
-    public void testNearCacheInvalidation_WithNone_whenMaxSizeExceeded() {
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
-        nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.NONE);
-        getNearCachedMapFromClient(nearCacheConfig);
-    }
-
     @Test
     @Override
     public void testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException() {
@@ -102,27 +81,10 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
     }
 
     /**
-     * HD backed Near Cache does not support RANDOM eviction policy.
+     * The EE Near Cache evicts a single entry per eviction.
      */
-    @Test(expected = IllegalArgumentException.class)
     @Override
-    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() {
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
-        nearCacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.RANDOM);
-        getNearCachedMapFromClient(nearCacheConfig);
-    }
-
-    @Override
-    protected void assertNearCacheInvalidation_whenMaxSizeExceeded(NearCacheConfig config) {
-        final IMap<Integer, Integer> map = getNearCachedMapFromClient(config);
-        populateNearCache(map, MAX_CACHE_SIZE);
-
-        triggerEviction(map);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertThatOwnedEntryCountIsSmallerThan(map, MAX_CACHE_SIZE);
-            }
-        });
+    protected int getExpectedEvictionCount(int size) {
+        return 1;
     }
 }

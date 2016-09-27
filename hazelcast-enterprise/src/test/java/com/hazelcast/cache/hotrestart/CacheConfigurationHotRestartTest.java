@@ -17,21 +17,21 @@ import org.junit.experimental.categories.Category;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import static com.hazelcast.util.IterableUtil.getFirst;
-import static java.util.Collections.EMPTY_LIST;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@Category({QuickTest.class, ParallelTest.class})
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@Category({QuickTest.class, ParallelTest.class})
 public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTest {
 
     @Test
     public void givenDynamicallyCreatedCacheExist_whenClusterRestarted_thenCacheStillExists() {
         HazelcastInstance hz = newHazelcastInstance();
         ICache<Integer, Object> cache = createCache(hz);
-        CacheConfig originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
 
         hz = restartHazelcastInstance(hz);
 
@@ -45,7 +45,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         Config hzConfig = makeConfig().addCacheConfig(createSimpleCacheConfig());
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = hz.getCacheManager().getCache(cacheName);
-        CacheConfig originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
 
         hz = restartHazelcastInstance(hz);
 
@@ -61,7 +61,7 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         Config hzConfig = createConfigWithWAN(wanConfigName);
         HazelcastInstance hz = newHazelcastInstance(hzConfig);
         ICache<Integer, Object> cache = hz.getCacheManager().getCache(cacheName);
-        CacheConfig originalConfig = cache.getConfiguration(CacheConfig.class);
+        CacheConfig<Integer, Object> originalConfig = cache.getConfiguration(CacheConfig.class);
         String cacheNameWithPrefix = originalConfig.getNameWithPrefix();
 
         hz = restartHazelcastInstance(hz);
@@ -90,10 +90,10 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         return simpleCacheConfig;
     }
 
-
     private CacheSimpleConfig createCacheConfigWithWAN(String wanConfigName) {
         CacheSimpleConfig simpleCacheConfig = createSimpleCacheConfig();
-        simpleCacheConfig.setWanReplicationRef(new WanReplicationRef(wanConfigName, "merge-policy", EMPTY_LIST, true));
+        simpleCacheConfig.setWanReplicationRef(new WanReplicationRef(wanConfigName, "merge-policy",
+                Collections.<String>emptyList(), true));
         return simpleCacheConfig;
     }
 
@@ -107,5 +107,4 @@ public class CacheConfigurationHotRestartTest extends AbstractCacheHotRestartTes
         CacheService cacheService = getCacheService(hz);
         return cacheService.getCacheConfigs();
     }
-
 }

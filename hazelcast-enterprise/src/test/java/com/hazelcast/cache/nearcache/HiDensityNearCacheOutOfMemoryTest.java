@@ -39,7 +39,6 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
     @After
     public void tearDown() {
-        super.tearDown();
         if (nearCacheManager != null) {
             nearCacheManager.destroyAllNearCaches();
         }
@@ -54,7 +53,7 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(nearCacheManager, serializationService, createNearCacheExecutor(), null);
+        return new NearCacheContext(serializationService, createNearCacheExecutor(), nearCacheManager);
     }
 
     @Override

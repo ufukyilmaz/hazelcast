@@ -39,7 +39,6 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
 
     @After
     public void tearDown() {
-        super.tearDown();
         if (memoryManager != null) {
             memoryManager.dispose();
             memoryManager = null;
@@ -52,7 +51,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(null, serializationService, createNearCacheExecutor(), null);
+        return new NearCacheContext(serializationService, createNearCacheExecutor());
     }
 
     private NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
@@ -60,7 +59,7 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(null, serializationService, createNearCacheExecutor(), null);
+        return new NearCacheContext(serializationService, createNearCacheExecutor());
     }
 
     @Override

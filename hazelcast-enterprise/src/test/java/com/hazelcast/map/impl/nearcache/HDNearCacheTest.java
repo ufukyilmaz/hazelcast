@@ -22,13 +22,10 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.hazelcast.map.nearcache.NearCacheTest;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -39,83 +36,13 @@ import org.junit.runners.Parameterized;
 
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.ENTRY_COUNT;
 import static com.hazelcast.config.EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.config.EvictionPolicy.LFU;
 import static com.hazelcast.config.EvictionPolicy.LRU;
-import static com.hazelcast.config.EvictionPolicy.NONE;
-import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
-import static junit.framework.TestCase.assertTrue;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HDNearCacheTest extends NearCacheTest {
-
-    /**
-     * HD backed Near Cache doesn't support NONE eviction policy.
-     */
-    @Test(expected = IllegalArgumentException.class)
-    @Override
-    public void testNearCacheInvalidation_WitNone_whenMaxSizeExceeded() {
-        testEvictionPolicyInternal(NONE);
-    }
-
-    /**
-     * HD backed Near Cache doesn't support RANDOM eviction policy.
-     */
-    @Test(expected = IllegalArgumentException.class)
-    @Override
-    public void testNearCacheInvalidation_WithRandom_whenMaxSizeExceeded() {
-        testEvictionPolicyInternal(RANDOM);
-    }
-
-    private void testEvictionPolicyInternal(EvictionPolicy evictionPolicy) {
-        String mapName = randomMapName();
-
-        NearCacheConfig nearCacheConfig = newNearCacheConfig();
-        nearCacheConfig.getEvictionConfig().setEvictionPolicy(evictionPolicy);
-
-        Config config = getConfig();
-        config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
-
-        HazelcastInstance node = createHazelcastInstance(config);
-        node.getMap(mapName);
-    }
-
-    @Test
-    @Override
-    public void testNearCacheInvalidation_WithLFU_whenMaxSizeExceeded() {
-        testNearCacheInvalidationInternal(LFU);
-    }
-
-    @Test
-    @Override
-    public void testNearCacheInvalidation_WithLRU_whenMaxSizeExceeded() {
-        testNearCacheInvalidationInternal(LRU);
-    }
-
-    private void testNearCacheInvalidationInternal(EvictionPolicy evictionPolicy) {
-        final int mapSize = 2000;
-        String mapName = randomMapName();
-
-        NearCacheConfig nearCacheConfig = newNearCacheConfig().setInvalidateOnChange(false);
-        nearCacheConfig.getEvictionConfig().setEvictionPolicy(evictionPolicy);
-
-        Config config = getConfig();
-        config.getMapConfig(mapName).setNearCacheConfig(nearCacheConfig);
-
-        final IMap<Integer, Integer> map = createHazelcastInstance(config).getMap(mapName);
-        populateNearCache(map, mapSize);
-
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                long ownedEntryCount = getNearCacheStats(map).getOwnedEntryCount();
-                triggerNearCacheEviction(map);
-                assertTrue("owned entry count " + ownedEntryCount, mapSize > ownedEntryCount);
-            }
-        });
-    }
 
     @Override
     protected Config getConfig() {
@@ -164,11 +91,10 @@ public class HDNearCacheTest extends NearCacheTest {
         return nearCacheConfig;
     }
 
-    /**
-     * The EE Near Cache evicts a single entry per eviction.
-     */
+    @Test
     @Override
-    protected int getExpectedEvictionCount(int size) {
-        return 1;
+    public void testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException() {
+        // this test expects an IllegalArgumentException in OS, but should not throw any exception in EE
+        super.testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException();
     }
 }

@@ -37,7 +37,6 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     @After
     public void tearDown() {
-        super.tearDown();
         if (memoryManager != null) {
             memoryManager.dispose();
             memoryManager = null;
@@ -50,7 +49,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(null, serializationService, null, null);
+        return new NearCacheContext(serializationService, null);
     }
 
     @Override

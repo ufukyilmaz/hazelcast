@@ -23,19 +23,18 @@ import com.hazelcast.config.NearCacheConfig;
 
 import static com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper.wrapAsStaleReadPreventerNearCache;
 
-
-public class HDMapNearCacheManager extends HiDensityNearCacheManager {
+class HDMapNearCacheManager extends HiDensityNearCacheManager {
 
     private final int partitionCount;
 
-    public HDMapNearCacheManager(int partitionCount) {
+    HDMapNearCacheManager(int partitionCount) {
         this.partitionCount = partitionCount;
     }
 
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                      NearCacheContext nearCacheContext) {
-        NearCache nearCache = super.createNearCache(name, nearCacheConfig, nearCacheContext);
+        NearCache<K, V> nearCache = super.createNearCache(name, nearCacheConfig, nearCacheContext);
         return wrapAsStaleReadPreventerNearCache(nearCache, partitionCount);
     }
 }

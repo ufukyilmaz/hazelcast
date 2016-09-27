@@ -1,7 +1,5 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.config.EvictionConfig;
-import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -13,8 +11,6 @@ import com.hazelcast.logging.Logger;
 
 import java.util.EnumSet;
 
-import static com.hazelcast.config.EvictionPolicy.NONE;
-import static com.hazelcast.config.EvictionPolicy.RANDOM;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MapConfig.DEFAULT_EVICTION_PERCENTAGE;
 import static com.hazelcast.config.MapConfig.DEFAULT_MIN_EVICTION_CHECK_MILLIS;
@@ -33,9 +29,6 @@ import static java.util.EnumSet.complementOf;
  * Responsible for validating supported configurations of HD backed IMap and its Near Cache.
  */
 public final class HDMapConfigValidator {
-
-    private static final EnumSet<EvictionPolicy> UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES
-            = EnumSet.of(NONE, RANDOM);
 
     private static final EnumSet<MaxSizeConfig.MaxSizePolicy> UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
@@ -66,6 +59,7 @@ public final class HDMapConfigValidator {
         checkHotRestartSpecificConfig(mapConfig);
     }
 
+    @SuppressWarnings("deprecation")
     private static void logIgnoredConfig(MapConfig mapConfig) {
         if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
                 || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
@@ -88,7 +82,7 @@ public final class HDMapConfigValidator {
     /**
      * When hot-restart is enabled we do want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
      * free HD space.
-     * <p/>
+     *
      * If configured max-size-policy is {@link com.hazelcast.config.MaxSizeConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE},
      * this method asserts that max-size is not below "hazelcast.hotrestart.free.native.memory.percentage"
      */
@@ -126,14 +120,5 @@ public final class HDMapConfigValidator {
         }
 
         checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
-
-        EvictionConfig evictionConfig = nearCacheConfig.getEvictionConfig();
-
-        EvictionPolicy evictionPolicy = evictionConfig.getEvictionPolicy();
-        if (UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES.contains(evictionPolicy)) {
-            throw new IllegalArgumentException("Near-cache eviction policy " + evictionPolicy
-                    + " cannot be used with NATIVE in memory format."
-                    + " Supported eviction policies are : " + complementOf(UNSUPPORTED_HD_NEAR_CACHE_EVICTION_POLICIES));
-        }
     }
 }

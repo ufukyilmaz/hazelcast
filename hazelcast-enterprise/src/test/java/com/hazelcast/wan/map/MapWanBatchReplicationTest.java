@@ -3,12 +3,15 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.SlowTest;
 import com.hazelcast.wan.map.filter.DummyMapWanFilter;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
 
+@RunWith(HazelcastSerialClassRunner.class)
 @Category(SlowTest.class)
 public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 

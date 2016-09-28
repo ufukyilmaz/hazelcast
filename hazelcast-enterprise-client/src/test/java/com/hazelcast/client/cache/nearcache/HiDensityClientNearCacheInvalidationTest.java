@@ -11,8 +11,12 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
+import org.junit.runners.Parameterized.Parameters;
+
+import java.util.Collection;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
+import static java.util.Arrays.asList;
 
 /**
  * Test publishing of Near Cache invalidation events, when the cache is configured with NATIVE in-memory format.
@@ -21,6 +25,18 @@ public class HiDensityClientNearCacheInvalidationTest extends ClientNearCacheInv
 
     private static final MemorySize SERVER_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
     private static final MemorySize CLIENT_NATIVE_MEMORY_SIZE = new MemorySize(16, MemoryUnit.MEGABYTES);
+
+    @Parameters(name = "fromMember:{0}, format:{1}")
+    public static Collection<Object[]> parameters() {
+        return asList(new Object[][]{
+                {false, InMemoryFormat.BINARY},
+                {false, InMemoryFormat.OBJECT},
+                {false, InMemoryFormat.NATIVE},
+                {true, InMemoryFormat.BINARY},
+                {true, InMemoryFormat.OBJECT},
+                {true, InMemoryFormat.NATIVE},
+        });
+    }
 
     @Override
     protected Config getConfig() {

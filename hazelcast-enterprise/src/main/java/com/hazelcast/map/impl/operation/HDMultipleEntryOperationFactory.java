@@ -68,4 +68,14 @@ public class HDMultipleEntryOperationFactory implements OperationFactory {
         }
         this.entryProcessor = in.readObject();
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MULTIPLE_ENTRY_FACTORY;
+    }
 }

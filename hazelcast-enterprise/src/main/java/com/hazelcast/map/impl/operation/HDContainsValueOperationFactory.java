@@ -61,6 +61,6 @@ public final class HDContainsValueOperationFactory implements OperationFactory {
 
     @Override
     public int getId() {
-        return EnterpriseMapDataSerializerHook.CONTAINES_VALUE_FACTORY;
+        return EnterpriseMapDataSerializerHook.CONTAINS_VALUE_FACTORY;
     }
 }

@@ -101,7 +101,7 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int MEMBER_MAP_SYNC = ID.value++;
     public static final int PARTITION_MAP_SYNC = ID.value++;
     public static final int CLEAR_FACTORY = ID.value++;
-    public static final int CONTAINES_VALUE_FACTORY = ID.value++;
+    public static final int CONTAINS_VALUE_FACTORY = ID.value++;
     public static final int EVICT_ALL_FACTORY = ID.value++;
     public static final int FLUSH_FACTORY = ID.value++;
     public static final int GET_ALL_FACTORY = ID.value++;
@@ -409,7 +409,7 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
                 return new HDClearOperationFactory();
             }
         };
-        constructors[CONTAINES_VALUE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[CONTAINS_VALUE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDContainsValueOperationFactory();
             }

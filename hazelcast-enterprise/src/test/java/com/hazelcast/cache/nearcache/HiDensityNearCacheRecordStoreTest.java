@@ -93,12 +93,12 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
 
     @Test
     public void clearRecordsSuccessfullyFromHiDensityNativeMemoryNearCacheRecordStore() {
-        clearRecordsOrDestroyStoreFromNearCacheDataRecordStore(InMemoryFormat.NATIVE, false);
+        clearRecordsOrDestroyStore(InMemoryFormat.NATIVE, false);
     }
 
     @Test(expected = IllegalStateException.class)
     public void destroyStoreFromHiDensityNativeMemoryNearCacheRecordStore() {
-        clearRecordsOrDestroyStoreFromNearCacheDataRecordStore(InMemoryFormat.NATIVE, true);
+        clearRecordsOrDestroyStore(InMemoryFormat.NATIVE, true);
     }
 
     @Test

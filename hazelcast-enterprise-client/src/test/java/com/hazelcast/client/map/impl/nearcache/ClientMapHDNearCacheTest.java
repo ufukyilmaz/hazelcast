@@ -79,12 +79,4 @@ public class ClientMapHDNearCacheTest extends ClientMapNearCacheTest {
         // this test expects an IllegalArgumentException in OS, but should not throw any exception in EE
         super.testNearCache_whenInMemoryFormatIsNative_thenThrowIllegalArgumentException();
     }
-
-    /**
-     * The EE Near Cache evicts a single entry per eviction.
-     */
-    @Override
-    protected int getExpectedEvictionCount(int size) {
-        return 1;
-    }
 }

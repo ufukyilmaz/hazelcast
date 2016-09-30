@@ -18,22 +18,20 @@ import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityClientCacheReadQuorumTest
-        extends HiDensityClientCacheQuorumTestSupport {
+public class HiDensityClientCacheReadQuorumTest extends HiDensityClientCacheQuorumTestSupport {
 
     @BeforeClass
-    public static void init()
-            throws InterruptedException {
+    public static void init() throws Exception {
         HiDensityClientCacheQuorumTestSupport.initialize(QuorumType.READ);
     }
 
     @Test
-    public void testGetOperationSuccessfulWhenQuorumSizeMet() throws Exception {
+    public void testGetOperationSuccessfulWhenQuorumSizeMet() {
         cache1.get(1);
     }
 
     @Test(expected = QuorumException.class)
-    public void testGetOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
+    public void testGetOperationThrowsExceptionWhenQuorumSizeNotMet() {
         cache4.get(1);
     }
 

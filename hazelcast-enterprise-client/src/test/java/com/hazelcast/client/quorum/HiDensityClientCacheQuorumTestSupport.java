@@ -17,13 +17,12 @@ import org.junit.AfterClass;
 
 import java.io.IOException;
 
-public class HiDensityClientCacheQuorumTestSupport
-        extends HazelcastTestSupport {
+public class HiDensityClientCacheQuorumTestSupport extends HazelcastTestSupport {
+
+    private static final String HAZELCAST_ELASTIC_MEMORY_ENABLED = "hazelcast.elastic.memory.enabled";
 
     private static String hazelcastElasticMemoryEnabledProperty;
-    private static final String elasticMemoryPropertyString = "hazelcast.elastic.memory.enabled";
-
-    static NativeMemPartitionedCluster cluster;
+    private static NativeMemPartitionedCluster cluster;
 
     protected static final String CACHE_NAME_PREFIX = "cacheQuorum";
     protected static final String QUORUM_ID = "threeNodeQuorumRule";
@@ -47,9 +46,9 @@ public class HiDensityClientCacheQuorumTestSupport
     protected static TestHazelcastFactory factory;
 
     public static void initialize(QuorumType quorumType) throws InterruptedException {
-        //As we create 5 instances, elastic memory causes out of memory error. We do not need elastic memory in this test.
-        hazelcastElasticMemoryEnabledProperty = System.getProperty(elasticMemoryPropertyString);
-        System.setProperty(elasticMemoryPropertyString, "false");
+        // as we create 5 instances, elastic memory causes out of memory error (we do not need elastic memory in this test)
+        hazelcastElasticMemoryEnabledProperty = System.getProperty(HAZELCAST_ELASTIC_MEMORY_ENABLED);
+        System.setProperty(HAZELCAST_ELASTIC_MEMORY_ENABLED, "false");
 
         QuorumConfig quorumConfig = new QuorumConfig();
         quorumConfig.setName(QUORUM_ID);
@@ -87,11 +86,11 @@ public class HiDensityClientCacheQuorumTestSupport
         cachingProvider5 = HazelcastClientCachingProvider.createCachingProvider(c5);
 
         final String cacheName = CACHE_NAME_PREFIX + randomString();
-        cache1 = (ICache)cachingProvider1.getCacheManager().getCache(cacheName);
-        cache2 = (ICache)cachingProvider2.getCacheManager().getCache(cacheName);
-        cache3 = (ICache)cachingProvider3.getCacheManager().getCache(cacheName);
-        cache4 = (ICache)cachingProvider4.getCacheManager().getCache(cacheName);
-        cache5 = (ICache)cachingProvider5.getCacheManager().getCache(cacheName);
+        cache1 = (ICache) cachingProvider1.getCacheManager().getCache(cacheName);
+        cache2 = (ICache) cachingProvider2.getCacheManager().getCache(cacheName);
+        cache3 = (ICache) cachingProvider3.getCacheManager().getCache(cacheName);
+        cache4 = (ICache) cachingProvider4.getCacheManager().getCache(cacheName);
+        cache5 = (ICache) cachingProvider5.getCacheManager().getCache(cacheName);
     }
 
     private static ClientConfig getClientConfig(HazelcastInstance instance) {
@@ -105,11 +104,10 @@ public class HiDensityClientCacheQuorumTestSupport
     @AfterClass
     public static void killAllHazelcastInstances() throws IOException {
         factory.terminateAll();
-        if (hazelcastElasticMemoryEnabledProperty != null ) {
-            System.setProperty(elasticMemoryPropertyString, hazelcastElasticMemoryEnabledProperty);
+        if (hazelcastElasticMemoryEnabledProperty != null) {
+            System.setProperty(HAZELCAST_ELASTIC_MEMORY_ENABLED, hazelcastElasticMemoryEnabledProperty);
         } else {
-            System.clearProperty(elasticMemoryPropertyString);
+            System.clearProperty(HAZELCAST_ELASTIC_MEMORY_ENABLED);
         }
     }
-
 }

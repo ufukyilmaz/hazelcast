@@ -24,22 +24,20 @@ import static org.junit.Assert.assertNull;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
-public class HiDensityClientCacheWriteQuorumTest
-        extends HiDensityClientCacheQuorumTestSupport {
+public class HiDensityClientCacheWriteQuorumTest extends HiDensityClientCacheQuorumTestSupport {
 
     @BeforeClass
-    public static void init()
-            throws InterruptedException {
+    public static void init() throws Exception {
         HiDensityClientCacheQuorumTestSupport.initialize(QuorumType.WRITE);
     }
 
     @Test
-    public void testPutOperationSuccessfulWhenQuorumSizeMet() throws Exception {
+    public void testPutOperationSuccessfulWhenQuorumSizeMet() {
         cache1.put(1, "");
     }
 
     @Test(expected = QuorumException.class)
-    public void testPutOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
+    public void testPutOperationThrowsExceptionWhenQuorumSizeNotMet() {
         cache4.put(1, "");
     }
 
@@ -155,7 +153,7 @@ public class HiDensityClientCacheWriteQuorumTest
     }
 
     @Test(expected = ExecutionException.class)
-    public void testGetAndRemoveAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception{
+    public void testGetAndRemoveAsyncOperationThrowsExceptionWhenQuorumSizeNotMet() throws Exception {
         Future<String> foo = cache4.getAndRemoveAsync(1);
         foo.get();
     }
@@ -236,7 +234,7 @@ public class HiDensityClientCacheWriteQuorumTest
 
     @Test
     public void testReplaceAsyncOperationSuccessfulWhenQuorumSizeMet() throws Exception {
-        Future<Boolean> foo =cache1.replaceAsync(1, "");
+        Future<Boolean> foo = cache1.replaceAsync(1, "");
         foo.get();
     }
 
@@ -259,14 +257,12 @@ public class HiDensityClientCacheWriteQuorumTest
         assertNull(cache2.get(123));
     }
 
-    public static class SimpleEntryProcessor
-            implements EntryProcessor<Integer, String, Void>, Serializable {
+    public static class SimpleEntryProcessor implements EntryProcessor<Integer, String, Void>, Serializable {
 
         private static final long serialVersionUID = -396575576353368113L;
 
         @Override
-        public Void process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
+        public Void process(MutableEntry<Integer, String> entry, Object... arguments) throws EntryProcessorException {
 
             entry.setValue("Foo");
             return null;

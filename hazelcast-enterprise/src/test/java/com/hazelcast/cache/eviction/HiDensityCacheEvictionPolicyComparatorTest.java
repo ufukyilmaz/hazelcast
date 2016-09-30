@@ -70,82 +70,73 @@ public class HiDensityCacheEvictionPolicyComparatorTest extends BaseCacheEvictio
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_usedNativeMemoryPercentage() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize(50)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
-                        .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(50)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_usedNativeMemoryPercentage() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize(50)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
-                        .setComparator(new MyEvictionPolicyComparator());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(50)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setComparator(new MyEvictionPolicyComparator());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_freeNativeMemoryPercentage() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize(50)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
-                        .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(50)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_freeNativeMemoryPercentage() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize(50)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
-                        .setComparator(new MyEvictionPolicyComparator());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(50)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setComparator(new MyEvictionPolicyComparator());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_usedNativeMemorySize() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
-                        .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_usedNativeMemorySize() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
-                        .setComparator(new MyEvictionPolicyComparator());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE)
+                .setComparator(new MyEvictionPolicyComparator());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorClassName_when_maxSizePolicy_is_freeNativeMemorySize() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
-                        .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
+                .setComparatorClassName(MyEvictionPolicyComparator.class.getName());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
 
     @Test
     public void test_evictionPolicyComparator_with_comparatorInstance_when_maxSizePolicy_is_freeNativeMemorySize() {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
-                        .setComparator(new MyEvictionPolicyComparator());
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize((int) (MEMORY_SIZE.megaBytes() / 4))
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE)
+                .setComparator(new MyEvictionPolicyComparator());
         do_test_evictionPolicyComparator(evictionConfig, ITERATION_COUNT);
     }
-
 }

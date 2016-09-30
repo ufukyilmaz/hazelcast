@@ -28,17 +28,18 @@ import static org.hamcrest.Matchers.greaterThan;
 public class ForcedEvictionTest extends CacheTestSupport {
 
     private static final int INSTANCE_COUNT = 1;
-    private HazelcastInstance hazelcastInstance;
 
     private TestHazelcastInstanceFactory factory = getInstanceFactory(INSTANCE_COUNT);
+
+    private HazelcastInstance hazelcastInstance;
+
+    private TestHazelcastInstanceFactory getInstanceFactory(int instanceCount) {
+        return createHazelcastInstanceFactory(instanceCount);
+    }
 
     @Override
     protected HazelcastInstance getHazelcastInstance() {
         return hazelcastInstance;
-    }
-
-    protected TestHazelcastInstanceFactory getInstanceFactory(int instanceCount) {
-        return createHazelcastInstanceFactory(instanceCount);
     }
 
     @Override
@@ -68,7 +69,7 @@ public class ForcedEvictionTest extends CacheTestSupport {
                 findMetricWithGivenStringAndSuffix(cache.getName(), ".forceEvictionCount"));
         assertThat(forceEvictionCount.read(), greaterThan(0L));
 
-        //intentionally no other assert. It's enough when the test does not throw NativeOutOfMemoryError
+        // intentionally no other assert, it's enough when the test does not throw NativeOutOfMemoryError
     }
 
     private MetricsRegistry getMetricsRegistry() {
@@ -108,5 +109,4 @@ public class ForcedEvictionTest extends CacheTestSupport {
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }
-
 }

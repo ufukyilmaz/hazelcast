@@ -65,4 +65,13 @@ public class AskForLoadCompletionStatusOperation extends Operation implements Jo
         return HotRestartService.SERVICE_NAME;
     }
 
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.ASK_FOR_LOAD_COMPLETION;
+    }
 }

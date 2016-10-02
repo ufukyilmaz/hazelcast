@@ -64,4 +64,14 @@ public class SendLoadCompletionStatusOperation
         loadedState = ClusterState.valueOf(in.readUTF());
         result = HotRestartClusterInitializationStatus.valueOf(in.readUTF());
     }
+
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.SEND_LOAD_COMPLETION_STATUS;
+    }
 }

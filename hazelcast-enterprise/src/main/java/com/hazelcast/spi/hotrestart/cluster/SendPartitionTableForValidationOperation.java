@@ -86,4 +86,14 @@ public class SendPartitionTableForValidationOperation
             }
         }
     }
+
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.SEND_PARTITION_TABLE_FOR_VALIDATION;
+    }
 }

@@ -63,4 +63,13 @@ public class AskForPartitionTableValidationStatusOperation extends Operation imp
         return HotRestartService.SERVICE_NAME;
     }
 
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.ASK_FOR_PARTITION_TABLE_VALIDATION_STATUS;
+    }
 }

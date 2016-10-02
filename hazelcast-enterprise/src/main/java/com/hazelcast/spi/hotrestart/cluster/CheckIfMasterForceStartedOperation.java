@@ -34,4 +34,14 @@ public class CheckIfMasterForceStartedOperation extends Operation implements Joi
         return HotRestartService.SERVICE_NAME;
     }
 
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.CHECK_IF_MASTER_FORCE_STARTED;
+    }
+
 }

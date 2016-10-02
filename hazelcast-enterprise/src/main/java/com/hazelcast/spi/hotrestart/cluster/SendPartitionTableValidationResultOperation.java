@@ -54,4 +54,14 @@ public class SendPartitionTableValidationResultOperation
         super.readInternal(in);
         result = HotRestartClusterInitializationStatus.valueOf(in.readUTF());
     }
+
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.SEND_PARTITION_TABLE_VALIDATION_RESULT;
+    }
 }

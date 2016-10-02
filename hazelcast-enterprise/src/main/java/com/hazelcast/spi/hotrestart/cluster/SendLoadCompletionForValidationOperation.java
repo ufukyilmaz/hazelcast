@@ -57,4 +57,14 @@ public class SendLoadCompletionForValidationOperation
 
         success = in.readBoolean();
     }
+
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.SEND_LOAD_COMPLETION_FOR_VALIDATION;
+    }
 }

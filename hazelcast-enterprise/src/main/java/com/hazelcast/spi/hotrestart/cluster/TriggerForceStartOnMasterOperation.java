@@ -30,4 +30,13 @@ public class TriggerForceStartOnMasterOperation extends Operation implements Joi
         return HotRestartService.SERVICE_NAME;
     }
 
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.TRIGGER_FORCE_START_ON_MASTER;
+    }
 }

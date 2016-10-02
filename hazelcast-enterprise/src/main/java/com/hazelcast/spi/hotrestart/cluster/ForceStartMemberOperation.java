@@ -30,4 +30,13 @@ public class ForceStartMemberOperation extends Operation implements JoinOperatio
         return HotRestartService.SERVICE_NAME;
     }
 
+    @Override
+    public int getFactoryId() {
+        return HotRestartClusterSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HotRestartClusterSerializerHook.FORCE_START_MEMBER;
+    }
 }

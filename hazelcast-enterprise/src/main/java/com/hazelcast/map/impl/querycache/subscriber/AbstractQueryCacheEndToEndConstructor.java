@@ -11,11 +11,10 @@ import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfoSupplier;
 import com.hazelcast.map.listener.MapListener;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.util.ExceptionUtil;
 
 import static com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo.createAccumulatorInfo;
 import static com.hazelcast.map.impl.querycache.subscriber.NullQueryCache.NULL_QUERY_CACHE;
-
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * Provides generic functionality for {@code QueryCacheEndToEndConstructor} implementations.
@@ -50,7 +49,6 @@ public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCach
         eventService.listenPublisher(info.getMapName(), info.getCacheName(), listener);
     }
 
-
     /**
      * Here order of method calls should not change.
      */
@@ -76,7 +74,7 @@ public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCach
 
         } catch (Throwable throwable) {
             removeQueryCacheConfig(mapName, request.getUserGivenCacheName());
-            ExceptionUtil.rethrow(throwable);
+            throw rethrow(throwable);
         }
 
         return queryCache;
@@ -152,5 +150,4 @@ public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCach
         QueryCacheConfigurator queryCacheConfigurator = subscriberContext.geQueryCacheConfigurator();
         queryCacheConfigurator.removeConfiguration(mapName, cacheName);
     }
-
 }

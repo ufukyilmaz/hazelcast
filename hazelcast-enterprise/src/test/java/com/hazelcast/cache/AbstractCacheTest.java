@@ -13,13 +13,14 @@ import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 
-import javax.cache.Cache;
 import javax.cache.CacheManager;
 import javax.cache.spi.CachingProvider;
+
+import static com.hazelcast.map.HDTestSupport.getICache;
+import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 /**
  * @author mdogan 02/06/14
@@ -46,14 +47,14 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
 
     static {
         String cacheNamePropertyValue = System.getProperty(CACHE_NAME_PROPERTY);
-        if (StringUtil.isNullOrEmpty(cacheNamePropertyValue)) {
+        if (isNullOrEmpty(cacheNamePropertyValue)) {
             CACHE_NAME = DEFAULT_CACHE_NAME;
         } else {
             CACHE_NAME = cacheNamePropertyValue;
         }
 
         String cacheStorageTypePropertyValue = System.getProperty(IN_MEMORY_FORMAT_PROPERTY);
-        if (StringUtil.isNullOrEmpty(cacheStorageTypePropertyValue)) {
+        if (isNullOrEmpty(cacheStorageTypePropertyValue)) {
             IN_MEMORY_FORMAT = DEFAULT_IN_MEMORY_FORMAT;
         } else {
             IN_MEMORY_FORMAT = InMemoryFormat.valueOf(cacheStorageTypePropertyValue);
@@ -68,30 +69,31 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         return config;
     }
 
-    protected CacheConfig createCacheConfig(String cacheName) {
+    protected <K, V> CacheConfig<K, V> createCacheConfig(String cacheName) {
         return createCacheConfig(cacheName, IN_MEMORY_FORMAT);
     }
 
-    protected CacheConfig createCacheConfig(String cacheName,
-                                            InMemoryFormat inMemoryFormat) {
-        CacheConfig cacheConfig = new CacheConfig();
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheConfig.setName(cacheName);
-        cacheConfig.setInMemoryFormat(inMemoryFormat);
+    protected <K, V> CacheConfig<K, V> createCacheConfig(String cacheName, InMemoryFormat inMemoryFormat) {
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(90)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
+        CacheConfig<K, V> cacheConfig = new CacheConfig<K, V>()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setName(cacheName)
+                .setInMemoryFormat(inMemoryFormat)
+                .setEvictionConfig(evictionConfig);
+
         cacheConfig.setStatisticsEnabled(true);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(90);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        cacheConfig.setEvictionConfig(evictionConfig);
+
         return cacheConfig;
     }
 
     protected NativeMemoryConfig getMemoryConfig() {
         MemorySize memorySize = new MemorySize(256, MemoryUnit.MEGABYTES);
-        return
-                new NativeMemoryConfig()
-                        .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
-                        .setSize(memorySize).setEnabled(true);
+        return new NativeMemoryConfig()
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.POOLED)
+                .setSize(memorySize).setEnabled(true);
     }
 
     protected SerializationConfig getSerializationConfig() {
@@ -110,17 +112,15 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.HEALTH_MONITORING_LEVEL.getName(), HealthMonitorLevel.OFF.name());
     }
 
-    protected ICache createCache() {
-        Cache<Object, Object> cache = cacheManager.createCache(CACHE_NAME, createCacheConfig(CACHE_NAME));
-        return cache.unwrap(ICache.class);
+    protected <K, V> ICache<K, V> createCache() {
+        CacheConfig<K, V> cacheConfig = createCacheConfig(CACHE_NAME);
+        return getICache(cacheManager, cacheConfig, CACHE_NAME);
     }
 
     @Before
     public void setup() {
         onSetup();
-        cachingProvider =
-                HazelcastServerCachingProvider
-                        .createCachingProvider(getHazelcastInstance());
+        cachingProvider = HazelcastServerCachingProvider.createCachingProvider(getHazelcastInstance());
         cacheManager = cachingProvider.getCacheManager();
     }
 

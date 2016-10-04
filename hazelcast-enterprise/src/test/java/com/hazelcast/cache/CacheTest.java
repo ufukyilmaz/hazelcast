@@ -32,7 +32,6 @@ import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -59,6 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.hazelcast.map.HDTestSupport.getICache;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -88,8 +88,11 @@ public class CacheTest extends AbstractCacheTest {
         return instance;
     }
 
-    // Test to reproduce issue 129 (https://github.com/hazelcast/hazelcast-enterprise/issues/129) and
-    // test code is originally taken from here.
+    /**
+     * Test to reproduce issue 129 (https://github.com/hazelcast/hazelcast-enterprise/issues/129).
+     *
+     * The test code is originally taken from there.
+     */
     @Test(expected = IllegalStateException.class)
     public void cacheCreateShouldFailWithInformativeMessageIfNativeMemoryIsNotEnabled() {
         TestHazelcastInstanceFactory factory = null;
@@ -98,11 +101,11 @@ public class CacheTest extends AbstractCacheTest {
             HazelcastInstance hz = factory.newHazelcastInstance();
             HazelcastServerCachingProvider provider = HazelcastServerCachingProvider.createCachingProvider(hz);
 
-            CacheConfig cacheConfig = new CacheConfig();
-            cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+            CacheConfig<String, String> cacheConfig = new CacheConfig<String, String>()
+                    .setInMemoryFormat(InMemoryFormat.NATIVE);
 
             // create cache should fail here with an informative exception
-            Cache cache = provider.getCacheManager().createCache("test", cacheConfig);
+            Cache<String, String> cache = getICache(provider.getCacheManager(), cacheConfig, "test");
 
             // trigger cache record store creation by accessing cache
             // since cache record stores are created as lazy when they are accessed
@@ -116,7 +119,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testPutGetRemoveReplace() throws InterruptedException, ExecutionException {
-        ICache cache = createCache();
+        ICache<String, String> cache = createCache();
 
         cache.put("key1", "value1");
         assertEquals("value1", cache.get("key1"));
@@ -153,7 +156,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testAsyncGetPutRemove() throws InterruptedException, ExecutionException {
-        final ICache cache = createCache();
+        final ICache<String, String> cache = createCache();
         final String key = "key";
         cache.put(key, "value1");
         Future f = cache.getAsync(key);
@@ -185,7 +188,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testClear() {
-        ICache cache = createCache();
+        ICache<String, String> cache = createCache();
         for (int i = 0; i < 10; i++) {
             cache.put("key" + i, "value" + i);
         }
@@ -195,7 +198,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testRemoveAll() {
-        ICache cache = createCache();
+        ICache<String, String> cache = createCache();
         for (int i = 0; i < 10; i++) {
             cache.put("key" + i, "value" + i);
         }
@@ -222,19 +225,17 @@ public class CacheTest extends AbstractCacheTest {
 
         final AtomicInteger counter = new AtomicInteger(0);
 
-        final CacheConfig config = cache.getConfiguration(CacheConfig.class);
-
         registerInvalidationListener(new CacheEventListener() {
             @Override
             public void handleEvent(Object eventObject) {
                 if (eventObject instanceof CacheSingleInvalidationMessage) {
                     CacheSingleInvalidationMessage event = (CacheSingleInvalidationMessage) eventObject;
-                    if (null == event.getKey() && config.getNameWithPrefix().equals(event.getName())) {
+                    if (null == event.getKey() && cache.getPrefixedName().equals(event.getName())) {
                         counter.incrementAndGet();
                     }
                 }
             }
-        }, config.getNameWithPrefix());
+        }, cache.getPrefixedName());
 
         cache.clear();
 
@@ -276,7 +277,7 @@ public class CacheTest extends AbstractCacheTest {
     private void registerInvalidationListener(CacheEventListener cacheEventListener, String name) {
         HazelcastInstanceProxy hzInstance = (HazelcastInstanceProxy) this.instance;
         hzInstance.getOriginal().node.getNodeEngine().getEventService()
-                                     .registerListener(ICacheService.SERVICE_NAME, name, cacheEventListener);
+                .registerListener(ICacheService.SERVICE_NAME, name, cacheEventListener);
     }
 
     protected ExpiryPolicy ttlToExpiryPolicy(long ttl, TimeUnit timeUnit) {
@@ -285,11 +286,12 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testPutWithTtl() throws ExecutionException, InterruptedException {
-        final ICache cache = createCache();
+        final ICache<String, String> cache = createCache();
         final String key = "key";
         cache.put(key, "value1", ttlToExpiryPolicy(1, TimeUnit.SECONDS));
 
         assertTrueEventually(new AssertTask() {
+            @Override
             public void run() throws Exception {
                 assertNull(cache.get(key));
             }
@@ -330,8 +332,9 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testIterator() {
-        ICache cache = createCache();
+        ICache<Integer, Integer> cache = createCache();
         int size = 1111;
         int multiplier = 11;
         for (int i = 0; i < size; i++) {
@@ -358,7 +361,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testIteratorRemove() {
-        ICache cache = createCache();
+        ICache<Integer, Integer> cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -374,7 +377,7 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test(expected = IllegalStateException.class)
     public void testIteratorIllegalRemove() {
-        ICache cache = createCache();
+        ICache<Integer, Integer> cache = createCache();
         int size = 10;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
@@ -387,15 +390,17 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testIteratorDuringInsertion() throws InterruptedException {
         final AtomicBoolean stop = new AtomicBoolean(false);
-        final ICache cache = createCache();
+        final ICache<Integer, Integer> cache = createCache();
         int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
         }
 
         final Thread thread = new Thread() {
+            @Override
             public void run() {
                 Random rand = new Random();
                 while (!stop.get()) {
@@ -431,15 +436,17 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testIteratorDuringUpdate() throws InterruptedException {
         final AtomicBoolean stop = new AtomicBoolean(false);
-        final ICache cache = createCache();
+        final ICache<Integer, Integer> cache = createCache();
         final int size = 1111;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
         }
 
         final Thread thread = new Thread() {
+            @Override
             public void run() {
                 Random rand = new Random();
                 while (!stop.get()) {
@@ -475,15 +482,17 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     @Test
+    @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testIteratorDuringRemoval() throws InterruptedException {
         final AtomicBoolean stop = new AtomicBoolean(false);
-        final ICache cache = createCache();
+        final ICache<Integer, Integer> cache = createCache();
         final int size = 2222;
         for (int i = 0; i < size; i++) {
             cache.put(i, i);
         }
 
         final Thread thread = new Thread() {
+            @Override
             public void run() {
                 Random rand = new Random();
                 while (!stop.get()) {
@@ -523,23 +532,21 @@ public class CacheTest extends AbstractCacheTest {
     // Issue https://github.com/hazelcast/hazelcast-enterprise/issues/296
     @Test
     public void testCacheLoadAll() throws InterruptedException {
-        EvictionConfig evictionConfig =
-                new EvictionConfig()
-                        .setEvictionPolicy(EvictionPolicy.LRU)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
-                        .setSize(100);
+        Factory<CacheLoader<String, Integer>> cacheLoaderFactory = new CacheLoaderFactory();
 
-        Factory<CacheLoader> cacheLoaderFactory = new CacheLoaderFactory();
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setEvictionPolicy(EvictionPolicy.LRU)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(100);
 
-        CacheConfiguration configuration =
-                new CacheConfig()
-                    .setInMemoryFormat(InMemoryFormat.NATIVE)
-                    .setEvictionConfig(evictionConfig)
-                    .setCacheLoaderFactory(cacheLoaderFactory);
+        CacheConfiguration<String, Integer> configuration = new CacheConfig<String, Integer>()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig)
+                .setCacheLoaderFactory(cacheLoaderFactory);
 
-        ICache cache = (ICache) cacheManager.createCache("test", configuration);
+        ICache<String, Integer> cache = getICache(cacheManager, configuration, "test");
 
-        Map map = new HashMap();
+        Map<String, Integer> map = new HashMap<String, Integer>();
         for (int i = 0; i < 10; i++) {
             map.put(String.valueOf(i), i);
         }
@@ -547,23 +554,23 @@ public class CacheTest extends AbstractCacheTest {
         MyCompletionListener completionListener = new MyCompletionListener();
         cache.loadAll(map.keySet(), true, completionListener);
 
-        Assert.assertTrue(completionListener.done.await(1, TimeUnit.MINUTES));
-        Assert.assertNull("Got error: " + completionListener.error, completionListener.error.get());
+        assertTrue(completionListener.done.await(1, TimeUnit.MINUTES));
+        assertNull("Got error: " + completionListener.error, completionListener.error.get());
     }
 
-    private static class CacheLoaderFactory implements Factory<CacheLoader> {
+    private static class CacheLoaderFactory implements Factory<CacheLoader<String, Integer>> {
         @Override
-        public CacheLoader create() {
-            return new CacheLoader() {
+        public CacheLoader<String, Integer> create() {
+            return new CacheLoader<String, Integer>() {
                 @Override
-                public Object load(Object key) throws CacheLoaderException {
-                    return String.valueOf(key);
+                public Integer load(String key) throws CacheLoaderException {
+                    return Integer.parseInt(key);
                 }
 
                 @Override
-                public Map loadAll(Iterable keys) throws CacheLoaderException {
-                    Map map = new HashMap();
-                    for (Object key : keys) {
+                public Map<String, Integer> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
+                    Map<String, Integer> map = new HashMap<String, Integer>();
+                    for (String key : keys) {
                         map.put(key, load(key));
                     }
                     return map;
@@ -573,6 +580,7 @@ public class CacheTest extends AbstractCacheTest {
     }
 
     private static class MyCompletionListener implements CompletionListener {
+
         final CountDownLatch done = new CountDownLatch(1);
         final AtomicReference<Exception> error = new AtomicReference<Exception>();
 
@@ -621,8 +629,8 @@ public class CacheTest extends AbstractCacheTest {
 
     @Test
     public void testNativeCache_UsedNativeMemory_beforeAndAfterShutdown() {
-        CacheConfig cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
-        Cache cache = cacheManager.createCache(CACHE_NAME, cacheConfig);
+        CacheConfig<Integer, Integer> cacheConfig = createCacheConfig(CACHE_NAME, InMemoryFormat.NATIVE);
+        Cache<Integer, Integer> cache = getICache(cacheManager, cacheConfig, CACHE_NAME);
         final int count = 100;
         for (int i = 0; i < count; i++) {
             cache.put(i, i);

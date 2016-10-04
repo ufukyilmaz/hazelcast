@@ -81,16 +81,15 @@ public class CacheLoadTest extends AbstractCacheTest {
     }
 
     @Override
-    protected CacheConfig createCacheConfig(String cacheName,
-                                            InMemoryFormat inMemoryFormat) {
-        CacheConfig cacheConfig = super.createCacheConfig(cacheName, inMemoryFormat);
+    protected <K, V> CacheConfig<K, V> createCacheConfig(String cacheName, InMemoryFormat inMemoryFormat) {
+        CacheConfig<K, V> cacheConfig = super.createCacheConfig(cacheName, inMemoryFormat);
         cacheConfig.getEvictionConfig().setEvictionPolicy(EvictionPolicy.LRU);
         return cacheConfig;
     }
 
     @Test
     public void testContinuousPut() throws InterruptedException {
-        final ICache cache = createCache();
+        final ICache<Integer, String> cache = createCache();
 
         Random random = new Random();
         int minSize = 10;
@@ -146,7 +145,7 @@ public class CacheLoadTest extends AbstractCacheTest {
 
     @Test
     public void testIncrementalDataLoad() throws InterruptedException {
-        final ICache cache = createCache();
+        final ICache<Integer, byte[]> cache = createCache();
 
         int min = 500;
         int max = (int) MemoryUnit.KILOBYTES.toBytes(10);
@@ -171,5 +170,4 @@ public class CacheLoadTest extends AbstractCacheTest {
             System.out.println(memoryStats);
         }
     }
-
 }

@@ -4,7 +4,6 @@ import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
@@ -19,8 +18,7 @@ public class HiDensityCacheReadWriteThroughTest extends CacheReadWriteThroughTes
     @Override
     protected Config createConfig() {
         Config config = super.createConfig();
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
-        memoryConfig
+        config.getNativeMemoryConfig()
                 .setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES));
         return config;
@@ -28,14 +26,14 @@ public class HiDensityCacheReadWriteThroughTest extends CacheReadWriteThroughTes
 
     @Override
     protected CacheConfig<Integer, Integer> createCacheConfig() {
-        CacheConfig cacheConfig = new CacheConfig<Integer, Integer>();
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(99)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
+        CacheConfig<Integer, Integer> cacheConfig = new CacheConfig<Integer, Integer>();
         cacheConfig.setTypes(Integer.class, Integer.class);
         cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(99);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
         cacheConfig.setEvictionConfig(evictionConfig);
         return cacheConfig;
     }
-
 }

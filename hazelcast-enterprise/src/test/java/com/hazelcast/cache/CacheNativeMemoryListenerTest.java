@@ -27,16 +27,17 @@ import javax.cache.event.CacheEntryRemovedListener;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.map.HDTestSupport.getICache;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(QuickTest.class)
 public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
 
-    static final int TEST_TIME = 3;
+    private static final int TEST_TIME = 3;
 
-    HazelcastServerCachingProvider provider;
-    Cache cache;
+    private HazelcastServerCachingProvider provider;
+    private Cache<Integer, Integer> cache;
 
     @Before
     public void setup() {
@@ -48,14 +49,17 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         factory.newHazelcastInstance(config);
         provider = HazelcastServerCachingProvider.createCachingProvider(instance);
         CacheManager cacheManager = provider.getCacheManager();
-        CacheConfig cacheConfig = new CacheConfig();
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(90);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        cacheConfig.setEvictionConfig(evictionConfig);
+
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(90)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
+        CacheConfig<Integer, Integer> cacheConfig = new CacheConfig<Integer, Integer>()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig);
+
         String cacheName = randomString();
-        cache = cacheManager.createCache(cacheName, cacheConfig);
+        cache = getICache(cacheManager, cacheConfig, cacheName);
     }
 
     @After
@@ -66,7 +70,8 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
     @Test
     public void testDuplicateEventPublishing_while_put() {
         final AtomicInteger counter = new AtomicInteger();
-        MutableCacheEntryListenerConfiguration configuration = new MutableCacheEntryListenerConfiguration(
+        MutableCacheEntryListenerConfiguration<Integer, Integer> configuration
+                = new MutableCacheEntryListenerConfiguration<Integer, Integer>(
                 FactoryBuilder.factoryOf(new TestListener(counter, true)), null, true, true);
         cache.registerCacheEntryListener(configuration);
 
@@ -86,7 +91,8 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
     @Test
     public void testDuplicateEventPublishing_while_remove() {
         final AtomicInteger counter = new AtomicInteger();
-        MutableCacheEntryListenerConfiguration configuration = new MutableCacheEntryListenerConfiguration(
+        MutableCacheEntryListenerConfiguration<Integer, Integer> configuration
+                = new MutableCacheEntryListenerConfiguration<Integer, Integer>(
                 FactoryBuilder.factoryOf(new TestListener(counter, false)), null, true, true);
         cache.registerCacheEntryListener(configuration);
 
@@ -107,13 +113,13 @@ public class CacheNativeMemoryListenerTest extends HazelcastTestSupport {
         }, TEST_TIME);
     }
 
-    public static class TestListener
-            implements CacheEntryCreatedListener, CacheEntryRemovedListener, Serializable {
+    public static class TestListener implements CacheEntryCreatedListener<Integer, Integer>,
+            CacheEntryRemovedListener<Integer, Integer>, Serializable {
 
         private final AtomicInteger counter;
         private final boolean create;
 
-        public TestListener(AtomicInteger counter, boolean create) {
+        TestListener(AtomicInteger counter, boolean create) {
             this.counter = counter;
             this.create = create;
         }

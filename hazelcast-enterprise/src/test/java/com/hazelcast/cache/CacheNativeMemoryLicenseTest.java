@@ -19,7 +19,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import javax.cache.Cache;
 import javax.cache.CacheManager;
 
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
@@ -31,9 +30,8 @@ import static com.hazelcast.enterprise.SampleLicense.V4_LICENSE_WITH_HD_MEMORY_D
 @Category(QuickTest.class)
 public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
 
-    HazelcastServerCachingProvider provider;
-    Cache cache;
-    Config config;
+    private HazelcastServerCachingProvider provider;
+    private Config config;
 
     @Before
     public void setup() {
@@ -54,7 +52,8 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(3);
         configureCacheWithNativeMemory(factory);
         factory.newHazelcastInstance(config);
-        factory.newHazelcastInstance(config);//This node does not join.
+        // this node does not join
+        factory.newHazelcastInstance(config);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -62,7 +61,8 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(SECURITY_ONLY_LICENSE);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         configureCacheWithNativeMemory(factory);
-        factory.newHazelcastInstance(config);//This node should not start with HD memory
+        // this node should not start with HD memory
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -77,7 +77,8 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         GroupProperty.ENTERPRISE_LICENSE_KEY.setSystemProperty(V4_LICENSE_WITH_HD_MEMORY_DISABLED);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         configureCacheWithNativeMemory(factory);
-        factory.newHazelcastInstance(config);//This node should not start with HD memory
+        // this node should not start with HD memory
+        factory.newHazelcastInstance(config);
     }
 
     @Test
@@ -92,14 +93,16 @@ public class CacheNativeMemoryLicenseTest extends HazelcastTestSupport {
         HazelcastInstance instance = factory.newHazelcastInstance(config);
         provider = HazelcastServerCachingProvider.createCachingProvider(instance);
         CacheManager cacheManager = provider.getCacheManager();
-        CacheConfig cacheConfig = new CacheConfig();
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(90);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
-        cacheConfig.setEvictionConfig(evictionConfig);
-        String cacheName = randomString();
-        cache = cacheManager.createCache(cacheName, cacheConfig);
-    }
 
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(90)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
+        CacheConfig cacheConfig = new CacheConfig()
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig);
+
+        String cacheName = randomString();
+        cacheManager.createCache(cacheName, cacheConfig);
+    }
 }

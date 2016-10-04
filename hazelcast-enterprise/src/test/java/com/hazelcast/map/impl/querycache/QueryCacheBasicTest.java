@@ -57,10 +57,11 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
     private static final String TEST_MAP_NAME = "EntryListenerEventTypesTestMap";
     private static final String QUERY_CACHE_NAME = "query-cache";
 
-    HazelcastInstance instance;
-    IEnterpriseMap<Integer, Person> map;
-    QueryCache queryCache;
-    Predicate predicate = new SqlPredicate("age > 50");
+    private Predicate predicate = new SqlPredicate("age > 50");
+
+    private HazelcastInstance instance;
+    private IEnterpriseMap<Integer, Person> map;
+    private QueryCache queryCache;
 
     @Parameterized.Parameter
     public boolean includeValues;
@@ -91,7 +92,8 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         Config config = new Config();
         config.setProperty("hazelcast.enterprise.license.key", SampleLicense.ENTERPRISE_HD_LICENSE);
         config.getMapConfig(TEST_MAP_NAME).addQueryCacheConfig(
-                new QueryCacheConfig(QUERY_CACHE_NAME).setPredicateConfig(new PredicateConfig(predicate))
+                new QueryCacheConfig(QUERY_CACHE_NAME)
+                        .setPredicateConfig(new PredicateConfig(predicate))
                         .setIncludeValue(includeValues)
         );
         if (useNearCache) {
@@ -226,5 +228,29 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
                 return queryCache.size();
             }
         }, 0);
+    }
+
+    @Test
+    public void testKeySet_withFullKeyScan() {
+        map.put(1, new Person("a", 55));
+
+        assertEqualsEventually(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return queryCache.keySet().size();
+            }
+        }, 1);
+    }
+
+    @Test
+    public void testEntrySet_withFullKeyScan() {
+        map.put(1, new Person("a", 55));
+
+        assertEqualsEventually(new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+                return queryCache.entrySet().size();
+            }
+        }, 1);
     }
 }

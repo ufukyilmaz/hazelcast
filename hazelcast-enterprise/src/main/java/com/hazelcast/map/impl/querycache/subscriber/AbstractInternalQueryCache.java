@@ -51,8 +51,8 @@ abstract class AbstractInternalQueryCache<K, V> implements InternalQueryCache<K,
         this.indexes = new Indexes(serializationService, Extractors.empty());
         this.includeValue = isIncludeValue();
         this.partitioningStrategy = getPartitioningStrategy();
-        this.recordStore = new DefaultQueryCacheRecordStore(serializationService,
-                indexes, getQueryCacheConfig(), getEvictionListener());
+        this.recordStore = new DefaultQueryCacheRecordStore(serializationService, indexes, getQueryCacheConfig(),
+                getEvictionListener());
     }
 
     protected Predicate getPredicate() {

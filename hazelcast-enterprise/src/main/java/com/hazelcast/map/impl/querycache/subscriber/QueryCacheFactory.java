@@ -20,7 +20,7 @@ class QueryCacheFactory {
 
         private final QueryCacheRequest request;
 
-        public InternalQueryCacheConstructor(QueryCacheRequest request) {
+        InternalQueryCacheConstructor(QueryCacheRequest request) {
             this.request = request;
         }
 

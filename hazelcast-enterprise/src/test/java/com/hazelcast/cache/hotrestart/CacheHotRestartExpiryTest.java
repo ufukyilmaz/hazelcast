@@ -16,8 +16,8 @@ import org.junit.runners.Parameterized;
 import javax.cache.expiry.ExpiryPolicy;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -39,7 +39,7 @@ public class CacheHotRestartExpiryTest extends AbstractCacheHotRestartTest {
     @Test
     public void test() throws Exception {
         final int expireAfter = 10;
-        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, TimeUnit.MILLISECONDS);
+        ExpiryPolicy expiryPolicy = new HazelcastExpiryPolicy(expireAfter, expireAfter, expireAfter, MILLISECONDS);
         HazelcastInstance hz = newHazelcastInstance();
         ICache<Integer, String> cache = createCache(hz);
 

@@ -7,7 +7,6 @@ import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -66,8 +65,8 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         cache.put(0, value);
         cache.put(KEY_COUNT, value);
 
-        Assert.assertEquals(value, cache.get(0));
-        Assert.assertEquals(value, cache.get(KEY_COUNT));
+        assertEquals(value, cache.get(0));
+        assertEquals(value, cache.get(KEY_COUNT));
     }
 
     @Test
@@ -216,8 +215,8 @@ public class CacheOperationsTest extends AbstractCacheHotRestartTest {
         }
 
         for (Cache.Entry<Integer, String> entry : cache) {
-            Assert.assertNotNull(entry.getKey());
-            Assert.assertNotNull(entry.getValue());
+            assertNotNull(entry.getKey());
+            assertNotNull(entry.getValue());
         }
     }
 

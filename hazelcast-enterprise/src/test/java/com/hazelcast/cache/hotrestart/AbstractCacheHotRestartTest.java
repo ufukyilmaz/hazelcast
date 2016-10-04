@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runners.Parameterized;
 
-import javax.cache.Cache;
 import javax.cache.CacheManager;
 import java.io.File;
 import java.net.InetAddress;
@@ -37,6 +36,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 
 import static com.hazelcast.cache.impl.HazelcastServerCachingProvider.createCachingProvider;
+import static com.hazelcast.map.HDTestSupport.getICache;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertNotNull;
@@ -173,10 +173,12 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        hotRestartPersistenceConfig.setEnabled(true);
-        hotRestartPersistenceConfig.setBaseDir(folder);
+        hotRestartPersistenceConfig
+                .setEnabled(true)
+                .setBaseDir(folder);
 
-        config.getNativeMemoryConfig().setEnabled(true)
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
                 .setSize(getNativeMemorySize())
                 .setMetadataSpacePercentage(20);
         return config;
@@ -192,11 +194,11 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return createCache(hz, 1);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz) {
+    <K, V> ICache<K, V> createCache(HazelcastInstance hz) {
         return createCache(hz, 1);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount) {
+    <K, V> ICache<K, V> createCache(HazelcastInstance hz, int backupCount) {
         EvictionConfig evictionConfig;
         if (memoryFormat == InMemoryFormat.NATIVE) {
             int size = evictionEnabled ? 90 : 100;
@@ -208,23 +210,23 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return createCache(hz, backupCount, evictionConfig);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz, EvictionConfig evictionConfig) {
+    <K, V> ICache<K, V> createCache(HazelcastInstance hz, EvictionConfig evictionConfig) {
         return createCache(hz, 1, evictionConfig);
     }
 
-    <V> ICache<Integer, V> createCache(HazelcastInstance hz, int backupCount, EvictionConfig evictionConfig) {
-        CacheConfig<Integer, V> cacheConfig = new CacheConfig<Integer, V>();
-        cacheConfig.getHotRestartConfig().setEnabled(true);
-        cacheConfig.setBackupCount(backupCount);
+    <K, V> ICache<K, V> createCache(HazelcastInstance hz, int backupCount, EvictionConfig evictionConfig) {
+        CacheConfig<K, V> cacheConfig = new CacheConfig<K, V>()
+                .setBackupCount(backupCount)
+                .setEvictionConfig(evictionConfig);
         cacheConfig.setStatisticsEnabled(true);
+        cacheConfig.getHotRestartConfig()
+                .setEnabled(true);
         if (memoryFormat == InMemoryFormat.NATIVE) {
             cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         }
-        cacheConfig.setEvictionConfig(evictionConfig);
 
         CacheManager cacheManager = createCachingProvider(hz).getCacheManager();
-        Cache<Integer, V> cache = cacheManager.createCache(cacheName, cacheConfig);
-        return cache.unwrap(ICache.class);
+        return getICache(cacheManager, cacheConfig, cacheName);
     }
 
     EnterpriseCacheService getCacheService(HazelcastInstance hz) {

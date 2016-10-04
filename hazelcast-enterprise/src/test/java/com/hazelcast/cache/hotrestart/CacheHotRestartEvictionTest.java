@@ -122,12 +122,13 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     }
 
     private static class CacheTask implements Runnable {
+
         private final List<Throwable> failures;
         private final CountDownLatch latch;
         private final int operationCount;
-        private final Cache cache;
+        private final Cache<Integer, byte[]> cache;
 
-        public CacheTask(int operationCount, Cache cache, CountDownLatch latch, List<Throwable> failures) {
+        CacheTask(int operationCount, Cache<Integer, byte[]> cache, CountDownLatch latch, List<Throwable> failures) {
             this.operationCount = operationCount;
             this.cache = cache;
             this.failures = failures;
@@ -180,7 +181,7 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
         if (memoryFormat == InMemoryFormat.NATIVE) {
             int freeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
             HazelcastInstance hz = newHazelcastInstance();
-            ICache cache = createCache(hz);
+            ICache<String, byte[]> cache = createCache(hz);
 
             Node node = TestUtil.getNode(hz);
             int partitionCount = node.getPartitionService().getPartitionCount();
@@ -232,5 +233,4 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
             }
         }
     }
-
 }

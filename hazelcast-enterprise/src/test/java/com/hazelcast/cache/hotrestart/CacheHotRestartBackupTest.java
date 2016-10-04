@@ -142,7 +142,6 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
             assertTrue(latch.await(30, TimeUnit.SECONDS));
             assertEquals(expectedSize, actualSize.get());
         }
-
     }
 
     // partition specific task to retrieve size of cache-record-store

@@ -7,7 +7,6 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.config.InMemoryFormat;
-import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.memory.MemorySize;
@@ -26,8 +25,7 @@ import static com.hazelcast.nio.IOUtil.toFileName;
 
 @RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category({QuickTest.class})
-public class HotRestartNativeCacheClearTest
-        extends CacheClearTest {
+public class HotRestartNativeCacheClearTest extends CacheClearTest {
 
     private File folder;
 
@@ -47,22 +45,26 @@ public class HotRestartNativeCacheClearTest
         hotRestartPersistenceConfig.setEnabled(true);
         hotRestartPersistenceConfig.setBaseDir(folder);
 
-        config.getNativeMemoryConfig().setEnabled(true)
-              .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))
-              .setMetadataSpacePercentage(20);
+        config.getNativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))
+                .setMetadataSpacePercentage(20);
         return config;
     }
 
     @Override
     protected <K, V> CacheConfig<K, V> createCacheConfig() {
-        CacheConfig<K, V> cacheConfig = super.createCacheConfig();
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE);
-        evictionConfig.setSize(20);
-        cacheConfig.setEvictionConfig(evictionConfig);
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE)
+                .setSize(20);
+
         HotRestartConfig hrConfig = new HotRestartConfig().setEnabled(true);
-        cacheConfig.setHotRestartConfig(hrConfig);
+
+        CacheConfig<K, V> cacheConfig = super.createCacheConfig();
+        cacheConfig
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig)
+                .setHotRestartConfig(hrConfig);
         return cacheConfig;
     }
 
@@ -84,5 +86,4 @@ public class HotRestartNativeCacheClearTest
             delete(folder);
         }
     }
-
 }

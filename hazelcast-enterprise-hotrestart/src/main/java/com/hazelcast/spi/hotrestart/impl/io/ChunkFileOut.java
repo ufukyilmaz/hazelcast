@@ -12,12 +12,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 
 /**
  * Encapsulates chunk file writing code.
  */
 public class ChunkFileOut implements Closeable {
+
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int FSYNC_INTERVAL_BYTES = 4 << 20;
     public final File file;
@@ -120,6 +121,7 @@ public class ChunkFileOut implements Closeable {
      * Flushes any remaining data to the file, executes {@code fsync} on it as indicated by the
      * {@link #needsFsyncBeforeClosing} flag, and closes the file.
      */
+    @Override
     public void close() {
         flushLocalBuffer();
         try {

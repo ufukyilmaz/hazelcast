@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.internal.util.BufferingInputStream;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -11,7 +12,6 @@ import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
-import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor;
 import com.hazelcast.util.collection.Long2LongHashMap;
@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
+import static com.hazelcast.nio.IOUtil.readFullyOrNothing;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
@@ -39,10 +40,10 @@ import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGIT
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.VAL_BASEDIR;
-import static com.hazelcast.spi.hotrestart.impl.io.ChunkFileCursor.readFullyOrNothing;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
 import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static com.hazelcast.util.collection.Long2LongHashMap.DEFAULT_LOAD_FACTOR;
+import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 
 /**
@@ -53,6 +54,12 @@ import static java.lang.Thread.currentThread;
  * </ol>
  */
 public final class HotRestarter {
+
+    /** Base-2 logarithm of buffer size. */
+    public static final int LOG_OF_BUFFER_SIZE = 16;
+    /** Buffer size used for file I/O. Invariant: buffer size is a power of two. **/
+    public static final int BUFFER_SIZE = 1 << LOG_OF_BUFFER_SIZE;
+
     private static final int REBUILDER_JOIN_TIMEOUT_IN_MILLIS = 5000;
     private static final int PREFIX_TOMBSTONE_ENTRY_SIZE = LONG_SIZE_IN_BYTES + LONG_SIZE_IN_BYTES;
     private static final Comparator<File> BY_SEQ = new Comparator<File>() {
@@ -63,7 +70,7 @@ public final class HotRestarter {
             return leftSeq < rightSeq ? -1 : leftSeq > rightSeq ? 1 : 0;
         }
     };
-    private static final Pattern RX_BUCKET_DIR = Pattern.compile(String.format("[0-9a-f]{%d}", BUCKET_DIRNAME_DIGITS));
+    private static final Pattern RX_BUCKET_DIR = Pattern.compile(format("[0-9a-f]{%d}", BUCKET_DIRNAME_DIGITS));
     private static final FileFilter BUCKET_DIRS_ONLY = new FileFilter() {
         @Override
         public boolean accept(File f) {
@@ -160,7 +167,7 @@ public final class HotRestarter {
                 (int) (f.length() / PREFIX_TOMBSTONE_ENTRY_SIZE), DEFAULT_LOAD_FACTOR, 0L);
         InputStream in = null;
         try {
-            in = new BufferingInputStream(new FileInputStream(f));
+            in = new BufferingInputStream(new FileInputStream(f), BUFFER_SIZE);
             final byte[] entryBuf = new byte[PREFIX_TOMBSTONE_ENTRY_SIZE];
             final ByteBuffer byteBuf = ByteBuffer.wrap(entryBuf);
             while (readFullyOrNothing(in, entryBuf)) {
@@ -382,7 +389,7 @@ public final class HotRestarter {
 
         private void checkSubmittersGone() {
             if (submitterGoneCount == submitterCount) {
-                throw new HotRestartException(String.format(
+                throw new HotRestartException(format(
                         "All submitters left prematurely (there were %d)", submitterCount));
             }
         }

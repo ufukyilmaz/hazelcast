@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
+import com.hazelcast.internal.util.BufferingInputStream;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -12,6 +13,9 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
+import static com.hazelcast.nio.IOUtil.readFully;
+import static com.hazelcast.nio.IOUtil.readFullyOrNothing;
+import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.TOMB_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.Record.VAL_HEADER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.isActiveChunkFile;
@@ -22,6 +26,7 @@ import static com.hazelcast.spi.hotrestart.impl.io.ChunkFilesetCursor.seq;
  * specializations, which are nested inside it.
  */
 public abstract class ChunkFileCursor implements ChunkFileRecord {
+
     final ByteBuffer headerBuf;
     byte[] key;
     int truncationPoint;
@@ -37,7 +42,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         this.chunkSeq = seq(chunkFile);
         try {
             final FileInputStream fileIn = new FileInputStream(chunkFile);
-            this.in = new BufferingInputStream(fileIn);
+            this.in = new BufferingInputStream(fileIn, BUFFER_SIZE);
         } catch (FileNotFoundException e) {
             throw new HotRestartException("Failed to open chunk file " + chunkFile);
         }
@@ -83,7 +88,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         }
     }
 
-
     // Implementation of ChunkFileRecord
 
     @Override
@@ -112,9 +116,7 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         return key;
     }
 
-
     // Begin private API
-
 
     abstract void loadRecord() throws IOException;
 
@@ -122,7 +124,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
         seq = headerBuf.getLong();
         prefix = headerBuf.getLong();
     }
-
 
     final byte[] readPayload(int size) throws EOFException {
         final byte[] payload = new byte[size];
@@ -149,27 +150,6 @@ public abstract class ChunkFileCursor implements ChunkFileRecord {
             return true;
         } catch (IOException e) {
             throw new HotRestartException(e);
-        }
-    }
-
-    public static boolean readFullyOrNothing(InputStream in, byte[] b) throws IOException {
-        int bytesRead = 0;
-        do {
-            int count = in.read(b, bytesRead, b.length - bytesRead);
-            if (count < 0) {
-                if (bytesRead == 0) {
-                    return false;
-                }
-                throw new EOFException();
-            }
-            bytesRead += count;
-        } while (bytesRead < b.length);
-        return true;
-    }
-
-    private static void readFully(InputStream in, byte[] b) throws IOException {
-        if (!readFullyOrNothing(in, b)) {
-            throw new EOFException();
         }
     }
 

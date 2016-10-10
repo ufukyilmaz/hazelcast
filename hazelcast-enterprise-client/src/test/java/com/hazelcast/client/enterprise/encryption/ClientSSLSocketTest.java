@@ -28,6 +28,7 @@ import com.hazelcast.nio.ssl.TestKeyStoreUtil;
 import com.hazelcast.test.annotation.QuickTest;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -57,6 +58,7 @@ public class ClientSSLSocketTest {
         Hazelcast.shutdownAll();
     }
 
+    @Ignore
     @Test(timeout = 60000)
     public void testClientThrowsExceptionIfNodesAreUsingSSLButClientIsNot() throws Exception {
         Properties serverSslProps = TestKeyStoreUtil.createSslProperties();

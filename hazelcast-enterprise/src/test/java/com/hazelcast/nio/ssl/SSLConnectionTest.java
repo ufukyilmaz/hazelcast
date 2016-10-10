@@ -17,6 +17,7 @@ import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -269,6 +270,7 @@ public class SSLConnectionTest {
         return factory.getSSLContext();
     }
 
+    @Ignore
     @Test(timeout = 1000 * 180)
     public void testNodes() throws Exception {
         Config config = new Config();
@@ -315,6 +317,7 @@ public class SSLConnectionTest {
         }
     }
 
+    @Ignore
     @Test(timeout = 1000 * 600)
     public void testPutAndGetAlwaysGoesToWire() throws Exception {
         Config config = new Config();

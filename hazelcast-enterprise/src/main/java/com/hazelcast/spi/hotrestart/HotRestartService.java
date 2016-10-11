@@ -345,7 +345,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
         });
         try {
-            awaitCompletionOnPartitionThreads(doneLatch, deadline);
+            awaitCompletionOnPartitionThreads(doneLatch, deadline, failIfAnyData);
         } catch (Throwable t) {
             failure.compareAndSet(null, t);
             for (Thread thr : restartThreads) {
@@ -355,7 +355,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         for (Thread thr : restartThreads) {
             thr.join(Math.max(1, deadline - currentTimeMillis()));
             if (thr.isAlive()) {
-                failure.compareAndSet(null, new HotRestartException("Timed out wating for a restartThread to complete"));
+                failure.compareAndSet(null, new HotRestartException("Timed out waiting for a restartThread to complete"));
             }
         }
         final Throwable t = failure.get();
@@ -364,7 +364,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
     }
 
-    private void awaitCompletionOnPartitionThreads(CountDownLatch doneLatch, long deadline) throws InterruptedException {
+    private void awaitCompletionOnPartitionThreads(CountDownLatch doneLatch, long deadline, boolean ignoreForceStartFlag)
+            throws InterruptedException {
         do {
             if (currentTimeMillis() > deadline) {
                 throw new HotRestartException("Hot Restart timed out");
@@ -372,7 +373,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             if (node.getState() == NodeState.SHUT_DOWN) {
                 throw new HotRestartException("Node is already shut down");
             }
-            if (clusterMetadataManager.getHotRestartStatus() == FORCE_STARTED) {
+            if (!ignoreForceStartFlag && clusterMetadataManager.getHotRestartStatus() == FORCE_STARTED) {
                 throw new ForceStartException();
             }
         } while (!doneLatch.await(1, TimeUnit.SECONDS));

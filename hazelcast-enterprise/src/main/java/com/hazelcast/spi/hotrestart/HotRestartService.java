@@ -203,8 +203,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
-                runRestarterPipeline(onHeapStores);
-                runRestarterPipeline(offHeapStores);
+                runRestarterPipeline(onHeapStores, !allowData);
+                runRestarterPipeline(offHeapStores, !allowData);
             } catch (ForceStartException e) {
                 throw e;
             } catch (Throwable t) {
@@ -303,7 +303,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
-    private void runRestarterPipeline(HotRestartStore[] stores) throws Throwable {
+    private void runRestarterPipeline(HotRestartStore[] stores, final boolean failIfAnyData) throws Throwable {
         if (stores == null) {
             return;
         }
@@ -320,7 +320,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
                 @Override
                 public void run() {
                     try {
-                        store.hotRestart(false, storeCount, loop.keyReceivers[storeIndex],
+                        store.hotRestart(failIfAnyData, storeCount, loop.keyReceivers[storeIndex],
                                 loop.keyHandleSenders[storeIndex], loop.valueReceivers[storeIndex]);
                     } catch (Throwable t) {
                         failure.compareAndSet(null, t);

@@ -177,10 +177,12 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
                 .setEnabled(true)
                 .setBaseDir(folder);
 
-        config.getNativeMemoryConfig()
-                .setEnabled(true)
-                .setSize(getNativeMemorySize())
-                .setMetadataSpacePercentage(20);
+        if (memoryFormat == InMemoryFormat.NATIVE) {
+            config.getNativeMemoryConfig()
+                    .setEnabled(true)
+                    .setSize(getNativeMemorySize())
+                    .setMetadataSpacePercentage(20);
+        }
         return config;
     }
 

@@ -37,6 +37,10 @@ public class PersistentCacheDescriptors {
 
     public PersistentCacheDescriptors(File instanceHome) {
         configsDir = new File(instanceHome, CONFIG_FOLDER);
+        ensureConfigDirectoryExists();
+    }
+
+    public void ensureConfigDirectoryExists() {
         if (!configsDir.exists()) {
             boolean mkdirs = configsDir.mkdirs();
             assert mkdirs : "Cannot create configs directory!";

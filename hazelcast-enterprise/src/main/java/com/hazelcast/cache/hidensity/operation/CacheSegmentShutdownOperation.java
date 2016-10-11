@@ -2,10 +2,8 @@ package com.hazelcast.cache.hidensity.operation;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
@@ -26,13 +24,6 @@ public final class CacheSegmentShutdownOperation
     @Override
     public void run() throws Exception {
         try {
-            EnterpriseSerializationService serializationService
-                    = (EnterpriseSerializationService) getNodeEngine().getSerializationService();
-            HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
-            if (memoryManager == null || memoryManager.isDisposed()) {
-                // otherwise will cause a SIGSEGV
-                return;
-            }
             int partitionId = getPartitionId();
             EnterpriseCacheService service = getService();
             CachePartitionSegment segment = service.getSegment(partitionId);

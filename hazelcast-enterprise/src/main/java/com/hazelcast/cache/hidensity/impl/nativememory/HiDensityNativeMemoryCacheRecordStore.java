@@ -95,7 +95,7 @@ public class HiDensityNativeMemoryCacheRecordStore
                     return null;
                 } else {
                     throw new IllegalArgumentException("Invalid max-size policy "
-                            + '(' + maxSizePolicy + ") for " + getClass().getName() + " ! Only "
+                            + '(' + maxSizePolicy + ") for " + getClass().getName() + "! Only "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_SIZE + ", "
                             + EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE + ", "
                             + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_SIZE + ", "
@@ -128,7 +128,7 @@ public class HiDensityNativeMemoryCacheRecordStore
             }
         }
         if (memoryManager == null) {
-            throw new IllegalStateException("Native memory must be enabled to use Hi-Density storage !");
+            throw new IllegalStateException("Native memory must be enabled to use Hi-Density storage!");
         }
         if (cacheRecordProcessor == null) {
             cacheRecordProcessor =

@@ -18,6 +18,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import static java.lang.Runtime.getRuntime;
 
 /**
+ * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
+ * {@link HiDensityNativeMemoryNearCacheRecordStore} in parallel.
+ *
  * @param <K> the type of the key stored in Near Cache
  * @param <V> the type of the value stored in Near Cache
  */
@@ -32,44 +35,54 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final int segmentMask;
     private final int segmentShift;
 
-    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
+    private final HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
 
     @SuppressWarnings("checkstyle:magicnumber")
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                               NearCacheContext nearCacheContext) {
         this.nearCacheConfig = nearCacheConfig;
         this.nearCacheStats = new NearCacheStatsImpl();
+        this.memoryManager = getMemoryManager((EnterpriseSerializationService) nearCacheContext.getSerializationService());
 
-        HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
         // find power-of-two sizes best matching arguments
-        int sShift = 0;
-        int sSize = 1;
-        while (sSize < concurrencyLevel) {
-            ++sShift;
-            sSize <<= 1;
+        int segmentShift = 0;
+        int segmentSize = 1;
+        while (segmentSize < concurrencyLevel) {
+            ++segmentShift;
+            segmentSize <<= 1;
         }
         this.hashSeed = hashCode();
-        this.segmentShift = 32 - sShift;
-        this.segmentMask = sSize - 1;
-        this.segments = new HiDensityNativeMemoryNearCacheRecordStore[sSize];
-        for (int i = 0; i < sSize; i++) {
-            this.segments[i] =
-                    new HiDensityNativeMemoryNearCacheRecordStoreSegment(
-                            nearCacheConfig,
-                            nearCacheContext,
-                            nearCacheStats,
-                            storageInfo);
-        }
-        EnterpriseSerializationService serializationService =
-                (EnterpriseSerializationService) nearCacheContext.getSerializationService();
+        this.segmentMask = segmentSize - 1;
+        this.segmentShift = 32 - segmentShift;
 
-        HazelcastMemoryManager mm = serializationService.getMemoryManager();
-        if (mm instanceof PoolingMemoryManager) {
-            this.memoryManager = ((PoolingMemoryManager) mm).getGlobalMemoryManager();
-        } else {
-            this.memoryManager = mm;
+        HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
+        this.segments = createSegments(nearCacheConfig, nearCacheContext, nearCacheStats, storageInfo, segmentSize);
+    }
+
+    private HazelcastMemoryManager getMemoryManager(EnterpriseSerializationService serializationService) {
+        HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
+        if (memoryManager instanceof PoolingMemoryManager) {
+            return ((PoolingMemoryManager) memoryManager).getGlobalMemoryManager();
         }
+        return memoryManager;
+    }
+
+    @SuppressWarnings("unchecked")
+    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
+                                                                             NearCacheContext nearCacheContext,
+                                                                             NearCacheStatsImpl nearCacheStats,
+                                                                             HiDensityStorageInfo storageInfo,
+                                                                             int segmentSize) {
+        HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments = new HiDensityNativeMemoryNearCacheRecordStore[segmentSize];
+        for (int i = 0; i < segmentSize; i++) {
+            segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(
+                    nearCacheConfig,
+                    nearCacheContext,
+                    nearCacheStats,
+                    storageInfo);
+        }
+        return segments;
     }
 
     private void checkAvailable() {
@@ -147,7 +160,9 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         nearCacheStats.setOwnedEntryCount(0);
         nearCacheStats.setOwnedEntryMemoryCost(0L);
 
-        segments = null;
+        for (int i = 0; i < segments.length; i++) {
+            segments[i] = null;
+        }
     }
 
     @Override
@@ -257,17 +272,16 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     /**
      * Represents a segment block (lockable by a thread) in this Near Cache storage
      */
-    private class HiDensityNativeMemoryNearCacheRecordStoreSegment
-            extends HiDensityNativeMemoryNearCacheRecordStore<K, V> {
+    private class HiDensityNativeMemoryNearCacheRecordStoreSegment extends HiDensityNativeMemoryNearCacheRecordStore<K, V> {
 
         private static final long READ_LOCK_TIMEOUT_IN_MILLISECONDS = 25;
 
         private final Lock lock = new ReentrantLock();
 
-        public HiDensityNativeMemoryNearCacheRecordStoreSegment(NearCacheConfig nearCacheConfig,
-                                                                NearCacheContext nearCacheContext,
-                                                                NearCacheStatsImpl nearCacheStats,
-                                                                HiDensityStorageInfo storageInfo) {
+        HiDensityNativeMemoryNearCacheRecordStoreSegment(NearCacheConfig nearCacheConfig,
+                                                         NearCacheContext nearCacheContext,
+                                                         NearCacheStatsImpl nearCacheStats,
+                                                         HiDensityStorageInfo storageInfo) {
             super(nearCacheConfig, nearCacheContext, nearCacheStats, storageInfo);
         }
 

@@ -212,7 +212,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public boolean isStartCompleted() {
         if (hotRestartService != null) {
-            return hotRestartService.isStartCompleted();
+            return hotRestartService.getClusterMetadataManager().isStartCompleted();
         }
         return super.isStartCompleted();
     }

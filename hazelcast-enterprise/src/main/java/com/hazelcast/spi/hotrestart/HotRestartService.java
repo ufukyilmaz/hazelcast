@@ -16,7 +16,6 @@ import com.hazelcast.spi.MembershipAwareService;
 import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
-import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
 import com.hazelcast.spi.hotrestart.cluster.TriggerForceStartOnMasterOperation;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
@@ -42,7 +41,6 @@ import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.se
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 import static com.hazelcast.util.Clock.currentTimeMillis;
@@ -225,11 +223,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
         }
-    }
-
-    public boolean isStartCompleted() {
-        final HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
-        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
     }
 
     public boolean triggerForceStart() {

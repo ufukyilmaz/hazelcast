@@ -196,6 +196,14 @@ public final class ClusterMetadataManager implements PartitionListener {
         if (logger.isFinestEnabled()) {
             logger.finest("Persisting partition table after " + event);
         }
+        if (!node.joined()) {
+            // Node is being shutdown.
+            // Partition events at this point can be ignored,
+            // latest partition state will be persisted during HotRestartService shutdown.
+            logger.fine("Skipping partition table change event, "
+                    + "because node is shutting down and latest state will be persisted during shutdown.");
+            return;
+        }
         persistPartitions();
     }
 
@@ -264,9 +272,14 @@ public final class ClusterMetadataManager implements PartitionListener {
         mkdirHome();
     }
 
+    public boolean isStartCompleted() {
+        HotRestartClusterInitializationStatus status = getHotRestartStatus();
+        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
+    }
+
     public void shutdown() {
         persistActiveAndPassiveMembers();
-        if (isClusterActive()) {
+        if (isStartCompleted()) {
             persistPartitions();
         }
     }

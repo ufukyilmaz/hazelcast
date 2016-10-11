@@ -163,8 +163,11 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void loadCompletedLocal(Throwable failure) throws InterruptedException {
         final boolean success = failure == null;
-        logger.info(String.format("Local Hot Restart procedure completed with %s. Waiting for all members to complete",
-                success ? "success" : "failure"));
+        if (success) {
+            logger.info("Local Hot Restart procedure completed with success. Waiting other members to complete.");
+        } else {
+            logger.warning("Local Hot Restart procedure completed with failure. Waiting other members to complete.", failure);
+        }
         localLoadResult.set(success);
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
         waitForFailureOrExpectedStatus(EnumSet.of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED),

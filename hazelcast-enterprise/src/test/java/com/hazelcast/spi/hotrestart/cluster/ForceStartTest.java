@@ -42,11 +42,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.instance.TestUtil.warmUpPartitions;
+import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
@@ -283,7 +285,10 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public KeyHandle toKeyHandle(byte[] key) {
             loadStarted.countDown();
-            LockSupport.park();
+            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
+            while (clusterMetadataManager.getHotRestartStatus() != FORCE_STARTED) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            }
             return new KeyOnHeap(1, key);
         }
 

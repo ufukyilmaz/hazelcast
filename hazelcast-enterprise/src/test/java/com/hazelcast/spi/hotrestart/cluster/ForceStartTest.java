@@ -59,8 +59,6 @@ import static org.junit.Assert.assertNotNull;
 @Category({QuickTest.class, ParallelTest.class})
 public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
-    private final MockHotRestartService service = new MockHotRestartService();
-
     private final int nodeCount = 3;
 
     private final List<Integer> ports = acquirePorts(nodeCount);
@@ -161,7 +159,12 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
     public void testForceStart_duringDataLoad() throws Exception {
         HazelcastInstance[] instances = startInstances(ports);
         warmUpPartitions(instances);
-        service.put();
+
+        for (HazelcastInstance instance : instances) {
+            MockHotRestartService service = getNode(instance).nodeEngine.getService(MockHotRestartService.NAME);
+            service.put();
+        }
+
         changeClusterStateEventually(instances[0], ClusterState.PASSIVE);
 
         terminateInstances();
@@ -213,7 +216,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         config.getServicesConfig().addServiceConfig(
                 new ServiceConfig().setEnabled(true)
                         .setName(MockHotRestartService.NAME)
-                        .setImplementation(service)
+                        .setClassName(MockHotRestartService.class.getName())
         );
         return config;
     }
@@ -247,8 +250,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
             OperationServiceImpl operationService = (OperationServiceImpl) nodeEngineImpl.getOperationService();
             final OperationExecutor operationExecutor = operationService.getOperationExecutor();
-            final CountDownLatch latch = new CountDownLatch(
-                    operationExecutor.getPartitionThreadCount());
+            final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionThreadCount());
 
             operationExecutor.executeOnPartitionThreads(new Runnable() {
                 @Override
@@ -294,7 +296,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         @Override
         public void accept(KeyHandle kh, byte[] value) {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -481,6 +482,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             spawn(new Runnable() {
                 @Override
                 public void run() {
+                    MockHotRestartService service = node.getNodeEngine().getService(MockHotRestartService.NAME);
                     service.awaitLoadStart();
                     NodeExtension extension = node.getNodeExtension();
                     extension.triggerForceStart();

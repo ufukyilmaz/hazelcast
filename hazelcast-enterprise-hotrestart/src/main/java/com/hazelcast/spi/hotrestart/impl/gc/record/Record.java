@@ -4,7 +4,7 @@ import com.hazelcast.spi.hotrestart.KeyHandle;
 
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
-import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.LOG_OF_BUFFER_SIZE;
+import static com.hazelcast.spi.hotrestart.impl.HotRestarter.LOG_OF_BUFFER_SIZE;
 
 /**
  * Holds the metadata on the newest record in a chunk associated with a given key and also
@@ -173,8 +173,8 @@ public abstract class Record {
 
     /**
      * Expresses the given file position in the unit of
-     * {@link com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream#BUFFER_SIZE}. Used during writing to a chunk
-     * file to determine when another bufferful of data was written out.
+     * {@link com.hazelcast.spi.hotrestart.impl.HotRestarter#BUFFER_SIZE}. Used during writing to a chunk
+     * file to determine when another buffer full of data was written out.
      */
     public static long positionInUnitsOfBufsize(long filePosition) {
         return filePosition >> LOG_OF_BUFFER_SIZE;

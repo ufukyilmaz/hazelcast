@@ -1,10 +1,8 @@
 package com.hazelcast.spi.hotrestart.impl.io;
 
-
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
-import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordOnHeap;
 import com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.TestRecord;
@@ -30,8 +28,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.valChunkSizeLimit;
-import static com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.assertRecordEquals;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.createGcHelper;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
@@ -40,6 +38,7 @@ import static org.mockito.Mockito.mock;
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ChunkFileOutIntegrationTest {
+
     @Rule
     public final TestName testName = new TestName();
 
@@ -217,5 +216,4 @@ public class ChunkFileOutIntegrationTest {
     private DataInputStream input(File file) throws FileNotFoundException {
         return input = new DataInputStream(new FileInputStream(file));
     }
-
 }

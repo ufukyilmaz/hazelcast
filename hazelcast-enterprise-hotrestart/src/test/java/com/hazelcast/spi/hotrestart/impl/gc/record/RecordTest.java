@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc.record;
 
 import com.hazelcast.spi.hotrestart.impl.gc.OnHeapOffHeapTestBase;
-import com.hazelcast.spi.hotrestart.impl.io.BufferingInputStream;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -12,6 +11,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static com.hazelcast.spi.hotrestart.impl.HotRestarter.BUFFER_SIZE;
 import static com.hazelcast.spi.hotrestart.impl.gc.record.RecordMapOffHeap.newRecordMapOffHeap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,6 +50,7 @@ public class RecordTest extends OnHeapOffHeapTestBase {
     }
 
     @After
+    @Override
     public void destroy() {
         if (containerMap != null) {
             containerMap.dispose();
@@ -95,7 +96,7 @@ public class RecordTest extends OnHeapOffHeapTestBase {
 
     @Test
     public void positionInUnitsOfBufSize_reportsCorrectly() {
-        assertEquals(1, Record.positionInUnitsOfBufsize(BufferingInputStream.BUFFER_SIZE));
+        assertEquals(1, Record.positionInUnitsOfBufsize(BUFFER_SIZE));
     }
 
     @Test

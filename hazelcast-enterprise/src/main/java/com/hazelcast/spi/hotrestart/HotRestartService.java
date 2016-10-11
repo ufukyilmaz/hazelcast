@@ -309,8 +309,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
         assert stores.length == storeCount;
         final long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
-        final RamStoreRestartLoop loop =
-                new RamStoreRestartLoop(stores.length, getOperationExecutor().getPartitionThreadCount(), this, logger);
+        final RamStoreRestartLoop loop = new RamStoreRestartLoop(stores.length, partitionThreadCount, this, logger);
         final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
         final Thread[] restartThreads = new Thread[stores.length];
         for (int i = 0; i < stores.length; i++) {
@@ -381,10 +380,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private void handleForceStart() {
         logger.warning("Force start requested, skipping hot restart");
-        logger.fine("Closing Hot Restart stores");
-        closeHotRestartStores();
-        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
-        IOUtil.delete(hotRestartHome);
+
         logger.fine("Resetting all services");
         NodeEngineImpl nodeEngine = node.getNodeEngine();
         Collection<ManagedService> services = nodeEngine.getServices(ManagedService.class);
@@ -397,12 +393,24 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
         logger.fine("Resetting NodeEngine");
         node.nodeEngine.reset();
+
+        logger.fine("Closing Hot Restart stores");
+        closeHotRestartStores();
+        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
+        IOUtil.delete(hotRestartHome);
+
         logger.fine("Resetting hot restart cluster metadata");
         clusterMetadataManager.reset();
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
         persistentCacheDescriptors.ensureConfigDirectoryExists();
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
+        try {
+            runRestarterPipeline(onHeapStores, true);
+            runRestarterPipeline(offHeapStores, true);
+        } catch (Throwable t) {
+            throw new HotRestartException("Restarting Hot Restart threads after force-start failed", t);
+        }
         logger.fine("Resetting cluster state to ACTIVE");
         setClusterState(node.getClusterService(), ClusterState.ACTIVE, false);
         logger.info("Force start completed");

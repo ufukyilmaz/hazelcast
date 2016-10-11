@@ -409,7 +409,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
         logger.fine("Resetting cluster state to ACTIVE");
-        setClusterState(node.getClusterService(), ClusterState.ACTIVE, true);
+        setClusterState(node.getClusterService(), ClusterState.ACTIVE, false);
         logger.info("Force start completed");
     }
 

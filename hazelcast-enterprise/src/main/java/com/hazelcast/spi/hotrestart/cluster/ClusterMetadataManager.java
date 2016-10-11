@@ -108,7 +108,7 @@ public final class ClusterMetadataManager implements PartitionListener {
             final Address[][] table = restorePartitionTable();
             if (startWithHotRestart) {
                 final ClusterServiceImpl clusterService = node.clusterService;
-                setClusterState(clusterService, ClusterState.PASSIVE, false);
+                setClusterState(clusterService, ClusterState.PASSIVE, true);
                 addMembersRemovedInNotActiveState(clusterService, addresses);
             }
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -361,7 +361,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main & operation thread
     void setFinalClusterState(ClusterState newState) {
         logger.info("Setting final cluster state to: " + newState);
-        setClusterState(node.getClusterService(), newState, true);
+        setClusterState(node.getClusterService(), newState, false);
         finalClusterStateSet = true;
     }
 

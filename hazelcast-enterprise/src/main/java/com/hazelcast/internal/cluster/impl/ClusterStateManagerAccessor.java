@@ -20,8 +20,8 @@ public final class ClusterStateManagerAccessor {
     private ClusterStateManagerAccessor() {
     }
 
-    public static void setClusterState(ClusterServiceImpl clusterService, ClusterState newState, boolean persistentChange) {
-        clusterService.getClusterStateManager().setClusterState(newState, persistentChange);
+    public static void setClusterState(ClusterServiceImpl clusterService, ClusterState newState, boolean isTransient) {
+        clusterService.getClusterStateManager().setClusterState(newState, isTransient);
     }
 
     public static void addMembersRemovedInNotActiveState(ClusterServiceImpl clusterService,

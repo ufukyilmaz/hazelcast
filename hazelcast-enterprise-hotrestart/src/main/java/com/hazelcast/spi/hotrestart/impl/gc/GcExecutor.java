@@ -25,7 +25,7 @@ public final class GcExecutor {
                        @Name("testGcMutex") Object testGcMutex
     ) {
         this.chunkMgr = chunkMgr;
-        this.gcThread = new Thread(mainLoop, "GC thread for " + storeName);
+        this.gcThread = new Thread(mainLoop, storeName + ".GC-thread");
         this.conveyor = gcConveyor;
         this.mc = mc;
         this.testGcMutex = testGcMutex;

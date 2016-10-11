@@ -225,6 +225,7 @@ public class HotRestartTestUtil {
         final LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger(LOGGER_NAME);
         return new HotRestartStoreConfig()
+                .setStoreName("hr-store")
                 .setHomeDir(new File(testingHome, "hr-store"))
                 .setLoggingService(loggingService)
                 .setMetricsRegistry(metricsRegistry(loggingService));

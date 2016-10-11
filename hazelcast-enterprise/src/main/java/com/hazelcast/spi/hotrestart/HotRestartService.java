@@ -292,21 +292,30 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private void createHotRestartStores() {
         HazelcastMemoryManager memMgr = ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager();
-        final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
-        cfg.setRamStoreRegistry(this)
-           .setLoggingService(node.loggingService)
-           .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
+
         onHeapStores = new HotRestartStore[storeCount];
         for (int i = 0; i < storeCount; i++) {
-            onHeapStores[i] = newOnHeapHotRestartStore(cfg.setHomeDir(storeDir(i, true)));
+            newHotRestartStoreConfig(i, true);
+            onHeapStores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true));
         }
         if (memMgr != null) {
             offHeapStores = new HotRestartStore[storeCount];
             for (int i = 0; i < storeCount; i++) {
                 offHeapStores[i] = newOffHeapHotRestartStore(
-                        cfg.setHomeDir(storeDir(i, false)).setMalloc(memMgr.getSystemAllocator()));
+                        newHotRestartStoreConfig(i, false).setMalloc(memMgr.getSystemAllocator()));
             }
         }
+    }
+
+    private HotRestartStoreConfig newHotRestartStoreConfig(int storeId, boolean onheap) {
+        File dir = storeDir(storeId, onheap);
+        String name = node.getHazelcastThreadGroup().getThreadNamePrefix(dir.getName());
+        return new HotRestartStoreConfig()
+                .setStoreName(name)
+                .setHomeDir(dir)
+                .setRamStoreRegistry(this)
+                .setLoggingService(node.loggingService)
+                .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
@@ -323,7 +332,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         for (int i = 0; i < stores.length; i++) {
             final int storeIndex = i;
             final HotRestartStore store = stores[storeIndex];
-            restartThreads[i] = new Thread("restartThread for " + store.name()) {
+            restartThreads[i] = new Thread(store.name() + ".restart-thread") {
                 @Override
                 public void run() {
                     try {
@@ -331,7 +340,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
                                 loop.keyHandleSenders[storeIndex], loop.valueReceivers[storeIndex]);
                     } catch (Throwable t) {
                         failure.compareAndSet(null, t);
-                        logger.severe("restartThread failed", t);
+                        logger.severe("Restart thread failed", t);
                     }
                 }
             };

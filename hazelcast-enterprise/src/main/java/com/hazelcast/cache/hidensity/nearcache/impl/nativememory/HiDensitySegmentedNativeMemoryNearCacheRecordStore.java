@@ -27,7 +27,6 @@ import static java.lang.Runtime.getRuntime;
 public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
-    private final NearCacheConfig nearCacheConfig;
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
 
@@ -40,7 +39,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     @SuppressWarnings("checkstyle:magicnumber")
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
                                                               NearCacheContext nearCacheContext) {
-        this.nearCacheConfig = nearCacheConfig;
         this.nearCacheStats = new NearCacheStatsImpl();
         this.memoryManager = getMemoryManager((EnterpriseSerializationService) nearCacheContext.getSerializationService());
 
@@ -85,20 +83,13 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         return segments;
     }
 
-    private void checkAvailable() {
-        if (segments == null) {
-            throw new IllegalStateException(nearCacheConfig.getName() + " named Near Cache record store is not available");
-        }
-    }
-
     @SuppressWarnings("checkstyle:magicnumber")
     private int hash(Object o) {
         int h = hashSeed;
 
         h ^= o.hashCode();
 
-        // Spread bits to regularize both segment and index locations,
-        // using variant of single-word Wang/Jenkins hash.
+        // spread bits to regularize both segment and index locations, using variant of single-word Wang/Jenkins hash
         h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
         h += (h << 3);
@@ -110,24 +101,18 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public V get(K key) {
-        checkAvailable();
-
         HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.get(key);
     }
 
     @Override
     public void put(K key, V value) {
-        checkAvailable();
-
         HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         segment.put(key, value);
     }
 
     @Override
     public boolean remove(K key) {
-        checkAvailable();
-
         HiDensityNativeMemoryNearCacheRecordStore<K, V> segment = segmentFor(key);
         return segment.remove(key);
     }
@@ -139,8 +124,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void clear() {
-        checkAvailable();
-
         for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
             segment.clear();
         }
@@ -151,8 +134,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void destroy() {
-        checkAvailable();
-
         for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
             segment.destroy();
         }
@@ -167,8 +148,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public NearCacheStats getNearCacheStats() {
-        checkAvailable();
-
         return nearCacheStats;
     }
 
@@ -177,8 +156,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         Object selectedCandidate = null;
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
-                // Give priority to Data typed candidate.
-                // So there will be no extra conversion from Object to Data.
+                // give priority to Data typed candidate, so there will be no extra conversion from Object to Data
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;
@@ -187,7 +165,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (selectedCandidate != null) {
                 return selectedCandidate;
             } else {
-                // Select a non-null candidate
+                // select a non-null candidate
                 for (Object candidate : candidates) {
                     if (candidate != null) {
                         selectedCandidate = candidate;
@@ -201,8 +179,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public int size() {
-        checkAvailable();
-
         int size = 0;
         for (HiDensityNativeMemoryNearCacheRecordStore segment : segments) {
             size += segment.size();
@@ -212,8 +188,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public int forceEvict() {
-        checkAvailable();
-
         int evictedCount = 0;
         for (int i = 0; i < segments.length; i++) {
             HiDensityNativeMemoryNearCacheRecordStore segment = segments[i];
@@ -224,8 +198,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void doExpiration() {
-        checkAvailable();
-
         Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
             if (currentThread.isInterrupted()) {
@@ -238,8 +210,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void doEvictionIfRequired() {
-        checkAvailable();
-
         Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
             if (currentThread.isInterrupted()) {
@@ -252,8 +222,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void doEviction() {
-        checkAvailable();
-
         Thread currentThread = Thread.currentThread();
         for (int i = 0; i < segments.length; i++) {
             if (currentThread.isInterrupted()) {

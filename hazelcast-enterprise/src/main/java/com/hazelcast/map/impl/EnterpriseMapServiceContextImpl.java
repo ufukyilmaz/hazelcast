@@ -72,9 +72,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private static final int MAP_PARTITION_CLEAR_OPERATION_AWAIT_TIME_IN_SECS = 10;
 
     private final ConstructorFunction<String, MapContainer> mapConstructor = new ConstructorFunction<String, MapContainer>() {
+        @Override
         public MapContainer createNew(String mapName) {
-            final MapServiceContext mapServiceContext = getService().getMapServiceContext();
-            final Config config = mapServiceContext.getNodeEngine().getConfig();
+            MapServiceContext mapServiceContext = getService().getMapServiceContext();
+            Config config = mapServiceContext.getNodeEngine().getConfig();
             return new EnterpriseMapContainer(mapName, config, mapServiceContext);
         }
     };
@@ -105,10 +106,12 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         return new EnterpriseMapOperationProviders(this);
     }
 
+    @Override
     public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
         return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
     }
 
+    @Override
     public HotRestartStore getOffHeapHotRestartStoreForCurrentThread() {
         return hotRestartService.getOffHeapHotRestartStoreForCurrentThread();
     }
@@ -137,7 +140,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     NearCacheProvider createNearCacheProvider() {
-        return new EnterpriseNearCacheProvider(this);
+        return new EnterpriseNearCacheProvider(this, nodeEngine);
     }
 
     @Override
@@ -161,12 +164,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public MapQueryEngine getMapQueryEngine(String mapName) {
-        InMemoryFormat inMemoryFormat = getInMemoryFormat(mapName);
-        if (NATIVE == inMemoryFormat) {
-            return hdMapQueryEngine;
-        } else {
+        if (getInMemoryFormat(mapName) != NATIVE) {
             return super.getMapQueryEngine(mapName);
         }
+        return hdMapQueryEngine;
     }
 
     @Override
@@ -197,6 +198,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         return new EnterpriseMapEventPublisherImpl(this);
     }
 
+    @Override
     public MapOperationProvider getMapOperationProvider(String name) {
         return operationProviders.getOperationProvider(name);
     }
@@ -223,7 +225,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public void clearPartitionData(int partitionId) {
-        final PartitionContainer container = partitionContainers[partitionId];
+        PartitionContainer container = partitionContainers[partitionId];
         if (container != null) {
             for (RecordStore recordStore : container.getMaps().values()) {
                 recordStore.destroy();
@@ -269,25 +271,22 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public void incrementOperationStats(long startTime, LocalMapStatsImpl localMapStats, String mapName, Operation operation) {
-        InMemoryFormat inMemoryFormat = getInMemoryFormat(mapName);
-
-        if (NATIVE == inMemoryFormat) {
-            if (operation instanceof HDBasePutOperation) {
-                localMapStats.incrementPuts(Clock.currentTimeMillis() - startTime);
-                return;
-            }
-
-            if (operation instanceof HDBaseRemoveOperation) {
-                localMapStats.incrementRemoves(Clock.currentTimeMillis() - startTime);
-                return;
-            }
-
-            if (operation instanceof HDGetOperation) {
-                localMapStats.incrementGets(Clock.currentTimeMillis() - startTime);
-                return;
-            }
-        } else {
+        if (getInMemoryFormat(mapName) != NATIVE) {
             super.incrementOperationStats(startTime, localMapStats, mapName, operation);
+        }
+
+        if (operation instanceof HDBasePutOperation) {
+            localMapStats.incrementPuts(Clock.currentTimeMillis() - startTime);
+            return;
+        }
+
+        if (operation instanceof HDBaseRemoveOperation) {
+            localMapStats.incrementRemoves(Clock.currentTimeMillis() - startTime);
+            return;
+        }
+
+        if (operation instanceof HDGetOperation) {
+            localMapStats.incrementGets(Clock.currentTimeMillis() - startTime);
         }
     }
 
@@ -315,7 +314,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     private HotRestartConfig getHotRestartConfig(MapContainer mapContainer) {
-        final HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
+        HotRestartConfig hotRestartConfig = mapContainer.getMapConfig().getHotRestartConfig();
         return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
     }
 }

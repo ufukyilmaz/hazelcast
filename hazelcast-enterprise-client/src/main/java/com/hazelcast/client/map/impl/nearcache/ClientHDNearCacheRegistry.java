@@ -19,7 +19,6 @@ package com.hazelcast.client.map.impl.nearcache;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.cache.impl.nearcache.NearCacheContext;
-import com.hazelcast.cache.impl.nearcache.NearCacheExecutor;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.client.spi.ClientExecutionService;
@@ -28,9 +27,6 @@ import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.map.impl.utils.AbstractRegistry;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ConstructorFunction;
-
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper.wrapAsStaleReadPreventerNearCache;
 
@@ -46,22 +42,9 @@ public class ClientHDNearCacheRegistry extends AbstractRegistry<String, NearCach
                                      ClientConfig clientConfig, ClientPartitionService partitionService) {
         this.clientConfig = clientConfig;
         this.nearCacheManager = new HiDensityNearCacheManager();
-        this.nearCacheContext = new NearCacheContext(
-                serializationService,
-                createNearCacheExecutor(executionService),
-                nearCacheManager,
+        this.nearCacheContext = new NearCacheContext(serializationService, executionService, nearCacheManager,
                 clientConfig.getClassLoader());
         this.partitionService = partitionService;
-    }
-
-    private NearCacheExecutor createNearCacheExecutor(final ClientExecutionService executionService) {
-        return new NearCacheExecutor() {
-
-            @Override
-            public ScheduledFuture<?> scheduleWithRepetition(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-                return executionService.scheduleWithRepetition(command, initialDelay, delay, unit);
-            }
-        };
     }
 
     @Override

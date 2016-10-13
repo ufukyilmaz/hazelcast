@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2008-2015, Hazelcast, Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.hazelcast.map.impl.proxy;
 
 import com.hazelcast.config.MapConfig;
@@ -76,8 +60,8 @@ public class EnterpriseNearCachedMapProxyImpl<K, V> extends NearCachedMapProxyIm
         return getQueryCacheInternal(name, listener, predicate, includeValue, this);
     }
 
-    protected QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
-                                                     Boolean includeValue, IMap map) {
+    private QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
+                                                   Boolean includeValue, IMap map) {
         QueryCacheContext queryCacheContext = getQueryCacheContext();
 
         QueryCacheRequest request = newQueryCacheRequest()

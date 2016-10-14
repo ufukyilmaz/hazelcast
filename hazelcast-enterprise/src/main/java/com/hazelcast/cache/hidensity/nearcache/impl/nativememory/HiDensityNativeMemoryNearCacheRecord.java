@@ -44,13 +44,6 @@ public class HiDensityNativeMemoryNearCacheRecord
         this.nearCacheRecordAccessor = nearCacheRecordAccessor;
     }
 
-    public HiDensityNativeMemoryNearCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor,
-            long address) {
-        super(address, SIZE);
-        this.nearCacheRecordAccessor = nearCacheRecordAccessor;
-    }
-
     @Override
     public long getCreationTime() {
         return readLong(CREATION_TIME_OFFSET);

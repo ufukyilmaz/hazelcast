@@ -21,10 +21,6 @@ public abstract class HiDensityNearCacheRecord
     protected HiDensityNearCacheRecord() {
     }
 
-    protected HiDensityNearCacheRecord(long address, int size) {
-        super(address, size);
-    }
-
     /**
      * Gets the access time difference which represents the passed time since previous access
      * of this {@link HiDensityNearCacheRecord} in milliseconds.

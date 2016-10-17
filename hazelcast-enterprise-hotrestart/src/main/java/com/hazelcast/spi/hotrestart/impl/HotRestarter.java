@@ -125,7 +125,7 @@ public final class HotRestarter {
     }
 
     public void restart(boolean failIfAnyData) throws InterruptedException {
-        final Thread rebuilderThread = new Thread(new RebuilderLoop(), "Rebuilder for " + storeName);
+        final Thread rebuilderThread = new Thread(new RebuilderLoop(), storeName + ".rebuilder");
         Throwable localFailure = null;
         try {
             final Long2LongHashMap prefixTombstones = restorePrefixTombstones(homeDir);

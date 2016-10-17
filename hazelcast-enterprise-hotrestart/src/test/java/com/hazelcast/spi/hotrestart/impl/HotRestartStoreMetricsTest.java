@@ -56,7 +56,7 @@ public class HotRestartStoreMetricsTest extends HazelcastTestSupport {
         testingHome = isolatedFolder(getClass(), testName);
         delete(testingHome);
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
-        cfg.setHomeDir(new File(testingHome, storeName))
+        cfg.setStoreName(storeName).setHomeDir(new File(testingHome, storeName))
            .setLoggingService(createLoggingService())
            .setMetricsRegistry(new MetricsRegistryImpl(cfg.logger(), MANDATORY));
         metrics = cfg.metricsRegistry();

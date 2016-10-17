@@ -17,11 +17,17 @@ import static com.hazelcast.util.Preconditions.checkNotNull;
  * Internal configuration class for the Hot Restart store.
  */
 public class HotRestartStoreConfig {
+    private String storeName;
     private File homeDir;
     private RamStoreRegistry ramStoreRegistry;
     private ILogger logger;
     private MetricsRegistry metricsRegistry;
     private MemoryAllocator malloc;
+
+    public HotRestartStoreConfig setStoreName(String storeName) {
+        this.storeName = storeName;
+        return this;
+    }
 
     public HotRestartStoreConfig setHomeDir(File homeDir) {
         this.homeDir = homeDir;
@@ -65,7 +71,7 @@ public class HotRestartStoreConfig {
     }
 
     public String storeName() {
-        return homeDir.getName();
+        return storeName;
     }
 
     public File homeDir() {

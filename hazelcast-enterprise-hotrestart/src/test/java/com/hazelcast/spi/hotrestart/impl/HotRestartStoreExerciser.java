@@ -37,6 +37,7 @@ public class HotRestartStoreExerciser {
         final LoggingService loggingService = createLoggingService();
         logger = loggingService.getLogger("hotrestart-test");
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig()
+                .setStoreName("hr-store")
                 .setHomeDir(new File(testingHome, "hr-store"))
                 .setLoggingService(loggingService)
                 .setMetricsRegistry(metricsRegistry(loggingService));

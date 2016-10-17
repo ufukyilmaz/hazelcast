@@ -179,6 +179,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         logger.info("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
         persistMembers();
         persistPartitions();
+        notValidatedAddresses.clear();
+        notLoadedAddresses.clear();
         memberListRef.set(null);
         partitionTableRef.set(null);
         localLoadResult.set(null);

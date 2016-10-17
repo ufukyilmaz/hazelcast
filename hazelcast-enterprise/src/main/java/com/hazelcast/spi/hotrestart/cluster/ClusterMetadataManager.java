@@ -163,8 +163,11 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void loadCompletedLocal(Throwable failure) throws InterruptedException {
         final boolean success = failure == null;
-        logger.info(String.format("Local Hot Restart procedure completed with %s. Waiting for all members to complete",
-                success ? "success" : "failure"));
+        if (success) {
+            logger.info("Local Hot Restart procedure completed with success. Waiting other members to complete.");
+        } else {
+            logger.warning("Local Hot Restart procedure completed with failure. Waiting other members to complete.", failure);
+        }
         localLoadResult.set(success);
         receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
         waitForFailureOrExpectedStatus(EnumSet.of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED),
@@ -195,6 +198,14 @@ public final class ClusterMetadataManager implements PartitionListener {
     public void replicaChanged(PartitionReplicaChangeEvent event) {
         if (logger.isFinestEnabled()) {
             logger.finest("Persisting partition table after " + event);
+        }
+        if (!node.joined()) {
+            // Node is being shutdown.
+            // Partition events at this point can be ignored,
+            // latest partition state will be persisted during HotRestartService shutdown.
+            logger.fine("Skipping partition table change event, "
+                    + "because node is shutting down and latest state will be persisted during shutdown.");
+            return;
         }
         persistPartitions();
     }
@@ -264,9 +275,14 @@ public final class ClusterMetadataManager implements PartitionListener {
         mkdirHome();
     }
 
+    public boolean isStartCompleted() {
+        HotRestartClusterInitializationStatus status = getHotRestartStatus();
+        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
+    }
+
     public void shutdown() {
         persistActiveAndPassiveMembers();
-        if (isClusterActive()) {
+        if (isStartCompleted()) {
             persistPartitions();
         }
     }

@@ -14,6 +14,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.util.Clock;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -29,7 +30,7 @@ import java.util.Map;
 @SuppressFBWarnings(value = "NM_SAME_SIMPLE_NAME_AS_SUPERCLASS",
         justification = "Class names shouldn't shadow simple name of superclass")
 public final class CacheReplicationOperation
-        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation {
+        extends com.hazelcast.cache.impl.operation.CacheReplicationOperation implements IdentifiedDataSerializable {
 
     private Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;
     private Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
@@ -207,6 +208,16 @@ public final class CacheReplicationOperation
     @Override
     public boolean isEmpty() {
         return (offHeapSource == null || offHeapSource.isEmpty() && super.isEmpty());
+    }
+
+    @Override
+    public int getFactoryId() {
+        return HiDensityCacheDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return HiDensityCacheDataSerializerHook.CACHE_REPLICATION;
     }
 
     /**

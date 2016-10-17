@@ -17,15 +17,9 @@ import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRI
  */
 public class EnterpriseMapPortableHook implements PortableHook {
 
-    /**
-     * Factory id for map portable factory.
-     */
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_MAP_PORTABLE_FACTORY,
             ENTERPRISE_MAP_PORTABLE_FACTORY_ID);
 
-    /**
-     * Index of {@link AccumulatorInfo} constructor.
-     */
     public static final int CREATE_ACCUMULATOR_INFO = 2;
 
     @Override

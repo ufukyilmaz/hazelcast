@@ -10,16 +10,8 @@ import com.hazelcast.util.ConstructorFunction;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY;
 import static com.hazelcast.internal.serialization.impl.FactoryIdHelper.ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY_ID;
 
-/**
- * Serializer hook for HotRestart-related operations
- *
- */
 public class HotRestartClusterSerializerHook implements DataSerializerHook {
 
-    // Checkstyle moans about lack of JavaDoc on these fields.
-    // It's just mechanical boiler-plate, there is no point in having JavaDoc
-    // let's disable CheckStyle instead of writing some mambo-jambo
-    //CHECKSTYLE:OFF
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY,
             ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY_ID);
 
@@ -32,7 +24,6 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     public static final int SEND_PARTITION_TABLE_FOR_VALIDATION = 6;
     public static final int SEND_PARTITION_TABLE_VALIDATION_RESULT = 7;
     public static final int TRIGGER_FORCE_START_ON_MASTER = 8;
-    //CHECKSTYLE:ON
 
     private static final int LEN = TRIGGER_FORCE_START_ON_MASTER + 1;
 

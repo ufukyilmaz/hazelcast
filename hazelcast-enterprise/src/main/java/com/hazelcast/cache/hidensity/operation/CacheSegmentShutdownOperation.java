@@ -4,6 +4,7 @@ import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.impl.CachePartitionSegment;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  */
 public final class CacheSegmentShutdownOperation
         extends Operation
-        implements PartitionAwareOperation, AllowedDuringPassiveState {
+        implements PartitionAwareOperation, AllowedDuringPassiveState, IdentifiedDataSerializable {
 
     private final CountDownLatch done = new CountDownLatch(1);
 
@@ -57,4 +58,13 @@ public final class CacheSegmentShutdownOperation
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int getFactoryId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getId() {
+        throw new UnsupportedOperationException();
+    }
 }

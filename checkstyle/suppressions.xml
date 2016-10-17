@@ -14,6 +14,7 @@
 
     <!-- Javadoc suppressions -->
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="/impl/"/>
+    <suppress checks="Javadoc(Package|Type|Method|Variable)" files="Hook\.java$"/>
     <suppress checks="Javadoc(Package|Type|Method|Variable)" files="com/hazelcast/security/"/>
     <suppress checks="Javadoc(Type|Method|Variable)" files="com/hazelcast/map/"/>
     <suppress checks="JavadocType" files="com/hazelcast/memory"/>

@@ -16,7 +16,6 @@ import com.hazelcast.spi.MembershipAwareService;
 import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
-import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus;
 import com.hazelcast.spi.hotrestart.cluster.TriggerForceStartOnMasterOperation;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
@@ -42,7 +41,6 @@ import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.se
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOnHeapHotRestartStore;
 import static com.hazelcast.util.Clock.currentTimeMillis;
@@ -205,8 +203,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
-                runRestarterPipeline(onHeapStores);
-                runRestarterPipeline(offHeapStores);
+                runRestarterPipeline(onHeapStores, !allowData);
+                runRestarterPipeline(offHeapStores, !allowData);
             } catch (ForceStartException e) {
                 throw e;
             } catch (Throwable t) {
@@ -225,11 +223,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
         }
-    }
-
-    public boolean isStartCompleted() {
-        final HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
-        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
     }
 
     public boolean triggerForceStart() {
@@ -310,14 +303,13 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
-    private void runRestarterPipeline(HotRestartStore[] stores) throws Throwable {
+    private void runRestarterPipeline(HotRestartStore[] stores, final boolean failIfAnyData) throws Throwable {
         if (stores == null) {
             return;
         }
         assert stores.length == storeCount;
         final long deadline = cappedSum(currentTimeMillis(), dataLoadTimeoutMillis);
-        final RamStoreRestartLoop loop =
-                new RamStoreRestartLoop(stores.length, getOperationExecutor().getPartitionThreadCount(), this, logger);
+        final RamStoreRestartLoop loop = new RamStoreRestartLoop(stores.length, partitionThreadCount, this, logger);
         final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
         final Thread[] restartThreads = new Thread[stores.length];
         for (int i = 0; i < stores.length; i++) {
@@ -327,7 +319,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
                 @Override
                 public void run() {
                     try {
-                        store.hotRestart(false, storeCount, loop.keyReceivers[storeIndex],
+                        store.hotRestart(failIfAnyData, storeCount, loop.keyReceivers[storeIndex],
                                 loop.keyHandleSenders[storeIndex], loop.valueReceivers[storeIndex]);
                     } catch (Throwable t) {
                         failure.compareAndSet(null, t);
@@ -352,7 +344,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
         });
         try {
-            awaitCompletionOnPartitionThreads(doneLatch, deadline);
+            awaitCompletionOnPartitionThreads(doneLatch, deadline, failIfAnyData);
         } catch (Throwable t) {
             failure.compareAndSet(null, t);
             for (Thread thr : restartThreads) {
@@ -362,7 +354,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         for (Thread thr : restartThreads) {
             thr.join(Math.max(1, deadline - currentTimeMillis()));
             if (thr.isAlive()) {
-                failure.compareAndSet(null, new HotRestartException("Timed out wating for a restartThread to complete"));
+                failure.compareAndSet(null, new HotRestartException("Timed out waiting for a restartThread to complete"));
             }
         }
         final Throwable t = failure.get();
@@ -371,7 +363,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
     }
 
-    private void awaitCompletionOnPartitionThreads(CountDownLatch doneLatch, long deadline) throws InterruptedException {
+    private void awaitCompletionOnPartitionThreads(CountDownLatch doneLatch, long deadline, boolean ignoreForceStartFlag)
+            throws InterruptedException {
         do {
             if (currentTimeMillis() > deadline) {
                 throw new HotRestartException("Hot Restart timed out");
@@ -379,7 +372,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             if (node.getState() == NodeState.SHUT_DOWN) {
                 throw new HotRestartException("Node is already shut down");
             }
-            if (clusterMetadataManager.getHotRestartStatus() == FORCE_STARTED) {
+            if (!ignoreForceStartFlag && clusterMetadataManager.getHotRestartStatus() == FORCE_STARTED) {
                 throw new ForceStartException();
             }
         } while (!doneLatch.await(1, TimeUnit.SECONDS));
@@ -387,10 +380,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private void handleForceStart() {
         logger.warning("Force start requested, skipping hot restart");
-        logger.fine("Closing Hot Restart stores");
-        closeHotRestartStores();
-        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
-        IOUtil.delete(hotRestartHome);
+
         logger.fine("Resetting all services");
         NodeEngineImpl nodeEngine = node.getNodeEngine();
         Collection<ManagedService> services = nodeEngine.getServices(ManagedService.class);
@@ -403,11 +393,24 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
         logger.fine("Resetting NodeEngine");
         node.nodeEngine.reset();
+
+        logger.fine("Closing Hot Restart stores");
+        closeHotRestartStores();
+        logger.info("Deleting Hot Restart base-dir " + hotRestartHome);
+        IOUtil.delete(hotRestartHome);
+
         logger.fine("Resetting hot restart cluster metadata");
         clusterMetadataManager.reset();
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
+        persistentCacheDescriptors.ensureConfigDirectoryExists();
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
+        try {
+            runRestarterPipeline(onHeapStores, true);
+            runRestarterPipeline(offHeapStores, true);
+        } catch (Throwable t) {
+            throw new HotRestartException("Restarting Hot Restart threads after force-start failed", t);
+        }
         logger.fine("Resetting cluster state to ACTIVE");
         setClusterState(node.getClusterService(), ClusterState.ACTIVE, true);
         logger.info("Force start completed");

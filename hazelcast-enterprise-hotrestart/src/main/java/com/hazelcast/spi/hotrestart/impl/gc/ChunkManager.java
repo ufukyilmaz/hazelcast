@@ -57,6 +57,8 @@ public final class ChunkManager implements Disposable {
     @Inject
     private Snapshotter snapshotter;
 
+    private long maxValLive;
+
     @Inject
     private ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
                          GcLogger logger, DiContainer di
@@ -110,6 +112,7 @@ public final class ChunkManager implements Disposable {
             final StableChunk stable = closed.toStableChunk();
             (isTombChunk ? tombOccupancy : valOccupancy).inc(stable.size());
             (isTombChunk ? tombGarbage : valGarbage).inc(stable.garbage);
+            updateMaxLive();
             chunks.put(stable.seq, stable);
         }
     }
@@ -150,6 +153,10 @@ public final class ChunkManager implements Disposable {
         public String toString() {
             return String.format("(%s,%d,%d,%s)", keyHandle, recordSeq, size, isTombstone);
         }
+    }
+
+    void updateMaxLive() {
+        maxValLive = Math.max(maxValLive, valOccupancy.get() - valGarbage.get());
     }
 
     /**
@@ -262,7 +269,7 @@ public final class ChunkManager implements Disposable {
 
     /** @return GC parameters calculated for the current state of the {@code ChunkManager} */
     GcParams gcParams() {
-        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), gcHelper.chunkSeq());
+        return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), maxValLive, gcHelper.chunkSeq());
     }
 
     /** Entry point to the ValueGC procedure (garbage collection of value chunks). */

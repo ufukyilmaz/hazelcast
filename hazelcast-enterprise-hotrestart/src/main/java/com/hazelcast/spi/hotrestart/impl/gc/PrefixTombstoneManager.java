@@ -142,6 +142,10 @@ public class PrefixTombstoneManager {
         return false;
     }
 
+    boolean sweepingInProgress() {
+        return sweeper != null || chunkSeqToStartSweep != 0;
+    }
+
     /**
      * Applies the effects of newly added prefix tombstones to the active chunk.
      * The point is to immediately reset the garbage counts on records in the active chunk so

@@ -72,5 +72,15 @@ public class EnterpriseMapReplicationOperation extends MapReplicationOperation {
         }
     }
 
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.MAP_REPLICATION;
+    }
+
 }
 

@@ -108,8 +108,10 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int PARTITION_WIDE_PREDICATE_ENTRY_FACTORY = 64;
     public static final int SIZE_FACTORY = 65;
     public static final int MADE_PUBLISHABLE_FACTORY = 66;
+    public static final int MAP_REPLICATION = 67;
+    public static final int POST_JOIN = 68;
 
-    private static final int LEN = MADE_PUBLISHABLE_FACTORY + 1;
+    private static final int LEN = POST_JOIN + 1;
 
     @Override
     public int getFactoryId() {
@@ -454,6 +456,16 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[MADE_PUBLISHABLE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new MadePublishableOperationFactory();
+            }
+        };
+        constructors[MAP_REPLICATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new EnterpriseMapReplicationOperation();
+            }
+        };
+        constructors[POST_JOIN] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new EnterprisePostJoinMapOperation();
             }
         };
 

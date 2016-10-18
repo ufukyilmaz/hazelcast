@@ -97,4 +97,14 @@ public class EnterprisePostJoinMapOperation extends PostJoinMapOperation {
         AccumulatorInfoSupplier infoSupplier = publisherContext.getAccumulatorInfoSupplier();
         infoSupplier.putIfAbsent(info.getMapName(), info.getCacheName(), info);
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.POST_JOIN;
+    }
 }

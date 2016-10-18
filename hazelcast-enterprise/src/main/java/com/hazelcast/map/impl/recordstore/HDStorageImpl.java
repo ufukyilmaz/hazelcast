@@ -29,6 +29,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     private final HiDensityRecordProcessor recordProcessor;
     private final SizeEstimator sizeEstimator;
     private final HDStorageSCHM map;
+    private volatile int entryCount;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
@@ -51,6 +52,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
         addDeferredDispose(key);
         addDeferredDispose(oldRecord);
+
+        setEntryCount(map.size());
     }
 
     @Override
@@ -76,6 +79,8 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
                 addDeferredDispose(nativeKey);
             }
         }
+
+        setEntryCount(map.size());
     }
 
     @Override
@@ -116,6 +121,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
             return;
         }
         map.clear();
+        setEntryCount(0);
+    }
+
+    private void setEntryCount(int value) {
+        entryCount = value;
     }
 
     @Override
@@ -130,7 +140,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     @Override
     public int size() {
-        return map.size();
+        return entryCount;
     }
 
     @Override
@@ -147,6 +157,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         }
         disposeDeferredBlocks();
         map.dispose();
+        setEntryCount(0);
     }
 
     @Override

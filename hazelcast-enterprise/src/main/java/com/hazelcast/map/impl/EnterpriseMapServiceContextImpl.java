@@ -140,11 +140,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    LocalMapStatsProvider createLocalMapStatsProvider() {
-        return new EnterpriseLocalMapStatsProvider(this);
-    }
-
-    @Override
     public MapContainer getMapContainer(String mapName) {
         return ConcurrencyUtil.getOrPutSynchronized(mapContainers, mapName, contextMutexFactory, mapConstructor);
     }

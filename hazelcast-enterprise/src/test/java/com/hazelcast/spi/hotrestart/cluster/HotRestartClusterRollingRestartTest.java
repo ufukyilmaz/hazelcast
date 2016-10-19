@@ -18,7 +18,7 @@ import java.util.List;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.waitClusterForSafeState;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
@@ -48,7 +48,7 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
 
     @Test
     public void test_rollingRestart() throws Exception {
-        final int nodeCount = 2;
+        final int nodeCount = 3;
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
         final List<Integer> ports = acquirePorts(nodeCount);
         initializeFactory(ports);
@@ -76,9 +76,12 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
 
         changeClusterStateEventually(instances[0], clusterState);
 
-        Address address = getNode(instances[0]).getThisAddress();
-        instances[0].shutdown();
-        instances[0] = startInstance(address.getPort());
+        for (int i = 0; i < 5; i++) {
+            int k = i % instances.length;
+            Address address = getAddress(instances[k]);
+            instances[k].getLifecycleService().terminate();
+            instances[k] = startInstance(address.getPort());
+        }
 
         for (HazelcastInstance instance : instances) {
             assertClusterSizeEventually(nodeCount, instance);

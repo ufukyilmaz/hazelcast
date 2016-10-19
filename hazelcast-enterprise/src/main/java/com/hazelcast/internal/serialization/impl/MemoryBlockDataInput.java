@@ -206,6 +206,7 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return service;
     }
 
+    @Override
     public double readDouble(ByteOrder byteOrder) throws IOException {
         if (byteOrder != ByteOrder.nativeOrder()) {
             return Double.longBitsToDouble(readLong(byteOrder));
@@ -481,6 +482,11 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
             return values;
         }
         return new String[0];
+    }
+
+    @Override
+    public <T> T readObject(Class aClass) throws IOException {
+        return service.readObject(this, aClass);
     }
 
     private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale)

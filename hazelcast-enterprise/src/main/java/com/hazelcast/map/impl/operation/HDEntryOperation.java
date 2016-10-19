@@ -91,7 +91,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
         mapServiceContext.interceptAfterPut(name, dataValue);
         if (isPostProcessing(recordStore)) {
             Record record = recordStore.getRecord(dataKey);
-            dataValue = record.getValue();
+            dataValue = record == null ? null : record.getValue();
         }
 
 

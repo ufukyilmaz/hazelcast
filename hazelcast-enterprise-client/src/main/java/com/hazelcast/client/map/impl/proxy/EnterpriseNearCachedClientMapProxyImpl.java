@@ -58,35 +58,36 @@ public class EnterpriseNearCachedClientMapProxyImpl<K, V>
         }
     };
 
-    public EnterpriseNearCachedClientMapProxyImpl(String serviceName, String name,
-                                                  Registry<String, NearCache<Data, Object>> hdNearCacheRegistry) {
+    EnterpriseNearCachedClientMapProxyImpl(String serviceName, String name,
+                                           Registry<String, NearCache<Data, Object>> hdNearCacheRegistry) {
         super(serviceName, name);
         this.hdNearCacheRegistry = hdNearCacheRegistry;
     }
 
     @Override
-    protected void init() {
-        InMemoryFormat nearCacheInMemoryFormat = getNearCacheInMemoryFormat();
-        if (NATIVE == nearCacheInMemoryFormat) {
-            nearCache = hdNearCacheRegistry.getOrCreate(name);
-            keyStateMarker = ((StaleReadPreventerNearCacheWrapper) nearCache).getKeyStateMarker();
+    protected void initNearCache() {
+        if (getNearCacheInMemoryFormat() != NATIVE) {
+            super.initNearCache();
+            return;
+        }
 
-            if (nearCache.isInvalidatedOnChange()) {
-                addNearCacheInvalidateListener();
-            }
-        } else {
-            super.init();
+        nearCache = hdNearCacheRegistry.getOrCreate(name);
+        keyStateMarker = ((StaleReadPreventerNearCacheWrapper) nearCache).getKeyStateMarker();
+
+        if (nearCache.isInvalidatedOnChange()) {
+            addNearCacheInvalidateListener();
         }
     }
 
     @Override
     protected void onDestroy() {
-        if (NATIVE == nearCache.getInMemoryFormat()) {
-            removeNearCacheInvalidationListener();
-            hdNearCacheRegistry.remove(name);
-        } else {
+        if (nearCache.getInMemoryFormat() != NATIVE) {
             super.onDestroy();
+            return;
         }
+
+        removeNearCacheInvalidationListener();
+        hdNearCacheRegistry.remove(name);
     }
 
     @Override

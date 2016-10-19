@@ -32,7 +32,7 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
 
     /**
      * Holds {@link QueryCacheContext} for this proxy.
-     * There should be only one {@link QueryCacheContext} instance exist.
+     * There should be only one {@link QueryCacheContext} instance.
      */
     private ConcurrentMap<String, QueryCacheContext> queryCacheContextHolder
             = new ConcurrentHashMap<String, QueryCacheContext>(1);
@@ -45,14 +45,12 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
         }
     };
 
-    public EnterpriseClientMapProxyImpl(String serviceName, String name) {
+    EnterpriseClientMapProxyImpl(String serviceName, String name) {
         super(serviceName, name);
-
     }
 
     public QueryCacheContext getQueryContext() {
-        return getOrPutIfAbsent(queryCacheContextHolder,
-                "QueryCacheContext", queryCacheContextConstructorFunction);
+        return getOrPutIfAbsent(queryCacheContextHolder, "QueryCacheContext", queryCacheContextConstructorFunction);
     }
 
     @Override
@@ -80,8 +78,8 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
         return getQueryCacheInternal(name, mapListener, predicate, includeValue, this);
     }
 
-    protected QueryCache getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
-                                               Boolean includeValue, IMap map) {
+    private QueryCache getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
+                                             Boolean includeValue, IMap map) {
         QueryCacheContext context = getQueryContext();
         QueryCacheRequest request = newQueryCacheRequest()
                 .withUserGivenCacheName(name)
@@ -103,5 +101,4 @@ public class EnterpriseClientMapProxyImpl extends ClientMapProxy implements IEnt
         return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
                 request.getUserGivenCacheName(), constructorFunction);
     }
-
 }

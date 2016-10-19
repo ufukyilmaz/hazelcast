@@ -57,12 +57,12 @@ public class HiDensityNearCacheStressTest extends NearCacheTestSupport {
         return createNearCacheContext(memoryManager);
     }
 
-    protected NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
+    private NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
         EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
                 .setMemoryManager(memoryManager)
                 .build();
 
-        return new NearCacheContext(serializationService, createNearCacheExecutor());
+        return new NearCacheContext(serializationService, createExecutionService());
     }
 
     @Override

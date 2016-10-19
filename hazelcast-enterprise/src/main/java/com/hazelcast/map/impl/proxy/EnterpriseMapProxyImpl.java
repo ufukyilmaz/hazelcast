@@ -66,8 +66,8 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
         return getQueryCacheInternal(name, listener, predicate, includeValue, this);
     }
 
-    protected QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
-                                                     Boolean includeValue, IMap map) {
+    private QueryCache<K, V> getQueryCacheInternal(String name, MapListener listener, Predicate predicate,
+                                                   Boolean includeValue, IMap map) {
         QueryCacheContext queryCacheContext = getQueryCacheContext();
 
         QueryCacheRequest request = newQueryCacheRequest()
@@ -97,7 +97,6 @@ public class EnterpriseMapProxyImpl<K, V> extends MapProxyImpl<K, V> implements 
         return queryCacheEndToEndProvider.getOrCreateQueryCache(request.getMapName(),
                 request.getUserGivenCacheName(), constructorFunction);
     }
-
 
     @Override
     public <SuppliedValue, Result> Result aggregate(Supplier<K, V, SuppliedValue> supplier,

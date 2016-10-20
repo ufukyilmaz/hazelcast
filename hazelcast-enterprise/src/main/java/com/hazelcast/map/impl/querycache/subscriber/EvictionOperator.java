@@ -10,9 +10,9 @@ import com.hazelcast.internal.eviction.EvictionStrategy;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 
+import static com.hazelcast.internal.config.ConfigValidator.checkEvictionConfig;
 import static com.hazelcast.internal.eviction.EvictionPolicyEvaluatorProvider.getEvictionPolicyEvaluator;
 import static com.hazelcast.internal.eviction.EvictionStrategyProvider.getEvictionStrategy;
-import static com.hazelcast.internal.eviction.impl.EvictionConfigHelper.checkEvictionConfig;
 
 /**
  * Contains eviction specific functionality of a {@link QueryCacheRecordStore}.
@@ -64,7 +64,7 @@ public class EvictionOperator {
     }
 
     private EvictionPolicyEvaluator<Data, QueryCacheRecord> createEvictionPolicyEvaluator() {
-        checkEvictionConfig(evictionConfig);
+        checkEvictionConfig(evictionConfig, false);
         return getEvictionPolicyEvaluator(evictionConfig, classLoader);
     }
 

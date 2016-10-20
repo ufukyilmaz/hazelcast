@@ -484,11 +484,6 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new String[0];
     }
 
-    @Override
-    public <T> T readObject(Class aClass) throws IOException {
-        return service.readObject(this, aClass);
-    }
-
     private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale)
     throws IOException {
         if (length < 0) {
@@ -604,6 +599,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     @Override
     public Object readObject() throws IOException {
         return service.readObject(this);
+    }
+
+    @Override
+    public <T> T readObject(Class aClass)
+            throws IOException {
+        return service.readObject(this, aClass);
     }
 
     @Override

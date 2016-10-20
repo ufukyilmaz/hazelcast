@@ -31,6 +31,8 @@ import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
 
+import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
+
 /**
  * Enterprise implementation of <tt>ClientExtension</tt>
  */
@@ -82,8 +84,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
         if (memoryConfig.isEnabled()) {
             if (license.getVersion() == LicenseVersion.V4) {
-                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                        Feature.HD_MEMORY);
+                checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.HD_MEMORY);
             }
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
@@ -144,8 +145,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
             try {
-                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                        Feature.CONTINUOUS_QUERY_CACHE);
+                checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.CONTINUOUS_QUERY_CACHE);
 
                 return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
                         client.getSerializationService(), client.getClientConfig(),
@@ -157,5 +157,4 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }
-
 }

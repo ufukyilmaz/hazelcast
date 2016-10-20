@@ -147,9 +147,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             try {
                 checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.CONTINUOUS_QUERY_CACHE);
 
-                return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
-                        client.getSerializationService(), client.getClientConfig(),
-                        client.getClientPartitionService());
+                return new EnterpriseMapClientProxyFactory(client.getClientConfig());
             } catch (InvalidLicenseException e) {
                 return super.createServiceProxyFactory(service);
             }

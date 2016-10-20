@@ -25,49 +25,41 @@ public class DataSerializerHookTest {
     private final Set<String> enterpriseAllSet = new HashSet<String>();
     private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
     private final String eeAllPath = "src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook";
-    private BufferedReader eeAllInput;
-    private URL ossURL;
-    private URL wmURL;
-    private BufferedReader ossIn;
+
+    private BufferedReader ossInput;
     private BufferedReader eeInput;
     private BufferedReader wmInput;
 
     @Before
     public void loadResources() throws IOException {
-        eeAllInput = new BufferedReader(
-                new FileReader(eeAllPath)
-        );
-
+        BufferedReader eeAllInput = new BufferedReader(new FileReader(eeAllPath));
         for (String line = eeAllInput.readLine(); line != null; line = eeAllInput.readLine()) {
             if (line.startsWith("com")) {
                 enterpriseAllSet.add(line);
             }
         }
 
-        ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+        URL ossURL = new URL("https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision
+                + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
         );
-        ossIn = new BufferedReader(
-                new InputStreamReader(ossURL.openStream()));
+        ossInput = new BufferedReader(new InputStreamReader(ossURL.openStream()));
 
-        eeInput = new BufferedReader(
-                new FileReader(
-                        "../hazelcast-enterprise/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
-                )
+        eeInput = new BufferedReader(new FileReader("../hazelcast-enterprise/src/main/resources/META-INF/"
+                + "services/com.hazelcast.DataSerializerHook")
         );
 
-        wmURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast-wm/master/src/main/resources/META-INF/services/com.hazelcast.DataSerializerHook"
+        URL wmURL = new URL("https://raw.githubusercontent.com/hazelcast/hazelcast-wm/master/src/main/resources/META-INF/"
+                + "services/com.hazelcast.DataSerializerHook"
         );
-        wmInput = new BufferedReader(
-                new InputStreamReader(wmURL.openStream()));
+        wmInput = new BufferedReader(new InputStreamReader(wmURL.openStream()));
     }
 
     @Test
     public void testMergedCorrectly() throws IOException {
-        for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
+        for (String line = ossInput.readLine(); line != null; line = ossInput.readLine()) {
             if (line.startsWith("com")) {
-                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath, enterpriseAllSet.contains(line));
+                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath,
+                        enterpriseAllSet.contains(line));
                 enterpriseAllSet.remove(line);
             }
         }

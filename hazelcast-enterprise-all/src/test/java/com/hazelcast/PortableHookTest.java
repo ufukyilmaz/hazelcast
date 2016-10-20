@@ -25,41 +25,34 @@ public class PortableHookTest {
     private final Set<String> enterpriseAllSet = new HashSet<String>();
     private final String revision = BuildInfoProvider.getBuildInfo().getRevision();
     private final String eeAllPath = "src/main/resources/META-INF/services/com.hazelcast.PortableHook";
-    private BufferedReader eeAllInput;
-    private URL ossURL;
+
     private BufferedReader ossIn;
     private BufferedReader eeInput;
 
     @Before
     public void loadResources() throws IOException {
-        eeAllInput = new BufferedReader(
-                new FileReader(eeAllPath)
-        );
-
+        BufferedReader eeAllInput = new BufferedReader(new FileReader(eeAllPath));
         for (String line = eeAllInput.readLine(); line != null; line = eeAllInput.readLine()) {
             if (line.startsWith("com")) {
                 enterpriseAllSet.add(line);
             }
         }
 
-        ossURL = new URL(
-                "https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
+        URL ossURL = new URL("https://raw.githubusercontent.com/hazelcast/hazelcast/" + revision
+                + "/hazelcast/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
         );
-        ossIn = new BufferedReader(
-                new InputStreamReader(ossURL.openStream()));
+        ossIn = new BufferedReader(new InputStreamReader(ossURL.openStream()));
 
-        eeInput = new BufferedReader(
-                new FileReader(
-                        "../hazelcast-enterprise/src/main/resources/META-INF/services/com.hazelcast.PortableHook"
-                )
-        );
+        eeInput = new BufferedReader(new FileReader("../hazelcast-enterprise/src/main/resources/META-INF/"
+                + "services/com.hazelcast.PortableHook"));
     }
 
     @Test
     public void testMergedCorrectly() throws IOException {
         for (String line = ossIn.readLine(); line != null; line = ossIn.readLine()) {
             if (line.startsWith("com")) {
-                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath, enterpriseAllSet.contains(line));
+                assertTrue("Class in OSS: " + line + " is missing in file: hazelcast-enterprise-all/" + eeAllPath,
+                        enterpriseAllSet.contains(line));
             }
         }
 

@@ -202,7 +202,7 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
     @Override
     public <T> T toObject(Object data, MemoryAllocator memoryAllocator) {
         try {
-            mallocThreadLocal.set((HazelcastMemoryManager) memoryAllocator);
+            mallocThreadLocal.set(memoryAllocator);
             return super.toObject(data);
         } finally {
             mallocThreadLocal.remove();

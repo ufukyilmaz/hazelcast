@@ -603,6 +603,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
     }
 
     @Override
+    public <T> T readObject(Class aClass)
+            throws IOException {
+        return service.readObject(this, aClass);
+    }
+
+    @Override
     public Data readData() throws IOException {
         byte[] bytes = readByteArray();
         Data data = bytes != null ? new HeapData(bytes) : null;

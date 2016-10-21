@@ -149,7 +149,7 @@ public class PublisherCreateOperation extends MapOperation {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
         MapQueryEngine queryEngine = mapServiceContext.getMapQueryEngine(name);
         IterationType iterationType = info.isIncludeValue() ? IterationType.ENTRY : IterationType.KEY;
-        return queryEngine.invokeQueryLocalPartitions(name, info.getPredicate(), iterationType);
+        return queryEngine.runQueryOnLocalPartitions(name, info.getPredicate(), iterationType);
     }
 
     /**

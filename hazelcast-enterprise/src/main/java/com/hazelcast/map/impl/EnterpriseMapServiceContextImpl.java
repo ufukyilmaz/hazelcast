@@ -21,8 +21,8 @@ import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProviders;
-import com.hazelcast.map.impl.query.HDMapQueryEngineImpl;
-import com.hazelcast.map.impl.query.MapQueryEngine;
+import com.hazelcast.map.impl.query.HDLocalQueryRunner;
+import com.hazelcast.map.impl.query.MapLocalQueryRunner;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
@@ -57,7 +57,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.query.impl.predicates.QueryOptimizerFactory.newOptimizer;
 
 /**
  * Contains enterprise specific implementations of {@link MapServiceContext}
@@ -80,7 +79,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         }
     };
 
-    private final MapQueryEngine hdMapQueryEngine;
+    private final MapLocalQueryRunner hdMapQueryRunner;
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartService hotRestartService;
@@ -88,7 +87,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
-        this.hdMapQueryEngine = new HDMapQueryEngineImpl(this, newOptimizer(nodeEngine.getProperties()));
+        this.hdMapQueryRunner = new HDLocalQueryRunner(this, queryOptimizer);
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
@@ -163,11 +162,11 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    public MapQueryEngine getMapQueryEngine(String mapName) {
+    public MapLocalQueryRunner getMapQueryRunner(String mapName) {
         if (getInMemoryFormat(mapName) != NATIVE) {
-            return super.getMapQueryEngine(mapName);
+            return super.getMapQueryRunner(mapName);
         }
-        return hdMapQueryEngine;
+        return hdMapQueryRunner;
     }
 
     @Override

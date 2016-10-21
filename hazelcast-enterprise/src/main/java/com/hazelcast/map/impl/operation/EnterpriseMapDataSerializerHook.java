@@ -21,6 +21,7 @@ import com.hazelcast.enterprise.wan.sync.PartitionMapSyncOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
+import com.hazelcast.map.impl.query.HDQueryPartitionOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.DestroyQueryCacheOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperation;
 import com.hazelcast.map.impl.querycache.subscriber.operation.MadePublishableOperationFactory;
@@ -110,8 +111,9 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int MADE_PUBLISHABLE_FACTORY = 66;
     public static final int MAP_REPLICATION = 67;
     public static final int POST_JOIN = 68;
+    public static final int QUERY_PARTITION = 69;
 
-    private static final int LEN = POST_JOIN + 1;
+    private static final int LEN = QUERY_PARTITION + 1;
 
     @Override
     public int getFactoryId() {
@@ -466,6 +468,11 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[POST_JOIN] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new EnterprisePostJoinMapOperation();
+            }
+        };
+        constructors[QUERY_PARTITION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDQueryPartitionOperation();
             }
         };
 

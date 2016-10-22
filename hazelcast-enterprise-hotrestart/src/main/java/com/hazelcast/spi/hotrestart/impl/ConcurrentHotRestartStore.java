@@ -1,12 +1,12 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
+import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
@@ -14,7 +14,6 @@ import com.hazelcast.util.concurrent.IdleStrategy;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.WORK_QUEUE_CAPACITY;
 import static java.lang.Thread.interrupted;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
@@ -23,6 +22,9 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
  * single-threaded {@link HotRestartPersistenceEngine} over a many-to-one concurrent queue.
  */
 public final class ConcurrentHotRestartStore implements HotRestartStore {
+    /** Capacity of the many-to-one queue used by partition threads to submit to HotRestart persistence thread */
+    @SuppressWarnings("checkstyle:magicnumber")
+    public static final int MUTATOR_QUEUE_CAPACITY = 1 << 10;
     private static final IdleStrategy IDLER = new BackoffIdleStrategy(1, 1, 1, MICROSECONDS.toNanos(200));
 
     private final String name;
@@ -31,11 +33,11 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
     private final DiContainer di;
     private final PersistenceEngineLoop persistenceLoop;
     private final Thread persistenceThread;
-    private final ILogger logger;
+    private final GcLogger logger;
 
     @Inject
     private ConcurrentHotRestartStore(
-            ILogger logger,
+            GcLogger logger,
             @Name("storeName") String storeName,
             HotRestartPersistenceEngine persistence,
             @Name("persistenceConveyor") ConcurrentConveyorSingleQueue<RunnableWithStatus> persistenceConveyor,
@@ -125,9 +127,9 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         @Override
         @SuppressWarnings("checkstyle:npathcomplexity")
         public void run() {
-            final List<RunnableWithStatus> batch = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
-            final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
-            final List<RunnableWithStatus> nonblockingTasks = new ArrayList<RunnableWithStatus>(WORK_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> batch = new ArrayList<RunnableWithStatus>(MUTATOR_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> blockingTasks = new ArrayList<RunnableWithStatus>(MUTATOR_QUEUE_CAPACITY);
+            final List<RunnableWithStatus> nonblockingTasks = new ArrayList<RunnableWithStatus>(MUTATOR_QUEUE_CAPACITY);
             long drainCount = 0;
             long blockingItemCount = 0;
             try {

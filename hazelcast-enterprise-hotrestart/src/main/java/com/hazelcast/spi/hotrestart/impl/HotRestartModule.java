@@ -19,6 +19,8 @@ import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
 import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore.MUTATOR_QUEUE_CAPACITY;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.COLLECTOR_QUEUE_CAPACITY;
 
 /**
  * Contains Hot Restart Store factory methods.
@@ -66,9 +68,9 @@ public final class HotRestartModule {
           .dep(GcLogger.class)
           .dep(GcHelper.class, isOffHeap ? GcHelper.OffHeap.class : GcHelper.OnHeap.class).disposable()
           .dep("persistenceConveyor", concurrentConveyorSingleQueue(null,
-                  new ManyToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
+                  new ManyToOneConcurrentArrayQueue<Runnable>(MUTATOR_QUEUE_CAPACITY)))
           .dep("gcConveyor", concurrentConveyorSingleQueue(null,
-                  new OneToOneConcurrentArrayQueue<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY)))
+                  new OneToOneConcurrentArrayQueue<Runnable>(COLLECTOR_QUEUE_CAPACITY)))
           .dep(ChunkManager.class).disposable()
           .dep(Snapshotter.class)
           .dep(MutatorCatchup.class)

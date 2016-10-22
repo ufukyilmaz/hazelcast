@@ -92,10 +92,9 @@ public final class HotRestartPersistenceEngine {
     }
 
     void clear(long... keyPrefixes) {
-        if (keyPrefixes.length == 0 || gcHelper.recordSeq() == 0) {
-            return;
+        if (keyPrefixes.length != 0 && gcHelper.recordSeq() != 0) {
+            pfixTombstoMgr.addPrefixTombstones(keyPrefixes);
         }
-        pfixTombstoMgr.addPrefixTombstones(keyPrefixes);
     }
 
     void close() {
@@ -108,11 +107,12 @@ public final class HotRestartPersistenceEngine {
     }
 
     private void closeAndDeleteIfEmpty(ActiveChunk chunk) {
-        if (chunk != null) {
-            chunk.close();
-            if (chunk.size() == 0) {
-                gcHelper.deleteChunkFile((Chunk) chunk);
-            }
+        if (chunk == null) {
+            return;
+        }
+        chunk.close();
+        if (chunk.size() == 0) {
+            gcHelper.deleteChunkFile((Chunk) chunk);
         }
     }
 

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.COLLECTOR_QUEUE_CAPACITY;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -23,13 +24,13 @@ public class MutatorCatchup {
     /** Base-2 log of the number of calls to {@link #catchupAsNeeded()} before deciding to catch up. */
     public static final int DEFAULT_CATCHUP_INTERVAL_LOG2 = 10;
     private static final int LATE_CATCHUP_THRESHOLD_MILLIS = 10;
-    private static final int LATE_CATCHUP_CUTOFF_MILLIS = 110;
+    private static final int LATE_CATCHUP_CUTOFF_MILLIS = 300;
 
     boolean askedToStop;
 
     private final ConcurrentConveyor<Runnable> conveyor;
     private final Snapshotter snapshotter;
-    private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(GcExecutor.WORK_QUEUE_CAPACITY);
+    private final ArrayList<Runnable> workDrain = new ArrayList<Runnable>(COLLECTOR_QUEUE_CAPACITY);
     private final GcLogger logger;
 
     // counts the number of calls to catchupAsNeeded since last catchupNow
@@ -82,7 +83,7 @@ public class MutatorCatchup {
     private int catchUpWithMutator() {
         final int workCount = conveyor.drainTo(workDrain);
         if (lastCaughtUp >= 0) {
-            diagnoseLateCatchup();
+            lastCaughtUp = diagnoseLateCatchup("Collector", lastCaughtUp, logger);
         }
         if (snapshotter.enabled) {
             snapshotter.takeChunkSnapshotAsNeeded();
@@ -97,14 +98,13 @@ public class MutatorCatchup {
         return workCount;
     }
 
-    private void diagnoseLateCatchup() {
+    public static long diagnoseLateCatchup(String name, long lastCaughtUp, GcLogger logger) {
         final long now = System.nanoTime();
         final long sinceLastCatchup = now - lastCaughtUp;
-        lastCaughtUp = now;
         if (sinceLastCatchup <= MILLISECONDS.toNanos(LATE_CATCHUP_THRESHOLD_MILLIS)
             || sinceLastCatchup >= MILLISECONDS.toNanos(LATE_CATCHUP_CUTOFF_MILLIS)
         ) {
-            return;
+            return now;
         }
         final StringWriter sw = new StringWriter(512);
         final PrintWriter w = new PrintWriter(sw);
@@ -112,7 +112,8 @@ public class MutatorCatchup {
         final String trace = sw.toString();
         final Matcher m = Pattern.compile("\n.*?\n.*?\n.*?(\n.*?\n.*?)\n").matcher(trace);
         m.find();
-        logger.finest("Didn't catch up for %d ms%s", NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+        logger.finest("%s didn't catch up for %d ms%s", name, NANOSECONDS.toMillis(sinceLastCatchup), m.group(1));
+        return now;
     }
 
 

@@ -88,7 +88,7 @@ public class CacheEntryProcessorOperation
     @Override
     public Operation getBackupOperation() {
         if (backupData != null) {
-            // After entry processor is executed if there is a record, this means that 
+            // After entry processor is executed if there is a record, this means that
             // there is a possible add/update.
             return new CachePutBackupOperation(name, key, backupData, null);
         } else {

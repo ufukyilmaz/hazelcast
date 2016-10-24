@@ -131,7 +131,7 @@ public interface HiDensityCacheRecordStore<R extends HiDensityCacheRecord>
     Object getAndReplace(Data key, Object value, String caller, int completionId);
 
     /**
-     * Returns an slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
+     * Returns a slottable iterator for this {@link HiDensityCacheRecordStore} to iterate over records.
      *
      * @param slot the slot number (or index) to start the <code>iterator</code>
      * @return the slottable iterator for specified <code>slot</code>

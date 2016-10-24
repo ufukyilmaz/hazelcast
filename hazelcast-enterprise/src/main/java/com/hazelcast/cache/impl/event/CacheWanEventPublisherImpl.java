@@ -7,7 +7,7 @@ import com.hazelcast.cache.impl.CacheEventContextUtil;
 import com.hazelcast.nio.serialization.Data;
 
 /**
- * Provides methods to publish wan replication
+ * Provides methods to publish WAN replication
  * update/remove methods and their backups.
  */
 public class CacheWanEventPublisherImpl implements CacheWanEventPublisher {

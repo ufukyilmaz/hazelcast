@@ -13,8 +13,8 @@ import com.hazelcast.spi.Operation;
 import java.io.IOException;
 
 /**
- * Operation implementation for merging entries
- * This operation is used by WAN replication services
+ * Operation implementation for merging entries.
+ * This operation is used by WAN replication services.
  */
 public class WanCacheMergeOperation
         extends AbstractMutatingCacheOperation {

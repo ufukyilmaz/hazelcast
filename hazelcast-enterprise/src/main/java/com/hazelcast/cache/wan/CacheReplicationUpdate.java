@@ -9,7 +9,7 @@ import com.hazelcast.nio.serialization.Data;
 import java.io.IOException;
 
 /**
- * WAN replication object for cache update operations
+ * WAN replication object for cache update operations.
  */
 public class CacheReplicationUpdate extends CacheReplicationObject {
 

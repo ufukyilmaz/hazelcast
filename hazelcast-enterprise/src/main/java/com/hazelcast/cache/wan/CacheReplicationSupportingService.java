@@ -22,12 +22,12 @@ import com.hazelcast.wan.WanReplicationEvent;
 import javax.cache.CacheException;
 
 /**
- * This class handles incoming WAN replication events
+ * This class handles incoming WAN replication events.
  */
 public class CacheReplicationSupportingService implements ReplicationSupportingService {
 
     /**
-     * Event origin
+     * Event origin.
      */
     public static final String ORIGIN = "ENTERPRISE_WAN";
 
@@ -56,9 +56,9 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             if (existingCacheConfig == null) {
                 CacheCreateConfigOperation op =
                         new CacheCreateConfigOperation(cacheConfig, true);
-                // Run "CacheCreateConfigOperation" on this node. Its itself handles interaction with other nodes.
+                // Run "CacheCreateConfigOperation" on this node. The operation itself handles interaction with other nodes.
                 // This operation doesn't block operation thread even "syncCreate" is specified.
-                // In that case, scheduled thread is used, not operation thread.
+                // In that case, scheduled thread is used, not the operation thread.
                 InternalCompletableFuture future =
                         nodeEngine.getOperationService()
                                 .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
@@ -94,7 +94,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                     cacheConfig.setName(name);
                     cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(name)));
                 } catch (Exception e) {
-                    //Cannot create the actual config from the declarative one
+                    //Cannot create the actual configuration from the declarative one.
                     throw new CacheException(e);
                 }
             }

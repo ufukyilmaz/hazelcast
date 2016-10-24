@@ -13,7 +13,7 @@ import static com.hazelcast.nio.ClassLoaderUtil.newInstance;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Manages {@link CacheWanEventFilter} instance access/creation
+ * Manages {@link CacheWanEventFilter} instance access/creation.
  */
 public final class CacheFilterProvider {
     private final ConcurrentMap<String, CacheWanEventFilter> filterMap;

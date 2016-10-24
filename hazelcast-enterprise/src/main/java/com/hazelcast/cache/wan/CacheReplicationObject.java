@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects
+ * Base class for {@link com.hazelcast.cache.ICache} related WAN replication objects.
  */
 public abstract class CacheReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
 

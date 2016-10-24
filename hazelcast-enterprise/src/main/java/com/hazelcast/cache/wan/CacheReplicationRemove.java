@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import java.io.IOException;
 
 /**
- * WAN replication object for cache remove operations
+ * WAN replication object for cache remove operations.
  */
 public class CacheReplicationRemove extends CacheReplicationObject {
 

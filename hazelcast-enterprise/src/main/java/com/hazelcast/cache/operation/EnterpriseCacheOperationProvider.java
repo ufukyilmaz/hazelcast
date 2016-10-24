@@ -7,7 +7,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.Operation;
 
 /**
- * Provides enterprise cache operations
+ * Provides enterprise cache operations.
  */
 public class EnterpriseCacheOperationProvider extends DefaultOperationProvider {
 

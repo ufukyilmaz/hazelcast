@@ -5,10 +5,10 @@ import com.hazelcast.cache.CacheEntryView;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 
 /**
- * Wan event filtering interface for cache based wan replication events
+ * WAN event filtering interface for cache based WAN replication events.
  *
- * @param <K> the type of the key
- * @param <V> the type of the value
+ * @param <K> the type of the key.
+ * @param <V> the type of the value.
  */
 public interface CacheWanEventFilter<K, V> {
 

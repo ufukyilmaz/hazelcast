@@ -50,7 +50,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
     protected BehmSlotAccessor accessor;
 
-    /** Number of allocated slots */
+    /** Number of allocated slots. */
     private int allocatedSlotCount;
 
     /** Cached number of assigned slots in {@link #allocatedSlotCount}. */
@@ -148,7 +148,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * Allocate internal buffer for a given capacity.
+     * Allocates internal buffer for a given capacity.
      *
      * @param capacity New capacity (must be a power of two).
      */
@@ -287,7 +287,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * Expand the internal storage buffers (capacity) and rehash.
+     * Expands the internal storage buffers (capacity) and rehash.
      */
     private void expandAndPut(long pendingKey, long pendingValue, int freeSlot) {
         ensureMemory();
@@ -302,7 +302,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         allocateBuffer(nextCapacity(allocatedSlotCount));
 
         // We have succeeded at allocating new data so insert the pending key/value at
-        // the free slot in the temp arrays before rehashing.
+        // the free slot in the temporary arrays before rehashing.
         assignedSlotCount++;
         oldAccessor.setKey(freeSlot, pendingKey);
         oldAccessor.setValue(freeSlot, pendingValue);
@@ -402,7 +402,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * Shift all the slot-conflicting keys allocated to (and including) <code>slot</code>.
+     * Shifts all the slot-conflicting keys allocated to (and including) <code>slot</code>.
      */
     private void shiftConflictingKeys(int slotCurr) {
         final int mask = allocatedSlotCount - 1;
@@ -415,12 +415,12 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 int slotOther = rehash(NativeMemoryDataUtil.hashCode(accessor.getKey(slotCurr)), perturbation) & mask;
 
                 if (slotPrev <= slotCurr) {
-                    // we're on the right of the original slot.
+                    // We're on the right of the original slot.
                     if (slotPrev >= slotOther || slotOther > slotCurr) {
                         break;
                     }
                 } else {
-                    // we've wrapped around.
+                    // We've wrapped around.
                     if (slotPrev >= slotOther && slotOther > slotCurr) {
                         break;
                     }
@@ -447,7 +447,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * @param k must be {@code instanceof NativeMemoryData}
+     * @param k must be {@code instanceof NativeMemoryData}.
      * @return same as {@link #get(Object)}, but with the additional constraint that the argument
      * must refer to exactly the same blob (at the same address) as the one stored by the map.
      */
@@ -663,10 +663,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 memoryBlockProcessor.dispose(value);
             }
 
-            // if current slot is assigned after
+            // If current slot is assigned after
             // removal and shift
             // then it means entry in the next slot
-            // is moved to current slot
+            // is moved to current slot.
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
@@ -747,10 +747,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 memoryBlockProcessor.dispose(value);
             }
 
-            // if current slot is assigned after
+            // If current slot is assigned after
             // removal and shift
             // then it means entry in the next slot
-            // is moved to current slot
+            // is moved to current slot.
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
@@ -803,7 +803,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return new KeyIter(startSlot);
     }
 
-    /** Key iterator */
+    /** Key iterator. */
     protected class KeyIter extends SlotIter<Data> implements Iterator<Data> {
         KeyIter() {
         }
@@ -849,7 +849,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         return new ValueIter();
     }
 
-    /** Iterator over the map's values */
+    /** Iterator over the map's values. */
     protected class ValueIter extends SlotIter<V> implements Iterator<V> {
         @Override
         public V next() {

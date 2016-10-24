@@ -8,13 +8,13 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.util.HashUtil.MurmurHash3_fmix;
 
-/** Helper class with logic to access BinaryElasticHashMap's slots */
+/** Helper class with logic to access BinaryElasticHashMap's slots. */
 public class BehmSlotAccessor {
-    /** An slot consists of a key pointer (8 bytes) and a value pointer (8 bytes) */
+    /** A slot consists of a key pointer (8 bytes) and a value pointer (8 bytes). */
     static final long SLOT_LENGTH = 16L;
-    /** Location of the key pointer in a slot */
+    /** Location of the key pointer in a slot. */
     static final int KEY_OFFSET = 0;
-    /** Location of the value pointer in a slot */
+    /** Location of the value pointer in a slot. */
     static final int VALUE_OFFSET = 8;
 
     private final MemoryAllocator malloc;

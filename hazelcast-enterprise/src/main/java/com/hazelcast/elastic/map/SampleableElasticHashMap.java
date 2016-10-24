@@ -80,7 +80,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     /**
-     * Iterable sampling entry to preventing from extra object creation for iteration.
+     * Iterable sampling entry to prevent from extra object creation for iteration.
      *
      * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
      */
@@ -137,7 +137,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     /**
-     * This class is implements both of "Iterable" and "Iterator" interfaces.
+     * This class implements both of "Iterable" and "Iterator" interfaces.
      * So we can use only one object (instead of two) both for "Iterable" and "Iterator" interfaces.
      *
      * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
@@ -185,48 +185,48 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             }
 
             if (toRight) {
-                // Iterate to right from current segment
+                // Iterate to right from current segment.
                 for (; passedSegmentCount < segmentCount;
                      passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
                     int segmentStart = currentSegmentNo * segmentSize;
                     int segmentEnd = segmentStart + segmentSize;
                     int ix = segmentStart + randomIndex;
 
-                    // Find an allocated index to be sampled from current random index
+                    // Find an allocated index to be sampled from current random index.
                     while (ix < segmentEnd && !isValidForSampling(ix)) {
-                        // Move to right in right-half of bucket
+                        // Move to right in right-half of bucket.
                         ix++;
                     }
                     if (ix < segmentEnd) {
                         currentSample = createSamplingEntry(ix);
                         passedSegmentCount++;
-                        // Move to next segment
+                        // Move to next segment.
                         currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
                         returnedEntryCount++;
                         return;
                     }
                 }
-                // Reset before iterating to left
+                // Reset before iterating to left.
                 currentSegmentNo = randomSegment;
                 passedSegmentCount = 0;
                 toRight = false;
             }
 
-            // Iterate to left from current segment
+            // Iterate to left from current segment.
             for (; passedSegmentCount < segmentCount;
                  passedSegmentCount++, currentSegmentNo = (currentSegmentNo + 1) % segmentCount) {
                 int segmentStart = currentSegmentNo * segmentSize;
                 int ix = segmentStart + randomIndex - 1;
 
-                // Find an allocated index to be sampled from current random index
+                // Find an allocated index to be sampled from current random index.
                 while (ix >= segmentStart && !isValidForSampling(ix)) {
-                    // Move to left in left-half of bucket
+                    // Move to left in left-half of bucket.
                     ix--;
                 }
                 if (ix >= segmentStart) {
                     currentSample = createSamplingEntry(ix);
                     passedSegmentCount++;
-                    // Move to next segment
+                    // Move to next segment.
                     currentSegmentNo = (currentSegmentNo + 1) % segmentCount;
                     returnedEntryCount++;
                     return;

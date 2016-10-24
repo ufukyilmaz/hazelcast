@@ -16,8 +16,8 @@ import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_CAP
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
- * @param <K> key type
- * @param <V> value type
+ * @param <K> key type.
+ * @param <V> value type.
  * @author mdogan 07/01/14
 */
 public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.util.concurrent.ConcurrentMap<K, V> {
@@ -49,7 +49,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
     private final int segmentShift;
 
     /**
-     * The segments, each of which is a specialized hash table
+     * The segments, each of which is a specialized hash table.
      */
     private final Segment<V>[] segments;
 
@@ -60,7 +60,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
     public ConcurrentElasticHashMap(int initialCapacity, float loadFactor, int concurrencyLevel,
             EnterpriseSerializationService ss, MemoryAllocator malloc) {
 
-        // Find power-of-two sizes best matching arguments
+        // Find power-of-two sizes best matching arguments.
         int sshift = 0;
         int ssize = 1;
         while (ssize < concurrencyLevel) {
@@ -86,9 +86,9 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
     }
 
     /**
-     * Returns the segment that should be used for key with given hash
-     * @param key the key
-     * @return the segment
+     * Returns the segment that should be used for key with given hash.
+     * @param key the key.
+     * @return the segment.
      */
     protected final Segment<V> segmentFor(Data key) {
         return segments[(key.hashCode() >>> segmentShift) & segmentMask];
@@ -347,7 +347,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
                 /*
                  * Since old value is not null, this put is an update and
                  * because of passed key was not native-memory backed, it has been converted.
-                 * This means that key is already exist and newly allocated key is redundant.
+                 * This means that key already exists and newly allocated key is redundant.
                  * Therefore dispose it.
                  *
                  * Note that, in here if key is already native-memory backed,
@@ -379,7 +379,7 @@ public class ConcurrentElasticHashMap<K, V> implements ElasticMap<K, V>, java.ut
                 /*
                  * Since it is not adding but updating, this set is an update and
                  * because of passed key was not native-memory backed, it has been converted.
-                 * This means that key is already exist and newly allocated key is redundant.
+                 * This means that key already exists and newly allocated key is redundant.
                  * Therefore dispose it.
                  *
                  * Note that, in here if key is already native-memory backed,

@@ -13,8 +13,8 @@ import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_CAP
 import static com.hazelcast.internal.util.hashslot.impl.CapacityUtil.DEFAULT_LOAD_FACTOR;
 
 /**
- * @param <K> key type
- * @param <V> value type
+ * @param <K> key type.
+ * @param <V> value type.
  * @author mdogan 07/01/14
  */
 public final class ElasticHashMap<K, V> implements ElasticMap<K, V> {

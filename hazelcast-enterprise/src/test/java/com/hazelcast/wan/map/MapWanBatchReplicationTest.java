@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-@RunWith(HazelcastSerialClassRunner.class)
 @Category(SlowTest.class)
 public class MapWanBatchReplicationTest extends AbstractMapWanReplicationTest {
 

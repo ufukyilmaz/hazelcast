@@ -44,11 +44,13 @@ public final class GcMainLoop implements Runnable {
                 final int workCount;
                 synchronized (testGcMutex) {
                     workCount = mc.catchupNow();
-                    final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
-                    didWork = gcp.forceGc ? runForcedGC(gcp) : chunkMgr.valueGc(gcp, mc);
-                    if (didWork) {
-                        mc.catchupNow();
-                        chunkMgr.tombGc(mc);
+                    if (!pfixTombstoMgr.sweepingInProgress()) {
+                        final GcParams gcp = (workCount > 0 || didWork) ? chunkMgr.gcParams() : GcParams.ZERO;
+                        didWork = gcp.forceGc ? runForcedGC(gcp) : chunkMgr.valueGc(gcp, mc);
+                        if (didWork) {
+                            mc.catchupNow();
+                            chunkMgr.tombGc(mc);
+                        }
                     }
                     didWork |= pfixTombstoMgr.sweepAsNeeded();
                 }

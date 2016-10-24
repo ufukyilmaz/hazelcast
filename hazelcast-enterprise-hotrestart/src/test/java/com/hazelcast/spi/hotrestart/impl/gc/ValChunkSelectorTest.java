@@ -44,7 +44,7 @@ public class ValChunkSelectorTest {
                 .dep(MutatorCatchup.class)
                 .dep(PrefixTombstoneManager.class, mock(PrefixTombstoneManager.class, withSettings().stubOnly()))
                 .wireAndInitializeAll();
-        loggerWithFinestEnabled = di.instantiate(GcLoggerFinestEnabled.class);
+        loggerWithFinestEnabled = di.instantiate(GcLoggerFinestVerboseEnabled.class);
     }
 
     @Test public void when_goalsAreHigh_then_selectAllChunks() {
@@ -134,14 +134,14 @@ public class ValChunkSelectorTest {
         return di.wire(new ValChunkSelector(allChunks, gcp)).select();
     }
 
-    private static class GcLoggerFinestEnabled extends GcLogger {
+    private static class GcLoggerFinestVerboseEnabled extends GcLogger {
         @Inject
-        private GcLoggerFinestEnabled(ILogger logger) {
+        private GcLoggerFinestVerboseEnabled(ILogger logger) {
             super(logger);
         }
 
         @Override
-        boolean isFinestEnabled() {
+        boolean isFinestVerboseEnabled() {
             return true;
         }
     }

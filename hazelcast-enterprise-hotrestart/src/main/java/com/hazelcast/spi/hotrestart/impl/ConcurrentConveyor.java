@@ -174,7 +174,7 @@ public class ConcurrentConveyor<E> {
     /**
      * Blocks until successfully inserting the given item to the given queue. No check is performed that
      * the queue actually belongs to this conveyor. If the {@code #backpressure} flag is raised on this conveyor
-     * at the time the item has been submitted, further blocks until the flag is lowered.
+     * at the time the item has been submitted, the call blocks until the flag is lowered.
      * @throws ConcurrentConveyorException if the current thread is interrupted or the draining thread has already left
      */
     public final void submit(Queue<E> queue, E item) throws ConcurrentConveyorException {

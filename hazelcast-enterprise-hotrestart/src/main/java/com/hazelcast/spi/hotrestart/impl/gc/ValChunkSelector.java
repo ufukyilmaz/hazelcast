@@ -204,7 +204,7 @@ final class ValChunkSelector {
     static void diagnoseChunks(Collection<StableChunk> allChunks, Collection<? extends StableChunk> selectedChunks,
                                GcParams gcp, GcLogger logger
     ) {
-        if (!logger.isFinestEnabled()) {
+        if (!logger.isFinestVerboseEnabled()) {
             return;
         }
         final List<StableValChunk> valChunks = new ArrayList<StableValChunk>(allChunks.size());

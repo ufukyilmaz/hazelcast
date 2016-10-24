@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import java.util.logging.Level;
@@ -26,7 +27,7 @@ public class GcLoggerTest {
         iLoggerMock = Mockito.mock(ILogger.class);
         Mockito.when(iLoggerMock.isFinestEnabled()).thenReturn(true);
         Mockito.when(iLoggerMock.isFineEnabled()).thenReturn(true);
-        Mockito.when(iLoggerMock.isLoggable(Mockito.any(Level.class))).thenReturn(true);
+        Mockito.when(iLoggerMock.isLoggable(Matchers.any(Level.class))).thenReturn(true);
         System.setProperty(VERBOSE_FINEST_LOGGING, "true");
         logger = new GcLogger(iLoggerMock);
     }
@@ -46,84 +47,84 @@ public class GcLoggerTest {
     @Test
     public void finest0() {
         logger.finest("0");
-        Mockito.verify(iLoggerMock).fine("0");
+        Mockito.verify(iLoggerMock).finest("0");
     }
 
     @Test
     public void finest1() {
         logger.finest("0%s", "1");
-        Mockito.verify(iLoggerMock).fine("01");
+        Mockito.verify(iLoggerMock).finest("01");
     }
 
     @Test
     public void finest2() {
         logger.finest("0%s%s", "1", "2");
-        Mockito.verify(iLoggerMock).fine("012");
+        Mockito.verify(iLoggerMock).finest("012");
     }
 
     @Test
     public void finest3() {
         logger.finest("0%s%s%s", "1", "2", "3");
-        Mockito.verify(iLoggerMock).fine("0123");
+        Mockito.verify(iLoggerMock).finest("0123");
     }
 
     @Test
     public void finest4() {
         logger.finest("0%s%s%s%s", "1", "2", "3", "4");
-        Mockito.verify(iLoggerMock).fine("01234");
+        Mockito.verify(iLoggerMock).finest("01234");
     }
 
     @Test
     public void finest5() {
         logger.finest("0%s%s%s%s%s", "1", "2", "3", "4", "5");
-        Mockito.verify(iLoggerMock).fine("012345");
+        Mockito.verify(iLoggerMock).finest("012345");
     }
 
     @Test
     public void finest6() {
         logger.finest("0%s%s%s%s%s%s", "1", "2", "3", "4", "5", "6");
-        Mockito.verify(iLoggerMock).fine("0123456");
+        Mockito.verify(iLoggerMock).finest("0123456");
     }
     @Test
     public void fine0() {
         logger.fine("0");
-        Mockito.verify(iLoggerMock).info("0");
+        Mockito.verify(iLoggerMock).fine("0");
     }
 
     @Test
     public void fine1() {
         logger.fine("0%s", "1");
-        Mockito.verify(iLoggerMock).info("01");
+        Mockito.verify(iLoggerMock).fine("01");
     }
 
     @Test
     public void fine2() {
         logger.fine("0%s%s", "1", "2");
-        Mockito.verify(iLoggerMock).info("012");
+        Mockito.verify(iLoggerMock).fine("012");
     }
 
     @Test
     public void fine3() {
         logger.fine("0%s%s%s", "1", "2", "3");
-        Mockito.verify(iLoggerMock).info("0123");
+        Mockito.verify(iLoggerMock).fine("0123");
     }
 
     @Test
     public void fine4() {
         logger.fine("0%s%s%s%s", "1", "2", "3", "4");
-        Mockito.verify(iLoggerMock).info("01234");
+        Mockito.verify(iLoggerMock).fine("01234");
     }
 
     @Test
     public void fine5() {
         logger.fine("0%s%s%s%s%s", "1", "2", "3", "4", "5");
-        Mockito.verify(iLoggerMock).info("012345");
+        Mockito.verify(iLoggerMock).fine("012345");
     }
 
     @Test
     public void fine8() {
         logger.fine("0%s%s%s%s%s%s%s%s", "1", "2", "3", "4", "5", "6", "7", "8");
-        Mockito.verify(iLoggerMock).info("012345678");
+        Mockito.verify(iLoggerMock).fine("012345678");
     }
 
     @Test
@@ -146,7 +147,7 @@ public class GcLoggerTest {
     }
 
     @Test
-    public void isFinestEnabled() {
-        assertTrue(logger.isFinestEnabled());
+    public void isFinestVerboseEnabled() {
+        assertTrue(logger.isFinestVerboseEnabled());
     }
 }

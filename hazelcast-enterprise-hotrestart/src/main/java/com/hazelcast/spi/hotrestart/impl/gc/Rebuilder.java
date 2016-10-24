@@ -154,6 +154,7 @@ public final class Rebuilder {
         logger.fine("Retired %,d tombstones, left %,d live ones. Record seq is %x",
                 retiredCount, tombstoneCount, maxSeq);
         assert tombstoneCount == trackerMap.liveTombstones.get();
+        cm.updateMaxLive();
         gcHelper.initRecordSeq(maxSeq);
     }
 

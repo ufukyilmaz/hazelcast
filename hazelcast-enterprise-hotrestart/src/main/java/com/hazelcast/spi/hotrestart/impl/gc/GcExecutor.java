@@ -11,7 +11,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 public final class GcExecutor {
     /** Capacity of the work queue which is used by the mutator thread to submit tasks to the GC thread. */
     @SuppressWarnings("checkstyle:magicnumber")
-    public static final int WORK_QUEUE_CAPACITY = 1 << 10;
+    public static final int COLLECTOR_QUEUE_CAPACITY = 1 << 10;
 
     private final ChunkManager chunkMgr;
     private final Object testGcMutex;

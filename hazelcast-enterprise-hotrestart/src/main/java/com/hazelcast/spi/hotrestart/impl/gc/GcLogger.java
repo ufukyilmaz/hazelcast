@@ -3,8 +3,6 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 
-import java.util.logging.Level;
-
 /**
  * Adds lazy-evaluating methods to Hazelcast logger.
  */
@@ -32,75 +30,75 @@ public class GcLogger {
     }
 
     public void finest(String message) {
-        logger.fine(message);
+        logger.finest(message);
     }
 
     public void finest(String template, Object arg) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg));
         }
     }
 
     public void finest(String template, Object arg1, Object arg2) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg1, arg2));
         }
     }
 
     public void finest(String template, Object arg1, Object arg2, Object arg3) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg1, arg2, arg3));
         }
     }
 
     public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg1, arg2, arg3, arg4));
         }
     }
 
     public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg1, arg2, arg3, arg4, arg5));
         }
     }
 
     public void finest(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6) {
-        if (logger.isFineEnabled()) {
+        if (logger.isFinestEnabled()) {
             finest(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6));
         }
     }
 
     public void fine(String message) {
-        logger.info(message);
+        logger.fine(message);
     }
 
     public void fine(String template, Object arg1) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3, arg4));
         }
     }
 
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3, arg4, arg5));
         }
     }
@@ -108,7 +106,7 @@ public class GcLogger {
     @SuppressWarnings("checkstyle:parameternumber")
     public void fine(String template, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5, Object arg6,
                      Object arg7, Object arg8) {
-        if (logger.isLoggable(Level.INFO)) {
+        if (logger.isFineEnabled()) {
             fine(String.format(template, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8));
         }
     }
@@ -125,7 +123,7 @@ public class GcLogger {
         logger.severe(message, thrown);
     }
 
-    boolean isFinestEnabled() {
-        return logger.isFinestEnabled();
+    boolean isFinestVerboseEnabled() {
+        return finestVerboseEnabled && logger.isFinestEnabled();
     }
 }

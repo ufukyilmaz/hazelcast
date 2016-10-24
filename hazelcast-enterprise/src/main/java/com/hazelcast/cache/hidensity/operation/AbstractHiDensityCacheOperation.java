@@ -175,7 +175,7 @@ abstract class AbstractHiDensityCacheOperation
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Clearing current record store because force eviction was not enough!");
                 }
-                // If still there is OOME, clear current record store and try again.
+                // If there is still OOME, clear current record store and try again.
                 cache.clear();
                 cacheService.sendInvalidationEvent(cache.getName(), null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
                 runInternal();
@@ -191,7 +191,7 @@ abstract class AbstractHiDensityCacheOperation
                     logger.info("Clearing other record stores owned by same partition thread "
                             + "because force eviction was not enough!");
                 }
-                // If still there is OOME, for the last chance,
+                // If there still is OOME, for the last chance,
                 // clear other record stores and try again.
                 cacheService.clearAll(getPartitionId());
                 runInternal();
@@ -213,9 +213,9 @@ abstract class AbstractHiDensityCacheOperation
             disposeInternal(serializationService);
         } catch (Throwable e) {
             getLogger().warning("Error while disposing internal...", e);
-            // TODO ignored error at the moment
-            // a double free() error may be thrown if an operation fails
-            // since internally key/value references are freed on oome
+            // TODO ignored error at the moment.
+            // A double free() error may be thrown if an operation fails
+            // since internally key/value references are freed on OOME.
         }
     }
 

@@ -87,7 +87,7 @@ public class CacheGetAllOperation
     // it is not received over network and not deserialized.
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
-        // TODO not used validate and remove
+        // TODO not used validate and remove.
         super.readInternal(in);
         expiryPolicy = in.readObject();
         int size = in.readInt();

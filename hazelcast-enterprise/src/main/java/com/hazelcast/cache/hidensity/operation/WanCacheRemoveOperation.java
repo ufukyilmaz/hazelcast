@@ -10,7 +10,7 @@ import java.io.IOException;
 
 /**
  * Operation implementation for cache remove functionality to be used
- * by WAN replication services
+ * by WAN replication services.
  */
 public class WanCacheRemoveOperation
         extends BackupAwareKeyBasedHiDensityCacheOperation

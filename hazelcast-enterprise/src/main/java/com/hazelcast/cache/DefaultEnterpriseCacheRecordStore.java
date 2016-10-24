@@ -13,7 +13,7 @@ import static com.hazelcast.cache.impl.CacheEventContextUtil.createCacheComplete
 
 /**
  * The {@link com.hazelcast.cache.EnterpriseCacheRecordStore} implementation that provides
- * merge function implementation
+ * merge function implementation.
  */
 public class DefaultEnterpriseCacheRecordStore extends CacheRecordStore
         implements EnterpriseCacheRecordStore {

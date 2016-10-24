@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Holds multiple cache backup record by their keys and values.
+ * Holds multiple cache backup records by their keys and values.
  */
 class CacheBackupRecordStore {
 
@@ -29,7 +29,7 @@ class CacheBackupRecordStore {
     }
 
     /**
-     * Represents cache backup record by wrapping key and value of it.
+     * Represents a cache backup record by wrapping key and value of it.
      */
     static class CacheBackupRecord {
 

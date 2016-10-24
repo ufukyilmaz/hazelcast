@@ -21,8 +21,8 @@ import static java.lang.Runtime.getRuntime;
  * Segmented {@link HiDensityNearCacheRecordStore} which improves performance by using multiple
  * {@link HiDensityNativeMemoryNearCacheRecordStore} in parallel.
  *
- * @param <K> the type of the key stored in Near Cache
- * @param <V> the type of the value stored in Near Cache
+ * @param <K> the type of the key stored in Near Cache.
+ * @param <V> the type of the value stored in Near Cache.
  */
 public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
@@ -43,7 +43,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.memoryManager = getMemoryManager((EnterpriseSerializationService) nearCacheContext.getSerializationService());
 
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
-        // find power-of-two sizes best matching arguments
+        // Find power-of-two sizes best matching arguments.
         int segmentShift = 0;
         int segmentSize = 1;
         while (segmentSize < concurrencyLevel) {
@@ -89,7 +89,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
         h ^= o.hashCode();
 
-        // spread bits to regularize both segment and index locations, using variant of single-word Wang/Jenkins hash
+        // Spread bits to regularize both segment and index locations, using variant of single-word Wang/Jenkins hash.
         h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
         h += (h << 3);
@@ -156,7 +156,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         Object selectedCandidate = null;
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
-                // give priority to Data typed candidate, so there will be no extra conversion from Object to Data
+                // Give priority to Data typed candidate, so there will be no extra conversion from Object to Data.
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;
@@ -165,7 +165,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (selectedCandidate != null) {
                 return selectedCandidate;
             } else {
-                // select a non-null candidate
+                // Select a non-null candidate.
                 for (Object candidate : candidates) {
                     if (candidate != null) {
                         selectedCandidate = candidate;
@@ -238,7 +238,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     }
 
     /**
-     * Represents a segment block (lockable by a thread) in this Near Cache storage
+     * Represents a segment block (lockable by a thread) in this Near Cache storage.
      */
     private class HiDensityNativeMemoryNearCacheRecordStoreSegment extends HiDensityNativeMemoryNearCacheRecordStore<K, V> {
 

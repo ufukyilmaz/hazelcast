@@ -31,7 +31,7 @@ public class HiDensityNativeMemoryCacheRecordMap
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
     }
 
-    // Called by only same partition thread. So there is no synchronization and visibility problem.
+    // Called by only the same partition thread. So there is no synchronization and visibility problem.
     @Override
     public void setEntryCounting(boolean enable) {
         if (enable) {

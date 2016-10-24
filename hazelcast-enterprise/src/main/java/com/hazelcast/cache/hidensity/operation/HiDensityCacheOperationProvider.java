@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Provide operations for {@link InMemoryFormat#NATIVE}
+ * Provide operations for {@link InMemoryFormat#NATIVE}.
  */
 @SuppressWarnings("checkstyle:classdataabstractioncoupling")
 public class HiDensityCacheOperationProvider extends EnterpriseCacheOperationProvider {

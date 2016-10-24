@@ -25,7 +25,7 @@ public abstract class HiDensityNearCacheRecord
      * Gets the access time difference which represents the passed time since previous access
      * of this {@link HiDensityNearCacheRecord} in milliseconds.
      *
-     * @return the access time difference of this {@link HiDensityNearCacheRecord} in milliseconds
+     * @return the access time difference of this {@link HiDensityNearCacheRecord} in milliseconds.
      */
     public abstract int getAccessTimeDiff();
 
@@ -33,7 +33,7 @@ public abstract class HiDensityNearCacheRecord
      * Sets the access time difference which represents the passed time since previous access
      * of this {@link HiDensityNearCacheRecord} in milliseconds.
      *
-     * @param time the access time difference of this {@link HiDensityNearCacheRecord} in milliseconds
+     * @param time the access time difference of this {@link HiDensityNearCacheRecord} in milliseconds.
      */
     public abstract void setAccessTimeDiff(int time);
 

@@ -8,8 +8,8 @@ import com.hazelcast.nio.serialization.Data;
 import javax.cache.expiry.ExpiryPolicy;
 
 /**
- * @param <K> Type of key for entry to be processed
- * @param <V> Type of value for entry to be processed
+ * @param <K> Type of key for entry to be processed.
+ * @param <V> Type of value for entry to be processed.
  * @author sozal 14/10/14
  */
 public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
@@ -35,7 +35,7 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
         super.applyChanges();
         if (state != State.CREATE && state != State.LOAD) {
             // If state is neither `CREATE` nor `LOAD`, this means that key is not stored.
-            // So, add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later
+            // So, add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
             if (keyData instanceof NativeMemoryData) {
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) keyData);
             }
@@ -52,7 +52,7 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
                 long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
                 cacheRecordProcessor.increaseUsedMemory(size);
             } else {
-                // If save is not successful, add key to deferred list so then operation will dispose it later
+                // If save is not successful, add key to deferred list so then operation will dispose it later.
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
             }
         }
@@ -68,7 +68,7 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
                 long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
                 cacheRecordProcessor.increaseUsedMemory(size);
             } else {
-                // If save is not successful, add key to deferred list so then operation will dispose it later
+                // If save is not successful, add key to deferred list so then operation will dispose it later.
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
             }
         }

@@ -37,12 +37,12 @@ public final class HiDensityNativeMemoryCacheRecord extends HiDensityCacheRecord
      */
 
     /**
-     * Size of record in bytes
+     * Size of record in bytes.
      */
     public static final int SIZE;
 
     /**
-     * Offset of value address in the record
+     * Offset of value address in the record.
      */
     static final int VALUE_OFFSET;
 

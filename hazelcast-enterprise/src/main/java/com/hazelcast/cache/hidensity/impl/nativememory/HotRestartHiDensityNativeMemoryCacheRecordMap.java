@@ -17,18 +17,18 @@ import java.util.Map;
 import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 
 /**
- * Hot-restart variant of HiDensityNativeMemoryCacheRecordMap.
+ * Hot Restart variant of HiDensityNativeMemoryCacheRecordMap.
  * <p/>
  * All mutator actions are synchronized to make them visible to
- * hot-restart GC thread.
+ * Hot Restart GC thread.
  * <p/>
  * Eviction methods don't actually evict the record but only
- * clears and disposes the value contained in the record.
+ * clear and dispose the value contained in the record.
  */
 public class HotRestartHiDensityNativeMemoryCacheRecordMap
         extends HiDensityNativeMemoryCacheRecordMap {
 
-    // Hot-restart GC thread needs to read internal record map.
+    // Hot Restart GC thread needs to read internal record map.
     // That's why modification of record map itself and modification of
     // records in this map should be synchronized with GC thread's
     // reads of record map and its records.
@@ -46,7 +46,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
     }
 
-    // All mutator methods should be in sync block
+    // All mutator methods should be in sync block.
     Object getMutex() {
         return mutex;
     }

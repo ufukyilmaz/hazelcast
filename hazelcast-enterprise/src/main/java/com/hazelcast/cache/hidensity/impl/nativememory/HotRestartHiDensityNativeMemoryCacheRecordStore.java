@@ -101,7 +101,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
             }
              // Invariants at this point:
              //
-             // - this cache is configured with the FREE_NATIVE_MEMORY_PERCENTAGE policy;
+             // - this cache is configured with the FREE_NATIVE_MEMORY_PERCENTAGE policy
              // - this cache's configured percentage is at least as high as the global setting
              //   imposed by the Hot Restart configuration.
              //
@@ -190,7 +190,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         return new KeyOffHeap(prefix, key.toByteArray(), keyAddress, record.getSequence());
     }
 
-    // called from hotrestart GC thread
+    // Called from Hot Restart GC thread.
     @Override
     public boolean copyEntry(KeyHandle keyHandle, int expectedSize, RecordDataSink sink) {
         KeyHandleOffHeap kh = (KeyHandleOffHeap) keyHandle;
@@ -206,7 +206,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    // called from PartitionOperationThread
+    // Called from PartitionOperationThread.
     @Override
     public KeyHandleOffHeap toKeyHandle(byte[] keyBytes) {
         assert keyBytes != null && keyBytes.length > 0;
@@ -219,7 +219,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         return newKeyHandle(heapKey);
     }
 
-    // called from PartitionOperationThread
+    // Called from PartitionOperationThread.
     @Override
     public void accept(KeyHandle kh, byte[] valueBytes) {
         assert kh != null : "accept() called with null KeyHandle";
@@ -234,7 +234,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         acceptNewValue(record, new HeapData(valueBytes));
     }
 
-    // called from PartitionOperationThread
+    // Called from PartitionOperationThread.
     @Override
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
         SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();

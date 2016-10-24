@@ -28,11 +28,11 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor HiDensityRecordProcessor} for hi-density cache implementation.
+ * {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor HiDensityRecordProcessor} for Hi-Density cache implementation.
  * Only difference from a {@link DefaultHiDensityRecordProcessor} is, the method {@link #disposeDeferredBlocks}
  * doesn't touch {@link #storageInfo} during dispose.
  *
- * @param <R> the type of the {@link HiDensityRecord} to be processed
+ * @param <R> the type of the {@link HiDensityRecord} to be processed.
  */
 public class CacheHiDensityRecordProcessor<R extends HiDensityRecord> extends DefaultHiDensityRecordProcessor<R> {
 

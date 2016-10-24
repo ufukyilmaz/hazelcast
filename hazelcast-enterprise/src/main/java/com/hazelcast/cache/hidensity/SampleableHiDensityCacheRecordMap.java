@@ -5,7 +5,7 @@ import com.hazelcast.internal.hidensity.HiDensityRecordMap;
 import com.hazelcast.nio.serialization.Data;
 
 /**
- * @param <R> Type of the cache record stored in this cache record map
+ * @param <R> Type of the cache record stored in this cache record map.
  *
  * @author sozal 28/11/14
  */

@@ -20,7 +20,7 @@ import com.hazelcast.cache.impl.CacheContext;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 
 /**
- * Holds information about Hi-Density cache storage such as entry count, used memory, etc ...
+ * Holds information about Hi-Density cache storage such as entry count, used memory, etc.
  *
  * @author sozal 27/11/15
  */

@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import java.io.IOException;
 
 /**
- * @deprecated Not used
+ * @deprecated Not used.
  */
 @Deprecated
 public final class CacheIterationResult implements IdentifiedDataSerializable {

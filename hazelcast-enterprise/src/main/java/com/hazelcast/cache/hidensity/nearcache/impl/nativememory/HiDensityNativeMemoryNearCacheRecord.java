@@ -12,15 +12,15 @@ public class HiDensityNativeMemoryNearCacheRecord
         extends HiDensityNearCacheRecord {
 
     /**
-     * Size of a HD Near Cache record
+     * Size of a Hi-Density Near Cache record.
      */
     public static final int SIZE;
     /**
-     * Size of a HD Near Cache record's header
+     * Size of a Hi-Density Near Cache record's header.
      */
     public static final int HEADER_SIZE = 8;
     /**
-     * Location of the value pointer in a HD Near Cache record
+     * Location of the value pointer in a Hi-Density Near Cache record.
      */
     public static final int VALUE_OFFSET;
 
@@ -28,7 +28,7 @@ public class HiDensityNativeMemoryNearCacheRecord
     private static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
     // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is the same for NearCacheRecord
     // since these fields (access hit count and access time) are not used at same time
-    // (their usage scenario is based on eviction type (LRU or LFU))
+    // (their usage scenario is based on eviction type (LRU or LFU)).
     private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
 

@@ -179,9 +179,9 @@ public class EnterpriseCacheService
     /**
      * Creates new {@link ICacheRecordStore} as specified {@link InMemoryFormat}.
      *
-     * @param name        the name of the cache, including prefix
-     * @param partitionId the partition id which cache record store is created on
-     * @return the created {@link ICacheRecordStore}
+     * @param name        the name of the cache, including prefix.
+     * @param partitionId the partition id which cache record store is created on.
+     * @return the created {@link ICacheRecordStore}.
      * @see com.hazelcast.cache.impl.CacheRecordStore
      * @see com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore
      */
@@ -256,7 +256,7 @@ public class EnterpriseCacheService
     /**
      * Destroys the segments for specified cache name.
      *
-     * @param cacheName the name of cache whose segments will be destroyed
+     * @param cacheName the name of cache whose segments will be destroyed.
      */
     @Override
     protected void destroySegments(String cacheName) {
@@ -299,7 +299,7 @@ public class EnterpriseCacheService
     /**
      * Destroys the distributed object for specified <code>object name/cache name</code>.
      *
-     * @param objectName the name of object/cache to be destroyed
+     * @param objectName the name of object/cache to be destroyed.
      */
     @Override
     public void destroyDistributedObject(String objectName) {
@@ -310,7 +310,7 @@ public class EnterpriseCacheService
     /**
      * Shutdowns the cache service and destroy the caches with their segments.
      *
-     * @param terminate condition about cache service will be closed or not
+     * @param terminate condition about cache service will be closed or not.
      */
     @Override
     public void shutdown(boolean terminate) {
@@ -350,9 +350,9 @@ public class EnterpriseCacheService
     /**
      * Does forced eviction on one or more caches. Runs on the operation threads.
      *
-     * @param name                the name of the cache to be evicted
-     * @param originalPartitionId the partition id of the record store stores the records of cache
-     * @return the number of evicted records
+     * @param name                the name of the cache to be evicted.
+     * @param originalPartitionId the partition id of the record store stores the records of cache.
+     * @return the number of evicted records.
      */
     public int forceEvict(String name, int originalPartitionId) {
         if (logger.isFinestEnabled()) {
@@ -381,9 +381,9 @@ public class EnterpriseCacheService
     /**
      * Does forced eviction on other caches. Runs on the operation threads.
      *
-     * @param name                the name of the cache not to be evicted
-     * @param originalPartitionId the partition id of the record store stores the records of cache
-     * @return the number of evicted records
+     * @param name                the name of the cache not to be evicted.
+     * @param originalPartitionId the partition id of the record store that stores the records of cache.
+     * @return the number of evicted records.
      */
     public int forceEvictOnOthers(String name, int originalPartitionId) {
         int evicted = 0;
@@ -409,8 +409,8 @@ public class EnterpriseCacheService
     /**
      * Does forced eviction on all caches. Runs on the operation threads.
      *
-     * @param originalPartitionId the partition id of the record store stores the records of cache
-     * @return the number of evicted records
+     * @param originalPartitionId the partition id of the record store that stores the records of cache.
+     * @return the number of evicted records.
      */
     public int forceEvictOnAll(int originalPartitionId) {
         int evicted = 0;
@@ -434,7 +434,7 @@ public class EnterpriseCacheService
     /**
      * Clears all record stores on the partitions owned by partition thread of original partition.
      *
-     * @param originalPartitionId the id of original partition
+     * @param originalPartitionId the id of original partition.
      */
     public void clearAll(int originalPartitionId) {
         NodeEngine nodeEngine = getNodeEngine();
@@ -459,7 +459,7 @@ public class EnterpriseCacheService
      * Creates a {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation} to start the replication.
      *
      * @param event the {@link PartitionReplicationEvent} holds the <code>partitionId</code>
-     *              and <code>replica index</code>
+     *              and <code>replica index</code>.
      * @return the created {@link com.hazelcast.cache.hidensity.operation.CacheReplicationOperation}
      */
     @Override
@@ -472,11 +472,11 @@ public class EnterpriseCacheService
 
     /**
      * Creates a {@link CacheOperationProvider} as specified {@link InMemoryFormat}
-     * for specified <code>cacheNameWithPrefix</code>
+     * for specified <code>cacheNameWithPrefix</code>.
      *
-     * @param cacheNameWithPrefix the name of the cache (including prefix) that operation works on
+     * @param cacheNameWithPrefix the name of the cache (including prefix) that operation works on.
      * @param inMemoryFormat      the format of memory such as <code>BINARY</code>, <code>OBJECT</code>
-     *                            or <code>NATIVE</code>
+     *                            or <code>NATIVE</code>.
      * @return
      */
     @Override
@@ -511,7 +511,7 @@ public class EnterpriseCacheService
     /**
      * Gets the {@link EnterpriseSerializationService} used by this {@link ICacheService}.
      *
-     * @return the used {@link EnterpriseSerializationService}
+     * @return the used {@link EnterpriseSerializationService}.
      */
     public EnterpriseSerializationService getSerializationService() {
         return (EnterpriseSerializationService) nodeEngine.getSerializationService();
@@ -521,8 +521,8 @@ public class EnterpriseCacheService
      * Gets or creates (if there is no cache info for that Hi-Density cache) {@link HiDensityStorageInfo} instance
      * which holds live information about cache.
      *
-     * @param cacheNameWithPrefix Name (including prefix) of the cache whose live information is requested
-     * @return the {@link HiDensityStorageInfo} instance which holds live information about Hi-Density cache
+     * @param cacheNameWithPrefix Name (including prefix) of the cache whose live information is requested.
+     * @return the {@link HiDensityStorageInfo} instance which holds live information about Hi-Density cache.
      */
     public HiDensityStorageInfo getOrCreateHiDensityCacheInfo(String cacheNameWithPrefix) {
         return ConcurrencyUtil.getOrPutSynchronized(hiDensityCacheInfoMap, cacheNameWithPrefix,
@@ -537,7 +537,7 @@ public class EnterpriseCacheService
                 hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(), config);
             }
         } else {
-            //there already is a configuration object for a given cache. let's use it instead
+            //There is already a configuration object for a given cache. Let's use it instead.
             config = localConfig;
         }
 

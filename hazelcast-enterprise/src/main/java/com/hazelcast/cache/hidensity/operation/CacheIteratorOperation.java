@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @deprecated Not used
+ * @deprecated Not used.
  */
 @Deprecated
 public class CacheIteratorOperation extends AbstractHiDensityCacheOperation implements ReadonlyOperation {

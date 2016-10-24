@@ -35,8 +35,8 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
 /**
- * @param <K> the type of the key stored in Near Cache
- * @param <V> the type of the value stored in Near Cache
+ * @param <K> the type of the key stored in Near Cache.
+ * @param <V> the type of the value stored in Near Cache.
  */
 public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         extends AbstractNearCacheRecordStore<K, V, Data, HiDensityNativeMemoryNearCacheRecord,
@@ -195,8 +195,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
-        // because the key will be saved as native memory data with native memory data header
-        // and this is not covered at "totalSize()" method
+        // Because the key will be saved as native memory data with native memory data header
+        // and this is not covered at "totalSize()" method.
         return key instanceof Data ? NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize() : 0L;
     }
 
@@ -266,7 +266,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                          HiDensityNativeMemoryNearCacheRecord oldRecord) {
-        // If old record is available, dispose it since it is replaced
+        // If old record is available, dispose it since it is replaced.
         if (isMemoryBlockValid(oldRecord)) {
             recordProcessor.dispose(oldRecord);
         }
@@ -275,7 +275,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onPutError(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                               HiDensityNativeMemoryNearCacheRecord oldRecord, Throwable error) {
-        // If old record is somehow allocated, dispose it since it is not in use
+        // If old record is somehow allocated, dispose it since it is not in use.
         if (isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
@@ -283,7 +283,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void onRemove(K key, HiDensityNativeMemoryNearCacheRecord record, boolean removed) {
-        // If the record is available, dispose its data and put this to queue for reusing later
+        // If the record is available, dispose its data and put this to queue for reusing later.
         if (record != null) {
             recordProcessor.dispose(record);
         }
@@ -292,7 +292,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onRemoveError(K key, HiDensityNativeMemoryNearCacheRecord record,
                                  boolean removed, Throwable error) {
-        // If record has been somehow removed and if it is still valid, dispose it and its data
+        // If record has been somehow removed and if it is still valid, dispose it and its data.
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
@@ -313,7 +313,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             if (selectedCandidate != null) {
                 return selectedCandidate;
             } else {
-                // Select a non-null candidate
+                // Select a non-null candidate.
                 for (Object candidate : candidates) {
                     if (candidate != null) {
                         selectedCandidate = candidate;
@@ -349,7 +349,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     /**
-     * {@link EvictionListener} implementation for listening record eviction
+     * {@link EvictionListener} implementation for listening record eviction.
      */
     private class RecordEvictionListener implements EvictionListener<Data, HiDensityNativeMemoryNearCacheRecord> {
 
@@ -366,7 +366,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     /**
-     * {@link ExpirationChecker} implementation for checking record expiration
+     * {@link ExpirationChecker} implementation for checking record expiration.
      */
     private class RecordExpirationChecker implements ExpirationChecker<HiDensityNativeMemoryNearCacheRecord> {
 

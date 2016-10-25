@@ -36,7 +36,7 @@ import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
  * Checks whether a specific threshold is exceeded or not
  * according to configured {@link MaxSizePolicy}
  * to start eviction process.
- * <p/>
+ *
  * Created one per map-container.
  */
 public class HDEvictionChecker extends EvictionChecker {
@@ -60,9 +60,9 @@ public class HDEvictionChecker extends EvictionChecker {
 
         switch (maxSizePolicy) {
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                // Here, we do not need to check Hot Restart specific eviction.
-                // Because from configuration we know that it is at least 20 percent.
-                // So just return the result. For further information, please see `HDMapConfigValidator#checkHotRestartSpecificConfig`.
+                // we do not need to check Hot Restart specific eviction in this case, because from the
+                // configuration we know that it is at least 20 percent (so we just return the result)
+                // see `HDMapConfigValidator#checkHotRestartSpecificConfig` for further information
                 return checkMinFreeNativeMemoryPercentage(maxSize);
             case FREE_NATIVE_MEMORY_SIZE:
                 evictable = checkMinFreeNativeMemorySize(maxSize);
@@ -79,7 +79,6 @@ public class HDEvictionChecker extends EvictionChecker {
         }
 
         return evictable || checkHotRestartSpecificEviction(mapConfig);
-
     }
 
     /**
@@ -128,5 +127,3 @@ public class HDEvictionChecker extends EvictionChecker {
         return MEGABYTES.toBytes(minFreeMB) > currentFreeBytes;
     }
 }
-
-

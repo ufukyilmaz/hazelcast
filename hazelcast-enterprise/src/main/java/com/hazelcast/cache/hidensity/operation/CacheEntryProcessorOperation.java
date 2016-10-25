@@ -77,9 +77,9 @@ public class CacheEntryProcessorOperation
 
     @Override
     protected void disposeInternal(EnterpriseSerializationService serializationService) {
-        // If run is completed successfully, don't dispose key since it is handled in the record store.
-        // Although run is completed successfully there may be still error (while sending response, ...), in this case,
-        // unused data (such as key on update) is handled (disposed) through `dispose()` > `disposeDeferredBlocks()`.
+        // if run is completed successfully, don't dispose key since it is handled in the record store
+        // although run is completed successfully there may be still error (while sending response, ...), in this case,
+        // unused data (such as key on update) is handled (disposed) through `dispose()` > `disposeDeferredBlocks()`
         if (!runCompleted) {
             serializationService.disposeData(key);
         }
@@ -88,14 +88,14 @@ public class CacheEntryProcessorOperation
     @Override
     public Operation getBackupOperation() {
         if (backupData != null) {
-            // After entry processor is executed if there is a record, this means that
-            // there is a possible add/update.
+            // after entry processor is executed if there is a record, this means that
+            // there is a possible add/update
             return new CachePutBackupOperation(name, key, backupData, null);
         } else {
-            // If there is no record, this means possible remove by entry processor.
+            // if there is no record, this means possible remove by entry processor
             // TODO In case of non-existing key, this cause redundant remove operation to backups
-            // Better solution may be using a new interface like "EntryProcessorListener" on "invoke" method
-            // for handling add/update/remove cases properly at execution of "EntryProcessor".
+            // better solution may be using a new interface like "EntryProcessorListener" on "invoke" method
+            // for handling add/update/remove cases properly at execution of "EntryProcessor"
             return new CacheRemoveBackupOperation(name, key);
         }
     }

@@ -66,8 +66,8 @@ public class CacheGetAllOperation
         }
     }
 
-    // Currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
-    // it is not sent over network and not serialized.
+    // currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
+    // it is not sent over network and not serialized
     @Override
     protected void writeInternal(ObjectDataOutput out) throws IOException {
         // TODO not used validate and remove
@@ -83,8 +83,8 @@ public class CacheGetAllOperation
         }
     }
 
-    // Currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
-    // it is not received over network and not deserialized.
+    // currently, since `CacheGetAllOperation` is created by `CacheGetAllOperationFactory`,
+    // it is not received over network and not deserialized
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         // TODO not used validate and remove.

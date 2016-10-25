@@ -34,8 +34,8 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
     public void applyChanges() {
         super.applyChanges();
         if (state != State.CREATE && state != State.LOAD) {
-            // If state is neither `CREATE` nor `LOAD`, this means that key is not stored.
-            // So, add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later.
+            // if state is neither `CREATE` nor `LOAD`, this means that key is not stored
+            // so, add key to deferred list if it is `NativeMemoryData`, then operation will dispose it later
             if (keyData instanceof NativeMemoryData) {
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) keyData);
             }
@@ -47,12 +47,12 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
                             long now, boolean disableWriteThrough, int completionId, boolean saved) {
         if (key instanceof NativeMemoryData) {
             if (saved) {
-                // If save is successful and key is `NativeMemoryData`, since there is no convertion,
-                // add its memory to used memory explicitly.
+                // if save is successful and key is `NativeMemoryData`, since there is no convertion,
+                // add its memory to used memory explicitly
                 long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
                 cacheRecordProcessor.increaseUsedMemory(size);
             } else {
-                // If save is not successful, add key to deferred list so then operation will dispose it later.
+                // if save is not successful, add key to deferred list so then operation will dispose it later
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
             }
         }
@@ -63,12 +63,12 @@ public class HiDensityNativeMemoryCacheEntryProcessorEntry<K, V>
                           long now, boolean disableWriteThrough, int completionId, boolean saved) {
         if (key instanceof NativeMemoryData) {
             if (saved) {
-                // If save is successful and key is `NativeMemoryData`, since there is no convertion,
-                // add its memory to used memory explicitly.
+                // if save is successful and key is `NativeMemoryData`, since there is no convertion,
+                // add its memory to used memory explicitly
                 long size = cacheRecordProcessor.getSize((NativeMemoryData) key);
                 cacheRecordProcessor.increaseUsedMemory(size);
             } else {
-                // If save is not successful, add key to deferred list so then operation will dispose it later.
+                // if save is not successful, add key to deferred list so then operation will dispose it later
                 cacheRecordProcessor.addDeferredDispose((NativeMemoryData) key);
             }
         }

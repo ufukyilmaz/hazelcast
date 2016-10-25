@@ -43,7 +43,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         this.memoryManager = getMemoryManager((EnterpriseSerializationService) nearCacheContext.getSerializationService());
 
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
-        // Find power-of-two sizes best matching arguments.
+        // find power-of-two sizes best matching arguments
         int segmentShift = 0;
         int segmentSize = 1;
         while (segmentSize < concurrencyLevel) {
@@ -89,7 +89,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
         h ^= o.hashCode();
 
-        // Spread bits to regularize both segment and index locations, using variant of single-word Wang/Jenkins hash.
+        // spread bits to regularize both segment and index locations, using variant of single-word Wang/Jenkins hash
         h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
         h += (h << 3);
@@ -156,7 +156,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         Object selectedCandidate = null;
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
-                // Give priority to Data typed candidate, so there will be no extra conversion from Object to Data.
+                // give priority to Data typed candidate, so there will be no extra conversion from Object to Data
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;
@@ -165,7 +165,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             if (selectedCandidate != null) {
                 return selectedCandidate;
             } else {
-                // Select a non-null candidate.
+                // select a non-null candidate
                 for (Object candidate : candidates) {
                     if (candidate != null) {
                         selectedCandidate = candidate;

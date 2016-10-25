@@ -195,8 +195,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
-        // Because the key will be saved as native memory data with native memory data header
-        // and this is not covered at "totalSize()" method.
+        // because the key will be saved as native memory data with native memory data header
+        // and this is not covered at "totalSize()" method
         return key instanceof Data ? NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize() : 0L;
     }
 
@@ -266,7 +266,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onPut(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                          HiDensityNativeMemoryNearCacheRecord oldRecord) {
-        // If old record is available, dispose it since it is replaced.
+        // if old record is available, dispose it since it is replaced
         if (isMemoryBlockValid(oldRecord)) {
             recordProcessor.dispose(oldRecord);
         }
@@ -275,7 +275,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onPutError(K key, V value, HiDensityNativeMemoryNearCacheRecord record,
                               HiDensityNativeMemoryNearCacheRecord oldRecord, Throwable error) {
-        // If old record is somehow allocated, dispose it since it is not in use.
+        // if old record is somehow allocated, dispose it since it is not in use
         if (isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
@@ -283,7 +283,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected void onRemove(K key, HiDensityNativeMemoryNearCacheRecord record, boolean removed) {
-        // If the record is available, dispose its data and put this to queue for reusing later.
+        // if the record is available, dispose its data and put this to queue for reusing later
         if (record != null) {
             recordProcessor.dispose(record);
         }
@@ -292,7 +292,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected void onRemoveError(K key, HiDensityNativeMemoryNearCacheRecord record,
                                  boolean removed, Throwable error) {
-        // If record has been somehow removed and if it is still valid, dispose it and its data.
+        // if record has been somehow removed and if it is still valid, dispose it and its data
         if (removed && isMemoryBlockValid(record)) {
             recordProcessor.dispose(record);
         }
@@ -303,8 +303,8 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         Object selectedCandidate = null;
         if (candidates != null && candidates.length > 0) {
             for (Object candidate : candidates) {
-                // Give priority to Data typed candidate.
-                // So there will be no extra conversion from Object to Data.
+                // give priority to Data typed candidate
+                // so there will be no extra conversion from Object to Data
                 if (candidate instanceof Data) {
                     selectedCandidate = candidate;
                     break;
@@ -313,7 +313,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
             if (selectedCandidate != null) {
                 return selectedCandidate;
             } else {
-                // Select a non-null candidate.
+                // select a non-null candidate
                 for (Object candidate : candidates) {
                     if (candidate != null) {
                         selectedCandidate = candidate;

@@ -155,7 +155,7 @@ abstract class AbstractHiDensityCacheOperation
                     if (logger.isFineEnabled()) {
                         logger.fine("Applying force eviction on other record stores owned by same partition thread!");
                     }
-                    // If still there is OOME, apply for eviction on others and try again.
+                    // if still there is OOME, apply for eviction on others and try again
                     forceEvictOnOthers();
                     runInternal();
                     oome = null;
@@ -175,7 +175,7 @@ abstract class AbstractHiDensityCacheOperation
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Clearing current record store because force eviction was not enough!");
                 }
-                // If there is still OOME, clear current record store and try again.
+                // if there is still OOME, clear current record store and try again
                 cache.clear();
                 cacheService.sendInvalidationEvent(cache.getName(), null, AbstractCacheRecordStore.SOURCE_NOT_AVAILABLE);
                 runInternal();
@@ -191,8 +191,8 @@ abstract class AbstractHiDensityCacheOperation
                     logger.info("Clearing other record stores owned by same partition thread "
                             + "because force eviction was not enough!");
                 }
-                // If there still is OOME, for the last chance,
-                // clear other record stores and try again.
+                // if there still is OOME, for the last chance,
+                // clear other record stores and try again
                 cacheService.clearAll(getPartitionId());
                 runInternal();
                 oome = null;
@@ -214,8 +214,8 @@ abstract class AbstractHiDensityCacheOperation
         } catch (Throwable e) {
             getLogger().warning("Error while disposing internal...", e);
             // TODO ignored error at the moment.
-            // A double free() error may be thrown if an operation fails
-            // since internally key/value references are freed on OOME.
+            // a double free() error may be thrown if an operation fails
+            // since internally key/value references are freed on OOME
         }
     }
 

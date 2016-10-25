@@ -46,7 +46,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordMap
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
     }
 
-    // All mutator methods should be in sync block.
+    // all mutator methods should be in sync block
     Object getMutex() {
         return mutex;
     }

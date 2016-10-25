@@ -28,7 +28,7 @@ public class HiDensityNativeMemoryNearCacheRecord
     private static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
     // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is the same for NearCacheRecord
     // since these fields (access hit count and access time) are not used at same time
-    // (their usage scenario is based on eviction type (LRU or LFU)).
+    // (their usage scenario is based on eviction type (LRU or LFU))
     private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
     private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
 

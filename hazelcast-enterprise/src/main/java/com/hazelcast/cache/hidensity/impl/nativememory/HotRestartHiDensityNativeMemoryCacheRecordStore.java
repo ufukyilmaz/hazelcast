@@ -81,7 +81,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
     @Override
     protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
-        // Max-Size checker is created before internal map,
+        // max-size checker is created before internal map,
         // so in case of failure because of invalid max-size policy,
         // since there is no allocated native memory yet,
         // there is no need to free allocated memory.
@@ -105,12 +105,12 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
              // - this cache's configured percentage is at least as high as the global setting
              //   imposed by the Hot Restart configuration.
              //
-             // Therefore no need to set up a composite policy checker, only the local one is enough.
+             // therefore no need to set up a composite policy checker, only the local one is enough
             return new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(memoryManager, size, maxNativeMemory);
         } else {
-            // The configured policy is other than FREE_NATIVE_MEMORY_PERCENTAGE,
-            // we must additionally apply the free memory check that meets Hot Restart's demands.
-            // Therefore create a composite checker with both checks.
+            // the configured policy is other than FREE_NATIVE_MEMORY_PERCENTAGE,
+            // we must additionally apply the free memory check that meets Hot Restart's demands
+            // therefore create a composite checker with both checks
             return CompositeMaxSizeChecker.newCompositeMaxSizeChecker(
                     CompositeMaxSizeChecker.CompositionOperator.OR,
                     super.createCacheMaxSizeChecker(size, maxSizePolicy),
@@ -190,7 +190,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         return new KeyOffHeap(prefix, key.toByteArray(), keyAddress, record.getSequence());
     }
 
-    // Called from Hot Restart GC thread.
+    // called from Hot Restart GC thread
     @Override
     public boolean copyEntry(KeyHandle keyHandle, int expectedSize, RecordDataSink sink) {
         KeyHandleOffHeap kh = (KeyHandleOffHeap) keyHandle;
@@ -206,7 +206,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         }
     }
 
-    // Called from PartitionOperationThread.
+    // called from PartitionOperationThread
     @Override
     public KeyHandleOffHeap toKeyHandle(byte[] keyBytes) {
         assert keyBytes != null && keyBytes.length > 0;
@@ -219,7 +219,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         return newKeyHandle(heapKey);
     }
 
-    // Called from PartitionOperationThread.
+    // called from PartitionOperationThread
     @Override
     public void accept(KeyHandle kh, byte[] valueBytes) {
         assert kh != null : "accept() called with null KeyHandle";
@@ -234,7 +234,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         acceptNewValue(record, new HeapData(valueBytes));
     }
 
-    // Called from PartitionOperationThread.
+    // called from PartitionOperationThread
     @Override
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
         SetOfKeyHandle.KhCursor cursor = keyHandles.cursor();

@@ -79,13 +79,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
                 oomeError = oome;
             }
 
-            // If there is any record, this means that this Near Cache is a candidate for eviction.
+            // if there is any record, this means that this Near Cache is a candidate for eviction
             if (nearCacheRecordStore.size() > 0) {
                 try {
                     anyAvailableNearCacheToEvict = true;
-                    // Evict a record from this Near Cache regardless from eviction max-size policy.
+                    // evict a record from this Near Cache regardless from eviction max-size policy
                     nearCacheRecordStore.doEviction();
-                    // Try to put new record to this Near Cache after eviction.
+                    // try to put new record to this Near Cache after eviction
                     super.put(key, value);
                     oomeError = null;
                     break;
@@ -96,7 +96,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
             try {
                 if (tryToPutByEvictingOnOtherNearCaches(key, value)) {
-                    // There is no OOME and eviction is done, this means that record successfully put to Near Cache.
+                    // there is no OOME and eviction is done, this means that record successfully put to Near Cache
                     oomeError = null;
                     break;
                 }
@@ -105,7 +105,7 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
                 oomeError = oome;
             }
 
-            // If put still cannot be done and there are evictable Near Caches, keep on trying.
+            // if put still cannot be done and there are evictable Near Caches, keep on trying
         } while (anyAvailableNearCacheToEvict);
 
         checkAndHandleOOME(key, value, oomeError);
@@ -122,17 +122,17 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
             if (nearCache != this && nearCache instanceof HiDensityNearCache && nearCache.size() > 0) {
                 HiDensityNearCache hiDensityNearCache = (HiDensityNearCache) nearCache;
                 try {
-                    // Evict a record regardless from eviction max-size policy.
+                    // evict a record regardless from eviction max-size policy
                     hiDensityNearCache.nearCacheRecordStore.doEviction();
                     anyOtherAvailableNearCacheToEvict = true;
-                    // Try to put new record to Near Cache after eviction.
+                    // try to put new record to Near Cache after eviction
                     super.put(key, value);
                     oomeError = null;
                     break;
                 } catch (NativeOutOfMemoryError oome) {
                     oomeError = oome;
                 } catch (IllegalStateException e) {
-                    // Near Cache may be destroyed at this time, so just ignore exception.
+                    // Near Cache may be destroyed at this time, so just ignore exception
                     EmptyStatement.ignore(e);
                 }
             }
@@ -156,14 +156,14 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
         try {
             super.put(key, value);
         } catch (NativeOutOfMemoryError e) {
-            // There may be an existing entry in Near Cache for the specified `key`, to be in safe side, remove that entry,
-            // Otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
-            // the value from underlying IMap/cache.
+            // there may be an existing entry in Near Cache for the specified `key`, to be in safe side, remove that entry,
+            // otherwise stale value for that `key` may be seen indefinitely. This removal will make subsequent gets to fetch
+            // the value from underlying IMap/cache
             super.remove(key);
-            // Due to the ongoing compaction, one user thread may not see sufficient space to put entry into Near Cache;
-            // in that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured).
-            // This is because Near Cache feature is an optimization and it is okay not to put some entries;
-            // we are expecting to put next entries into Near Cache after compaction or after Near Cache invalidation.
+            // due to the ongoing compaction, one user thread may not see sufficient space to put entry into Near Cache;
+            // in that case, skipping NativeOutOfMemoryError instead of throwing it to user (even eviction is configured)
+            // this is because Near Cache feature is an optimization and it is okay not to put some entries;
+            // we are expecting to put next entries into Near Cache after compaction or after Near Cache invalidation
             logger.warning("Entry can not be put into Near Cache for this time");
         }
     }

@@ -31,20 +31,20 @@ public class HiDensityNativeMemoryCacheRecordMap
         super(initialCapacity, cacheRecordProcessor, cacheInfo);
     }
 
-    // Called by only the same partition thread. So there is no synchronization and visibility problem.
+    // called by only the same partition thread. so there is no synchronization and visibility problem
     @Override
     public void setEntryCounting(boolean enable) {
         if (enable) {
             if (!entryCountingEnable) {
-                // It was disable before but now it will be enable.
-                // Therefore, we increase the entry count as size of records.
+                // it was disable before but now it will be enable
+                // therefore we increase the entry count as size of records
                 storageInfo.addEntryCount(size());
             }
         } else {
             if (entryCountingEnable) {
                 int size = size();
-                // It was enable before but now it will be disable.
-                // Therefore, we decrease the entry count as size of records.
+                // it was enable before but now it will be disable
+                // therefore we decrease the entry count as size of records
                 storageInfo.removeEntryCount(size);
             }
         }

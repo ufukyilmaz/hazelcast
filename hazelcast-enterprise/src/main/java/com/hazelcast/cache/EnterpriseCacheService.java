@@ -537,7 +537,7 @@ public class EnterpriseCacheService
                 hotRestartService.ensureHasConfiguration(SERVICE_NAME, config.getNameWithPrefix(), config);
             }
         } else {
-            //There is already a configuration object for a given cache. Let's use it instead.
+            //there is already a configuration object for a given cache. let's use it instead
             config = localConfig;
         }
 

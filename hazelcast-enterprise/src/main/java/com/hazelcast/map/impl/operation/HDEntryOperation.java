@@ -149,8 +149,8 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
 
     /**
      * noOp in two cases:
-     * - setValue not called on entry
-     * - or entry does not exist and no add operation is done.
+     * - setValue not called on entry,
+     * - entry does not exist and no add operation is done.
      */
     private boolean noOp(Map.Entry entry) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;
@@ -169,7 +169,7 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     }
 
     /**
-     * Only difference between add and update is event type to be published.
+     * Only difference between add and update is the event type to be published.
      */
     private void entryAddedOrUpdated(Map.Entry entry, long now) {
         dataValue = entry.getValue();
@@ -200,9 +200,9 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     }
 
     /**
-     * Nullify old value if in memory format is object and operation is not removal
+     * Nullify old value if in-memory format is object and operation is not removal
      * since old and new value in fired event {@link com.hazelcast.core.EntryEvent}
-     * may be same due to the object in memory format.
+     * may be same due to the object in-memory format.
      */
     private void nullifyOldValueIfNecessary() {
         final MapConfig mapConfig = mapContainer.getMapConfig();

@@ -69,7 +69,7 @@ public class NodeQueryCacheContext implements QueryCacheContext {
     }
 
     /**
-     * This is a best effort approach, there is no guarantee that events in publishers internal buffers will be fired,
+     * This is a best effort approach; there is no guarantee that events in publishers internal buffers will be fired,
      * {@link com.hazelcast.spi.EventService} can drop them.
      */
     protected void flushPublishersOnNodeShutdown() {

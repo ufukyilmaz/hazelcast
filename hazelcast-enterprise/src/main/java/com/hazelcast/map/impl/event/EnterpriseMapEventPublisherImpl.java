@@ -165,13 +165,13 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         String mapName = ((EventData) eventData).getMapName();
         int eventType = ((EventData) eventData).getEventType();
 
-        // in case of expiration, imap publishes both EVICTED and EXPIRED events for a key.
+        // In case of expiration, IMap publishes both EVICTED and EXPIRED events for a key.
         // Only handling EVICTED event for that key is sufficient.
         if (EXPIRED.getType() == eventType) {
             return;
         }
 
-        // this collection contains all defined query-caches on an IMap.
+        // This collection contains all defined query-caches on an IMap.
         Collection<PartitionAccumulatorRegistry> partitionAccumulatorRegistries = getPartitionAccumulatorRegistries(mapName);
         if (isEmpty(partitionAccumulatorRegistries)) {
             return;
@@ -206,9 +206,9 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                                                                  int partitionId) {
         EventFilter eventFilter = registry.getEventFilter();
         EntryEventType eventType = EntryEventType.getByType(eventTypeId);
-        // when using Hazelcast default event filtering strategy, then let the CQC workaround kick-in
-        // otherwise just deliver the event if it matches the registry's predicate according to the configured
-        // filtering strategy
+        // When using Hazelcast default event filtering strategy, then let the CQC workaround kick-in.
+        // Otherwise, just deliver the event if it matches the registry's predicate according to the configured
+        // filtering strategy.
         if (filteringStrategy instanceof DefaultEntryEventFilteringStrategy) {
             eventType = getCQCEventTypeOrNull(eventType, eventFilter, dataKey, dataNewValue, dataOldValue);
         } else {
@@ -243,8 +243,8 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         boolean newValueMatching = filteringStrategy.doFilter(eventFilter, dataKey, dataOldValue, dataNewValue,
                 eventType, null) != FilteringStrategy.FILTER_DOES_NOT_MATCH;
         if (eventType == UPDATED) {
-            // UPDATED event has a special handling as it might result in either ADDING or REMOVING an entry from CQC
-            // depending on a predicate
+            // UPDATED event has a special handling as it might result in either ADDING or REMOVING an entry to/from CQC
+            // depending on a predicate.
             boolean oldValueMatching = filteringStrategy.doFilter(eventFilter, dataKey, null, dataOldValue,
                     EntryEventType.ADDED, null) != FilteringStrategy.FILTER_DOES_NOT_MATCH;
             if (oldValueMatching) {
@@ -255,7 +255,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
                 if (newValueMatching) {
                     eventType = ADDED;
                 } else {
-                    //neither old value or new value is matching -> it's a non-event for the CQC
+                    //Neither old value nor new value is matching -> it's a non-event for the CQC.
                     return null;
                 }
             }
@@ -290,7 +290,7 @@ public class EnterpriseMapEventPublisherImpl extends MapEventPublisherImpl {
         if (publisherRegistry == null) {
             return Collections.emptySet();
         }
-        // this collection contains all query-caches for this map.
+        // This collection contains all query-caches for this map.
         return publisherRegistry.getAll().values();
     }
 

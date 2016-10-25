@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Clears maps partition data. This operation is required because HD backed IMap can only be cleared by
+ * Clears map's partition data. This operation is required because Hi-Density backed IMap can only be cleared by
  * corresponding partition threads.
  */
 public final class EnterpriseMapPartitionClearOperation

@@ -60,7 +60,7 @@ public class EnterpriseMapEventPublishingService extends MapEventPublishingServi
      * node.
      *
      * @param eventData {@link EventData} to be dispatched.
-     * @param listener  the listener which the event will be dispatched.
+     * @param listener  the listener which the event will be dispatched from.
      */
     private void dispatchLocalEventData(EventData eventData, ListenerAdapter listener) {
         IMapEvent event = createIMapEvent(eventData, null, member, serializationService);

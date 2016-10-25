@@ -7,7 +7,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
 /**
- * Flushes dirty entries upon call of {@link IMap#flush()}
+ * Flushes dirty entries upon call of {@link IMap#flush()}.
  */
 public class HDMapFlushOperation extends HDMapOperation implements BackupAwareOperation, MutatingOperation {
 

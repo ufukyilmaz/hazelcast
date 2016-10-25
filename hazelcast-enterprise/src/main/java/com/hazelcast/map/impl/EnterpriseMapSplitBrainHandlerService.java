@@ -26,7 +26,7 @@ import java.util.Set;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 /**
- * This service resolves of split-brain issues and it is the enterprise counter-part of {@link MapSplitBrainHandlerService}.
+ * This service resolves split-brain issues and it is the enterprise counter-part of {@link MapSplitBrainHandlerService}.
  *
  * @see com.hazelcast.spi.SplitBrainHandlerService
  */

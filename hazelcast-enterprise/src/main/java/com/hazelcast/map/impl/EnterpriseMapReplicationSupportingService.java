@@ -21,7 +21,7 @@ import com.hazelcast.wan.WanReplicationEvent;
 import com.hazelcast.wan.WanReplicationPublisher;
 
 /**
- * This class handles incoming map WAN replication events
+ * This class handles incoming map WAN replication events.
  */
 
 class EnterpriseMapReplicationSupportingService implements ReplicationSupportingService {

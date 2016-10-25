@@ -11,7 +11,7 @@ import com.hazelcast.spi.impl.CountingMigrationAwareService;
 
 /**
  * Enterprise implementation of {@link MapServiceFactory}.
- * Contains enterprise specific implementations of spi services.
+ * Contains enterprise specific implementations of SPI services.
  *
  * @see DefaultMapServiceFactory
  */

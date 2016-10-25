@@ -176,9 +176,9 @@ public class BasicAccumulator<E extends Sequenced> extends AbstractAccumulator<E
     }
 
     /**
-     * Iterator used to read and {@link Accumulator}
+     * Iterator used to read an {@link Accumulator}.
      *
-     * @param <T> the type which can be stored the {@link Accumulator}
+     * @param <T> the type which can be stored in the {@link Accumulator}.
      */
     private static class ReadOnlyIterator<T extends Sequenced> implements Iterator<T> {
 

@@ -124,8 +124,8 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
 
     /**
      * noOpBackup in two cases:
-     * - setValue not called on entry
-     * - or entry does not exist and no add operation is done.
+     * - setValue not called on entry,
+     * - entry does not exist and no add operation is done.
      */
     private boolean noOpBackup(Map.Entry entry) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;

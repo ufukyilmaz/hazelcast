@@ -5,7 +5,7 @@ import com.hazelcast.core.IMapEvent;
 import com.hazelcast.core.Member;
 
 /**
- * {@link IMapEvent} which holds {@link BatchEventData}
+ * {@link IMapEvent} which holds {@link BatchEventData}.
  */
 public class BatchIMapEvent implements IMapEvent {
 

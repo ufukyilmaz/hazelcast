@@ -19,7 +19,7 @@ import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.query.MapQueryEngineUtils.waitForResult;
 
 /**
- * Used only with HD memory. Runs all query operations on partition threads.
+ * Used only with Hi-Density memory. Runs all query operations on partition threads.
  */
 public class HDLocalQueryRunner extends MapLocalParallelQueryRunner {
 
@@ -28,13 +28,13 @@ public class HDLocalQueryRunner extends MapLocalParallelQueryRunner {
     }
 
     @Override
-    // difference between OS and EE with HD: EE version always caches values
+    // Difference between OS and EE with HD: EE version always caches values.
     protected boolean isUseCachedDeserializedValuesEnabled(MapContainer mapContainer) {
         return true;
     }
 
     @Override
-    // difference between OS and EE with HD: transform native memory data to heap data
+    // Difference between OS and EE with HD: transform native memory data to heap data.
     protected <T> Object toData(T input) {
         if (!(input instanceof NativeMemoryData)) {
             return input;
@@ -43,7 +43,7 @@ public class HDLocalQueryRunner extends MapLocalParallelQueryRunner {
     }
 
     @Override
-    // difference between OS and EE with HD: do not use the executor service but just dispatch QueryPartitionOperations instead
+    // Difference between OS and EE with HD: do not use the executor service but just dispatch QueryPartitionOperations instead.
     protected List<QueryableEntry> runUsingPartitionScanWithoutPaging(
             String name, Predicate predicate, Collection<Integer> partitions) throws InterruptedException, ExecutionException {
 

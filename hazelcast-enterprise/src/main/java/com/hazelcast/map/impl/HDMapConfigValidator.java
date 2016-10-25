@@ -26,7 +26,7 @@ import static java.lang.String.format;
 import static java.util.EnumSet.complementOf;
 
 /**
- * Responsible for validating supported configurations of HD backed IMap and its Near Cache.
+ * Responsible for validating supported configurations of Hi-Density backed IMap and its Near Cache.
  */
 public final class HDMapConfigValidator {
 
@@ -41,8 +41,8 @@ public final class HDMapConfigValidator {
     /**
      * Checks preconditions to create a map proxy.
      *
-     * @param mapConfig          the mapConfig
-     * @param nativeMemoryConfig the nativeMemoryConfig
+     * @param mapConfig          the mapConfig.
+     * @param nativeMemoryConfig the nativeMemoryConfig.
      */
     public static void checkHDConfig(MapConfig mapConfig, NativeMemoryConfig nativeMemoryConfig) {
         if (NATIVE != mapConfig.getInMemoryFormat()) {
@@ -80,11 +80,11 @@ public final class HDMapConfigValidator {
     }
 
     /**
-     * When hot-restart is enabled we do want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
-     * free HD space.
+     * When Hot Restart is enabled, we want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
+     * free Hi-Density memory space.
      *
      * If configured max-size-policy is {@link com.hazelcast.config.MaxSizeConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE},
-     * this method asserts that max-size is not below "hazelcast.hotrestart.free.native.memory.percentage"
+     * this method asserts that max-size is not below "hazelcast.hotrestart.free.native.memory.percentage".
      */
     private static void checkHotRestartSpecificConfig(MapConfig mapConfig) {
         HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
@@ -111,7 +111,7 @@ public final class HDMapConfigValidator {
     /**
      * Checks preconditions to create a map proxy with Near Cache.
      *
-     * @param nearCacheConfig the nearCacheConfig
+     * @param nearCacheConfig the nearCacheConfig.
      */
     public static void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
         InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();

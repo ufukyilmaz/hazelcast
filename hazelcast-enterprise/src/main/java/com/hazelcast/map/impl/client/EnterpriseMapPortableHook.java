@@ -38,15 +38,15 @@ public class EnterpriseMapPortableHook implements PortableHook {
     }
 
     /**
-     * Implements {@link PortableFactory} for this {@link PortableHook}
+     * Implements {@link PortableFactory} for this {@link PortableHook}.
      */
     private static class EnterpriseMapPortableFactory implements PortableFactory {
 
         /**
-         * Creates a Portable instance using given class id
+         * Creates a Portable instance using given class id.
          *
-         * @param classId portable class id
-         * @return portable instance or null if class id is not known by this factory
+         * @param classId portable class id.
+         * @return portable instance or null if class id is not known by this factory.
          */
         @Override
         public Portable create(int classId) {

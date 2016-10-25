@@ -15,7 +15,7 @@ import static com.hazelcast.util.Preconditions.checkNotNegative;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Holder for a collection of {@link QueryCacheEventData}
+ * Holder for a collection of {@link QueryCacheEventData}.
  *
  * @see QueryCacheEventData
  */

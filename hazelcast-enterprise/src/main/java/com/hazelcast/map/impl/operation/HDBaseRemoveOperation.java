@@ -29,8 +29,8 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
     protected transient Data dataOldValue;
 
     /**
-     * Used by wan-replication-service to disable wan-replication event publishing
-     * otherwise in active-active scenarios infinite loop of event forwarding can be seen.
+     * Used by WAN replication service to disable WAN replication event publishing.
+     * Otherwise, in active-active scenarios infinite loop of event forwarding can be seen.
      */
     protected transient boolean disableWanReplicationEvent;
 
@@ -52,7 +52,7 @@ public abstract class HDBaseRemoveOperation extends HDLockAwareOperation impleme
         mapEventPublisher.publishEvent(getCallerAddress(), name, REMOVED, dataKey, dataOldValue, null);
         invalidateNearCache(dataKey);
         if (mapContainer.isWanReplicationEnabled() && !disableWanReplicationEvent) {
-            // todo should evict operation replicated??
+            // TODO should evict operation be replicated?
             mapEventPublisher.publishWanReplicationRemove(name, dataKey, Clock.currentTimeMillis());
         }
         evict(dataKey);

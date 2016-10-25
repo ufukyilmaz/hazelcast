@@ -12,7 +12,7 @@ import static com.hazelcast.map.impl.querycache.publisher.AccumulatorSweeper.flu
 import static com.hazelcast.map.impl.querycache.publisher.AccumulatorSweeper.removeAccumulator;
 
 /**
- * Defines enterprise only migration aware service behavior for {@link MapService}
+ * Defines enterprise only migration aware service behavior for {@link MapService}.
  *
  * @see MapService
  */

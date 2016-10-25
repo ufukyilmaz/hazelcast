@@ -102,7 +102,7 @@ public interface Accumulator<E extends Sequenced> extends Iterable<E> {
 
     /**
      * Resets this accumulator.
-     * After return of this call, accumulator will be its initial state.
+     * After return of this call, accumulator will be in its initial state.
      */
     void reset();
 }

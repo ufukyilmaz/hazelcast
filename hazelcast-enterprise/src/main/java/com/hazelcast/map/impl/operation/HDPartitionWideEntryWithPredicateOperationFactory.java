@@ -84,7 +84,7 @@ public class HDPartitionWideEntryWithPredicateOperationFactory extends Partition
     @Override
     public Operation createPartitionOperation(int partition) {
         if (isNullOrEmpty(partitionIdToKeysMap)) {
-            // fallback here if we cannot find anything from indexes.
+            // Fallback here if we cannot find anything from indexes.
             return new HDPartitionWideEntryWithPredicateOperation(name, entryProcessor, predicate);
         }
 
@@ -114,11 +114,11 @@ public class HDPartitionWideEntryWithPredicateOperationFactory extends Partition
             return emptySet();
         }
 
-        // get indexes
+        // Get indexes.
         MapService mapService = nodeEngine.getService(SERVICE_NAME);
         MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         Indexes indexes = mapServiceContext.getMapContainer(name).getIndexes();
-        // optimize predicate
+        // Optimize predicate.
         QueryOptimizer queryOptimizer = mapServiceContext.getQueryOptimizer();
         predicate = queryOptimizer.optimize(predicate, indexes);
 

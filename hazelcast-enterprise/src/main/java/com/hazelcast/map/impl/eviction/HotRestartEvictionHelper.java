@@ -4,7 +4,7 @@ package com.hazelcast.map.impl.eviction;
 import static java.lang.Integer.getInteger;
 
 /**
- * Helper class to centralize hot-restart eviction related stuff.
+ * Helper class to centralize Hot Restart eviction related stuff.
  */
 public final class HotRestartEvictionHelper {
 
@@ -16,8 +16,8 @@ public final class HotRestartEvictionHelper {
     }
 
     /**
-     * When hot-restart is enabled we do want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
-     * free HD space.
+     * When Hot Restart is enabled, we want at least "hazelcast.hotrestart.free.native.memory.percentage" percent
+     * free Hi-Density space.
      *
      * @return percentage of minimum free native memory space.
      */

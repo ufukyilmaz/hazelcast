@@ -5,7 +5,7 @@ import com.hazelcast.map.impl.querycache.publisher.PublisherAccumulatorHandler;
 /**
  * Used to handle elements of an {@link Accumulator}.
  *
- * @param <T> the type of element in {@link Accumulator}
+ * @param <T> the type of element in {@link Accumulator}.
  * @see PublisherAccumulatorHandler
  * @see com.hazelcast.map.impl.querycache.subscriber.SubscriberAccumulatorHandler
  */

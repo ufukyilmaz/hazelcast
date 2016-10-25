@@ -33,8 +33,8 @@ import java.io.IOException;
 public final class HDPutBackupOperation extends HDKeyBasedMapOperation implements BackupOperation,
         IdentifiedDataSerializable, MutatingOperation {
 
-    // todo unlockKey is a logic just used in transactional put operations.
-    // todo It complicates here there should be another Operation for that logic. e.g. TxnSetBackup
+    // TODO unlockKey is a logic just used in transactional put operations.
+    // TODO It complicates here there should be another Operation for that logic, e.g., TxnSetBackup
     private boolean unlockKey;
     private RecordInfo recordInfo;
     private boolean putTransient;

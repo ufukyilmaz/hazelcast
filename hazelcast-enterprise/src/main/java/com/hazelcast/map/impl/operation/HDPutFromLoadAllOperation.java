@@ -37,7 +37,7 @@ import static com.hazelcast.util.CollectionUtil.isEmpty;
 import static com.hazelcast.util.Preconditions.checkFalse;
 
 /**
- * Puts records to map which are loaded from map store by {@link com.hazelcast.core.IMap#loadAll}
+ * Puts records to map which are loaded from map store by {@link com.hazelcast.core.IMap#loadAll}.
  */
 public class HDPutFromLoadAllOperation extends HDMapOperation implements PartitionAwareOperation, MutatingOperation,
         BackupAwareOperation {

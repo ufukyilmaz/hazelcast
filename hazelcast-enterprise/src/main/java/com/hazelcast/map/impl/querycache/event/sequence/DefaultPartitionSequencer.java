@@ -3,7 +3,7 @@ package com.hazelcast.map.impl.querycache.event.sequence;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Default implementation of {@link PartitionSequencer}
+ * Default implementation of {@link PartitionSequencer}.
  *
  * @see PartitionSequencer
  */

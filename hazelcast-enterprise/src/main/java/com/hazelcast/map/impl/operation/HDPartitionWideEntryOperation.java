@@ -74,11 +74,11 @@ public class HDPartitionWideEntryOperation extends AbstractHDMultipleEntryOperat
             Map.Entry entry = createMapEntry(dataKey, oldValue);
             Data response = process(entry);
             if (response != null) {
-                // copy key from HD memory to heap memory
+                // Copy key from Hi-Density memory to heap memory.
                 responses.add(toData(dataKey), response);
             }
 
-            // first call noOp, other if checks below depends on it.
+            // First call noOp, other if checks below depends on it.
             if (noOp(entry, oldValue)) {
                 continue;
             }

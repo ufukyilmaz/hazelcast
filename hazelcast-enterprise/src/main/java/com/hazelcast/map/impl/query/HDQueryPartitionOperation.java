@@ -12,7 +12,7 @@ import com.hazelcast.spi.ReadonlyOperation;
 import java.io.IOException;
 import java.util.Collection;
 
-// difference between OS and EE with HD: to avoid an extra allocation and extra logic invocation it returns the result
+// Difference between OS and EE with HD: to avoid an extra allocation and extra logic invocation it returns the result
 // as a Collection<QueryableEntry> and does not allocate the QueryResult object. Used by the HDLocalQueryRunner only.
 public class HDQueryPartitionOperation extends MapOperation implements PartitionAwareOperation, ReadonlyOperation {
 

@@ -7,7 +7,7 @@ package com.hazelcast.map.impl.querycache.event.sequence;
  * incremented by one and set to that event before sending it to the subscriber side.
  * <p/>
  * On subscriber side, this sequence is used to keep track of published events; upon arrival of an event, there
- * is a pre-condition check to decide whether that just arrived event has next expected sequence-number for the
+ * is a pre-condition check to decide whether that the arrived event has the next-expected-sequence-number for the
  * relevant partition. If the event has next-sequence, it is applied to the query-cache.
  * <p/>
  * Implementations of this interface should be thread-safe.
@@ -24,16 +24,16 @@ public interface PartitionSequencer {
     /**
      * Sets the current sequence number for the partition.
      *
-     * @param update new sequence number
+     * @param update new sequence number.
      */
     void setSequence(long update);
 
     /**
      * Atomically sets the value of sequence number for the partition.
      *
-     * @param expect the expected sequence
-     * @param update the new sequence
-     * @return {@code true} if cas operation is successful, otherwise returns {@code false}
+     * @param expect the expected sequence.
+     * @param update the new sequence.
+     * @return {@code true} if Compare-and-Set operation is successful, otherwise returns {@code false}.
      */
     boolean compareAndSetSequence(long expect, long update);
 

@@ -6,7 +6,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import java.io.IOException;
 
 /**
- * Triggers map loading from a map store
+ * Triggers map loading from a map store.
  */
 public class HDLoadMapOperation extends HDMapOperation {
 

@@ -83,9 +83,9 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     }
 
     /**
-     * Nullify old value if in memory format is object and operation is not removal
+     * Nullify old value if in-memory format is object and operation is not removal
      * since old and new value in fired event {@link com.hazelcast.core.EntryEvent}
-     * may be same due to the object in memory format.
+     * may be same due to the object in-memory format.
      */
     protected Object nullifyOldValueIfNecessary(Object oldValue, EntryEventType eventType) {
         final MapConfig mapConfig = mapContainer.getMapConfig();
@@ -115,12 +115,12 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
                 return EntryEventType.UPDATED;
             }
         }
-        // return null for read only operations.
+        // Return null for read only operations.
         return null;
     }
 
     /**
-     * Entry has not exist and no add operation has been done.
+     * Entry has not been existing and no add operation has been done.
      */
     protected boolean noOp(Map.Entry entry, Object oldValue) {
         final LazyMapEntry mapEntrySimple = (LazyMapEntry) entry;

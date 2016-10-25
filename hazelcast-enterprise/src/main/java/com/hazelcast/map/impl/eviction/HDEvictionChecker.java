@@ -60,9 +60,9 @@ public class HDEvictionChecker extends EvictionChecker {
 
         switch (maxSizePolicy) {
             case FREE_NATIVE_MEMORY_PERCENTAGE:
-                // here we do not need to check hot-restart specific eviction.
-                // because from configuration we know that it is at least 20 percent.
-                // So just return the result. For further info. please see `HDMapConfigValidator#checkHotRestartSpecificConfig`
+                // Here, we do not need to check Hot Restart specific eviction.
+                // Because from configuration we know that it is at least 20 percent.
+                // So just return the result. For further information, please see `HDMapConfigValidator#checkHotRestartSpecificConfig`.
                 return checkMinFreeNativeMemoryPercentage(maxSize);
             case FREE_NATIVE_MEMORY_SIZE:
                 evictable = checkMinFreeNativeMemorySize(maxSize);
@@ -83,7 +83,7 @@ public class HDEvictionChecker extends EvictionChecker {
     }
 
     /**
-     * When hot-restart is enabled we want at least `hotRestartMinFreeNativeMemoryPercentage` free HD space.
+     * When Hot Restart is enabled we want at least `hotRestartMinFreeNativeMemoryPercentage` free HD space.
      */
     protected boolean checkHotRestartSpecificEviction(MapConfig mapConfig) {
         HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();

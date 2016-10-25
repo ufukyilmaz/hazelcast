@@ -4,7 +4,7 @@ import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 
 /**
  * A cyclic buffer to store {@link Sequenced} events. Only additions can be done to this buffer.
- * If capacity is not sufficient subsequent additions will be done by overwriting on existing ones.
+ * If capacity is not sufficient subsequent additions will be done by overwriting existing ones.
  * Also read access to any element is possible by providing the sequence number.
  *
  * @param <E> the type of elements in this buffer.
@@ -38,7 +38,7 @@ public interface CyclicBuffer<E extends Sequenced> {
      * is still in this buffer. Otherwise, returns {@code false}
      *
      * @param sequence the sequence number which will be set to head of this buffer.
-     * @return {@code true} if {@code sequence} is set to head, otherwise returns {@code false}
+     * @return {@code true} if {@code sequence} is set to head, otherwise returns {@code false}.
      */
     boolean setHead(long sequence);
 
@@ -46,12 +46,12 @@ public interface CyclicBuffer<E extends Sequenced> {
      * Returns the sequence number of the element in the head index of this buffer if there exists any,
      * otherwise {@code -1L} will be returned.
      *
-     * @return the sequence number of the element in the head index or {@code -1L}
+     * @return the sequence number of the element in the head index or {@code -1L}.
      */
     long getHeadSequence();
 
     /**
-     * Resets this buffer, after the return of this method buffer will be empty and
+     * Resets this buffer; after the return of this method buffer will be empty and
      * all elements in it will be null.
      */
     void reset();

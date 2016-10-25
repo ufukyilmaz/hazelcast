@@ -9,7 +9,7 @@ import com.hazelcast.map.impl.proxy.EnterpriseNearCachedMapProxyImpl;
 import static com.hazelcast.map.impl.HDMapConfigValidator.checkHDConfig;
 
 /**
- * Defines enterprise only remote service behavior for {@link MapService}
+ * Defines enterprise only remote service behavior for {@link MapService}.
  *
  * @see MapService
  */

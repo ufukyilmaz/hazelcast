@@ -6,7 +6,7 @@ import com.hazelcast.core.Member;
 
 /**
  * This event is fired in case of an event lost detection.
- * The fired event can be caught by implementing {@link com.hazelcast.map.listener.EventLostListener EventLostListener}
+ * The fired event can be caught by implementing {@link com.hazelcast.map.listener.EventLostListener EventLostListener}.
  *
  * @see com.hazelcast.map.listener.EventLostListener
  */
@@ -43,7 +43,7 @@ public class EventLostEvent implements IMapEvent {
 
     /**
      * Intentionally returns null.
-     * Used in {@link com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter}
+     * Used in {@link com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter}.
      *
      * @return null.
      * @see com.hazelcast.map.impl.querycache.subscriber.InternalQueryCacheListenerAdapter

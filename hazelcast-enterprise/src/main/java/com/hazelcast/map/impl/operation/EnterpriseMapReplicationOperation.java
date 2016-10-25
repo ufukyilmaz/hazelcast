@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Replicates all IMap-states of this partition to a replica partition.
  *
- * Additionally deals with HD-IMap specific cases by handling {@link NativeOutOfMemoryError}
+ * Additionally deals with Hi-Density backed IMap specific cases by handling {@link NativeOutOfMemoryError}.
  */
 public class EnterpriseMapReplicationOperation extends MapReplicationOperation {
 

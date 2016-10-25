@@ -70,11 +70,11 @@ public class HDMultipleEntryOperation extends AbstractHDMultipleEntryOperation i
 
             final Data response = process(entry);
             if (response != null) {
-                // copy key from HD memory to heap memory
+                // Copy key from Hi-Density memory to heap memory.
                 responses.add(toData(dataKey), response);
             }
 
-            // first call noOp, other if checks below depends on it.
+            // First call noOp, other if checks below depends on it.
             if (noOp(entry, value)) {
                 continue;
             }

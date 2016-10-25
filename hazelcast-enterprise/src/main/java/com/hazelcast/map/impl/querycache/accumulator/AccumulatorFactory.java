@@ -9,8 +9,8 @@ package com.hazelcast.map.impl.querycache.accumulator;
 public interface AccumulatorFactory {
 
     /**
-     * @param info info which will be used by an {@link Accumulator}
-     * @return an instance of {@link Accumulator}
+     * @param info info which will be used by an {@link Accumulator}.
+     * @return an instance of {@link Accumulator}.
      */
     Accumulator createAccumulator(AccumulatorInfo info);
 }

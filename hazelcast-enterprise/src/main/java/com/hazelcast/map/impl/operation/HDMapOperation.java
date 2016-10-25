@@ -43,7 +43,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
  * If an {@code IMap} is evictable, naturally expected thing is, all put operations should be successful.
  * Because if there is no more space, operation can be able to evict some entries and can put the new ones.
  * <p/>
- * This abstract class forces the evictable record-stores on this partition thread to eviction in the event of
+ * This abstract class forces the evictable record-stores on this partition thread to be evicted in the event of
  * a {@link NativeOutOfMemoryError}.
  * <p/>
  * Used when {@link com.hazelcast.config.InMemoryFormat InMemoryFormat} is
@@ -112,8 +112,8 @@ public abstract class HDMapOperation extends MapOperation {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
         } else {
-            // we need to introduce a proper method to handle operation failures (at the moment
-            // this is the only place where we can dispose native memory allocations on failure)
+            // We need to introduce a proper method to handle operation failures (at the moment
+            // this is the only place where we can dispose native memory allocations on failure).
             disposeDeferredBlocks();
             super.logError(e);
         }
@@ -165,7 +165,7 @@ public abstract class HDMapOperation extends MapOperation {
                 if (logger.isFineEnabled()) {
                     logger.fine("Applying force eviction on current record store!");
                 }
-                // if there is still an OOME, apply eviction on current RecordStore and try again
+                // If there is still an OOME, apply eviction on current RecordStore and try again.
                 forceEviction(recordStore);
                 runInternal();
                 oome = null;
@@ -181,7 +181,7 @@ public abstract class HDMapOperation extends MapOperation {
                     if (logger.isFineEnabled()) {
                         logger.fine("Applying force eviction on other record stores owned by same partition thread!");
                     }
-                    // if there is still an OOME, apply for eviction on others and try again
+                    // If there is still an OOME, apply for eviction on others and try again.
                     forceEvictionOnOthers();
                     runInternal();
                     oome = null;
@@ -235,7 +235,7 @@ public abstract class HDMapOperation extends MapOperation {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Evicting all entries in current record-store because force eviction was not enough!");
                 }
-                // if there is still OOME, clear the current RecordStore and try again
+                // If there is still OOME, clear the current RecordStore and try again.
                 recordStore.evictAll(backup);
                 runInternal();
                 oome = null;
@@ -250,7 +250,7 @@ public abstract class HDMapOperation extends MapOperation {
                     logger.info("Evicting all entries in other record-stores owned by same partition thread "
                             + "because force eviction was not enough!");
                 }
-                // if there is still OOME, for the last chance, evict other record stores and try again
+                // If there is still OOME, for the last chance, evict other record stores and try again.
                 evictAll(backup);
                 runInternal();
                 oome = null;

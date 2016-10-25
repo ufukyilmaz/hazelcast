@@ -47,7 +47,7 @@ public final class NativeMemoryData extends MemoryBlock implements Data {
     public static final int DATA_OFFSET = 12;
 
     /**
-     * Native memory data size overhead relative to wrapped data
+     * Native memory data size overhead relative to wrapped data.
      */
     public static final int NATIVE_MEMORY_DATA_OVERHEAD = Bits.INT_SIZE_IN_BYTES;
 

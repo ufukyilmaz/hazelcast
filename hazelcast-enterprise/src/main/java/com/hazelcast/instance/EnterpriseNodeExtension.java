@@ -59,7 +59,7 @@ import java.util.logging.Level;
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
 
 /**
- * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems
+ * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.
  */
 @SuppressWarnings({
         "checkstyle:classdataabstractioncoupling",

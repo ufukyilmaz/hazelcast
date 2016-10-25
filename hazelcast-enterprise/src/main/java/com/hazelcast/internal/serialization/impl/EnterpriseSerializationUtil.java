@@ -16,7 +16,7 @@ import static com.hazelcast.internal.serialization.impl.SerializationUtil.handle
 import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 
 /**
- * Enterprise Serialization utility methods
+ * Enterprise Serialization utility methods.
  */
 public final class EnterpriseSerializationUtil {
 

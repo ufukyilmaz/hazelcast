@@ -16,7 +16,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 
 /**
- * @param <R> the type of the {@link HiDensityRecord} to be processed
+ * @param <R> Type of the {@link HiDensityRecord} to be processed.
  * @author sozal 18/02/15
  */
 public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
@@ -175,7 +175,7 @@ public class DefaultHiDensityRecordProcessor<R extends HiDensityRecord>
         MemoryBlock block;
         while ((block = deferredBlocksQueue.poll()) != null) {
             if (block.address() == MemoryAllocator.NULL_ADDRESS) {
-                // already disposed
+                // Already disposed.
                 continue;
             }
 

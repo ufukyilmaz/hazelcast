@@ -12,7 +12,7 @@ import com.hazelcast.nio.serialization.Data;
 /**
  * @author sozal 18/02/15
  *
- * @param <R> the type of the {@link HiDensityRecord} to be stored
+ * @param <R> Type of the {@link HiDensityRecord} to be stored.
  */
 public class SampleableEvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
         extends EvictableHiDensityRecordMap<R>

@@ -10,7 +10,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 /**
  * @author sozal 18/02/15
  *
- * @param <R> the type of the {@link HiDensityRecord} to be accessed
+ * @param <R> Type of the {@link HiDensityRecord} to be accessed.
  */
 public abstract class AbstractHiDensityRecordAccessor<R extends HiDensityRecord>
         implements HiDensityRecordAccessor<R> {

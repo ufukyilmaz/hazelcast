@@ -19,7 +19,7 @@ import com.hazelcast.internal.serialization.impl.NativeMemoryData;
  * </li>
  * </ul>
  *
- * @param <R> Type of the hi-density record to be accessed
+ * @param <R> Type of the Hi-Density record to be accessed.
  *
  * @see com.hazelcast.memory.MemoryBlockAccessor
  * @see com.hazelcast.internal.hidensity.HiDensityRecordAccessor
@@ -32,34 +32,34 @@ public interface HiDensityRecordProcessor<R extends HiDensityRecord>
         extends MemoryBlockProcessor<R>, HiDensityRecordAccessor<R> {
 
     /**
-     * Returns the used memory for the underlying HiDensity storage (cache, ...).
+     * Returns the used memory for the underlying Hi-Density storage (cache, ...).
      *
-     * @return the used memory for the underlying HiDensity storage (cache, ...)
+     * @return the used memory for the underlying Hi-Density storage (cache, ...).
      */
     long getUsedMemory();
 
     /**
-     * Increases the used memory for the underlying HiDensity storage (cache, ...) as the <code>increasedMemory</code>.
+     * Increases the used memory for the underlying Hi-Density storage (cache, ...) as the <code>increasedMemory</code>.
      *
-     * @param increasedMemory the memory size to be added to used memory
-     * @return the used memory for the underlying HiDensity storage (cache, ...)
+     * @param increasedMemory the memory size to be added to used memory.
+     * @return the used memory for the underlying Hi-Density storage (cache, ...).
      */
     long increaseUsedMemory(long increasedMemory);
 
     /**
-     * Decreases the used memory for the underlying HiDensity storage (cache, ...) as the <code>decreasedMemory</code>.
+     * Decreases the used memory for the underlying Hi-Density storage (cache, ...) as the <code>decreasedMemory</code>.
      *
-     * @param decreasedMemory the memory size to be removed from used memory
-     * @return the used memory for the underlying HiDensity storage (cache, ...)
+     * @param decreasedMemory the memory size to be removed from used memory.
+     * @return the used memory for the underlying Hi-Density storage (cache, ...).
      */
     long decreaseUsedMemory(long decreasedMemory);
 
     /**
      * Adds given {@link com.hazelcast.memory.MemoryBlock}
      * to this {@link com.hazelcast.internal.hidensity.HiDensityRecordProcessor} to be disposed later.
-     * Possibly at the end (succeeded or failed) operation.
+     * Possibly at the end of (succeeded or failed) operation.
      *
-     * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to be disposed later
+     * @param memoryBlock the {@link com.hazelcast.memory.MemoryBlock} to be disposed later.
      */
     void addDeferredDispose(MemoryBlock memoryBlock);
 

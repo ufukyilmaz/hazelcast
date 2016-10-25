@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 
 /**
- * Holds information about Hi-Density storage such as entry count, used memory, etc ...
+ * Holds information about Hi-Density storage such as entry count, used memory, etc.
  *
  * @author sozal 18/02/15
  */

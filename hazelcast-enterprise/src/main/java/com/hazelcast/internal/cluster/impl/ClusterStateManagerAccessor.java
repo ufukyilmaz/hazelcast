@@ -9,10 +9,10 @@ import java.util.Collection;
  * Accessor used to invoke package-private
  * methods on ClusterStateManager in a safe manner.
  * <p/>
- * Normally these method are not allowed to be called,
+ * Normally these methods are not allowed to be called,
  * they are not required for ClusterState logic.
  * <p/>
- * Hot-restart needs to set ClusterState directly
+ * Hot Restart needs to set ClusterState directly
  * without a cluster-wide transaction, it's already managing a consensus of its own.
  */
 public final class ClusterStateManagerAccessor {

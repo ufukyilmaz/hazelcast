@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Map storage interface to hold {@link HiDensityRecord} objects.
  *
- * @param <R> Type of the hi-density record stored in this record map
+ * @param <R> Type of the Hi-Density record stored in this record map.
  *
  * @author sozal 18/02/15
  */

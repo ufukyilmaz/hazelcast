@@ -129,8 +129,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 
-            //Future version note: add new versions here
-            //adding case's for each version and instantiate it properly
+            //Future version note: Add new versions here.
+            //Adding cases for each version and instantiate it properly.
             default:
                 throw new IllegalArgumentException("Serialization version is not supported!");
         }

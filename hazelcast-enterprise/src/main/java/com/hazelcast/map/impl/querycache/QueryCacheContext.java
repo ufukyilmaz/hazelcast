@@ -36,9 +36,9 @@ public interface QueryCacheContext {
     SubscriberContext getSubscriberContext();
 
     /**
-     * Returns {@link InternalSerializationService} for this context
+     * Returns {@link InternalSerializationService} for this context.
      *
-     * @return {@link InternalSerializationService} for this context
+     * @return {@link InternalSerializationService} for this context.
      */
     InternalSerializationService getSerializationService();
 
@@ -47,7 +47,7 @@ public interface QueryCacheContext {
      * which will be used to create {@link QueryCacheEventService} implementations
      * for client or node sides.
      *
-     * @return {@link QueryCacheEventService} for this context
+     * @return {@link QueryCacheEventService} for this context.
      */
     QueryCacheEventService getQueryCacheEventService();
 
@@ -56,7 +56,7 @@ public interface QueryCacheContext {
      * which will be used to create {@link QueryCacheConfigurator} implementations
      * for client or node sides.
      *
-     * @return {@link QueryCacheConfigurator} for this context
+     * @return {@link QueryCacheConfigurator} for this context.
      */
     QueryCacheConfigurator getQueryCacheConfigurator();
 
@@ -65,7 +65,7 @@ public interface QueryCacheContext {
      * which will be used to create {@link QueryCacheScheduler} implementations
      * for client or node sides.
      *
-     * @return {@link QueryCacheScheduler} for this context
+     * @return {@link QueryCacheScheduler} for this context.
      */
     QueryCacheScheduler getQueryCacheScheduler();
 

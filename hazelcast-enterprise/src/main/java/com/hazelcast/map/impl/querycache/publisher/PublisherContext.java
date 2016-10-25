@@ -62,22 +62,23 @@ public interface PublisherContext {
      * Handles a disconnected subscriber. This method will be used
      * to clean orphaned {@link com.hazelcast.map.QueryCache QueryCache} resources.
      *
-     * @param uuid client or node uuid of subscriber.
+     * @param uuid client or node UUID of subscriber.
      */
     void handleDisconnectedSubscriber(String uuid);
 
     /**
      * Handles a reconnected subscriber. This method will be used
-     * to stop actions taken in {@code #handleDisconnectedSubscriber}
+     * to stop actions taken in {@code #handleDisconnectedSubscriber}.
      *
-     * @param uuid client or node uuid of subscriber.
+     * @param uuid client or node UUID of subscriber.
      * @see #handleDisconnectedSubscriber
      */
     void handleConnectedSubscriber(String uuid);
 
     /**
      * Flushes this publisher context.
-     * For example during graceful shutdown we need to flush all events in the registered accumulators of this context.
+     * For example during graceful shutdown we need to flush all events in the 
+     * registered accumulators of this context.
      */
     void flush();
 

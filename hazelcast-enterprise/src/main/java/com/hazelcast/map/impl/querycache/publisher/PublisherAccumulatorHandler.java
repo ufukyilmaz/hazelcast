@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * Handler for processing of event data in an {@link Accumulator Accumulator}.
- * Processing is done by the help of {@link AccumulatorProcessor}
+ * Processing is done by the help of {@link AccumulatorProcessor}.
  *
  * @see EventPublisherAccumulatorProcessor
  */

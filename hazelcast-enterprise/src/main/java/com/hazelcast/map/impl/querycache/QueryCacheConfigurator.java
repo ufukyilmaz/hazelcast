@@ -9,7 +9,7 @@ import com.hazelcast.config.QueryCacheConfig;
 public interface QueryCacheConfigurator {
 
     /**
-     * Returns {@link QueryCacheConfig} for the requested query cache with cacheName
+     * Returns {@link QueryCacheConfig} for the requested query cache with cacheName.
      *
      * @param mapName   underlying IMap name for query cache.
      * @param cacheName query cache name.

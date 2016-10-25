@@ -27,7 +27,7 @@ import static com.hazelcast.map.impl.querycache.publisher.AccumulatorSweeper.flu
 import static com.hazelcast.util.CollectionUtil.isEmpty;
 
 /**
- * Default implementation of {@link PublisherContext}
+ * Default implementation of {@link PublisherContext}.
  *
  * @see PublisherContext
  */

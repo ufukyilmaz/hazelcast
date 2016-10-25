@@ -37,7 +37,7 @@ public final class AccumulatorSweeper {
 
                     processor.setInfo(accumulator.getInfo());
 
-                    // Give 0 to delay-time in order to fetch all events in the accumulator.
+                    // give 0 to delay-time in order to fetch all events in the accumulator
                     accumulator.poll(handler, 0, TimeUnit.SECONDS);
 
                     // send end event
@@ -69,7 +69,7 @@ public final class AccumulatorSweeper {
 
                 processor.setInfo(accumulator.getInfo());
 
-                // Give 0 to delay-time in order to fetch all events in the accumulator.
+                // give 0 to delay-time in order to fetch all events in the accumulator
                 accumulator.poll(handler, 0, TimeUnit.SECONDS);
                 // send end event
                 QueryCacheEventData eventData = createEndOfSequenceEvent(partitionId);

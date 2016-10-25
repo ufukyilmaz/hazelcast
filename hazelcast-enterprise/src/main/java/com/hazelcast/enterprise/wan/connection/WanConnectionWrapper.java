@@ -3,7 +3,7 @@ package com.hazelcast.enterprise.wan.connection;
 import com.hazelcast.nio.Connection;
 
 /**
- * Wrapper for {@link Connection} to add etra info related WAN replication
+ * Wrapper for {@link Connection} to add extra information related to WAN replication.
  */
 public class WanConnectionWrapper {
 

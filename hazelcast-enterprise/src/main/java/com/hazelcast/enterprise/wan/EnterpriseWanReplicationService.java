@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
 
 /**
- * Enterprise implementation for WAN replication
+ * Enterprise implementation for WAN replication.
  */
 public class EnterpriseWanReplicationService
         implements WanReplicationService, MigrationAwareService {
@@ -292,7 +292,7 @@ public class EnterpriseWanReplicationService
 
     /**
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
-     * related {@link ReplicationSupportingService}
+     * related {@link ReplicationSupportingService}.
      */
     private class WanEventRunnable extends AbstractWanEventRunnable {
 
@@ -322,7 +322,7 @@ public class EnterpriseWanReplicationService
 
     /**
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
-     * related {@link ReplicationSupportingService}
+     * related {@link ReplicationSupportingService}.
      */
     private class BatchWanEventRunnable extends AbstractWanEventRunnable {
 

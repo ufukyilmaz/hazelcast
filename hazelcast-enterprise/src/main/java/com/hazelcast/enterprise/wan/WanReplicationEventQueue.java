@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Wan replication event queue wrapper
+ * WAN replication event queue wrapper.
  */
 public class WanReplicationEventQueue extends ConcurrentLinkedQueue<WanReplicationEvent> implements DataSerializable {
 

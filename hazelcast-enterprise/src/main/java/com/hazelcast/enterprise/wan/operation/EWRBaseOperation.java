@@ -11,7 +11,7 @@ import com.hazelcast.spi.PartitionAwareOperation;
 import java.io.IOException;
 
 /**
- * Base class for wan replication operations
+ * Base class for WAN replication operations.
  */
 public abstract class EWRBaseOperation extends Operation
         implements PartitionAwareOperation, IdentifiedDataSerializable {

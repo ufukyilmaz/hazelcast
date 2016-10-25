@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Queue container for wan replication publishers, provides methods to push/pull wan events to/from queues
+ * Queue container for WAN replication publishers.
+ * Provides methods to push/pull WAN events to/from queues.
  */
 public class PublisherQueueContainer {
 

@@ -25,7 +25,7 @@ import com.hazelcast.wan.WanReplicationPublisher;
 import java.util.Map;
 
 /**
- * Delegating replication publisher implementation
+ * Delegating WAN replication publisher implementation.
  */
 public final class WanReplicationPublisherDelegate
         implements WanReplicationPublisher {

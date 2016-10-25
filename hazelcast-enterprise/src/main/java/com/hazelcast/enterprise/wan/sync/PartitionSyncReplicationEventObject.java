@@ -6,7 +6,7 @@ import com.hazelcast.wan.ReplicationEventObject;
 import java.util.List;
 
 /**
- * {@link ReplicationEventObject} implementation used by WAN sync events.
+ * {@link ReplicationEventObject} implementation used by WAN synchronization events.
  */
 public class PartitionSyncReplicationEventObject implements ReplicationEventObject {
 

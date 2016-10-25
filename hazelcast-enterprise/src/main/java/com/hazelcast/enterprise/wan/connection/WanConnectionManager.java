@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Maintains connections for WAN replication
+ * Maintains connections for WAN replication.
  */
 public class WanConnectionManager {
 

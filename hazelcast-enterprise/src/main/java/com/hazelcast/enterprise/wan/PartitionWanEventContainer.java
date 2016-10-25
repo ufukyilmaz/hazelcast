@@ -6,7 +6,7 @@ import com.hazelcast.wan.WanReplicationEvent;
 import java.util.Map;
 
 /**
- * Contains all map/cache event queues of a partition
+ * Contains all map/cache event queues of a partition.
  */
 public class PartitionWanEventContainer {
 

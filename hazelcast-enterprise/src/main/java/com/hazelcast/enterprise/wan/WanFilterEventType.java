@@ -4,7 +4,7 @@ import com.hazelcast.map.wan.filter.MapWanEventFilter;
 
 /**
  * Event types to be used by {@link com.hazelcast.cache.wan.filter.CacheWanEventFilter}
- * and {@link MapWanEventFilter} instances
+ * and {@link MapWanEventFilter} instances.
  */
 public enum  WanFilterEventType {
 

@@ -13,7 +13,7 @@ import com.hazelcast.wan.WanReplicationEvent;
 import java.io.IOException;
 
 /**
- * Used to put forwarded wan events to event queue
+ * Used to put forwarded WAN events to event queue.
  */
 public class EWRPutOperation extends EWRBackupAwareOperation
         implements IdentifiedDataSerializable {

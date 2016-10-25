@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Container to gather batch of {@link WanReplicationEvent} objects
+ * Container to gather batch of {@link WanReplicationEvent} objects.
  */
 public class BatchWanReplicationEvent implements IdentifiedDataSerializable {
 

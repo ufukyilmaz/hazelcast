@@ -27,9 +27,9 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.getProperty;
 
 /**
- * Wan replication publisher that sends events in batches.
+ * WAN replication publisher that sends events in batches.
  * <p>
- * Basically, it either publishes events either when a pre-defined
+ * Basically, it publishes events either when a pre-defined
  * (see {@link }) number of events are enqueued
  * or enqueued events are waited enough (see {@link }).
  * </p>
@@ -165,8 +165,8 @@ public class WanBatchReplication
     }
 
     /**
-     * {@link StripedRunnable} implementation to send Batch of wan replication events to
-     * target cluster
+     * {@link StripedRunnable} implementation to send Batch of WAN replication events to
+     * target cluster.
      */
     private class BatchStripedRunnable implements StripedRunnable, TimeoutRunnable {
 

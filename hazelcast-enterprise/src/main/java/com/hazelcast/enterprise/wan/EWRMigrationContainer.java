@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Migration data holder
+ * Migration data holder.
  */
 public class EWRMigrationContainer implements IdentifiedDataSerializable {
 

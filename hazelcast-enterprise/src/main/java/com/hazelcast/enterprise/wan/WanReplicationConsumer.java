@@ -6,7 +6,7 @@ import com.hazelcast.instance.Node;
 /**
  * Interface to be implemented by custom WAN event consumers.
  *
- * Can be registered by programmatically or by xml using {@link WanConsumerConfig}
+ * Can be registered by programmatically or by XML using {@link WanConsumerConfig}.
  */
 public interface WanReplicationConsumer {
 

@@ -11,7 +11,7 @@ import com.hazelcast.spi.Operation;
 import java.io.IOException;
 
 /**
- * Operation to be sent to target WAN members
+ * Operation to be sent to target WAN members.
  */
 public class WanOperation extends Operation implements WanReplicationOperation {
 

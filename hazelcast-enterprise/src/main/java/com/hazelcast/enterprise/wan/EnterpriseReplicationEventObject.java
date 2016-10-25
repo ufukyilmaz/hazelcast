@@ -7,7 +7,7 @@ import com.hazelcast.wan.ReplicationEventObject;
 import java.util.Set;
 
 /**
- * Marker interface for enterprise wan replication events
+ * Marker interface for enterprise WAN replication events.
  */
 public interface EnterpriseReplicationEventObject extends ReplicationEventObject, DataSerializable {
 

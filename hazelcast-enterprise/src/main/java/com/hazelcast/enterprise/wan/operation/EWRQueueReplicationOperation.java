@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Migration operation
+ * Migration operation.
  */
 public class EWRQueueReplicationOperation extends Operation implements IdentifiedDataSerializable {
 

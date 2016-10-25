@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Wan event queue map of a partition
- * Contains all map/cache event queues of a partition
+ * WAN event queue map of a partition.
+ * Contains all map/cache event queues of a partition.
  */
 public class PartitionWanEventQueueMap extends ConcurrentHashMap<String, WanReplicationEventQueue> implements DataSerializable {
 

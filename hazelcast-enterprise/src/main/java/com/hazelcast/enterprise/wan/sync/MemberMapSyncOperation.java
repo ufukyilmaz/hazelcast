@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Iniatiates the WAN synchronization of an {@link com.hazelcast.core.IMap} instance
+ * Initiates the WAN synchronization of an {@link com.hazelcast.core.IMap} instance
  * on owned partitions of a member.
  */
 public class MemberMapSyncOperation extends MapOperation implements ReadonlyOperation {

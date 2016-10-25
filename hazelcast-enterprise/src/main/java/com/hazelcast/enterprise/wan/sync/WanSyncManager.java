@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
- * Manages the initiation of WAN sync requests
+ * Manages the initiation of WAN synchronization requests.
  */
 public class WanSyncManager {
 

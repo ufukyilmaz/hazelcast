@@ -12,7 +12,7 @@ import com.hazelcast.wan.WanReplicationEvent;
 import java.io.IOException;
 
 /**
- * Publishes backup of wan event
+ * Publishes backup of a WAN event.
  */
 public class EWRPutBackupOperation extends EWRBaseOperation
         implements BackupOperation, IdentifiedDataSerializable {

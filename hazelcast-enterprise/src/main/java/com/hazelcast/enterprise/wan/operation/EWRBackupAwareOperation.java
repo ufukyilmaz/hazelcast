@@ -7,7 +7,7 @@ import com.hazelcast.spi.BackupAwareOperation;
 import java.io.IOException;
 
 /**
- * Base class for backup aware wan operations
+ * Base class for backup aware WAN operations.
  */
 public abstract class EWRBackupAwareOperation extends EWRBaseOperation implements BackupAwareOperation {
 

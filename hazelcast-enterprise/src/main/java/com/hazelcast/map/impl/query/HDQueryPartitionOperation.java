@@ -51,6 +51,11 @@ public class HDQueryPartitionOperation extends MapOperation implements Partition
     }
 
     @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
     public int getId() {
         return EnterpriseMapDataSerializerHook.QUERY_PARTITION;
     }

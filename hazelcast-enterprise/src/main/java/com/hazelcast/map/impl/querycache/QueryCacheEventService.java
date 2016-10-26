@@ -11,7 +11,7 @@ import com.hazelcast.spi.EventFilter;
  * subscriber side which may be node or client. Responsible for registering/removing listeners
  * and publishing events locally etc.
  *
- * @param <E> Type of event to be published.
+ * @param <E> type of event to be published.
  */
 public interface QueryCacheEventService<E> {
 

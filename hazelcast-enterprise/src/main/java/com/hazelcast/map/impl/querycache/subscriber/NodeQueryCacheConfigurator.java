@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Node side implementation of {@link QueryCacheConfigurator}
+ * Node side implementation of {@link QueryCacheConfigurator}.
  *
  * @see QueryCacheConfigurator
  */

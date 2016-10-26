@@ -261,7 +261,7 @@ class DefaultQueryCache<K, V> extends AbstractInternalQueryCache<K, V> {
             return toObject(valueInRecord);
         } else {
             // if value caching is not enabled, we fetch the value from underlying IMap
-            // for every request.
+            // for every request
             return (V) getDelegate().get(keyData);
         }
     }

@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 import static com.hazelcast.util.ConcurrencyUtil.getOrPutIfAbsent;
 
 /**
- * Used to register and hold {@link SubscriberRegistry} per {@link com.hazelcast.core.IMap IMap}
+ * Used to register and hold {@link SubscriberRegistry} per {@link com.hazelcast.core.IMap IMap}.
  *
  * @see SubscriberRegistry
  */

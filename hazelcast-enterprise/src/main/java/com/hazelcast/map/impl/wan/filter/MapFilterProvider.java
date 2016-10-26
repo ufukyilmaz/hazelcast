@@ -13,7 +13,7 @@ import static com.hazelcast.nio.ClassLoaderUtil.newInstance;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Manages {@link MapWanEventFilter} instance access/creation
+ * Manages {@link MapWanEventFilter} instance access/creation.
  */
 public final class MapFilterProvider {
     private final ConcurrentMap<String, MapWanEventFilter> filterMap;

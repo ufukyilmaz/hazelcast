@@ -61,7 +61,7 @@ public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCach
             }
             queryCache = createUnderlyingQueryCache(request);
             // this is users listener which can be given as a parameter
-            // when calling `IMap.getQueryCache` method.
+            // when calling `IMap.getQueryCache` method
             addListener(request);
 
             AccumulatorInfo info = createAccumulatorInfo(queryCacheConfig, mapName, request.getCacheName(), predicate);
@@ -129,7 +129,7 @@ public abstract class AbstractQueryCacheEndToEndConstructor implements QueryCach
             return null;
         }
 
-        // init some required parameters.
+        // init some required parameters
         this.includeValue = queryCacheConfig.isIncludeValue();
         this.predicate = queryCacheConfig.getPredicateConfig().getImplementation();
 

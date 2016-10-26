@@ -13,7 +13,7 @@ import java.util.Set;
 
 /**
  * Base class for {@link com.hazelcast.core.IMap} related WAN
- * replication objects
+ * replication objects.
  */
 public abstract class EnterpriseMapReplicationObject implements EnterpriseReplicationEventObject, IdentifiedDataSerializable {
 

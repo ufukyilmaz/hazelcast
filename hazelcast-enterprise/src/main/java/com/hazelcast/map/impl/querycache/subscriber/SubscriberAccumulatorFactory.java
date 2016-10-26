@@ -6,7 +6,7 @@ import com.hazelcast.map.impl.querycache.accumulator.AccumulatorInfo;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 
 /**
- * Subscriber part implementation of {@link AccumulatorFactory}
+ * Subscriber part implementation of {@link AccumulatorFactory}.
  *
  * @see AccumulatorFactory
  */

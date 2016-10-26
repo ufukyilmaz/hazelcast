@@ -30,7 +30,7 @@ import com.hazelcast.transaction.TransactionException;
 import java.io.IOException;
 
 /**
- * Transactional delete operation
+ * Transactional delete operation.
  */
 public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTxnOperation {
 

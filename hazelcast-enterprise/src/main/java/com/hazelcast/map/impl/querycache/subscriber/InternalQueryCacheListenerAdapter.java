@@ -10,7 +10,7 @@ import static com.hazelcast.map.impl.querycache.subscriber.QueryCacheEventListen
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * Internal listener adapter for the listener of a {@code QueryCache}
+ * Internal listener adapter for the listener of a {@code QueryCache}.
  */
 public class InternalQueryCacheListenerAdapter implements ListenerAdapter<IMapEvent> {
 

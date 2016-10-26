@@ -11,7 +11,7 @@ import com.hazelcast.query.Predicate;
 public interface QueryCacheRequest {
 
     /**
-     * Setter for underlying {@link IMap} for this {@link com.hazelcast.map.QueryCache QueryCache}
+     * Setter for underlying {@link IMap} for this {@link com.hazelcast.map.QueryCache QueryCache}.
      *
      * @param map underlying {@link IMap}
      * @return this request object.
@@ -19,7 +19,7 @@ public interface QueryCacheRequest {
     QueryCacheRequest forMap(IMap map);
 
     /**
-     * Setter for name of the {@link com.hazelcast.map.QueryCache QueryCache}
+     * Setter for name of the {@link com.hazelcast.map.QueryCache QueryCache}.
      *
      * @param cacheName name of {@link com.hazelcast.map.QueryCache QueryCache}
      * @return this request object.
@@ -28,7 +28,7 @@ public interface QueryCacheRequest {
 
 
     /**
-     * Sets the user given name for the {@link com.hazelcast.map.QueryCache QueryCache}
+     * Sets the user given name for the {@link com.hazelcast.map.QueryCache QueryCache}.
      *
      * @param userGivenCacheName name of {@link com.hazelcast.map.QueryCache QueryCache}
      * @return this request object.
@@ -37,7 +37,7 @@ public interface QueryCacheRequest {
 
     /**
      * Setter for the predicate which will be used to filter underlying {@link IMap}
-     * of this {@link com.hazelcast.map.QueryCache QueryCache}
+     * of this {@link com.hazelcast.map.QueryCache QueryCache}.
      *
      * @param predicate the predicate
      * @return this request object.
@@ -45,7 +45,7 @@ public interface QueryCacheRequest {
     QueryCacheRequest withPredicate(Predicate predicate);
 
     /**
-     * Setter for the listener which will be used to listen the {@link com.hazelcast.map.QueryCache QueryCache}
+     * Setter for the listener which will be used to listen the {@link com.hazelcast.map.QueryCache QueryCache}.
      *
      * @param listener the listener
      * @return this request object.
@@ -63,7 +63,7 @@ public interface QueryCacheRequest {
     QueryCacheRequest withIncludeValue(Boolean includeValue);
 
     /**
-     * The {@link QueryCacheContext} on this node/client
+     * The {@link QueryCacheContext} on this node/client.
      *
      * @param context the {@link QueryCacheContext}
      * @return this request object.
@@ -71,14 +71,14 @@ public interface QueryCacheRequest {
     QueryCacheRequest withContext(QueryCacheContext context);
 
     /**
-     * Returns underlying {@link IMap}
+     * Returns underlying {@link IMap}.
      *
      * @return underlying {@link IMap}
      */
     IMap getMap();
 
     /**
-     * Returns name of underlying {@link IMap}
+     * Returns name of underlying {@link IMap}.
      *
      * @return name of underlying {@link IMap}
      */
@@ -113,7 +113,7 @@ public interface QueryCacheRequest {
     MapListener getListener();
 
     /**
-     * Returns {@code true} if values will be cached otherwise {@code false}
+     * Returns {@code true} if values will be cached otherwise {@code false}.
      *
      * @return {@code true} if values will be cached otherwise {@code false}
      */

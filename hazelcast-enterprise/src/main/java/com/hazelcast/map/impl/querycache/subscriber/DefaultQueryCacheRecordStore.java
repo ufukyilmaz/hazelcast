@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Default implementation of {@link QueryCacheRecordStore}
+ * Default implementation of {@link QueryCacheRecordStore}.
  *
  * @see QueryCacheRecordStore
  */

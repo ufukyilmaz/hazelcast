@@ -15,9 +15,9 @@ import com.hazelcast.spi.serialization.SerializationService;
 import java.util.Collection;
 
 /**
- * HotRestart storage implementation for maps
+ * Hot Restart storage implementation for maps
  * not configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
- * For {@link com.hazelcast.config.InMemoryFormat#NATIVE} please see {@link HotRestartHDStorageImpl}
+ * For {@link com.hazelcast.config.InMemoryFormat#NATIVE} please see {@link HotRestartHDStorageImpl}.
  */
 public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>, HotRestartStorage<R> {
 

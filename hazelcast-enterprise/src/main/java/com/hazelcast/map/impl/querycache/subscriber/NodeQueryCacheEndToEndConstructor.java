@@ -36,7 +36,7 @@ public class NodeQueryCacheEndToEndConstructor extends AbstractQueryCacheEndToEn
 
     @Override
     public void createPublisherAccumulator(AccumulatorInfo info) throws Exception {
-        // create publishers and execute initial population query in one go.
+        // create publishers and execute initial population query in one go
         Collection<QueryResult> results = createPublishersAndGetQueryResults(info);
         setResults(queryCache, results);
         boolean populate = info.isPopulate();

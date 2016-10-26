@@ -15,7 +15,7 @@ import com.hazelcast.util.Clock;
 /**
  * RamStore implementation for maps
  * not configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
- * For {@link com.hazelcast.config.InMemoryFormat#NATIVE} please see {@link RamStoreHDImpl}
+ * For {@link com.hazelcast.config.InMemoryFormat#NATIVE} please see {@link RamStoreHDImpl}.
  */
 public class RamStoreImpl implements RamStore {
 

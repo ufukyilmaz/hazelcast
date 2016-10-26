@@ -13,7 +13,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Represents simple HiDensity backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
+ * Represents simple Hi-Density backed {@link Record} implementation for {@link com.hazelcast.core.IMap IMap}.
  */
 @SuppressWarnings("checkstyle:methodcount")
 public class HDRecord extends HiDensityRecord implements Record<Data> {
@@ -49,7 +49,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
 
     /**
-     * Gives the size of an {@link HDRecord}
+     * Gives the size of an {@link HDRecord}.
      */
     public static final int SIZE;
 
@@ -141,7 +141,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
 
     @Override
     public long getCost() {
-        // This is heap cost. For NATIVE we are not calculating this cost.
+        // this is heap cost. For NATIVE we are not calculating this cost
         return 0L;
     }
 
@@ -151,8 +151,8 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     /**
-     * Since the address can be re-used, sequence provides a unique number () for the pointer
-     * Sequence is used for hot-restart
+     * Since the address can be re-used, sequence provides a unique number () for the pointer.
+     * Sequence is used for Hot Restart.
      *
      * @param sequence
      */
@@ -202,7 +202,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     /**
-     * version field is used as tombstone-sequence, after removing the record
+     * Version field is used as tombstone-sequence, after removing the record.
      *
      * @return
      */
@@ -212,7 +212,7 @@ public class HDRecord extends HiDensityRecord implements Record<Data> {
     }
 
     /**
-     * version field is used as tombstone-sequence, after removing the record
+     * Version field is used as tombstone-sequence, after removing the record.
      *
      * @param version
      */

@@ -22,7 +22,7 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.map.impl.SizeEstimatorFactory.createMapSizeEstimator;
 
 /**
- * HiDensity backed {@code Storage} impl. for {@link com.hazelcast.core.IMap}.
+ * Hi-Density backed {@code Storage} implementation for {@link com.hazelcast.core.IMap}.
  * This implementation can be used under multi-thread access.
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {

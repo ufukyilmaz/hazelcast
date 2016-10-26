@@ -44,7 +44,7 @@ import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Enterprise specific extensions for {@link DefaultRecordStore}
+ * Enterprise specific extensions for {@link DefaultRecordStore}.
  */
 public class EnterpriseRecordStore extends DefaultRecordStore {
 
@@ -82,7 +82,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
      * an infinite ttl is represented with an {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS} instead of Long.MAX_VALUE.
      * <p/>
      * When marking a record-store as expirable we should also take care of this new case and should not mark a record-store
-     * as expirable if a ttl was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}
+     * as expirable if a ttl was set to {@link EnterpriseRecordStore#HD_RECORD_MAX_TTL_MILLIS}.
      *
      * @param ttl ttl in milliseconds.
      */
@@ -134,7 +134,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         if (NATIVE == inMemoryFormat) {
             record.setSequence(sequence);
             // `lastAccessTime` is used for LRU eviction, for this reason, after creation of record,
-            // `lastAccessTime` should be zero instead of `now`.
+            // `lastAccessTime` should be zero instead of `now`
             record.setLastAccessTime(NOT_AVAILABLE);
         }
 
@@ -182,8 +182,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     public Record loadRecordOrNull(Data key, boolean backup) {
         Record record = super.loadRecordOrNull(key, backup);
 
-        // Here we are only publishing events for loaded entries. This is required for notifying query-caches
-        // otherwise query-caches cannot see loaded entries.
+        // here, we are only publishing events for loaded entries. This is required for notifying query-caches
+        // otherwise query-caches cannot see loaded entries
         if (!backup && record != null && hasQueryCache()) {
             addEventToQueryCache(record);
         }
@@ -214,8 +214,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         if (hasQueryCache()) {
             for (Data key : loadedEntries.keySet()) {
                 Record record = storage.get(key);
-                // Here we are only publishing events for loaded entries. This is required for notifying query-caches
-                // otherwise query-caches cannot see loaded entries.
+                // here we are only publishing events for loaded entries. This is required for notifying query-caches
+                // otherwise query-caches cannot see loaded entries
                 addEventToQueryCache(record);
             }
         }
@@ -224,7 +224,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
     }
 
     /**
-     * If in-memory-format is native method is executed on partition thread
+     * If in-memory-format is native, method is executed on partition thread.
      *
      * @param key
      * @return

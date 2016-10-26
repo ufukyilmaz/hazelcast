@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.Data;
 import java.io.IOException;
 
 /**
- * WAN replication object for map remove operations
+ * WAN replication object for map remove operations.
  */
 public class EnterpriseMapReplicationRemove extends EnterpriseMapReplicationObject {
 

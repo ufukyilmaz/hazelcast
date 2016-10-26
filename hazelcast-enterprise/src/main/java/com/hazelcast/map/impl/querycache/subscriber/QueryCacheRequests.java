@@ -9,7 +9,7 @@ public final class QueryCacheRequests {
     }
 
     /**
-     * Creates and returns an instance of {@link QueryCacheRequest}
+     * Creates and returns an instance of {@link QueryCacheRequest}.
      *
      * @return an instance of {@link QueryCacheRequest}
      */

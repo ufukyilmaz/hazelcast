@@ -10,7 +10,7 @@ import com.hazelcast.nio.serialization.Data;
 import java.io.IOException;
 
 /**
- * WAN replication object for map update operations
+ * WAN replication object for map update operations.
  */
 public class EnterpriseMapReplicationUpdate extends EnterpriseMapReplicationObject {
 

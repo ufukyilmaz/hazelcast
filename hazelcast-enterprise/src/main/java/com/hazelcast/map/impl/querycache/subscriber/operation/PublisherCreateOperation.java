@@ -196,7 +196,7 @@ public class PublisherCreateOperation extends MapOperation {
     private void add(QueryResult result, QueryResultRow row) {
         // row in the queryResultSet and new row is compared by the keyData of QueryResultEntryImpl instances.
         // values of the entries may be different if keyData-s are equal
-        // so this `if` is checking the existence of keyData in the set. If it is there, just removing it and adding
+        // so this `if` checks the existence of keyData in the set. If it is there, just removing it and adding
         // `the new row with the same keyData but possibly with the new value`.
         //todo
 //        if (queryResultSet.contains(row)) {

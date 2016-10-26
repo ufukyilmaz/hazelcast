@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An extended {@link SampleableElasticHashMap} for HD backed {@link com.hazelcast.core.IMap}.
+ * An extended {@link SampleableElasticHashMap} for Hi-Density
+ * backed {@link com.hazelcast.core.IMap}.
  */
 public class HDStorageSCHM extends SampleableElasticHashMap<HDRecord> {
 

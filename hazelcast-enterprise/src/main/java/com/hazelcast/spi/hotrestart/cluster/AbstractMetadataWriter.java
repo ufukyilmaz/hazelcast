@@ -44,7 +44,6 @@ abstract class AbstractMetadataWriter<T> {
         }
     }
 
-
     abstract String getFilename();
 
     abstract void doWrite(DataOutput out, T param) throws IOException;

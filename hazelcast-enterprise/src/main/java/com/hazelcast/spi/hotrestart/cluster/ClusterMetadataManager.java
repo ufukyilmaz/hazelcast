@@ -3,6 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
+import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
@@ -75,8 +76,8 @@ public final class ClusterMetadataManager implements PartitionListener {
             new AtomicReference<HotRestartClusterInitializationStatus>(PENDING_VERIFICATION);
     private final Set<Address> notValidatedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
     private final Set<Address> notLoadedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
-    private final AtomicReference<Collection<Address>> memberListRef = new AtomicReference<Collection<Address>>();
     private final AtomicReference<Address[][]> partitionTableRef = new AtomicReference<Address[][]>();
+    private final AtomicReference<Collection<MemberImpl>> memberListRef = new AtomicReference<Collection<MemberImpl>>();
     private final AtomicReference<Boolean> localLoadResult = new AtomicReference<Boolean>();
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
@@ -95,7 +96,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         mkdirHome();
         validationTimeout = TimeUnit.SECONDS.toMillis(cfg.getValidationTimeoutSeconds());
         dataLoadTimeout = TimeUnit.SECONDS.toMillis(cfg.getDataLoadTimeoutSeconds());
-        memberListWriter = new MemberListWriter(homeDir, node.getThisAddress());
+        memberListWriter = new MemberListWriter(homeDir);
         partitionTableWriter = new PartitionTableWriter(homeDir);
         clusterStateWriter = new ClusterStateWriter(homeDir);
     }
@@ -116,16 +117,17 @@ public final class ClusterMetadataManager implements PartitionListener {
     // main thread
     public void prepare() {
         try {
+            memberListWriter.setLocalMember(node.getLocalMember());
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
-            final Collection<Address> addresses = restoreMemberList();
             final Address[][] table = restorePartitionTable();
+            final Collection<MemberImpl> members = restoreMemberList();
             if (startWithHotRestart) {
-                final ClusterServiceImpl clusterService = node.clusterService;
+                ClusterServiceImpl clusterService = node.clusterService;
                 setClusterState(clusterService, ClusterState.PASSIVE, true);
-                addMembersRemovedInNotActiveState(clusterService, addresses);
+                addMembersRemovedInNotActiveState(clusterService, new ArrayList<MemberImpl>(members));
             }
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                listener.onPrepareComplete(addresses, table, startWithHotRestart);
+                listener.onPrepareComplete(members, table, startWithHotRestart);
             }
         } catch (IOException e) {
             throw new HotRestartException(e);
@@ -215,7 +217,7 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     public void onMembershipChange() {
-        if (isClusterActive() && node.joined()) {
+        if (isStartCompleted() && node.joined()) {
             persistMembers();
         }
     }
@@ -308,14 +310,10 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     public void shutdown() {
-        persistActiveAndPassiveMembers();
         if (isStartCompleted()) {
+            persistMembers();
             persistPartitions();
         }
-    }
-
-    private boolean isClusterActive() {
-        return node.getClusterService().getClusterState() == ClusterState.ACTIVE;
     }
 
     // operation thread
@@ -426,29 +424,28 @@ public final class ClusterMetadataManager implements PartitionListener {
         return table;
     }
 
-    private Collection<Address> restoreMemberList() throws IOException {
-        final MemberListReader r = new MemberListReader(homeDir);
+    private Collection<MemberImpl> restoreMemberList() throws IOException {
+        MemberListReader r = new MemberListReader(homeDir);
         r.read();
-        final Address thisAddress = r.getThisAddress();
-        final Collection<Address> addresses = r.getAddresses();
-        if (thisAddress == null && !addresses.isEmpty()) {
-            throw new HotRestartException("Unexpected state! Could not load local member address from disk!");
+
+        MemberImpl thisMember = r.getThisMember();
+        Collection<MemberImpl> members = r.getMembers();
+
+        if (thisMember != null && !node.getThisAddress().equals(thisMember.getAddress())) {
+            addressChangeDetected = true;
+            logger.warning("Local address change detected. Previous: " + thisMember.getAddress()
+                    + ", Current: " + node.getThisAddress());
         }
-        if (thisAddress != null && !node.getThisAddress().equals(thisAddress)) {
-            throw new HotRestartException("Wrong local address! Expected: "
-                    + node.getThisAddress() + ", Actual: " + thisAddress);
-        }
-        if (thisAddress == null) {
-            logger.info("Cluster state not found on disk. Will not load hot-restart data.");
+
+        if (thisMember == null) {
+            logger.info("Cluster state not found on disk. Will not load Hot Restart data.");
             startWithHotRestart = false;
         }
         if (logger.isFineEnabled()) {
-            logger.fine("Restored " + addresses.size() + " members -> " + addresses);
+            logger.fine("Restored " + members.size() + " members -> " + members);
         }
-        memberListRef.set(addresses);
-        notValidatedAddresses.addAll(addresses);
-        notLoadedAddresses.addAll(addresses);
-        return addresses;
+        memberListRef.set(members);
+        return members;
     }
 
     // main thread
@@ -769,19 +766,6 @@ public final class ClusterMetadataManager implements PartitionListener {
     private void persistMembers() {
         try {
             ClusterServiceImpl clusterService = node.getClusterService();
-            Set<Member> members = clusterService.getMembers();
-            if (logger.isFineEnabled()) {
-                logger.fine("Persisting " + members.size() + " members -> " + members);
-            }
-            memberListWriter.write(members);
-        } catch (IOException e) {
-            logger.severe("While persisting members", e);
-        }
-    }
-
-    private void persistActiveAndPassiveMembers() {
-        try {
-            ClusterServiceImpl clusterService = node.getClusterService();
             Collection<Member> allMembers = clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive();
             if (logger.isFineEnabled()) {
                 logger.fine("Persisting " + allMembers.size() + " (active & passive) members -> " + allMembers);
@@ -808,9 +792,9 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private void sendOperationToOthers(Operation operation) {
         final InternalOperationService operationService = node.nodeEngine.getOperationService();
-        for (Address memberAddress : memberListRef.get()) {
-            if (!node.getThisAddress().equals(memberAddress)) {
-                operationService.send(operation, memberAddress);
+        for (MemberImpl member : memberListRef.get()) {
+            if (!member.localMember()) {
+                operationService.send(operation, member.getAddress());
             }
         }
     }

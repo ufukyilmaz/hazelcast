@@ -801,10 +801,21 @@ public final class ClusterMetadataManager implements PartitionListener {
 
     private void mkdirHome() {
         if (!homeDir.exists() && !homeDir.mkdirs()) {
-            throw new HotRestartException("Cannot create " + homeDir.getAbsolutePath());
+            throw new HotRestartException("Cannot create Hot Restart base directory: " + homeDir.getAbsolutePath());
         }
     }
 
+    public String readMemberUuid() {
+        LocalMemberReader r = new LocalMemberReader(homeDir);
+        try {
+            r.read();
+        } catch (IOException e) {
+            throw new HotRestartException("Cannot read local member UUID!", e);
+        }
+
+        MemberImpl thisMember = r.getThisMember();
+        return thisMember != null ? thisMember.getUuid() : null;
+    }
 
     private interface TimeoutableRunnable extends Runnable {
         void onTimeout();

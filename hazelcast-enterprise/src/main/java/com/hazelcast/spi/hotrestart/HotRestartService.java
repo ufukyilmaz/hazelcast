@@ -28,6 +28,11 @@ import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
-import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
 import static com.hazelcast.spi.hotrestart.impl.HotRestartModule.newOffHeapHotRestartStore;
@@ -66,6 +70,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private static final char ONHEAP_SUFFIX = '0';
     private static final char OFFHEAP_SUFFIX = '1';
     private static final String STORE_NAME_PATTERN = STORE_PREFIX + "\\d+" + ONHEAP_SUFFIX;
+    private static final String LOCK_FILE_NAME = "lock";
 
     private final Map<String, RamStoreRegistry> ramStoreRegistryMap = new ConcurrentHashMap<String, RamStoreRegistry>();
     private final Map<Long, RamStoreDescriptor> ramStoreDescriptors = new ConcurrentHashMap<Long, RamStoreDescriptor>();
@@ -76,22 +81,26 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private final ClusterMetadataManager clusterMetadataManager;
     private final long dataLoadTimeoutMillis;
     private final int storeCount;
-    private HotRestartStore[] onHeapStores;
-    private HotRestartStore[] offHeapStores;
-    private int partitionThreadCount;
+
+    private volatile HotRestartStore[] onHeapStores;
+    private volatile HotRestartStore[] offHeapStores;
+    private volatile int partitionThreadCount;
     private final List<LoadedConfigurationListener> loadedConfigurationListeners;
+
+    private final DirectoryLock directoryLock;
 
     public HotRestartService(Node node) {
         this.node = node;
         this.logger = node.getLogger(getClass());
-        final Address adr = node.getThisAddress();
-        final HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
-        this.hotRestartHome = new File(hrCfg.getBaseDir(), toFileName(adr.getHost() + '-' + adr.getPort()));
+        HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
+        this.hotRestartHome = hrCfg.getBaseDir();
         this.storeCount = hrCfg.getParallelism();
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
         this.persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
         this.dataLoadTimeoutMillis = TimeUnit.SECONDS.toMillis(hrCfg.getDataLoadTimeoutSeconds());
         this.loadedConfigurationListeners = new ArrayList<LoadedConfigurationListener>();
+        this.directoryLock = new DirectoryLock();
+        logger.fine("Created hot-restart service. Base directory: " + hotRestartHome.getAbsolutePath());
     }
 
     public void registerLoadedConfigurationListener(LoadedConfigurationListener listener) {
@@ -240,7 +249,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
      */
     public void start() {
         try {
-            logger.info("Starting hot-restart service...");
+            logger.info("Starting hot-restart service. Base directory: " + hotRestartHome.getAbsolutePath());
             clusterMetadataManager.start();
             persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
@@ -287,6 +296,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     public void shutdown() {
         clusterMetadataManager.shutdown();
         closeHotRestartStores();
+        directoryLock.release();
     }
 
     private int persistedStoreCount() {
@@ -336,17 +346,20 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private void createHotRestartStores() {
         HazelcastMemoryManager memMgr = ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager();
 
-        onHeapStores = new HotRestartStore[storeCount];
+        HotRestartStore[] stores = new HotRestartStore[storeCount];
         for (int i = 0; i < storeCount; i++) {
             newHotRestartStoreConfig(i, true);
-            onHeapStores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true), node.getProperties());
+            stores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true), node.getProperties());
         }
+        onHeapStores = stores;
+
         if (memMgr != null) {
-            offHeapStores = new HotRestartStore[storeCount];
+            stores = new HotRestartStore[storeCount];
             for (int i = 0; i < storeCount; i++) {
-                offHeapStores[i] = newOffHeapHotRestartStore(
+                stores[i] = newOffHeapHotRestartStore(
                         newHotRestartStoreConfig(i, false).setMalloc(memMgr.getSystemAllocator()), node.getProperties());
             }
+            offHeapStores = stores;
         }
     }
 
@@ -491,13 +504,18 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     private void closeHotRestartStores() {
-        if (onHeapStores != null) {
-            for (HotRestartStore st : onHeapStores) {
+        HotRestartStore[] stores = onHeapStores;
+        onHeapStores = null;
+        if (stores != null) {
+            for (HotRestartStore st : stores) {
                 st.close();
             }
         }
-        if (offHeapStores != null) {
-            for (HotRestartStore st : offHeapStores) {
+
+        stores = offHeapStores;
+        offHeapStores = null;
+        if (stores != null) {
+            for (HotRestartStore st : stores) {
                 st.close();
             }
         }
@@ -519,6 +537,56 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             this.registry = registry;
             this.name = name;
             this.partitionId = partitionId;
+        }
+    }
+
+    private final class DirectoryLock {
+        final FileChannel channel;
+        final FileLock lock;
+
+        private DirectoryLock() {
+            File lockFile = new File(hotRestartHome, LOCK_FILE_NAME);
+            channel = openChannel(lockFile);
+            lock = acquireLock(lockFile);
+        }
+
+        private FileLock acquireLock(File lockFile) {
+            FileLock fileLock = null;
+            try {
+                fileLock = channel.tryLock();
+                if (fileLock == null) {
+                    throw new HotRestartException("Cannot acquire lock on " + lockFile.getAbsolutePath()
+                            + ". " + hotRestartHome + " is already being used by another member.");
+                }
+                return fileLock;
+            } catch (OverlappingFileLockException e) {
+                throw new HotRestartException("Cannot acquire lock on " + lockFile.getAbsolutePath()
+                        + ". " + hotRestartHome + " is already being used by another member.", e);
+            } catch (IOException e) {
+                throw new HotRestartException("Unknown failure while acquiring lock on " + lockFile.getAbsolutePath(), e);
+            } finally {
+                if (fileLock == null) {
+                    IOUtil.closeResource(channel);
+                }
+            }
+        }
+
+        private FileChannel openChannel(File lockFile) {
+            try {
+                return new RandomAccessFile(lockFile, "rw").getChannel();
+            } catch (IOException e) {
+                throw new HotRestartException("Cannot create lock file " + lockFile.getAbsolutePath(), e);
+            }
+        }
+
+        void release() {
+            try {
+                lock.release();
+                channel.close();
+            } catch (IOException e) {
+                logger.severe("Problem while releasing the lock and closing channel on "
+                        + new File(hotRestartHome, LOCK_FILE_NAME), e);
+            }
         }
     }
 }

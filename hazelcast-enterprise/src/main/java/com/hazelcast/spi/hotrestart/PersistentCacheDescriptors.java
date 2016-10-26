@@ -47,9 +47,8 @@ public class PersistentCacheDescriptors {
      * Checks if the configuration directory exists and creates one if not.
      */
     public void ensureConfigDirectoryExists() {
-        if (!configsDir.exists()) {
-            boolean mkdirs = configsDir.mkdirs();
-            assert mkdirs : "Cannot create configs directory!";
+        if (!configsDir.exists() && !configsDir.mkdirs()) {
+            throw new HotRestartException("Cannot create config directory: " + configsDir.getAbsolutePath());
         }
     }
 

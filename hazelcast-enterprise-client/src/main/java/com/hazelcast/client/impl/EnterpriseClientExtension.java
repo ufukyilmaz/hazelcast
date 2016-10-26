@@ -34,7 +34,7 @@ import com.hazelcast.util.ExceptionUtil;
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
 /**
- * Enterprise implementation of <tt>ClientExtension</tt>
+ * Enterprise implementation of <tt>ClientExtension</tt>.
  */
 public class EnterpriseClientExtension extends DefaultClientExtension {
 

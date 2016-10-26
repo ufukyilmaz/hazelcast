@@ -28,7 +28,7 @@ abstract class AbstractMetadataWriter<T> {
         this.homeDir = homeDir;
     }
 
-    // This will be called by the class's client
+    // this will be called by the class's client
     final synchronized void write(T param) throws IOException {
         final File tmpFile = new File(homeDir, getFilename() + TMP_SUFFIX);
         final FileOutputStream fileOut = new FileOutputStream(tmpFile);
@@ -49,7 +49,7 @@ abstract class AbstractMetadataWriter<T> {
 
     abstract void doWrite(DataOutput out, T param) throws IOException;
 
-    // This will be called from the subclasses
+    // this will be called from the subclasses
     final void writeAddress(DataOutput out, Address address) throws IOException {
         out.writeUTF(address.getHost());
         out.writeInt(address.getPort());

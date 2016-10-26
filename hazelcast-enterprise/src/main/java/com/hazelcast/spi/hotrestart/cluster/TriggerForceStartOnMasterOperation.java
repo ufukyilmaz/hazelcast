@@ -6,7 +6,7 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 /**
- * Operation which is sent to master by members to initiate force start process on master
+ * Operation which is sent to master by members to initiate force start process on master.
  */
 public class TriggerForceStartOnMasterOperation extends Operation implements JoinOperation {
 

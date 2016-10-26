@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.EventListener;
 
 /**
- * This is a sync listener. When a node calls one of the methods below during hot restart, it will block until the method returns.
+ * This is a sync listener. When a node calls one of the methods below during Hot Restart, it will block until the method returns.
  */
 @PrivateApi
 public abstract class ClusterHotRestartEventListener
@@ -27,7 +27,7 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
-     * Called when a persisted member list contains only a single member
+     * Called when a persisted member list contains only a single member.
      */
     public void onSingleMemberCluster() {
 
@@ -42,7 +42,7 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
-     * Called on all nodes after all expected members joins to the cluster
+     * Called on all nodes after all expected members join to the cluster.
      *
      * @param members expected member list
      */
@@ -51,7 +51,7 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
-     * Called after master receives a partition table from a member and validates it
+     * Called after master receives a partition table from a member and validates it.
      *
      * @param sender  member that has sent the partition table
      * @param success result of the validation
@@ -62,7 +62,7 @@ public abstract class ClusterHotRestartEventListener
 
     /**
      * Called on master when it receives partition tables from all nodes and called on non-master nodes when they receive the
-     * partition table validation status from master
+     * partition table validation status from master.
      *
      * @param result result of the partition table validation
      */
@@ -79,7 +79,7 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
-     * Called on master when it receives a hot-restart data load result from a node
+     * Called on master when it receives a Hot Restart data load result from a node.
      *
      * @param sender  address of the node that sends its hot-restart data load result
      * @param success result of the hot restart data load attempt of the node
@@ -90,7 +90,7 @@ public abstract class ClusterHotRestartEventListener
 
     /**
      * Called on master when it receives a failure result from one of the nodes, and called on non-master nodes when they receive
-     * the result of the load process from master
+     * the result of the load process from master.
      *
      * @param result result of the cluster wide load operation
      */

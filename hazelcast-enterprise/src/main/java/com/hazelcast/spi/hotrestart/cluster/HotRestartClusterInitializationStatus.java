@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 /**
- * Indicates the state of the cluster from the perspective of a node during a hot restart cluster verification
+ * Indicates the state of the cluster from the perspective of a node during a Hot Restart cluster verification.
  */
 public enum HotRestartClusterInitializationStatus {
 
@@ -12,24 +12,24 @@ public enum HotRestartClusterInitializationStatus {
 
     /**
      * Indicates that the cluster verification failed because of either mismatching partition tables or
-     * not-loaded data on some nodes
+     * not-loaded data on some nodes.
      */
     VERIFICATION_FAILED,
 
     /**
-     * The state after of a node after it discovers that its partition table matches with all other nodes.
+     * The state of a node after it discovers that its partition table matches with all other nodes.
      * After this state, it can move to {@link HotRestartClusterInitializationStatus#VERIFICATION_AND_LOAD_SUCCEEDED}
      * or {@link HotRestartClusterInitializationStatus#VERIFICATION_FAILED}
      */
     PARTITION_TABLE_VERIFIED,
 
     /**
-     * Final state of the cluster after load process succeeds on all nodes
+     * Final state of the cluster after load process succeeds on all nodes.
      */
     VERIFICATION_AND_LOAD_SUCCEEDED,
 
     /**
-     * Final state of the cluster after hot restart start process is interrupted and cluster is started with force start
+     * Final state of the cluster after Hot Restart start process is interrupted and cluster is started with force start.
      */
     FORCE_STARTED
 

@@ -9,7 +9,7 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
 
 /**
  * Operation which is sent to master by members while waiting all members to join.
- * This operation is necessary since waiting members will not notice if force start is triggered while waiting all members to join
+ * This operation is necessary since waiting members will not notice if force start is triggered while waiting all members to join.
  */
 public class CheckIfMasterForceStartedOperation extends Operation implements JoinOperation {
 

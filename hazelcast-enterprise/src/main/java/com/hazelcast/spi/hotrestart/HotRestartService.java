@@ -49,16 +49,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Provides common services needed for Hot Restart.
- * HotRestartService is main integration point between HotRestart infrastructure
+ * HotRestartService is main integration point between Hot Restart infrastructure
  * and Hazelcast services. It manages RamStoreRegistry(s), is access point for
- * per thread on-heap and off-heap HotRestart stores. Also, it's listener for
+ * per thread on-heap and off-heap Hot Restart stores. Also, it's listener for
  * membership and cluster state events.
  */
 @SuppressWarnings({ "checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling" })
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
     /**
-     * Name of the Hot Restart service
+     * Name of the Hot Restart service.
      */
     public static final String SERVICE_NAME = "hz:ee:hotRestartService";
 

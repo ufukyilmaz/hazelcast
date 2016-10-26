@@ -9,7 +9,7 @@ import com.hazelcast.spi.hotrestart.HotRestartService;
 import java.io.IOException;
 
 /**
- * Operation, which is used to send local hot-restart load completion result (success or failure)
+ * Operation, which is used to send local Hot Restart load completion result (success or failure)
  * to master member after load phase.
  */
 public class SendLoadCompletionForValidationOperation

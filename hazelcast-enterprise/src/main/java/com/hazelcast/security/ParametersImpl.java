@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class is used to pass parameters of a method to {@link SecurityInterceptor}
+ * This class is used to pass parameters of a method to {@link SecurityInterceptor}.
  */
 public class ParametersImpl implements Parameters {
 

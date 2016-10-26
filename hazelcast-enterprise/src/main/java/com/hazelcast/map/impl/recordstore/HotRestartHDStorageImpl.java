@@ -16,7 +16,8 @@ import com.hazelcast.spi.serialization.SerializationService;
 import java.util.Iterator;
 
 /**
- * Hot Restart storage implementation for maps configured with in-memory-format: {@link com.hazelcast.config.InMemoryFormat#NATIVE}
+ * Hot Restart storage implementation for maps configured with in-memory-format
+ * {@link com.hazelcast.config.InMemoryFormat#NATIVE}
  */
 public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> implements ForcedEvictable<HDRecord> {
 
@@ -40,6 +41,7 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
         return new HDStorageImpl(recordProcessor, serializationService);
     }
 
+    @Override
     public void put(Data key, HDRecord record) {
         synchronized (mutex) {
             storage.put(key, record);

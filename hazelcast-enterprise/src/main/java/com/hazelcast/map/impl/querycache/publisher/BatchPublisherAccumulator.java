@@ -8,10 +8,10 @@ import com.hazelcast.map.impl.querycache.event.sequence.Sequenced;
 import java.util.concurrent.TimeUnit;
 
 /**
- * When batching is enabled by setting {@link com.hazelcast.config.QueryCacheConfig#batchSize} 
- * to a value greater than 1,
- * this {@code Accumulator} is used to collect events. This {@code Accumulator} uses batch publishing logic in
- * the {@link EventPublisherAccumulatorProcessor} class.
+ * When batching is enabled by setting {@link com.hazelcast.config.QueryCacheConfig#batchSize} to a value
+ * greater than {@code 1}, this {@code Accumulator} is used to collect events.
+ *
+ * This {@code Accumulator} uses batch publishing logic in the {@link EventPublisherAccumulatorProcessor} class.
  *
  * @see EventPublisherAccumulatorProcessor
  */
@@ -33,5 +33,4 @@ class BatchPublisherAccumulator extends BasicAccumulator<Sequenced> {
         poll(handler, info.getBatchSize());
         poll(handler, info.getDelaySeconds(), TimeUnit.SECONDS);
     }
-
 }

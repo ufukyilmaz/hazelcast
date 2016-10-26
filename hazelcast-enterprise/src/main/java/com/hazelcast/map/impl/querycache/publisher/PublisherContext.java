@@ -7,6 +7,7 @@ import com.hazelcast.spi.NodeEngine;
 
 /**
  * Context for a publisher.
+ *
  * Responsible for providing functionality/services for {@link NonStopPublisherAccumulator} and
  * {@link BatchPublisherAccumulator}.
  */
@@ -27,7 +28,6 @@ public interface PublisherContext {
      * @see MapPublisherRegistry
      */
     MapPublisherRegistry getMapPublisherRegistry();
-
 
     /**
      * Returns {@link MapListenerRegistry} for this context.
@@ -77,9 +77,8 @@ public interface PublisherContext {
 
     /**
      * Flushes this publisher context.
-     * For example during graceful shutdown we need to flush all events in the 
+     * For example during graceful shutdown we need to flush all events in the
      * registered accumulators of this context.
      */
     void flush();
-
 }

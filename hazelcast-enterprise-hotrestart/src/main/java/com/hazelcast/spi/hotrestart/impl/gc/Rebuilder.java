@@ -30,6 +30,7 @@ public final class Rebuilder {
     private final GcLogger logger;
 
     private boolean isLoadingTombstones = true;
+    /**  The occupancy counter. Only incremented, never read. Incremented during pre-accept for each encountered record. */
     private Counter occupancy;
     private Counter garbage;
     private Map<Long, SetOfKeyHandle> tombKeys;

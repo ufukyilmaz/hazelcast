@@ -20,15 +20,39 @@ final class GcParams {
     static final GcParams ZERO = new GcParams(0, 0, 0, 0.0, 0, VAL_SIZE_LIMIT_DEFAULT, false);
 
     // These drive the chunk selection logic
+    /** How many bytes of live data do we have, up to {@link #MAX_COST_CHUNKS}/2 chunks of data */
     final long costGoal;
+    /** Min cost in bytes. It is 0.5 chunk size if we have less than {@link #HIGH_GARBAGE_RATIO} garbage, otherwise 0 */
     final long minCost;
+    /**
+     * Garbage in bytes which exceeds {@link #MIN_GARBAGE_RATIO} for normal or projected garbage in bytes which exceeds
+     * {@link #MAX_PROJECTED_GARBAGE_RATIO} for forced GC
+     */
     final long benefitGoal;
+    /** In normal GC we collect up to {@link #MAX_COST_CHUNKS} chunks. In forced there is no limit. */
     final long maxCost;
+    /** Ratio of live to garbage data under which the GC cycle is aborted. In forced GC it is {@link #FORCED_MIN_B2C} */
     final double minBenefitToCost;
+    /**
+     * GC is forced if the ratio is larger or equal to {@link GcParams#MAX_PROJECTED_GARBAGE_RATIO} and if there is enough
+     * garbage to fill {@link GcParams#MIN_GARBAGE_CHUNKS_TO_FORCE_GC} chunks.
+     */
     final boolean forceGc;
+    /** True if we have more than {@link #MAX_COST_CHUNKS}/2 chunks of live data */
     final boolean limitSrcChunks;
     final long currChunkSeq;
 
+    /**
+     * Calculates the GC ergonomics.
+     *
+     * @param garbage      the amount of garbage in bytes
+     * @param occupancy    total size of value chunks in bytes, including live data and garbage
+     * @param maxLive      the maximum observed live data in bytes
+     * @param ratio        the ratio of garbage to live data
+     * @param currChunkSeq the current chunk sequence
+     * @param chunkSize    the value chunk size limit (default 8MB)
+     * @param forceGc      is GC forced
+     */
     private GcParams(long garbage, long occupancy, long maxLive, double ratio,
                      long currChunkSeq, long chunkSize, boolean forceGc
     ) {
@@ -55,12 +79,21 @@ final class GcParams {
         }
     }
 
+    /**
+     * Calculates the GC params for the given value parameters. If the ratio of garbage to live data is less than
+     * {@link GcParams#MIN_GARBAGE_RATIO} then returns zero GC params which signals that there is no need for GC.
+     *
+     * @param garbage      amount of value garbage in bytes
+     * @param occupancy    total size of value chunks in bytes, including live data and garbage
+     * @param currChunkSeq the current chunk sequence
+     * @return the gc params
+     */
     static GcParams gcParams(long garbage, long occupancy, long maxLive, long currChunkSeq) {
         final int chunkSize = valChunkSizeLimit();
         final long liveData = occupancy - garbage;
         return ratio(garbage, liveData) < MIN_GARBAGE_RATIO ? ZERO
-                : new GcParams(garbage, liveData, maxLive, ratio(garbage, liveData),
-                               currChunkSeq, chunkSize, shouldForceGc(garbage, maxLive, chunkSize));
+                : new GcParams(garbage, occupancy, maxLive, ratio(garbage, liveData),
+                currChunkSeq, chunkSize, shouldForceGc(garbage, maxLive, chunkSize));
     }
 
     private static boolean shouldForceGc(long occupancy, long maxLive, int chunkSize) {

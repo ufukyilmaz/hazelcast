@@ -37,10 +37,31 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public final class ChunkManager implements Disposable {
     private static final double UNIT_PERCENTAGE = 100;
 
-    @Probe(level = MANDATORY) final Counter valOccupancy = newSwCounter();
-    @Probe(level = MANDATORY) final Counter valGarbage = newSwCounter();
-    @Probe(level = MANDATORY) final Counter tombOccupancy = newSwCounter();
-    @Probe(level = MANDATORY) final Counter tombGarbage = newSwCounter();
+    /**
+     * The global byte size of value chunks. It is incremented when the active chunk is turned into a stable one. Used for
+     * determining the {@link GcParams} and diagnostics.
+     */
+    @Probe(level = MANDATORY)
+    final Counter valOccupancy = newSwCounter();
+    /**
+     * The global size of the value record garbage in bytes. The size is incremented when a record is retired or an active
+     * chunk is turned into a stable one. It is used for calculating the {@link GcParams} and
+     * diagnostics.
+     */
+    @Probe(level = MANDATORY)
+    final Counter valGarbage = newSwCounter();
+    /**
+     * The global byte size of tombstone chunks. It is incremented when the active chunk is turned into a stable one. Used
+     * mainly for diagnostics in {@link ChunkManager#tombGc(MutatorCatchup)}.
+     */
+    @Probe(level = MANDATORY)
+    final Counter tombOccupancy = newSwCounter();
+    /**
+     * The global size of the tombstone record garbage in bytes. The size is incremented when a record is retired or an active
+     * chunk is turned into a stable one. Used mainly for diagnostics in {@link ChunkManager#tombGc(MutatorCatchup)}.
+     */
+    @Probe(level = MANDATORY)
+    final Counter tombGarbage = newSwCounter();
 
     final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
     final TrackerMap trackers;
@@ -87,7 +108,14 @@ public final class ChunkManager implements Disposable {
         trackers.dispose();
     }
 
-    /** Accounts for the active value chunk having been inactivated and replaced with a new one. */
+    /**
+     * Accounts for the active value chunk having been inactivated and replaced with a new one.
+     * <ul>
+     * <li>Replaces the {@link ChunkManager#activeValChunk} or the {@link ChunkManager#activeTombChunk} with the new chunk</li>
+     * <li>Turns the closed chunk into a stable one and adds it into the {@link ChunkManager#chunks} map</li>
+     * <li>Increases the global tombstone and value garbage and occupancy.</li>
+     * </ul>
+     */
     class ReplaceActiveChunk implements Runnable {
         private final ActiveChunk fresh;
         private final ActiveChunk closed;
@@ -160,10 +188,19 @@ public final class ChunkManager implements Disposable {
     }
 
     /**
-     * Retires a record (makes it dead).
+     * Retires a record (makes it dead). The details :
+     * <p>
+     * <ul>
+     * <li>Increments the global garbage size if the chunk is not currently active</li>
+     * <li>Increments the chunk record garbage count if the record is not a tombstone</li>
+     * <li>Increases the chunk garbage amount</li>
+     * <li>Decrements the chunk live record count</li>
+     * <li>Marks the record as dead</li>
+     * </ul>
+     *
      * @param chunk chunk where the record is written
-     * @param kh key handle of the record
-     * @param r the record being retired
+     * @param kh    key handle of the record
+     * @param r     the record being retired
      */
     void retire(Chunk chunk, KeyHandle kh, Record r) {
         adjustGlobalGarbage(chunk, r);
@@ -172,9 +209,19 @@ public final class ChunkManager implements Disposable {
 
     /**
      * Propagates the effects of a "clear by prefix" operation to the given record.
+     * <ul>
+     * <li>Increments the global garbage size if the chunk is not currently active</li>
+     * <li>Sets the chunk record garbage count to 0</li>
+     * <li>Increases the chunk garbage amount</li>
+     * <li>Decrements the chunk live record count</li>
+     * <li>Marks the record as dead</li>
+     * <li>Reduces the global garbage count by the chunk record garbage count</li>
+     * <li>Removes the tracker if the global garbage count reached 0 and tracker is retired</li>
+     * </ul>
+     *
      * @param chunk chunk where the record is written
-     * @param kh key handle of the record
-     * @param r the record being retired
+     * @param kh    key handle of the record
+     * @param r     the record being retired
      */
     void dismissPrefixGarbage(Chunk chunk, KeyHandle kh, Record r) {
         final Tracker tr = trackers.get(kh);
@@ -247,6 +294,12 @@ public final class ChunkManager implements Disposable {
         trackers.removeLiveTombstone(kh);
     }
 
+    /**
+     * Adds the record size to the global garbage chunk if the chunk is not currently active.
+     *
+     * @param chunk the chunk which is checked if it is active
+     * @param r     the record whose size will be added to the global garbage size
+     */
     private void adjustGlobalGarbage(Chunk chunk, Record r) {
         if (chunk != activeValChunk && chunk != activeTombChunk) {
             // Garbage in the active chunk will be accounted for upon deactivation
@@ -254,6 +307,12 @@ public final class ChunkManager implements Disposable {
         }
     }
 
+    /**
+     * Returns the chunk for the given {@code chunkSeq}.
+     *
+     * @param chunkSeq the chunk sequence
+     * @return the chunk
+     */
     private Chunk chunk(long chunkSeq) {
         if (chunkSeq == activeValChunk.seq) {
             return activeValChunk;

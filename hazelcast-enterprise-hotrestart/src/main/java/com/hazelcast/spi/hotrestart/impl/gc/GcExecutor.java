@@ -2,9 +2,9 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue;
-import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
+import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 
 /** Contains top-level control code for the GC thread. */

@@ -54,7 +54,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * per thread on-heap and off-heap Hot Restart stores. Also, it's listener for
  * membership and cluster state events.
  */
-@SuppressWarnings({ "checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling" })
+@SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling"})
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
     /**
@@ -121,6 +121,16 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return offHeapStores[storeIndexForCurrentThread()];
     }
 
+    /**
+     * Registers a {@link RamStoreRegistry}. There should already be a configuration for the service and distributed object name.
+     * This can be ensured by calling {@link #ensureHasConfiguration(String, String, Object)}.
+     *
+     * @param ramStoreRegistry the registry to be registered
+     * @param serviceName      the service name
+     * @param name             the distributed object name
+     * @param partitionId      the partition ID
+     * @return the key (prefix) under which the registry is registered in the hot restart service
+     */
     public long registerRamStore(RamStoreRegistry ramStoreRegistry, String serviceName, String name, int partitionId) {
         long prefix = persistentCacheDescriptors.getPrefix(serviceName, name, partitionId);
         ramStoreDescriptors.put(prefix, new RamStoreDescriptor(ramStoreRegistry, name, partitionId));
@@ -131,10 +141,24 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         ramStoreRegistryMap.put(serviceName, registry);
     }
 
+    /**
+     * Ensures that the configuration exists for the given service name and distributed object name. Creates one if there is none.
+     *
+     * @param serviceName the service name
+     * @param name        the distributed object name
+     * @param config      the configuration
+     */
     public void ensureHasConfiguration(String serviceName, String name, Object config) {
         persistentCacheDescriptors.ensureHas(node.getSerializationService(), serviceName, name, config);
     }
 
+    /**
+     * Returns the distributed object name for the given {@link RamStoreRegistry} {@code prefix}.
+     *
+     * @param prefix the prefix of the {@link RamStoreRegistry}
+     * @return the cache name
+     * @throws IllegalArgumentException if there is no descriptor found for this prefix
+     */
     public String getCacheName(long prefix) {
         final CacheDescriptor descriptor = persistentCacheDescriptors.getDescriptor(prefix);
         if (descriptor == null) {
@@ -154,7 +178,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     @Override
-    public void memberAttributeChanged(MemberAttributeServiceEvent event) { }
+    public void memberAttributeChanged(MemberAttributeServiceEvent event) {
+    }
 
     public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
         this.clusterMetadataManager.addClusterHotRestartEventListener(listener);
@@ -164,6 +189,16 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return clusterMetadataManager;
     }
 
+    /**
+     * Prepares the Hot restart store for {@link #start()}.
+     * <ul>
+     * <li>Checks for any mismatch of number of persisted stores and configured parallelism or persisted and current
+     * partition thread count</li>
+     * <li>Persists the partition thread count if there are no persisted stores</li>
+     * <li>Prepares the cluster metadata by reading it from disk</li>
+     * <li>Creates the hot restart off-heap and on-heap stores</li>
+     * </ul>
+     */
     public void prepare() {
         partitionThreadCount = getOperationExecutor().getPartitionThreadCount();
         final int persistedStoreCount = persistedStoreCount();
@@ -171,14 +206,14 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             if (storeCount != persistedStoreCount) {
                 throw new HotRestartException(String.format(
                         "Mismatch between configured and actual level of parallelism in Hot Restart Persistence."
-                        + " Configured %d, actual %d",
+                                + " Configured %d, actual %d",
                         storeCount, persistedStoreCount));
             }
             final int persistedPartitionThreadCount = clusterMetadataManager.readPartitionThreadCount();
             if (partitionThreadCount != persistedPartitionThreadCount) {
                 throw new HotRestartException(String.format(
                         "Mismatch between the current number of partition operation threads and"
-                        + " the number persisted in the Hot Restart data. Current %d, persisted %d",
+                                + " the number persisted in the Hot Restart data. Current %d, persisted %d",
                         partitionThreadCount, persistedPartitionThreadCount));
             }
         } else {
@@ -192,6 +227,17 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         createHotRestartStores();
     }
 
+    /**
+     * Starts the Hot restart service.
+     * <ul>
+     * <li>Starts the metadata manager which validates the cluster metadata loaded from disk</li>
+     * <li>Restores the cache descriptors from disk</li>
+     * <li>Loads the hot restart data from disk</li>
+     * <li>Force starts if not all members joined and force start was requested</li>
+     * </ul>
+     *
+     * @throws HotRestartException if there was any exception while starting the service
+     */
     public void start() {
         try {
             logger.info("Starting hot-restart service...");
@@ -199,7 +245,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
             logger.info(allowData ? "Starting the Hot Restart procedure."
-                                  : "Initializing Hot Restart stores, not expecting to reload any data.");
+                    : "Initializing Hot Restart stores, not expecting to reload any data.");
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
@@ -283,6 +329,10 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return null;
     }
 
+    /**
+     * Creates {@link HotRestartPersistenceConfig#getParallelism()} on-heap and off-heap hot restart stores. The off-heap
+     * stores are created only if there is a defined memory manager.
+     */
     private void createHotRestartStores() {
         HazelcastMemoryManager memMgr = ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager();
 
@@ -342,7 +392,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
         final CountDownLatch doneLatch = new CountDownLatch(partitionThreadCount);
         getOperationExecutor().executeOnPartitionThreads(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 try {
                     loop.run(((OperationThread) currentThread()).getThreadId());
                 } catch (Throwable t) {

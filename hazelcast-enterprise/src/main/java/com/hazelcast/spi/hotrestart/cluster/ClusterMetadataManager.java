@@ -100,6 +100,19 @@ public final class ClusterMetadataManager implements PartitionListener {
         clusterStateWriter = new ClusterStateWriter(homeDir);
     }
 
+    /**
+     * Prepares the cluster metadata manager for {@link #start()} by loading the existing data from disk.
+     * <ul>
+     * <li>Reads the cluster state</li>
+     * <li>Restores the member list and prepares them for loading and validation</li>
+     * <li>Restores the partition table and partition table version</li>
+     * <li>If there is cluster state on disk sets the cluster state to {@code PASSIVE} and prepares the list of members removed
+     * in not active state for validating member joins</li>
+     * <li>Notifies any {@link ClusterHotRestartEventListener}s that the prepare is complete</li>
+     * </ul>
+     *
+     * @throws HotRestartException if there was an {@link IOException} while preparing the metadata
+     */
     // main thread
     public void prepare() {
         try {
@@ -143,6 +156,18 @@ public final class ClusterMetadataManager implements PartitionListener {
         this.hotRestartEventListeners.add(listener);
     }
 
+    /**
+     * Starts the metadata manager.
+     * <ul>
+     * <li>Awaits for all members to join if any metadata about members was loaded from disk</li>
+     * <li>Validates the partition tables by sending them to the master</li>
+     * <li>Registers itself as a partition listener for persisting state on replica changes</li>
+     * <li>Notifies all {@link ClusterHotRestartEventListener}s for data load start</li>
+     * </ul>
+     *
+     * @throws ForceStartException if not all members joined but force start was requested
+     * @throws HotRestartException if there were any other errors while starting
+     */
     // main thread
     public void start() {
         try {

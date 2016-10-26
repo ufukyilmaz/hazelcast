@@ -8,9 +8,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.internal.cluster.impl.ClusterServiceImpl;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
-import com.hazelcast.internal.partition.PartitionListener;
-import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
-import com.hazelcast.internal.partition.impl.PartitionReplicaChangeEvent;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
@@ -22,11 +20,14 @@ import com.hazelcast.util.Clock;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -54,7 +55,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * and storing these metadata when they change during runtime.
  */
 @SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
-public final class ClusterMetadataManager implements PartitionListener {
+public final class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
 
@@ -76,8 +77,8 @@ public final class ClusterMetadataManager implements PartitionListener {
             new AtomicReference<HotRestartClusterInitializationStatus>(PENDING_VERIFICATION);
     private final Set<Address> notValidatedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
     private final Set<Address> notLoadedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
-    private final AtomicReference<Address[][]> partitionTableRef = new AtomicReference<Address[][]>();
     private final AtomicReference<Collection<MemberImpl>> memberListRef = new AtomicReference<Collection<MemberImpl>>();
+    private final AtomicReference<PartitionTableView> partitionTableRef = new AtomicReference<PartitionTableView>();
     private final AtomicReference<Boolean> localLoadResult = new AtomicReference<Boolean>();
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
@@ -85,7 +86,6 @@ public final class ClusterMetadataManager implements PartitionListener {
     private volatile boolean startWithHotRestart = true;
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
     private volatile boolean finalClusterStateSet;
-    private int partitionTableVersion;
     private long validationStartTime;
     private long loadStartTime;
 
@@ -119,8 +119,8 @@ public final class ClusterMetadataManager implements PartitionListener {
         try {
             memberListWriter.setLocalMember(node.getLocalMember());
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
-            final Address[][] table = restorePartitionTable();
             final Collection<MemberImpl> members = restoreMemberList();
+            final PartitionTableView table = restorePartitionTable();
             if (startWithHotRestart) {
                 ClusterServiceImpl clusterService = node.clusterService;
                 setClusterState(clusterService, ClusterState.PASSIVE, true);
@@ -179,7 +179,6 @@ public final class ClusterMetadataManager implements PartitionListener {
             throw new HotRestartException("Cluster metadata manager interrupted during startup");
         }
         setInitialPartitionTable();
-        node.partitionService.addPartitionListener(this);
         loadStartTime = Clock.currentTimeMillis();
         logger.info("Starting hot restart local data load.");
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -222,17 +221,12 @@ public final class ClusterMetadataManager implements PartitionListener {
         }
     }
 
-    // replicaChanged(event) is called synchronously
-    @Override
-    public void replicaChanged(PartitionReplicaChangeEvent event) {
-        if (logger.isFinestEnabled()) {
-            logger.finest("Persisting partition table after " + event);
-        }
+    public void onPartitionStateChange() {
         if (!node.joined()) {
             // Node is being shutdown.
             // Partition events at this point can be ignored,
             // latest partition state will be persisted during HotRestartService shutdown.
-            logger.fine("Skipping partition table change event, "
+            logger.finest("Skipping partition table change event, "
                     + "because node is shutting down and latest state will be persisted during shutdown.");
             return;
         }
@@ -259,7 +253,7 @@ public final class ClusterMetadataManager implements PartitionListener {
         return homeDir;
     }
 
-    public void receiveForceStartFromMaster(final Address sender) {
+    void receiveForceStartFromMaster(final Address sender) {
         if (!sender.equals(node.getMasterAddress())) {
             logger.warning("Force restart command received from non-master member: " + sender);
             return;
@@ -312,18 +306,16 @@ public final class ClusterMetadataManager implements PartitionListener {
     public void shutdown() {
         if (isStartCompleted()) {
             persistMembers();
+            logger.fine("Persisting partition table during shutdown");
             persistPartitions();
         }
     }
 
     // operation thread
-    void receivePartitionTableFromMember(Address sender, Address[][] remoteTable) {
+    void receivePartitionTableFromMember(Address sender, PartitionTableView remoteTable) {
         if (!node.isMaster()) {
             logger.warning("Ignoring partition table received from " + sender + " since this node is not master!");
             return;
-        }
-        if (logger.isFineEnabled()) {
-            logger.fine("Received partition table from " + sender);
         }
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
         if (status == VERIFICATION_FAILED) {
@@ -407,19 +399,18 @@ public final class ClusterMetadataManager implements PartitionListener {
     }
 
     private void setInitialPartitionTable() {
-        ((InternalPartitionServiceImpl) node.getPartitionService()).setInitialState(
-                partitionTableRef.get(), partitionTableVersion);
+        PartitionTableView partitionTable = partitionTableRef.get();
+        node.partitionService.setInitialState(partitionTable);
     }
 
-    private Address[][] restorePartitionTable() throws IOException {
+    private PartitionTableView restorePartitionTable() throws IOException {
         final int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
         final PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
         partitionTableReader.read();
-        final Address[][] table = partitionTableReader.getTable();
+        PartitionTableView table = partitionTableReader.getTable();
         partitionTableRef.set(table);
-        partitionTableVersion = partitionTableReader.getPartitionVersion();
         if (logger.isFineEnabled()) {
-            logger.fine("Restored partition table version " + partitionTableVersion);
+            logger.fine("Restored partition table version " + table.getVersion());
         }
         return table;
     }
@@ -534,26 +525,35 @@ public final class ClusterMetadataManager implements PartitionListener {
             logger.warning("Failed to send partition table to master since this node is master.");
             return;
         }
-        final Address[][] table = partitionTableRef.get();
+        final PartitionTableView table = partitionTableRef.get();
         if (logger.isFinestEnabled()) {
-            logger.finest("Sending partition table to: " + masterAddress + ", TABLE-> " + Arrays.deepToString(table));
+            logger.finest("Sending partition table to: " + masterAddress + ", TABLE-> " + table);
         } else if (logger.isFineEnabled()) {
-            logger.fine("Sending partition table to: " + masterAddress);
+            logger.fine("Sending partition table to: " + masterAddress + ", Version: " + table.getVersion());
         }
+
         node.getNodeEngine().getOperationService().send(
                 new SendPartitionTableForValidationOperation(table), masterAddress);
     }
 
     // operation thread
-    private void validatePartitionTable(Address sender, Address[][] remoteTable) {
-        Address[][] localTable = partitionTableRef.get();
+    private void validatePartitionTable(Address sender, PartitionTableView remoteTable) {
+        PartitionTableView localTable = partitionTableRef.get();
         if (localTable == null) {
-            // this node is already running
+            // this node is already up & running
             // sender node is doing a rolling-restart
             // gather local table from partition service
-            localTable = createTableFromPartitionService();
+            logger.info("Creating partition table using PartitionService runtime information");
+            localTable = node.partitionService.createPartitionTableView();
         }
-        boolean validated = Arrays.deepEquals(localTable, remoteTable);
+
+        if (logger.isFineEnabled()) {
+            logger.fine("Received partition table from " + sender
+                    + ", Local version: " + localTable.getVersion()
+                    + ", Remote version: " + remoteTable.getVersion());
+        }
+
+        boolean validated = localTable.equals(remoteTable);
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onPartitionTableValidationResult(sender, validated);
         }
@@ -563,18 +563,6 @@ public final class ClusterMetadataManager implements PartitionListener {
         } else {
             processFailedPartitionTableValidation(sender);
         }
-    }
-
-    private Address[][] createTableFromPartitionService() {
-        InternalPartitionServiceImpl partitionService = node.partitionService;
-        Address[][] table = new Address[partitionService.getPartitionCount()][InternalPartition.MAX_REPLICA_COUNT];
-        for (InternalPartition partition : partitionService.getInternalPartitions()) {
-            int partitionId = partition.getPartitionId();
-            for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                table[partitionId][replica] = partition.getReplicaAddress(replica);
-            }
-        }
-        return table;
     }
 
     private void processSuccessfulPartitionTableValidation(Address sender) {
@@ -654,13 +642,12 @@ public final class ClusterMetadataManager implements PartitionListener {
             return;
         }
 
-        Address[][] table = partitionTableRef.get();
+        PartitionTableView table = partitionTableRef.get();
 
         if (logger.isFineEnabled()) {
             logger.fine("Sending load-completion status [" + success + "] to: " + masterAddress);
         } else if (logger.isFinestEnabled()) {
-            logger.fine("Sending load-completion status [" + success + "] to: " + masterAddress + ", TABLE: "
-                    + Arrays.deepToString(table));
+            logger.fine("Sending load-completion status [" + success + "] to: " + masterAddress + ", TABLE: " + table);
         }
 
         InternalOperationService operationService = node.getNodeEngine().getOperationService();
@@ -779,12 +766,18 @@ public final class ClusterMetadataManager implements PartitionListener {
     private void persistPartitions() {
         try {
             InternalPartitionService partitionService = node.getPartitionService();
-            int partitionStateVersion = partitionService.getPartitionStateVersion();
-            if (logger.isFinestEnabled()) {
-                logger.finest("Persisting partition table version: " + partitionStateVersion);
+            PartitionTableView partitionTable = partitionService.createPartitionTableView();
+            if (partitionTable.getVersion() == 0) {
+                if (logger.isFinestEnabled()) {
+                    logger.finest("Cannot persist partition table, not initialized yet.");
+                }
+                return;
             }
-            partitionTableWriter.setPartitionVersion(partitionStateVersion);
-            partitionTableWriter.write(partitionService.getInternalPartitions());
+
+            if (logger.isFinestEnabled()) {
+                logger.finest("Persisting partition table version: " + partitionTable.getVersion());
+            }
+            partitionTableWriter.write(partitionTable);
         } catch (IOException e) {
             logger.severe("While persisting partition table", e);
         }

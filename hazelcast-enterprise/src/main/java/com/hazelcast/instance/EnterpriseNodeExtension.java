@@ -469,6 +469,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public void onPartitionStateChange() {
+        super.onPartitionStateChange();
+
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onPartitionStateChange();
+        }
+    }
+
+    @Override
     public boolean registerListener(Object listener) {
         if (listener instanceof ClusterHotRestartEventListener) {
             if (listener instanceof HazelcastInstanceAware) {

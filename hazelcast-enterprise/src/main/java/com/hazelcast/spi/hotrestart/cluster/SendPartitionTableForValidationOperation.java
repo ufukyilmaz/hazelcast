@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
-import com.hazelcast.nio.Address;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
@@ -9,8 +9,6 @@ import com.hazelcast.spi.hotrestart.HotRestartService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
-
-import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 
 /**
  * Operation, which is used to send local partition table to master member
@@ -20,13 +18,13 @@ public class SendPartitionTableForValidationOperation
         extends Operation
         implements JoinOperation {
 
-    private Address[][] partitionTable;
+    private PartitionTableView partitionTable;
 
     public SendPartitionTableForValidationOperation() {
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public SendPartitionTableForValidationOperation(Address[][] partitionTable) {
+    public SendPartitionTableForValidationOperation(PartitionTableView partitionTable) {
         this.partitionTable = partitionTable;
     }
 
@@ -49,42 +47,13 @@ public class SendPartitionTableForValidationOperation
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out)
-            throws IOException {
-        super.writeInternal(out);
-
-        int len = partitionTable != null ? partitionTable.length : 0;
-        out.writeInt(len);
-        for (int i = 0; i < len; i++) {
-            Address[] replicas = partitionTable[i];
-            for (int j = 0; j < MAX_REPLICA_COUNT; j++) {
-                Address replica = replicas[j];
-                boolean replicaExists = replica != null;
-                out.writeBoolean(replicaExists);
-                if (replicaExists) {
-                    replica.writeData(out);
-                }
-            }
-        }
+    protected void writeInternal(ObjectDataOutput out) throws IOException {
+        PartitionTableView.writeData(partitionTable, out);
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in)
-            throws IOException {
-        super.readInternal(in);
-
-        int len = in.readInt();
-        partitionTable = new Address[len][MAX_REPLICA_COUNT];
-        for (int i = 0; i < len; i++) {
-            for (int j = 0; j < MAX_REPLICA_COUNT; j++) {
-                boolean exists = in.readBoolean();
-                if (exists) {
-                    Address address = new Address();
-                    partitionTable[i][j] = address;
-                    address.readData(in);
-                }
-            }
-        }
+    protected void readInternal(ObjectDataInput in) throws IOException {
+        partitionTable = PartitionTableView.readData(in);
     }
 
     @Override

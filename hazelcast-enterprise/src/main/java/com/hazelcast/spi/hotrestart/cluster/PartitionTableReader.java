@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 
 import java.io.DataInputStream;
@@ -12,29 +13,36 @@ import java.io.IOException;
  */
 final class PartitionTableReader extends AbstractMetadataReader {
 
-    private final Address[][] table;
+    private final Address[][] addresses;
     private int partitionVersion;
 
     PartitionTableReader(File homeDir, int partitionCount) {
         super(homeDir);
-        table = new Address[partitionCount][InternalPartition.MAX_REPLICA_COUNT];
+        addresses = new Address[partitionCount][InternalPartition.MAX_REPLICA_COUNT];
     }
 
     @Override
     void doRead(DataInputStream in) throws IOException {
-        int partitionCount = in.readInt();
-        if (partitionCount != table.length) {
-            throw new IOException("Invalid partition count! Expected: " + table.length + ", Actual: " + partitionCount);
-        }
         try {
             partitionVersion = in.readInt();
         } catch (IOException e) {
             throw new IOException("Cannot read partition version!", e);
         }
+
+        int partitionCount;
         try {
-            for (int partition = 0; partition < table.length; partition++) {
+            partitionCount = in.readInt();
+        } catch (IOException e) {
+            throw new IOException("Cannot read partition count!", e);
+        }
+        if (partitionCount != addresses.length) {
+            throw new IOException("Invalid partition count! Expected: " + addresses.length + ", Actual: " + partitionCount);
+        }
+
+        try {
+            for (int partition = 0; partition < addresses.length; partition++) {
                 for (int replica = 0; replica < InternalPartition.MAX_REPLICA_COUNT; replica++) {
-                    table[partition][replica] = in.readBoolean() ? readAddress(in) : null;
+                    addresses[partition][replica] = in.readBoolean() ? readAddress(in) : null;
                 }
             }
         } catch (IOException e) {
@@ -47,11 +55,7 @@ final class PartitionTableReader extends AbstractMetadataReader {
         return PartitionTableWriter.FILE_NAME;
     }
 
-    int getPartitionVersion() {
-        return partitionVersion;
-    }
-
-    Address[][] getTable() {
-        return table;
+    PartitionTableView getTable() {
+        return new PartitionTableView(addresses, partitionVersion);
     }
 }

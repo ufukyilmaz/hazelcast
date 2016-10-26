@@ -26,14 +26,18 @@ public abstract class Chunk implements Disposable {
     /** Chunk filename suffix. */
     public static final String FNAME_SUFFIX = ".chunk";
 
-    /** Suffix added to the chunk file while it is active. On restart this file
+    /**
+     * Suffix added to the chunk file while it is active. On restart this file
      * is the only one whose last entry may be incomplete. If the system failed while
      * it was being written out, the caller did not receive a successful response,
-     * therefore that entry doesn't actually exist. */
+     * therefore that entry doesn't actually exist.
+     */
     public static final String ACTIVE_FNAME_SUFFIX = ".active";
 
-    /** Suffix added to a chunk file while it is being written to during a GC cycle.
-     * If system fails during GC, such file should not be considered during restart. */
+    /**
+     * Suffix added to a chunk file while it is being written to during a GC cycle.
+     * If system fails during GC, such file should not be considered during restart.
+     */
     public static final String SURVIVOR_FNAME_SUFFIX = Chunk.FNAME_SUFFIX + ".survivor";
 
     /** Name of the base directory for value records. */
@@ -46,6 +50,12 @@ public abstract class Chunk implements Disposable {
     public final long seq;
 
     public final RecordMap records;
+    /**
+     * The amount of garbage in this chunk in bytes. It is incremented when the record is retired or in the
+     * {@link com.hazelcast.spi.hotrestart.impl.gc.Rebuilder} if we encounter a stale record (encounter a record interred by
+     * a prefix tombstone or a record which has a lower seq than the one we already encountered).
+     * The value is used while calculating the benefit of GC-ing the chunk.
+     */
     public long garbage;
     public int liveRecordCount;
 

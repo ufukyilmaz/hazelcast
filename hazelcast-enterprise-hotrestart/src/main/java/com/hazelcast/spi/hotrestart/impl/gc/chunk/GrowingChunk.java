@@ -10,7 +10,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.record.RecordMap;
  */
 public abstract class GrowingChunk extends Chunk {
     private final int sizeLimit = determineSizeLimit();
-
+    /**  The current size of the chunk in bytes. */
     private long size;
 
     // Current chunk file offset from the viewpoint of the addStep2() method. Nedeed to
@@ -28,8 +28,10 @@ public abstract class GrowingChunk extends Chunk {
         liveRecordCount++;
     }
 
-    /** Called only by {@code Rebuilder}, which encounters records out of file order. Therefore
-     * {@code addStep2FilePos} is unusable. */
+    /**
+     * Called only by {@code Rebuilder}, which encounters records out of file order. Therefore
+     * {@code addStep2FilePos} is unusable.
+     */
     public final void addStep2(long recordSeq, long keyPrefix, KeyHandle kh, int filePos, int size) {
         insertOrUpdate(recordSeq, keyPrefix, kh, filePos, size);
         liveRecordCount++;

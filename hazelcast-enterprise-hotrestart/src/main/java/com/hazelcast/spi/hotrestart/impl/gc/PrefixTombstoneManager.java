@@ -26,8 +26,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static com.hazelcast.nio.IOUtil.rename;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.PREFIX_TOMBSTONES_FILENAME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 @SuppressFBWarnings(value = "IS", justification =
         "All accesses of the map referred to by mutatorPrefixTombstones are synchronized."
-      + " Setter doesn't need synchronization because it is called before GC thread is started.")
+                + " Setter doesn't need synchronization because it is called before GC thread is started.")
 // class non-final for the sake of Mockito
 @SuppressWarnings("checkstyle:finalclass")
 public class PrefixTombstoneManager {
@@ -197,7 +197,7 @@ public class PrefixTombstoneManager {
     /**
      * Removes the prefix tombstones contained in the supplied {@code garbageTombstones} map,
      * but only if the record seq for a given tombstone in this map matches record seq in the
-     * "official" metadata map.
+     * "official" metadata maps for collector and mutator prefix tombstones.
      */
     private void collectGarbageTombstones(Long2LongHashMap garbageTombstones) {
         int collectedCount = 0;

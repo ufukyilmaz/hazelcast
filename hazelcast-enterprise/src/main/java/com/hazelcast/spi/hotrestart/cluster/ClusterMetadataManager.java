@@ -462,10 +462,12 @@ public final class ClusterMetadataManager {
             logger.info("All expected members joined...");
             logAddressChanges(addressMapping);
             fillMemberAddresses();
+            repairPartitionTable(addressMapping);
         }
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onAllMembersJoin(memberListRef.get());
         }
+
         notValidatedAddresses.remove(node.getThisAddress());
         final EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
                 .of(VERIFICATION_FAILED, PARTITION_TABLE_VERIFIED);
@@ -506,11 +508,60 @@ public final class ClusterMetadataManager {
             notLoadedAddresses.add(member.getAddress());
         }
     }
+
+    private void repairPartitionTable(Map<Address, Address> addressMapping) {
+        if (!addressChangeDetected) {
+            return;
+        }
+
+        assert !addressMapping.isEmpty() : "Address mapping should not be empty when address change is detected";
+
+        StringBuilder s = new StringBuilder("Replacing old addresses with the new ones in restored partition table:");
+        for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
+            s.append("\n\t").append(entry.getKey()).append(" -> ").append(entry.getValue());
+        }
+        logger.info(s.toString());
+
+        PartitionTableView table = partitionTableRef.get();
+        Address[][] newAddresses = new Address[table.getLength()][];
+
+        int versionInc = 0;
+        for (int p = 0; p < newAddresses.length; p++) {
+            Address[] replicas = table.getAddresses(p);
+            newAddresses[p] = replicas;
+
+            for (int i = 0; i < InternalPartition.MAX_REPLICA_COUNT; i++) {
+                Address current = replicas[i];
+                if (current == null) {
+                    continue;
+                }
+                Address updated = addressMapping.get(current);
+                if (updated == null) {
+                    continue;
+                }
+                assert !current.equals(updated);
+                replicas[i] = updated;
+                versionInc++;
+            }
+        }
+        partitionTableRef.set(new PartitionTableView(newAddresses, table.getVersion() + versionInc));
+        logger.fine("Partition table repair has been completed.");
+    }
+
     private boolean completeValidationIfSingleMember() {
-        final int memberListSize = memberListRef.get().size();
+        Collection<MemberImpl> members = memberListRef.get();
+        final int memberListSize = members.size();
         if (memberListSize > 1) {
             return false;
         }
+
+        if (memberListSize == 1 && addressChangeDetected) {
+            MemberImpl member = members.iterator().next();
+            Map<Address, Address> addressMapping = Collections.singletonMap(member.getAddress(), node.getThisAddress());
+            fillMemberAddresses();
+            repairPartitionTable(addressMapping);
+        }
+
         logger.info("No need to start validation since expected member count is: " + memberListSize);
         hotRestartStatus.set(PARTITION_TABLE_VERIFIED);
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -908,7 +959,7 @@ public final class ClusterMetadataManager {
     private class LoadTask implements TimeoutableRunnable {
         private final boolean success;
 
-        public LoadTask(boolean success) {
+        LoadTask(boolean success) {
             this.success = success;
         }
 

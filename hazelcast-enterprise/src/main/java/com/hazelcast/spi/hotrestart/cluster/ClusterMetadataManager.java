@@ -86,6 +86,7 @@ public final class ClusterMetadataManager {
     private volatile boolean startWithHotRestart = true;
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
     private volatile boolean finalClusterStateSet;
+    private volatile boolean addressChangeDetected;
     private long validationStartTime;
     private long loadStartTime;
 
@@ -317,7 +318,17 @@ public final class ClusterMetadataManager {
             logger.warning("Ignoring partition table received from " + sender + " since this node is not master!");
             return;
         }
+
         final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
+
+        // barrier
+        if (status == PENDING_VERIFICATION && notValidatedAddresses.isEmpty()
+                || notValidatedAddresses.contains(node.getThisAddress())) {
+            logger.fine("Received partition table version " + remoteTable.getVersion()
+                    + " from " + sender + ", but we are not ready yet!");
+            return;
+        }
+
         if (status == VERIFICATION_FAILED) {
             logger.info("Partition table validation already failed. Sending failure to: " + sender);
             InternalOperationService operationService = node.getNodeEngine().getOperationService();
@@ -447,8 +458,10 @@ public final class ClusterMetadataManager {
         }
         logger.info("Starting cluster member-list & partition table validation.");
         if (startWithHotRestart) {
-            awaitUntilAllMembersJoin();
+            Map<Address, Address> addressMapping = awaitUntilAllMembersJoin();
             logger.info("All expected members joined...");
+            logAddressChanges(addressMapping);
+            fillMemberAddresses();
         }
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onAllMembersJoin(memberListRef.get());
@@ -467,6 +480,32 @@ public final class ClusterMetadataManager {
         logger.info("Cluster member-list & partition table validation completed.");
     }
 
+    private void logAddressChanges(Map<Address, Address> addressMapping) {
+        assert addressChangeDetected != addressMapping.isEmpty()
+                : "Address change detected but address-mappings is empty!";
+        if (!addressMapping.isEmpty()) {
+            StringBuilder s = new StringBuilder("Address changes detected:");
+            for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
+                s.append("\n\t").append(entry.getKey()).append(" -> ").append(entry.getValue());
+            }
+            logger.warning(s.toString());
+        }
+    }
+
+    private void fillMemberAddresses() {
+        if (addressChangeDetected) {
+            memberListRef.set(node.getClusterService().getMemberImpls());
+        }
+
+        // needed for `receivePartitionTableFromMember()`
+        notValidatedAddresses.add(node.getThisAddress());
+        notLoadedAddresses.add(node.getThisAddress());
+
+        for (MemberImpl member : memberListRef.get()) {
+            notValidatedAddresses.add(member.getAddress());
+            notLoadedAddresses.add(member.getAddress());
+        }
+    }
     private boolean completeValidationIfSingleMember() {
         final int memberListSize = memberListRef.get().size();
         if (memberListSize > 1) {
@@ -481,38 +520,67 @@ public final class ClusterMetadataManager {
     }
 
     // main thread
-    private void awaitUntilAllMembersJoin() throws InterruptedException {
-        final Collection<Address> loadedAddresses = memberListRef.get();
+    private Map<Address, Address> awaitUntilAllMembersJoin() throws InterruptedException {
+        final Collection<MemberImpl> loadedMembers = memberListRef.get();
+        Map<String, Member> expectedMembers = new HashMap<String, Member>(loadedMembers.size());
+        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
+        for (MemberImpl member : loadedMembers) {
+            expectedMembers.put(member.getUuid(), member);
+        }
+
         final ClusterServiceImpl clusterService = node.getClusterService();
-        Set<Member> members = clusterService.getMembers();
-        while (members.size() != loadedAddresses.size()) {
+        while (true) {
+            Set<Member> members = clusterService.getMembers();
             if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
                 throw new HotRestartException(
-                        "Expected number of members didn't join, validation phase timed-out!"
-                                + " Expected member-count: " + loadedAddresses.size()
+                        "Expected members didn't join, validation phase timed-out!"
+                                + " Expected member-count: " + loadedMembers.size()
                                 + ", Actual member-count: " + members.size()
                                 + ". Start-time: " + new Date(validationStartTime)
                                 + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
             } else if (hotRestartStatus.get() == FORCE_STARTED) {
                 throw new ForceStartException();
             }
-            logger.info("Waiting for cluster formation... Expected: " + loadedAddresses.size() + ", Actual: " + members.size());
+
             final Address masterAddress = node.getMasterAddress();
             if (masterAddress != null && !masterAddress.equals(node.getThisAddress())) {
                 InternalOperationService operationService = node.getNodeEngine().getOperationService();
                 operationService.send(new CheckIfMasterForceStartedOperation(), masterAddress);
             }
-            sleep(SECONDS.toMillis(1));
-            members = clusterService.getMembers();
+
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                 listener.beforeAllMembersJoin(members);
             }
+
+            if (isExpectedMembersJoined(expectedMembers, addressMapping)) {
+                return addressMapping;
+            }
+
+            sleep(SECONDS.toMillis(1));
         }
-        for (Address address : loadedAddresses) {
-            if (clusterService.getMember(address) == null) {
-                throw new HotRestartException("Member missing! " + address);
+    }
+
+    private boolean isExpectedMembersJoined(Map<String, Member> expectedMembers, Map<Address, Address> addressMapping) {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        for (Map.Entry<String, Member> entry : expectedMembers.entrySet()) {
+            Member missingMember = entry.getValue();
+            Member currentMember = clusterService.getMember(entry.getKey());
+
+            if (currentMember == null) {
+                logger.info("Waiting for cluster formation... Expected-Size: " + expectedMembers.size()
+                        + ", Actual-Size: " + clusterService.getSize()
+                        + ", Missing member: " + missingMember);
+
+                return false;
+            }
+
+            if (!currentMember.getAddress().equals(missingMember.getAddress())) {
+                addressMapping.put(missingMember.getAddress(), currentMember.getAddress());
+                addressChangeDetected = true;
             }
         }
+
+        return true;
     }
 
     // main thread

@@ -18,6 +18,7 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
@@ -25,6 +26,8 @@ import static com.hazelcast.nio.IOUtil.toFileName;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
+
+    private static final AtomicInteger instanceIndex = new AtomicInteger();
 
     private File folder;
 
@@ -42,7 +45,7 @@ public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(folder);
+                .setBaseDir(new File(folder, "hz_" + instanceIndex.incrementAndGet()));
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))

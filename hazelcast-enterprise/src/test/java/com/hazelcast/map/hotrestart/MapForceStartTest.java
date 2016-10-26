@@ -6,6 +6,7 @@ import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.nio.Address;
@@ -76,7 +77,7 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
         private Node node;
 
         @Override
-        public void onAllMembersJoin(Collection<Address> members) {
+        public void onAllMembersJoin(Collection<? extends Member> members) {
             NodeExtension extension = node.getNodeExtension();
             extension.triggerForceStart();
         }
@@ -89,8 +90,8 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
     }
 
     @Override
-    Config makeConfig() {
-        Config config = super.makeConfig();
+    Config makeConfig(Address address, int backupCount) {
+        Config config = super.makeConfig(address, backupCount);
         if (triggerForceStart) {
             config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
         } else {

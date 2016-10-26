@@ -14,9 +14,11 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.waitClusterForSafeState;
@@ -28,59 +30,78 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "clusterState:{0},partitionAssignmentType:{1}")
+    @Parameterized.Parameters(name = "clusterState:{1},addressChangePolicy:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
-                {ClusterState.FROZEN, PartitionAssignmentType.NEVER},
-                {ClusterState.PASSIVE, PartitionAssignmentType.NEVER},
-                {ClusterState.FROZEN, PartitionAssignmentType.AT_THE_END},
-                {ClusterState.PASSIVE, PartitionAssignmentType.AT_THE_END},
-                {ClusterState.FROZEN, PartitionAssignmentType.DURING_STARTUP},
-                {ClusterState.PASSIVE, PartitionAssignmentType.DURING_STARTUP}
+                {NONE, ClusterState.FROZEN},
+                {NONE, ClusterState.PASSIVE},
+                {PARTIAL, ClusterState.FROZEN},
+                {PARTIAL, ClusterState.PASSIVE},
+                {ALL, ClusterState.FROZEN},
+                {ALL, ClusterState.PASSIVE},
         });
     }
 
-    @Parameterized.Parameter(0)
+    @Parameterized.Parameter(1)
     public ClusterState clusterState;
 
-    @Parameterized.Parameter(1)
-    public PartitionAssignmentType partitionAssignmentType;
+    private int nodeCount = 3;
 
     @Test
-    public void test_rollingRestart() throws Exception {
-        final int nodeCount = 3;
+    public void test_rollingRestart_withoutPartitionAssignment() throws Exception {
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
-        final List<Integer> ports = acquirePorts(nodeCount);
-        initializeFactory(ports);
 
-        instances[0] = startInstance(ports.get(0));
-
-        if (partitionAssignmentType == PartitionAssignmentType.DURING_STARTUP) {
-            warmUpPartitions(instances[0]);
+        for (int i = 0; i < nodeCount; i++) {
+            instances[i] = startNewInstance();
         }
+
+        rollingRestartInstances(instances, false);
+    }
+
+    @Test
+    public void test_rollingRestart_withPartitionAssignment_atTheEnd() throws Exception {
+        final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
+
+        for (int i = 0; i < nodeCount; i++) {
+            instances[i] = startNewInstance();
+        }
+
+        warmUpPartitions(instances);
+
+        rollingRestartInstances(instances, true);
+    }
+
+    @Test
+    public void test_rollingRestart_withPartitionAssignment_duringStartup() throws Exception {
+        final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
+
+        instances[0] = startNewInstance();
+        warmUpPartitions(instances[0]);
 
         for (int i = 1; i < nodeCount; i++) {
-            instances[i] = startInstance(ports.get(i));
+            instances[i] = startNewInstance();
         }
 
-        if (partitionAssignmentType == PartitionAssignmentType.AT_THE_END) {
-            warmUpPartitions(instances);
-        }
+        rollingRestartInstances(instances, true);
+    }
 
+    private void rollingRestartInstances(HazelcastInstance[] instances, boolean invokePartitionOps) {
         assertInstancesJoined(nodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
-        if (partitionAssignmentType == PartitionAssignmentType.DURING_STARTUP) {
-            // this is to avoid lots of retry logs during cluster state change
-            waitClusterForSafeState(instances[nodeCount - 1]);
-        }
+        // this is to avoid lots of retry logs during cluster state change
+        waitClusterForSafeState(instances[nodeCount - 1]);
 
         changeClusterStateEventually(instances[0], clusterState);
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < nodeCount; i++) {
             int k = i % instances.length;
             Address address = getAddress(instances[k]);
             instances[k].getLifecycleService().terminate();
-            instances[k] = startInstance(address.getPort());
+            instances[k] = restartInstance(address);
+
+            if (invokePartitionOps) {
+                invokeDummyOperationOnAllPartitions(instances);
+            }
         }
 
         for (HazelcastInstance instance : instances) {
@@ -88,14 +109,5 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
             assertEquals(clusterState, instance.getCluster().getClusterState());
         }
 
-        if (partitionAssignmentType == PartitionAssignmentType.DURING_STARTUP) {
-            // this is to avoid lots of retry logs during cluster state change
-            waitClusterForSafeState(instances[0]);
-        }
-        changeClusterStateEventually(instances[0], ClusterState.ACTIVE);
-    }
-
-    private enum PartitionAssignmentType {
-        NEVER, DURING_STARTUP, AT_THE_END
     }
 }

@@ -48,7 +48,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     @Parameterized.Parameter(2)
     public boolean evictionEnabled;
     String mapName;
-    private File folder;
+    private File baseDir;
     private TestHazelcastInstanceFactory factory;
 
     @BeforeClass
@@ -58,10 +58,10 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
     @Before
     public final void setup() throws UnknownHostException {
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
+        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        delete(baseDir);
+        if (!baseDir.mkdir() && !baseDir.exists()) {
+            throw new AssertionError("Unable to create test folder: " + baseDir.getAbsolutePath());
         }
 
         mapName = randomString();
@@ -88,8 +88,8 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             factory.terminateAll();
         }
 
-        if (folder != null) {
-            delete(folder);
+        if (baseDir != null) {
+            delete(baseDir);
         }
     }
 
@@ -97,15 +97,32 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     }
 
     HazelcastInstance newHazelcastInstance() {
-        return factory.newHazelcastInstance(makeConfig());
+        return newHazelcastInstance(1);
+    }
+
+    HazelcastInstance newHazelcastInstance(int backupCount) {
+        Address address = factory.nextAddress();
+        return factory.newHazelcastInstance(address, makeConfig(address, backupCount));
     }
 
     HazelcastInstance[] newInstances(int clusterSize) {
-        return factory.newInstances(makeConfig(), clusterSize);
+        return newInstances(clusterSize, 1);
+    }
+
+    HazelcastInstance[] newInstances(int clusterSize, int backupCount) {
+        HazelcastInstance[] instances = new HazelcastInstance[clusterSize];
+        for (int i = 0; i < clusterSize; i++) {
+            HazelcastInstance instance = newHazelcastInstance(backupCount);
+            instances[i] = instance;
+        }
+        return instances;
     }
 
     void restartInstances(int clusterSize) {
-        final Config config = makeConfig();
+        restartInstances(clusterSize, 1);
+    }
+
+    void restartInstances(int clusterSize, final int backupCount) {
         ClusterState state = ClusterState.ACTIVE;
         if (factory != null) {
             Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
@@ -127,6 +144,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             new Thread() {
                 @Override
                 public void run() {
+                    Config config = makeConfig(address, backupCount);
                     factory.newHazelcastInstance(address, config);
                     latch.countDown();
                 }
@@ -146,16 +164,10 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         Config config = hz.getConfig();
         Address address = getNode(hz).getThisAddress();
         hz.shutdown();
-        hz = factory.newHazelcastInstance(address, config);
-        return hz;
+        return factory.newHazelcastInstance(address, config);
     }
 
-    Config makeConfig() {
-        Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
-        if (!instances.isEmpty()) {
-            HazelcastInstance instance = instances.iterator().next();
-            return instance.getConfig();
-        }
+    Config makeConfig(Address address, int backupCount) {
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
         config.setProperty(GroupProperty.PARTITION_MAX_PARALLEL_REPLICATIONS.getName(), "100");
@@ -165,13 +177,20 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
 
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
         hotRestartPersistenceConfig.setEnabled(true);
-        hotRestartPersistenceConfig.setBaseDir(folder);
+        hotRestartPersistenceConfig.setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
 
         if (memoryFormat == InMemoryFormat.NATIVE) {
             config.getNativeMemoryConfig().setEnabled(true)
                     .setSize(getNativeMemorySize())
                     .setMetadataSpacePercentage(20);
         }
+
+        MapConfig mapConfig = new MapConfig(mapName);
+        mapConfig.getHotRestartConfig().setEnabled(true);
+        mapConfig.setInMemoryFormat(memoryFormat);
+        mapConfig.setBackupCount(backupCount);
+        setEvictionConfig(mapConfig);
+        config.addMapConfig(mapConfig);
 
         return config;
     }
@@ -183,24 +202,10 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     <V> IMap<Integer, V> createMap() {
         HazelcastInstance hz = factory.getAllHazelcastInstances().iterator().next();
         assertNotNull(hz);
-
-        return createMap(hz, 1);
+        return createMap(hz);
     }
 
     <V> IMap<Integer, V> createMap(HazelcastInstance hz) {
-        return createMap(hz, 1);
-    }
-
-    <V> IMap<Integer, V> createMap(HazelcastInstance hz, int backupCount) {
-        for (HazelcastInstance instance : factory.getAllHazelcastInstances()) {
-            Config config = instance.getConfig();
-            MapConfig mapConfig = new MapConfig(mapName);
-            mapConfig.getHotRestartConfig().setEnabled(true);
-            mapConfig.setInMemoryFormat(memoryFormat);
-            mapConfig.setBackupCount(backupCount);
-            setEvictionConfig(mapConfig);
-            config.addMapConfig(mapConfig);
-        }
         return hz.getMap(mapName);
     }
 

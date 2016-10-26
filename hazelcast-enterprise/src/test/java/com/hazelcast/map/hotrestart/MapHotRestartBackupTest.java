@@ -48,12 +48,12 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
 
     @Test
     public void test_whenClusterIsStable() throws Exception {
-        HazelcastInstance[] instances = newInstances(clusterSize);
+        HazelcastInstance[] instances = newInstances(clusterSize, backupCount);
         warmUpPartitions(instances);
 
         int k = 0;
         for (HazelcastInstance instance : instances) {
-            maps[k++] = createMap(instance, backupCount);
+            maps[k++] = createMap(instance);
         }
         map = maps[maps.length - 1];
 
@@ -69,8 +69,8 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
 
     @Test
     public void test_afterMigration() throws Exception {
-        HazelcastInstance hz = newHazelcastInstance();
-        map = createMap(hz, backupCount);
+        HazelcastInstance hz = newHazelcastInstance(backupCount);
+        map = createMap(hz);
 
         Random random = new Random();
         for (int i = 0; i < 1; i++) {
@@ -80,8 +80,8 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
         IMap[] maps = new IMap[clusterSize];
         maps[0] = map;
         for (int i = 1; i < clusterSize; i++) {
-            HazelcastInstance instance = newHazelcastInstance();
-            maps[i] = createMap(instance, backupCount);
+            HazelcastInstance instance = newHazelcastInstance(backupCount);
+            maps[i] = createMap(instance);
         }
 
         assertExpectedTotalMapSize(maps);

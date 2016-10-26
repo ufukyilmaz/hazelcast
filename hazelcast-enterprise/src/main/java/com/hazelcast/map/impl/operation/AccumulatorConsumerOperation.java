@@ -60,12 +60,12 @@ public class AccumulatorConsumerOperation extends Operation implements Partition
             }
 
             if (isLocal()) {
-                // Consume the accumulator if only this node is the owner
-                // of accumulators partition.
+                // consume the accumulator if only this node is the owner
+                // of accumulators partition
                 publishAccumulator(processor, handler, accumulator);
             } else {
-                // If the accumulator is not local, it should be a leftover
-                // stayed after partition migrations and remove that accumulator.
+                // if the accumulator is not local, it should be a leftover
+                // stayed after partition migrations and remove that accumulator
                 removeAccumulator(context, accumulator);
             }
             processed++;

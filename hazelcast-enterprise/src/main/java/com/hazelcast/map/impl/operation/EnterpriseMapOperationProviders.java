@@ -38,9 +38,9 @@ public class EnterpriseMapOperationProviders extends MapOperationProviders {
      * Returns a {@link MapOperationProvider} instance, depending on whether the provided {@code MapConfig} has a
      * WAN replication policy configured or not.
      *
-     * @param mapConfig the map configuration to query whether WAN replication is configured.
+     * @param mapConfig the map configuration to query whether WAN replication is configured
      * @return {@link DefaultMapOperationProvider} or {@link WANAwareOperationProvider} depending on the WAN replication
-     * config of the map configuration provided as parameter.
+     * config of the map configuration provided as parameter
      */
     @Override
     public MapOperationProvider getOperationProvider(MapConfig mapConfig) {

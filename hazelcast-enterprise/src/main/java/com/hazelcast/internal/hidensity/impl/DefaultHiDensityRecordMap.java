@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * @author sozal 18/02/15
  *
- * @param <R> Type of the {@link HiDensityRecord} to be stored.
+ * @param <R> type of the {@link HiDensityRecord} to be stored
  */
 public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
         extends SampleableElasticHashMap<R>
@@ -55,7 +55,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     @Override
     public R put(Data key, R value) {
         R record = super.put(key, value);
-        // If there is no previous value with specified key, means that new entry is added
+        // if there is no previous value with specified key, means that new entry is added
         if (record == null) {
             increaseEntryCount();
         }
@@ -65,7 +65,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     @Override
     public R putIfAbsent(Data key, R value) {
         R record = super.putIfAbsent(key, value);
-        // If there is no previous value with specified key, it means that new entry is added.
+        // if there is no previous value with specified key, it means that new entry is added
         if (record == null) {
             increaseEntryCount();
         }
@@ -113,8 +113,8 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     /**
      * Returns a slottable iterator for this {@link HiDensityRecordMap} to iterate over records.
      *
-     * @param slot the slot number (or index) to start the <code>iterator</code>.
-     * @return the slottable iterator for specified <code>slot</code>.
+     * @param slot the slot number (or index) to start the <code>iterator</code>
+     * @return the slottable iterator for specified <code>slot</code>
      */
     public SlottableIterator<Map.Entry<Data, R>> iterator(int slot) {
         return entryIter(slot);

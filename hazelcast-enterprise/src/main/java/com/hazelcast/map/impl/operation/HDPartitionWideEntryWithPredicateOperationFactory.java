@@ -84,7 +84,7 @@ public class HDPartitionWideEntryWithPredicateOperationFactory extends Partition
     @Override
     public Operation createPartitionOperation(int partition) {
         if (isNullOrEmpty(partitionIdToKeysMap)) {
-            // Fallback here if we cannot find anything from indexes.
+            // fallback here if we cannot find anything from indexes
             return new HDPartitionWideEntryWithPredicateOperation(name, entryProcessor, predicate);
         }
 
@@ -109,16 +109,16 @@ public class HDPartitionWideEntryWithPredicateOperationFactory extends Partition
     }
 
     private Set<Data> getKeysFromIndex(NodeEngine nodeEngine) {
-        // Do not use index in this case, because it requires full-table-scan.
+        // do not use index in this case, because it requires full-table-scan
         if (predicate == TruePredicate.INSTANCE) {
             return emptySet();
         }
 
-        // Get indexes.
+        // get indexes
         MapService mapService = nodeEngine.getService(SERVICE_NAME);
         MapServiceContext mapServiceContext = mapService.getMapServiceContext();
         Indexes indexes = mapServiceContext.getMapContainer(name).getIndexes();
-        // Optimize predicate.
+        // optimize predicate
         QueryOptimizer queryOptimizer = mapServiceContext.getQueryOptimizer();
         predicate = queryOptimizer.optimize(predicate, indexes);
 

@@ -59,8 +59,8 @@ public class EnterpriseMapEventPublishingService extends MapEventPublishingServi
      * Dispatches an event-data to {@link com.hazelcast.map.QueryCache QueryCache} listeners on this local
      * node.
      *
-     * @param eventData {@link EventData} to be dispatched.
-     * @param listener  the listener which the event will be dispatched from.
+     * @param eventData {@link EventData} to be dispatched
+     * @param listener  the listener which the event will be dispatched from
      */
     private void dispatchLocalEventData(EventData eventData, ListenerAdapter listener) {
         IMapEvent event = createIMapEvent(eventData, null, member, serializationService);

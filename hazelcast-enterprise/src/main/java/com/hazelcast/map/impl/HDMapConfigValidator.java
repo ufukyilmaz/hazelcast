@@ -41,8 +41,8 @@ public final class HDMapConfigValidator {
     /**
      * Checks preconditions to create a map proxy.
      *
-     * @param mapConfig          the mapConfig.
-     * @param nativeMemoryConfig the nativeMemoryConfig.
+     * @param mapConfig          the mapConfig
+     * @param nativeMemoryConfig the nativeMemoryConfig
      */
     public static void checkHDConfig(MapConfig mapConfig, NativeMemoryConfig nativeMemoryConfig) {
         if (NATIVE != mapConfig.getInMemoryFormat()) {

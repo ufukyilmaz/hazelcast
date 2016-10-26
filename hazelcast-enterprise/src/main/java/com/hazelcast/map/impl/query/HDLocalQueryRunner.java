@@ -28,13 +28,13 @@ public class HDLocalQueryRunner extends MapLocalParallelQueryRunner {
     }
 
     @Override
-    // Difference between OS and EE with HD: EE version always caches values.
+    // difference between OS and EE with HD: EE version always caches values
     protected boolean isUseCachedDeserializedValuesEnabled(MapContainer mapContainer) {
         return true;
     }
 
     @Override
-    // Difference between OS and EE with HD: transform native memory data to heap data.
+    // difference between OS and EE with HD: transform native memory data to heap data
     protected <T> Object toData(T input) {
         if (!(input instanceof NativeMemoryData)) {
             return input;
@@ -43,7 +43,7 @@ public class HDLocalQueryRunner extends MapLocalParallelQueryRunner {
     }
 
     @Override
-    // Difference between OS and EE with HD: do not use the executor service but just dispatch QueryPartitionOperations instead.
+    // difference between OS and EE with HD: do not use the executor service but just dispatch QueryPartitionOperations instead
     protected List<QueryableEntry> runUsingPartitionScanWithoutPaging(
             String name, Predicate predicate, Collection<Integer> partitions) throws InterruptedException, ExecutionException {
 

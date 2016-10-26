@@ -115,7 +115,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
                 return EntryEventType.UPDATED;
             }
         }
-        // Return null for read only operations.
+        // return null for read only operations
         return null;
     }
 
@@ -237,7 +237,7 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
         return partitionService.getPartitionId(key) != getPartitionId();
     }
 
-    // This method is overridden.
+    // this method is overridden
     protected boolean isEntryProcessable(Map.Entry entry) {
         return true;
     }

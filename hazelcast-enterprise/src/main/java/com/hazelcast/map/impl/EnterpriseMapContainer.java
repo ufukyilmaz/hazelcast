@@ -55,7 +55,7 @@ public class EnterpriseMapContainer extends MapContainer {
 
     @Override
     public void initEvictor() {
-        // This can't be located in the constructor since the superclass constructor calls initEvictor() at its end.
+        // this can't be located in the constructor since the superclass constructor calls initEvictor() at its end
         initStorageInfoAndRegisterMapProbes();
         if (NATIVE == mapConfig.getInMemoryFormat()) {
             MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();

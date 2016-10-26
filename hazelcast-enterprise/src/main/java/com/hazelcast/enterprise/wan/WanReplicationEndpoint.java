@@ -34,9 +34,9 @@ public interface WanReplicationEndpoint
     /**
      * Initializes the endpoint using the given arguments.
      *
-     * @param node      the current node that tries to connect.
-     * @param wanReplicationConfig  {@link com.hazelcast.config.WanReplicationConfig} config.
-     * @param wanPublisherConfig  this endpoint will be initialized using this {@link WanPublisherConfig} instance.
+     * @param node      the current node that tries to connect
+     * @param wanReplicationConfig  {@link com.hazelcast.config.WanReplicationConfig} config
+     * @param wanPublisherConfig  this endpoint will be initialized using this {@link WanPublisherConfig} instance
      */
     void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig);
 

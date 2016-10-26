@@ -41,7 +41,7 @@ import static com.hazelcast.util.HashUtil.computePerturbationValue;
  * always allocated to the nearest higher size that is a power of two. When
  * the capacity exceeds the given load factor, the buffer size is doubled.
  *
- * @param <V> the type of memory block used as value.
+ * @param <V> the type of memory block used as value
  */
 @SuppressWarnings("checkstyle:methodcount")
 public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<Data, V> {
@@ -83,7 +83,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      */
     public BinaryElasticHashMap(EnterpriseSerializationService serializationService,
                                 MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
-        // Checkstyle complains that CapacityUtil is an unused import so we use it once here.
+        // checkstyle complains that CapacityUtil is an unused import so we use it once here
         this(CapacityUtil.DEFAULT_CAPACITY, serializationService, memoryBlockAccessor, malloc);
     }
 
@@ -91,8 +91,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
      * Creates a hash map with the given initial capacity, default load factor of
      * {@value CapacityUtil#DEFAULT_LOAD_FACTOR}.
      *
-     * @param initialCapacity Initial capacity (greater than zero and automatically
-     *                        rounded to the next power of two).
+     * @param initialCapacity initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two)
      */
     public BinaryElasticHashMap(int initialCapacity, EnterpriseSerializationService serializationService,
                                 MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
@@ -102,9 +102,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity Initial capacity (greater than zero and automatically
-     *                        rounded to the next power of two).
-     * @param loadFactor      The load factor (greater than zero and smaller than 1).
+     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two)
+     * @param loadFactor      the load factor (greater than zero and smaller than 1)
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
                                 EnterpriseSerializationService serializationService,
@@ -116,8 +116,8 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity Initial capacity (greater than zero and automatically
-     *                        rounded to the next power of two).
+     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two)
      */
     public BinaryElasticHashMap(int initialCapacity, MemoryBlockProcessor<V> memoryBlockProcessor) {
         this(initialCapacity, DEFAULT_LOAD_FACTOR, memoryBlockProcessor);
@@ -126,9 +126,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Creates a hash map with the given initial capacity,
      * load factor.
-     *  @param initialCapacity Initial capacity (greater than zero and automatically
-     *                        rounded to the next power of two).
-     * @param loadFactor      The load factor (greater than zero and smaller than 1).
+     *  @param initialCapacity initial capacity (greater than zero and automatically
+     *                        rounded to the next power of two)
+     * @param loadFactor      the load factor (greater than zero and smaller than 1)
      */
     public BinaryElasticHashMap(int initialCapacity, float loadFactor,
                                 MemoryBlockProcessor<V> memoryBlockProcessor) {
@@ -150,7 +150,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     /**
      * Allocates internal buffer for a given capacity.
      *
-     * @param capacity New capacity (must be a power of two).
+     * @param capacity new capacity (must be a power of two)
      */
     private void allocateBuffer(int capacity) {
         try {
@@ -188,14 +188,14 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
 
         assert memKey.address() != NULL_ADDRESS : "Null key!";
 
-        // Check if we need to grow. If so, reallocate new data, fill in the last element
-        // and rehash.
+        // check if we need to grow. If so, reallocate new data, fill in the last element
+        // and rehash
         if (assignedSlotCount == resizeAt) {
             try {
                 expandAndPut(memKey.address(), value.address(), slot);
             } catch (Throwable error) {
-                // If they are not same, this means that the key is converted to native memory data at here.
-                // So, it must be disposed at here
+                // if they are not same, this means that the key is converted to native memory data at here
+                // so, it must be disposed at here
                 if (memKey != key) {
                     memoryBlockProcessor.disposeData(memKey);
                 }
@@ -297,17 +297,17 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
         final BehmSlotAccessor oldAccessor = new BehmSlotAccessor(accessor);
         final int oldAllocated = allocatedSlotCount;
 
-        // Try to allocate new buffer first. If we OOM, it'll be now without
-        // leaving the data structure in an inconsistent state.
+        // try to allocate new buffer first. If we OOM, it'll be now without
+        // leaving the data structure in an inconsistent state
         allocateBuffer(nextCapacity(allocatedSlotCount));
 
-        // We have succeeded at allocating new data so insert the pending key/value at
-        // the free slot in the temporary arrays before rehashing.
+        // we have succeeded at allocating new data so insert the pending key/value at
+        // the free slot in the temporary arrays before rehashing
         assignedSlotCount++;
         oldAccessor.setKey(freeSlot, pendingKey);
         oldAccessor.setValue(freeSlot, pendingValue);
 
-        // Rehash all stored keys into the new buffers.
+        // rehash all stored keys into the new buffers
         final int mask = allocatedSlotCount - 1;
         for (int slot = oldAllocated; --slot >= 0;) {
             if (oldAccessor.isAssigned(slot)) {
@@ -420,7 +420,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                         break;
                     }
                 } else {
-                    // We've wrapped around.
+                    // we've wrapped around
                     if (slotPrev >= slotOther && slotOther > slotCurr) {
                         break;
                     }
@@ -432,7 +432,7 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 break;
             }
 
-            // Shift key/value pair.
+            // shift key/value pair
             accessor.setKey(slotPrev, accessor.getKey(slotCurr));
             accessor.setValue(slotPrev, accessor.getValue(slotCurr));
         }
@@ -447,9 +447,9 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
     }
 
     /**
-     * @param k must be {@code instanceof NativeMemoryData}.
+     * @param k must be {@code instanceof NativeMemoryData}
      * @return same as {@link #get(Object)}, but with the additional constraint that the argument
-     * must refer to exactly the same blob (at the same address) as the one stored by the map.
+     * must refer to exactly the same blob (at the same address) as the one stored by the map
      */
     public V getIfSameKey(Object k) {
         return get0(k, true);
@@ -663,10 +663,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 memoryBlockProcessor.dispose(value);
             }
 
-            // If current slot is assigned after
+            // if current slot is assigned after
             // removal and shift
             // then it means entry in the next slot
-            // is moved to current slot.
+            // is moved to current slot
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }
@@ -747,10 +747,10 @@ public class BinaryElasticHashMap<V extends MemoryBlock> implements ElasticMap<D
                 memoryBlockProcessor.dispose(value);
             }
 
-            // If current slot is assigned after
+            // if current slot is assigned after
             // removal and shift
             // then it means entry in the next slot
-            // is moved to current slot.
+            // is moved to current slot
             if (accessor.isAssigned(currentSlot)) {
                 nextSlot = currentSlot;
             }

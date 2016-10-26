@@ -56,9 +56,9 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
             if (existingCacheConfig == null) {
                 CacheCreateConfigOperation op =
                         new CacheCreateConfigOperation(cacheConfig, true);
-                // Run "CacheCreateConfigOperation" on this node. The operation itself handles interaction with other nodes.
-                // This operation doesn't block operation thread even "syncCreate" is specified.
-                // In that case, scheduled thread is used, not the operation thread.
+                // run "CacheCreateConfigOperation" on this node, the operation itself handles interaction with other nodes
+                // this operation doesn't block operation thread even "syncCreate" is specified
+                // in that case, scheduled thread is used, not the operation thread
                 InternalCompletableFuture future =
                         nodeEngine.getOperationService()
                                 .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
@@ -94,7 +94,7 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                     cacheConfig.setName(name);
                     cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(name)));
                 } catch (Exception e) {
-                    //Cannot create the actual configuration from the declarative one.
+                    //cannot create the actual configuration from the declarative one
                     throw new CacheException(e);
                 }
             }

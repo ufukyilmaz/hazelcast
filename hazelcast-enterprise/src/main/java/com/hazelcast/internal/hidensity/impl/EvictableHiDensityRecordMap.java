@@ -18,7 +18,7 @@ import com.hazelcast.util.QuickMath;
 /**
  * @author sozal 18/02/15
  *
- * @param <R> Type of the {@link HiDensityRecord} to be stored.
+ * @param <R> type of the {@link HiDensityRecord} to be stored
  */
 public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable & Expirable>
         extends DefaultHiDensityRecordMap<R>
@@ -27,7 +27,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     protected static final int ONE_HUNDRED_PERCENT = 100;
     protected static final int MIN_EVICTION_ELEMENT_COUNT = 10;
 
-    // To reuse every time a key is read from a reference.
+    // to reuse every time a key is read from a reference
     protected final NativeMemoryData keyHolder = new NativeMemoryData();
 
     public EvictableHiDensityRecordMap(int initialCapacity,
@@ -39,10 +39,10 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
     /**
      * Forcefully evict records with the given <code>evictionPercentage</code>.
      *
-     * @param evictionPercentage    Percentage to determine how many records will be evicted.
+     * @param evictionPercentage    percentage to determine how many records will be evicted
      * @param evictionListener      {@link EvictionListener} to be notified
-     *                              about evicted key and value.
-     * @return evicted entry count.
+     *                              about evicted key and value
+     * @return evicted entry count
      */
     public <C extends EvictionCandidate<Data, R>> int forceEvict(int evictionPercentage,
                                                                  EvictionListener<Data, R> evictionListener) {
@@ -107,8 +107,8 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
         final int end = capacity();
         final int mask = end - 1;
 
-        // Assert capacity is power of 2, otherwise loop below will not work.
-        // We know BinaryOffHeapHashMap.capacity() is power of 2.
+        // assert capacity is power of 2, otherwise loop below will not work
+        // we know BinaryOffHeapHashMap.capacity() is power of 2
         assert QuickMath.isPowerOfTwo(end);
 
         int evictedEntryCount = 0;
@@ -135,7 +135,7 @@ public class EvictableHiDensityRecordMap<R extends HiDensityRecord & Evictable &
                     delete(keyData);
                     recordProcessor.disposeData(keyData);
                     evictedEntryCount++;
-                    // If disposed index is still allocated, it means next keys are shifted.
+                    // if disposed index is still allocated, it means next keys are shifted
                     shifted = accessor.isAssigned(ix);
                 }
             }

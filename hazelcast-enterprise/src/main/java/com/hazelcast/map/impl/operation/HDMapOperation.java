@@ -112,8 +112,8 @@ public abstract class HDMapOperation extends MapOperation {
             Level level = this instanceof BackupOperation ? Level.FINEST : Level.WARNING;
             logger.log(level, "Cannot complete operation! -> " + e.getMessage());
         } else {
-            // We need to introduce a proper method to handle operation failures (at the moment
-            // this is the only place where we can dispose native memory allocations on failure).
+            // we need to introduce a proper method to handle operation failures (at the moment
+            // this is the only place where we can dispose native memory allocations on failure)
             disposeDeferredBlocks();
             super.logError(e);
         }
@@ -165,7 +165,7 @@ public abstract class HDMapOperation extends MapOperation {
                 if (logger.isFineEnabled()) {
                     logger.fine("Applying force eviction on current record store!");
                 }
-                // If there is still an OOME, apply eviction on current RecordStore and try again.
+                // if there is still an OOME, apply eviction on current RecordStore and try again
                 forceEviction(recordStore);
                 runInternal();
                 oome = null;
@@ -181,7 +181,7 @@ public abstract class HDMapOperation extends MapOperation {
                     if (logger.isFineEnabled()) {
                         logger.fine("Applying force eviction on other record stores owned by same partition thread!");
                     }
-                    // If there is still an OOME, apply for eviction on others and try again.
+                    // if there is still an OOME, apply for eviction on others and try again
                     forceEvictionOnOthers();
                     runInternal();
                     oome = null;
@@ -235,7 +235,7 @@ public abstract class HDMapOperation extends MapOperation {
                 if (logger.isLoggable(Level.INFO)) {
                     logger.info("Evicting all entries in current record-store because force eviction was not enough!");
                 }
-                // If there is still OOME, clear the current RecordStore and try again.
+                // if there is still OOME, clear the current RecordStore and try again
                 recordStore.evictAll(backup);
                 runInternal();
                 oome = null;
@@ -250,7 +250,7 @@ public abstract class HDMapOperation extends MapOperation {
                     logger.info("Evicting all entries in other record-stores owned by same partition thread "
                             + "because force eviction was not enough!");
                 }
-                // If there is still OOME, for the last chance, evict other record stores and try again.
+                // if there is still OOME, for the last chance, evict other record stores and try again
                 evictAll(backup);
                 runInternal();
                 oome = null;

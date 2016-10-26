@@ -81,7 +81,7 @@ public class HDPutAllOperation extends HDMapOperation implements PartitionAwareO
 
     @Override
     protected void runInternal() {
-        // If currentIndex is not zero, this is a continuation of the operation after a NativeOOME.
+        // if currentIndex is not zero, this is a continuation of the operation after a NativeOOME
         int size = mapEntries.size();
         while (currentIndex < size) {
             put(mapEntries.getKey(currentIndex), mapEntries.getValue(currentIndex));

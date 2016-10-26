@@ -76,7 +76,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         removeFromHotRestart(key);
     }
 
-    // Called from Hot Restart GC thread.
+    // called from Hot Restart GC thread
     @Override
     public boolean copyEntry(KeyHandle kh, int expectedSize, RecordDataSink sink) {
         final KeyOnHeap keyHandle = (KeyOnHeap) kh;
@@ -90,13 +90,13 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         return RamStoreHelper.copyEntry(keyHandle, value, expectedSize, sink);
     }
 
-    // Called from PartitionOperationThread.
+    // called from PartitionOperationThread
     @Override
     public KeyOnHeap toKeyHandle(byte[] key) {
         return new KeyOnHeap(prefix, key);
     }
 
-    // Called from PartitionOperationThread.
+    // called from PartitionOperationThread
     @Override
     public void accept(KeyHandle kh, byte[] valueBytes) {
         HeapData key = new HeapData(((KeyOnHeap) kh).bytes());
@@ -120,7 +120,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
 
     @Override
     public void removeNullEntries(SetOfKeyHandle keyHandles) {
-        // We don't keep tombstones during restart.
+        // we don't keep tombstones during restart
     }
 
     @Override

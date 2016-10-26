@@ -8,8 +8,8 @@ import com.hazelcast.spi.annotation.Beta;
 /**
  * Contains enterprise extensions for {@link IMap} interface.
  *
- * @param <K> the type of keys maintained by this map.
- * @param <V> the type of mapped values.
+ * @param <K> the type of keys maintained by this map
+ * @param <V> the type of mapped values
  * @see IMap
  * @since 3.5
  */
@@ -23,9 +23,9 @@ public interface IEnterpriseMap<K, V> extends IMap<K, V> {
      * configuration exists for the supplied {@code name} this method returns or creates the instance respectively,
      * otherwise returns null.
      *
-     * @param name the name of {@code QueryCache}.
-     * @return the {@code QueryCache} instance or null if there is no corresponding {@code QueryCacheConfig}.
-     * @throws NullPointerException if the specified {@code name} is null.
+     * @param name the name of {@code QueryCache}
+     * @return the {@code QueryCache} instance or null if there is no corresponding {@code QueryCacheConfig}
+     * @throws NullPointerException if the specified {@code name} is null
      * @see QueryCache
      * @since 3.5
      */
@@ -42,11 +42,11 @@ public interface IEnterpriseMap<K, V> extends IMap<K, V> {
      * {@code name}, {@code predicate} and {@code includeValue} parameters will overwrite corresponding ones
      * in {@link com.hazelcast.config.QueryCacheConfig}.
      *
-     * @param name         the name of {@code QueryCache}.
-     * @param predicate    the predicate for filtering entries.
-     * @param includeValue {@code true} if this {@code QueryCache} is allowed to cache values of entries, otherwise {@code false}.
-     * @return the {@code QueryCache} instance with the supplied {@code name}.
-     * @throws NullPointerException if the specified {@code name} or {@code predicate} is null.
+     * @param name         the name of {@code QueryCache}
+     * @param predicate    the predicate for filtering entries
+     * @param includeValue {@code true} if this {@code QueryCache} is allowed to cache values of entries, otherwise {@code false}
+     * @return the {@code QueryCache} instance with the supplied {@code name}
+     * @throws NullPointerException if the specified {@code name} or {@code predicate} is null
      * @see QueryCache
      * @since 3.5
      */
@@ -63,12 +63,12 @@ public interface IEnterpriseMap<K, V> extends IMap<K, V> {
      * {@code name}, {@code listener},{@code predicate} and {@code includeValue} parameters will overwrite corresponding ones
      * in {@link com.hazelcast.config.QueryCacheConfig}.
      *
-     * @param name         the name of {@code QueryCache}.
-     * @param listener     the {@code MapListener} which will be used to listen this {@code QueryCache}.
-     * @param predicate    the predicate for filtering entries.
-     * @param includeValue {@code true} if this {@code QueryCache} is allowed to cache values of entries, otherwise {@code false}.
-     * @return the {@code QueryCache} instance with the supplied {@code name}.
-     * @throws NullPointerException if the specified {@code name} or {@code listener} or {@code predicate} is null.
+     * @param name         the name of {@code QueryCache}
+     * @param listener     the {@code MapListener} which will be used to listen this {@code QueryCache}
+     * @param predicate    the predicate for filtering entries
+     * @param includeValue {@code true} if this {@code QueryCache} is allowed to cache values of entries, otherwise {@code false}
+     * @return the {@code QueryCache} instance with the supplied {@code name}
+     * @throws NullPointerException if the specified {@code name} or {@code listener} or {@code predicate} is null
      * @see QueryCache
      * @since 3.5
      */

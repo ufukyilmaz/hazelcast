@@ -45,8 +45,8 @@ public class EnterpriseMapPortableHook implements PortableHook {
         /**
          * Creates a Portable instance using given class id.
          *
-         * @param classId portable class id.
-         * @return portable instance or null if class id is not known by this factory.
+         * @param classId portable class id
+         * @return portable instance or null if class id is not known by this factory
          */
         @Override
         public Portable create(int classId) {

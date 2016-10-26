@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.DataType;
 /**
  * @author sozal 17/11/14
  *
- * @param <V> Type of MemoryBlock.
+ * @param <V> type of MemoryBlock
  */
 public interface MemoryBlockProcessor<V extends MemoryBlock>
         extends MemoryBlockAccessor<V> {

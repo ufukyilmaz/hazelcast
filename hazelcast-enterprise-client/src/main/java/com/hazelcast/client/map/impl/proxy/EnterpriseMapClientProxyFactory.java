@@ -1,15 +1,9 @@
 package com.hazelcast.client.map.impl.proxy;
 
-import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.client.map.impl.nearcache.ClientHDNearCacheRegistry;
-import com.hazelcast.client.spi.ClientExecutionService;
-import com.hazelcast.client.spi.ClientPartitionService;
 import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.NearCacheConfig;
-import com.hazelcast.map.impl.utils.Registry;
-import com.hazelcast.spi.serialization.SerializationService;
 
 import static com.hazelcast.map.impl.HDMapConfigValidator.checkHDConfig;
 import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
@@ -19,16 +13,10 @@ import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
  */
 public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
 
-    private final Registry<String, NearCache> hdNearCacheRegistry;
     private final ClientConfig clientConfig;
 
-    public EnterpriseMapClientProxyFactory(ClientExecutionService executionService,
-                                           SerializationService serializationService,
-                                           ClientConfig clientConfig, ClientPartitionService partitionService) {
+    public EnterpriseMapClientProxyFactory(ClientConfig clientConfig) {
         this.clientConfig = clientConfig;
-
-        this.hdNearCacheRegistry
-                = new ClientHDNearCacheRegistry(executionService, serializationService, clientConfig, partitionService);
     }
 
     @Override
@@ -36,7 +24,7 @@ public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
         NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(id);
         if (nearCacheConfig != null) {
             checkHDConfig(nearCacheConfig, clientConfig.getNativeMemoryConfig());
-            return new EnterpriseNearCachedClientMapProxyImpl(SERVICE_NAME, id, hdNearCacheRegistry);
+            return new EnterpriseNearCachedClientMapProxyImpl(SERVICE_NAME, id);
         } else {
             return new EnterpriseClientMapProxyImpl(SERVICE_NAME, id);
         }

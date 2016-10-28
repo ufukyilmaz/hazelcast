@@ -170,8 +170,6 @@ public abstract class AbstractWanPublisher
         updateStats(wanReplicationEvent);
         Data wanReplicationEventData
                 = node.nodeEngine.getSerializationService().toData(wanReplicationEvent);
-        Operation ewrRemoveOperation
-                = new EWRRemoveBackupOperation(wanReplicationName, targetGroupName, wanReplicationEventData);
         OperationService operationService = node.nodeEngine.getOperationService();
         EnterpriseReplicationEventObject evObj
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
@@ -181,6 +179,8 @@ public abstract class AbstractWanPublisher
         List<InternalCompletableFuture> futures = new ArrayList<InternalCompletableFuture>(backupCount);
         try {
             for (int i = 0; i < backupCount && i < clusterSize - 1; i++) {
+                Operation ewrRemoveOperation
+                        = new EWRRemoveBackupOperation(wanReplicationName, targetGroupName, wanReplicationEventData);
                 InternalCompletableFuture<Object> future = operationService
                         .createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
                                 ewrRemoveOperation,

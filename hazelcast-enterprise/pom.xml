@@ -68,7 +68,8 @@
                             <instructions>
                                 <Bundle-Activator>com.hazelcast.osgi.impl.Activator</Bundle-Activator>
                                 <Export-Package>
-                                    com.hazelcast.*
+                                    com.hazelcast.*,
+                                    com.hazelcast.cache.impl.CacheEntry
                                 </Export-Package>
                                 <Import-Package>
                                     !org.junit,
@@ -85,9 +86,13 @@
                                     org.jruby.embed.jsr223;resolution:=optional,
                                     org.jclouds.*;resolution:=optional,
                                     com.google.*;resolution:=optional,
+                                    sun.nio.ch;resolution:=optional,
                                     *
                                 </Import-Package>
                                 <Embed-Dependency>*; scope=compile|runtime</Embed-Dependency>
+                                <CacheEntryImpl>com.hazelcast.cache.impl.CacheEntry</CacheEntryImpl>
+                                <CacheImpl>com.hazelcast.cache.ICache</CacheImpl>
+                                <CacheManagerImpl>com.hazelcast.cache.HazelcastCacheManager</CacheManagerImpl>
                             </instructions>
                         </configuration>
                     </execution>

@@ -3,6 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
@@ -19,11 +20,15 @@ import com.hazelcast.map.merge.HigherHitsMapMergePolicy;
 import com.hazelcast.map.merge.LatestUpdateMapMergePolicy;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.map.merge.PutIfAbsentMapMergePolicy;
+import com.hazelcast.monitor.LocalInstanceStats;
+import com.hazelcast.monitor.LocalWanPublisherStats;
+import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.OperationFactory;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.util.MapUtil;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -266,6 +271,32 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertDataSizeEventually(clusterB, "map", 0);
         assertDataSizeEventually(clusterC, "map", 0);
+    }
+
+    //See https://github.com/hazelcast/hazelcast-enterprise/issues/1103
+    @Test
+    public void multiBackupTest() {
+        String replicaName = "multiBackup";
+        configA.getMapConfig("default").setBackupCount(3);
+        HazelcastInstance[] clusterA4Node = new HazelcastInstance[4];
+        setupReplicateFrom(configA, configB, clusterB.length, replicaName, PassThroughMergePolicy.class.getName());
+        initCluster(clusterA4Node, configA);
+        startClusterB();
+
+        createDataIn(clusterA4Node, "map", 0, 1000);
+        assertKeysIn(clusterB, "map", 0, 1000);
+        for(final HazelcastInstance instance : clusterA4Node) {
+            assertTrueEventually(new AssertTask() {
+                @Override
+                public void run() throws Exception {
+                    Map<String, LocalInstanceStats> stats
+                            = getNode(instance).nodeEngine.getWanReplicationService().getStats();
+                    LocalWanPublisherStats publisherStats =
+                            ((LocalWanStatsImpl) stats.get("multiBackup")).getLocalWanPublisherStats().get("B");
+                    assert 0 == publisherStats.getOutboundQueueSize();
+                }
+            });
+        }
     }
 
     @Test

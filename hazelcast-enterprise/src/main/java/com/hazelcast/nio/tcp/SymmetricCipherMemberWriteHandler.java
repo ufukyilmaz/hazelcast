@@ -1,6 +1,7 @@
 package com.hazelcast.nio.tcp;
 
 import com.hazelcast.core.HazelcastException;
+import com.hazelcast.internal.networking.WriteHandler;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.CipherHelper;
@@ -24,7 +25,7 @@ public class SymmetricCipherMemberWriteHandler implements WriteHandler<Packet> {
     public SymmetricCipherMemberWriteHandler(TcpIpConnection connection, IOService ioService) {
         this.connection = connection;
         this.ioService = ioService;
-        logger = ioService.getLogger(getClass().getName());
+        logger = ioService.getLoggingService().getLogger(getClass().getName());
         packetBuffer = ByteBuffer.allocate(ioService.getSocketSendBufferSize() * IOService.KILO_BYTE);
         cipher = initCipher();
     }

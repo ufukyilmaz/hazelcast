@@ -26,7 +26,7 @@ public class SymmetricCipherMemberReadHandler extends MemberReadHandler {
         super(connection, packetDispatcher);
         this.ioService = ioService;
         this.cipherBuffer = ByteBuffer.allocate(ioService.getSocketReceiveBufferSize() * KILO_BYTE);
-        this.logger = ioService.getLogger(getClass().getName());
+        this.logger = ioService.getLoggingService().getLogger(getClass());
         this.cipher = initCipher();
     }
 

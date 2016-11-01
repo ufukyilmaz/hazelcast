@@ -1,8 +1,8 @@
 package com.hazelcast.nio.ssl;
 
 import com.hazelcast.config.SSLConfig;
-import com.hazelcast.nio.tcp.SocketChannelWrapper;
-import com.hazelcast.nio.tcp.SocketChannelWrapperFactory;
+import com.hazelcast.internal.networking.SocketChannelWrapper;
+import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 
 import java.nio.channels.SocketChannel;
 

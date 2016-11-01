@@ -5,6 +5,7 @@ import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.MemoryManagerBean;
 import com.hazelcast.internal.metrics.MetricsRegistry;
 import com.hazelcast.internal.metrics.impl.MetricsRegistryImpl;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.logging.LoggingServiceImpl;
@@ -24,10 +25,10 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 import com.hazelcast.spi.hotrestart.impl.io.ChunkFileRecord;
 import com.hazelcast.spi.hotrestart.impl.testsupport.Long2bytesMap.L2bCursor;
+import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.collection.Long2LongHashMap.LongLongCursor;
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 import org.HdrHistogram.Histogram;
 import org.junit.rules.TestName;
 
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
@@ -271,6 +273,7 @@ public class HotRestartTestUtil {
     public static DiContainer createBaseDiContainer() {
         return new DiContainer()
                 .dep(ILogger.class, createHotRestartLogger())
+                .dep(new HazelcastProperties(new Properties()))
                 .dep(GcLogger.class);
     }
 

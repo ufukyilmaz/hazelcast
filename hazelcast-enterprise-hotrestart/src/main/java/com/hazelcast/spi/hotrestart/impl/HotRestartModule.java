@@ -2,6 +2,8 @@ package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.metrics.MetricsRegistry;
+import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -15,8 +17,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup;
 import com.hazelcast.spi.hotrestart.impl.gc.PrefixTombstoneManager;
 import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
-import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
+import com.hazelcast.spi.properties.HazelcastProperties;
 
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore.MUTATOR_QUEUE_CAPACITY;
@@ -31,21 +32,25 @@ public final class HotRestartModule {
 
     /**
      * Constructs, configures, and returns an on-heap Hot Restart Store.
-     * @param cfg the configuration object
+     *
+     * @param cfg        the configuration object
+     * @param properties hazelcast configuration properties
      */
-    public static HotRestartStore newOnHeapHotRestartStore(HotRestartStoreConfig cfg) {
-        return hrStore(cfg, false);
+    public static HotRestartStore newOnHeapHotRestartStore(HotRestartStoreConfig cfg, HazelcastProperties properties) {
+        return hrStore(cfg, false, properties);
     }
 
     /**
      * Constructs, configures, and returns an off-heap Hot Restart Store.
-     * @param cfg the configuration object
+     *
+     * @param cfg        the configuration object
+     * @param properties hazelcast configuration properties
      */
-    public static HotRestartStore newOffHeapHotRestartStore(HotRestartStoreConfig cfg) {
-        return hrStore(cfg, true);
+    public static HotRestartStore newOffHeapHotRestartStore(HotRestartStoreConfig cfg, HazelcastProperties properties) {
+        return hrStore(cfg, true, properties);
     }
 
-    private static HotRestartStore hrStore(HotRestartStoreConfig cfg, boolean isOffHeap) {
+    private static HotRestartStore hrStore(HotRestartStoreConfig cfg, boolean isOffHeap, HazelcastProperties properties) {
         cfg.logger().info(cfg.storeName() + " homeDir: " + cfg.homeDir());
         cfg.validateAndCreateHomeDir();
         final DiContainer di = new DiContainer();
@@ -57,6 +62,7 @@ public final class HotRestartModule {
             di.dep(MemoryAllocator.class, malloc);
         }
         di.dep(di)
+          .dep(HazelcastProperties.class, properties)
           .dep("storeName", cfg.storeName())
           .dep("homeDir", cfg.homeDir())
           .dep(RamStoreRegistry.class, cfg.ramStoreRegistry())

@@ -24,6 +24,7 @@ import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.hazelcast.map.impl.eviction.HDEvictionChecker;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
+import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.map.impl.record.HDRecord;
 import com.hazelcast.map.impl.record.HDRecordAccessor;
 import com.hazelcast.map.impl.record.HDRecordFactory;
@@ -61,7 +62,10 @@ public class EnterpriseMapContainer extends MapContainer {
             MapEvictionPolicy mapEvictionPolicy = mapConfig.getMapEvictionPolicy();
             if (mapEvictionPolicy != null) {
                 MemoryInfoAccessor memoryInfoAccessor = getMemoryInfoAccessor();
-                HDEvictionChecker evictionChecker = new HDEvictionChecker(memoryInfoAccessor, mapServiceContext);
+                HotRestartEvictionHelper hotRestartEvictionHelper =
+                        new HotRestartEvictionHelper(mapServiceContext.getNodeEngine().getProperties());
+                HDEvictionChecker evictionChecker =
+                        new HDEvictionChecker(memoryInfoAccessor, mapServiceContext, hotRestartEvictionHelper);
                 IPartitionService partitionService = mapServiceContext.getNodeEngine().getPartitionService();
                 evictor = new HDEvictorImpl(mapEvictionPolicy, evictionChecker, partitionService, storageInfo,
                         mapServiceContext.getNodeEngine());
@@ -79,7 +83,7 @@ public class EnterpriseMapContainer extends MapContainer {
             return new ConstructorFunction<Void, RecordFactory>() {
                 @Override
                 public RecordFactory createNew(Void notUsedArg) {
-                    HiDensityRecordProcessor recordProcessor = createHiDensityRecordProcessor();
+                    HiDensityRecordProcessor<HDRecord> recordProcessor = createHiDensityRecordProcessor();
                     return new HDRecordFactory(recordProcessor, serializationService);
                 }
             };
@@ -89,7 +93,7 @@ public class EnterpriseMapContainer extends MapContainer {
     }
 
 
-    private HiDensityRecordProcessor createHiDensityRecordProcessor() {
+    private HiDensityRecordProcessor<HDRecord> createHiDensityRecordProcessor() {
         boolean optimizeQueries = mapConfig.isOptimizeQueries();
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
         EnterpriseSerializationService serializationService
@@ -97,7 +101,7 @@ public class EnterpriseMapContainer extends MapContainer {
         HiDensityRecordAccessor<HDRecord> recordAccessor
                 = new HDRecordAccessor(serializationService, optimizeQueries);
         HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
-        return new DefaultHiDensityRecordProcessor(serializationService, recordAccessor,
+        return new DefaultHiDensityRecordProcessor<HDRecord>(serializationService, recordAccessor,
                 memoryManager, storageInfo);
     }
 

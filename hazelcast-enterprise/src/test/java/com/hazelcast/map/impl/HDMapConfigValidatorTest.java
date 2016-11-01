@@ -9,6 +9,7 @@ import com.hazelcast.config.MaxSizeConfig.MaxSizePolicy;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Rule;
@@ -24,8 +25,7 @@ import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.util.RandomPicker.getInt;
 import static java.lang.String.format;
 
@@ -37,15 +37,10 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
-    public void testConstructor() {
-        assertUtilityConstructor(HDMapConfigValidator.class);
-    }
-
-    @Test
     public void testGetMap_throwsIllegalArgumentException_whenNativeMemoryConfigDisabled() throws Exception {
         String mapName = randomName();
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        maxSizeConfig.setSize(getInt(1, getHotRestartFreeNativeMemoryPercentage()));
+        maxSizeConfig.setSize(getInt(1, new HotRestartEvictionHelper().getHotRestartFreeNativeMemoryPercentage()));
         maxSizeConfig.setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE);
 
         MapConfig mapConfig = new MapConfig();
@@ -117,7 +112,7 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
         String mapName = randomName();
 
         MaxSizeConfig maxSizeConfig = new MaxSizeConfig();
-        int hotRestartFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
+        int hotRestartFreeNativeMemoryPercentage = new HotRestartEvictionHelper().getHotRestartFreeNativeMemoryPercentage();
         int localSizeConfig = getInt(1, hotRestartFreeNativeMemoryPercentage);
         maxSizeConfig.setSize(localSizeConfig);
         maxSizeConfig.setMaxSizePolicy(FREE_NATIVE_MEMORY_PERCENTAGE);
@@ -140,7 +135,7 @@ public class HDMapConfigValidatorTest extends HazelcastTestSupport {
                 "There is a global limit on the minimum free native memory, settable by the system property"
                         + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
                         + " with %d percent, lower than the allowed minimum.",
-                SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartFreeNativeMemoryPercentage,
+                HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartFreeNativeMemoryPercentage,
                 mapConfig.getName(), localSizeConfig));
 
         node.getMap(mapName);

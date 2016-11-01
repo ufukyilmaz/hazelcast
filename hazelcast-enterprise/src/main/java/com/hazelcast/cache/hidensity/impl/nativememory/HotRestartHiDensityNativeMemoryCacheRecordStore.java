@@ -9,6 +9,7 @@ import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -26,8 +27,7 @@ import com.hazelcast.util.Clock;
 
 import java.util.Iterator;
 
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.nio.serialization.DataType.NATIVE;
 
 /**
@@ -88,15 +88,16 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
 
         long maxNativeMemory = ((EnterpriseSerializationService) nodeEngine.getSerializationService())
                 .getMemoryManager().getMemoryStats().getMaxNative();
-        int hotRestartMinFreePercentage = getHotRestartFreeNativeMemoryPercentage();
+        final HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(nodeEngine.getProperties());
+        final int hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
         if (EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy) {
-            if (size < hotRestartMinFreePercentage) {
+            if (size < hotRestartMinFreeNativeMemoryPercentage) {
                 throw new IllegalArgumentException(String.format(
-                    "There is a global limit on the minimum free native memory, settable by the system property"
-                  + " %s, whose value is currently %d percent. The cache %s has Hot Restart enabled, but is configured"
-                  + " with %d percent, lower than the allowed minimum.",
-                    SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreePercentage,
-                    getConfig().getNameWithPrefix(), size)
+                        "There is a global limit on the minimum free native memory, settable by the system property"
+                                + " %s, whose value is currently %d percent. The cache %s has Hot Restart enabled, but is "
+                                + " configured with %d percent, lower than the allowed minimum.",
+                        HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE.getName(), hotRestartMinFreeNativeMemoryPercentage,
+                        getConfig().getNameWithPrefix(), size)
                 );
             }
              // Invariants at this point:
@@ -115,7 +116,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
                     CompositeMaxSizeChecker.CompositionOperator.OR,
                     super.createCacheMaxSizeChecker(size, maxSizePolicy),
                     new HiDensityFreeNativeMemoryPercentageMaxSizeChecker(
-                            memoryManager, hotRestartMinFreePercentage, maxNativeMemory));
+                            memoryManager, hotRestartMinFreeNativeMemoryPercentage, maxNativeMemory));
         }
     }
 

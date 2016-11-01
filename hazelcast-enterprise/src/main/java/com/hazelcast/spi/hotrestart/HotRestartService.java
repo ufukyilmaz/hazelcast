@@ -339,13 +339,13 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         onHeapStores = new HotRestartStore[storeCount];
         for (int i = 0; i < storeCount; i++) {
             newHotRestartStoreConfig(i, true);
-            onHeapStores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true));
+            onHeapStores[i] = newOnHeapHotRestartStore(newHotRestartStoreConfig(i, true), node.getProperties());
         }
         if (memMgr != null) {
             offHeapStores = new HotRestartStore[storeCount];
             for (int i = 0; i < storeCount; i++) {
                 offHeapStores[i] = newOffHeapHotRestartStore(
-                        newHotRestartStoreConfig(i, false).setMalloc(memMgr.getSystemAllocator()));
+                        newHotRestartStoreConfig(i, false).setMalloc(memMgr.getSystemAllocator()), node.getProperties());
             }
         }
     }

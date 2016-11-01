@@ -26,6 +26,7 @@ import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
@@ -100,7 +101,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         logger.log(Level.INFO, license.toString());
 
         createSecurityContext(node);
-        createMemoryManager(node.config);
+        createMemoryManager(node);
         createSocketInterceptor(node.config.getNetworkConfig());
     }
 
@@ -253,25 +254,28 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return ss;
     }
 
-    private void createMemoryManager(Config config) {
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
+    private void createMemoryManager(Node node) {
+        final NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
+
         if (memoryConfig.isEnabled()) {
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(node.getProperties());
+
             logger.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
                 if (isHotRestartEnabled()) {
                     throw new ConfigurationException("MemoryAllocatorType.STANDARD cannot be used when Hot Restart "
                             + "is enabled. Please use MemoryAllocatorType.POOLED!");
                 }
-                memoryManager = new StandardMemoryManager(size);
+                memoryManager = new StandardMemoryManager(size, freeMemoryChecker);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
                 memoryManager = isHotRestartEnabled()
-                        ? new HotRestartPoolingMemoryManager(size, blockSize, pageSize, metadataSpace)
-                        : new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
+                        ? new HotRestartPoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker)
+                        : new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker);
             }
         }
     }

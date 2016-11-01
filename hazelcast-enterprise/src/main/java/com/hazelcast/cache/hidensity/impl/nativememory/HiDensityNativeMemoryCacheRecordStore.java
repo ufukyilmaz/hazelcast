@@ -15,6 +15,7 @@ import com.hazelcast.cache.impl.merge.entry.DefaultCacheEntryView;
 import com.hazelcast.cache.impl.record.CacheDataRecord;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType;
 import com.hazelcast.elastic.SlottableIterator;
@@ -67,6 +68,28 @@ public class HiDensityNativeMemoryCacheRecordStore
         return Boolean.getBoolean(SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION);
     }
 
+    /**
+     * Creates an instance for checking if the maximum cache size has been reached. Supports the following policies :
+     * <ul>
+     * <li>{@link MaxSizePolicy#USED_NATIVE_MEMORY_SIZE}</li>
+     * <li>{@link MaxSizePolicy#USED_NATIVE_MEMORY_PERCENTAGE}</li>
+     * <li>{@link MaxSizePolicy#FREE_NATIVE_MEMORY_SIZE}</li>
+     * <li>{@link MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE}</li>
+     * </ul>
+     * <p>
+     * If the {@code maxSizePolicy} parameter is null or the policy is not supported, returns null if the
+     * {@link #SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION} system property is true, else throws an
+     * {@link IllegalArgumentException}.
+     *
+     * @param size          the maximum size
+     * @param maxSizePolicy the way in which the size is interpreted based on the supported policies
+     * @return the instance which will check if the maximum size has been reached or null if the
+     * {@code maxSizePolicy} is null or not supported and the
+     * {@link #SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION} system property is true
+     * @throws IllegalArgumentException if the {@code maxSizePolicy} is null or not supported and the
+     *                                  {@link #SYSTEM_PROPERTY_NAME_TO_DISABLE_INVALID_MAX_SIZE_POLICY_EXCEPTION} system
+     *                                  property is false
+     */
     @Override
     protected MaxSizeChecker createCacheMaxSizeChecker(int size, EvictionConfig.MaxSizePolicy maxSizePolicy) {
         if (maxSizePolicy == null) {

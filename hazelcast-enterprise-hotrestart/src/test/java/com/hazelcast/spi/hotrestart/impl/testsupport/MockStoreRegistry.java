@@ -7,7 +7,9 @@ import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
+import com.hazelcast.spi.properties.HazelcastProperties;
 
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -18,14 +20,15 @@ public class MockStoreRegistry implements RamStoreRegistry {
 
     public final HotRestartStore hrStore;
     public final ConcurrentMap<Long, MockRecordStore> recordStores = new ConcurrentHashMap<Long, MockRecordStore>();
-    private final MemoryManager memMgr;
     public final boolean fsyncEnabled;
+    private final MemoryManager memMgr;
 
     public MockStoreRegistry(HotRestartStoreConfig cfg, MemoryManager memMgr, boolean fsyncEnabled) throws InterruptedException {
         this.memMgr = memMgr;
         this.fsyncEnabled = fsyncEnabled;
         cfg.setRamStoreRegistry(this);
-        this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg) : newOnHeapHotRestartStore(cfg);
+        final HazelcastProperties emptyProperties = new HazelcastProperties(new Properties());
+        this.hrStore = memMgr != null ? newOffHeapHotRestartStore(cfg, emptyProperties) : newOnHeapHotRestartStore(cfg, emptyProperties);
         final RamStoreRestartLoop loop = new RamStoreRestartLoop(1, 1, this, cfg.logger());
         final Throwable[] failure = { null };
         final Thread restartIoThread = new Thread() {

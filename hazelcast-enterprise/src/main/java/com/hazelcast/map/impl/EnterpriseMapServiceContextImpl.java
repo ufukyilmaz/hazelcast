@@ -21,8 +21,12 @@ import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProviders;
-import com.hazelcast.map.impl.query.HDLocalQueryRunner;
-import com.hazelcast.map.impl.query.MapLocalQueryRunner;
+import com.hazelcast.map.impl.query.HDParallelPartitionScanExecutor;
+import com.hazelcast.map.impl.query.HDPartitionScanRunner;
+import com.hazelcast.map.impl.query.PartitionScanExecutor;
+import com.hazelcast.map.impl.query.PartitionScanRunner;
+import com.hazelcast.map.impl.query.QueryRunner;
+import com.hazelcast.map.impl.query.ResultProcessorRegistry;
 import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
 import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
@@ -33,11 +37,13 @@ import com.hazelcast.monitor.impl.LocalMapStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.query.impl.predicates.QueryOptimizer;
 import com.hazelcast.spi.EventFilter;
 import com.hazelcast.spi.EventRegistration;
 import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
@@ -79,7 +85,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         }
     };
 
-    private final MapLocalQueryRunner hdMapQueryRunner;
+    private final QueryRunner hdMapQueryRunner;
+    private final PartitionScanRunner hdPartitionScanRunner;
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartService hotRestartService;
@@ -87,7 +94,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
-        this.hdMapQueryRunner = new HDLocalQueryRunner(this, queryOptimizer);
         this.mapFilterProvider = new MapFilterProvider(nodeEngine);
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
@@ -98,6 +104,13 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         if (nodeExtension.isFeatureEnabledForLicenseKey(Feature.CONTINUOUS_QUERY_CACHE)) {
             queryCacheContext = new NodeQueryCacheContext(this);
         }
+        this.hdMapQueryRunner = createMapQueryRunner(nodeEngine.getOperationService(), getQueryOptimizer(),
+                getResultProcessorRegistry());
+        this.hdPartitionScanRunner = createPartitionScanRunner();
+    }
+
+    private PartitionScanRunner createPartitionScanRunner() {
+        return new HDPartitionScanRunner(this);
     }
 
     @Override
@@ -162,11 +175,24 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    public MapLocalQueryRunner getMapQueryRunner(String mapName) {
+    public PartitionScanRunner getPartitionScanRunner() {
+        return hdPartitionScanRunner;
+    }
+
+    @Override
+    public QueryRunner getMapQueryRunner(String mapName) {
         if (getInMemoryFormat(mapName) != NATIVE) {
             return super.getMapQueryRunner(mapName);
         }
         return hdMapQueryRunner;
+    }
+
+    private QueryRunner createMapQueryRunner(OperationService operationService, QueryOptimizer queryOptimizer,
+                                             ResultProcessorRegistry resultProcessorRegistry) {
+        PartitionScanRunner partitionScanRunner = new HDPartitionScanRunner(this);
+        PartitionScanExecutor partitionScanExecutor = new HDParallelPartitionScanExecutor(
+                partitionScanRunner, operationService);
+        return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
     }
 
     @Override

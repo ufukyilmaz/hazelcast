@@ -11,26 +11,27 @@ import com.hazelcast.spi.ReadonlyOperation;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 
-// Difference between OS and EE with HD: to avoid an extra allocation and extra logic invocation it returns the result
-// as a Collection<QueryableEntry> and does not allocate the QueryResult object. Used by the HDLocalQueryRunner only.
-public class HDQueryPartitionOperation extends MapOperation implements PartitionAwareOperation, ReadonlyOperation {
+// Difference between OS and EE with HD: EE with NATIVE has to run partition scan on partition thread
+public class HDPartitionScanOperation extends MapOperation implements PartitionAwareOperation, ReadonlyOperation {
 
     private Predicate predicate;
     private Collection<QueryableEntry> result;
 
-    public HDQueryPartitionOperation() {
+    public HDPartitionScanOperation() {
     }
 
-    public HDQueryPartitionOperation(String mapName, Predicate predicate) {
+    public HDPartitionScanOperation(String mapName, Predicate predicate) {
         super(mapName);
         this.predicate = predicate;
     }
 
     @Override
-    public void run() {
-        MapLocalQueryRunner queryRunner = mapServiceContext.getMapQueryRunner(getName());
-        result = queryRunner.runUsingPartitionScanOnSinglePartition(name, predicate, getPartitionId());
+    public void run() throws ExecutionException, InterruptedException {
+        PartitionScanRunner partitionScanRunner = mapServiceContext.getPartitionScanRunner();
+        assert (partitionScanRunner instanceof HDPartitionScanRunner);
+        result = partitionScanRunner.run(getName(), predicate, getPartitionId());
     }
 
     @Override
@@ -57,7 +58,7 @@ public class HDQueryPartitionOperation extends MapOperation implements Partition
 
     @Override
     public int getId() {
-        return EnterpriseMapDataSerializerHook.QUERY_PARTITION;
+        return EnterpriseMapDataSerializerHook.PARTITION_SCAN;
     }
 
 }

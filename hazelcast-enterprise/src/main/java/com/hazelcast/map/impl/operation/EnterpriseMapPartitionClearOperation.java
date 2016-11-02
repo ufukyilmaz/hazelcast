@@ -5,6 +5,7 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
@@ -19,10 +20,17 @@ import java.util.concurrent.TimeUnit;
  */
 public final class EnterpriseMapPartitionClearOperation
         extends Operation
-        implements PartitionAwareOperation, AllowedDuringPassiveState {
+        implements PartitionAwareOperation, AllowedDuringPassiveState, IdentifiedDataSerializable {
 
     private final CountDownLatch done = new CountDownLatch(1);
     private boolean onShutdown;
+
+    /**
+     * Do not use this constructor to obtain an instance of this class, introduced to conform to IdentifiedDataserializable
+     * conventions.
+     */
+    public EnterpriseMapPartitionClearOperation() {
+    }
 
     public EnterpriseMapPartitionClearOperation(boolean onShutdown) {
         this.onShutdown = onShutdown;
@@ -65,4 +73,13 @@ public final class EnterpriseMapPartitionClearOperation
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int getFactoryId() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getId() {
+        throw new UnsupportedOperationException();
+    }
 }

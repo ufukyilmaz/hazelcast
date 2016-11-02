@@ -68,6 +68,6 @@ public class CacheIteratorOperation extends AbstractHiDensityCacheOperation impl
 
     @Override
     public int getId() {
-        return HiDensityCacheDataSerializerHook.ITERATE;
+        throw new UnsupportedOperationException("CacheIterator Operation is deprecated.");
     }
 }

@@ -14,6 +14,7 @@ import com.hazelcast.map.impl.querycache.publisher.PartitionAccumulatorRegistry;
 import com.hazelcast.map.impl.querycache.publisher.PublisherAccumulatorHandler;
 import com.hazelcast.map.impl.querycache.publisher.PublisherContext;
 import com.hazelcast.map.impl.querycache.publisher.PublisherRegistry;
+import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionAwareOperation;
@@ -29,7 +30,7 @@ import static com.hazelcast.util.Preconditions.checkPositive;
  * Processes remaining items in {@link Accumulator} instances on a partition.
  * If the partition is not owned by this node, {@link Accumulator} will be removed.
  */
-public class AccumulatorConsumerOperation extends Operation implements PartitionAwareOperation {
+public class AccumulatorConsumerOperation extends Operation implements PartitionAwareOperation, IdentifiedDataSerializable {
 
     private int maxProcessableAccumulatorCount;
     private Queue<Accumulator> accumulators;
@@ -116,5 +117,15 @@ public class AccumulatorConsumerOperation extends Operation implements Partition
         }
 
         partitionAccumulatorRegistry.remove(getPartitionId());
+    }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.ACCUMULATOR_CONSUMER;
     }
 }

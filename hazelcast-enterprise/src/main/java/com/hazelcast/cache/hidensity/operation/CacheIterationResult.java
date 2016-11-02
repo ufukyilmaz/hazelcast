@@ -76,12 +76,12 @@ public final class CacheIterationResult implements IdentifiedDataSerializable {
 
     @Override
     public int getFactoryId() {
-        return HiDensityCacheDataSerializerHook.F_ID;
+        throw new UnsupportedOperationException("CacheIterationResult is deprecated");
     }
 
     @Override
     public int getId() {
-        return HiDensityCacheDataSerializerHook.ITERATION_RESULT;
+        throw new UnsupportedOperationException("CacheIterationResult is deprecated");
     }
 
     @Override

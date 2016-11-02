@@ -48,4 +48,14 @@ public class HDPutAllPartitionAwareOperationFactory extends PutAllPartitionAware
         }
         throw new IllegalArgumentException("Unknown partitionId " + partitionId + " (" + Arrays.toString(partitions) + ")");
     }
+
+    @Override
+    public int getFactoryId() {
+        return EnterpriseMapDataSerializerHook.F_ID;
+    }
+
+    @Override
+    public int getId() {
+        return EnterpriseMapDataSerializerHook.PUT_ALL_PARTITION_AWARE_FACTORY;
+    }
 }

@@ -4,6 +4,7 @@ import com.hazelcast.map.impl.event.EventData;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.impl.BinaryInterface;
 
 import java.io.IOException;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
  * <p/>
  * Throws {@link UnsupportedOperationException} if one tries to serialize an instance of this class.
  */
+@BinaryInterface
 public class LocalCacheWideEventData implements EventData {
 
     private final String source;

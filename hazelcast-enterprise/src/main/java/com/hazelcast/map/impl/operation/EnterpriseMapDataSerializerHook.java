@@ -112,8 +112,10 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int MAP_REPLICATION = 67;
     public static final int POST_JOIN = 68;
     public static final int QUERY_PARTITION = 69;
+    public static final int ACCUMULATOR_CONSUMER = 70;
+    public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 71;
 
-    private static final int LEN = QUERY_PARTITION + 1;
+    private static final int LEN = PUT_ALL_PARTITION_AWARE_FACTORY + 1;
 
     @Override
     public int getFactoryId() {
@@ -473,6 +475,16 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[QUERY_PARTITION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new HDQueryPartitionOperation();
+            }
+        };
+        constructors[ACCUMULATOR_CONSUMER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new AccumulatorConsumerOperation();
+            }
+        };
+        constructors[PUT_ALL_PARTITION_AWARE_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new HDPutAllPartitionAwareOperationFactory();
             }
         };
 

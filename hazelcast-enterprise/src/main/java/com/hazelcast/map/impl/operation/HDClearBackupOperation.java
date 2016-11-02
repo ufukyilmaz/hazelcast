@@ -16,11 +16,10 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
-public class HDClearBackupOperation extends HDMapOperation implements BackupOperation, MutatingOperation, DataSerializable {
+public class HDClearBackupOperation extends HDMapOperation implements BackupOperation, MutatingOperation {
 
     public HDClearBackupOperation() {
         this(null);

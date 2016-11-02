@@ -19,7 +19,6 @@ package com.hazelcast.map.impl.operation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.spi.BackupOperation;
 import com.hazelcast.spi.impl.MutatingOperation;
 
@@ -33,8 +32,7 @@ import java.util.List;
  *
  * @see PutFromLoadAllOperation
  */
-public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements BackupOperation, MutatingOperation,
-        DataSerializable {
+public class HDPutFromLoadAllBackupOperation extends HDMapOperation implements BackupOperation, MutatingOperation {
 
     private List<Data> keyValueSequence;
 

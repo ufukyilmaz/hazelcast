@@ -2,20 +2,22 @@ package com.hazelcast.cache.hidensity.nearcache;
 
 import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.cache.impl.nearcache.impl.DefaultNearCache;
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.NativeOutOfMemoryError;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.ExecutionService;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.EmptyStatement;
 
 import java.util.Collection;
 
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
@@ -28,19 +30,27 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
 
     private final ILogger logger = Logger.getLogger(getClass());
     private final NearCacheManager nearCacheManager;
-    private final HazelcastMemoryManager memoryManager;
+    private HazelcastMemoryManager memoryManager;
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
-        super(name, nearCacheConfig, nearCacheContext);
-        this.nearCacheManager = nearCacheContext.getNearCacheManager();
-        this.memoryManager = createMemoryManager();
+    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
+                              EnterpriseSerializationService serializationService, ExecutionService executionService,
+                              ClassLoader classLoader) {
+        this(name, nearCacheConfig, nearCacheManager, null, serializationService, executionService, classLoader);
     }
 
-    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
-                              NearCacheRecordStore<K, V> nearCacheRecordStore) {
-        super(name, nearCacheConfig, nearCacheContext, nearCacheRecordStore);
-        this.nearCacheManager = nearCacheContext.getNearCacheManager();
-        this.memoryManager = createMemoryManager();
+    public HiDensityNearCache(String name, NearCacheConfig nearCacheConfig, NearCacheManager nearCacheManager,
+                              NearCacheRecordStore<K, V> nearCacheRecordStore, SerializationService serializationService,
+                              ExecutionService executionService, ClassLoader classLoader) {
+        super(name, nearCacheConfig, nearCacheRecordStore, serializationService, executionService, classLoader);
+        this.nearCacheManager = nearCacheManager;
+    }
+
+    @Override
+    public void initialize() {
+        super.initialize();
+
+        memoryManager = createMemoryManager();
+        nearCacheRecordStore.initialize();
     }
 
     private HazelcastMemoryManager createMemoryManager() {
@@ -51,13 +61,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    protected NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig,
-                                                                    NearCacheContext nearCacheContext) {
-        InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
-        if (inMemoryFormat == InMemoryFormat.NATIVE) {
-            return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, nearCacheContext);
+    protected NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig) {
+        if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
+            EnterpriseSerializationService ss = (EnterpriseSerializationService) serializationService;
+            return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ss, classLoader);
         }
-        return super.createNearCacheRecordStore(nearCacheConfig, nearCacheContext);
+
+        return super.createNearCacheRecordStore(nearCacheConfig);
     }
 
     @Override

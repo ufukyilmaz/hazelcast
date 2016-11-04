@@ -12,8 +12,8 @@ import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
-import com.hazelcast.map.impl.nearcache.EnterpriseNearCacheProvider;
-import com.hazelcast.map.impl.nearcache.NearCacheProvider;
+import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
+import com.hazelcast.map.impl.nearcache.MapNearCacheManager;
 import com.hazelcast.map.impl.operation.EnterpriseMapOperationProviders;
 import com.hazelcast.map.impl.operation.EnterpriseMapPartitionClearOperation;
 import com.hazelcast.map.impl.operation.HDBasePutOperation;
@@ -138,8 +138,8 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    NearCacheProvider createNearCacheProvider() {
-        return new EnterpriseNearCacheProvider(this, nodeEngine);
+    MapNearCacheManager createMapNearCacheManager() {
+        return new EnterpriseMapNearCacheManager(this);
     }
 
     @Override

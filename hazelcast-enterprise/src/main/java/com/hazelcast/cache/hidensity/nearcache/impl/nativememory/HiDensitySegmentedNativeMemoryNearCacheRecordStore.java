@@ -1,7 +1,6 @@
 package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -27,20 +26,25 @@ import static java.lang.Runtime.getRuntime;
 public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
-    private final NearCacheStatsImpl nearCacheStats;
-    private final HazelcastMemoryManager memoryManager;
-
     private final int hashSeed;
     private final int segmentMask;
     private final int segmentShift;
+    private final int segmentSize;
+    private final NearCacheConfig nearCacheConfig;
+    private final EnterpriseSerializationService serializationService;
+    private final ClassLoader classLoader;
+    private final NearCacheStatsImpl nearCacheStats;
 
-    private final HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
+    private HazelcastMemoryManager memoryManager;
+    private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
 
     @SuppressWarnings("checkstyle:magicnumber")
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig,
-                                                              NearCacheContext nearCacheContext) {
+                                                              EnterpriseSerializationService ss, ClassLoader classLoader) {
+        this.nearCacheConfig = nearCacheConfig;
+        this.serializationService = ss;
+        this.classLoader = classLoader;
         this.nearCacheStats = new NearCacheStatsImpl();
-        this.memoryManager = getMemoryManager((EnterpriseSerializationService) nearCacheContext.getSerializationService());
 
         int concurrencyLevel = Math.max(16, 8 * getRuntime().availableProcessors());
         // find power-of-two sizes best matching arguments
@@ -50,12 +54,17 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             ++segmentShift;
             segmentSize <<= 1;
         }
+        this.segmentSize = segmentSize;
         this.hashSeed = hashCode();
         this.segmentMask = segmentSize - 1;
         this.segmentShift = 32 - segmentShift;
+    }
 
+    @Override
+    public void initialize() {
+        memoryManager = getMemoryManager(serializationService);
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
-        this.segments = createSegments(nearCacheConfig, nearCacheContext, nearCacheStats, storageInfo, segmentSize);
+        segments = createSegments(nearCacheConfig, nearCacheStats, storageInfo, segmentSize);
     }
 
     private HazelcastMemoryManager getMemoryManager(EnterpriseSerializationService serializationService) {
@@ -68,17 +77,14 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @SuppressWarnings("unchecked")
     private HiDensityNativeMemoryNearCacheRecordStore<K, V>[] createSegments(NearCacheConfig nearCacheConfig,
-                                                                             NearCacheContext nearCacheContext,
                                                                              NearCacheStatsImpl nearCacheStats,
                                                                              HiDensityStorageInfo storageInfo,
                                                                              int segmentSize) {
         HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments = new HiDensityNativeMemoryNearCacheRecordStore[segmentSize];
         for (int i = 0; i < segmentSize; i++) {
-            segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(
-                    nearCacheConfig,
-                    nearCacheContext,
-                    nearCacheStats,
-                    storageInfo);
+            segments[i] = new HiDensityNativeMemoryNearCacheRecordStoreSegment(nearCacheConfig, nearCacheStats,
+                    storageInfo, serializationService, classLoader);
+            segments[i].initialize();
         }
         return segments;
     }
@@ -247,10 +253,11 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         private final Lock lock = new ReentrantLock();
 
         HiDensityNativeMemoryNearCacheRecordStoreSegment(NearCacheConfig nearCacheConfig,
-                                                         NearCacheContext nearCacheContext,
                                                          NearCacheStatsImpl nearCacheStats,
-                                                         HiDensityStorageInfo storageInfo) {
-            super(nearCacheConfig, nearCacheContext, nearCacheStats, storageInfo);
+                                                         HiDensityStorageInfo storageInfo,
+                                                         EnterpriseSerializationService ss,
+                                                         ClassLoader classLoader) {
+            super(nearCacheConfig, nearCacheStats, storageInfo, ss, classLoader);
         }
 
         @Override

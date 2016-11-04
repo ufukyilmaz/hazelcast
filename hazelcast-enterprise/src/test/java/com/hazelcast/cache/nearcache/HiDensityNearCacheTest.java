@@ -1,14 +1,14 @@
 package com.hazelcast.cache.nearcache;
 
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCache;
+import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
+import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -30,11 +30,15 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(256, MemoryUnit.MEGABYTES);
 
     private PoolingMemoryManager memoryManager;
+    private EnterpriseSerializationService ess;
 
     @Before
     public void setup() {
         memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
         memoryManager.registerThread(Thread.currentThread());
+        ess = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
     }
 
     @After
@@ -45,21 +49,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         }
     }
 
-    @Override
-    protected NearCacheContext createNearCacheContext() {
-        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(memoryManager)
-                .build();
-
-        return new NearCacheContext(serializationService, createExecutionService());
-    }
-
-    private NearCacheContext createNearCacheContext(HazelcastMemoryManager memoryManager) {
-        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(memoryManager)
-                .build();
-
-        return new NearCacheContext(serializationService, createExecutionService());
+    private NearCacheManager newNearCacheManager() {
+        return new HiDensityNearCacheManager(ess, executionService, null);
     }
 
     @Override
@@ -77,7 +68,8 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
     @Override
     protected NearCache<Integer, String> createNearCache(String name, NearCacheConfig nearCacheConfig,
                                                          ManagedNearCacheRecordStore nearCacheRecordStore) {
-        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, createNearCacheContext(), nearCacheRecordStore);
+        return new HiDensityNearCache<Integer, String>(name, nearCacheConfig, newNearCacheManager(),
+                nearCacheRecordStore, ss, executionService, null);
     }
 
     @Test
@@ -161,11 +153,12 @@ public class HiDensityNearCacheTest extends NearCacheTestSupport {
         NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
         PoolingMemoryManager mm = new PoolingMemoryManager(memorySize);
         try {
-            NearCacheContext nearCacheContext = createNearCacheContext(mm);
             NearCache<Integer, byte[]> nearCache = new HiDensityNearCache<Integer, byte[]>(
                     DEFAULT_NEAR_CACHE_NAME,
-                    nearCacheConfig,
-                    nearCacheContext);
+                    nearCacheConfig, newNearCacheManager(),
+                    ess, executionService, null);
+            nearCache.initialize();
+
             byte[] value = new byte[(int) (2 * memorySize.bytes())];
 
             // when - then (just don't fail)

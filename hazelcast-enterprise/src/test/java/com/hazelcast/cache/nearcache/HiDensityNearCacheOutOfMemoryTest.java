@@ -2,7 +2,6 @@ package com.hazelcast.cache.nearcache;
 
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
@@ -29,12 +28,16 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
 
     private PoolingMemoryManager memoryManager;
     private NearCacheManager nearCacheManager;
+    private EnterpriseSerializationService ess;
 
     @Before
     public void setup() {
         memoryManager = new PoolingMemoryManager(DEFAULT_MEMORY_SIZE);
         memoryManager.registerThread(Thread.currentThread());
-        nearCacheManager = new HiDensityNearCacheManager();
+        ess = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
+        nearCacheManager = new HiDensityNearCacheManager(ess, createExecutionService(), null);
     }
 
     @After
@@ -45,15 +48,6 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         if (memoryManager != null) {
             memoryManager.dispose();
         }
-    }
-
-    @Override
-    protected NearCacheContext createNearCacheContext() {
-        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(memoryManager)
-                .build();
-
-        return new NearCacheContext(serializationService, createExecutionService(), nearCacheManager);
     }
 
     @Override
@@ -73,9 +67,8 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
     }
 
     private NearCache<Integer, Object> createNearCache(String name) {
-        return nearCacheManager.getOrCreateNearCache(name,
-                createNearCacheConfig(name),
-                createNearCacheContext());
+        NearCacheConfig nearCacheConfig = createNearCacheConfig(name);
+        return nearCacheManager.getOrCreateNearCache(name, nearCacheConfig);
     }
 
     @Test

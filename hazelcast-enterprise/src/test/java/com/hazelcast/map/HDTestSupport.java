@@ -41,18 +41,18 @@ public final class HDTestSupport {
     }
 
     public static Config getHDConfig(Config config) {
-        MapConfig mapConfig = new MapConfig();
-        mapConfig.setName("default");
-        mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
+        MapConfig mapConfig = new MapConfig()
+                .setName("default")
+                .setInMemoryFormat(InMemoryFormat.NATIVE);
 
-        NativeMemoryConfig memoryConfig = new NativeMemoryConfig();
-        memoryConfig.setEnabled(true);
-        memoryConfig.setSize(NATIVE_MEMORY_SIZE);
-        memoryConfig.setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
+        NativeMemoryConfig memoryConfig = new NativeMemoryConfig()
+                .setEnabled(true)
+                .setSize(NATIVE_MEMORY_SIZE)
+                .setAllocatorType(NativeMemoryConfig.MemoryAllocatorType.STANDARD);
 
-        config.addMapConfig(mapConfig);
-        config.setNativeMemoryConfig(memoryConfig);
-        return config;
+        return config
+                .addMapConfig(mapConfig)
+                .setNativeMemoryConfig(memoryConfig);
     }
 
     public static <K, V> IEnterpriseMap<K, V> getEnterpriseMap(HazelcastInstance instance, String mapName) {

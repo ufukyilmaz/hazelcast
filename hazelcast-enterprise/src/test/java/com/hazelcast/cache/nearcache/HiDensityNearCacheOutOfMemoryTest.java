@@ -16,6 +16,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -71,7 +72,7 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         return nearCacheManager.getOrCreateNearCache(name, nearCacheConfig);
     }
 
-    @Test
+    @Test @Ignore
     public void putToNearCacheShouldNotGetOOMEIfNativeMemoryIsFullAndThereIsNoRecordToEvict() {
         NearCache<Integer, Object> nearCache1 = createNearCache("Near-Cache-1");
         NearCache<Integer, Object> nearCache2 = createNearCache("Near-Cache-2");

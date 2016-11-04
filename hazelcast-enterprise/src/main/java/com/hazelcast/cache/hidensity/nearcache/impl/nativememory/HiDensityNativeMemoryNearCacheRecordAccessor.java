@@ -9,7 +9,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * {@link com.hazelcast.map.impl.nearcache.NearCacheRecord} accessor for {@link HiDensityNativeMemoryNearCacheRecord}
+ * {@link com.hazelcast.cache.impl.nearcache.NearCacheRecord} accessor for {@link HiDensityNativeMemoryNearCacheRecord}
  * to create, read, dispose record or its data.
  */
 public class HiDensityNativeMemoryNearCacheRecordAccessor

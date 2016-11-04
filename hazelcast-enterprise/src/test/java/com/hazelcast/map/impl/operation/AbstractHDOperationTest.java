@@ -11,7 +11,7 @@ import com.hazelcast.map.impl.PartitionContainer;
 import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
-import com.hazelcast.map.impl.nearcache.NearCacheProvider;
+import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.nearcache.invalidation.NearCacheInvalidator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -102,13 +102,13 @@ abstract class AbstractHDOperationTest {
 
         nearCacheInvalidator = mock(NearCacheInvalidator.class);
 
-        NearCacheProvider nearCacheProvider = mock(NearCacheProvider.class, RETURNS_DEEP_STUBS);
-        when(nearCacheProvider.getNearCacheInvalidator()).thenReturn(nearCacheInvalidator);
+        EnterpriseMapNearCacheManager nearCacheManager = mock(EnterpriseMapNearCacheManager.class, RETURNS_DEEP_STUBS);
+        when(nearCacheManager.getNearCacheInvalidator()).thenReturn(nearCacheInvalidator);
 
         MapServiceContext mapServiceContext = mock(MapServiceContext.class);
         when(mapServiceContext.getPartitionContainer(anyInt())).thenReturn(partitionContainer);
         when(mapServiceContext.getMapEventPublisher()).thenReturn(mapEventPublisher);
-        when(mapServiceContext.getNearCacheProvider()).thenReturn(nearCacheProvider);
+        when(mapServiceContext.getMapNearCacheManager()).thenReturn(nearCacheManager);
         when(mapServiceContext.getMapContainer(eq(getMapName()))).thenReturn(mapContainer);
 
         mapService = mock(MapService.class);

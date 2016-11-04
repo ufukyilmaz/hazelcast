@@ -6,10 +6,8 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentage
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheContext;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
 import com.hazelcast.cache.impl.nearcache.impl.store.AbstractNearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
@@ -52,33 +50,35 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     private final RecordEvictionListener recordEvictionListener = new RecordEvictionListener();
     private final RecordExpirationChecker recordExpirationChecker = new RecordExpirationChecker();
 
-    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
-        this(nearCacheConfig, nearCacheContext, new NearCacheStatsImpl(), new HiDensityStorageInfo(nearCacheConfig.getName()));
+    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, EnterpriseSerializationService ss,
+                                                     ClassLoader classLoader) {
+        this(nearCacheConfig, new NearCacheStatsImpl(),
+                new HiDensityStorageInfo(nearCacheConfig.getName()), ss, classLoader);
     }
 
-    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext,
-                                                     NearCacheStatsImpl nearCacheStats, HiDensityStorageInfo storageInfo) {
-        super(nearCacheConfig, new HiDensityNearCacheContext(nearCacheContext, storageInfo), nearCacheStats);
+    public HiDensityNativeMemoryNearCacheRecordStore(NearCacheConfig nearCacheConfig, NearCacheStatsImpl nearCacheStats,
+                                                     HiDensityStorageInfo storageInfo, EnterpriseSerializationService ss,
+                                                     ClassLoader classLoader) {
+        super(nearCacheConfig, nearCacheStats, ss, classLoader);
+        this.storageInfo = storageInfo;
     }
 
     @SuppressWarnings("checkstyle:npathcomplexity")
-    private void ensureInitialized(NearCacheConfig nearCacheConfig, NearCacheContext nearCacheContext) {
-        final EnterpriseSerializationService serializationService =
-                (EnterpriseSerializationService) nearCacheContext.getSerializationService();
+    private void ensureInitialized(NearCacheConfig nearCacheConfig) {
+        EnterpriseSerializationService serializationService = (EnterpriseSerializationService) super.serializationService;
+
         if (memoryManager == null) {
             HazelcastMemoryManager mm = serializationService.getMemoryManager();
             this.memoryManager = mm instanceof PoolingMemoryManager
                     ? ((PoolingMemoryManager) mm).getGlobalMemoryManager() : mm;
         }
 
-        if (storageInfo == null) {
-            storageInfo = nearCacheContext instanceof HiDensityNearCacheContext
-                    ? ((HiDensityNearCacheContext) nearCacheContext).getStorageInfo()
-                    : new HiDensityStorageInfo(nearCacheConfig.getName());
-        }
+        storageInfo = storageInfo == null ? new HiDensityStorageInfo(nearCacheConfig.getName()) : storageInfo;
+
         if (recordAccessor == null) {
             this.recordAccessor = new HiDensityNativeMemoryNearCacheRecordAccessor(serializationService, memoryManager);
         }
+
         if (recordProcessor == null) {
             this.recordProcessor = new CacheHiDensityRecordProcessor<HiDensityNativeMemoryNearCacheRecord>(
                     serializationService, recordAccessor, memoryManager, storageInfo);
@@ -86,17 +86,14 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(NearCacheConfig nearCacheConfig,
-                                                                               NearCacheContext nearCacheContext) {
-        ensureInitialized(nearCacheConfig, nearCacheContext);
+    protected HiDensityNativeMemoryNearCacheRecordMap createNearCacheRecordMap(NearCacheConfig nearCacheConfig) {
+        ensureInitialized(nearCacheConfig);
         return new HiDensityNativeMemoryNearCacheRecordMap(DEFAULT_INITIAL_CAPACITY, recordProcessor, storageInfo);
     }
 
     @Override
-    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig,
-                                                           NearCacheConfig nearCacheConfig,
-                                                           NearCacheContext nearCacheContext) {
-        ensureInitialized(nearCacheConfig, nearCacheContext);
+    protected MaxSizeChecker createNearCacheMaxSizeChecker(EvictionConfig evictionConfig, NearCacheConfig nearCacheConfig) {
+        ensureInitialized(nearCacheConfig);
 
         EvictionConfig.MaxSizePolicy maxSizePolicy = evictionConfig.getMaximumSizePolicy();
         if (maxSizePolicy == null) {
@@ -104,7 +101,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         }
 
         int size = evictionConfig.getSize();
-        long maxNativeMemory = ((EnterpriseSerializationService) nearCacheContext.getSerializationService())
+        long maxNativeMemory = ((EnterpriseSerializationService) super.serializationService)
                 .getMemoryManager().getMemoryStats().getMaxNative();
         switch (maxSizePolicy) {
             case ENTRY_COUNT:

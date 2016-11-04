@@ -3,6 +3,7 @@ package com.hazelcast.cache.nearcache;
 import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.cache.impl.nearcache.NearCacheManager;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -14,7 +15,7 @@ public class HiDensityNearCacheManagerTest extends NearCacheManagerTestSupport {
 
     @Override
     protected NearCacheManager createNearCacheManager() {
-        return new HiDensityNearCacheManager();
+        return new HiDensityNearCacheManager(((EnterpriseSerializationService) ss), executionService, null);
     }
 
     @Test

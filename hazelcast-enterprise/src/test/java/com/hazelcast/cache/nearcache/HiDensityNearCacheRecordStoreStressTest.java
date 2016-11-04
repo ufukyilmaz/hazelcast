@@ -1,7 +1,6 @@
 package com.hazelcast.cache.nearcache;
 
 import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensityNativeMemoryNearCacheRecordStore;
-import com.hazelcast.cache.impl.nearcache.NearCacheContext;
 import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
@@ -29,6 +28,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static org.junit.Assert.assertTrue;
 
@@ -40,6 +40,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
     private static final MemorySize DEFAULT_MEMORY_SIZE = new MemorySize(DEFAULT_MEMORY_SIZE_IN_MEGABYTES, MemoryUnit.MEGABYTES);
 
     private PoolingMemoryManager memoryManager;
+    private EnterpriseSerializationService ess;
 
     @Before
     public void setup() {
@@ -48,6 +49,9 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
                 NativeMemoryConfig.DEFAULT_PAGE_SIZE,
                 2 * NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE);
         memoryManager.registerThread(Thread.currentThread());
+        ess = new EnterpriseSerializationServiceBuilder()
+                .setMemoryManager(memoryManager)
+                .build();
     }
 
     @After
@@ -56,15 +60,6 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             memoryManager.dispose();
             memoryManager = null;
         }
-    }
-
-    @Override
-    protected NearCacheContext createNearCacheContext() {
-        EnterpriseSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
-                .setMemoryManager(memoryManager)
-                .build();
-
-        return new NearCacheContext(serializationService, null);
     }
 
     @Override
@@ -80,15 +75,17 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
     }
 
     @Override
-    protected <K, V> NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig,
-                                                                           NearCacheContext nearCacheContext,
-                                                                           InMemoryFormat inMemoryFormat) {
+    protected <K, V> NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig, InMemoryFormat inMemoryFormat) {
+        NearCacheRecordStore recordStore;
         switch (inMemoryFormat) {
             case NATIVE:
-                return new HiDensityNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, nearCacheContext);
+                recordStore = new HiDensityNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ess, null);
+                break;
             default:
-                return super.createNearCacheRecordStore(nearCacheConfig, nearCacheContext, inMemoryFormat);
+                recordStore = super.createNearCacheRecordStore(nearCacheConfig, inMemoryFormat);
         }
+        recordStore.initialize();
+        return recordStore;
     }
 
     @Test
@@ -193,7 +190,7 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             final int defaultSize = DEFAULT_MEMORY_SIZE_IN_MEGABYTES / 2;
             final int defaultPercentage = percentage;
 
-            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, InMemoryFormat.NATIVE);
+            NearCacheConfig nearCacheConfig = createNearCacheConfig(DEFAULT_NEAR_CACHE_NAME, NATIVE);
 
             if (evictionPolicy == null) {
                 evictionPolicy = EvictionConfig.DEFAULT_EVICTION_POLICY;
@@ -212,15 +209,9 @@ public class HiDensityNearCacheRecordStoreStressTest extends NearCacheRecordStor
             evictionConfig.setEvictionPolicy(evictionPolicy);
             nearCacheConfig.setEvictionConfig(evictionConfig);
 
-            NearCacheContext nearCacheContext = createNearCacheContext();
-            EnterpriseSerializationService serializationService =
-                    (EnterpriseSerializationService) nearCacheContext.getSerializationService();
-            HazelcastMemoryManager memoryManager = serializationService.getMemoryManager();
+            HazelcastMemoryManager memoryManager = ess.getMemoryManager();
 
-            NearCacheRecordStore<Integer, String> nearCacheRecordStore = createNearCacheRecordStore(
-                    nearCacheConfig,
-                    nearCacheContext,
-                    InMemoryFormat.NATIVE);
+            NearCacheRecordStore<Integer, String> nearCacheRecordStore = createNearCacheRecordStore(nearCacheConfig, NATIVE);
 
             Random random = new Random();
             byte[] bytes = new byte[128];

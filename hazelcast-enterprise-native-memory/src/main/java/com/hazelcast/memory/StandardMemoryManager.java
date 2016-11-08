@@ -10,7 +10,6 @@ import com.hazelcast.util.collection.Long2LongHashMap;
 import com.hazelcast.util.function.LongLongConsumer;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
-import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 
 public final class StandardMemoryManager implements HazelcastMemoryManager {
 
@@ -18,6 +17,7 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
      * System property to enable debug mode of {@link StandardMemoryManager}.
      */
     public static final String PROPERTY_DEBUG_ENABLED = "hazelcast.memory.manager.debug.enabled";
+    private static final FreeMemoryChecker DEFAULT_FREE_MEMORY_CHECKER = new FreeMemoryChecker();
 
     private final boolean isDebugEnabled;
 
@@ -28,10 +28,14 @@ public final class StandardMemoryManager implements HazelcastMemoryManager {
     private final Long2LongHashMap allocatedBlocks;
 
     public StandardMemoryManager(MemorySize cap) {
+        this(cap, DEFAULT_FREE_MEMORY_CHECKER);
+    }
+
+    public StandardMemoryManager(MemorySize cap, FreeMemoryChecker freeMemoryChecker) {
         isDebugEnabled = Boolean.getBoolean(PROPERTY_DEBUG_ENABLED);
 
         long size = cap.bytes();
-        checkFreeMemory(size);
+        freeMemoryChecker.checkFreeMemory(size);
         malloc = new UnsafeMalloc();
         memoryStats = new NativeMemoryStats(size);
 

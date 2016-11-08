@@ -23,6 +23,7 @@ import com.hazelcast.license.domain.LicenseVersion;
 import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.memory.FreeMemoryChecker;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -70,7 +71,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
-            ss = builder.setMemoryManager(getMemoryManager(config))
+            ss = builder.setMemoryManager(getMemoryManager(client))
                     .setClassLoader(configClassLoader)
                     .setConfig(serializationConfig)
                     .setManagedContext(new HazelcastClientManagedContext(client, config.getManagedContext()))
@@ -83,22 +84,25 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
         return ss;
     }
 
-    private HazelcastMemoryManager getMemoryManager(ClientConfig config) {
-        NativeMemoryConfig memoryConfig = config.getNativeMemoryConfig();
+    private HazelcastMemoryManager getMemoryManager(HazelcastClientInstanceImpl client) {
+        final NativeMemoryConfig memoryConfig = client.getClientConfig().getNativeMemoryConfig();
+
         if (memoryConfig.isEnabled()) {
             if (license.getVersion() == LicenseVersion.V4) {
                 checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.HD_MEMORY);
             }
             MemorySize size = memoryConfig.getSize();
             NativeMemoryConfig.MemoryAllocatorType type = memoryConfig.getAllocatorType();
+            final FreeMemoryChecker freeMemoryChecker = new FreeMemoryChecker(client.getProperties());
+
             LOGGER.info("Creating " + type + " native memory manager with " + size.toPrettyString() + " size");
             if (type == NativeMemoryConfig.MemoryAllocatorType.STANDARD) {
-                return new StandardMemoryManager(size);
+                return new StandardMemoryManager(size, freeMemoryChecker);
             } else {
                 int blockSize = memoryConfig.getMinBlockSize();
                 int pageSize = memoryConfig.getPageSize();
                 float metadataSpace = memoryConfig.getMetadataSpacePercentage();
-                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace);
+                return new PoolingMemoryManager(size, blockSize, pageSize, metadataSpace, freeMemoryChecker);
             }
         }
         return null;
@@ -154,7 +158,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
             try {
                 checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.CONTINUOUS_QUERY_CACHE);
 
-                return new EnterpriseMapClientProxyFactory(client.getClientConfig());
+                return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
             } catch (InvalidLicenseException e) {
                 return super.createServiceProxyFactory(service);
             }

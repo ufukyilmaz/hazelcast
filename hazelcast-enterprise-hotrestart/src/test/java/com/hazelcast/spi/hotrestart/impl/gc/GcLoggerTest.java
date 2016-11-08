@@ -13,7 +13,7 @@ import org.mockito.Mockito;
 
 import java.util.logging.Level;
 
-import static com.hazelcast.spi.hotrestart.impl.gc.GcLogger.VERBOSE_FINEST_LOGGING;
+import static com.hazelcast.spi.hotrestart.impl.gc.GcLogger.PROPERTY_VERBOSE_FINEST_LOGGING;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -28,7 +28,7 @@ public class GcLoggerTest {
         Mockito.when(iLoggerMock.isFinestEnabled()).thenReturn(true);
         Mockito.when(iLoggerMock.isFineEnabled()).thenReturn(true);
         Mockito.when(iLoggerMock.isLoggable(Matchers.any(Level.class))).thenReturn(true);
-        System.setProperty(VERBOSE_FINEST_LOGGING, "true");
+        System.setProperty(PROPERTY_VERBOSE_FINEST_LOGGING, "true");
         logger = new GcLogger(iLoggerMock);
     }
 

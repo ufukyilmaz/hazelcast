@@ -9,7 +9,7 @@ import org.junit.runners.model.InitializationError;
 import static com.hazelcast.enterprise.SampleLicense.UNLIMITED_LICENSE;
 
 /**
- * @mdogan 7/20/12
+ * Test runner which sets the enterprise key license to an unlimited key license and runs the test in series.
  */
 public class EnterpriseSerialJUnitClassRunner extends HazelcastSerialClassRunner {
 

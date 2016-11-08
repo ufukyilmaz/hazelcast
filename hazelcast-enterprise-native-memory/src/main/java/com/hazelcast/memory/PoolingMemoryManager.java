@@ -1,8 +1,8 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.memory.impl.LibMalloc;
 import com.hazelcast.internal.memory.impl.UnsafeMalloc;
-import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.util.QuickMath;
 
 import java.util.Collection;
@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_METADATA_SPACE_PERCENTAGE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_MIN_BLOCK_SIZE;
 import static com.hazelcast.config.NativeMemoryConfig.DEFAULT_PAGE_SIZE;
-import static com.hazelcast.memory.FreeMemoryChecker.checkFreeMemory;
 import static com.hazelcast.util.QuickMath.isPowerOfTwo;
 
 /**
@@ -54,6 +53,7 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     static final int MAX_PAGE_SIZE = 1 << 30;
 
     private static final int PERCENTAGE_FACTOR = 100;
+    private static final FreeMemoryChecker DEFAULT_FREE_MEMORY_CHECKER = new FreeMemoryChecker();
 
     private final LibMalloc malloc = new UnsafeMalloc();
     private final PooledNativeMemoryStats memoryStats;
@@ -64,20 +64,26 @@ public class PoolingMemoryManager implements HazelcastMemoryManager, GarbageColl
     private final SimpleGarbageCollector gc = new SimpleGarbageCollector();
 
     public PoolingMemoryManager(MemorySize cap) {
-        this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE);
+        this(cap, DEFAULT_MIN_BLOCK_SIZE, DEFAULT_PAGE_SIZE, DEFAULT_METADATA_SPACE_PERCENTAGE, DEFAULT_FREE_MEMORY_CHECKER);
     }
 
     public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize) {
-        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE);
+        this(size, minBlockSize, pageSize, DEFAULT_METADATA_SPACE_PERCENTAGE, DEFAULT_FREE_MEMORY_CHECKER);
     }
 
-    public PoolingMemoryManager(MemorySize cap, int minBlockSize, int pageSize, float metadataSpacePercentage) {
+    public PoolingMemoryManager(MemorySize size, int minBlockSize, int pageSize, float metadataSpacePercentage) {
+        this(size, minBlockSize, pageSize, metadataSpacePercentage, DEFAULT_FREE_MEMORY_CHECKER);
+    }
+
+    public PoolingMemoryManager(MemorySize cap, int minBlockSize,
+                                int pageSize, float metadataSpacePercentage,
+                                FreeMemoryChecker freeMemoryChecker) {
         long totalSize = cap.bytes();
         if (totalSize <= 0) {
             throw new IllegalArgumentException("Capacity must be positive!");
         }
 
-        checkFreeMemory(totalSize);
+        freeMemoryChecker.checkFreeMemory(totalSize);
         checkBlockAndPageSize(minBlockSize, pageSize);
         long maxMetadata = (long) (totalSize * metadataSpacePercentage / PERCENTAGE_FACTOR);
         long maxNative = QuickMath.normalize(totalSize - maxMetadata, pageSize);

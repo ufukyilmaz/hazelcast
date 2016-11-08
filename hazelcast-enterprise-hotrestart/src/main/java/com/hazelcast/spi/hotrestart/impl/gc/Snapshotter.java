@@ -8,6 +8,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
+import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.spi.properties.HazelcastProperty;
 import com.hazelcast.util.collection.LongHashSet;
 
 import java.io.BufferedOutputStream;
@@ -54,7 +56,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 // class non-final for mockability
 @SuppressWarnings("checkstyle:finalclass")
 public class Snapshotter {
-    public static final String SYSPROP_GCSTATS_ENABLED = "hazelcast.hotrestart.gc.stats.enabled";
+    public static final String PROPERTY_GCSTATS_ENABLED = "hazelcast.hotrestart.gc.stats.enabled";
+    public static final HazelcastProperty GCSTATS_ENABLED = new HazelcastProperty(PROPERTY_GCSTATS_ENABLED, false);
     public static final String CHUNK_SNAPSHOT_FNAME = "chunk-snapshot.bin";
     public static final int SOURCE_CHUNK_FLAG_MASK = 1;
     public static final int SURVIVOR_FLAG_MASK = 1 << 1;
@@ -64,7 +67,7 @@ public class Snapshotter {
     private static final int SNAPSHOTTING_INTERVAL_MILLIS = 50;
     private static final LongHashSet EMPTY_SET = new LongHashSet(0, -1);
 
-    final boolean enabled = Boolean.getBoolean(SYSPROP_GCSTATS_ENABLED);
+    final boolean enabled;
     private final File homeDir;
     private final ChunkManager chunkMgr;
 
@@ -72,9 +75,10 @@ public class Snapshotter {
     private LongHashSet srcChunkSeqs = EMPTY_SET;
 
     @Inject
-    private Snapshotter(@Name("homeDir") File homeDir, ChunkManager chunkMgr) {
+    private Snapshotter(@Name("homeDir") File homeDir, ChunkManager chunkMgr, HazelcastProperties properties) {
         this.homeDir = homeDir;
         this.chunkMgr = chunkMgr;
+        this.enabled = properties.getBoolean(GCSTATS_ENABLED);
     }
 
     void initSrcChunkSeqs(Collection<? extends Chunk> srcChunks) {

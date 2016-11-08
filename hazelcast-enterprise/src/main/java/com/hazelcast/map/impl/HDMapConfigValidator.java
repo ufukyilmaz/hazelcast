@@ -8,6 +8,7 @@ import com.hazelcast.config.NativeMemoryConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
+import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 
 import java.util.EnumSet;
 
@@ -19,8 +20,7 @@ import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_HEAP_SIZE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_PERCENTAGE;
 import static com.hazelcast.config.MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE;
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
+import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE;
 import static com.hazelcast.util.Preconditions.checkTrue;
 import static java.lang.String.format;
 import static java.util.EnumSet.complementOf;
@@ -34,8 +34,24 @@ public final class HDMapConfigValidator {
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
 
     private static final ILogger LOGGER = Logger.getLogger(MapConfig.class);
+    private final int hotRestartMinFreeNativeMemoryPercentage;
 
-    private HDMapConfigValidator() {
+    public HDMapConfigValidator(HotRestartEvictionHelper hotRestartEvictionHelper) {
+        this.hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
+    }
+
+    /**
+     * Checks preconditions to create a map proxy with Near Cache.
+     *
+     * @param nearCacheConfig the nearCacheConfig
+     */
+    public void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
+        final InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
+        if (NATIVE != inMemoryFormat) {
+            return;
+        }
+
+        checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
     }
 
     /**
@@ -44,7 +60,7 @@ public final class HDMapConfigValidator {
      * @param mapConfig          the mapConfig
      * @param nativeMemoryConfig the nativeMemoryConfig
      */
-    public static void checkHDConfig(MapConfig mapConfig, NativeMemoryConfig nativeMemoryConfig) {
+    public void checkHDConfig(MapConfig mapConfig, NativeMemoryConfig nativeMemoryConfig) {
         if (NATIVE != mapConfig.getInMemoryFormat()) {
             return;
         }
@@ -60,7 +76,7 @@ public final class HDMapConfigValidator {
     }
 
     @SuppressWarnings("deprecation")
-    private static void logIgnoredConfig(MapConfig mapConfig) {
+    private void logIgnoredConfig(MapConfig mapConfig) {
         if (DEFAULT_MIN_EVICTION_CHECK_MILLIS != mapConfig.getMinEvictionCheckMillis()
                 || DEFAULT_EVICTION_PERCENTAGE != mapConfig.getEvictionPercentage()) {
 
@@ -69,7 +85,7 @@ public final class HDMapConfigValidator {
         }
     }
 
-    private static void checkMaxSizePolicy(MapConfig mapConfig) {
+    private void checkMaxSizePolicy(MapConfig mapConfig) {
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
         if (UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES.contains(maxSizePolicy)) {
@@ -86,7 +102,7 @@ public final class HDMapConfigValidator {
      * If configured max-size-policy is {@link com.hazelcast.config.MaxSizeConfig.MaxSizePolicy#FREE_NATIVE_MEMORY_PERCENTAGE},
      * this method asserts that max-size is not below "hazelcast.hotrestart.free.native.memory.percentage".
      */
-    private static void checkHotRestartSpecificConfig(MapConfig mapConfig) {
+    private void checkHotRestartSpecificConfig(MapConfig mapConfig) {
         HotRestartConfig hotRestartConfig = mapConfig.getHotRestartConfig();
         if (hotRestartConfig == null || !hotRestartConfig.isEnabled()) {
             return;
@@ -95,30 +111,15 @@ public final class HDMapConfigValidator {
         MaxSizeConfig maxSizeConfig = mapConfig.getMaxSizeConfig();
         MaxSizeConfig.MaxSizePolicy maxSizePolicy = maxSizeConfig.getMaxSizePolicy();
 
-        int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
         int localSizeConfig = maxSizeConfig.getSize();
         if (FREE_NATIVE_MEMORY_PERCENTAGE == maxSizePolicy && localSizeConfig < hotRestartMinFreeNativeMemoryPercentage) {
             throw new IllegalArgumentException(format(
                     "There is a global limit on the minimum free native memory, settable by the system property"
                             + " %s, whose value is currently %d percent. The map %s has Hot Restart enabled, but is configured"
                             + " with %d percent, lower than the allowed minimum.",
-                    SYSPROP_HOTRESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreeNativeMemoryPercentage,
+                    HOT_RESTART_FREE_NATIVE_MEMORY_PERCENTAGE, hotRestartMinFreeNativeMemoryPercentage,
                     mapConfig.getName(), localSizeConfig)
             );
         }
-    }
-
-    /**
-     * Checks preconditions to create a map proxy with Near Cache.
-     *
-     * @param nearCacheConfig the nearCacheConfig.
-     */
-    public static void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
-        InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
-        if (NATIVE != inMemoryFormat) {
-            return;
-        }
-
-        checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
     }
 }

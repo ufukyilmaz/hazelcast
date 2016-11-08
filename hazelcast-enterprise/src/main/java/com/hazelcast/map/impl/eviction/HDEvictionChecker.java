@@ -29,7 +29,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.MemoryInfoAccessor;
 
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
 
 /**
@@ -41,10 +40,13 @@ import static com.hazelcast.memory.MemoryUnit.MEGABYTES;
  */
 public class HDEvictionChecker extends EvictionChecker {
 
-    private final int hotRestartMinFreeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
+    private final int hotRestartMinFreeNativeMemoryPercentage;
 
-    public HDEvictionChecker(MemoryInfoAccessor memoryInfoAccessor, MapServiceContext mapServiceContext) {
+    public HDEvictionChecker(MemoryInfoAccessor memoryInfoAccessor,
+                             MapServiceContext mapServiceContext,
+                             HotRestartEvictionHelper hotRestartEvictionHelper) {
         super(memoryInfoAccessor, mapServiceContext);
+        this.hotRestartMinFreeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
     }
 
     @Override

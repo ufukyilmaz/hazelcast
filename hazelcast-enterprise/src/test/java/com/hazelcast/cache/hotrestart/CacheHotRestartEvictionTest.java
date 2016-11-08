@@ -8,8 +8,8 @@ import com.hazelcast.config.EvictionPolicy;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.TestUtil;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.map.impl.eviction.HotRestartEvictionHelper;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
@@ -35,7 +35,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.map.impl.eviction.HotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -159,8 +158,9 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     @Test
     public void freeNativeMemoryPercentageCannotBeLessThanItsMinimumLimit() {
         if (memoryFormat == InMemoryFormat.NATIVE) {
-            int freeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
             HazelcastInstance hz = newHazelcastInstance();
+            HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(getNode(hz).getProperties());
+            int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
             EvictionConfig evictionConfig =
                     new EvictionConfig(freeNativeMemoryPercentage / 2,
                             EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE,
@@ -179,11 +179,12 @@ public class CacheHotRestartEvictionTest extends AbstractCacheHotRestartTest {
     @Test
     public void evictionShouldBeTriggeredWhenFreeNativeMemoryPercentageIsReached() {
         if (memoryFormat == InMemoryFormat.NATIVE) {
-            int freeNativeMemoryPercentage = getHotRestartFreeNativeMemoryPercentage();
             HazelcastInstance hz = newHazelcastInstance();
+            final Node node = getNode(hz);
+            final HotRestartEvictionHelper hotRestartEvictionHelper = new HotRestartEvictionHelper(node.getProperties());
+            final int freeNativeMemoryPercentage = hotRestartEvictionHelper.getHotRestartFreeNativeMemoryPercentage();
             ICache<String, byte[]> cache = createCache(hz);
 
-            Node node = TestUtil.getNode(hz);
             int partitionCount = node.getPartitionService().getPartitionCount();
             EnterpriseSerializationService ss =
                     (EnterpriseSerializationService) node.getSerializationService();

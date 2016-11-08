@@ -2,19 +2,28 @@ package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
+import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.spi.properties.HazelcastProperty;
 
 /**
  * Adds lazy-evaluating methods to Hazelcast logger.
  */
 public class GcLogger {
-    public static final String VERBOSE_FINEST_LOGGING = "hazelcast.hotrestart.gc.verboseFinestLogging";
+    public static final String PROPERTY_VERBOSE_FINEST_LOGGING = "hazelcast.hotrestart.gc.verboseFinestLogging";
+    public static final HazelcastProperty VERBOSE_FINEST_LOGGING = new HazelcastProperty(PROPERTY_VERBOSE_FINEST_LOGGING, false);
 
     private final ILogger logger;
-    private final boolean finestVerboseEnabled = Boolean.getBoolean(VERBOSE_FINEST_LOGGING);
+    private final boolean finestVerboseEnabled;
 
-    @Inject
     GcLogger(ILogger logger) {
         this.logger = logger;
+        this.finestVerboseEnabled = Boolean.getBoolean(PROPERTY_VERBOSE_FINEST_LOGGING);
+    }
+
+    @Inject
+    GcLogger(ILogger logger, HazelcastProperties properties) {
+        this.logger = logger;
+        this.finestVerboseEnabled = properties.getBoolean(VERBOSE_FINEST_LOGGING);
     }
 
     public void finestVerbose(String message) {

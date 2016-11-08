@@ -1,22 +1,44 @@
 package com.hazelcast.memory;
 
+import com.hazelcast.spi.properties.HazelcastProperties;
+import com.hazelcast.spi.properties.HazelcastProperty;
+
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
-final class FreeMemoryChecker {
+/**
+ * Class which checks if there is enough free native memory for allocation. If disabled, acts as if the check for free memory
+ * succeeded.
+ */
+public final class FreeMemoryChecker {
+    /**
+     * Name of the property for enabling or disabling the free memory checking.
+     */
+    public static final String HIDENSITY_CHECK_FREEMEMORY = "hazelcast.hidensity.check.freememory";
+    /**
+     * Hazelcast XML and system property for setting if free memory checking is enabled.
+     */
+    public static final HazelcastProperty FREE_MEMORY_CHECKER_ENABLED = new HazelcastProperty(HIDENSITY_CHECK_FREEMEMORY, true);
+    private final boolean enabled;
 
-    private static final boolean ENABLED;
-
-    static {
-        String checkFreeMemoryProp = System.getProperty("hazelcast.hidensity.check.freememory", "true");
-        ENABLED = Boolean.parseBoolean(checkFreeMemoryProp);
+    FreeMemoryChecker() {
+        final String enabledStr = FREE_MEMORY_CHECKER_ENABLED.getSystemProperty();
+        this.enabled = Boolean.parseBoolean(enabledStr != null ? enabledStr : "true");
     }
 
-    private FreeMemoryChecker() {
+    public FreeMemoryChecker(HazelcastProperties properties) {
+        this.enabled = properties.getBoolean(FREE_MEMORY_CHECKER_ENABLED);
     }
 
-    public static void checkFreeMemory(long size) {
-        if (!ENABLED) {
+    /**
+     * If enabled and is able to fetch memory statistics via {@link java.lang.management.OperatingSystemMXBean},
+     * checks if there is enough free physical memory for the requested number of bytes. If the free memory checker is disabled,
+     * acts as if the check succeeded.
+     *
+     * @param size the number of bytes that need to be allocated
+     */
+    public void checkFreeMemory(long size) {
+        if (!enabled) {
             return;
         }
 

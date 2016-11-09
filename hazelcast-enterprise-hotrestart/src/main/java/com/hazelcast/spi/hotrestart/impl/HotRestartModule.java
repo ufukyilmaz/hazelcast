@@ -2,8 +2,8 @@ package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
 import com.hazelcast.internal.metrics.MetricsRegistry;
-import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -19,7 +19,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.Snapshotter;
 import com.hazelcast.spi.hotrestart.impl.gc.record.RecordDataHolder;
 import com.hazelcast.spi.properties.HazelcastProperties;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.spi.hotrestart.impl.ConcurrentHotRestartStore.MUTATOR_QUEUE_CAPACITY;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcExecutor.COLLECTOR_QUEUE_CAPACITY;
 

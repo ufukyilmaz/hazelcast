@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 

@@ -4,7 +4,7 @@ import com.hazelcast.internal.util.collection.LongCursor;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;

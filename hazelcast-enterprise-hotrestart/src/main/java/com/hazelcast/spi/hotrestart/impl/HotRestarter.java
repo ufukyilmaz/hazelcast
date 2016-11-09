@@ -1,6 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl;
 
 import com.hazelcast.internal.util.BufferingInputStream;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorException;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
@@ -33,7 +36,7 @@ import java.util.regex.Pattern;
 
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 import static com.hazelcast.nio.IOUtil.readFullyOrNothing;
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop.DRAIN_IDLER;
 import static com.hazelcast.spi.hotrestart.impl.RestartItem.clearedItem;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcHelper.BUCKET_DIRNAME_DIGITS;

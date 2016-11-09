@@ -1,5 +1,7 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartKey;
 import com.hazelcast.spi.hotrestart.HotRestartStore;

@@ -1,7 +1,9 @@
 package com.hazelcast.spi.hotrestart.impl;
 
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.collection.QueuedPipe;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.QueuedPipe;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -15,8 +17,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Queue;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.concurrentConveyor;
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.concurrentConveyor;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.util.ExceptionUtil.sneakyThrow;
 import static java.lang.Math.max;
 import static java.lang.Thread.currentThread;

@@ -1,8 +1,8 @@
 package com.hazelcast.util.concurrent;
 
-import com.hazelcast.internal.util.collection.ManyToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
-import com.hazelcast.internal.util.collection.QueuedPipe;
+import com.hazelcast.internal.util.concurrent.ManyToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.QueuedPipe;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;

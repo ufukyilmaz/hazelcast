@@ -1,10 +1,10 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
-import com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyor.SUBMIT_IDLER;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyor.SUBMIT_IDLER;
 import static java.lang.Thread.interrupted;
 
 /**

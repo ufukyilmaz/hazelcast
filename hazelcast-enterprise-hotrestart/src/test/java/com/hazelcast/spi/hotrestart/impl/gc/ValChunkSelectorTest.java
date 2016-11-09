@@ -8,7 +8,7 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableValChunk;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.internal.util.collection.OneToOneConcurrentArrayQueue;
+import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -18,7 +18,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import static com.hazelcast.spi.hotrestart.impl.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
+import static com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue.concurrentConveyorSingleQueue;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParams.MAX_RECORD_COUNT;
 import static com.hazelcast.spi.hotrestart.impl.gc.GcParamsBuilder.gcp;
 import static com.hazelcast.spi.hotrestart.impl.gc.StableChunkBuilder.chunkBuilder;

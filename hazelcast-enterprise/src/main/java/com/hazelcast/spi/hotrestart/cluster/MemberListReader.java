@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.nio.Address;
+import com.hazelcast.version.Version;
 
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -38,7 +39,8 @@ class MemberListReader extends AbstractMetadataReader {
         String uuid = in.readUTF();
         Address address = readAddress(in);
         boolean localMember = in.readBoolean();
-        return new MemberImpl(address, localMember, uuid, null);
+        Version version = Version.of(in.readUTF());
+        return new MemberImpl(address, version, localMember, uuid, null);
     }
 
     @Override

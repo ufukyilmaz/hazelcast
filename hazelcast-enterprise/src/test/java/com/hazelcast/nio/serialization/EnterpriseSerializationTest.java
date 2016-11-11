@@ -41,6 +41,7 @@ import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.version.Version;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -308,7 +309,7 @@ public class EnterpriseSerializationTest
         String host = "127.0.0.1";
         int port = 5000;
 
-        Member member = new MemberImpl(new Address(host, port), false, uuid, null);
+        Member member = new MemberImpl(new Address(host, port), Version.UNKNOWN, false, uuid, null);
 
         testMemberLeftException(uuid, host, port, member);
     }
@@ -319,7 +320,7 @@ public class EnterpriseSerializationTest
         String host = "127.0.0.1";
         int port = 5000;
 
-        Member member = new SimpleMemberImpl(uuid, new InetSocketAddress(host, port));
+        Member member = new SimpleMemberImpl(Version.UNKNOWN, uuid, new InetSocketAddress(host, port));
         testMemberLeftException(uuid, host, port, member);
     }
 

@@ -12,9 +12,10 @@ import com.hazelcast.config.SSLConfig;
 import com.hazelcast.config.SerializationConfig;
 import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
-import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.internal.cluster.impl.JoinMessage;
+import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.networking.ReadHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
@@ -54,6 +55,8 @@ import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.util.Preconditions;
+import com.hazelcast.version.Version;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
@@ -445,7 +448,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void validateJoinRequest() {
+    public void validateJoinRequest(JoinMessage joinRequest) {
+        validateJoiningMemberVersion(joinRequest);
         NativeMemoryConfig memoryConfig = node.getConfig().getNativeMemoryConfig();
         if (!memoryConfig.isEnabled()) {
             return;
@@ -462,6 +466,37 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
         license = LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
                 Feature.HD_MEMORY);
+    }
+
+    // validate that the joining member is at same major and >= minor version as the cluster version at which this cluster
+    // operates
+    private void validateJoiningMemberVersion(JoinMessage joinMessage) {
+        Version clusterVersion = node.getClusterService().getClusterVersion();
+
+        if (clusterVersion.getMajor() != joinMessage.getVersion().getMajor()
+                || clusterVersion.getMinor() > joinMessage.getVersion().getMinor()) {
+            throw new VersionMismatchException("Joining node's version " + joinMessage.getVersion() + " is not compatible "
+                    + "with cluster version " + clusterVersion);
+        }
+    }
+
+    /**
+     * Check if this node's version is compatible with given cluster version. For rolling upgrades context, a node's version
+     * is considered compatible with cluster of same version or if cluster's minor version number is smaller by one versus
+     * node's minor version number.
+     *
+     * @param clusterVersion the cluster version to check against
+     * @return {@code true} if compatible, otherwise false.
+     */
+    @Override
+    public boolean isNodeVersionCompatibleWith(Version clusterVersion) {
+        Preconditions.checkNotNull(clusterVersion);
+
+        // node can either work at its codebase version (native mode)
+        // or at a minor version that's smaller by one (emulated mode)
+        return (node.getVersion().getMajor() == clusterVersion.getMajor()
+                && (node.getVersion().getMinor() == clusterVersion.getMinor()
+                    || node.getVersion().getMinor() - clusterVersion.getMinor() == 1));
     }
 
     @Override
@@ -483,12 +518,17 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public boolean registerListener(Object listener) {
-        if (listener instanceof ClusterHotRestartEventListener) {
-            if (listener instanceof HazelcastInstanceAware) {
-                ((HazelcastInstanceAware) listener).setHazelcastInstance(node.hazelcastInstance);
-            }
+    public void onClusterVersionChange(Version newVersion) {
+        super.onClusterVersionChange(newVersion);
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onClusterVersionChange(newVersion);
+        }
+    }
 
+    @Override
+    public boolean registerListener(Object listener) {
+        super.registerListener(listener);
+        if (listener instanceof ClusterHotRestartEventListener) {
             if (hotRestartService == null) {
                 throw new HotRestartException("HotRestart is not enabled!");
             }

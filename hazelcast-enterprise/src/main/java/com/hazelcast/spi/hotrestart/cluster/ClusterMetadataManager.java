@@ -19,6 +19,7 @@ import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatu
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
+import com.hazelcast.version.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +45,9 @@ import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_R
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.addMembersRemovedInNotActiveState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
+import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterVersion;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterStateReader.readClusterState;
+import static com.hazelcast.spi.hotrestart.cluster.ClusterVersionReader.readClusterVersion;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
@@ -75,6 +78,7 @@ public final class ClusterMetadataManager {
     private final MemberListWriter memberListWriter;
     private final PartitionTableWriter partitionTableWriter;
     private final ClusterStateWriter clusterStateWriter;
+    private final ClusterVersionWriter clusterVersionWriter;
     private final File homeDir;
     private final ILogger logger;
     private final long validationTimeout;
@@ -110,6 +114,7 @@ public final class ClusterMetadataManager {
         clusterDataRecoveryPolicy = cfg.getClusterDataRecoveryPolicy();
         partitionTableWriter = new PartitionTableWriter(homeDir);
         clusterStateWriter = new ClusterStateWriter(homeDir);
+        clusterVersionWriter = new ClusterVersionWriter(homeDir);
     }
 
     /**
@@ -129,6 +134,10 @@ public final class ClusterMetadataManager {
     public void prepare() {
         try {
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
+            Version clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
+            if (clusterVersion != null) {
+                setClusterVersion(node.clusterService, clusterVersion);
+            }
             final Collection<MemberImpl> members = restoreMemberList();
             final PartitionTableView table = restorePartitionTable();
             if (startWithHotRestart) {
@@ -460,6 +469,17 @@ public final class ClusterMetadataManager {
 
     public HotRestartClusterStartStatus getHotRestartStatus() {
         return hotRestartStatus;
+    }
+
+    public void onClusterVersionChange(Version newClusterVersion) {
+        if (logger.isFineEnabled()) {
+            logger.fine("Persisting cluster version: " + newClusterVersion);
+        }
+        try {
+            clusterVersionWriter.write(newClusterVersion);
+        } catch (IOException e) {
+            logger.severe("While persisting cluster state: " + newClusterVersion, e);
+        }
     }
 
     File getHomeDir() {
@@ -911,7 +931,7 @@ public final class ClusterMetadataManager {
             if (newAddress == null) {
                 updatedMembers.add(member);
             } else {
-                updatedMembers.add(new MemberImpl(newAddress, member.localMember(), member.getUuid(), null));
+                updatedMembers.add(new MemberImpl(newAddress, member.getVersion(), member.localMember(), member.getUuid(), null));
             }
         }
 

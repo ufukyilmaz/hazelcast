@@ -65,11 +65,10 @@ public class HDPartitionWideEntryWithPredicateOperation extends HDPartitionWideE
 
     @Override
     protected void toString(StringBuilder sb) {
-        sb.append("HDPartitionWideEntryWithPredicateOperation{"
-                + "name='" + name
-                + "', entryProcessor='" + entryProcessor.toString()
-                + "', predicate='" + predicate.toString()
-                + "'}");
+        super.toString(sb);
+
+        sb .append(", entryProcessor='").append(entryProcessor.toString()).append('\'')
+                .append(", predicate='").append(predicate.toString()).append('\'');
     }
 
     @Override

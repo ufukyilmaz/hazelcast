@@ -144,11 +144,9 @@ public class HDTxnSetOperation extends HDBasePutOperation implements MapTxnOpera
     @Override
     protected void toString(StringBuilder sb) {
         super.toString(sb);
-        sb.append("HDTxnSetOperation{"
-                + "version=" + version
-                + ", shouldBackup=" + shouldBackup
-                + ", ownerUuid='" + ownerUuid + '\''
-                + '}');
+        sb.append(", version=").append(version)
+                .append(", shouldBackup=").append(shouldBackup)
+                .append(", ownerUuid=").append(ownerUuid);
     }
 
     @Override

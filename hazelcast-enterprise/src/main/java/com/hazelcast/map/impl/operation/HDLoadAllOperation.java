@@ -129,8 +129,8 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
 
     @Override
     protected void toString(StringBuilder sb) {
-        sb.append("HDLoadAllOperation{");
-        sb.append("replaceExistingValues=" + replaceExistingValues + '}');
+        super.toString(sb);
+        sb.append(", replaceExistingValues=").append(replaceExistingValues);
     }
 
     @Override

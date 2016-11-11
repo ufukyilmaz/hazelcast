@@ -94,10 +94,7 @@ public class HDTxnLockAndGetOperation extends HDLockAwareOperation implements Mu
     @Override
     protected void toString(StringBuilder sb) {
         super.toString(sb);
-        sb.append("HDTxnLockAndGetOperation{"
-                + "timeout=" + getWaitTimeout()
-                + ", thread=" + getThreadId()
-                + '}');
+        sb.append(", thread=").append(getThreadId());
     }
 
     @Override

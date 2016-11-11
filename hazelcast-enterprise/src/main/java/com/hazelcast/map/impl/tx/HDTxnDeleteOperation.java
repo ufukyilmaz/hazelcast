@@ -135,11 +135,10 @@ public class HDTxnDeleteOperation extends HDBaseRemoveOperation implements MapTx
     @Override
     protected void toString(StringBuilder sb) {
         super.toString(sb);
-        sb.append("HDTxnDeleteOperation{"
-                + "version=" + version
-                + ", successful=" + successful
-                + ", ownerUuid='" + ownerUuid + '\''
-                + '}');
+
+        sb.append(", version=").append(version)
+                .append(", successful=").append(successful)
+                .append(", ownerUuid=").append(ownerUuid);
     }
 
     @Override

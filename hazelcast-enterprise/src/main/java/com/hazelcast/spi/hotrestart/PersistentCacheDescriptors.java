@@ -5,6 +5,7 @@ import com.hazelcast.internal.serialization.impl.ObjectDataInputStream;
 import com.hazelcast.internal.serialization.impl.ObjectDataOutputStream;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.util.ExceptionUtil;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,12 +29,17 @@ import static java.lang.Math.max;
  * information on disk with an additional config per cache descriptor.
  */
 public class PersistentCacheDescriptors {
+
     private static final String CONFIG_SUFFIX = ".config";
     private static final String CONFIG_FOLDER = "configs";
 
-    /** Mappings from a combination of service name and distributed object name to cache descriptor */
+    /**
+     * Mappings from a combination of service name and distributed object name to cache descriptor
+     */
     private final Map<String, CacheDescriptor> nameToDesc = new ConcurrentHashMap<String, CacheDescriptor>();
-    /** Mappings from a combination of cache ID to cache descriptor */
+    /**
+     * Mappings from a combination of cache ID to cache descriptor
+     */
     private final Map<Integer, CacheDescriptor> idToDesc = new ConcurrentHashMap<Integer, CacheDescriptor>();
     private final File configsDir;
     private volatile int cacheIdSeq;
@@ -91,6 +97,7 @@ public class PersistentCacheDescriptors {
      * @param name                 the name of the distributed object
      * @param config               configuration written to disk alongside the newly created descriptor
      */
+    @SuppressFBWarnings("JLM_JSR166_UTILCONCURRENT_MONITORENTER")
     public void ensureHas(InternalSerializationService serializationService, String serviceName, String name, Object config) {
         String cacheKey = toCacheKey(serviceName, name);
         if (nameToDesc.get(cacheKey) != null) {
@@ -116,7 +123,6 @@ public class PersistentCacheDescriptors {
                 out.writeObject(config);
                 idToDesc.put(id, desc);
                 nameToDesc.put(cacheKey, desc);
-
             } catch (IOException e) {
                 throw ExceptionUtil.rethrow(e);
             } finally {
@@ -140,6 +146,7 @@ public class PersistentCacheDescriptors {
      * @param serializationService         the serialization service for deserializing the persisted descriptors
      * @param loadedConfigurationListeners listeners to be notified with the loaded descriptors and configurations
      */
+    @SuppressFBWarnings("JLM_JSR166_UTILCONCURRENT_MONITORENTER")
     void restore(InternalSerializationService serializationService,
                  List<LoadedConfigurationListener> loadedConfigurationListeners) {
         if (cacheIdSeq != 0) {

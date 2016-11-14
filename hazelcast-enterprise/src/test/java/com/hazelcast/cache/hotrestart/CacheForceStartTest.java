@@ -6,6 +6,7 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.nio.Address;
@@ -75,7 +76,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
         private Node node;
 
         @Override
-        public void onAllMembersJoin(Collection<Address> members) {
+        public void onAllMembersJoin(Collection<? extends Member> members) {
             NodeExtension extension = node.getNodeExtension();
             extension.triggerForceStart();
         }
@@ -88,8 +89,8 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
     }
 
     @Override
-    Config makeConfig() {
-        Config config = super.makeConfig();
+    Config makeConfig(Address address) {
+        Config config = super.makeConfig(address);
         if (triggerForceStart) {
             config.addListenerConfig(new ListenerConfig(new TriggerForceStart()));
         }

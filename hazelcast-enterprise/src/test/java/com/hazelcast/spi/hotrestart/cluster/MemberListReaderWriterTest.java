@@ -22,6 +22,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.util.UuidUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -31,8 +32,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,11 +42,12 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
 
-    private Address thisAddress;
+    private MemberImpl thisMember;
 
     @Override
     void setupInternal() {
-        thisAddress = new Address("127.0.0.1", localAddress, 5000);
+        thisMember = new MemberImpl(new Address("127.0.0.1", localAddress, 5000), true,
+                UuidUtil.newUnsecureUuidString(), null);
     }
 
     @Test
@@ -55,8 +55,8 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         MemberListReader reader = new MemberListReader(getNonExistingFolder());
         reader.read();
 
-        assertNull(reader.getThisAddress());
-        assertTrue(reader.getAddresses().isEmpty());
+        assertNull(reader.getThisMember());
+        assertTrue(reader.getMembers().isEmpty());
     }
 
     @Test
@@ -64,62 +64,54 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         MemberListReader reader = new MemberListReader(folder);
         reader.read();
 
-        assertNull(reader.getThisAddress());
-        assertTrue(reader.getAddresses().isEmpty());
+        assertNull(reader.getThisMember());
+        assertTrue(reader.getMembers().isEmpty());
     }
 
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws IOException {
-        MemberListWriter writer = new MemberListWriter(getNonExistingFolder(), thisAddress);
+        MemberListWriter writer = new MemberListWriter(getNonExistingFolder());
         writer.write(Collections.<Member>emptyList());
     }
 
     @Test
     public void test_EmptyWriteRead() throws IOException {
-        MemberListWriter writer = new MemberListWriter(folder, thisAddress);
+        MemberListWriter writer = new MemberListWriter(folder);
+        writer.setLocalMember(thisMember);
         writer.write(Collections.<Member>emptyList());
 
         MemberListReader reader = new MemberListReader(folder);
         reader.read();
 
-        assertEquals(thisAddress, reader.getThisAddress());
-        assertTrue(reader.getAddresses().isEmpty());
+        assertEquals(thisMember, reader.getThisMember());
+        assertTrue(reader.getMembers().isEmpty());
     }
 
     @Test
     public void test_WriteRead() throws IOException {
         Collection<Member> members = initializeMembers(100);
-        MemberListWriter writer = new MemberListWriter(folder, thisAddress);
+        MemberListWriter writer = new MemberListWriter(folder);
+        writer.setLocalMember(thisMember);
         writer.write(members);
 
         MemberListReader reader = new MemberListReader(folder);
         reader.read();
 
-        assertEquals(thisAddress, reader.getThisAddress());
-        Collection<Address> addresses = reader.getAddresses();
+        assertEquals(thisMember, reader.getThisMember());
 
-        assertNotNull(addresses);
-        assertEquals(members.size(), addresses.size());
-
-        Set<Address> expectedAddresses = toAddresses(members);
-        assertEquals(expectedAddresses, new HashSet<Address>(addresses));
-    }
-
-    private Set<Address> toAddresses(Collection<Member> members) {
-        Set<Address> expectedAddresses = new HashSet<Address>(members.size());
-        for (Member member : members) {
-            expectedAddresses.add(member.getAddress());
-        }
-        return expectedAddresses;
+        Collection<MemberImpl> readMembers = reader.getMembers();
+        assertNotNull(readMembers);
+        assertEquals(members.size(), readMembers.size());
+        assertEquals(members, readMembers);
     }
 
     private Collection<Member> initializeMembers(int memberCount) {
         Address[] addresses = initializeAddresses(memberCount - 1);
         Collection<Member> members = new ArrayList<Member>(memberCount);
         for (Address address : addresses) {
-            members.add(new MemberImpl(address, false));
+            members.add(new MemberImpl(address, false, UuidUtil.newUnsecureUuidString(), null));
         }
-        members.add(new MemberImpl(thisAddress, true));
+        members.add(thisMember);
         return members;
     }
 }

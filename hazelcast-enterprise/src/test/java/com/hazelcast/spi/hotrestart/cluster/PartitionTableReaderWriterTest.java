@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.partition.InternalPartition;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -14,7 +15,6 @@ import java.io.IOException;
 
 import static com.hazelcast.internal.partition.InternalPartition.MAX_REPLICA_COUNT;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
@@ -33,21 +33,22 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
     public void test_readEmptyFolder() throws IOException {
         PartitionTableReader reader = new PartitionTableReader(folder, 100);
         reader.read();
-        assertEquals(0, reader.getPartitionVersion());
-        assertPartitionTableEmpty(reader.getTable());
+        PartitionTableView table = reader.getTable();
+        assertEquals(0, table.getVersion());
+        assertPartitionTableEmpty(table);
     }
 
-    private void assertPartitionTableEmpty(Address[][] table) {
-        for (Address[] replicas : table) {
+    private void assertPartitionTableEmpty(PartitionTableView table) {
+        for (int i = 0; i < table.getLength(); i++) {
             for (int j = 0; j < MAX_REPLICA_COUNT; j++) {
-                assertNull(replicas[j]);
+                assertNull(table.getAddress(i, j));
             }
         }
     }
 
     @Test(expected = FileNotFoundException.class)
     public void test_writeNotExistingFolder() throws IOException {
-        InternalPartition[] partitions = new InternalPartition[100];
+        PartitionTableView partitions = new PartitionTableView(new Address[100][InternalPartition.MAX_REPLICA_COUNT], 0);
         PartitionTableWriter writer = new PartitionTableWriter(getNonExistingFolder());
         writer.write(partitions);
     }
@@ -71,18 +72,16 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
         Address[] members = initializeAddresses(memberCount);
 
         final int partitionCount = 100;
-        InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
         PartitionTableWriter writer = new PartitionTableWriter(folder);
-        writer.setPartitionVersion(memberCount);
-        writer.write(partitions);
+        writer.write(expectedPartitionTable);
 
         PartitionTableReader reader = new PartitionTableReader(folder, partitionCount);
         reader.read();
 
-        assertEquals(memberCount, reader.getPartitionVersion());
-        Address[][] partitionTable = reader.getTable();
-        assertPartitionTableEquals(partitions, partitionTable);
+        PartitionTableView partitionTable = reader.getTable();
+        assertEquals(expectedPartitionTable, partitionTable);
     }
 
     @Test
@@ -90,10 +89,10 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
         Address[] members = initializeAddresses(0);
         int partitionCount = 100;
 
-        InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
         PartitionTableWriter writer = new PartitionTableWriter(folder);
-        writer.write(partitions);
+        writer.write(expectedPartitionTable);
 
         int newPartitionCount = partitionCount + 1;
         PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
@@ -110,10 +109,10 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
         Address[] members = initializeAddresses(0);
         int partitionCount = 100;
 
-        InternalPartition[] partitions = initializePartitionTable(members, partitionCount);
+        PartitionTableView expectedPartitionTable = initializePartitionTable(members, partitionCount);
 
         PartitionTableWriter writer = new PartitionTableWriter(folder);
-        writer.write(partitions);
+        writer.write(expectedPartitionTable);
 
         int newPartitionCount = partitionCount - 1;
         PartitionTableReader reader = new PartitionTableReader(folder, newPartitionCount);
@@ -125,86 +124,17 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
         }
     }
 
-    private void assertPartitionTableEquals(InternalPartition[] partitions, Address[][] partitionTable) {
-        assertNotNull(partitionTable);
-        assertEquals(partitions.length, partitionTable.length);
-
-        for (int i = 0; i < partitions.length; i++) {
-            InternalPartition partition = partitions[i];
-            Address[] replicas = partitionTable[i];
-
-            assertPartitionEquals(partition, replicas);
-        }
-    }
-
-    private void assertPartitionEquals(InternalPartition partition, Address[] replicas) {
-        assertNotNull(replicas);
-        assertEquals(MAX_REPLICA_COUNT, replicas.length);
-
-        for (int i = 0; i < MAX_REPLICA_COUNT; i++) {
-            Address address = partition.getReplicaAddress(i);
-            Address replica = replicas[i];
-            assertAddressEquals(address, replica);
-        }
-    }
-
-    public InternalPartition[] initializePartitionTable(Address[] members, int partitionCount) {
-        InternalPartition[] partitions = new InternalPartition[partitionCount];
+    public PartitionTableView initializePartitionTable(Address[] members, int partitionCount) {
+        Address[][] addresses = new Address[partitionCount][MAX_REPLICA_COUNT];
 
         int replicaCount = Math.min(members.length, MAX_REPLICA_COUNT);
 
         for (int i = 0; i < partitionCount; i++) {
-            Address[] replicas = new Address[MAX_REPLICA_COUNT];
+            Address[] replicas = addresses[i];
             for (int j = 0; j < replicaCount; j++) {
                 replicas[j] = members[(i + j) % members.length];
             }
-            partitions[i] = new PartitionImpl(i, replicas);
         }
-        return partitions;
-    }
-
-    private static class PartitionImpl implements InternalPartition {
-        final int partitionId;
-        final Address[] replicas;
-
-        private PartitionImpl(int partitionId, Address[] replicas) {
-            this.partitionId = partitionId;
-            this.replicas = replicas;
-        }
-
-        @Override
-        public boolean isLocal() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getPartitionId() {
-            return partitionId;
-        }
-
-        @Override
-        public Address getOwnerOrNull() {
-            return replicas[0];
-        }
-
-        @Override
-        public boolean isMigrating() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Address getReplicaAddress(int replicaIndex) {
-            return replicas[replicaIndex];
-        }
-
-        @Override
-        public boolean isOwnerOrBackup(Address address) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getReplicaIndex(Address address) {
-            throw new UnsupportedOperationException();
-        }
+        return new PartitionTableView(addresses, partitionCount * replicaCount);
     }
 }

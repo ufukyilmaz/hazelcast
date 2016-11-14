@@ -1,7 +1,7 @@
 package com.hazelcast.internal.cluster.impl;
 
 import com.hazelcast.cluster.ClusterState;
-import com.hazelcast.nio.Address;
+import com.hazelcast.instance.MemberImpl;
 
 import java.util.Collection;
 
@@ -24,8 +24,7 @@ public final class ClusterStateManagerAccessor {
         clusterService.getClusterStateManager().setClusterState(newState, isTransient);
     }
 
-    public static void addMembersRemovedInNotActiveState(ClusterServiceImpl clusterService,
-            Collection<Address> addresses) {
-        clusterService.addMembersRemovedInNotActiveState(addresses);
+    public static void addMembersRemovedInNotActiveState(ClusterServiceImpl clusterService, Collection<MemberImpl> members) {
+        clusterService.addMembersRemovedInNotActiveState(members);
     }
 }

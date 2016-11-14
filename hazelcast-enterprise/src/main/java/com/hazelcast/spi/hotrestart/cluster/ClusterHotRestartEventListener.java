@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.core.Member;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.annotation.PrivateApi;
 
@@ -18,12 +19,12 @@ public abstract class ClusterHotRestartEventListener
 
     /**
      * Called after a node completes the preparation by reading member list and partition table from disk
-     *
-     * @param members             member list which is read from the disk
+     *  @param members             member list which is read from the disk
      * @param partitionTable      partition table which is read from disk
      * @param startWithHotRestart if false, node will start without hot restart
      */
-    public void onPrepareComplete(Collection<Address> members, Address[][] partitionTable, boolean startWithHotRestart) {
+    public void onPrepareComplete(Collection<? extends Member> members, PartitionTableView partitionTable,
+            boolean startWithHotRestart) {
     }
 
     /**
@@ -37,7 +38,7 @@ public abstract class ClusterHotRestartEventListener
      * Called while waiting for all members to join.
      * @param currentMembers currently joined members
      */
-    public void beforeAllMembersJoin(Collection<Member> currentMembers) {
+    public void beforeAllMembersJoin(Collection<? extends Member> currentMembers) {
 
     }
 
@@ -46,7 +47,7 @@ public abstract class ClusterHotRestartEventListener
      *
      * @param members expected member list
      */
-    public void onAllMembersJoin(Collection<Address> members) {
+    public void onAllMembersJoin(Collection<? extends Member> members) {
 
     }
 

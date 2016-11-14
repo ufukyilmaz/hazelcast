@@ -1,7 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
-import com.hazelcast.nio.Address;
+import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.hotrestart.HotRestartService;
@@ -20,7 +20,7 @@ public class SendLoadCompletionForValidationOperation
     public SendLoadCompletionForValidationOperation() {
     }
 
-    public SendLoadCompletionForValidationOperation(Address[][] partitionTable, boolean success) {
+    public SendLoadCompletionForValidationOperation(PartitionTableView partitionTable, boolean success) {
         super(partitionTable);
         this.success = success;
     }

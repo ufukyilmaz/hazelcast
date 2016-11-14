@@ -33,6 +33,7 @@ import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
 import com.hazelcast.memory.StandardMemoryManager;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOService;
 import com.hazelcast.nio.MemberSocketInterceptor;
 import com.hazelcast.nio.SocketInterceptor;
@@ -468,6 +469,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public void onPartitionStateChange() {
+        super.onPartitionStateChange();
+
+        if (hotRestartService != null) {
+            hotRestartService.getClusterMetadataManager().onPartitionStateChange();
+        }
+    }
+
+    @Override
     public boolean registerListener(Object listener) {
         if (listener instanceof ClusterHotRestartEventListener) {
             if (listener instanceof HazelcastInstanceAware) {
@@ -495,5 +505,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         return hotRestartService.triggerForceStart();
+    }
+
+    @Override
+    public String createMemberUuid(Address address) {
+        if (hotRestartService != null) {
+            String uuid = hotRestartService.getClusterMetadataManager().readMemberUuid();
+            if (uuid != null) {
+                return uuid;
+            }
+        }
+        return super.createMemberUuid(address);
     }
 }

@@ -53,7 +53,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     @Rule
     public TestName testName = new TestName();
 
-    private File folder;
+    private File baseDir;
     private TestHazelcastInstanceFactory factory;
     String cacheName;
 
@@ -68,10 +68,10 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
     @Before
     public final void setup() throws UnknownHostException {
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
+        baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
+        delete(baseDir);
+        if (!baseDir.mkdir() && !baseDir.exists()) {
+            throw new AssertionError("Unable to create test folder: " + baseDir.getAbsolutePath());
         }
 
         cacheName = randomName();
@@ -98,8 +98,8 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
             factory.terminateAll();
         }
 
-        if (folder != null) {
-            delete(folder);
+        if (baseDir != null) {
+            delete(baseDir);
         }
     }
 
@@ -107,15 +107,21 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
     }
 
     HazelcastInstance newHazelcastInstance() {
-        return factory.newHazelcastInstance(makeConfig());
+        Address address = factory.nextAddress();
+        return factory.newHazelcastInstance(address, makeConfig(address));
     }
 
     HazelcastInstance newHazelcastInstance(Config config) {
-        return factory.newHazelcastInstance(config);
+        Address address = factory.nextAddress();
+        return factory.newHazelcastInstance(address, withHotRestart(address, config));
     }
 
     HazelcastInstance[] newInstances(int clusterSize) {
-        return factory.newInstances(makeConfig(), clusterSize);
+        HazelcastInstance[] instances = new HazelcastInstance[clusterSize];
+        for (int i = 0; i < clusterSize; i++) {
+            instances[i] = newHazelcastInstance();
+        }
+        return instances;
     }
 
     void restartInstances(int clusterSize) {
@@ -134,13 +140,13 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         factory = createFactory();
 
         final CountDownLatch latch = new CountDownLatch(clusterSize);
-        final Config config = makeConfig();
 
         for (int i = 0; i < clusterSize; i++) {
             final Address address = new Address("127.0.0.1", localAddress, 5000 + i);
             new Thread() {
                 @Override
                 public void run() {
+                    Config config = makeConfig(address);
                     factory.newHazelcastInstance(address, config);
                     latch.countDown();
                 }
@@ -164,6 +170,19 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return hz;
     }
 
+    Config makeConfig(Address address) {
+        Config config = makeConfig();
+        return withHotRestart(address, config);
+    }
+
+    private Config withHotRestart(Address address, Config config) {
+        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
+        hotRestartPersistenceConfig
+                .setEnabled(true)
+                .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())));
+        return config;
+    }
+
     Config makeConfig() {
         Config config = new Config();
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
@@ -171,11 +190,6 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
 
         // to reduce used native memory size
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-
-        HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        hotRestartPersistenceConfig
-                .setEnabled(true)
-                .setBaseDir(folder);
 
         if (memoryFormat == InMemoryFormat.NATIVE) {
             config.getNativeMemoryConfig()

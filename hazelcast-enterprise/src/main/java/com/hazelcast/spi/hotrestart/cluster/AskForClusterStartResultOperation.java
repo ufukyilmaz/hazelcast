@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
+import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
@@ -8,10 +9,10 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_FAILED;
+import java.util.Set;
+
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 
 /**
  * It may happen that master can fail just after validating partition table of the nodes. If next master doesn't receive
@@ -19,14 +20,14 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializati
  * will not send their partition table as they started loading hot restart data. Master sends this operation to other nodes to
  * check if there is a status change it missed.
  */
-public class AskForPartitionTableValidationStatusOperation extends Operation implements JoinOperation {
+public class AskForClusterStartResultOperation extends Operation implements JoinOperation {
 
     @Override
     public void run() throws Exception {
         NodeEngine nodeEngine = getNodeEngine();
         Address caller = getCallerAddress();
         ILogger logger = getLogger();
-        final Address master = nodeEngine.getMasterAddress();
+        Address master = nodeEngine.getMasterAddress();
         if (!master.equals(caller)) {
             logger.warning("Non-master member: " + caller + " asked for partition table validation status. master: " + master);
             return;
@@ -36,20 +37,15 @@ public class AskForPartitionTableValidationStatusOperation extends Operation imp
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         OperationService operationService = nodeEngine.getOperationService();
 
-        HotRestartClusterInitializationStatus status = clusterMetadataManager.getHotRestartStatus();
-        if (status == PARTITION_TABLE_VERIFIED || status == VERIFICATION_FAILED) {
+        HotRestartClusterStartStatus status = clusterMetadataManager.getHotRestartStatus();
+        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        if (clusterMetadataManager.isStartWithHotRestart() && status != CLUSTER_START_IN_PROGRESS) {
             if (logger.isFineEnabled()) {
                 logger.fine("Sending " + status + " to: " + caller + " as response for " + getClass().getSimpleName());
             }
-            operationService.send(new SendPartitionTableValidationResultOperation(status), caller);
-        } else if (status == FORCE_STARTED) {
-            if (logger.isFineEnabled()) {
-                logger.fine("Sending force start to: " + caller + " as response for " + getClass().getSimpleName());
-            }
-            operationService.send(new ForceStartMemberOperation(), caller);
-        } else if (status == VERIFICATION_AND_LOAD_SUCCEEDED) {
-            logger.warning("Should not receive " + getClass().getSimpleName() + " from member: " + caller
-                    + " while hot restart status is " + VERIFICATION_AND_LOAD_SUCCEEDED);
+            ClusterState clusterState = (status == CLUSTER_START_SUCCEEDED)
+                    ? clusterMetadataManager.getCurrentClusterState() : null;
+            operationService.send(new SendClusterStartResultOperation(status, excludedMemberUuids, clusterState), caller);
         }
     }
 
@@ -70,6 +66,6 @@ public class AskForPartitionTableValidationStatusOperation extends Operation imp
 
     @Override
     public int getId() {
-        return HotRestartClusterSerializerHook.ASK_FOR_PARTITION_TABLE_VALIDATION_STATUS;
+        return HotRestartClusterSerializerHook.ASK_FOR_CLUSTER_START_RESULT;
     }
 }

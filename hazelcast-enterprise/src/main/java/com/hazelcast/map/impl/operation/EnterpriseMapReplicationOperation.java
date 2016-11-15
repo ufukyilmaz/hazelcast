@@ -31,6 +31,8 @@ public class EnterpriseMapReplicationOperation extends MapReplicationOperation {
         try {
             super.run();
         } catch (Throwable e) {
+            getLogger().severe("map replication operation failed for partitionId=" + getPartitionId(), e);
+
             disposePartition();
 
             if (e instanceof NativeOutOfMemoryError) {

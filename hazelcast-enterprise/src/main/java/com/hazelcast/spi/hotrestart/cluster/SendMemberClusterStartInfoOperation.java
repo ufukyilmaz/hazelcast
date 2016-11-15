@@ -1,7 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
-import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
@@ -14,18 +13,16 @@ import java.io.IOException;
  * Operation, which is used to send local partition table to master member
  * during cluster-wide validation phase.
  */
-public class SendPartitionTableForValidationOperation
-        extends Operation
-        implements JoinOperation {
+public class SendMemberClusterStartInfoOperation extends Operation implements JoinOperation {
 
-    private PartitionTableView partitionTable;
+    private MemberClusterStartInfo memberClusterStartInfo;
 
-    public SendPartitionTableForValidationOperation() {
+    public SendMemberClusterStartInfoOperation() {
     }
 
     @SuppressFBWarnings("EI_EXPOSE_REP")
-    public SendPartitionTableForValidationOperation(PartitionTableView partitionTable) {
-        this.partitionTable = partitionTable;
+    public SendMemberClusterStartInfoOperation(MemberClusterStartInfo memberClusterStartInfo) {
+        this.memberClusterStartInfo = memberClusterStartInfo;
     }
 
     @Override
@@ -33,7 +30,7 @@ public class SendPartitionTableForValidationOperation
             throws Exception {
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receivePartitionTableFromMember(getCallerAddress(), partitionTable);
+        clusterMetadataManager.receiveClusterStartInfoFromMember(getCallerAddress(), getCallerUuid(), memberClusterStartInfo);
     }
 
     @Override
@@ -47,13 +44,18 @@ public class SendPartitionTableForValidationOperation
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
-        PartitionTableView.writeData(partitionTable, out);
+    protected void writeInternal(ObjectDataOutput out)
+            throws IOException {
+        super.writeInternal(out);
+        memberClusterStartInfo.writeData(out);
     }
 
     @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
-        partitionTable = PartitionTableView.readData(in);
+    protected void readInternal(ObjectDataInput in)
+            throws IOException {
+        super.readInternal(in);
+        memberClusterStartInfo = new MemberClusterStartInfo();
+        memberClusterStartInfo.readData(in);
     }
 
     @Override
@@ -63,6 +65,7 @@ public class SendPartitionTableForValidationOperation
 
     @Override
     public int getId() {
-        return HotRestartClusterSerializerHook.SEND_PARTITION_TABLE_FOR_VALIDATION;
+        return HotRestartClusterSerializerHook.SEND_MEMBER_CLUSTER_START_INFO;
     }
+
 }

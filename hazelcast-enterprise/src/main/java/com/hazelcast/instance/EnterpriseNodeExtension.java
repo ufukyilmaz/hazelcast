@@ -47,6 +47,7 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -56,9 +57,11 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.
@@ -218,7 +221,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     @Override
     public boolean isStartCompleted() {
         if (hotRestartService != null) {
-            return hotRestartService.getClusterMetadataManager().isStartCompleted();
+            return hotRestartService.isStartCompleted();
         }
         return super.isStartCompleted();
     }
@@ -508,6 +511,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
+    public boolean triggerPartialStart() {
+        if (hotRestartService == null) {
+            logger.warning("Ignoring partial start request, hot restart is not enabled!");
+            return false;
+        }
+
+        return hotRestartService.triggerPartialStart();
+    }
+
+    @Override
     public String createMemberUuid(Address address) {
         if (hotRestartService != null) {
             String uuid = hotRestartService.getClusterMetadataManager().readMemberUuid();
@@ -516,5 +529,39 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             }
         }
         return super.createMemberUuid(address);
+    }
+
+    @Override
+    public boolean isMemberExcluded(Address memberAddress, String memberUuid) {
+        if (hotRestartService != null) {
+            Set<String> excludedMemberUuids = hotRestartService.getClusterMetadataManager().getExcludedMemberUuids();
+            return excludedMemberUuids.contains(memberUuid);
+        }
+        return super.isMemberExcluded(memberAddress, memberUuid);
+    }
+
+    @Override
+    public Set<String> getExcludedMemberUuids() {
+        if (hotRestartService != null) {
+            return hotRestartService.getClusterMetadataManager().getExcludedMemberUuids();
+        }
+
+        return super.getExcludedMemberUuids();
+    }
+
+    @Override
+    public void handleExcludedMemberUuids(Address sender, Set<String> excludedMemberUuids) {
+        if (!excludedMemberUuids.contains(node.getThisUuid())) {
+            logger.warning("Should handle final cluster start result with excluded member uuids: " + excludedMemberUuids
+                    + " within hot restart service since this member is not excluded. sender: " + sender);
+            return;
+        }
+
+        if (hotRestartService != null) {
+            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
+            clusterMetadataManager.receiveHotRestartStatus(sender, CLUSTER_START_SUCCEEDED, excludedMemberUuids, null);
+        }
+
+        super.handleExcludedMemberUuids(sender, excludedMemberUuids);
     }
 }

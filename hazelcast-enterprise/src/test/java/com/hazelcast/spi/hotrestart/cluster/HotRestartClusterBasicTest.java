@@ -2,6 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
@@ -106,8 +107,9 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
     }
 
     @Override
-    protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener) {
-        final Config config = super.newConfig(instanceName, listener);
+    protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
+            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+        final Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));
 

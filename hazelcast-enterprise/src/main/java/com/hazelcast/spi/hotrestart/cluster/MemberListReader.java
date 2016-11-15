@@ -7,16 +7,16 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 
 /**
  * Reads cluster member list from a specific file if exists.
  */
 class MemberListReader extends AbstractMetadataReader {
 
-    MemberImpl thisMember;
+    MemberImpl localMember;
     private Collection<MemberImpl> members = Collections.emptySet();
 
     MemberListReader(File homeDir) {
@@ -25,9 +25,9 @@ class MemberListReader extends AbstractMetadataReader {
 
     @Override
     void doRead(DataInputStream in) throws IOException {
-        thisMember = readMember(in);
+        localMember = readMember(in);
         int size = in.readInt();
-        members = new ArrayList<MemberImpl>(size);
+        members = new HashSet<MemberImpl>(size);
         for (int i = 0; i < size; i++) {
             MemberImpl member = readMember(in);
             members.add(member);
@@ -46,8 +46,8 @@ class MemberListReader extends AbstractMetadataReader {
         return MemberListWriter.FILE_NAME;
     }
 
-    MemberImpl getThisMember() {
-        return thisMember;
+    MemberImpl getLocalMember() {
+        return localMember;
     }
 
     Collection<MemberImpl> getMembers() {

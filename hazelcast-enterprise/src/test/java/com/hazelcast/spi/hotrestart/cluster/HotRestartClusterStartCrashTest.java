@@ -4,43 +4,39 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
+import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
+import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
-import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.impl.operationservice.InternalOperationService;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
+import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 
@@ -52,21 +48,6 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     @Parameterized.Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
         return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
-    }
-
-    private Future startNodeFuture;
-
-    @After
-    public void after() throws IOException {
-        try {
-            // Nothing to do with test's correctness.
-            // Just to avoid some IO errors to be printed
-            // when test finishes and deletes hot-restart folders
-            // before new node's restart process completes.
-            startNodeFuture.get(2, TimeUnit.MINUTES);
-        } catch (Exception ignored) {
-        }
-        super.after();
     }
 
     @Test
@@ -99,7 +80,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
         restartInstances(addresses, listeners);
 
-        assertInstancesJoined(addresses.length, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoinedEventually(addresses.length, NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
     @Test
@@ -114,33 +95,19 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
         restartInstances(addresses, listeners);
 
-        assertInstancesJoined(addresses.length, NodeState.ACTIVE, ClusterState.ACTIVE);
-    }
-
-    @Test
-    public void testMasterRestartAfterPartitionTablesValidated() throws InterruptedException {
-        Address[] addresses = startAndTerminateInstances(4);
-
-        final AtomicBoolean firstCrash = new AtomicBoolean(false);
-        final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
-        for (Address address : addresses) {
-            listeners.put(address, new CrashMasterOnPartitionTableValidationComplete(firstCrash));
-        }
-
-        restartInstances(addresses, listeners);
-
-        assertInstancesJoined(addresses.length, NodeState.ACTIVE, ClusterState.ACTIVE);
+        assertInstancesJoinedEventually(addresses.length, NodeState.ACTIVE, ClusterState.ACTIVE);
     }
 
     @Test
     public void testByzantineFailPartitionTableAfterPartitionTablesValidated()
             throws InterruptedException {
-        Address[] addresses = startAndTerminateInstances(4);
+        final int nodeCount = 4;
+        Address[] addresses = startAndTerminateInstances(nodeCount);
 
         final AtomicBoolean firstCrash = new AtomicBoolean(false);
         final Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
         for (Address address : addresses) {
-            listeners.put(address, new ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(firstCrash));
+            listeners.put(address, new ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(firstCrash, nodeCount));
         }
 
         final HazelcastInstance[] instances = restartInstances(addresses, listeners);
@@ -166,12 +133,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         restartInstances(addresses, listeners);
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assertInstancesJoined(addresses.length, NodeState.PASSIVE, ClusterState.PASSIVE);
-            }
-        });
+        assertInstancesJoinedEventually(addresses.length, NodeState.PASSIVE, ClusterState.PASSIVE);
     }
 
     private class CrashMemberOnAllMembersJoin extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
@@ -192,10 +154,11 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             this.instance = instance;
         }
 
+
         @Override
-        public void onAllMembersJoin(Collection<? extends Member> members) {
+        public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
             final Node node = getNode(instance);
-            boolean shouldCrash = crashMaster && node.isMaster() || !crashMaster && !node.isMaster();
+            boolean shouldCrash = (crashMaster && node.isMaster()) || (!crashMaster && !node.isMaster());
             if (shouldCrash && crash.compareAndSet(false, true)) {
                 startNodeAfterTermination(node);
                 throw new HotRestartException("hot restart is failed manually!");
@@ -203,40 +166,21 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
     }
 
-    private class CrashMasterOnPartitionTableValidationComplete extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
-
-        private final AtomicBoolean firstCrash;
-
-        private HazelcastInstance instance;
-
-        CrashMasterOnPartitionTableValidationComplete(AtomicBoolean firstCrash) {
-            this.firstCrash = firstCrash;
-        }
-
-        @Override
-        public void setHazelcastInstance(HazelcastInstance instance) {
-            this.instance = instance;
-        }
-
-        @Override
-        public void onPartitionTableValidationComplete(HotRestartClusterInitializationStatus result) {
-            final Node node = getNode(instance);
-            if (result == PARTITION_TABLE_VERIFIED && node.isMaster() && firstCrash.compareAndSet(false, true)) {
-                startNodeAfterTermination(node);
-                throw new HotRestartException("hot restart is failed manually!");
-            }
-        }
-
-    }
-
     private static class ByzantineFailPartitionTableAfterPartitionTableValidationCompleted extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
+        private final CountDownLatch latch = new CountDownLatch(1);
+
         private final AtomicBoolean firstCrash;
+
+        private final Set<Address> addresses = Collections.newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
+
+        private final int expectedNodeCount;
 
         private HazelcastInstance instance;
 
-        ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(AtomicBoolean firstCrash) {
+        ByzantineFailPartitionTableAfterPartitionTableValidationCompleted(AtomicBoolean firstCrash, final int expectedNodeCount) {
             this.firstCrash = firstCrash;
+            this.expectedNodeCount = expectedNodeCount;
         }
 
         @Override
@@ -245,13 +189,34 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         @Override
-        public void onPartitionTableValidationComplete(HotRestartClusterInitializationStatus result) {
+        public void onDataLoadStart(Address address) {
             final Node node = getNode(instance);
-            if (result == PARTITION_TABLE_VERIFIED && !node.isMaster()
-                    && firstCrash.compareAndSet(false, true)) {
-                InternalOperationService operationService = node.getNodeEngine().getOperationService();
-                Operation op = new SendPartitionTableForValidationOperation(null);
-                operationService.send(op, node.getMasterAddress());
+            if (!node.isMaster()) {
+                return;
+            }
+            assertOpenEventually(latch);
+        }
+
+        @Override
+        public void onPartitionTableValidationResult(Address sender, boolean success) {
+            final Node node = getNode(instance);
+            if (!node.isMaster()) {
+                return;
+            }
+
+            if (success) {
+                addresses.add(sender);
+                if (addresses.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
+                    PartitionTableView partitionTableView = new PartitionTableView(
+                            new Address[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
+                    MemberClusterStartInfo invalidMemberClusterStartInfo = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
+                    EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
+                    ClusterMetadataManager clusterMetadataManager = nodeExtension.getHotRestartService() .getClusterMetadataManager();
+                    clusterMetadataManager.receiveClusterStartInfoFromMember(sender, null, invalidMemberClusterStartInfo);
+                    latch.countDown();
+                }
+            } else {
+                System.err.println("Invalid ptable from " + sender);
             }
         }
 
@@ -273,31 +238,13 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
 
         @Override
-        public void onHotRestartDataLoadComplete(HotRestartClusterInitializationStatus result) {
+        public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<String> excludedMemberUuids) {
             final Node node = getNode(instance);
-            if (result == VERIFICATION_AND_LOAD_SUCCEEDED && !node.isMaster() && firstCrash.compareAndSet(false, true)) {
+            if (result == CLUSTER_START_SUCCEEDED && !node.isMaster() && firstCrash.compareAndSet(false, true)) {
                 startNodeAfterTermination(node);
                 throw new HotRestartException("hot restart is failed manually!");
             }
         }
-
-    }
-
-    private void startNodeAfterTermination(final Node node) {
-        startNodeFuture = spawn(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Address address = node.getThisAddress();
-                    assertNodeStateEventually(node, NodeState.SHUT_DOWN);
-                    // we can't change address anymore after cluster restart is initiated
-                    addressChangePolicy = NONE;
-                    restartInstance(address);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 
 }

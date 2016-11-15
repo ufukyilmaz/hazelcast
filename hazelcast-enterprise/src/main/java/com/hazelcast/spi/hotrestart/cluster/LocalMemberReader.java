@@ -15,6 +15,6 @@ class LocalMemberReader extends MemberListReader {
 
     @Override
     void doRead(DataInputStream in) throws IOException {
-        thisMember = readMember(in);
+        localMember = readMember(in);
     }
 }

@@ -1,6 +1,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.MemberImpl;
@@ -14,6 +15,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
@@ -26,25 +28,33 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY;
+import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE;
+import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_RECENT;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.addMembersRemovedInNotActiveState;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.spi.hotrestart.cluster.ClusterStateReader.readClusterState;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.FORCE_STARTED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PARTITION_TABLE_VERIFIED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.PENDING_VERIFICATION;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_AND_LOAD_SUCCEEDED;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterInitializationStatus.VERIFICATION_FAILED;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_FAILED;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS;
+import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
+import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_FAILED;
+import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
+import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_SUCCESSFUL;
+import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
-import static java.util.Collections.newSetFromMap;
+import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -59,11 +69,7 @@ public final class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
 
-    // A very long timeout to observe volatile write of finalClusterStateSet
-    // after successful CAS of hotRestartStatus is observed.
-    // This timeout to avoid a possible infinite loop and see the failure
-    // when the logic here is broken erroneously.
-    private static final long FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT = TimeUnit.MINUTES.toNanos(5);
+    private static final long EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS = TimeUnit.MINUTES.toMillis(2);
 
     private final Node node;
     private final MemberListWriter memberListWriter;
@@ -73,22 +79,25 @@ public final class ClusterMetadataManager {
     private final ILogger logger;
     private final long validationTimeout;
     private final long dataLoadTimeout;
-    private final AtomicReference<HotRestartClusterInitializationStatus> hotRestartStatus =
-            new AtomicReference<HotRestartClusterInitializationStatus>(PENDING_VERIFICATION);
-    private final Set<Address> notValidatedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
-    private final Set<Address> notLoadedAddresses = newSetFromMap(new ConcurrentHashMap<Address, Boolean>());
-    private final AtomicReference<Collection<MemberImpl>> memberListRef = new AtomicReference<Collection<MemberImpl>>();
     private final AtomicReference<PartitionTableView> partitionTableRef = new AtomicReference<PartitionTableView>();
-    private final AtomicReference<Boolean> localLoadResult = new AtomicReference<Boolean>();
+    private final HotRestartClusterDataRecoveryPolicy clusterDataRecoveryPolicy;
+    private final ReentrantLock hotRestartStatusLock = new ReentrantLock();
+    private final ConcurrentMap<Address, MemberClusterStartInfo> memberClusterStartInfos =
+            new ConcurrentHashMap<Address, MemberClusterStartInfo>();
+    private final AtomicReference<Collection<MemberImpl>> restoredMembersRef = new AtomicReference<Collection<MemberImpl>>();
+    private final AtomicReference<Set<String>> expectedMemberUuidsRef = new AtomicReference<Set<String>>();
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
+    private Thread pingThread;
 
     private volatile boolean startWithHotRestart = true;
+    private volatile HotRestartClusterStartStatus hotRestartStatus = CLUSTER_START_IN_PROGRESS;
+    private volatile boolean startCompleted;
+    private volatile Set<String> excludedMemberUuids = Collections.emptySet();
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
-    private volatile boolean finalClusterStateSet;
     private volatile boolean addressChangeDetected;
-    private long validationStartTime;
-    private long loadStartTime;
+    private volatile long validationStartTime;
+    private volatile long dataLoadStartTime;
 
     public ClusterMetadataManager(Node node, File hotRestartHome, HotRestartPersistenceConfig cfg) {
         this.node = node;
@@ -97,7 +106,8 @@ public final class ClusterMetadataManager {
         mkdirHome();
         validationTimeout = TimeUnit.SECONDS.toMillis(cfg.getValidationTimeoutSeconds());
         dataLoadTimeout = TimeUnit.SECONDS.toMillis(cfg.getDataLoadTimeoutSeconds());
-        memberListWriter = new MemberListWriter(homeDir);
+        memberListWriter = new MemberListWriter(homeDir, node);
+        clusterDataRecoveryPolicy = cfg.getClusterDataRecoveryPolicy();
         partitionTableWriter = new PartitionTableWriter(homeDir);
         clusterStateWriter = new ClusterStateWriter(homeDir);
     }
@@ -118,7 +128,6 @@ public final class ClusterMetadataManager {
     // main thread
     public void prepare() {
         try {
-            memberListWriter.setLocalMember(node.getLocalMember());
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
             final Collection<MemberImpl> members = restoreMemberList();
             final PartitionTableView table = restorePartitionTable();
@@ -155,8 +164,14 @@ public final class ClusterMetadataManager {
         return startWithHotRestart;
     }
 
-    public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
+    public void addClusterHotRestartEventListener(ClusterHotRestartEventListener listener) {
         this.hotRestartEventListeners.add(listener);
+    }
+
+    public Set<String> getExcludedMemberUuids() {
+        // this is on purpose. We can start filling excludedMemberUuids before status is finalized
+        // but we only publish it when the final status is set
+        return hotRestartStatus == CLUSTER_START_SUCCEEDED ? excludedMemberUuids : Collections.<String>emptySet();
     }
 
     /**
@@ -179,46 +194,243 @@ public final class ClusterMetadataManager {
             currentThread().interrupt();
             throw new HotRestartException("Cluster metadata manager interrupted during startup");
         }
+
         setInitialPartitionTable();
-        loadStartTime = Clock.currentTimeMillis();
         logger.info("Starting hot restart local data load.");
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
             listener.onDataLoadStart(node.getThisAddress());
+        }
+        dataLoadStartTime = Clock.currentTimeMillis();
+        pingThread = new Thread(node.getHazelcastThreadGroup().getThreadNamePrefix("cluster-start-ping-thread")) {
+            @Override
+            public void run() {
+                while (ping()) {
+                    try {
+                        logger.fine("Cluster start ping...");
+                        sleep(SECONDS.toMillis(1));
+                    } catch (InterruptedException e) {
+                        currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+        };
+        pingThread.start();
+    }
+
+    private void validate() throws InterruptedException {
+        validationStartTime = Clock.currentTimeMillis();
+        if (completeValidationIfNoHotRestartData()) {
+            return;
+        }
+        logger.info("Starting cluster member-list & partition table validation.");
+        if (startWithHotRestart) {
+            Map<Address, Address> addressMapping = awaitUntilAllMembersJoin();
+            if (addressMapping.size() > 0) {
+                addressChangeDetected = true;
+            }
+            logger.info("Expected member list after await until all members join: " + expectedMemberUuidsRef.get());
+            logAddressChanges(addressMapping);
+            fillMemberAddresses(addressMapping, restoredMembersRef);
+            repairPartitionTable(addressMapping);
+        }
+        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+            final Collection<MemberImpl> expectedMembers = new ArrayList<MemberImpl>();
+            for (MemberImpl member : restoredMembersRef.get()) {
+                if (expectedMemberUuidsRef.get().contains(member.getUuid())) {
+                    expectedMembers.add(member);
+                }
+            }
+            listener.afterAwaitUntilMembersJoin(expectedMembers);
+        }
+
+        // THIS IS DONE HERE TO BE ABLE TO INVOKE LISTENERS
+        Address thisAddress = node.getThisAddress();
+        String thisUuid = node.getThisUuid();
+        MemberClusterStartInfo clusterStartInfo = new MemberClusterStartInfo(partitionTableRef.get(), LOAD_IN_PROGRESS);
+        receiveClusterStartInfoFromMember(thisAddress, thisUuid, clusterStartInfo);
+
+        if (hotRestartStatus == CLUSTER_START_FAILED) {
+            throw new HotRestartException("Cluster-wide start failed!");
+        }
+    }
+
+    private boolean ping() {
+        hotRestartStatusLock.lock();
+        try {
+            long deadline = dataLoadStartTime + dataLoadTimeout;
+            if (hotRestartStatus != CLUSTER_START_IN_PROGRESS || deadline <= Clock.currentTimeMillis()) {
+                logger.fine("Completing cluster start ping...");
+                return false;
+            }
+
+            if (node.isMaster()) {
+                askForClusterStartResult();
+            } else {
+                sendLocalMemberClusterStartInfoToMaster();
+            }
+            return true;
+        } finally {
+            hotRestartStatusLock.unlock();
         }
     }
 
     // main thread
     public void loadCompletedLocal(Throwable failure) throws InterruptedException {
-        final boolean success = failure == null;
+        boolean success = failure == null;
         if (success) {
-            logger.info("Local Hot Restart procedure completed with success. Waiting other members to complete.");
+            logger.info("Local Hot Restart procedure completed with success.");
         } else {
-            logger.warning("Local Hot Restart procedure completed with failure. Waiting other members to complete.", failure);
+            logger.warning("Local Hot Restart procedure completed with failure.", failure);
         }
-        localLoadResult.set(success);
-        receiveLoadCompletionStatusFromMember(node.getThisAddress(), success);
-        waitForFailureOrExpectedStatus(EnumSet.of(VERIFICATION_FAILED, VERIFICATION_AND_LOAD_SUCCEEDED),
-                new LoadTask(success), loadStartTime + dataLoadTimeout);
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
+
+        hotRestartStatusLock.lock();
+        try {
+            if (startWithHotRestart) {
+                if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                    MemberClusterStartInfo current = memberClusterStartInfos.get(node.getThisAddress());
+                    DataLoadStatus dataLoadStatus = success ? LOAD_SUCCESSFUL : LOAD_FAILED;
+                    PartitionTableView partitionTable = current.getPartitionTable();
+                    MemberClusterStartInfo newMemberClusterStartInfo = new MemberClusterStartInfo(partitionTable, dataLoadStatus);
+                    receiveClusterStartInfoFromMember(node.getThisAddress(), node.getThisUuid(), newMemberClusterStartInfo);
+                }
+            } else {
+                logger.info("Shortcutting cluster start to success as there is no hot restart data on disk.");
+                hotRestartStatus = CLUSTER_START_SUCCEEDED;
+            }
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
+
+        try {
+            waitForDataLoadTimeoutOrFinalClusterStartStatus();
+            processFinalClusterStartStatus(failure);
+
+            persistMembers();
+            persistPartitions();
+            restoredMembersRef.set(null);
+            expectedMemberUuidsRef.set(null);
+            partitionTableRef.set(null);
+            memberClusterStartInfos.clear();
+        } finally {
+            try {
+                pingThread.join();
+            } catch (InterruptedException e) {
+                logger.severe("interrupted while joined to ping thread");
+                currentThread().interrupt();
+            }
+        }
+    }
+
+    private void processFinalClusterStartStatus(Throwable failure) throws InterruptedException {
+        if (hotRestartStatus == CLUSTER_START_SUCCEEDED) {
+            if (excludedMemberUuids.contains(node.getThisUuid())) {
+                invokeListenersOnCompletion();
+                throw new ForceStartException();
+            } else {
+                awaitUntilExcludedMembersLeave();
+                invokeListenersOnCompletion();
+            }
+        } else {
+            invokeListenersOnCompletion();
+            throw new HotRestartException("Cluster-wide start failed!", failure);
+        }
+    }
+
+    private void invokeListenersOnCompletion() {
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onHotRestartDataLoadComplete(status);
+            listener.onHotRestartDataLoadComplete(hotRestartStatus, excludedMemberUuids);
         }
-        if (status == VERIFICATION_FAILED) {
-            throw new HotRestartException("Cluster-wide load failed!", failure);
+    }
+
+    public void forceStartCompleted() {
+        if (hotRestartStatus != CLUSTER_START_SUCCEEDED || excludedMemberUuids.contains(node.getThisUuid())) {
+            throw new IllegalStateException("cannot complete force start with " + hotRestartStatus
+                    + " and excluded member uuids: " + excludedMemberUuids);
         }
-        logger.info("Cluster-wide load completed... ClusterState: " + node.getClusterService().getClusterState());
-        persistMembers();
-        persistPartitions();
-        notValidatedAddresses.clear();
-        notLoadedAddresses.clear();
-        memberListRef.set(null);
-        partitionTableRef.set(null);
-        localLoadResult.set(null);
+
+        startCompleted = true;
+        logger.info("Force start completed.");
+    }
+
+    private void awaitUntilExcludedMembersLeave() throws InterruptedException {
+        HotRestartClusterStartStatus hotRestartStatus = this.hotRestartStatus;
+        if (hotRestartStatus != CLUSTER_START_SUCCEEDED) {
+            throw new IllegalStateException("Cannot wait for excluded uuids to leave because in " + hotRestartStatus + " status");
+        }
+
+        long deadline = Clock.currentTimeMillis() + EXCLUDED_MEMBERS_LEAVE_WAIT_IN_MILLIS;
+
+        while (isExcludedMemberPresentInCluster()) {
+            sleep(SECONDS.toMillis(1));
+            if (logger.isFineEnabled()) {
+                long remaining = (dataLoadStartTime + dataLoadTimeout) - Clock.currentTimeMillis();
+                logger.fine("Waiting for result... Remaining time: " + remaining + " ms.");
+            }
+
+           if (Clock.currentTimeMillis() > deadline) {
+                throw new HotRestartException("Excluded members have not left the cluster before timeout!");
+            }
+        }
+
+        hotRestartStatusLock.lock();
+        try {
+            setFinalClusterState(clusterState);
+            startCompleted = true;
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
+
+        notifyClusterServiceForExcludedMembers();
+
+        logger.info("Completed hot restart with final cluster state: " + clusterState);
+    }
+
+    private boolean isExcludedMemberPresentInCluster() {
+        for (String uuid : excludedMemberUuids) {
+            if (node.getClusterService().getMember(uuid) != null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void notifyClusterServiceForExcludedMembers() {
+        for (Member member : restoredMembersRef.get()) {
+            if (excludedMemberUuids.contains(member.getUuid())) {
+                node.getClusterService().notifyForRemovedMember((MemberImpl) member);
+            }
+        }
+    }
+
+    public boolean isStartCompleted() {
+        return startCompleted;
     }
 
     public void onMembershipChange() {
         if (isStartCompleted() && node.joined()) {
             persistMembers();
+        } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+            hotRestartStatusLock.lock();
+            try {
+                if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                    Collection<MemberImpl> restoredMembers = restoredMembersRef.get();
+                    if (restoredMembers == null) {
+                       return;
+                    }
+
+                    for (Member member : restoredMembers) {
+                        Address address = member.getAddress();
+                        if (node.getClusterService().getMember(address) == null
+                                && memberClusterStartInfos.remove(address) != null) {
+                            logger.warning("Member cluster start info of " + address + " is removed as it has left the cluster");
+                        }
+                    }
+                }
+            } finally {
+                hotRestartStatusLock.unlock();
+            }
         }
     }
 
@@ -246,62 +458,104 @@ public final class ClusterMetadataManager {
         }
     }
 
-    public HotRestartClusterInitializationStatus getHotRestartStatus() {
-        return hotRestartStatus.get();
+    public HotRestartClusterStartStatus getHotRestartStatus() {
+        return hotRestartStatus;
     }
 
     File getHomeDir() {
         return homeDir;
     }
 
-    void receiveForceStartFromMaster(final Address sender) {
-        if (!sender.equals(node.getMasterAddress())) {
-            logger.warning("Force restart command received from non-master member: " + sender);
-            return;
+    public boolean handleForceStartRequest() {
+        if (!node.isMaster()) {
+            logger.warning("Force start attempt received but this node is not master!");
+            return false;
         }
 
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
-        if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
-            if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
-                logger.info("Force start will proceed as it is received from master: " + sender);
-            } else {
-                logger.warning("Could not set force start. Current: " + hotRestartStatus.get());
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
+                logger.warning("cannot trigger force start since cluster start status is " + hotRestartStatus);
+                return false;
             }
-        } else {
-            logger.warning("Could not set force start since hot restart is already completed with: " + status);
+
+            Set<String> excludedMemberUuids = new HashSet<String>();
+            for (Member member : restoredMembersRef.get()) {
+                excludedMemberUuids.add(member.getUuid());
+            }
+
+            this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
+            node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+            this.clusterState = ClusterState.ACTIVE;
+            this.hotRestartStatus = CLUSTER_START_SUCCEEDED;
+
+            logger.warning("Force start is set.");
+            broadcast(new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, clusterState));
+            return true;
+        } finally {
+            hotRestartStatusLock.unlock();
         }
     }
 
-    public boolean receiveForceStartTrigger(final Address sender) {
+    public boolean handlePartialStartRequest() {
         if (!node.isMaster()) {
-            logger.warning("Force start attempt received from " + sender + " but this node is not master!");
+            logger.warning("Partial data recovery attempt received but this node is not master!");
             return false;
         }
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
-        if (status == PENDING_VERIFICATION || status == PARTITION_TABLE_VERIFIED) {
-            if (hotRestartStatus.compareAndSet(status, FORCE_STARTED)) {
-                logger.info("Force start will proceed. Sender: " + sender);
-                sendOperationToOthers(new ForceStartMemberOperation());
-                return true;
+
+        if (!isPartialStartPolicy()) {
+            logger.warning("Cannot eagerly set expected member uuids because cluster start policy is "
+                    + clusterDataRecoveryPolicy);
+            return false;
+        }
+
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
+                logger.warning("cannot trigger partial data recovery since cluster start status is " + hotRestartStatus);
+                return false;
+            }
+
+            if (restoredMembersRef.get() == null) {
+                logger.warning("cannot trigger partial data recovery since restored member list is not present");
+                return false;
+            }
+
+            if (expectedMemberUuidsRef.get() == null) {
+                setCurrentMemberListToExpectedMembers();
             } else {
-                logger.warning("Could not set hot restart status to " + FORCE_STARTED + ". Current: " + hotRestartStatus.get());
+                tryPartialStart();
+            }
+
+            return true;
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
+    }
+
+    private void setCurrentMemberListToExpectedMembers() {
+        ClusterServiceImpl clusterService = node.getClusterService();
+        Set<String> expectedMemberUuids = new HashSet<String>();
+        for (MemberImpl restoredMember : restoredMembersRef.get()) {
+            if (clusterService.getMember(restoredMember.getUuid()) != null) {
+                expectedMemberUuids.add(restoredMember.getUuid());
             }
         }
-        return false;
+        expectedMemberUuidsRef.set(unmodifiableSet(expectedMemberUuids));
+        logger.info("Expected member list is eagerly set to current member list uuids: " + expectedMemberUuids);
     }
 
     public void reset() {
-        memberListRef.set(null);
-        partitionTableRef.set(null);
-        localLoadResult.set(null);
-        notLoadedAddresses.clear();
-        notValidatedAddresses.clear();
-        mkdirHome();
-    }
-
-    public boolean isStartCompleted() {
-        HotRestartClusterInitializationStatus status = getHotRestartStatus();
-        return status == VERIFICATION_AND_LOAD_SUCCEEDED || status == FORCE_STARTED;
+        hotRestartStatusLock.lock();
+        try {
+            restoredMembersRef.set(null);
+            expectedMemberUuidsRef.set(null);
+            partitionTableRef.set(null);
+            memberClusterStartInfos.clear();
+            mkdirHome();
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
     }
 
     public void shutdown() {
@@ -313,100 +567,258 @@ public final class ClusterMetadataManager {
     }
 
     // operation thread
-    void receivePartitionTableFromMember(Address sender, PartitionTableView remoteTable) {
-        if (!node.isMaster()) {
-            logger.warning("Ignoring partition table received from " + sender + " since this node is not master!");
+    void receiveClusterStartInfoFromMember(Address sender, String senderUuid, MemberClusterStartInfo senderClusterStartInfo) {
+        if (!(node.isMaster() || node.getThisAddress().equals(sender))) {
+            logger.warning("Ignoring partition table received from non-master " + sender + " since this node is not master!");
             return;
-        }
-
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
-
-        // barrier
-        if (status == PENDING_VERIFICATION && notValidatedAddresses.isEmpty()
-                || notValidatedAddresses.contains(node.getThisAddress())) {
-            logger.fine("Received partition table version " + remoteTable.getVersion()
-                    + " from " + sender + ", but we are not ready yet!");
-            return;
-        }
-
-        if (status == VERIFICATION_FAILED) {
-            logger.info("Partition table validation already failed. Sending failure to: " + sender);
-            InternalOperationService operationService = node.getNodeEngine().getOperationService();
-            operationService.send(new SendPartitionTableValidationResultOperation(VERIFICATION_FAILED), sender);
-        } else if (status == FORCE_STARTED) {
-            logger.info("Ignored partition table from " + sender + " and sent force start response.");
-            InternalOperationService operationService = node.getNodeEngine().getOperationService();
-            operationService.send(new ForceStartMemberOperation(), sender);
-        } else {
-            validatePartitionTable(sender, remoteTable);
-        }
-    }
-
-    // operation thread
-    void receiveHotRestartStatusFromMasterAfterPartitionTableVerification(
-            Address sender, HotRestartClusterInitializationStatus result
-    ) {
-        final Address master = node.getMasterAddress();
-        if (!master.equals(sender)) {
-            logger.warning(String.format(
-                    "Received partition table validation result from a non-master member %s. Current master is %s",
-                    sender, master));
-            return;
-        }
-        if (result != VERIFICATION_FAILED && result != PARTITION_TABLE_VERIFIED) {
-            throw new IllegalArgumentException(String.format(
-                    "Cannot set hot restart status to %s because partition table already passed verification", result));
         }
         if (logger.isFineEnabled()) {
-            logger.fine(String.format("Setting cluster-wide validation status %s to %s", hotRestartStatus.get(), result));
+            logger.fine("Received partition table from " + sender);
         }
-        hotRestartStatus.compareAndSet(PENDING_VERIFICATION, result);
-    }
 
-    // operation thread
-    void receiveLoadCompletionStatusFromMember(Address sender, boolean success) {
-        if (logger.isFineEnabled()) {
-            logger.fine(String.format("Received load completion status == %s from %s, still waiting for %s",
-                    success, sender, notLoadedAddresses));
-        }
-        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onHotRestartDataLoadResult(sender, success);
-        }
-        if (!success) {
-            if (node.isMaster()) {
-                processFailedLoadCompletionStatus(sender);
-            } else if (!node.getThisAddress().equals(sender)) {
-                logger.warning(String.format("Received load completion status == false from %s, "
-                        + "but this node is not the master", sender));
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus == CLUSTER_START_FAILED) {
+                logger.info("Cluster start already failed. Sending failure to: " + sender);
+                sendIfNotThisMember(SendClusterStartResultOperation.newFailureResultOperation(), sender);
+            } else if (hotRestartStatus == CLUSTER_START_SUCCEEDED) {
+                validateSenderClusterStartInfoWhenSuccess(sender, senderUuid, senderClusterStartInfo);
+            } else {
+                validateSenderClusterStartInfoWhenInProgress(sender, senderClusterStartInfo);
             }
-        } else if (hotRestartStatus.get() == PARTITION_TABLE_VERIFIED) {
-            processSuccessfulLoadCompletionStatusWhenPartitionTableVerified(sender);
-        } else {
-            sendClusterWideLoadCompletionResultIfAvailable(sender);
+        } finally {
+            hotRestartStatusLock.unlock();
         }
     }
 
-    // operation thread
-    void receiveHotRestartStatusFromMasterAfterLoadCompletion(Address sender, HotRestartClusterInitializationStatus result) {
-        final Address master = node.getMasterAddress();
-        if (!master.equals(sender)) {
-            logger.warning("Received load completion result from non-master member: " + sender + " master: " + master);
+    private void validateSenderClusterStartInfoWhenSuccess(Address sender, String senderUuid,
+                                                           MemberClusterStartInfo senderClusterStartInfo) {
+        if (excludedMemberUuids.contains(senderUuid)) {
+            logger.info(sender + " with uuid: " + senderUuid + " is excluded in start.");
+            Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, null);
+            sendIfNotThisMember(op, sender);
+            return;
+        } else if (excludedMemberUuids.contains(node.getThisUuid())) {
+            logger.info("Will not answer " + sender + "'s cluster start info since this member is excluded in start.");
             return;
         }
-        if (!(result == VERIFICATION_FAILED || result == VERIFICATION_AND_LOAD_SUCCEEDED)) {
-            throw new IllegalArgumentException("Can not set hot restart status after load completion to " + result);
+
+        PartitionTableView senderPartitionTable = senderClusterStartInfo.getPartitionTable();
+        DataLoadStatus senderDataLoadStatus = senderClusterStartInfo.getDataLoadStatus();
+
+        PartitionTableView localPartitionTable;
+        MemberClusterStartInfo thisMemberClusterStartInfo = memberClusterStartInfos.get(node.getThisAddress());
+        if (thisMemberClusterStartInfo != null) {
+            localPartitionTable = thisMemberClusterStartInfo.getPartitionTable();
+        } else {
+            localPartitionTable = node.partitionService.createPartitionTableView();
         }
-        if (logger.isFineEnabled()) {
-            logger.fine("Setting cluster-wide hot restart status " + hotRestartStatus.get() + " to " + result);
+
+        boolean partitionTableValidated = localPartitionTable.equals(senderPartitionTable);
+
+        notifyListeners(sender, partitionTableValidated, senderDataLoadStatus);
+
+        if (partitionTableValidated && senderDataLoadStatus == LOAD_SUCCESSFUL) {
+            logger.info("Sender: " + sender + " succeeded after cluster is started");
+            Operation op = new SendClusterStartResultOperation(CLUSTER_START_SUCCEEDED,
+                    excludedMemberUuids, getCurrentClusterState());
+            sendIfNotThisMember(op, sender);
+        } else if (!partitionTableValidated || senderDataLoadStatus == LOAD_FAILED) {
+            logger.info("Sender: " + sender + " failed after cluster is started. partition table validated: "
+                    + partitionTableValidated + " sender data load result: " + senderDataLoadStatus);
+            sendIfNotThisMember(SendClusterStartResultOperation.newFailureResultOperation(), sender);
+        } else {
+            logger.fine("Sender: " + sender + " validated its partition table but we are still waiting for data load result...");
         }
-        hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, result);
+    }
+
+    private void sendIfNotThisMember(Operation operation, Address target) {
+        if (!node.getThisAddress().equals(target)) {
+            InternalOperationService operationService = node.getNodeEngine().getOperationService();
+            operationService.send(operation, target);
+        }
+    }
+
+    private void validateSenderClusterStartInfoWhenInProgress(Address sender, MemberClusterStartInfo senderClusterStartInfo) {
+        // MAY PUT STALE OBJECT TEMPORARILY BECAUSE OF NO ORDERING GUARANTEE
+        // BUT EVENTUALLY THE FINAL OBJECT WILL BE PUT INSIDE
+        memberClusterStartInfos.put(sender, senderClusterStartInfo);
+        logger.fine("Received cluster info from member " + sender + " load-status " + senderClusterStartInfo.getDataLoadStatus());
+
+        if (!memberClusterStartInfos.containsKey(node.getThisAddress())) {
+            logger.fine("Not validating member cluster start info of " + sender
+                    + " as this member's cluster start info is not known yet");
+            return;
+        }
+
+        if (!validateMemberClusterStartInfosForFullStart(sender)) {
+            autoTryPartialStart();
+        }
+
+        if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
+            ClusterState clusterState = hotRestartStatus == CLUSTER_START_SUCCEEDED ? this.clusterState : null;
+            Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, clusterState);
+            sendIfNotThisMember(op, sender);
+        }
+    }
+
+    private boolean validateMemberClusterStartInfosForFullStart(Address sender) {
+        MemberClusterStartInfo thisMemberClusterStartInfo = memberClusterStartInfos.get(node.getThisAddress());
+
+        int partitionTableVersion = thisMemberClusterStartInfo.getPartitionTableVersion();
+        boolean fullStartSuccessful = true;
+
+        for (Member member : restoredMembersRef.get()) {
+            Address memberAddress = member.getAddress();
+            MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(memberAddress);
+            if (memberClusterStartInfo == null) {
+                fullStartSuccessful = false;
+                continue;
+            }
+
+            int memberPartitionTableVersion = memberClusterStartInfo.getPartitionTableVersion();
+            boolean partitionTableValidated = thisMemberClusterStartInfo.checkPartitionTables(memberClusterStartInfo);
+            DataLoadStatus memberDataLoadStatus = memberClusterStartInfo.getDataLoadStatus();
+
+            if (memberAddress.equals(sender)) {
+                notifyListeners(sender, partitionTableValidated, memberDataLoadStatus);
+            }
+
+            boolean memberFailed = !partitionTableValidated || memberDataLoadStatus == LOAD_FAILED;
+
+            if (memberFailed) {
+                fullStartSuccessful = false;
+                if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
+                    logger.warning("Failing cluster start since full cluster data recovery is expected and we have a failure! "
+                            + "failed member: " + memberAddress + " ref partition table version: " + partitionTableVersion
+                            + " ref partition table version: " + partitionTableVersion + " member partition table version: "
+                            + memberPartitionTableVersion + " member load status: " + memberDataLoadStatus);
+                    hotRestartStatus = CLUSTER_START_FAILED;
+                    break;
+                }
+            } else if (memberDataLoadStatus == LOAD_IN_PROGRESS) {
+                fullStartSuccessful = false;
+            }
+        }
+
+        if (fullStartSuccessful) {
+            logger.info("All members completed! Setting final result to success!");
+            hotRestartStatus = CLUSTER_START_SUCCEEDED;
+        }
+
+        return fullStartSuccessful;
+    }
+
+    private void notifyListeners(Address sender, boolean isSenderPartitionTableValidated, DataLoadStatus memberDataLoadStatus) {
+        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+            listener.onPartitionTableValidationResult(sender, isSenderPartitionTableValidated);
+        }
+
+        if (memberDataLoadStatus != LOAD_IN_PROGRESS) {
+            for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+                listener.onHotRestartDataLoadResult(sender, memberDataLoadStatus == LOAD_SUCCESSFUL);
+            }
+        }
+    }
+
+    private void autoTryPartialStart() {
+        if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
+            logger.fine("No partial data recovery attempt since " + hotRestartStatus);
+            return;
+        }
+
+        if (!isPartialStartPolicy()) {
+            logger.fine("No partial data recovery attempt cluster start policy: " + clusterDataRecoveryPolicy);
+            return;
+        }
+
+        if (checkPartialStart()) {
+            return;
+        }
+
+        logger.fine("auto partial data recovery attempt...");
+        tryPartialStart();
+    }
+
+    private boolean checkPartialStart() {
+        Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+        if (expectedMemberUuids == null) {
+            return true;
+        }
+
+        for (MemberImpl expectedMember : restoredMembersRef.get()) {
+            if (!expectedMemberUuids.contains(expectedMember.getUuid())) {
+                continue;
+            }
+
+            if (!memberClusterStartInfos.containsKey(expectedMember.getAddress())) {
+                return true;
+            }
+
+            MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(expectedMember.getAddress());
+            if (memberClusterStartInfo.getDataLoadStatus() == LOAD_IN_PROGRESS) {
+                logger.fine("No partial data recovery attempt since member load status...");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isPartialStartPolicy() {
+        return clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_COMPLETE
+                || clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_RECENT;
+    }
+
+    public void receiveHotRestartStatus(Address sender, HotRestartClusterStartStatus result,
+                                        Set<String> excludedMemberUuids, ClusterState clusterState) {
+        if (node.joined()) {
+            Address master = node.getMasterAddress();
+            if (master.equals(sender) || node.isMaster()) {
+                handleHotRestartStatus(sender, result, excludedMemberUuids, clusterState);
+            } else {
+                logger.warning(format(
+                        "Received cluster start status from a non-master member %s. Current master is %s",
+                        sender, master));
+            }
+        } else {
+            handleHotRestartStatus(sender, result, excludedMemberUuids, clusterState);
+        }
+    }
+
+    private void handleHotRestartStatus(Address sender, HotRestartClusterStartStatus result,
+                                        Set<String> excludedMemberUuids, ClusterState clusterState) {
+        if (!(result == CLUSTER_START_FAILED || result == CLUSTER_START_SUCCEEDED)) {
+            throw new IllegalArgumentException("Cannot set hot restart status to " + result);
+        }
+
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                logger.info("Setting cluster-wide start status to " + result + " with cluster state " + clusterState
+                        +  " received from: " + sender);
+
+                // ORDER IS IMPORTANT. excludedMemberUuids is set before hotRestartStatus since hotRestartStatus can be read
+                // without acquiring the lock and excludedMemberUuids should be there once it is success.
+                this.excludedMemberUuids = unmodifiableSet(new HashSet<String>(excludedMemberUuids));
+                node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+                if (result == CLUSTER_START_SUCCEEDED && !excludedMemberUuids.contains(node.getThisUuid())) {
+                    this.clusterState = clusterState;
+                }
+
+                hotRestartStatus = result;
+            } else if (hotRestartStatus != result) {
+                logger.severe("Current cluster status: " + hotRestartStatus + " received cluster status: " + result
+                        + " from: " + sender);
+            }
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
     }
 
     // main & operation thread
-    void setFinalClusterState(ClusterState newState) {
+    private void setFinalClusterState(ClusterState newState) {
         logger.info("Setting final cluster state to: " + newState);
         setClusterState(node.getClusterService(), newState, false);
-        finalClusterStateSet = true;
     }
 
     private void setInitialPartitionTable() {
@@ -415,8 +827,8 @@ public final class ClusterMetadataManager {
     }
 
     private PartitionTableView restorePartitionTable() throws IOException {
-        final int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
-        final PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
+        int partitionCount = node.getProperties().getInteger(GroupProperty.PARTITION_COUNT);
+        PartitionTableReader partitionTableReader = new PartitionTableReader(homeDir, partitionCount);
         partitionTableReader.read();
         PartitionTableView table = partitionTableReader.getTable();
         partitionTableRef.set(table);
@@ -430,7 +842,7 @@ public final class ClusterMetadataManager {
         MemberListReader r = new MemberListReader(homeDir);
         r.read();
 
-        MemberImpl thisMember = r.getThisMember();
+        Member thisMember = r.getLocalMember();
         Collection<MemberImpl> members = r.getMembers();
 
         if (thisMember != null && !node.getThisAddress().equals(thisMember.getAddress())) {
@@ -442,49 +854,43 @@ public final class ClusterMetadataManager {
         if (thisMember == null) {
             logger.info("Cluster state not found on disk. Will not load Hot Restart data.");
             startWithHotRestart = false;
+            members = Collections.singletonList(node.getLocalMember());
         }
         if (logger.isFineEnabled()) {
             logger.fine("Restored " + members.size() + " members -> " + members);
         }
-        memberListRef.set(members);
+        restoredMembersRef.set(members);
+        if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
+            hotRestartStatusLock.lock();
+            try {
+                logger.fine("Setting expected member uuids with members -> " + members);
+                final Set<String> uuids = new HashSet<String>();
+                for (MemberImpl member : restoredMembersRef.get()) {
+                    uuids.add(member.getUuid());
+                }
+                expectedMemberUuidsRef.set(unmodifiableSet(uuids));
+            } finally {
+                hotRestartStatusLock.unlock();
+            }
+        }
+
         return members;
     }
 
-    // main thread
-    private void validate() throws InterruptedException {
-        validationStartTime = Clock.currentTimeMillis();
-        if (completeValidationIfSingleMember()) {
-            return;
-        }
-        logger.info("Starting cluster member-list & partition table validation.");
+    private boolean completeValidationIfNoHotRestartData() {
         if (startWithHotRestart) {
-            Map<Address, Address> addressMapping = awaitUntilAllMembersJoin();
-            logger.info("All expected members joined...");
-            logAddressChanges(addressMapping);
-            fillMemberAddresses();
-            repairPartitionTable(addressMapping);
-        }
-        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onAllMembersJoin(memberListRef.get());
+            return false;
         }
 
-        notValidatedAddresses.remove(node.getThisAddress());
-        final EnumSet<HotRestartClusterInitializationStatus> statuses = EnumSet
-                .of(VERIFICATION_FAILED, PARTITION_TABLE_VERIFIED);
-        waitForFailureOrExpectedStatus(statuses, new ValidationTask(), validationStartTime + validationTimeout);
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
+        int memberListSize = restoredMembersRef.get().size();
+        logger.info("No need to start validation since expected member count is: " + memberListSize);
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onPartitionTableValidationComplete(status);
+            listener.onSingleMemberCluster();
         }
-        if (status == VERIFICATION_FAILED) {
-            throw new HotRestartException("Cluster-wide validation failed!");
-        }
-        logger.info("Cluster member-list & partition table validation completed.");
+        return true;
     }
 
     private void logAddressChanges(Map<Address, Address> addressMapping) {
-        assert addressChangeDetected != addressMapping.isEmpty()
-                : "Address change detected but address-mappings is empty!";
         if (!addressMapping.isEmpty()) {
             StringBuilder s = new StringBuilder("Address changes detected:");
             for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
@@ -494,19 +900,22 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private void fillMemberAddresses() {
-        if (addressChangeDetected) {
-            memberListRef.set(node.getClusterService().getMemberImpls());
+    private void fillMemberAddresses(Map<Address, Address> addressMapping, AtomicReference<Collection<MemberImpl>> ref) {
+        if (!addressChangeDetected) {
+            return;
         }
 
-        // needed for `receivePartitionTableFromMember()`
-        notValidatedAddresses.add(node.getThisAddress());
-        notLoadedAddresses.add(node.getThisAddress());
-
-        for (MemberImpl member : memberListRef.get()) {
-            notValidatedAddresses.add(member.getAddress());
-            notLoadedAddresses.add(member.getAddress());
+        Collection<MemberImpl> updatedMembers = new HashSet<MemberImpl>();
+        for (MemberImpl member : ref.get()) {
+            Address newAddress = addressMapping.get(member.getAddress());
+            if (newAddress == null) {
+                updatedMembers.add(member);
+            } else {
+                updatedMembers.add(new MemberImpl(newAddress, member.localMember(), member.getUuid(), null));
+            }
         }
+
+        ref.set(updatedMembers);
     }
 
     private void repairPartitionTable(Map<Address, Address> addressMapping) {
@@ -548,77 +957,87 @@ public final class ClusterMetadataManager {
         logger.fine("Partition table repair has been completed.");
     }
 
-    private boolean completeValidationIfSingleMember() {
-        Collection<MemberImpl> members = memberListRef.get();
-        final int memberListSize = members.size();
-        if (memberListSize > 1) {
-            return false;
-        }
-
-        if (memberListSize == 1 && addressChangeDetected) {
-            MemberImpl member = members.iterator().next();
-            Map<Address, Address> addressMapping = Collections.singletonMap(member.getAddress(), node.getThisAddress());
-            fillMemberAddresses();
-            repairPartitionTable(addressMapping);
-        }
-
-        logger.info("No need to start validation since expected member count is: " + memberListSize);
-        hotRestartStatus.set(PARTITION_TABLE_VERIFIED);
-        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onSingleMemberCluster();
-        }
-        return true;
-    }
-
-    // main thread
     private Map<Address, Address> awaitUntilAllMembersJoin() throws InterruptedException {
-        final Collection<MemberImpl> loadedMembers = memberListRef.get();
-        Map<String, Member> expectedMembers = new HashMap<String, Member>(loadedMembers.size());
-        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
-        for (MemberImpl member : loadedMembers) {
-            expectedMembers.put(member.getUuid(), member);
+        Set<String> restoredMemberUuids = new HashSet<String>();
+        for (MemberImpl member : restoredMembersRef.get()) {
+            restoredMemberUuids.add(member.getUuid());
         }
+        restoredMemberUuids = unmodifiableSet(restoredMemberUuids);
+
+        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
 
         final ClusterServiceImpl clusterService = node.getClusterService();
         while (true) {
-            Set<Member> members = clusterService.getMembers();
-            if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
-                throw new HotRestartException(
-                        "Expected members didn't join, validation phase timed-out!"
-                                + " Expected member-count: " + loadedMembers.size()
-                                + ", Actual member-count: " + members.size()
-                                + ". Start-time: " + new Date(validationStartTime)
-                                + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
-            } else if (hotRestartStatus.get() == FORCE_STARTED) {
-                throw new ForceStartException();
-            }
+            Collection<MemberImpl> members = clusterService.getMemberImpls();
 
-            final Address masterAddress = node.getMasterAddress();
-            if (masterAddress != null && !masterAddress.equals(node.getThisAddress())) {
-                InternalOperationService operationService = node.getNodeEngine().getOperationService();
-                operationService.send(new CheckIfMasterForceStartedOperation(), masterAddress);
-            }
-
-            for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                listener.beforeAllMembersJoin(members);
-            }
-
-            if (isExpectedMembersJoined(expectedMembers, addressMapping)) {
+            if (isExpectedMembersJoined(addressMapping)) {
                 return addressMapping;
+            }
+
+            hotRestartStatusLock.lock();
+            try {
+                failIfAwaitUntilAllMembersJoinDeadlineMissed(members);
+
+                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+                    listener.beforeAllMembersJoin(members);
+                }
+
+                Address masterAddress = node.getMasterAddress();
+                if (node.isMaster()) {
+                    if (members.size() == restoredMemberUuids.size()
+                            && expectedMemberUuidsRef.compareAndSet(null, restoredMemberUuids)) {
+                        logger.info("All members are present. Expected member list is set to: " + restoredMemberUuids);
+                        broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
+                    }
+                } else if (masterAddress != null) {
+                        sendIfNotThisMember(new AskForExpectedMembersOperation(), masterAddress);
+                }
+            } finally {
+                hotRestartStatusLock.unlock();
             }
 
             sleep(SECONDS.toMillis(1));
         }
     }
 
-    private boolean isExpectedMembersJoined(Map<String, Member> expectedMembers, Map<Address, Address> addressMapping) {
-        ClusterServiceImpl clusterService = node.getClusterService();
-        for (Map.Entry<String, Member> entry : expectedMembers.entrySet()) {
-            Member missingMember = entry.getValue();
-            Member currentMember = clusterService.getMember(entry.getKey());
+    private void failIfAwaitUntilAllMembersJoinDeadlineMissed(Collection<MemberImpl> members) {
+        if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
+            if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
+                throw new HotRestartException(
+                        "Expected members didn't join, validation phase timed-out!"
+                                + " Expected member-count: " + restoredMembersRef.get().size()
+                                + ", Actual member-count: " + members.size()
+                                + ". Start-time: " + new Date(validationStartTime)
+                                + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
+            } else if (node.isMaster() && isPartialStartPolicy() && expectedMemberUuidsRef.get() == null) {
+                setCurrentMemberListToExpectedMembers();
+                broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
+            }
+        } else if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
+            throw new ForceStartException();
+        } else if (hotRestartStatus == CLUSTER_START_FAILED) {
+            throw new HotRestartException("Cluster-wide start failed!");
+        }
+    }
 
+    private boolean isExpectedMembersJoined(Map<Address, Address> addressMapping) {
+        addressMapping.clear();
+
+        Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+        if (expectedMemberUuids == null) {
+            return false;
+        }
+
+        ClusterServiceImpl clusterService = node.getClusterService();
+
+        for (Member missingMember : restoredMembersRef.get()) {
+            Member currentMember = clusterService.getMember(missingMember.getUuid());
             if (currentMember == null) {
-                logger.info("Waiting for cluster formation... Expected-Size: " + expectedMembers.size()
+                if (!expectedMemberUuids.contains(missingMember.getUuid())) {
+                    continue;
+                }
+
+                logger.info("Waiting for cluster formation... Expected-Size: " + expectedMemberUuids.size()
                         + ", Actual-Size: " + clusterService.getSize()
                         + ", Missing member: " + missingMember);
 
@@ -627,246 +1046,245 @@ public final class ClusterMetadataManager {
 
             if (!currentMember.getAddress().equals(missingMember.getAddress())) {
                 addressMapping.put(missingMember.getAddress(), currentMember.getAddress());
-                addressChangeDetected = true;
             }
+
         }
 
         return true;
     }
 
-    // main thread
-    private void sendPartitionTableToMaster() {
-        final Address masterAddress = node.getMasterAddress();
+    private void sendLocalMemberClusterStartInfoToMaster() {
+        Address masterAddress = node.getMasterAddress();
         if (masterAddress == null) {
-            logger.warning("Failed to send partition table to master since master address is null.");
+            logger.warning("Failed to send partition table to master since master address is null");
             return;
         } else if (masterAddress.equals(node.getThisAddress())) {
             logger.warning("Failed to send partition table to master since this node is master.");
             return;
         }
-        final PartitionTableView table = partitionTableRef.get();
+        MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(node.getThisAddress());
+        if (memberClusterStartInfo == null) {
+            logger.fine("No member cluster start info to send to master!");
+            return;
+        }
+
+        PartitionTableView partitionTable = memberClusterStartInfo.getPartitionTable();
         if (logger.isFinestEnabled()) {
-            logger.finest("Sending partition table to: " + masterAddress + ", TABLE-> " + table);
+            logger.finest("Sending partition table to: " + masterAddress + ", TABLE-> " + partitionTable);
         } else if (logger.isFineEnabled()) {
-            logger.fine("Sending partition table to: " + masterAddress + ", Version: " + table.getVersion());
+            logger.fine("Sending partition table to: " + masterAddress + ", Version: " + partitionTable.getVersion());
         }
-
-        node.getNodeEngine().getOperationService().send(
-                new SendPartitionTableForValidationOperation(table), masterAddress);
-    }
-
-    // operation thread
-    private void validatePartitionTable(Address sender, PartitionTableView remoteTable) {
-        PartitionTableView localTable = partitionTableRef.get();
-        if (localTable == null) {
-            // this node is already up & running
-            // sender node is doing a rolling-restart
-            // gather local table from partition service
-            logger.info("Creating partition table using PartitionService runtime information");
-            localTable = node.partitionService.createPartitionTableView();
-        }
-
-        if (logger.isFineEnabled()) {
-            logger.fine("Received partition table from " + sender
-                    + ", Local version: " + localTable.getVersion()
-                    + ", Remote version: " + remoteTable.getVersion());
-        }
-
-        boolean validated = localTable.equals(remoteTable);
-        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            listener.onPartitionTableValidationResult(sender, validated);
-        }
-
-        if (validated) {
-            processSuccessfulPartitionTableValidation(sender);
-        } else {
-            processFailedPartitionTableValidation(sender);
-        }
-    }
-
-    private void processSuccessfulPartitionTableValidation(Address sender) {
         InternalOperationService operationService = node.getNodeEngine().getOperationService();
-        notValidatedAddresses.remove(sender);
-        if (logger.isFineEnabled()) {
-            logger.fine(String.format("Partition table validation successful for %s not-validated: %s",
-                    sender, notValidatedAddresses));
-        }
-        if (notValidatedAddresses.isEmpty()) {
-            hotRestartStatus.compareAndSet(PENDING_VERIFICATION, PARTITION_TABLE_VERIFIED);
-            HotRestartClusterInitializationStatus result = hotRestartStatus.get();
-            if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
-                result = PARTITION_TABLE_VERIFIED;
-                logger.info("Will send " + PARTITION_TABLE_VERIFIED + " instead of " + VERIFICATION_AND_LOAD_SUCCEEDED
-                        + " to member: " + sender);
-            } else if (logger.isFineEnabled()) {
-                logger.fine("Partition table validation completed for all members. Sending " + result + " to: " + sender);
-            }
-            final Operation op = result == FORCE_STARTED
-                    ? new ForceStartMemberOperation() : new SendPartitionTableValidationResultOperation(result);
-            operationService.send(op, sender);
-        }
-    }
-
-    private void processFailedPartitionTableValidation(Address sender) {
-        InternalOperationService operationService = node.getNodeEngine().getOperationService();
-
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
-        if (status == VERIFICATION_AND_LOAD_SUCCEEDED) {
-            logger.warning("Wrong partition table received from " + sender + " after load successfully completed cluster-wide");
-            operationService.send(new SendPartitionTableValidationResultOperation(VERIFICATION_FAILED), sender);
-        } else if (status == FORCE_STARTED) {
-            logger.info("Wrong partition table received from " + sender + " after status is set to " + FORCE_STARTED);
-            operationService.send(new ForceStartMemberOperation(), sender);
-        } else {
-            // we can only CAS if it is not already completed with the 2 status values above
-            hotRestartStatus.compareAndSet(status, VERIFICATION_FAILED);
-            final HotRestartClusterInitializationStatus result = hotRestartStatus.get();
-            logger.info("Partition table validation failed for " + sender + ". Current status is " + result);
-            final Operation op = result == FORCE_STARTED ? new ForceStartMemberOperation()
-                    : new SendPartitionTableValidationResultOperation(result);
-            operationService.send(op, sender);
-
-            // must be removed after the CAS operation above
-            notValidatedAddresses.remove(sender);
-        }
+        operationService.send(new SendMemberClusterStartInfoOperation(memberClusterStartInfo), masterAddress);
     }
 
     // main thread
-    private void waitForFailureOrExpectedStatus(
-            Collection<HotRestartClusterInitializationStatus> expectedStatuses, TimeoutableRunnable runnable, long deadLine
-    ) throws InterruptedException {
-        while (!expectedStatuses.contains(hotRestartStatus.get())) {
-            if (deadLine <= Clock.currentTimeMillis()) {
-                runnable.onTimeout();
-            } else if (hotRestartStatus.get() == FORCE_STARTED) {
-                throw new ForceStartException();
-            }
-            runnable.run();
+    private void waitForDataLoadTimeoutOrFinalClusterStartStatus()
+            throws InterruptedException {
+        Collection<HotRestartClusterStartStatus> expectedStatuses = EnumSet.of(CLUSTER_START_FAILED, CLUSTER_START_SUCCEEDED);
+        while (!expectedStatuses.contains(hotRestartStatus)) {
             sleep(SECONDS.toMillis(1));
             if (logger.isFineEnabled()) {
-                logger.fine("Waiting for result... Remaining time: " + (deadLine - Clock.currentTimeMillis()) + " ms.");
+                long remaining = (dataLoadStartTime + dataLoadTimeout) - Clock.currentTimeMillis();
+                logger.fine("Waiting for result... Remaining time: " + remaining + " ms.");
+            }
+
+            failIfDataLoadDeadlineMissed();
+        }
+    }
+
+    public void receiveExpectedMembersFromMaster(Address sender, Set<String> expectedMemberUuids) {
+        if (node.isMaster()) {
+            logger.warning("received expected member list from " + sender
+                    + " but this node is already master.");
+            return;
+        } else if (!sender.equals(node.getMasterAddress())) {
+            logger.warning("received expected member list from non-master member: " + sender
+                    + " master is " + node.getMasterAddress() + " expected member list: " + expectedMemberUuids);
+            return;
+        }
+
+        expectedMemberUuids = unmodifiableSet(new HashSet<String>(expectedMemberUuids));
+
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                if (expectedMemberUuidsRef.compareAndSet(null, expectedMemberUuids)) {
+                    logger.info("expected member uuids is set to " + expectedMemberUuids + " received from master: " + sender);
+                    return;
+                }
+
+                Set<String> currentExpectedMemberUuids = expectedMemberUuidsRef.get();
+                if (!currentExpectedMemberUuids.equals(expectedMemberUuids)) {
+                    logger.severe("expected member uuids is already set to " + currentExpectedMemberUuids
+                            + " but a different one " + expectedMemberUuids + " is received from master: " + sender);
+                }
+            } else {
+                logger.warning("Ignored expected member uuids " + expectedMemberUuids + " received from master: " + sender
+                        + " because cluster start status is set to " + hotRestartStatus
+                        + " with excluded members: " + excludedMemberUuids);
+            }
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
+    }
+
+    public void replyExpectedMemberUuidsQuestion(Address sender, String senderUuid) {
+        if (!node.isMaster()) {
+            logger.warning("won't reply expected member list question of sender: " + sender + " since this node is not master.");
+            return;
+        }
+
+        hotRestartStatusLock.lock();
+        try {
+            if (hotRestartStatus == CLUSTER_START_FAILED
+                    || (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(senderUuid))) {
+                logger.info(sender + " with uuid: " + senderUuid + " is excluded in start.");
+                Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, null);
+                sendIfNotThisMember(op, sender);
+            } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+                if (expectedMemberUuids != null) {
+                    sendIfNotThisMember(new SendExpectedMemberUuidsOperation(expectedMemberUuids), sender);
+                }
+            } else {
+                // cluster start is success. just send the current member list except the excluded ones
+                ClusterServiceImpl clusterService = node.getClusterService();
+                Set<String> expectedMemberUuids = new HashSet<String>();
+                for (Member member : clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive()) {
+                    if (excludedMemberUuids.contains(member.getUuid())) {
+                        continue;
+                    }
+
+                    expectedMemberUuids.add(member.getUuid());
+                }
+
+                sendIfNotThisMember(new SendExpectedMemberUuidsOperation(expectedMemberUuids), sender);
+            }
+        } finally {
+            hotRestartStatusLock.unlock();
+        }
+    }
+
+    private void failIfDataLoadDeadlineMissed() {
+        if ((dataLoadStartTime + dataLoadTimeout) < Clock.currentTimeMillis()) {
+            if (!node.isMaster()) {
+                if (clusterDataRecoveryPolicy != FULL_RECOVERY_ONLY) {
+                    return;
+                }
+
+                throw new HotRestartException("cluster-wide data load timeout...");
+            }
+
+            hotRestartStatusLock.lock();
+            try {
+                if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                    if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
+                        logger.severe("Data load step timed out...");
+                        hotRestartStatus = CLUSTER_START_FAILED;
+                        broadcast(SendClusterStartResultOperation.newFailureResultOperation());
+                    } else if (isPartialStartPolicy()) {
+                        tryPartialStart();
+                    } else {
+                        throw new IllegalStateException("invalid cluster start policy: " + clusterDataRecoveryPolicy);
+                    }
+                }
+            } finally {
+                hotRestartStatusLock.unlock();
             }
         }
     }
 
-    // main thread
-    private void sendLoadCompleteToMaster(boolean success) {
-        Address masterAddress = node.getMasterAddress();
+    private void tryPartialStart() {
+        Map<Integer, List<String>> memberUuidsByPartitionTableVersion = collectLoadSucceededMemberUuidsByPartitionTableVersion();
 
-        if (masterAddress == null) {
-            logger.warning("Failed to send load-completion status [" + success + "] to master since master address is null.");
-            return;
-        } else if (masterAddress.equals(node.getThisAddress())) {
-            logger.warning("Failed to send load-completion status [" + success + "] to master since this node is master.");
-            return;
+        if (memberUuidsByPartitionTableVersion.isEmpty()) {
+            logger.severe("Nobody has succeeded to load data...");
+            hotRestartStatus = CLUSTER_START_FAILED;
+            broadcast(SendClusterStartResultOperation.newFailureResultOperation());
+        } else {
+            Set<String> excludedMemberUuids = collectExcludedMemberUuids(memberUuidsByPartitionTableVersion);
+
+            this.excludedMemberUuids = unmodifiableSet(excludedMemberUuids);
+            node.getClusterService().shrinkMembersRemovedWhileClusterIsNotActiveState(this.excludedMemberUuids);
+            hotRestartStatus = CLUSTER_START_SUCCEEDED;
+
+            logger.warning("Partial data recovery is set. Excluded member uuids: " + excludedMemberUuids);
+            broadcast(new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, clusterState));
         }
-
-        PartitionTableView table = partitionTableRef.get();
-
-        if (logger.isFineEnabled()) {
-            logger.fine("Sending load-completion status [" + success + "] to: " + masterAddress);
-        } else if (logger.isFinestEnabled()) {
-            logger.fine("Sending load-completion status [" + success + "] to: " + masterAddress + ", TABLE: " + table);
-        }
-
-        InternalOperationService operationService = node.getNodeEngine().getOperationService();
-        Operation op = new SendLoadCompletionForValidationOperation(table, success);
-        operationService.send(op, masterAddress);
     }
 
-    private void sendClusterWideLoadCompletionResultIfAvailable(Address sender) {
-        InternalOperationService operationService = node.getNodeEngine().getOperationService();
-        final HotRestartClusterInitializationStatus status = hotRestartStatus.get();
-
-        if (status == VERIFICATION_AND_LOAD_SUCCEEDED || status == VERIFICATION_FAILED) {
-            if (!node.getThisAddress().equals(sender)) {
-                final ClusterState clusterState = getCurrentClusterState();
-                logger.info("Sending cluster-wide load-completion result " + status + " and cluster state: "
-                        + clusterState + " to: " + sender);
-                operationService.send(new SendLoadCompletionStatusOperation(status, clusterState), sender);
+    private Map<Integer, List<String>> collectLoadSucceededMemberUuidsByPartitionTableVersion() {
+        Map<Integer, List<String>> membersUuidsByPartitionTableVersion = new HashMap<Integer, List<String>>();
+        final Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+        for (MemberImpl member : restoredMembersRef.get()) {
+            if (!expectedMemberUuids.contains(member.getUuid())) {
+                continue;
             }
-        } else if (status == FORCE_STARTED) {
-            if (!node.getThisAddress().equals(sender)) {
-                logger.info("Sending " + status + " to: " + sender);
-                operationService.send(new ForceStartMemberOperation(), sender);
+
+            MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(member.getAddress());
+            if (memberClusterStartInfo == null || memberClusterStartInfo.getDataLoadStatus() != LOAD_SUCCESSFUL) {
+                continue;
+            }
+
+            int partitionTableVersion = memberClusterStartInfo.getPartitionTableVersion();
+            List<String> members = membersUuidsByPartitionTableVersion.get(partitionTableVersion);
+            if (members == null) {
+                members = new ArrayList<String>();
+                membersUuidsByPartitionTableVersion.put(partitionTableVersion, members);
+            }
+
+            members.add(member.getUuid());
+        }
+
+        logger.info("partition table version -> member uuids: " + membersUuidsByPartitionTableVersion);
+
+        return membersUuidsByPartitionTableVersion;
+    }
+
+    private Set<String> collectExcludedMemberUuids(Map<Integer, List<String>> membersByPartitionTableVersion) {
+        int selectedPartitionTableVersion = -1;
+        List<String> selectedMembers = Collections.emptyList();
+        for (Map.Entry<Integer, List<String>> e : membersByPartitionTableVersion.entrySet()) {
+            int partitionTableVersion = e.getKey();
+            List<String> members = e.getValue();
+            if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_RECENT) {
+                if (partitionTableVersion > selectedPartitionTableVersion) {
+                    selectedPartitionTableVersion = partitionTableVersion;
+                    selectedMembers = members;
+                    logger.info("Picking partition table version = " + selectedPartitionTableVersion
+                            + " with members: " + selectedMembers);
+                }
+            } else if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_COMPLETE) {
+                if (members.size() > selectedMembers.size()
+                        || (members.size() == selectedMembers.size() && partitionTableVersion > selectedPartitionTableVersion)) {
+                    selectedPartitionTableVersion = partitionTableVersion;
+                    selectedMembers = members;
+                    logger.info("Picking partition table version = " + selectedPartitionTableVersion
+                            + " with members: " + selectedMembers);
+                }
             }
         }
+        Set<String> excludedMemberUuids = new HashSet<String>();
+        for (Member member : restoredMembersRef.get()) {
+            if (!selectedMembers.contains(member.getUuid())) {
+                excludedMemberUuids.add(member.getUuid());
+            }
+        }
+        return excludedMemberUuids;
     }
 
     ClusterState getCurrentClusterState() {
-        if (hotRestartStatus.get() == VERIFICATION_AND_LOAD_SUCCEEDED) {
-            long start = System.nanoTime();
-            while (!finalClusterStateSet) {
-                // Spin until finalClusterStateSet flag is set.
-                // finalClusterStateSet will be set after hotRestartStatus becomes `VERIFICATION_AND_LOAD_SUCCEEDED`.
-                Thread.yield();
-
-                if ((System.nanoTime() - start) > FINAL_CLUSTER_STATE_FLAG_CHECK_TIMEOUT) {
-                    throw new HotRestartException("Final cluster-state flag is not set even though "
-                            + "hotRestartStatus = VERIFICATION_AND_LOAD_SUCCEEDED");
-                }
-            }
-        }
-        return node.getClusterService().getClusterState();
-    }
-
-    private void processFailedLoadCompletionStatus(Address sender) {
-        InternalOperationService operationService = node.getNodeEngine().getOperationService();
-        if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_FAILED)) {
-            for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                listener.onHotRestartDataLoadComplete(VERIFICATION_FAILED);
-            }
-        }
-
-        if (!node.getThisAddress().equals(sender)) {
-            final HotRestartClusterInitializationStatus result = hotRestartStatus.get();
-
-            if (result == FORCE_STARTED) {
-                logger.info("Failed load status received from " + sender + " after status: " + FORCE_STARTED);
-            } else if (result == VERIFICATION_AND_LOAD_SUCCEEDED) {
-                logger.warning("Failed load status received from " + sender + " after load successfully completed cluster-wide");
-            } else if (logger.isFineEnabled()) {
-                logger.fine("Sending failure result to: " + sender + ", Current hot restart status: " + result);
-            }
-
-            final Operation op = result == FORCE_STARTED ? new ForceStartMemberOperation()
-                    : new SendLoadCompletionStatusOperation(VERIFICATION_FAILED, ClusterState.PASSIVE);
-            operationService.send(op, sender);
-        }
-
-        notLoadedAddresses.remove(sender);
-    }
-
-    private void processSuccessfulLoadCompletionStatusWhenPartitionTableVerified(Address sender) {
-        notLoadedAddresses.remove(sender);
-        if (notLoadedAddresses.isEmpty()) {
-            if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_AND_LOAD_SUCCEEDED)) {
-                logger.info("Cluster wide hot restart status is set to " + VERIFICATION_AND_LOAD_SUCCEEDED);
-                setFinalClusterState(clusterState);
-                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                    listener.onHotRestartDataLoadComplete(VERIFICATION_AND_LOAD_SUCCEEDED);
-                }
-            } else if (logger.isFineEnabled()) {
-                logger.fine("Cluster wide hot restart status is: " + hotRestartStatus.get()
-                        + " successful when load completion received from: " + sender);
-            }
-            sendClusterWideLoadCompletionResultIfAvailable(sender);
-        } else if (Boolean.FALSE.equals(localLoadResult.get())) {
-            if (hotRestartStatus.compareAndSet(PARTITION_TABLE_VERIFIED, VERIFICATION_FAILED)) {
-                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                    listener.onHotRestartDataLoadComplete(VERIFICATION_FAILED);
-                }
-            }
-            sendClusterWideLoadCompletionResultIfAvailable(sender);
+        hotRestartStatusLock.lock();
+        try {
+            return startCompleted ? node.getClusterService().getClusterState() : clusterState;
+        } finally {
+            hotRestartStatusLock.unlock();
         }
     }
 
-    private void askForPartitionTableValidationStatus() {
-        sendOperationToOthers(new AskForPartitionTableValidationStatusOperation());
-    }
-
-    private void askForLoadCompletionStatus() {
-        sendOperationToOthers(new AskForLoadCompletionStatusOperation());
+    private void askForClusterStartResult() {
+        broadcast(new AskForClusterStartResultOperation());
     }
 
     private void persistMembers() {
@@ -902,12 +1320,9 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private void sendOperationToOthers(Operation operation) {
-        final InternalOperationService operationService = node.nodeEngine.getOperationService();
-        for (MemberImpl member : memberListRef.get()) {
-            if (!member.localMember()) {
-                operationService.send(operation, member.getAddress());
-            }
+    private void broadcast(Operation operation) {
+        for (Member member : restoredMembersRef.get()) {
+            sendIfNotThisMember(operation, member.getAddress());
         }
     }
 
@@ -925,61 +1340,7 @@ public final class ClusterMetadataManager {
             throw new HotRestartException("Cannot read local member UUID!", e);
         }
 
-        MemberImpl thisMember = r.getThisMember();
-        return thisMember != null ? thisMember.getUuid() : null;
-    }
-
-    private interface TimeoutableRunnable extends Runnable {
-        void onTimeout();
-    }
-
-    private class ValidationTask implements TimeoutableRunnable {
-        @Override
-        public void run() {
-            if (node.isMaster()) {
-                askForPartitionTableValidationStatus();
-            } else {
-                sendPartitionTableToMaster();
-            }
-        }
-
-        @Override
-        public void onTimeout() {
-            if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
-                throw new HotRestartException(String.format(
-                        "Could not validate partition table, validation phase timed out. Started at %s,"
-                        + " timeout %d sec, deadline %s",
-                        new Date(validationStartTime), MILLISECONDS.toSeconds(validationTimeout),
-                        new Date(validationStartTime + validationTimeout)
-                ));
-            }
-        }
-    }
-
-    private class LoadTask implements TimeoutableRunnable {
-        private final boolean success;
-
-        LoadTask(boolean success) {
-            this.success = success;
-        }
-
-        @Override
-        public void run() {
-            if (node.isMaster()) {
-                askForLoadCompletionStatus();
-            } else {
-                sendLoadCompleteToMaster(success);
-            }
-        }
-
-        @Override
-        public void onTimeout() {
-            throw new HotRestartException(String.format(
-                    "Could not load all Hot Restart data, load phase timed out."
-                            + " Started at %s, timeout %d sec, deadline %s",
-                    new Date(loadStartTime),
-                    MILLISECONDS.toSeconds(dataLoadTimeout),
-                    new Date(loadStartTime + validationTimeout)));
-        }
+        Member localMember = r.getLocalMember();
+        return localMember != null ? localMember.getUuid() : null;
     }
 }

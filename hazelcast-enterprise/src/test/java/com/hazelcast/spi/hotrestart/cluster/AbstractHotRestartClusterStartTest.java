@@ -1,8 +1,11 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.cluster.ClusterState;
+import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.config.ListenerConfig;
+import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.EnterpriseNodeExtension;
@@ -10,6 +13,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
 import com.hazelcast.nio.IOUtil;
+import com.hazelcast.partition.PartitionLostListenerStressTest.EventCollectingPartitionLostListener;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
@@ -35,6 +39,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,6 +50,7 @@ import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
+import static com.hazelcast.test.HazelcastTestSupport.spawn;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertEquals;
@@ -54,11 +60,20 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class AbstractHotRestartClusterStartTest {
 
+    protected static final int PARTITION_COUNT = 50;
+
+    private static final AtomicInteger instanceNameIndex = new AtomicInteger(0);
+
     public enum AddressChangePolicy {
         NONE, PARTIAL, ALL
     }
 
-    private static final AtomicInteger instanceNameIndex = new AtomicInteger(0);
+    protected final String[] mapNames = new String[]{"map0", "map1", "map2", "map3", "map4", "map5", "map6"};
+    protected final String[] cacheNames = new String[]{"cache0", "cache1", "cache2", "cache3", "cache4", "cache5", "cache6"};
+
+    protected final EventCollectingPartitionLostListener partitionLostListener = new EventCollectingPartitionLostListener();
+
+    private Future startNodeFuture;
 
     @Rule
     public TestName testName = new TestName();
@@ -82,11 +97,26 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     @After
     public void after() throws IOException {
+        if (startNodeFuture != null) {
+            try {
+                // Nothing to do with test's correctness.
+                // Just to avoid some IO errors to be printed
+                // when test finishes and deletes hot-restart folders
+                // before new node's restart process completes.
+                startNodeFuture.get(2, TimeUnit.MINUTES);
+            } catch (Exception ignored) {
+            }
+        }
+
         factory.terminateAll();
         IOUtil.delete(baseDir);
     }
 
     HazelcastInstance[] startNewInstances(int numberOfInstances) throws InterruptedException {
+        return startNewInstances(numberOfInstances, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
+    }
+
+    HazelcastInstance[] startNewInstances(int numberOfInstances, final HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(numberOfInstances);
 
@@ -95,7 +125,7 @@ public abstract class AbstractHotRestartClusterStartTest {
                 @Override
                 public void run() {
                     try {
-                        HazelcastInstance instance = startNewInstance();
+                        HazelcastInstance instance = startNewInstance(null, clusterStartPolicy);
                         instancesList.add(instance);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -118,6 +148,12 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners)
             throws InterruptedException {
+        return restartInstances(addresses, listeners, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
+    }
+
+    HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners,
+            final HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
+            throws InterruptedException {
 
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(addresses.length);
@@ -128,7 +164,7 @@ public abstract class AbstractHotRestartClusterStartTest {
                 @Override
                 public void run() {
                     try {
-                        HazelcastInstance instance = restartInstance(address, listener);
+                        HazelcastInstance instance = restartInstance(address, listener, clusterStartPolicy);
                         instancesList.add(instance);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -146,28 +182,34 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     HazelcastInstance startNewInstance() {
-        return startNewInstance(null);
+        return startNewInstance(null, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
-    HazelcastInstance startNewInstance(ClusterHotRestartEventListener listener) {
+    HazelcastInstance startNewInstance(ClusterHotRestartEventListener listener,
+            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Address address = factory.nextAddress();
 
         String instanceName = "instance_" + instanceNameIndex.getAndIncrement();
         assertNull(instanceNames.putIfAbsent(address, instanceName));
 
-        Config config = newConfig(instanceName, listener);
+        Config config = newConfig(instanceName, listener, clusterStartPolicy);
         return factory.newHazelcastInstance(address, config);
     }
 
     HazelcastInstance restartInstance(Address address) {
-        return restartInstance(address, null);
+        return restartInstance(address, null, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener) {
+        return restartInstance(address, listener, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
+    }
+
+    HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
+            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         String instanceName = instanceNames.get(address);
         assertNotNull(instanceName);
 
-        Config config = newConfig(instanceName, listener);
+        Config config = newConfig(instanceName, listener, clusterStartPolicy);
 
         Address newAddress = getRestartingAddress(address);
         if (!address.equals(newAddress)) {
@@ -255,17 +297,32 @@ public abstract class AbstractHotRestartClusterStartTest {
         factory.terminateAll();
     }
 
-    private Collection<HazelcastInstance> getAllInstances() {
+    Collection<HazelcastInstance> getAllInstances() {
         return factory.getAllHazelcastInstances();
     }
 
-    Config newConfig(String instanceName, ClusterHotRestartEventListener listener) {
+    Config newConfig(String instanceName, ClusterHotRestartEventListener listener, HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = new Config();
+
+        for (int i = 0; i < mapNames.length; i++) {
+            MapConfig mapConfig = config.getMapConfig(mapNames[i]);
+            mapConfig.setBackupCount(i);
+            mapConfig.getHotRestartConfig().setEnabled(true);
+            CacheSimpleConfig cacheConfig = config.getCacheConfig(cacheNames[i]);
+            cacheConfig.setBackupCount(i);
+            cacheConfig.getHotRestartConfig().setEnabled(true);
+        }
+
+        config.addListenerConfig(new ListenerConfig(partitionLostListener));
+
         config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
         config.setInstanceName(instanceName);
 
+        config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(PARTITION_COUNT));
+
         config.getHotRestartPersistenceConfig().setEnabled(true)
                 .setBaseDir(new File(baseDir, instanceName))
+                .setClusterDataRecoveryPolicy(clusterStartPolicy)
                 .setValidationTimeoutSeconds(10).setDataLoadTimeoutSeconds(10);
 
         if (listener != null) {
@@ -286,22 +343,34 @@ public abstract class AbstractHotRestartClusterStartTest {
         IOUtil.delete(hotRestartDir);
     }
 
+    void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
+        Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
+        HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
+        assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
+    }
+
     static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances, NodeState expectedNodeState,
             ClusterState expectedClusterState) {
         assertEquals(numberOfInstances, instances.length);
         for (HazelcastInstance instance : instances) {
             Node node = getNode(instance);
             assertNotNull(node);
-            assertTrue(node.joined());
-            assertEquals(expectedNodeState, node.getState());
-            assertEquals(expectedClusterState, instance.getCluster().getClusterState());
+            assertTrue("node: " + getAddress(instance), node.joined());
+            assertEquals("node: " + getAddress(instance), expectedNodeState, node.getState());
+            assertEquals("node: " + getAddress(instance), expectedClusterState, instance.getCluster().getClusterState());
         }
     }
 
-    void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
-        Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
-        HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
-        assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
+    void assertInstancesJoinedEventually(final int numberOfInstances, final NodeState nodeState, final ClusterState clusterState) {
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run()
+                    throws Exception {
+                Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
+                HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
+                assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);
+            }
+        });
     }
 
     static void assertNodeStateEventually(final Node node, final NodeState expected) {
@@ -342,5 +411,22 @@ public abstract class AbstractHotRestartClusterStartTest {
         @Override
         public void run() throws Exception {
         }
+    }
+
+    void startNodeAfterTermination(final Node node) {
+        startNodeFuture = spawn(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Address address = node.getThisAddress();
+                    assertNodeStateEventually(node, NodeState.SHUT_DOWN);
+                    // we can't change address anymore after cluster restart is initiated
+                    addressChangePolicy = AddressChangePolicy.NONE;
+                    restartInstance(address);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }

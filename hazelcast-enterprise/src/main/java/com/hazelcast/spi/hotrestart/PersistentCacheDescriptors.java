@@ -58,6 +58,7 @@ public class PersistentCacheDescriptors {
         }
     }
 
+    @SuppressFBWarnings("JLM_JSR166_UTILCONCURRENT_MONITORENTER")
     public void reset() {
         synchronized (nameToDesc) {
             nameToDesc.clear();

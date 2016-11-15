@@ -1,6 +1,5 @@
 package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.nearcache.CommonNearCacheTestSupport;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NativeMemoryConfig;

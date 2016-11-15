@@ -1,6 +1,5 @@
 package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.nearcache.NearCacheManagerTestSupport;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;

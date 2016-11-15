@@ -1,6 +1,5 @@
 package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.nearcache.NearCacheRecordStoreTestSupport;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.EvictionConfig.MaxSizePolicy;
 import com.hazelcast.config.InMemoryFormat;

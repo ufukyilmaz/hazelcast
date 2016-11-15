@@ -7,14 +7,13 @@ import com.hazelcast.spi.annotation.PrivateApi;
 
 import java.util.Collection;
 import java.util.EventListener;
+import java.util.Set;
 
 /**
  * This is a sync listener. When a node calls one of the methods below during Hot Restart, it will block until the method returns.
  */
 @PrivateApi
-public abstract class ClusterHotRestartEventListener
-        implements EventListener {
-
+public abstract class ClusterHotRestartEventListener implements EventListener {
 
 
     /**
@@ -47,7 +46,7 @@ public abstract class ClusterHotRestartEventListener
      *
      * @param members expected member list
      */
-    public void onAllMembersJoin(Collection<? extends Member> members) {
+    public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
 
     }
 
@@ -58,16 +57,6 @@ public abstract class ClusterHotRestartEventListener
      * @param success result of the validation
      */
     public void onPartitionTableValidationResult(Address sender, boolean success) {
-
-    }
-
-    /**
-     * Called on master when it receives partition tables from all nodes and called on non-master nodes when they receive the
-     * partition table validation status from master.
-     *
-     * @param result result of the partition table validation
-     */
-    public void onPartitionTableValidationComplete(HotRestartClusterInitializationStatus result) {
 
     }
 
@@ -90,12 +79,11 @@ public abstract class ClusterHotRestartEventListener
     }
 
     /**
-     * Called on master when it receives a failure result from one of the nodes, and called on non-master nodes when they receive
-     * the result of the load process from master.
+     * Called on all nodes after the final cluster start decision is made.
      *
      * @param result result of the cluster wide load operation
      */
-    public void onHotRestartDataLoadComplete(HotRestartClusterInitializationStatus result) {
+    public void onHotRestartDataLoadComplete(HotRestartClusterStartStatus result, Set<String> excludedMemberUuids) {
 
     }
 }

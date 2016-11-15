@@ -70,11 +70,12 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         warmUpPartitions(instances1);
 
         HazelcastInstance[] instances2 = startNewInstances(2);
-        assertInstancesJoined(4, NodeState.ACTIVE, ClusterState.ACTIVE);
 
         HazelcastInstance[] instances = new HazelcastInstance[4];
         System.arraycopy(instances1, 0, instances, 0, 2);
         System.arraycopy(instances2, 0, instances, 2, 2);
+
+        assertInstancesJoined(4, NodeState.ACTIVE, ClusterState.ACTIVE);
         waitAllForSafeState(instances);
 
         Address[] addresses = getAddresses(instances);
@@ -82,7 +83,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
         terminateInstances();
 
         instances = restartInstances(addresses);
-        assertInstancesJoined(4, NodeState.ACTIVE, ClusterState.FROZEN);
+        assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.FROZEN);
         invokeDummyOperationOnAllPartitions(instances);
     }
 

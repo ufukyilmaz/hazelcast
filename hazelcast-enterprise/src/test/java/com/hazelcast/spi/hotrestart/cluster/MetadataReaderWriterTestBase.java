@@ -58,7 +58,11 @@ public abstract class MetadataReaderWriterTestBase {
         if (folder != null) {
             delete(folder);
         }
+
+        tearDownInternal();
     }
+
+    void tearDownInternal() {}
 
     final Address[] initializeAddresses(int len) {
         Address[] addresses = new Address[len];

@@ -15,17 +15,14 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     public static final int F_ID = FactoryIdHelper.getFactoryId(ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY,
             ENTERPRISE_HOTRESTART_CLUSTER_DS_FACTORY_ID);
 
-    public static final int ASK_FOR_LOAD_COMPLETION = 0;
-    public static final int ASK_FOR_PARTITION_TABLE_VALIDATION_STATUS = 1;
-    public static final int CHECK_IF_MASTER_FORCE_STARTED = 2;
-    public static final int FORCE_START_MEMBER = 3;
-    public static final int SEND_LOAD_COMPLETION_FOR_VALIDATION = 4;
-    public static final int SEND_LOAD_COMPLETION_STATUS = 5;
-    public static final int SEND_PARTITION_TABLE_FOR_VALIDATION = 6;
-    public static final int SEND_PARTITION_TABLE_VALIDATION_RESULT = 7;
-    public static final int TRIGGER_FORCE_START_ON_MASTER = 8;
+    public static final int ASK_FOR_CLUSTER_START_RESULT = 0;
+    public static final int ASK_FOR_EXPECTED_MEMBERS = 1;
+    public static final int SEND_CLUSTER_START_RESULT = 2;
+    public static final int SEND_MEMBER_CLUSTER_START_INFO = 3;
+    public static final int TRIGGER_FORCE_START_ON_MASTER = 4;
+    public static final int SEND_EXPECTED_MEMBERS = 5;
 
-    private static final int LEN = TRIGGER_FORCE_START_ON_MASTER + 1;
+    private static final int LEN = SEND_EXPECTED_MEMBERS + 1;
 
     @Override
     public int getFactoryId() {
@@ -35,58 +32,41 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     @Override
     public DataSerializableFactory createFactory() {
         ConstructorFunction<Integer, IdentifiedDataSerializable>[] constructors = new ConstructorFunction[LEN];
-        constructors[ASK_FOR_LOAD_COMPLETION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+
+        constructors[ASK_FOR_CLUSTER_START_RESULT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new AskForLoadCompletionStatusOperation();
+                return new AskForClusterStartResultOperation();
             }
         };
-        constructors[ASK_FOR_PARTITION_TABLE_VALIDATION_STATUS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[ASK_FOR_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new AskForPartitionTableValidationStatusOperation();
+                return new AskForExpectedMembersOperation();
             }
         };
-        constructors[CHECK_IF_MASTER_FORCE_STARTED] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[SEND_CLUSTER_START_RESULT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new CheckIfMasterForceStartedOperation();
+                return new SendClusterStartResultOperation();
             }
         };
-        constructors[FORCE_START_MEMBER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[SEND_MEMBER_CLUSTER_START_INFO] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new ForceStartMemberOperation();
-            }
-        };
-        constructors[SEND_LOAD_COMPLETION_FOR_VALIDATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendLoadCompletionForValidationOperation();
-            }
-        };
-        constructors[SEND_LOAD_COMPLETION_STATUS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendLoadCompletionStatusOperation();
-            }
-        };
-        constructors[SEND_PARTITION_TABLE_FOR_VALIDATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendPartitionTableForValidationOperation();
-            }
-        };
-        constructors[SEND_PARTITION_TABLE_VALIDATION_RESULT] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            @Override
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendPartitionTableValidationResultOperation();
+                return new SendMemberClusterStartInfoOperation();
             }
         };
         constructors[TRIGGER_FORCE_START_ON_MASTER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new TriggerForceStartOnMasterOperation();
+            }
+        };
+        constructors[SEND_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new SendExpectedMemberUuidsOperation();
             }
         };
 

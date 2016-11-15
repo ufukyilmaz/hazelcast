@@ -17,7 +17,7 @@ public class TriggerForceStartOnMasterOperation extends Operation implements Joi
 
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveForceStartTrigger(caller);
+        clusterMetadataManager.handleForceStartRequest();
     }
 
     @Override

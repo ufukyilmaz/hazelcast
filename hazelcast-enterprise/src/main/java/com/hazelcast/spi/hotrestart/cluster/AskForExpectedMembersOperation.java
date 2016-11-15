@@ -1,23 +1,20 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
-import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 
 /**
- * Operation which is sent to members by master to notify that Hot Restart will continue with force start.
+ * Checks the master if this member is excluded in the final cluster start result,
+ * during this member is waiting for all members to join
  */
-public class ForceStartMemberOperation extends Operation implements JoinOperation {
+public class AskForExpectedMembersOperation extends Operation implements JoinOperation {
 
     @Override
     public void run() throws Exception {
-        Address caller = getCallerAddress();
-        getLogger().warning("Received force start from: " + caller);
-
         HotRestartService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveForceStartFromMaster(caller);
+        clusterMetadataManager.replyExpectedMemberUuidsQuestion(getCallerAddress(), getCallerUuid());
     }
 
     @Override
@@ -37,6 +34,7 @@ public class ForceStartMemberOperation extends Operation implements JoinOperatio
 
     @Override
     public int getId() {
-        return HotRestartClusterSerializerHook.FORCE_START_MEMBER;
+        return HotRestartClusterSerializerHook.ASK_FOR_EXPECTED_MEMBERS;
     }
+
 }

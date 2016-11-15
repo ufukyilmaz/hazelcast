@@ -58,6 +58,16 @@ public class PersistentCacheDescriptors {
         }
     }
 
+    public void reset() {
+        synchronized (nameToDesc) {
+            nameToDesc.clear();
+            idToDesc.clear();
+            cacheIdSeq = 0;
+        }
+        ensureConfigDirectoryExists();
+    }
+
+
     /**
      * Returns the prefix for the given parameters. The prefix is generated from the cache ID and the given {@code partitionId}.
      * The cache ID is retrieved from the persisted cache descriptors map by {@code serviceName} and {@code name}.

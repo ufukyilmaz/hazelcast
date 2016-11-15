@@ -1,7 +1,6 @@
 package com.hazelcast.map.impl.event;
 
 import com.hazelcast.core.IMapEvent;
-import com.hazelcast.core.Member;
 import com.hazelcast.map.impl.ListenerAdapter;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.map.impl.querycache.event.BatchEventData;
@@ -10,6 +9,7 @@ import com.hazelcast.map.impl.querycache.event.LocalCacheWideEventData;
 import com.hazelcast.map.impl.querycache.event.LocalEntryEventData;
 import com.hazelcast.map.impl.querycache.event.QueryCacheEventData;
 import com.hazelcast.map.impl.querycache.event.SingleIMapEvent;
+import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.serialization.SerializationService;
 
 import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.createIMapEvent;
@@ -21,12 +21,13 @@ import static com.hazelcast.map.impl.querycache.subscriber.EventPublisherHelper.
  */
 public class EnterpriseMapEventPublishingService extends MapEventPublishingService {
 
-    private final Member member;
     private final SerializationService serializationService;
+
+    private final NodeEngine nodeEngine;
 
     public EnterpriseMapEventPublishingService(MapServiceContext mapServiceContext) {
         super(mapServiceContext);
-        this.member = mapServiceContext.getNodeEngine().getLocalMember();
+        this.nodeEngine = mapServiceContext.getNodeEngine();
         this.serializationService = mapServiceContext.getNodeEngine().getSerializationService();
     }
 
@@ -63,7 +64,7 @@ public class EnterpriseMapEventPublishingService extends MapEventPublishingServi
      * @param listener  the listener which the event will be dispatched from
      */
     private void dispatchLocalEventData(EventData eventData, ListenerAdapter listener) {
-        IMapEvent event = createIMapEvent(eventData, null, member, serializationService);
+        IMapEvent event = createIMapEvent(eventData, null, nodeEngine.getLocalMember(), serializationService);
         listener.onEvent(event);
     }
 

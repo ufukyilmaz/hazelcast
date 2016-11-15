@@ -7,7 +7,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
-import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
@@ -462,15 +462,12 @@ public class EnterpriseWanReplicationService
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
         initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, false);
+        syncManager.initiateSyncMapRequest(wanReplicationName, targetGroupName, mapName);
     }
 
-    /**
-     * DO NOT USE: This method is for testing purposes only.
-     */
-    public void syncMapTestMissingPartitions(String wanReplicationName, String targetGroupName, String mapName) {
-        initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, true);
+    public void publishSyncEvent(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        endpoint.publishSyncEvent(syncEvent);
     }
 
     private void initializeSyncManagerIfNeeded() {
@@ -483,8 +480,4 @@ public class EnterpriseWanReplicationService
         }
     }
 
-    public void publishMapWanSyncEvent(PartitionSyncReplicationEventObject eventObject) {
-        WanReplicationEndpoint endpoint = getEndpoint(eventObject.getWanReplicationName(), eventObject.getTargetGroupName());
-        endpoint.publishMapSyncEvent(eventObject);
-    }
 }

@@ -4,7 +4,6 @@ import com.hazelcast.cache.wan.CacheReplicationObject;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.core.EntryView;
 import com.hazelcast.enterprise.wan.EnterpriseReplicationEventObject;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.PublisherQueueContainer;
@@ -12,10 +11,14 @@ import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.WanReplicationEventQueue;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
-import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
+import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.SimpleEntryView;
+import com.hazelcast.map.impl.record.RecordReplicationInfo;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -35,8 +38,10 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,6 +56,7 @@ public abstract class AbstractWanPublisher
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
+    protected volatile boolean syncInProgress;
     protected volatile WanPublisherConfig publisherConfig;
 
     protected String targetGroupName;
@@ -66,7 +72,7 @@ public abstract class AbstractWanPublisher
 
     protected PublisherQueueContainer eventQueueContainer;
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
-
+    protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(1);
     protected ILogger logger;
 
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
@@ -94,6 +100,7 @@ public abstract class AbstractWanPublisher
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
+        node.nodeEngine.getExecutionService().execute("hz:wan:sync-poller", new SyncQueuePoller());
     }
 
     public int getStagingQueueSize() {
@@ -101,7 +108,7 @@ public abstract class AbstractWanPublisher
     }
 
     protected int getPartitionId(Object key) {
-        return node.nodeEngine.getPartitionService().getPartitionId(key);
+        return  node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 
     @Override
@@ -320,14 +327,30 @@ public abstract class AbstractWanPublisher
         }
     }
 
+    private Object invokeOp(Operation operation) {
+        try {
+
+            Future future = node.nodeEngine.getOperationService()
+                    .createInvocationBuilder(MapService.SERVICE_NAME, operation, operation.getPartitionId())
+                    .setResultDeserialized(false)
+                    .invoke();
+            return future.get();
+        } catch (Throwable t) {
+            throw ExceptionUtil.rethrow(t);
+        }
+    }
+
     public String getTargetGroupName() {
         return targetGroupName;
     }
 
     @Override
-    public void publishMapSyncEvent(PartitionSyncReplicationEventObject eventObject) {
-        WanReplicationEvent wanReplicationEvent = new WanReplicationEvent(MapService.SERVICE_NAME, eventObject);
-        eventQueueContainer.publishMapWanEvent(eventObject.getMapName(), eventObject.getPartitionId(), wanReplicationEvent);
+    public void publishSyncEvent(WanSyncEvent event) {
+        try {
+            syncRequests.put(event);
+        } catch (InterruptedException e) {
+            ExceptionUtil.rethrow(e);
+        }
     }
 
     private class QueuePoller implements Runnable {
@@ -341,28 +364,8 @@ public abstract class AbstractWanPublisher
             while (running) {
                 boolean offered = false;
 
-                if (!paused) {
-                    for (IPartition partition : node.getPartitionService().getPartitions()) {
-                        if (!partition.isLocal()) {
-                            continue;
-                        }
-
-                        WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
-                        if (event == null) {
-                            continue;
-                        }
-
-                        offered = false;
-                        while (!offered && running) {
-                            try {
-                                handleEvent(event);
-                                offered = true;
-                                emptyIterationCount = 0;
-                            } catch (InterruptedException ignored) {
-                                EmptyStatement.ignore(ignored);
-                            }
-                        }
-                    }
+                if (!paused && !syncInProgress) {
+                    offered = offerToStagingQueue();
                 }
 
                 if (!offered && running) {
@@ -376,18 +379,111 @@ public abstract class AbstractWanPublisher
             }
         }
 
-        private void handleEvent(WanReplicationEvent event) throws InterruptedException {
-            if (event.getEventObject() instanceof PartitionSyncReplicationEventObject) {
-                PartitionSyncReplicationEventObject evObj = (PartitionSyncReplicationEventObject) event.getEventObject();
-                for (EntryView entryView : evObj.getEntryViews()) {
-                    EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
-                            evObj.getMapName(), entryView);
-                    WanReplicationEvent wanEvent = new WanReplicationEvent(event.getServiceName(), sync);
-                    stagingQueue.put(wanEvent);
+        private boolean offerToStagingQueue() {
+            boolean offered = false;
+            for (IPartition partition : node.getPartitionService().getPartitions()) {
+                if (!partition.isLocal()) {
+                    continue;
+                }
+
+                WanReplicationEvent event = eventQueueContainer.pollRandomWanEvent(partition.getPartitionId());
+                if (event == null) {
+                    continue;
+                }
+
+                offered = false;
+                while (!offered && running) {
+                    try {
+                        stagingQueue.put(event);
+                        offered = true;
+                        emptyIterationCount = 0;
+                    } catch (InterruptedException ignored) {
+                        EmptyStatement.ignore(ignored);
+                    }
+                }
+            }
+            return offered;
+        }
+    }
+
+    private class SyncQueuePoller implements Runnable {
+
+        @Override
+        public void run() {
+            while (running) {
+                try {
+                    WanSyncEvent syncEvent = syncRequests.take();
+                    syncInProgress = true;
+                    MapService mapService = node.nodeEngine.getService(MapService.SERVICE_NAME);
+                    sync(syncEvent, mapService);
+                } catch (InterruptedException ignored) {
+                    EmptyStatement.ignore(ignored);
+                } finally {
+                    syncInProgress = false;
+                }
+            }
+        }
+
+        private void sync(WanSyncEvent syncEvent, MapService mapService) {
+            if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
+                for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
+                    try {
+                        syncMap(mapName);
+                    } catch (Exception ex) {
+                        logger.warning("Exception occurred during WAN sync", ex);
+                    }
                 }
             } else {
-                stagingQueue.put(event);
+                syncMap(syncEvent.getName());
             }
+        }
+
+        private void syncMap(String mapName) {
+            for (IPartition partition : node.getPartitionService().getPartitions()) {
+                if (!partition.isLocal()) {
+                    continue;
+                }
+                syncPartition(mapName, partition);
+            }
+        }
+
+        private void syncPartition(String mapName, IPartition partition) {
+            boolean offered;
+            GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
+            op.setPartitionId(partition.getPartitionId());
+            Set<RecordReplicationInfo> set = (Set<RecordReplicationInfo>) invokeOp(op);
+
+            for (RecordReplicationInfo info : set) {
+                offered = false;
+                SimpleEntryView<Object, Object> simpleEntryView = createSimpleEntryView(info);
+
+                EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
+                        mapName, simpleEntryView);
+                WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
+
+                while (!offered && running) {
+                    try {
+                        stagingQueue.put(event);
+                        offered = true;
+                    } catch (InterruptedException ignored) {
+                        EmptyStatement.ignore(ignored);
+                    }
+                }
+            }
+        }
+
+        private SimpleEntryView<Object, Object> createSimpleEntryView(RecordReplicationInfo info) {
+            SimpleEntryView<Object, Object> simpleEntryView
+                    = new SimpleEntryView<Object, Object>(info.getKey(), info.getValue());
+            simpleEntryView.setVersion(info.getVersion());
+            simpleEntryView.setHits(info.getHits());
+            simpleEntryView.setLastAccessTime(info.getLastAccessTime());
+            simpleEntryView.setLastUpdateTime(info.getLastUpdateTime());
+            simpleEntryView.setTtl(info.getTtl());
+            simpleEntryView.setCreationTime(info.getCreationTime());
+            simpleEntryView.setExpirationTime(info.getExpirationTime());
+            simpleEntryView.setLastStoredTime(info.getLastStoredTime());
+            return simpleEntryView;
         }
     }
 }

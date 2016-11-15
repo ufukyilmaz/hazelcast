@@ -84,68 +84,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
     }
 
     @Test
-    public void basicSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncMap("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
-    }
-
-    @Test
-    public void missingPartitionSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncMapTestMissingPartitions("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
-    }
-
-    @Test
-    public void syncUsingRestApi() throws Exception {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.syncMapOverWAN("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
-    }
-
-    @Test
     public void Vtopo_TTL_Replication_Issue254() {
         setupReplicateFrom(configA, configC, clusterC.length, "atoc", PassThroughMergePolicy.class.getName());
         setupReplicateFrom(configB, configC, clusterC.length, "btoc", PassThroughMergePolicy.class.getName());

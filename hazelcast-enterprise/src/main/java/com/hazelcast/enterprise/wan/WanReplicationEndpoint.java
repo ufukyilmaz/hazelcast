@@ -18,7 +18,7 @@ package com.hazelcast.enterprise.wan;
 
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
-import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.instance.Node;
 import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -84,5 +84,5 @@ public interface WanReplicationEndpoint
 
     void checkWanReplicationQueues();
 
-    void publishMapSyncEvent(PartitionSyncReplicationEventObject eventObject);
+    void publishSyncEvent(WanSyncEvent syncRequest);
 }

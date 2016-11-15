@@ -1,4 +1,4 @@
-package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
+package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.CacheHiDensityRecordProcessor;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityEntryCountMaxSizeChecker;
@@ -6,17 +6,17 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentage
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore;
-import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
-import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
-import com.hazelcast.cache.impl.nearcache.impl.store.AbstractNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
+import com.hazelcast.internal.eviction.MaxSizeChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.nearcache.NearCacheRecord;
+import com.hazelcast.internal.nearcache.impl.store.AbstractNearCacheRecordStore;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemoryBlock;
@@ -28,8 +28,8 @@ import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.util.Clock;
 
-import static com.hazelcast.cache.impl.nearcache.NearCache.NULL_OBJECT;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
+import static com.hazelcast.internal.nearcache.NearCache.NULL_OBJECT;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
 /**

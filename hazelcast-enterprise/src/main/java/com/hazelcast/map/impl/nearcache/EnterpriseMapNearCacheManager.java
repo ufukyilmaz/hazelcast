@@ -1,8 +1,8 @@
 package com.hazelcast.map.impl.nearcache;
 
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCache;
-import com.hazelcast.cache.impl.nearcache.NearCache;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.internal.nearcache.HiDensityNearCache;
+import com.hazelcast.internal.nearcache.NearCache;
 import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 

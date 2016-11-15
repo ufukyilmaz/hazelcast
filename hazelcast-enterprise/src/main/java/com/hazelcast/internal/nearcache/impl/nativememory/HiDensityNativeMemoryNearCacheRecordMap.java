@@ -1,10 +1,10 @@
-package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
+package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.CacheEntryView;
-import com.hazelcast.cache.impl.nearcache.impl.SampleableNearCacheRecordMap;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.hidensity.impl.SampleableEvictableHiDensityRecordMap;
+import com.hazelcast.internal.nearcache.impl.SampleableNearCacheRecordMap;
 import com.hazelcast.nio.serialization.Data;
 
 public class HiDensityNativeMemoryNearCacheRecordMap

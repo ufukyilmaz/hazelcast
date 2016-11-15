@@ -1,22 +1,19 @@
-package com.hazelcast.cache.hidensity.nearcache;
+package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.impl.nearcache.NearCacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 /**
  * Represents {@link NearCacheRecord} implementations for Hi-Density Near Cache.
  *
- * Record of {@link com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore}.
+ * Record of {@link HiDensityNearCacheRecordStore}.
  *
  * @see com.hazelcast.internal.hidensity.HiDensityRecord
- * @see com.hazelcast.cache.impl.nearcache.NearCacheRecord
+ * @see com.hazelcast.internal.nearcache.NearCacheRecord
  * @see NativeMemoryData
- * @see com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecordStore
+ * @see HiDensityNearCacheRecordStore
  */
-public abstract class HiDensityNearCacheRecord
-        extends HiDensityRecord
-        implements NearCacheRecord<NativeMemoryData> {
+public abstract class HiDensityNearCacheRecord extends HiDensityRecord implements NearCacheRecord<NativeMemoryData> {
 
     protected HiDensityNearCacheRecord() {
     }

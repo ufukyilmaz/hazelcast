@@ -1,12 +1,12 @@
 package com.hazelcast.map.impl.querycache.subscriber;
 
-import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.QueryCacheConfig;
 import com.hazelcast.internal.eviction.EvictionChecker;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.EvictionPolicyEvaluator;
 import com.hazelcast.internal.eviction.EvictionStrategy;
+import com.hazelcast.internal.eviction.MaxSizeChecker;
 import com.hazelcast.map.impl.querycache.subscriber.record.QueryCacheRecord;
 import com.hazelcast.nio.serialization.Data;
 

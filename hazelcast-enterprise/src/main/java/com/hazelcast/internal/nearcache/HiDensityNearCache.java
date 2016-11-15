@@ -1,11 +1,8 @@
-package com.hazelcast.cache.hidensity.nearcache;
+package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.hidensity.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
-import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.NearCacheManager;
-import com.hazelcast.cache.impl.nearcache.NearCacheRecordStore;
-import com.hazelcast.cache.impl.nearcache.impl.DefaultNearCache;
+import com.hazelcast.internal.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -21,7 +18,7 @@ import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.util.Preconditions.checkNotNull;
 
 /**
- * {@link com.hazelcast.cache.impl.nearcache.NearCache} implementation for Hi-Density cache.
+ * {@link com.hazelcast.internal.nearcache.NearCache} implementation for Hi-Density cache.
  *
  * @param <K> the type of the key.
  * @param <V> the type of the value.

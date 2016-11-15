@@ -1,4 +1,4 @@
-package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
+package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.internal.hidensity.impl.AbstractHiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryDataUtil;
@@ -9,7 +9,7 @@ import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 
 /**
- * {@link com.hazelcast.cache.impl.nearcache.NearCacheRecord} accessor for {@link HiDensityNativeMemoryNearCacheRecord}
+ * {@link com.hazelcast.internal.nearcache.NearCacheRecord} accessor for {@link HiDensityNativeMemoryNearCacheRecord}
  * to create, read, dispose record or its data.
  */
 public class HiDensityNativeMemoryNearCacheRecordAccessor

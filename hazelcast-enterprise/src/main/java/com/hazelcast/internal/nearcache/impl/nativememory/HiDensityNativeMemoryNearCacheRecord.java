@@ -1,7 +1,7 @@
-package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
+package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheRecord;
+import com.hazelcast.internal.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.nio.Bits;

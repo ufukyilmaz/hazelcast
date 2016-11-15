@@ -1,4 +1,4 @@
-package com.hazelcast.cache.hidensity.nearcache.impl.nativememory;
+package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;

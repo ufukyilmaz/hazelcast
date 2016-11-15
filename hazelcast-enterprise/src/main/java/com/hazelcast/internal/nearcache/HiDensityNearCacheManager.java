@@ -1,13 +1,12 @@
-package com.hazelcast.cache.hidensity.nearcache;
+package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.impl.DefaultNearCacheManager;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.internal.nearcache.impl.DefaultNearCacheManager;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.spi.ExecutionService;
 
 /**
- * {@link com.hazelcast.cache.impl.nearcache.NearCacheManager} implementation for Hi-Density cache.
+ * {@link com.hazelcast.internal.nearcache.NearCacheManager} implementation for Hi-Density cache.
  */
 public class HiDensityNearCacheManager extends DefaultNearCacheManager {
 

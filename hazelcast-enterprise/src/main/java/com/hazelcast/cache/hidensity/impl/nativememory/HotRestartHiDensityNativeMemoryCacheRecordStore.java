@@ -2,10 +2,10 @@ package com.hazelcast.cache.hidensity.impl.nativememory;
 
 import com.hazelcast.cache.EnterpriseCacheService;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentageMaxSizeChecker;
-import com.hazelcast.cache.impl.maxsize.MaxSizeChecker;
-import com.hazelcast.cache.impl.maxsize.impl.CompositeMaxSizeChecker;
 import com.hazelcast.cache.impl.record.CacheRecord;
 import com.hazelcast.config.EvictionConfig;
+import com.hazelcast.internal.eviction.CompositeMaxSizeChecker;
+import com.hazelcast.internal.eviction.MaxSizeChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;

@@ -1,9 +1,6 @@
-package com.hazelcast.cache.nearcache;
+package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCache;
-import com.hazelcast.cache.hidensity.nearcache.HiDensityNearCacheManager;
-import com.hazelcast.cache.impl.nearcache.NearCache;
-import com.hazelcast.cache.impl.nearcache.NearCacheManager;
+import com.hazelcast.cache.nearcache.NearCacheTestSupport;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.NearCacheConfig;

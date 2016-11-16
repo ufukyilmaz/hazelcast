@@ -48,7 +48,7 @@ public class HDMapLoadAllOperationFactory implements OperationFactory {
 
     @Override
     public Operation createOperation() {
-        return new HDLoadAllOperation(name, keys, replaceExistingValues);
+        return new HDLoadAllOperation(name, keys, replaceExistingValues, true);
     }
 
     @Override

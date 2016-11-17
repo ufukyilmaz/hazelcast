@@ -18,6 +18,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -44,7 +45,6 @@ import static com.hazelcast.test.HazelcastTestSupport.generateKeyForPartition;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
 import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
-import static com.hazelcast.test.HazelcastTestSupport.sleepAtLeastMillis;
 import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.util.Preconditions.checkFalse;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
-    private static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();
+    protected static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();
 
     @Parameterized.Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
@@ -70,39 +70,9 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     private final int nodeCount = 5;
 
-    @Test
-    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE()
-            throws Exception {
-        testTimeoutOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_RECENT);
-    }
-
-    @Test
-    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
-            throws Exception {
-        testTimeoutOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_COMPLETE);
-    }
-
-    private void testTimeoutOnMissingLoadStatus(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
-            throws Exception {
-        checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
-                "invalid cluster start policy for partial start test");
-
-        HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
-        Address[] addresses = getAddresses(instances);
-        terminateInstances();
-
-        AtomicReference<String> excludedUuid = new AtomicReference<String>();
-        Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
-        for (Address address : addresses) {
-            listeners.put(address, new BlockOnLoadStart(excludedUuid));
-        }
-
-        instances = restartInstances(addresses, listeners, clusterStartPolicy);
-        assertInstancesJoined(nodeCount - 1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
-        assertNotNull(excludedUuid.get());
-        for (HazelcastInstance instance : instances) {
-            assertNotEquals(excludedUuid.get(), getNode(instance).getThisUuid());
-        }
+    @Before
+    public void init() {
+        dataLoadTimeoutInSeconds = 60;
     }
 
     @Test
@@ -139,7 +109,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         Map<Address, ClusterHotRestartEventListener> listeners = new HashMap<Address, ClusterHotRestartEventListener>();
         for (Address address : addresses) {
-            listeners.put(address, new EagerlySetExpectedMembers(nodeCount - 1));
+            listeners.put(address, new TriggerPartialStart(nodeCount - 1));
         }
 
         Address[] newAddresses = new Address[nodeCount - 1];
@@ -195,7 +165,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             assertTrue(nodeExtension.getExcludedMemberUuids().contains(excludedUuid));
         }
     }
-
 
     @Test
     public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
@@ -520,51 +489,21 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         return uuid;
     }
 
-    private HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) throws InterruptedException {
+    protected HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) throws InterruptedException {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         warmUpPartitions(instances);
         changeClusterStateEventually(instances[0], clusterState);
         return instances;
     }
 
-    private class BlockOnLoadStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
-        private final AtomicReference<String> excludedUuid;
-
-        private Node node;
-
-        BlockOnLoadStart(AtomicReference<String> excludedUuid) {
-            this.excludedUuid = excludedUuid;
-        }
-
-        @Override
-        public void onDataLoadStart(Address address) {
-            if (!node.isMaster() && excludedUuid.compareAndSet(null, node.getThisUuid())) {
-                EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
-                ClusterMetadataManager clusterMetadataManager = nodeExtension.getHotRestartService().getClusterMetadataManager();
-                while (clusterMetadataManager.getHotRestartStatus() == HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS) {
-                    sleepAtLeastMillis(100);
-                    if (Thread.currentThread().isInterrupted()) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void setHazelcastInstance(HazelcastInstance instance) {
-            node = getNode(instance);
-        }
-
-    }
-
-    private class EagerlySetExpectedMembers extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+    private class TriggerPartialStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final int expectedNodeCount;
 
         private Node node;
 
-        EagerlySetExpectedMembers(int expectedNodeCount) {
+        TriggerPartialStart(int expectedNodeCount) {
             this.expectedNodeCount = expectedNodeCount;
         }
 

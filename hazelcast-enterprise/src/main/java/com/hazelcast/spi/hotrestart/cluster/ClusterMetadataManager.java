@@ -364,7 +364,7 @@ public final class ClusterMetadataManager {
         while (isExcludedMemberPresentInCluster()) {
             sleep(SECONDS.toMillis(1));
             if (logger.isFineEnabled()) {
-                long remaining = (dataLoadStartTime + dataLoadTimeout) - Clock.currentTimeMillis();
+                long remaining = getRemainingDataLoadTimeMillis();
                 logger.fine("Waiting for result... Remaining time: " + remaining + " ms.");
             }
 
@@ -1001,7 +1001,7 @@ public final class ClusterMetadataManager {
     }
 
     private void failIfAwaitUntilAllMembersJoinDeadlineMissed(Collection<MemberImpl> members) {
-        if (validationStartTime + validationTimeout < Clock.currentTimeMillis()) {
+        if (getRemainingValidationTimeMillis() == 0) {
             if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
                 throw new HotRestartException(
                         "Expected members didn't join, validation phase timed-out!"
@@ -1085,7 +1085,7 @@ public final class ClusterMetadataManager {
         while (!expectedStatuses.contains(hotRestartStatus)) {
             sleep(SECONDS.toMillis(1));
             if (logger.isFineEnabled()) {
-                long remaining = (dataLoadStartTime + dataLoadTimeout) - Clock.currentTimeMillis();
+                long remaining = getRemainingDataLoadTimeMillis();
                 logger.fine("Waiting for result... Remaining time: " + remaining + " ms.");
             }
 
@@ -1167,7 +1167,7 @@ public final class ClusterMetadataManager {
     }
 
     private void failIfDataLoadDeadlineMissed() {
-        if ((dataLoadStartTime + dataLoadTimeout) < Clock.currentTimeMillis()) {
+        if (getRemainingDataLoadTimeMillis() == 0) {
             if (!node.isMaster()) {
                 if (clusterDataRecoveryPolicy != FULL_RECOVERY_ONLY) {
                     return;
@@ -1342,5 +1342,38 @@ public final class ClusterMetadataManager {
 
         Member localMember = r.getLocalMember();
         return localMember != null ? localMember.getUuid() : null;
+    }
+
+    HotRestartClusterDataRecoveryPolicy getClusterDataRecoveryPolicy() {
+        return clusterDataRecoveryPolicy;
+    }
+
+    Collection<MemberImpl> getRestoredMembers() {
+        Collection<MemberImpl> members = restoredMembersRef.get();
+        if (members == null) {
+            members = node.getClusterService().getMemberImpls();
+        }
+        return Collections.unmodifiableCollection(members);
+    }
+
+    MemberClusterStartInfo.DataLoadStatus getMemberDataLoadStatus(Address address) {
+        MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(address);
+        return memberClusterStartInfo != null ? memberClusterStartInfo.getDataLoadStatus() : null;
+    }
+
+    long getRemainingValidationTimeMillis() {
+        if (validationStartTime == 0) {
+            return validationTimeout;
+        }
+        long remaining = validationStartTime + validationTimeout - Clock.currentTimeMillis();
+        return Math.max(0, remaining);
+    }
+
+    long getRemainingDataLoadTimeMillis() {
+        if (dataLoadStartTime == 0) {
+            return dataLoadTimeout;
+        }
+        long remaining = dataLoadStartTime + dataLoadTimeout - Clock.currentTimeMillis();
+        return Math.max(0, remaining);
     }
 }

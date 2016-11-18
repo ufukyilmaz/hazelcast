@@ -12,8 +12,24 @@ import java.io.IOException;
  */
 public class MemberClusterStartInfo implements DataSerializable {
 
-    enum DataLoadStatus {
-        LOAD_IN_PROGRESS, LOAD_SUCCESSFUL, LOAD_FAILED
+    /**
+     * Data load status for eache member during Hot Restart
+     */
+    public enum DataLoadStatus {
+        /**
+         * Denotes that member data load is in progress
+         */
+        LOAD_IN_PROGRESS,
+
+        /**
+         * Denotes that member data load is completed successfully
+         */
+        LOAD_SUCCESSFUL,
+
+        /**
+         * Denotes that member data load is failed
+         */
+        LOAD_FAILED
     }
 
     private PartitionTableView partitionTable;

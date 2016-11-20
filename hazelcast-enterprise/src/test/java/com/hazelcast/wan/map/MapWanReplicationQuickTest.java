@@ -5,14 +5,19 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.WANQueueFullBehavior;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
+import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.spi.OperationService;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.test.annotation.Repeat;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,13 +28,14 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static com.hazelcast.config.InMemoryFormat.BINARY;
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(EnterpriseParametersRunnerFactory.class)
-@Category({QuickTest.class, ParallelTest.class})
+@Category({QuickTest.class})
 public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
 
     private static final String BATCH_IMPL = WanBatchReplication.class.getName();
@@ -65,6 +71,34 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         targetClusterConfig.setQueueCapacity(10);
         targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION);
         initCluster(basicCluster, configA, factory);
+        createDataIn(basicCluster, "map", 0, 1000);
+    }
+
+    @Test(expected = WANReplicationQueueFullException.class)
+    public void testExceptionOnQueueOverrunIfReplicationActive() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
+        targetClusterConfig.setQueueCapacity(10);
+        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
+        initCluster(basicCluster, configA, factory);
+        createDataIn(basicCluster, "map", 0, 1000);
+    }
+
+    @Test
+    public void testExceptionOnQueueOverrunIfReplicationPassive() throws ExecutionException, InterruptedException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
+        targetClusterConfig.setQueueCapacity(10);
+        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
+        initCluster(basicCluster, configA, factory);
+        for (HazelcastInstance instance : basicCluster) {
+            ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
+                    configB.getGroupConfig().getName(), false);
+            getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
+                    changeWanStateOperation, getNode(instance).address).invoke().get();
+        }
         createDataIn(basicCluster, "map", 0, 1000);
     }
 

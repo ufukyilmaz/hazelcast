@@ -490,6 +490,25 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         assertKeysIn(clusterB, "stored-map", 0, 10);
     }
 
+    @Test
+    public void testStats() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 10);
+        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) getNodeEngineImpl(clusterA[0]).getWanReplicationService();
+                assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
+            }
+        });
+    }
+
     private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {
 
         @Override

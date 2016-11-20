@@ -56,6 +56,7 @@ public abstract class AbstractWanPublisher
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
+    //TODO: not needed if single thread is used.
     protected volatile boolean syncInProgress;
     protected volatile WanPublisherConfig publisherConfig;
 
@@ -78,11 +79,7 @@ public abstract class AbstractWanPublisher
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
-
-    @Override
-    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEvent(serviceName, eventObject);
-    }
+    private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
@@ -113,7 +110,17 @@ public abstract class AbstractWanPublisher
 
     @Override
     public void publishReplicationEvent(String serviceName, ReplicationEventObject eventObject) {
-        boolean dropEvent = isEventDroppingNeeded();
+        publishReplicationEventInternal(serviceName, eventObject, false);
+    }
+
+    @Override
+    public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
+        publishReplicationEventInternal(serviceName, eventObject, true);
+    }
+
+    private void publishReplicationEventInternal(String serviceName, ReplicationEventObject eventObject,
+                                                 boolean backupEvent) {
+        boolean dropEvent = isEventDroppingNeeded(backupEvent);
         if (!dropEvent) {
             EnterpriseReplicationEventObject replicationEventObject = (EnterpriseReplicationEventObject) eventObject;
             if (!replicationEventObject.getGroupNames().contains(targetGroupName)) {
@@ -122,7 +129,11 @@ public abstract class AbstractWanPublisher
                 int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
                 boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
                 if (eventPublished) {
-                    currentElementCount.incrementAndGet();
+                    if (backupEvent) {
+                        currentBackupElementCount.incrementAndGet();
+                    } else {
+                        currentElementCount.incrementAndGet();
+                    }
                 }
             }
         }
@@ -151,9 +162,11 @@ public abstract class AbstractWanPublisher
         return eventPublished;
     }
 
-    private boolean isEventDroppingNeeded() {
+    private boolean isEventDroppingNeeded(boolean isBackup) {
         boolean dropEvent = false;
-        if (currentElementCount.get() >= queueCapacity
+        if(isBackup && currentBackupElementCount.get() >= queueCapacity) {
+            dropEvent = true;
+        } else if (currentElementCount.get() >= queueCapacity
                 && queueFullBehavior == WANQueueFullBehavior.DISCARD_AFTER_MUTATION) {
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
@@ -235,7 +248,7 @@ public abstract class AbstractWanPublisher
         }
 
         if (wanEvent != null) {
-            currentElementCount.decrementAndGet();
+            currentBackupElementCount.decrementAndGet();
         }
     }
 
@@ -243,7 +256,7 @@ public abstract class AbstractWanPublisher
     public void putBackup(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject eventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
-        publishReplicationEvent(wanReplicationEvent.getServiceName(), eventObject);
+        publishReplicationEventBackup(wanReplicationEvent.getServiceName(), eventObject);
     }
 
     @Override
@@ -299,7 +312,7 @@ public abstract class AbstractWanPublisher
 
     @Override
     public void checkWanReplicationQueues() {
-        if (WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
+        if (isThrowExceptionBehavior(queueFullBehavior)
                 && currentElementCount.get() >= queueCapacity) {
             throw new WANReplicationQueueFullException(
                     String.format("WAN replication for target cluster %s is full. Queue capacity is %d",
@@ -338,6 +351,12 @@ public abstract class AbstractWanPublisher
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }
+    }
+
+    private boolean isThrowExceptionBehavior(WANQueueFullBehavior queueFullBehavior) {
+        return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
+                || (WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
+                && !paused);
     }
 
     public String getTargetGroupName() {

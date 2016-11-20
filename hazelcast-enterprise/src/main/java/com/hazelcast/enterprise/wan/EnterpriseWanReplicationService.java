@@ -12,6 +12,7 @@ import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
+import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
@@ -286,6 +287,10 @@ public class EnterpriseWanReplicationService
             WanReplicationPublisherDelegate delegate = delegateEntry.getValue();
             localWanStats.getLocalWanPublisherStats().putAll(delegate.getStats());
             wanStatsMap.put(schemeName, localWanStats);
+            for (Map.Entry<String, LocalWanPublisherStats> localWanPublisherStatsEntry : delegate.getStats().entrySet()) {
+                logger.info("Queue Size : " + localWanPublisherStatsEntry.getValue().getOutboundQueueSize()
+                + " Total published event count : " + localWanPublisherStatsEntry.getValue().getTotalPublishedEventCount());
+            }
         }
         return wanStatsMap;
     }

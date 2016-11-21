@@ -26,6 +26,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -112,6 +113,7 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
     }
 
     @Test
+    @Ignore("https://github.com/hazelcast/hazelcast-enterprise/issues/1138")
     public void putToCacheAndGetInvalidationEventWhenNodeShutdown() {
         putToCacheAndGetInvalidationEventWhenNodeShutdown(InMemoryFormat.NATIVE);
     }

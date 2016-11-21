@@ -15,6 +15,7 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.networking.ReadHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.networking.WriteHandler;
@@ -48,6 +49,7 @@ import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
+import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -563,5 +565,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         super.handleExcludedMemberUuids(sender, excludedMemberUuids);
+    }
+
+    @Override
+    public ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() {
+        if (hotRestartService != null) {
+            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
+            return ClusterHotRestartStatusDTOUtil.create(clusterMetadataManager);
+        }
+        return super.getCurrentClusterHotRestartStatus();
     }
 }

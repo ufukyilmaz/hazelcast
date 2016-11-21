@@ -9,11 +9,13 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParametersRunnerFactory;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.WanReplicationEndpoint;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.internal.management.operation.ChangeWanStateOperation;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -117,6 +119,32 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         properties.put(WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS.key(), "500");
         initCluster(basicCluster, propTestConfig, factory);
         createDataIn(basicCluster, "map", 0, 1000);
+    }
+
+    @Test
+    public void testClearQueues() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
+        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
+        targetClusterConfig.setQueueCapacity(1000);
+        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
+        initCluster(singleNodeA, configA, factory);
+        createDataIn(singleNodeA, "map", 0, 1000);
+        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
+        final WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint("atob", configB.getGroupConfig().getName());
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assert endpoint.getStats().getOutboundQueueSize() == 1000;
+            }
+        });
+        wanReplicationService.clearQueues("atob", configB.getGroupConfig().getName());
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                assert endpoint.getStats().getOutboundQueueSize() == 0;
+            }
+        });
     }
 
     @Override

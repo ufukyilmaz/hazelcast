@@ -12,7 +12,6 @@ import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.monitor.LocalWanPublisherStats;
 import com.hazelcast.monitor.LocalWanStats;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
@@ -287,10 +286,6 @@ public class EnterpriseWanReplicationService
             WanReplicationPublisherDelegate delegate = delegateEntry.getValue();
             localWanStats.getLocalWanPublisherStats().putAll(delegate.getStats());
             wanStatsMap.put(schemeName, localWanStats);
-            for (Map.Entry<String, LocalWanPublisherStats> localWanPublisherStatsEntry : delegate.getStats().entrySet()) {
-                logger.info("Queue Size : " + localWanPublisherStatsEntry.getValue().getOutboundQueueSize()
-                + " Total published event count : " + localWanPublisherStatsEntry.getValue().getTotalPublishedEventCount());
-            }
         }
         return wanStatsMap;
     }
@@ -456,23 +451,27 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
-    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
-        return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
-    }
-
-    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
-        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
-    }
-
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
         initializeSyncManagerIfNeeded();
         syncManager.initiateSyncMapRequest(wanReplicationName, targetGroupName, mapName);
     }
 
-    public void publishSyncEvent(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+    @Override
+    public void clearQueues(String wanReplicationName, String targetGroupName) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        endpoint.clearQueues();
+    }
+
+    public void publishSyncEvent(String wanReplicationName, String targetGroupName,
+                                 WanSyncEvent syncEvent) {
         WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
         endpoint.publishSyncEvent(syncEvent);
+    }
+
+    public void populateSyncEventOnMembers(String wanReplicationName, String targetGroupName, String mapName) {
+        initializeSyncManagerIfNeeded();
+        syncManager.populateSyncRequestOnMembers(wanReplicationName, targetGroupName, mapName);
     }
 
     private void initializeSyncManagerIfNeeded() {
@@ -483,6 +482,14 @@ public class EnterpriseWanReplicationService
                 }
             }
         }
+    }
+
+    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
+        return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
+    }
+
+    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
+        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
     }
 
 }

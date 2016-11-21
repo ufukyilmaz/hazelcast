@@ -85,4 +85,6 @@ public interface WanReplicationEndpoint
     void checkWanReplicationQueues();
 
     void publishSyncEvent(WanSyncEvent syncRequest);
+
+    void clearQueues();
 }

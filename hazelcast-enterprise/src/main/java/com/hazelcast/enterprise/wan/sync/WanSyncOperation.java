@@ -30,6 +30,7 @@ public class WanSyncOperation extends Operation implements IdentifiedDataSeriali
     @Override
     public void run() throws Exception {
         EnterpriseWanReplicationService wanReplicationService = getService();
+        syncEvent.setOp(this);
         wanReplicationService.publishSyncEvent(wanReplicationName, targetGroupName, syncEvent);
     }
 
@@ -57,5 +58,10 @@ public class WanSyncOperation extends Operation implements IdentifiedDataSeriali
     @Override
     public int getId() {
         return EWRDataSerializerHook.WAN_SYNC_OPERATION;
+    }
+
+    @Override
+    public boolean returnsResponse() {
+        return false;
     }
 }

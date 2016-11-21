@@ -13,12 +13,12 @@ import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
+import com.hazelcast.enterprise.wan.sync.WanSyncResult;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.map.impl.SimpleEntryView;
-import com.hazelcast.map.impl.record.RecordReplicationInfo;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationObject;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationSync;
 import com.hazelcast.monitor.LocalWanPublisherStats;
@@ -56,8 +56,7 @@ public abstract class AbstractWanPublisher
 
     protected volatile boolean running = true;
     protected volatile boolean paused;
-    //TODO: not needed if single thread is used.
-    protected volatile boolean syncInProgress;
+
     protected volatile WanPublisherConfig publisherConfig;
 
     protected String targetGroupName;
@@ -73,13 +72,15 @@ public abstract class AbstractWanPublisher
 
     protected PublisherQueueContainer eventQueueContainer;
     protected BlockingQueue<WanReplicationEvent> stagingQueue;
-    protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(1);
+    protected BlockingQueue<WanSyncEvent> syncRequests = new ArrayBlockingQueue<WanSyncEvent>(DEFAULT_STAGING_QUEUE_SIZE);
     protected ILogger logger;
 
     private final LocalWanPublisherStatsImpl localWanPublisherStats = new LocalWanPublisherStatsImpl();
 
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
     private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
+
+    private volatile boolean resetCounters;
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig publisherConfig) {
@@ -97,7 +98,6 @@ public abstract class AbstractWanPublisher
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
 
         node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
-        node.nodeEngine.getExecutionService().execute("hz:wan:sync-poller", new SyncQueuePoller());
     }
 
     public int getStagingQueueSize() {
@@ -129,13 +129,17 @@ public abstract class AbstractWanPublisher
                 int partitionId = getPartitionId(((EnterpriseReplicationEventObject) eventObject).getKey());
                 boolean eventPublished = publishEventInternal(eventObject, replicationEvent, partitionId, dropEvent);
                 if (eventPublished) {
-                    if (backupEvent) {
-                        currentBackupElementCount.incrementAndGet();
-                    } else {
-                        currentElementCount.incrementAndGet();
-                    }
+                    incrementCounters(backupEvent);
                 }
             }
+        }
+    }
+
+    private void incrementCounters(boolean backupEvent) {
+        if (backupEvent) {
+            currentBackupElementCount.incrementAndGet();
+        } else {
+            currentElementCount.incrementAndGet();
         }
     }
 
@@ -164,10 +168,10 @@ public abstract class AbstractWanPublisher
 
     private boolean isEventDroppingNeeded(boolean isBackup) {
         boolean dropEvent = false;
-        if(isBackup && currentBackupElementCount.get() >= queueCapacity) {
+        if ((isBackup && currentBackupElementCount.get() >= queueCapacity)) {
             dropEvent = true;
         } else if (currentElementCount.get() >= queueCapacity
-                && queueFullBehavior == WANQueueFullBehavior.DISCARD_AFTER_MUTATION) {
+                && queueFullBehavior != WANQueueFullBehavior.THROW_EXCEPTION) {
             long curTime = System.currentTimeMillis();
             if (curTime > lastQueueFullLogTimeMs + queueLoggerTimePeriodMs) {
                 lastQueueFullLogTimeMs = curTime;
@@ -293,11 +297,28 @@ public abstract class AbstractWanPublisher
     @Override
     public void pause() {
         paused = true;
+        logger.info("Pausing WAN replication.");
     }
 
     @Override
     public void resume() {
         paused = false;
+        if (resetCounters) {
+            int backupCount = 0;
+            int primaryCount = 0;
+            for (IPartition partition : node.getPartitionService().getPartitions()) {
+                int size = eventQueueContainer.size(partition.getPartitionId());
+                if (!partition.isLocal()) {
+                    backupCount += size;
+                } else {
+                    primaryCount += size;
+                }
+            }
+            currentElementCount.set(primaryCount);
+            currentBackupElementCount.set(backupCount);
+            resetCounters = false;
+        }
+        logger.info("WAN replication resumed.");
     }
 
     @Override
@@ -372,6 +393,18 @@ public abstract class AbstractWanPublisher
         }
     }
 
+    @Override
+    public void clearQueues() {
+        resetCounters = true;
+        boolean alreadyPaused = paused;
+        if (!alreadyPaused) {
+            pause();
+        }
+        stagingQueue.clear();
+        eventQueueContainer.clearQueues();
+        resume();
+    }
+
     private class QueuePoller implements Runnable {
 
         private static final int MAX_SLEEP_MS = 2000;
@@ -381,10 +414,17 @@ public abstract class AbstractWanPublisher
         @Override
         public void run() {
             while (running) {
-                boolean offered = false;
 
-                if (!paused && !syncInProgress) {
-                    offered = offerToStagingQueue();
+                WanSyncEvent syncEvent = syncRequests.poll();
+                if (syncEvent != null) {
+                    sync(syncEvent);
+                    continue;
+                }
+
+                boolean offered = false;
+                if (!paused) {
+                    offered = tryWanReplicationQueues();
+                    emptyIterationCount = 0;
                 }
 
                 if (!offered && running) {
@@ -398,7 +438,7 @@ public abstract class AbstractWanPublisher
             }
         }
 
-        private boolean offerToStagingQueue() {
+        private boolean tryWanReplicationQueues() {
             boolean offered = false;
             for (IPartition partition : node.getPartitionService().getPartitions()) {
                 if (!partition.isLocal()) {
@@ -409,100 +449,57 @@ public abstract class AbstractWanPublisher
                 if (event == null) {
                     continue;
                 }
+                offered = offerToStagingQueue(event);
+            }
+            return offered;
+        }
 
-                offered = false;
-                while (!offered && running) {
-                    try {
-                        stagingQueue.put(event);
-                        offered = true;
-                        emptyIterationCount = 0;
-                    } catch (InterruptedException ignored) {
-                        EmptyStatement.ignore(ignored);
-                    }
+        private boolean offerToStagingQueue(WanReplicationEvent event) {
+            boolean offered = false;
+            while (!offered && running) {
+                try {
+                    stagingQueue.put(event);
+                    offered = true;
+                } catch (InterruptedException ignored) {
+                    EmptyStatement.ignore(ignored);
                 }
             }
             return offered;
         }
-    }
 
-    private class SyncQueuePoller implements Runnable {
-
-        @Override
-        public void run() {
-            while (running) {
-                try {
-                    WanSyncEvent syncEvent = syncRequests.take();
-                    syncInProgress = true;
-                    MapService mapService = node.nodeEngine.getService(MapService.SERVICE_NAME);
-                    sync(syncEvent, mapService);
-                } catch (InterruptedException ignored) {
-                    EmptyStatement.ignore(ignored);
-                } finally {
-                    syncInProgress = false;
-                }
-            }
-        }
-
-        private void sync(WanSyncEvent syncEvent, MapService mapService) {
-            if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
-                for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                    try {
-                        syncMap(mapName);
-                    } catch (Exception ex) {
-                        logger.warning("Exception occurred during WAN sync", ex);
+        private void sync(WanSyncEvent syncEvent) {
+            assert syncEvent.getType() == WanSyncType.SINGLE_MAP;
+            WanSyncResult result = new WanSyncResult();
+            Set<Integer> syncedPartitions = result.getSyncedPartitions();
+            if (syncEvent.getPartitionId() == WanSyncEvent.ALL_PARTITIONS) {
+                for (IPartition partition : node.getPartitionService().getPartitions()) {
+                    if (!partition.isLocal()) {
+                        continue;
                     }
+                    syncPartition(syncEvent.getName(), partition);
+                    syncedPartitions.add(partition.getPartitionId());
                 }
             } else {
-                syncMap(syncEvent.getName());
-            }
-        }
-
-        private void syncMap(String mapName) {
-            for (IPartition partition : node.getPartitionService().getPartitions()) {
-                if (!partition.isLocal()) {
-                    continue;
+                IPartition partition = node.getPartitionService().getPartition(syncEvent.getOp().getPartitionId());
+                if (partition.isLocal()) {
+                    syncPartition(syncEvent.getName(), partition);
+                    syncedPartitions.add(partition.getPartitionId());
                 }
-                syncPartition(mapName, partition);
             }
+            syncEvent.getOp().sendResponse(result);
         }
 
         private void syncPartition(String mapName, IPartition partition) {
-            boolean offered;
             GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
             op.setPartitionId(partition.getPartitionId());
-            Set<RecordReplicationInfo> set = (Set<RecordReplicationInfo>) invokeOp(op);
+            Set<SimpleEntryView> set = (Set<SimpleEntryView>) invokeOp(op);
 
-            for (RecordReplicationInfo info : set) {
-                offered = false;
-                SimpleEntryView<Object, Object> simpleEntryView = createSimpleEntryView(info);
-
+            for (SimpleEntryView simpleEntryView : set) {
                 EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
                         mapName, simpleEntryView);
                 WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
-
-                while (!offered && running) {
-                    try {
-                        stagingQueue.put(event);
-                        offered = true;
-                    } catch (InterruptedException ignored) {
-                        EmptyStatement.ignore(ignored);
-                    }
-                }
+                offerToStagingQueue(event);
             }
-        }
-
-        private SimpleEntryView<Object, Object> createSimpleEntryView(RecordReplicationInfo info) {
-            SimpleEntryView<Object, Object> simpleEntryView
-                    = new SimpleEntryView<Object, Object>(info.getKey(), info.getValue());
-            simpleEntryView.setVersion(info.getVersion());
-            simpleEntryView.setHits(info.getHits());
-            simpleEntryView.setLastAccessTime(info.getLastAccessTime());
-            simpleEntryView.setLastUpdateTime(info.getLastUpdateTime());
-            simpleEntryView.setTtl(info.getTtl());
-            simpleEntryView.setCreationTime(info.getCreationTime());
-            simpleEntryView.setExpirationTime(info.getExpirationTime());
-            simpleEntryView.setLastStoredTime(info.getLastStoredTime());
-            return simpleEntryView;
         }
     }
 }

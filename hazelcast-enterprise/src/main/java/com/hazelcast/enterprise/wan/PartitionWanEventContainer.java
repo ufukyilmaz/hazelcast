@@ -43,6 +43,25 @@ public class PartitionWanEventContainer {
         return event;
     }
 
+    public int size() {
+        int size = 0;
+        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : mapWanEventQueueMap.entrySet()) {
+            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
+            if (eventQueue != null) {
+                size += eventQueue.size();
+            }
+        }
+
+        for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : cacheWanEventQueueMap.entrySet()) {
+            WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();
+            if (eventQueue != null) {
+                size += eventQueue.size();
+            }
+        }
+
+        return size;
+    }
+
     private WanReplicationEvent pollRandomWanEvent(PartitionWanEventQueueMap eventQueueMap) {
         for (Map.Entry<String, WanReplicationEventQueue> eventQueueMapEntry : eventQueueMap.entrySet()) {
             WanReplicationEventQueue eventQueue = eventQueueMapEntry.getValue();

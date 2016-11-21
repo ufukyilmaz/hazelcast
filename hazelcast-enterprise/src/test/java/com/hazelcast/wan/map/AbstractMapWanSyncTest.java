@@ -61,5 +61,6 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         communicator.syncMapOverWAN("atob", "B", "map");
 
         assertKeysIn(clusterB, "map", 0, 1000);
+
     }
 }

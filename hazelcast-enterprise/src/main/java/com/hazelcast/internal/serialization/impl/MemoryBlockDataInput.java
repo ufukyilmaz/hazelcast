@@ -486,12 +486,13 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
 
     @Override
     public <T> T readDataAsObject() throws IOException {
-        // FIXME: this needs a proper implementation!
-        return null;
+        // a future optimization would be to skip the construction of the Data object.
+        Data data = readData();
+        return data == null ? null : (T) service.toObject(data);
     }
 
     private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale)
-    throws IOException {
+            throws IOException {
         if (length < 0) {
             throw new NegativeArraySizeException("Destination length is negative: " + length);
         }
@@ -595,7 +596,8 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
             b = readByte();
             charBuffer[i] = b < 0 ? Bits.readUtf8Char(this, b) : (char) b;
         }
-        return new String(charBuffer, 0, charCount);    }
+        return new String(charBuffer, 0, charCount);
+    }
 
     @Override
     public void copyToMemoryBlock(MemoryBlock memory, int offset, int length) throws IOException {

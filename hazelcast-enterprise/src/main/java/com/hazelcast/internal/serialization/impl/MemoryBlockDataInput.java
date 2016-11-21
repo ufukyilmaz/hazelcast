@@ -484,6 +484,12 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return new String[0];
     }
 
+    @Override
+    public <T> T readDataAsObject() throws IOException {
+        // FIXME: this needs a proper implementation!
+        return null;
+    }
+
     private void memCopy(final Object dest, final long destOffset, final int length, final int indexScale)
     throws IOException {
         if (length < 0) {

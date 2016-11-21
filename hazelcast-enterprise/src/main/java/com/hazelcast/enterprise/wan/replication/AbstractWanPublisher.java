@@ -226,11 +226,13 @@ public abstract class AbstractWanPublisher
         EnterpriseReplicationEventObject eventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
         long latency = Clock.currentTimeMillis() - eventObject.getCreationTime();
-        localWanPublisherStats.incrementPublishedEventCount(latency);
+        localWanPublisherStats.incrementPublishedEventCount(latency < 0 ? 0 : latency);
     }
 
     private void removeLocal() {
-        currentElementCount.decrementAndGet();
+        if (currentElementCount.get() > 0) {
+            currentElementCount.decrementAndGet();
+        }
     }
 
     @Override

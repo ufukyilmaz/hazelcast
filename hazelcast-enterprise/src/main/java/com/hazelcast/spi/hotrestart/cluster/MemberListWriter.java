@@ -35,6 +35,7 @@ class MemberListWriter extends AbstractMetadataWriter<Collection<Member>> {
         out.writeUTF(member.getUuid());
         writeAddress(out, member.getAddress());
         out.writeBoolean(member.localMember());
+        out.writeUTF(member.getVersion().toString());
     }
 
     @Override

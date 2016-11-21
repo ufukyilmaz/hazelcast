@@ -73,6 +73,8 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     protected final EventCollectingPartitionLostListener partitionLostListener = new EventCollectingPartitionLostListener();
 
+    protected int validationTimeoutInSeconds = 10, dataLoadTimeoutInSeconds = 10;
+
     private Future startNodeFuture;
 
     @Rule
@@ -323,7 +325,8 @@ public abstract class AbstractHotRestartClusterStartTest {
         config.getHotRestartPersistenceConfig().setEnabled(true)
                 .setBaseDir(new File(baseDir, instanceName))
                 .setClusterDataRecoveryPolicy(clusterStartPolicy)
-                .setValidationTimeoutSeconds(10).setDataLoadTimeoutSeconds(10);
+                .setValidationTimeoutSeconds(validationTimeoutInSeconds)
+                .setDataLoadTimeoutSeconds(dataLoadTimeoutInSeconds);
 
         if (listener != null) {
             config.addListenerConfig(new ListenerConfig(listener));

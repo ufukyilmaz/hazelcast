@@ -83,11 +83,6 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
     }
 
     @Test
-    public void whenEmptyMapThenPopulatedNearCacheShouldReturnNull_neverNULL_OBJECT() {
-        whenEmptyMapThenPopulatedNearCacheShouldReturnNullNeverNULL_OBJECT(InMemoryFormat.NATIVE);
-    }
-
-    @Test
     public void putAndGetFromCacheAndThenGetFromClientHiDensityNearCache() {
         putAndGetFromCacheAndThenGetFromClientNearCache(InMemoryFormat.NATIVE);
     }
@@ -139,11 +134,6 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
     }
 
     @Test
-    public void testNearCacheEviction() {
-        testNearCacheEviction(InMemoryFormat.NATIVE);
-    }
-
-    @Test
     public void testNearCacheExpiration_withTTL() {
         testNearCacheExpiration_withTTL(InMemoryFormat.NATIVE);
     }
@@ -151,15 +141,5 @@ public class HiDensityClientNearCacheTest extends ClientNearCacheTestSupport {
     @Test
     public void testNearCacheExpiration_withMaxIdle() {
         testNearCacheExpiration_withMaxIdle(InMemoryFormat.NATIVE);
-    }
-
-    @Test
-    public void testNearCacheMemoryCostCalculation() {
-        testNearCacheMemoryCostCalculation(InMemoryFormat.NATIVE, 1);
-    }
-
-    @Test
-    public void testNearCacheMemoryCostCalculation_withConcurrentCacheMisses() {
-        testNearCacheMemoryCostCalculation(InMemoryFormat.NATIVE, 10);
     }
 }

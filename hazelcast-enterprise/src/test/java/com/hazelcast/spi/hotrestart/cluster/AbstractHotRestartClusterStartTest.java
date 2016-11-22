@@ -32,6 +32,7 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -354,7 +355,12 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances, NodeState expectedNodeState,
             ClusterState expectedClusterState) {
-        assertEquals(numberOfInstances, instances.length);
+        assertInstancesJoined(numberOfInstances, Arrays.asList(instances), expectedNodeState, expectedClusterState);
+    }
+
+    static void assertInstancesJoined(int numberOfInstances, Collection<HazelcastInstance> instances, NodeState expectedNodeState,
+                                      ClusterState expectedClusterState) {
+        assertEquals(numberOfInstances, instances.size());
         for (HazelcastInstance instance : instances) {
             Node node = getNode(instance);
             assertNotNull(node);

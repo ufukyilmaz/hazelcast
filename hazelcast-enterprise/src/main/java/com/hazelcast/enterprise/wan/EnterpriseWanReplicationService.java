@@ -7,8 +7,9 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
-import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
+import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
@@ -451,26 +452,43 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
+    @Override
+    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
+        initializeSyncManagerIfNeeded();
+        syncManager.initiateSyncRequest(wanReplicationName, targetGroupName,
+                new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName));
+    }
+
+    @Override
+    public void syncAllMaps(String wanReplicationName, String targetGroupName) {
+        initializeSyncManagerIfNeeded();
+        syncManager.initiateSyncRequest(wanReplicationName, targetGroupName,
+                new WanSyncEvent(WanSyncType.ALL_MAPS));
+    }
+
+    @Override
+    public void clearQueues(String wanReplicationName, String targetGroupName) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        endpoint.clearQueues();
+    }
+
+    public void publishSyncEvent(String wanReplicationName, String targetGroupName,
+                                 WanSyncEvent syncEvent) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        endpoint.publishSyncEvent(syncEvent);
+    }
+
+    public void populateSyncEventOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+        initializeSyncManagerIfNeeded();
+        syncManager.populateSyncRequestOnMembers(wanReplicationName, targetGroupName, syncEvent);
+    }
+
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
         return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
     }
 
     private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
         return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
-    }
-
-    @Override
-    public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
-        initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, false);
-    }
-
-    /**
-     * DO NOT USE: This method is for testing purposes only.
-     */
-    public void syncMapTestMissingPartitions(String wanReplicationName, String targetGroupName, String mapName) {
-        initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, true);
     }
 
     private void initializeSyncManagerIfNeeded() {
@@ -481,10 +499,5 @@ public class EnterpriseWanReplicationService
                 }
             }
         }
-    }
-
-    public void publishMapWanSyncEvent(PartitionSyncReplicationEventObject eventObject) {
-        WanReplicationEndpoint endpoint = getEndpoint(eventObject.getWanReplicationName(), eventObject.getTargetGroupName());
-        endpoint.publishMapSyncEvent(eventObject);
     }
 }

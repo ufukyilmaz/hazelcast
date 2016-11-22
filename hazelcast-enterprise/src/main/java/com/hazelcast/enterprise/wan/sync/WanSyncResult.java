@@ -9,24 +9,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Contains the results of WAN synchronization operations.
- *
- * @see MemberMapSyncOperation
- * @see PartitionMapSyncOperation
+ * Result of {@link WanSyncOperation}
  */
-public class SyncResult implements DataSerializable {
+public class WanSyncResult implements DataSerializable {
 
-    private Set<Integer> partitionIds = new HashSet<Integer>();
+    private Set<Integer> syncedPartitions = new HashSet<Integer>();
 
-    public Set<Integer> getPartitionIds() {
-        return partitionIds;
+    public WanSyncResult() { }
+
+    public Set<Integer> getSyncedPartitions() {
+        return syncedPartitions;
     }
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
-        out.writeInt(partitionIds.size());
-        for (Integer partitionId : partitionIds) {
-            out.writeInt(partitionId);
+        out.writeInt(syncedPartitions.size());
+        for (Integer syncedPartition : syncedPartitions) {
+            out.writeInt(syncedPartition);
         }
     }
 
@@ -34,7 +33,7 @@ public class SyncResult implements DataSerializable {
     public void readData(ObjectDataInput in) throws IOException {
         int size = in.readInt();
         for (int i = 0; i < size; i++) {
-            partitionIds.add(in.readInt());
+            syncedPartitions.add(in.readInt());
         }
     }
 }

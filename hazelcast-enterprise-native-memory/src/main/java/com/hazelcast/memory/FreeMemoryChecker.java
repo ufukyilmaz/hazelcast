@@ -7,18 +7,22 @@ import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
 
 /**
- * Class which checks if there is enough free native memory for allocation. If disabled, acts as if the check for free memory
- * succeeded.
+ * Class which checks if there is enough free native memory for allocation.
+ *
+ * If disabled, acts as if the check for free memory succeeded.
  */
 public final class FreeMemoryChecker {
+
     /**
      * Name of the property for enabling or disabling the free memory checking.
      */
     public static final String HIDENSITY_CHECK_FREEMEMORY = "hazelcast.hidensity.check.freememory";
+
     /**
      * Hazelcast XML and system property for setting if free memory checking is enabled.
      */
     public static final HazelcastProperty FREE_MEMORY_CHECKER_ENABLED = new HazelcastProperty(HIDENSITY_CHECK_FREEMEMORY, true);
+
     private final boolean enabled;
 
     FreeMemoryChecker() {

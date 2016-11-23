@@ -6,15 +6,16 @@ import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemoryPercentage
 import com.hazelcast.cache.hidensity.maxsize.HiDensityFreeNativeMemorySizeMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemoryPercentageMaxSizeChecker;
 import com.hazelcast.cache.hidensity.maxsize.HiDensityUsedNativeMemorySizeMaxSizeChecker;
-import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.NearCacheConfig;
+import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.eviction.EvictionListener;
 import com.hazelcast.internal.eviction.ExpirationChecker;
 import com.hazelcast.internal.eviction.MaxSizeChecker;
 import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.HiDensityRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
+import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
 import com.hazelcast.internal.nearcache.NearCacheRecord;
 import com.hazelcast.internal.nearcache.impl.store.AbstractNearCacheRecordStore;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
@@ -124,6 +125,10 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
                         + EvictionConfig.MaxSizePolicy.FREE_NATIVE_MEMORY_PERCENTAGE
                         + " are supported.");
         }
+    }
+
+    HiDensityNativeMemoryNearCacheRecordMap getRecords() {
+        return records;
     }
 
     private NativeMemoryData toNativeMemoryData(Object data) {
@@ -332,6 +337,16 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     public void doExpiration() {
         checkAvailable();
         records.evictExpiredRecords(recordEvictionListener, recordExpirationChecker);
+    }
+
+    @Override
+    public void loadKeys(DataStructureAdapter<Data, ?> adapter) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public void storeKeys() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

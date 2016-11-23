@@ -9,6 +9,7 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanReplicationProperties;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.instance.Node;
@@ -155,6 +156,10 @@ public abstract class WanReplicationTestSupport extends HazelcastTestSupport {
             Node node = TestUtil.getNode(instance);
             node.getNodeEngine().getWanReplicationService().resume(wanRepName, targetGroupName);
         }
+    }
+
+    protected EnterpriseWanReplicationService getWanReplicationService(HazelcastInstance instance) {
+        return (EnterpriseWanReplicationService) getNodeEngineImpl(instance).getWanReplicationService();
     }
 
     protected boolean isNativeMemoryEnabled() {

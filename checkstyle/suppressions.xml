@@ -31,4 +31,7 @@
     <suppress checks="CyclomaticComplexityCheck|ClassFanOutComplexityCheck|ClassDataAbstractionCoupling"
               files="SerializerHook\.java$"/>
 
+    <!-- WAN -->
+    <suppress checks="MethodCount" files="com/hazelcast/enterprise/wan/replication/AbstractWanPublisher\.java$"/>
+
 </suppressions>

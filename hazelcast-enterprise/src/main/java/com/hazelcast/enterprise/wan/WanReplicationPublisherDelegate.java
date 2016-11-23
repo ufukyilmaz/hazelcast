@@ -54,7 +54,9 @@ public final class WanReplicationPublisherDelegate
 
     @Override
     public void publishReplicationEventBackup(String serviceName, ReplicationEventObject eventObject) {
-        publishReplicationEvent(serviceName, eventObject);
+        for (WanReplicationEndpoint endpoint : endpoints.values()) {
+            endpoint.publishReplicationEventBackup(serviceName, eventObject);
+        }
     }
 
     @Override

@@ -16,8 +16,6 @@
 
 package com.hazelcast.map.impl.operation;
 
-import com.hazelcast.enterprise.wan.sync.MemberMapSyncOperation;
-import com.hazelcast.enterprise.wan.sync.PartitionMapSyncOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
 import com.hazelcast.internal.serialization.impl.ArrayDataSerializableFactory;
 import com.hazelcast.internal.serialization.impl.FactoryIdHelper;
@@ -96,8 +94,9 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int READ_AND_RESET_ACCUMULATOR = 51;
     public static final int SET_READ_CURSOR = 52;
     public static final int DESTROY_QUERY_CACHE = 53;
-    public static final int MEMBER_MAP_SYNC = 54;
-    public static final int PARTITION_MAP_SYNC = 55;
+    // Below two operations are removed with 3.8. IDs 54 and 55 are free.
+    // public static final int MEMBER_MAP_SYNC = 54;
+    // public static final int PARTITION_MAP_SYNC = 55;
     public static final int CLEAR_FACTORY = 56;
     public static final int CONTAINS_VALUE_FACTORY = 57;
     public static final int EVICT_ALL_FACTORY = 58;
@@ -395,16 +394,6 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[DESTROY_QUERY_CACHE] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new DestroyQueryCacheOperation();
-            }
-        };
-        constructors[MEMBER_MAP_SYNC] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new MemberMapSyncOperation();
-            }
-        };
-        constructors[PARTITION_MAP_SYNC] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new PartitionMapSyncOperation();
             }
         };
         constructors[CLEAR_FACTORY] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {

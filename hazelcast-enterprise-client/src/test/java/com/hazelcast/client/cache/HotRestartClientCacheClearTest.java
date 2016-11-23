@@ -18,21 +18,33 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.client.HotRestartTestUtil.createFolder;
+import static com.hazelcast.client.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.client.HotRestartTestUtil.getBaseDir;
+import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
 
-    private static final AtomicInteger instanceIndex = new AtomicInteger();
+    @Rule
+    public TestName testName = new TestName();
 
     private File folder;
 
-    @Rule
-    public TestName testName = new TestName();
+    @Override
+    protected void onSetup() {
+        folder = isolatedFolder(getClass(), testName);
+        createFolder(folder);
+        super.onSetup();
+    }
+
+    @Override
+    protected void onTearDown() {
+        super.onTearDown();
+        deleteQuietly(folder);
+    }
 
     @Override
     protected Config createConfig() {
@@ -45,7 +57,7 @@ public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
 
         config.getHotRestartPersistenceConfig()
                 .setEnabled(true)
-                .setBaseDir(new File(folder, "hz_" + instanceIndex.incrementAndGet()));
+                .setBaseDir(getBaseDir(folder));
 
         config.getNativeMemoryConfig().setEnabled(true)
                 .setSize(new MemorySize(128, MemoryUnit.MEGABYTES))
@@ -68,24 +80,5 @@ public class HotRestartClientCacheClearTest extends ClientCacheClearTest {
         cacheConfig.setHotRestartConfig(hrConfig);
 
         return cacheConfig;
-    }
-
-    @Override
-    protected void onSetup() {
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
-        }
-
-        super.onSetup();
-    }
-
-    @Override
-    protected void onTearDown() {
-        super.onTearDown();
-        if (folder != null) {
-            delete(folder);
-        }
     }
 }

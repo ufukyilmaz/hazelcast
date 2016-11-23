@@ -257,9 +257,9 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         byte header = input.readByte();
         if (isIdentifiedDataSerializable(header)) {
             if (isCompressed(header)) {
-                input.skipBytes(FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH);
+                skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH);
             } else {
-                input.skipBytes(FACTORY_AND_CLASS_ID_BYTE_LENGTH);
+                skipBytesSafely(input, FACTORY_AND_CLASS_ID_BYTE_LENGTH);
             }
         } else {
             // read class-name
@@ -267,9 +267,15 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
         }
 
         if (isVersioned(header)) {
-            input.skipBytes(VERSION_BYTE_LENGTH);
+            skipBytesSafely(input, VERSION_BYTE_LENGTH);
         }
         return input;
+    }
+
+    private void skipBytesSafely(ObjectDataInput input, int count) throws IOException {
+        if (input.skipBytes(count) != count) {
+            throw new HazelcastSerializationException("Malformed serialization format");
+        }
     }
 
 }

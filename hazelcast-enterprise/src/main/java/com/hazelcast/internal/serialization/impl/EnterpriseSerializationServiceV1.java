@@ -24,21 +24,34 @@ import com.hazelcast.internal.serialization.impl.bufferpool.BufferPool;
 import com.hazelcast.internal.serialization.impl.bufferpool.BufferPoolFactory;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.EnterpriseBufferObjectDataOutput;
+import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.Data;
+import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.PortableFactory;
 
+import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Map;
 
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BYTE_BASE_OFFSET;
+import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isCompressed;
+import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isIdentifiedDataSerializable;
+import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isVersioned;
 import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
+import static com.hazelcast.internal.serialization.impl.SerializationUtil.createSerializerAdapter;
 import static com.hazelcast.internal.serialization.impl.SerializationUtil.handleException;
+import static com.hazelcast.util.Preconditions.checkNotNull;
 
 public final class EnterpriseSerializationServiceV1 extends SerializationServiceV1 implements EnterpriseSerializationService {
+
+    private static final int FACTORY_AND_CLASS_ID_BYTE_LENGTH = 8;
+    private static final int FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH = 2;
+    private static final int VERSION_BYTE_LENGTH = 1;
+
     private final HazelcastMemoryManager memoryManager;
     private final ThreadLocal<MemoryAllocator> mallocThreadLocal = new ThreadLocal<MemoryAllocator>();
 
@@ -48,12 +61,27 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
             Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
             PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
-            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject) {
+            HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject,
+            EnterpriseClusterVersionAware clusterVersionAware, boolean rollingUpgradesEnabled) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
                 enableSharedObject);
 
         this.memoryManager = memoryManager;
+        overrideConstantSerializers(classLoader, clusterVersionAware, dataSerializableFactories, rollingUpgradesEnabled);
+    }
+
+    private void overrideConstantSerializers(ClassLoader classLoader, EnterpriseClusterVersionAware clusterVersionAware,
+                                             Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
+                                             boolean rollingUpgradesEnabled) {
+        // In case of rolling-upgrades the "versioned" serializer has to be enabled. It's not used by default we need to
+        // maintain backward compatibility and the "old" clients do not know it.
+        if (rollingUpgradesEnabled) {
+            checkNotNull(clusterVersionAware, "ClusterVersionAware can't be null");
+            this.dataSerializerAdapter = createSerializerAdapter(
+                    new EnterpriseDataSerializableSerializer(dataSerializableFactories, classLoader, clusterVersionAware), this);
+            registerConstant(DataSerializable.class, dataSerializerAdapter);
+        }
     }
 
     @Override
@@ -222,4 +250,26 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             memoryManager.dispose();
         }
     }
+
+    @Override
+    public ObjectDataInput initDataSerializableInputAndSkipTheHeader(Data data) throws IOException {
+        ObjectDataInput input = createObjectDataInput(data);
+        byte header = input.readByte();
+        if (isIdentifiedDataSerializable(header)) {
+            if (isCompressed(header)) {
+                input.skipBytes(FACTORY_AND_CLASS_ID_BYTE_COMPRESSED_LENGTH);
+            } else {
+                input.skipBytes(FACTORY_AND_CLASS_ID_BYTE_LENGTH);
+            }
+        } else {
+            // read class-name
+            input.readUTF();
+        }
+
+        if (isVersioned(header)) {
+            input.skipBytes(VERSION_BYTE_LENGTH);
+        }
+        return input;
+    }
+
 }

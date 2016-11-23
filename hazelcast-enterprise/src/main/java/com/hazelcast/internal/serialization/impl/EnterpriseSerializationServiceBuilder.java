@@ -21,6 +21,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
 
     private HazelcastMemoryManager memoryManager;
     private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
+    private EnterpriseClusterVersionAware clusterVersionAware;
+    private boolean rollingUpgradeEnabled;
 
     public EnterpriseSerializationServiceBuilder setMemoryManager(HazelcastMemoryManager memoryManager) {
         this.memoryManager = memoryManager;
@@ -112,6 +114,16 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         return (EnterpriseSerializationServiceBuilder) super.setInitialOutputBufferSize(initialOutputBufferSize);
     }
 
+    public EnterpriseSerializationServiceBuilder setClusterVersionAware(EnterpriseClusterVersionAware clusterVersionAware) {
+        this.clusterVersionAware = clusterVersionAware;
+        return this;
+    }
+
+    public EnterpriseSerializationServiceBuilder setRollingUpgradeEnabled(boolean rollingUpgradeEnabled) {
+        this.rollingUpgradeEnabled = rollingUpgradeEnabled;
+        return this;
+    }
+
     @Override
     public EnterpriseSerializationService build() {
         return (EnterpriseSerializationService) super.build();
@@ -124,8 +136,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
                         partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject
-                );
+                        enableSharedObject, clusterVersionAware, rollingUpgradeEnabled);
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 
@@ -151,4 +162,5 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
 
         return new EnterpriseByteArrayInputOutputFactory(byteOrder);
     }
+
 }

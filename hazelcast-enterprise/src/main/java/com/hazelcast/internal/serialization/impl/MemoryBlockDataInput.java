@@ -25,7 +25,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteOrder;
 
 import static com.hazelcast.internal.memory.HeapMemoryAccessor.ARRAY_BOOLEAN_BASE_OFFSET;
@@ -53,7 +52,7 @@ import static com.hazelcast.nio.Bits.NULL_ARRAY_LENGTH;
 import static com.hazelcast.nio.Bits.SHORT_SIZE_IN_BYTES;
 
 @SuppressWarnings("checkstyle:methodcount")
-final class MemoryBlockDataInput extends InputStream implements EnterpriseBufferObjectDataInput {
+final class MemoryBlockDataInput extends VersionedObjectDataInput implements EnterpriseBufferObjectDataInput {
 
     private static final int LOWER_BYTE_MASK = (1 << Byte.SIZE) - 1;
     private static final int LOWER_SHORT_MASK = (1 << Short.SIZE) - 1;
@@ -708,4 +707,5 @@ final class MemoryBlockDataInput extends InputStream implements EnterpriseBuffer
         return "MemoryBlockDataInput{size=" + size + ", pos=" + pos
                 + ", mark=" + mark + ", byteOrder=" + getByteOrder() + '}';
     }
+
 }

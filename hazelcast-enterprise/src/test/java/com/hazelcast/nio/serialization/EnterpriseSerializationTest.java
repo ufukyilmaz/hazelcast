@@ -22,19 +22,19 @@ import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.core.PartitioningStrategy;
-import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.executor.impl.operations.CancellationOperation;
 import com.hazelcast.instance.MemberImpl;
 import com.hazelcast.instance.SimpleMemberImpl;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.serialization.impl.SerializationServiceV1;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
@@ -45,6 +45,7 @@ import com.hazelcast.version.Version;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -54,6 +55,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Random;
 
@@ -66,10 +69,19 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(EnterpriseSerialJUnitClassRunner.class)
+
+@RunWith(Parameterized.class)
 @Category(QuickTest.class)
 public class EnterpriseSerializationTest
         extends HazelcastTestSupport {
+
+    private static Version V3_8 = Version.of(3, 8, 0);
+
+    private boolean rollingUpgradeEnabled;
+
+    public EnterpriseSerializationTest(boolean rollingUpgradeEnabled) {
+        this.rollingUpgradeEnabled = rollingUpgradeEnabled;
+    }
 
     @Test
     public void testGlobalSerializer() {
@@ -92,25 +104,28 @@ public class EnterpriseSerializationTest
                     }
                 }));
 
-        InternalSerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss1 = builder().setConfig(serializationConfig)
+                .setClusterVersionAware(new TestVersionAware()).build();
         DummyValue value = new DummyValue("test", 111);
         Data data = ss1.toData(value);
         assertNotNull(data);
 
-        InternalSerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss2 = builder().setConfig(serializationConfig)
+                .setClusterVersionAware(new TestVersionAware()).build();
         Object o = ss2.toObject(data);
         assertEquals(value, o);
     }
 
     @Test
     public void test_callid_on_correct_stream_position() throws Exception {
-        InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService serializationService = builder()
+                .setClusterVersionAware(new TestVersionAware()).build();
         CancellationOperation operation = new CancellationOperation(newUnsecureUuidString(), true);
         operation.setCallerUuid(newUnsecureUuidString());
         OperationAccessor.setCallId(operation, 12345);
 
         Data data = serializationService.toData(operation);
-        long callId = IOUtil.extractOperationCallId(data, serializationService);
+        long callId = ((SerializationServiceV1) serializationService).initDataSerializableInputAndSkipTheHeader(data).readLong();
 
         assertEquals(12345, callId);
     }
@@ -173,11 +188,13 @@ public class EnterpriseSerializationTest
                             }
                         }));
 
-        InternalSerializationService ss1 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss1 = builder().setConfig(serializationConfig)
+                .setClusterVersionAware(new TestVersionAware()).build();
         Data data = ss1.toData(new SingletonValue());
         assertNotNull(data);
 
-        InternalSerializationService ss2 = new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
+        InternalSerializationService ss2 = builder().setConfig(serializationConfig)
+                .setClusterVersionAware(new TestVersionAware()).build();
         Object o = ss2.toObject(data);
         assertEquals(new SingletonValue(), o);
     }
@@ -191,7 +208,8 @@ public class EnterpriseSerializationTest
     @Test
     public void testNullData() {
         Data data = new HeapData();
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = builder()
+                .setClusterVersionAware(new TestVersionAware()).build();
         assertNull(ss.toObject(data));
     }
 
@@ -200,7 +218,8 @@ public class EnterpriseSerializationTest
      */
     @Test
     public void testSharedJavaSerialization() {
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(true).build();
+        InternalSerializationService ss = builder().setEnableSharedObject(true)
+                .setClusterVersionAware(new TestVersionAware()).build();
         Data data = ss.toData(new Foo());
         Foo foo = (Foo) ss.toObject(data);
 
@@ -209,7 +228,8 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testLinkedListSerialization() {
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = builder()
+                .setClusterVersionAware(new TestVersionAware()).build();
         LinkedList<Person> linkedList = new LinkedList<Person>();
         linkedList.add(new Person(35, 180, 100, "Orhan", null));
         linkedList.add(new Person(12, 120, 60, "Osman", null));
@@ -220,7 +240,8 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testArrayListSerialization() {
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = builder()
+                .setClusterVersionAware(new TestVersionAware()).build();
         ArrayList<Person> arrayList = new ArrayList<Person>();
         arrayList.add(new Person(35, 180, 100, "Orhan", null));
         arrayList.add(new Person(12, 120, 60, "Osman", null));
@@ -231,7 +252,8 @@ public class EnterpriseSerializationTest
 
     @Test
     public void testArraySerialization() {
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().build();
+        InternalSerializationService ss = builder()
+                .setClusterVersionAware(new TestVersionAware()).build();
         byte[] array = new byte[1024];
         new Random().nextBytes(array);
         Data data = ss.toData(array);
@@ -249,9 +271,10 @@ public class EnterpriseSerializationTest
             }
         };
 
-        EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
+        EnterpriseSerializationService ss = builder()
                 .setAllowUnsafe(true).setUseNativeByteOrder(true)
-                .setMemoryManager(memoryManager).build();
+                .setMemoryManager(memoryManager)
+                .setClusterVersionAware(new TestVersionAware()).build();
 
         String obj = String.valueOf(System.nanoTime());
         Data partitionKey = ss.toData(obj.hashCode(), DataType.NATIVE);
@@ -278,7 +301,8 @@ public class EnterpriseSerializationTest
      */
     @Test
     public void testUnsharedJavaSerialization() {
-        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setEnableSharedObject(false).build();
+        InternalSerializationService ss = builder().setEnableSharedObject(false)
+                .setClusterVersionAware(new TestVersionAware()).build();
         Data data = ss.toData(new Foo());
         Foo foo = ss.toObject(data);
 
@@ -342,4 +366,45 @@ public class EnterpriseSerializationTest
         assertEquals(host, member2.getAddress().getHost());
         assertEquals(port, member2.getAddress().getPort());
     }
+
+    @Test(expected = NullPointerException.class)
+    public void serializerNeedsClusterAware_fail() {
+        new EnterpriseSerializationServiceBuilder()
+                .setRollingUpgradeEnabled(true)
+                .setVersion(InternalSerializationService.VERSION_1)
+                .build();
+    }
+
+    @Test
+    public void serializerNeedsClusterAware_success() {
+        new EnterpriseSerializationServiceBuilder()
+                .setRollingUpgradeEnabled(true)
+                .setVersion(InternalSerializationService.VERSION_1)
+                .setClusterVersionAware(new EnterpriseClusterVersionAware() {
+                    @Override
+                    public Version getClusterVersion() {
+                        return V3_8;
+                    }
+                })
+                .build();
+    }
+
+    @Parameterized.Parameters(name = "{index}: rollingUpgradeEnabled = {0}")
+    public static Collection<Object[]> data() {
+        return Arrays.asList(new Object[][]{
+                {false}, {true}
+        });
+    }
+
+    public EnterpriseSerializationServiceBuilder builder() {
+        return new EnterpriseSerializationServiceBuilder().setRollingUpgradeEnabled(rollingUpgradeEnabled);
+    }
+
+    private static class TestVersionAware implements EnterpriseClusterVersionAware {
+        @Override
+        public Version getClusterVersion() {
+            return V3_8;
+        }
+    }
+
 }

@@ -16,6 +16,7 @@ import com.hazelcast.internal.nearcache.HiDensityNearCacheManager;
 import com.hazelcast.internal.nearcache.NearCacheManager;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionAware;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
@@ -34,6 +35,7 @@ import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.version.Version;
 
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
@@ -45,6 +47,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     private volatile SocketInterceptor socketInterceptor;
     private volatile License license;
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
+    private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {
@@ -68,6 +71,7 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
             PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
 
+            boolean rollingUpgradeEnabled = Boolean.valueOf(config.getProperty(GroupProperty.ROLLING_UPGRADE_ENABLED.getName()));
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
@@ -77,6 +81,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
                     .setManagedContext(new HazelcastClientManagedContext(client, config.getManagedContext()))
                     .setPartitioningStrategy(partitioningStrategy)
                     .setHazelcastInstance(client)
+                    .setClusterVersionAware(versionAware)
+                    .setRollingUpgradeEnabled(rollingUpgradeEnabled)
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);
@@ -166,4 +172,18 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);
     }
+
+    private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {
+        private final Version version;
+
+        public EnterpriseClientVersionAware(String buildVersion) {
+            this.version = Version.of(buildVersion);
+        }
+
+        @Override
+        public Version getClusterVersion() {
+            return version;
+        }
+    }
+
 }

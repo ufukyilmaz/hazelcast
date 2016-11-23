@@ -21,6 +21,7 @@ import com.hazelcast.internal.networking.ReadHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.networking.WriteHandler;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.impl.EnterpriseClusterVersionListener;
 import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
@@ -49,8 +50,8 @@ import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
+import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -245,6 +246,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             HazelcastInstanceImpl hazelcastInstance = node.hazelcastInstance;
             PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
 
+            EnterpriseClusterVersionListener listener = new EnterpriseClusterVersionListener();
+            registerListener(listener);
+
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
@@ -255,7 +259,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     .setConfig(serializationConfig)
                     .setManagedContext(hazelcastInstance.managedContext)
                     .setPartitioningStrategy(partitioningStrategy)
+                    .setClusterVersionAware(listener)
                     .setHazelcastInstance(hazelcastInstance)
+                    .setRollingUpgradeEnabled(node.isRollingUpgradeEnabled())
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

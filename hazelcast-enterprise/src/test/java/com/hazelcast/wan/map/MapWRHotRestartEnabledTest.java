@@ -1,6 +1,7 @@
 package com.hazelcast.wan.map;
 
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
@@ -11,46 +12,52 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 
-import static com.hazelcast.nio.IOUtil.delete;
-import static com.hazelcast.nio.IOUtil.toFileName;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 /**
  * WAN replication tests for hot-restart enabled maps
  */
+@RunWith(EnterpriseSerialJUnitClassRunner.class)
 @Category(SlowTest.class)
 public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
-
-    private File folder;
 
     @Rule
     public TestName testName = new TestName();
 
+    private File folder;
+
     @Before
+    @Override
     public void setup() {
+        folder = isolatedFolder(getClass(), testName);
+        createFolder(folder);
         super.setup();
-        folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        delete(folder);
-        if (!folder.mkdir() && !folder.exists()) {
-            throw new AssertionError("Unable to create test folder: " + folder.getAbsolutePath());
-        }
-        configA.getHotRestartPersistenceConfig().setEnabled(true).setBaseDir(folder);
     }
 
     @After
+    @Override
     public void cleanup() {
         super.cleanup();
-        if (folder != null) {
-            delete(folder);
-        }
+        deleteQuietly(folder);
     }
 
     @Test
     public void basicSyncTest() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        configA.getMapConfig("default").getHotRestartConfig().setEnabled(true).setFsync(false);
+        configA.getMapConfig("default")
+                .getHotRestartConfig()
+                .setEnabled(true)
+                .setFsync(false);
+        configA.getHotRestartPersistenceConfig()
+                .setEnabled(true)
+                .setBaseDir(getBaseDir(folder));
         startClusterA();
         startClusterB();
 

@@ -8,7 +8,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 
 /** Contains top-level control code for the GC thread. */
-public final class GcExecutor {
+// class non-final for mockability
+public class GcExecutor {
     /** Capacity of the work queue which is used by the mutator thread to submit tasks to the GC thread. */
     @SuppressWarnings("checkstyle:magicnumber")
     public static final int COLLECTOR_QUEUE_CAPACITY = 1 << 10;
@@ -20,7 +21,7 @@ public final class GcExecutor {
     private final MutatorCatchup mc;
 
     @Inject
-    private GcExecutor(@Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> gcConveyor, ChunkManager chunkMgr,
+    GcExecutor(@Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> gcConveyor, ChunkManager chunkMgr,
                        MutatorCatchup mc, GcMainLoop mainLoop, @Name("storeName") String storeName,
                        @Name("testGcMutex") Object testGcMutex
     ) {

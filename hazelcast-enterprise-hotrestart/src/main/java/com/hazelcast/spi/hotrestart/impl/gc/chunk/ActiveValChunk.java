@@ -9,7 +9,8 @@ import com.hazelcast.spi.hotrestart.impl.io.ChunkFileOut;
 /**
  * Represents the currently active value chunk.
  */
-public final class ActiveValChunk extends WriteThroughChunk implements ActiveChunk {
+// class non-final for mockability
+public class ActiveValChunk extends WriteThroughChunk implements ActiveChunk {
 
     public ActiveValChunk(long seq, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, ACTIVE_FNAME_SUFFIX, records, out, gcHelper);

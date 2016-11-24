@@ -31,7 +31,7 @@ public final class HotRestartPersistenceEngine {
     private ActiveChunk activeTombChunk;
 
     @Inject
-    private HotRestartPersistenceEngine(
+    HotRestartPersistenceEngine(
             DiContainer di, GcExecutor gcExec, GcHelper gcHelper, PrefixTombstoneManager pfixTombstoMgr) {
         this.di = di;
         this.gcExec = gcExec;
@@ -70,11 +70,16 @@ public final class HotRestartPersistenceEngine {
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
         final boolean full = activeChunk.addStep1(seq, hrKey.prefix(), hrKey.bytes(), value);
         if (full) {
-            activeChunk.close();
             final ActiveChunk inactiveChunk = activeChunk;
-            activeChunk = isTombstone
-                            ? (activeTombChunk = gcHelper.newActiveTombChunk())
-                            : (activeValChunk = gcHelper.newActiveValChunk());
+            if (isTombstone) {
+                activeTombChunk = null;
+                inactiveChunk.close();
+                activeTombChunk = activeChunk = gcHelper.newActiveTombChunk();
+            } else {
+                activeValChunk = null;
+                inactiveChunk.close();
+                activeValChunk = activeChunk = gcHelper.newActiveValChunk();
+            }
             gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
         }
     }

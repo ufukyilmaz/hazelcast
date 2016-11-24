@@ -90,7 +90,7 @@ public abstract class GcHelper implements Disposable {
     }
 
     /** Creates a new active value chunk file and returns an instance of {@link ActiveValChunk} that wraps it. */
-    public final ActiveValChunk newActiveValChunk() {
+    public ActiveValChunk newActiveValChunk() {
         final long seq = chunkSeq.incrementAndGet();
         return new ActiveValChunk(seq, newRecordMap(false),
                 chunkFileOut(chunkFile(VAL_BASEDIR, seq, Chunk.FNAME_SUFFIX + ACTIVE_FNAME_SUFFIX, true), null),
@@ -107,7 +107,7 @@ public abstract class GcHelper implements Disposable {
 
     /** Creates a new active tombstone chunk file and returns an instance of
      * {@link WriteThroughTombChunk} that wraps it. */
-    public final WriteThroughTombChunk newActiveTombChunk() {
+    public WriteThroughTombChunk newActiveTombChunk() {
         return newWriteThroughTombChunk(ACTIVE_FNAME_SUFFIX);
     }
 
@@ -154,7 +154,7 @@ public abstract class GcHelper implements Disposable {
     }
 
     /** Deletes the chunk file associated with the given instance of {@link Chunk}. */
-    public final void deleteChunkFile(Chunk chunk) {
+    public void deleteChunkFile(Chunk chunk) {
         final File toDelete = chunkFile(chunk, false);
         assert toDelete.exists() : "Attempt to delete non-existent file " + toDelete;
         delete(toDelete);

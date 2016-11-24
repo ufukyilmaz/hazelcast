@@ -13,7 +13,8 @@ import java.io.IOException;
 /**
  * Write-through chunk specialized to contain tombstone records.
  */
-public final class WriteThroughTombChunk extends WriteThroughChunk implements ActiveChunk {
+// class non-final for mockability
+public class WriteThroughTombChunk extends WriteThroughChunk implements ActiveChunk {
 
     public WriteThroughTombChunk(long seq, String suffix, RecordMap records, ChunkFileOut out, GcHelper gcHelper) {
         super(seq, suffix, records, out, gcHelper);

@@ -169,7 +169,11 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
             } catch (Throwable t) {
                 persistenceConveyor.drainerFailed(t);
             } finally {
-                persistence.close();
+                try {
+                    persistence.close();
+                } catch (Throwable e) {
+                    logger.severe("Hot restart engine failed to close", e);
+                }
                 logger.fine(String.format("Drained %,d blocking items. Mean batch size was %.1f",
                         blockingItemCount, (double) blockingItemCount / drainCount));
             }

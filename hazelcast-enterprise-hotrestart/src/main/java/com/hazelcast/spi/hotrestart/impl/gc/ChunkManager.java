@@ -34,7 +34,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 /**
  * Manages GC-related metadata and contains the entry points into the GC procedures.
  */
-public final class ChunkManager implements Disposable {
+// class non-final for mockability
+public class ChunkManager implements Disposable {
     private static final double UNIT_PERCENTAGE = 100;
 
     /**
@@ -81,7 +82,7 @@ public final class ChunkManager implements Disposable {
     private long maxValLive;
 
     @Inject
-    private ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
+    ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
                          GcLogger logger, DiContainer di
     ) {
         this.di = di;

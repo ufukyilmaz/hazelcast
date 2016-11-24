@@ -1,4 +1,4 @@
-package com.hazelcast.client;
+package com.hazelcast.cache.hotrestart;
 
 import org.junit.rules.TestName;
 

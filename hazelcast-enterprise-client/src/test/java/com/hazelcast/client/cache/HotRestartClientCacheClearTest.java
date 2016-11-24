@@ -19,9 +19,9 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 
-import static com.hazelcast.client.HotRestartTestUtil.createFolder;
-import static com.hazelcast.client.HotRestartTestUtil.isolatedFolder;
-import static com.hazelcast.client.HotRestartTestUtil.getBaseDir;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)

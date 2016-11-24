@@ -38,9 +38,9 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static com.hazelcast.client.HotRestartTestUtil.createFolder;
-import static com.hazelcast.client.HotRestartTestUtil.isolatedFolder;
-import static com.hazelcast.client.HotRestartTestUtil.getBaseDir;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 

@@ -5,6 +5,7 @@ import com.hazelcast.config.WanConsumerConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
+import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
@@ -21,6 +22,7 @@ import com.hazelcast.spi.MigrationAwareService;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionMigrationEvent;
 import com.hazelcast.spi.PartitionReplicationEvent;
+import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.partition.MigrationEndpoint;
 import com.hazelcast.util.ExceptionUtil;
@@ -46,7 +48,7 @@ import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
  * Enterprise implementation for WAN replication.
  */
 public class EnterpriseWanReplicationService
-        implements WanReplicationService, MigrationAwareService {
+        implements WanReplicationService, MigrationAwareService, PostJoinAwareService {
 
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
@@ -291,6 +293,16 @@ public class EnterpriseWanReplicationService
         return wanStatsMap;
     }
 
+    @Override
+    public Operation getPostJoinOperation() {
+        PostJoinWanOperation postJoinWanOperation = new PostJoinWanOperation();
+        Map<String, WanReplicationConfig> wanConfigs = node.getConfig().getWanReplicationConfigs();
+        for (Map.Entry<String, WanReplicationConfig> wanReplicationConfigEntry : wanConfigs.entrySet()) {
+            postJoinWanOperation.addWanConfig(wanReplicationConfigEntry.getValue());
+        }
+        return postJoinWanOperation;
+    }
+
     /**
      * {@link StripedRunnable} implementation that is responsible dispatching incoming {@link WanReplicationEvent}s to
      * related {@link ReplicationSupportingService}.
@@ -478,7 +490,21 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void addWanReplicationConfig(WanReplicationConfig wanConfig) {
-        //Will be implemented with PR https://github.com/hazelcast/hazelcast-enterprise/pull/1151
+        if (addWanReplicationConfigIfAbsent(wanConfig)) {
+            getWanReplicationPublisher(wanConfig.getName());
+        } else {
+            throw new UnsupportedOperationException("A WanReplicationConfig is already exists with the given name: "
+                    + wanConfig.getName());
+        }
+    }
+
+    public boolean addWanReplicationConfigIfAbsent(WanReplicationConfig wanConfig) {
+        WanReplicationConfig wanReplicationConfig = node.getConfig().getWanReplicationConfig(wanConfig.getName());
+        if (wanReplicationConfig == null) {
+            node.getConfig().addWanReplicationConfig(wanConfig);
+            return true;
+        }
+        return false;
     }
 
     public void publishSyncEvent(String wanReplicationName, String targetGroupName,

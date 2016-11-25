@@ -3,10 +3,14 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanPublisherConfig;
+import com.hazelcast.config.WanReplicationConfig;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.management.ManagementCenterService;
+import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.Test;
@@ -100,7 +104,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
     }
 
     @Test
-    public void syncTestUsingREST() throws IOException {
+    public void syncAllTestUsingREST() throws IOException {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
         startClusterB();
@@ -125,5 +129,89 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         assertKeysIn(clusterB, "map", 0, 1000);
         assertKeysIn(clusterB, "map2", 0, 2000);
         assertKeysIn(clusterB, "map3", 0, 3000);
+    }
+
+    @Test
+    public void addNewWanConfigAndSyncTest() throws IOException {
+        /*Form Cluster A by starting each instance with different Config object
+        reference to prevent sharing */
+        startClusterWithUniqueConfigObjects(clusterA, configA);
+        startClusterB();
+        createDataIn(clusterA, "map", 0, 1000);
+        createDataIn(clusterA, "map2", 0, 2000);
+        sleepSeconds(5);
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName("newWRConfig");
+        WanPublisherConfig newPublisherConfig = targetCluster(clusterB[0].getConfig(), clusterB.length);
+        wanReplicationConfig.addWanPublisherConfig(newPublisherConfig);
+
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
+
+        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
+        communicator.addWanConfig(dto.toJson().toString());
+
+        createDataIn(clusterA, "map3", 0, 3000);
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotIn(clusterB, "map2", 0, 2000);
+        assertKeysNotIn(clusterB, "map3", 0, 3000);
+        communicator = new HTTPCommunicator(clusterA[0]);
+        communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysIn(clusterB, "map2", 0, 2000);
+        assertKeysIn(clusterB, "map3", 0, 3000);
+    }
+
+    @Test
+    public void checkNewWanConfigExistsInNewNodesAndSyncTest() throws IOException {
+        /*Form Cluster A by starting each instance with different Config object
+        reference to prevent sharing */
+        HazelcastInstance[] instance1 = new HazelcastInstance[1];
+        HazelcastInstance[] instance2 = new HazelcastInstance[1];
+        startClusterWithUniqueConfigObjects(instance1, configA);
+        startClusterB();
+
+        createDataIn(instance1, "map", 0, 1000);
+        createDataIn(instance1, "map2", 0, 2000);
+        sleepSeconds(5);
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+
+        WanReplicationConfig wanReplicationConfig = new WanReplicationConfig();
+        wanReplicationConfig.setName("newWRConfig");
+        WanPublisherConfig newPublisherConfig = targetCluster(clusterB[0].getConfig(), clusterB.length);
+        wanReplicationConfig.addWanPublisherConfig(newPublisherConfig);
+
+        WanReplicationConfigDTO dto = new WanReplicationConfigDTO(wanReplicationConfig);
+
+        HTTPCommunicator communicator = new HTTPCommunicator(instance1[0]);
+        communicator.addWanConfig(dto.toJson().toString());
+
+        startClusterWithUniqueConfigObjects(instance2, configA.setInstanceName("confA-new"));
+        assertClusterSizeEventually(2, instance1[0]);
+        assert instance2[0].getConfig().getWanReplicationConfig("newWRConfig") != null;
+
+        createDataIn(instance1, "map3", 0, 3000);
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+        assertKeysNotIn(clusterB, "map2", 0, 2000);
+        assertKeysNotIn(clusterB, "map3", 0, 3000);
+
+        communicator = new HTTPCommunicator(instance2[0]);
+        communicator.syncMapsOverWAN("newWRConfig", newPublisherConfig.getGroupName());
+
+        assertKeysIn(clusterB, "map", 0, 1000);
+        assertKeysIn(clusterB, "map2", 0, 2000);
+        assertKeysIn(clusterB, "map3", 0, 3000);
+    }
+
+    private void startClusterWithUniqueConfigObjects(HazelcastInstance[] cluster, Config config) {
+        for (int i = 0; i < cluster.length; i++) {
+            Config newConfig = getConfig();
+            newConfig.getGroupConfig().setName(config.getGroupConfig().getName());
+            newConfig.setInstanceName(config.getInstanceName() + 1);
+            newConfig.getNetworkConfig().setPort(config.getNetworkConfig().getPort());
+            newConfig.setInstanceName(config.getInstanceName() + i);
+            cluster[i] = HazelcastInstanceFactory.newHazelcastInstance(newConfig);
+        }
     }
 }

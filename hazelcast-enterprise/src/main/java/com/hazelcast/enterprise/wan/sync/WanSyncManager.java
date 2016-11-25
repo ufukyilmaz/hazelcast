@@ -26,6 +26,7 @@ public class WanSyncManager {
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
+    private volatile boolean running = true;
 
     public WanSyncManager(NodeEngine nodeEngine) {
         partitionService = nodeEngine.getPartitionService();
@@ -33,6 +34,10 @@ public class WanSyncManager {
         operationService = nodeEngine.getOperationService();
         this.nodeEngine = nodeEngine;
         logger = nodeEngine.getLogger(getClass());
+    }
+
+    public void shutdown() {
+        running = false;
     }
 
     public void initiateSyncRequest(final String wanReplicationName,
@@ -62,10 +67,10 @@ public class WanSyncManager {
         Set<Integer> partitionIds = getAllPartitionIds();
         addResultOfOps(futures, partitionIds);
 
-        while (!partitionIds.isEmpty()) {
+        while (!partitionIds.isEmpty() && running) {
             futures.clear();
+            logger.finest("WAN sync will retry missing partitions - " + partitionIds);
             for (Integer partitionId : partitionIds) {
-                logger.info("Retrying to sync missing partition - " + partitionId);
                 syncEvent.setPartitionId(partitionId);
                 Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName, syncEvent);
                 operation.setPartitionId(partitionId);
@@ -78,12 +83,16 @@ public class WanSyncManager {
     }
 
     private void addResultOfOps(List<Future<WanSyncResult>> futures, Set<Integer> partitionIds) {
+        boolean alreadyLogged = false;
         for (Future<WanSyncResult> future : futures) {
             try {
                 WanSyncResult result = future.get();
                 partitionIds.removeAll(result.getSyncedPartitions());
             } catch (Exception ex) {
-                logger.warning("Exception occurred during WAN sync, missing partitions will be retried.", ex);
+                if (!alreadyLogged) {
+                    logger.warning("Exception occurred during WAN sync, missing partitions will be retried.", ex);
+                    alreadyLogged = true;
+                }
             }
         }
     }

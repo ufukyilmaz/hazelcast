@@ -426,6 +426,10 @@ public class EnterpriseWanReplicationService
             consumer.shutdown();
         }
 
+        if (syncManager != null) {
+            syncManager.shutdown();
+        }
+
         StripedExecutor ex = executor;
         if (ex != null) {
             ex.shutdown();

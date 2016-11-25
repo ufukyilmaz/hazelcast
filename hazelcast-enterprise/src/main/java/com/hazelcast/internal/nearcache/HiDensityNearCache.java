@@ -58,13 +58,13 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
     }
 
     @Override
-    protected NearCacheRecordStore<K, V> createNearCacheRecordStore(NearCacheConfig nearCacheConfig) {
+    protected NearCacheRecordStore<K, V> createNearCacheRecordStore(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
             EnterpriseSerializationService ss = (EnterpriseSerializationService) serializationService;
-            return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(nearCacheConfig, ss, classLoader);
+            return new HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>(name, nearCacheConfig, ss, classLoader);
         }
 
-        return super.createNearCacheRecordStore(nearCacheConfig);
+        return super.createNearCacheRecordStore(name, nearCacheConfig);
     }
 
     @Override

@@ -149,7 +149,7 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
                 .setInstanceName("hr-test-" + instanceId);
         config.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), SampleLicense.UNLIMITED_LICENSE);
         HotRestartPersistenceConfig hrConfig = config.getHotRestartPersistenceConfig();
-        hrConfig.setBaseDir(homeDir).setEnabled(true);
+        hrConfig.setBaseDir(new File(homeDir, "hz-" + instanceId)).setEnabled(true);
         config.getNativeMemoryConfig().setEnabled(true).setSize(new MemorySize(256, MemoryUnit.MEGABYTES))
                 .setMetadataSpacePercentage(50);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), "20");

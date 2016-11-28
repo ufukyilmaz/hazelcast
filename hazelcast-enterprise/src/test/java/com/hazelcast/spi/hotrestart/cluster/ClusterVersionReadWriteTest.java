@@ -22,7 +22,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -45,12 +45,12 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    private Version version;
+    private ClusterVersion version;
     private ILogger logger = Logger.getLogger(ClusterVersionReadWriteTest.class);
 
     @Override
     void setupInternal() {
-        version = Version.of(BuildInfoProvider.BUILD_INFO.getVersion());
+        version = ClusterVersion.of(BuildInfoProvider.BUILD_INFO.getVersion());
     }
 
     @Test

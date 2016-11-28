@@ -41,7 +41,8 @@ import com.hazelcast.nio.serialization.SerializationConcurrencyTest.Person;
 import com.hazelcast.spi.OperationAccessor;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
+import com.hazelcast.version.MemberVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -75,7 +76,7 @@ import static org.junit.Assert.assertTrue;
 public class EnterpriseSerializationTest
         extends HazelcastTestSupport {
 
-    private static Version V3_8 = Version.of(3, 8, 0);
+    private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
 
     private boolean rollingUpgradeEnabled;
 
@@ -333,7 +334,7 @@ public class EnterpriseSerializationTest
         String host = "127.0.0.1";
         int port = 5000;
 
-        Member member = new MemberImpl(new Address(host, port), Version.UNKNOWN, false, uuid, null);
+        Member member = new MemberImpl(new Address(host, port), MemberVersion.UNKNOWN, false, uuid, null);
 
         testMemberLeftException(uuid, host, port, member);
     }
@@ -344,7 +345,7 @@ public class EnterpriseSerializationTest
         String host = "127.0.0.1";
         int port = 5000;
 
-        Member member = new SimpleMemberImpl(Version.UNKNOWN, uuid, new InetSocketAddress(host, port));
+        Member member = new SimpleMemberImpl(MemberVersion.UNKNOWN, uuid, new InetSocketAddress(host, port));
         testMemberLeftException(uuid, host, port, member);
     }
 
@@ -382,7 +383,7 @@ public class EnterpriseSerializationTest
                 .setVersion(InternalSerializationService.VERSION_1)
                 .setClusterVersionAware(new EnterpriseClusterVersionAware() {
                     @Override
-                    public Version getClusterVersion() {
+                    public ClusterVersion getClusterVersion() {
                         return V3_8;
                     }
                 })
@@ -402,7 +403,7 @@ public class EnterpriseSerializationTest
 
     private static class TestVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public Version getClusterVersion() {
+        public ClusterVersion getClusterVersion() {
             return V3_8;
         }
     }

@@ -4,6 +4,7 @@ import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.nio.Bits;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.Version;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -12,7 +13,7 @@ import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -34,7 +35,8 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
-    private static Version V3_8 = Version.of(3, 8, 0);
+    private static ClusterVersion V3_8 = new ClusterVersion(3, 8);
+    private static Version SERIALIZATION_VERSION_3_8 = new Version(8);
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
@@ -109,8 +111,8 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
-        assertEquals(V3_8, deserialized.deserializationVersion);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(SERIALIZATION_VERSION_3_8, deserialized.deserializationVersion);
     }
 
     @Test
@@ -176,8 +178,8 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestDataSerializable deserialized = newSS.toObject(data);
 
         assertEquals(original.value, deserialized.value);
-        assertEquals(V3_8, original.serializationVersion);
-        assertEquals(V3_8, deserialized.deserializationVersion);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(SERIALIZATION_VERSION_3_8, deserialized.deserializationVersion);
     }
 
     private static Data adjustClassNameOfDSInData(Class oldClass, Class newClass, Data data) {
@@ -266,7 +268,7 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public Version getClusterVersion() {
+        public ClusterVersion getClusterVersion() {
             return V3_8;
         }
     }

@@ -2,7 +2,7 @@ package com.hazelcast.internal.cluster.impl;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.instance.MemberImpl;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 
 import java.util.Collection;
 
@@ -13,7 +13,7 @@ import java.util.Collection;
  * Normally these methods are not allowed to be called,
  * they are not required for ClusterState logic.
  * <p/>
- * Hot Restart needs to set {@link ClusterState} and cluster's {@link Version} directly
+ * Hot Restart needs to set {@link ClusterState} and cluster's {@link ClusterVersion} directly
  * without a cluster-wide transaction, it's already managing a consensus of its own.
  */
 public final class ClusterStateManagerAccessor {
@@ -25,7 +25,7 @@ public final class ClusterStateManagerAccessor {
         clusterService.getClusterStateManager().setClusterState(newState, isTransient);
     }
 
-    public static void setClusterVersion(ClusterServiceImpl clusterService, Version newVersion) {
+    public static void setClusterVersion(ClusterServiceImpl clusterService, ClusterVersion newVersion) {
         clusterService.getClusterStateManager().setClusterVersion(newVersion);
     }
 

@@ -22,7 +22,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.NightlyTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     @Override
-    HazelcastInstance createHazelcastInstance(Version version, Config config) {
+    HazelcastInstance createHazelcastInstance(MemberVersion version, Config config) {
         System.setProperty("hazelcast.version", version.toString());
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(config);
         System.clearProperty("hazelcast.version");
@@ -45,7 +45,7 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
     }
 
     @Override
-    void upgradeInstances(final HazelcastInstance[] instances, Version version, Config config) {
+    void upgradeInstances(final HazelcastInstance[] instances, MemberVersion version, Config config) {
         try {
             // upgrade one by one each member of the cluster to the next version
             for (int i = 0; i < instances.length; i++) {
@@ -69,7 +69,7 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
         }
     }
 
-    void assertNodesVersion(Version version) {
+    void assertNodesVersion(MemberVersion version) {
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }

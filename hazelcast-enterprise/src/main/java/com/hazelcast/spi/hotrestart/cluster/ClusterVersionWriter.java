@@ -1,6 +1,6 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 
 import java.io.DataOutput;
 import java.io.File;
@@ -9,7 +9,7 @@ import java.io.IOException;
 /**
  * Writes cluster version to a specific file.
  */
-class ClusterVersionWriter extends AbstractMetadataWriter<Version> {
+class ClusterVersionWriter extends AbstractMetadataWriter<ClusterVersion> {
 
     static final String NULL_VERSION = "null";
     static final String FILE_NAME = "cluster-version.txt";
@@ -24,7 +24,7 @@ class ClusterVersionWriter extends AbstractMetadataWriter<Version> {
     }
 
     @Override
-    synchronized void doWrite(DataOutput out, Version newVersion) throws IOException {
+    synchronized void doWrite(DataOutput out, ClusterVersion newVersion) throws IOException {
         out.writeUTF(newVersion == null ? NULL_VERSION : newVersion.toString());
     }
 }

@@ -7,7 +7,7 @@ import com.hazelcast.instance.Node;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.MemberVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -36,7 +36,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     @Override
     void setupInternal() {
         Address address = new Address("127.0.0.1", localAddress, 5701);
-        MemberImpl localMember = new MemberImpl(address, Version.of(BUILD_INFO.getVersion()), true,
+        MemberImpl localMember = new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), true,
                 newUnsecureUuidString(), null);
         when(node.getLocalMember()).thenReturn(localMember);
     }
@@ -98,7 +98,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         Address[] addresses = initializeAddresses(memberCount - 1);
         Collection<Member> members = new HashSet<Member>(memberCount);
         for (Address address : addresses) {
-            members.add(new MemberImpl(address, Version.of(BUILD_INFO.getVersion()), false, newUnsecureUuidString(), null));
+            members.add(new MemberImpl(address, MemberVersion.of(BUILD_INFO.getVersion()), false, newUnsecureUuidString(), null));
         }
         members.add(new MemberImpl(node.getLocalMember()));
         return members;

@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseSerializationServiceV1Test {
 
-    private static Version V3_8 = Version.of(3, 8, 0);
+    private static ClusterVersion V3_8 = new ClusterVersion(3, 8);
 
     @Test
     public void checkIfProperSerializerUsed_withRollingUpgrades() throws IOException {
@@ -40,7 +40,7 @@ public class EnterpriseSerializationServiceV1Test {
 
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public Version getClusterVersion() {
+        public ClusterVersion getClusterVersion() {
             return V3_8;
         }
     }

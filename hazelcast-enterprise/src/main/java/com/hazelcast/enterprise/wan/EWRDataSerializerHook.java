@@ -6,6 +6,7 @@ import com.hazelcast.enterprise.wan.operation.EWRPutBackupOperation;
 import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
+import com.hazelcast.enterprise.wan.operation.PostJoinWanOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
 import com.hazelcast.internal.serialization.DataSerializerHook;
@@ -92,6 +93,11 @@ public class EWRDataSerializerHook implements DataSerializerHook {
      */
     public static final int GET_MAP_PARTITION_DATA_OPERATION = 12;
 
+    /**
+     * Id of {@link com.hazelcast.enterprise.wan.operation.PostJoinWanOperation}
+     */
+    public static final int POST_JOIN_WAN_OPERATION = 13;
+
     @Override
     public int getFactoryId() {
         return F_ID;
@@ -130,6 +136,8 @@ public class EWRDataSerializerHook implements DataSerializerHook {
                         return new WanSyncOperation();
                     case GET_MAP_PARTITION_DATA_OPERATION:
                         return new GetMapPartitionDataOperation();
+                    case POST_JOIN_WAN_OPERATION:
+                        return new PostJoinWanOperation();
                 }
                 throw new IllegalArgumentException("Unknown type-id: " + typeId);
             }

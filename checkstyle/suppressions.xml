@@ -33,5 +33,6 @@
 
     <!-- WAN -->
     <suppress checks="MethodCount" files="com/hazelcast/enterprise/wan/replication/AbstractWanPublisher\.java$"/>
+    <suppress checks="MethodCount" files="com/hazelcast/enterprise/wan/EnterpriseWanReplicationService\.java$"/>
 
 </suppressions>

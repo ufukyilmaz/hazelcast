@@ -207,11 +207,11 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         return new HeapData(adjustedBytes);
     }
 
-    private EnterpriseSerializationService ss(boolean rollingUpgradeEnabled) {
+    private EnterpriseSerializationService ss(boolean versionedSerializationEnabled) {
         EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder()
                 .setVersion(InternalSerializationService.VERSION_1);
-        if (rollingUpgradeEnabled) {
-            builder.setClusterVersionAware(new TestClusterVersionAware()).setRollingUpgradeEnabled(rollingUpgradeEnabled);
+        if (versionedSerializationEnabled) {
+            builder.setClusterVersionAware(new TestClusterVersionAware()).setVersionedSerializationEnabled(versionedSerializationEnabled);
         }
         return builder.build();
     }

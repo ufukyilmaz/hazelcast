@@ -71,7 +71,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
 
             PartitioningStrategy partitioningStrategy = getPartitioningStrategy(configClassLoader);
 
-            boolean rollingUpgradeEnabled = Boolean.valueOf(config.getProperty(GroupProperty.ROLLING_UPGRADE_ENABLED.getName()));
             EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();
             SerializationConfig serializationConfig = config.getSerializationConfig() != null ? config
                     .getSerializationConfig() : new SerializationConfig();
@@ -82,7 +81,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
                     .setPartitioningStrategy(partitioningStrategy)
                     .setHazelcastInstance(client)
                     .setClusterVersionAware(versionAware)
-                    .setRollingUpgradeEnabled(rollingUpgradeEnabled)
+                    // the client doesn't use the versioned serialization
+                    .setVersionedSerializationEnabled(false)
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

@@ -30,10 +30,10 @@ public class EnterpriseDSSerializationTest {
 
     private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
 
-    private boolean rollingUpgradeEnabled;
+    private boolean versionedSerializationEnabled;
 
-    public EnterpriseDSSerializationTest(boolean rollingUpgradeEnabled) {
-        this.rollingUpgradeEnabled = rollingUpgradeEnabled;
+    public EnterpriseDSSerializationTest(boolean versionedSerializationEnabled) {
+        this.versionedSerializationEnabled = versionedSerializationEnabled;
     }
 
     private SerializationService ss;
@@ -42,7 +42,7 @@ public class EnterpriseDSSerializationTest {
     public void init() {
         ss = new EnterpriseSerializationServiceBuilder()
                 .setClusterVersionAware(new TestVersionAware())
-                .setRollingUpgradeEnabled(rollingUpgradeEnabled)
+                .setVersionedSerializationEnabled(versionedSerializationEnabled)
                 .setVersion(InternalSerializationService.VERSION_1)
                 .build();
     }
@@ -78,7 +78,7 @@ public class EnterpriseDSSerializationTest {
         SerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .addDataSerializableFactory(1, new IDSPersonFactoryVersioned())
                 .setClusterVersionAware(new TestVersionAware())
-                .setRollingUpgradeEnabled(rollingUpgradeEnabled)
+                .setVersionedSerializationEnabled(versionedSerializationEnabled)
                 .setVersion(InternalSerializationService.VERSION_1)
                 .build();
 
@@ -152,7 +152,7 @@ public class EnterpriseDSSerializationTest {
     private class IDSPersonFactoryVersioned implements VersionedDataSerializableFactory {
         @Override
         public IdentifiedDataSerializable create(int typeId) {
-            if (rollingUpgradeEnabled) {
+            if (versionedSerializationEnabled) {
                 throw new RuntimeException("Should not be used in versioned context");
             } else {
                 return new IDSPerson();
@@ -161,7 +161,7 @@ public class EnterpriseDSSerializationTest {
 
         @Override
         public IdentifiedDataSerializable create(int typeId, Version version) {
-            if (rollingUpgradeEnabled) {
+            if (versionedSerializationEnabled) {
                 return new IDSPerson();
             } else {
                 throw new RuntimeException("Should not be used outside of versioned context");
@@ -176,7 +176,7 @@ public class EnterpriseDSSerializationTest {
         }
     }
 
-    @Parameterized.Parameters(name = "{index}: rollingUpgradeEnabled = {0}")
+    @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {false}, {true}

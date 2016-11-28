@@ -261,7 +261,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
                     .setPartitioningStrategy(partitioningStrategy)
                     .setClusterVersionAware(listener)
                     .setHazelcastInstance(hazelcastInstance)
-                    .setRollingUpgradeEnabled(node.isRollingUpgradeEnabled())
+                    // EE version uses the versioned serialization by default
+                    .setVersionedSerializationEnabled(true)
                     .build();
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);

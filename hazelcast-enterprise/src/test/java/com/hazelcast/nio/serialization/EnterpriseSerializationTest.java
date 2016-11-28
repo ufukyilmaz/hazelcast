@@ -78,10 +78,10 @@ public class EnterpriseSerializationTest
 
     private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
 
-    private boolean rollingUpgradeEnabled;
+    private boolean versionedSerializationEnabled;
 
-    public EnterpriseSerializationTest(boolean rollingUpgradeEnabled) {
-        this.rollingUpgradeEnabled = rollingUpgradeEnabled;
+    public EnterpriseSerializationTest(boolean versionedSerializationEnabled) {
+        this.versionedSerializationEnabled = versionedSerializationEnabled;
     }
 
     @Test
@@ -371,7 +371,7 @@ public class EnterpriseSerializationTest
     @Test(expected = NullPointerException.class)
     public void serializerNeedsClusterAware_fail() {
         new EnterpriseSerializationServiceBuilder()
-                .setRollingUpgradeEnabled(true)
+                .setVersionedSerializationEnabled(true)
                 .setVersion(InternalSerializationService.VERSION_1)
                 .build();
     }
@@ -379,7 +379,7 @@ public class EnterpriseSerializationTest
     @Test
     public void serializerNeedsClusterAware_success() {
         new EnterpriseSerializationServiceBuilder()
-                .setRollingUpgradeEnabled(true)
+                .setVersionedSerializationEnabled(true)
                 .setVersion(InternalSerializationService.VERSION_1)
                 .setClusterVersionAware(new EnterpriseClusterVersionAware() {
                     @Override
@@ -390,7 +390,7 @@ public class EnterpriseSerializationTest
                 .build();
     }
 
-    @Parameterized.Parameters(name = "{index}: rollingUpgradeEnabled = {0}")
+    @Parameterized.Parameters(name = "{index}: versionedSerializationEnabled = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {false}, {true}
@@ -398,7 +398,7 @@ public class EnterpriseSerializationTest
     }
 
     public EnterpriseSerializationServiceBuilder builder() {
-        return new EnterpriseSerializationServiceBuilder().setRollingUpgradeEnabled(rollingUpgradeEnabled);
+        return new EnterpriseSerializationServiceBuilder().setVersionedSerializationEnabled(versionedSerializationEnabled);
     }
 
     private static class TestVersionAware implements EnterpriseClusterVersionAware {

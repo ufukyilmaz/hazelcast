@@ -244,11 +244,11 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         assertEquals(SERIALIZATION_VERSION_3_8, deserialized.deserializationVersion);
     }
 
-    private EnterpriseSerializationService ss(boolean rollingUpgradeEnabled, DataSerializableFactory factory) {
+    private EnterpriseSerializationService ss(boolean versionedSerializationEnabled, DataSerializableFactory factory) {
         EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder()
                 .setVersion(InternalSerializationService.VERSION_1);
-        if (rollingUpgradeEnabled) {
-            builder.setClusterVersionAware(new TestClusterVersionAware()).setRollingUpgradeEnabled(rollingUpgradeEnabled);
+        if (versionedSerializationEnabled) {
+            builder.setClusterVersionAware(new TestClusterVersionAware()).setVersionedSerializationEnabled(versionedSerializationEnabled);
         }
         builder.addDataSerializableFactory(1, factory);
         return builder.build();

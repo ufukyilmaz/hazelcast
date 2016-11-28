@@ -62,21 +62,20 @@ public final class EnterpriseSerializationServiceV1 extends SerializationService
             Map<Integer, ? extends PortableFactory> portableFactories, ManagedContext managedContext,
             PartitioningStrategy partitionStrategy, int initialOutputBufferSize, BufferPoolFactory bufferPoolFactory,
             HazelcastMemoryManager memoryManager, boolean enableCompression, boolean enableSharedObject,
-            EnterpriseClusterVersionAware clusterVersionAware, boolean rollingUpgradesEnabled) {
+            EnterpriseClusterVersionAware clusterVersionAware, boolean versionedSerializationEnabled) {
         super(inputOutputFactory, version, portableVersion, classLoader, dataSerializableFactories, portableFactories,
                 managedContext, partitionStrategy, initialOutputBufferSize, bufferPoolFactory, enableCompression,
                 enableSharedObject);
 
         this.memoryManager = memoryManager;
-        overrideConstantSerializers(classLoader, clusterVersionAware, dataSerializableFactories, rollingUpgradesEnabled);
+        overrideConstantSerializers(classLoader, clusterVersionAware, dataSerializableFactories, versionedSerializationEnabled);
     }
 
     private void overrideConstantSerializers(ClassLoader classLoader, EnterpriseClusterVersionAware clusterVersionAware,
                                              Map<Integer, ? extends DataSerializableFactory> dataSerializableFactories,
-                                             boolean rollingUpgradesEnabled) {
-        // In case of rolling-upgrades the "versioned" serializer has to be enabled. It's not used by default we need to
-        // maintain backward compatibility and the "old" clients do not know it.
-        if (rollingUpgradesEnabled) {
+                                             boolean versionedSerializationEnabled) {
+        // the EE client does not use the versioned serialization whereas the EE server does.
+        if (versionedSerializationEnabled) {
             checkNotNull(clusterVersionAware, "ClusterVersionAware can't be null");
             this.dataSerializerAdapter = createSerializerAdapter(
                     new EnterpriseDataSerializableSerializer(dataSerializableFactories, classLoader, clusterVersionAware), this);

@@ -43,28 +43,16 @@ public class ClientRollingUpgradeCompatibilityTest extends HazelcastTestSupport 
         instance.shutdown();
     }
 
-    private SerializationService getClientSerializationService(boolean rollingUpgradeEnabled) {
+    private SerializationService getClientSerializationService() {
         ClientConfig clientConfig = new ClientConfig();
-        if (rollingUpgradeEnabled) {
-            clientConfig.setProperty(GroupProperty.ROLLING_UPGRADE_ENABLED.getName(), Boolean.toString(rollingUpgradeEnabled));
-        }
         clientConfig.setProperty(GroupProperty.ENTERPRISE_LICENSE_KEY.getName(), ENTERPRISE_LICENSE_WITHOUT_HUMAN_READABLE_PART);
         HazelcastClientProxy client = (HazelcastClientProxy) factory.newHazelcastClient(clientConfig);
         return client.getSerializationService();
     }
 
     @Test
-    public void checkIfProperSerializerUsed_withRollingUpgrades() {
-        AbstractSerializationService ss = (AbstractSerializationService) getClientSerializationService(true);
-
-        SerializerAdapter serializerAdapter = get("dataSerializerAdapter", ss);
-
-        assertEquals(EnterpriseDataSerializableSerializer.class, serializerAdapter.getImpl().getClass());
-    }
-
-    @Test
     public void checkIfProperSerializerUsed_withoutRollingUpgrades() {
-        AbstractSerializationService ss = (AbstractSerializationService) getClientSerializationService(false);
+        AbstractSerializationService ss = (AbstractSerializationService) getClientSerializationService();
 
         SerializerAdapter serializerAdapter = get("dataSerializerAdapter", ss);
 

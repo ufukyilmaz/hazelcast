@@ -23,7 +23,7 @@ public class EnterpriseSerializationServiceV1Test {
     public void checkIfProperSerializerUsed_withRollingUpgrades() throws IOException {
         AbstractSerializationService ss = (AbstractSerializationService) new EnterpriseSerializationServiceBuilder()
                 .setClusterVersionAware(new TestClusterVersionAware())
-                .setRollingUpgradeEnabled(true)
+                .setVersionedSerializationEnabled(true)
                 .build();
 
         assertEquals(EnterpriseDataSerializableSerializer.class, ss.dataSerializerAdapter.getImpl().getClass());
@@ -32,7 +32,7 @@ public class EnterpriseSerializationServiceV1Test {
     @Test
     public void checkIfProperSerializerUsed_withoutRollingUpgrades() throws IOException {
         AbstractSerializationService ss = (AbstractSerializationService) new EnterpriseSerializationServiceBuilder()
-                .setRollingUpgradeEnabled(false)
+                .setVersionedSerializationEnabled(false)
                 .build();
 
         assertEquals(DataSerializableSerializer.class, ss.dataSerializerAdapter.getImpl().getClass());

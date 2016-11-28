@@ -22,7 +22,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
     private HazelcastMemoryManager memoryManager;
     private BufferPoolFactory bufferPoolFactory = new EnterpriseBufferPoolFactory();
     private EnterpriseClusterVersionAware clusterVersionAware;
-    private boolean rollingUpgradeEnabled;
+    private boolean versionedSerializationEnabled;
 
     public EnterpriseSerializationServiceBuilder setMemoryManager(HazelcastMemoryManager memoryManager) {
         this.memoryManager = memoryManager;
@@ -119,8 +119,8 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
         return this;
     }
 
-    public EnterpriseSerializationServiceBuilder setRollingUpgradeEnabled(boolean rollingUpgradeEnabled) {
-        this.rollingUpgradeEnabled = rollingUpgradeEnabled;
+    public EnterpriseSerializationServiceBuilder setVersionedSerializationEnabled(boolean versionedSerializationEnabled) {
+        this.versionedSerializationEnabled = versionedSerializationEnabled;
         return this;
     }
 
@@ -136,7 +136,7 @@ public class EnterpriseSerializationServiceBuilder extends DefaultSerializationS
                 EnterpriseSerializationServiceV1 serializationServiceV1 = new EnterpriseSerializationServiceV1(inputOutputFactory,
                         version, portableVersion, classLoader, dataSerializableFactories, portableFactories, managedContext,
                         partitioningStrategy, initialOutputBufferSize, bufferPoolFactory, memoryManager, enableCompression,
-                        enableSharedObject, clusterVersionAware, rollingUpgradeEnabled);
+                        enableSharedObject, clusterVersionAware, versionedSerializationEnabled);
                 serializationServiceV1.registerClassDefinitions(classDefinitions, checkClassDefErrors);
                 return serializationServiceV1;
 

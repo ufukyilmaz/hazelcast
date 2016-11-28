@@ -21,7 +21,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -40,16 +40,16 @@ public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
     private TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(10);
 
     @Override
-    HazelcastInstance createHazelcastInstance(Version version, Config config) {
+    HazelcastInstance createHazelcastInstance(MemberVersion version, Config config) {
         return newHazelcastInstance(factory, version, config);
     }
 
     @Override
-    void upgradeInstances(HazelcastInstance[] instances, Version version, Config config) {
+    void upgradeInstances(HazelcastInstance[] instances, MemberVersion version, Config config) {
         upgradeClusterMembers(factory, instances, version, config);
     }
 
-    void assertNodesVersion(Version version) {
+    void assertNodesVersion(MemberVersion version) {
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }

@@ -20,7 +20,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
+import com.hazelcast.version.MemberVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -34,9 +35,8 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
 
     @Test
     public void testClusterVersionChange() {
-        Version currentVersion = getNode(hz).getVersion();
-        Version nextMinorVersion = Version.of(currentVersion.getMajor(), currentVersion.getMinor() + 1,
-                currentVersion.getPatch());
+        MemberVersion currentVersion = getNode(hz).getVersion();
+        ClusterVersion nextMinorVersion = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         System.setProperty("hazelcast.version", nextMinorVersion.toString());
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
         waitAllForSafeState();

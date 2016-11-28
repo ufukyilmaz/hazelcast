@@ -3,7 +3,7 @@ package com.hazelcast.internal.serialization.impl;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -14,13 +14,13 @@ import static org.junit.Assert.assertEquals;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseClusterVersionListenerTest {
 
-    private static Version V3_6 = Version.of(3, 6, 0);
+    private static ClusterVersion V3_6 = new ClusterVersion(3, 6);
 
     private EnterpriseClusterVersionListener listener = new EnterpriseClusterVersionListener();
 
     @Test
     public void uninitialized() {
-        assertEquals(Version.UNKNOWN, listener.getClusterVersion());
+        assertEquals(ClusterVersion.UNKNOWN, listener.getClusterVersion());
     }
 
     @Test

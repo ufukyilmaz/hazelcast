@@ -35,7 +35,7 @@ import com.hazelcast.nio.ssl.SSLSocketChannelWrapperFactory;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.ExceptionUtil;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 
 import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature;
 
@@ -174,14 +174,14 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     }
 
     private static class EnterpriseClientVersionAware implements EnterpriseClusterVersionAware {
-        private final Version version;
+        private final ClusterVersion version;
 
         public EnterpriseClientVersionAware(String buildVersion) {
-            this.version = Version.of(buildVersion);
+            this.version = ClusterVersion.of(buildVersion);
         }
 
         @Override
-        public Version getClusterVersion() {
+        public ClusterVersion getClusterVersion() {
             return version;
         }
     }

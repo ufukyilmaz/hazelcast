@@ -21,7 +21,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
+import com.hazelcast.version.MemberVersion;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,12 +41,17 @@ import static org.junit.Assert.assertEquals;
  */
 public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
-    static final Version VERSION_2_0_5 = Version.of(2, 0, 5);
-    static final Version VERSION_2_1_0 = Version.of(2, 1, 0);
-    static final Version VERSION_2_1_1 = Version.of(2, 1, 1);
-    static final Version VERSION_2_2_0 = Version.of(2, 2, 0);
-    static final Version VERSION_2_3_0 = Version.of(2, 3, 0);
-    static final Version VERSION_3_0_0 = Version.of(3, 0, 0);
+    static final ClusterVersion CLUSTER_VERSION_2_0 = ClusterVersion.of("2.0");
+    static final ClusterVersion CLUSTER_VERSION_2_1 = ClusterVersion.of("2.1");
+    static final ClusterVersion CLUSTER_VERSION_2_2 = ClusterVersion.of("2.2");
+    static final ClusterVersion CLUSTER_VERSION_2_3 = ClusterVersion.of("2.3");
+
+    static final MemberVersion VERSION_2_0_5 = MemberVersion.of(2, 0, 5);
+    static final MemberVersion VERSION_2_1_0 = MemberVersion.of(2, 1, 0);
+    static final MemberVersion VERSION_2_1_1 = MemberVersion.of(2, 1, 1);
+    static final MemberVersion VERSION_2_2_0 = MemberVersion.of(2, 2, 0);
+    static final MemberVersion VERSION_2_3_0 = MemberVersion.of(2, 3, 0);
+    static final MemberVersion VERSION_3_0_0 = MemberVersion.of(3, 0, 0);
 
     static final int CLUSTER_MEMBERS_COUNT = 3;
 
@@ -65,18 +71,17 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_upgradePatchVersion_isAllowed() {
+    public void test_upgradePatchCodebaseVersion_isAllowed() {
         upgradeInstances(clusterMembers, VERSION_2_1_1, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_1_1);
-        assertClusterVersion(clusterMembers, VERSION_2_1_1);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_1);
         assertNodesVersion(VERSION_2_1_1);
     }
 
     @Test
     public void test_upgradeMinorVersion_isAllowed() {
         upgradeInstances(clusterMembers, VERSION_2_2_0, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0);
-        assertClusterVersion(clusterMembers, VERSION_2_2_0);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_2);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_2);
         assertNodesVersion(VERSION_2_2_0);
     }
 
@@ -85,20 +90,20 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     @Test
     public void test_upgradeTwoMinorVersions_isAllowed() {
         upgradeInstances(clusterMembers, VERSION_2_3_0, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_3_0);
-        assertClusterVersion(clusterMembers, VERSION_2_3_0);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_3);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_3);
         assertNodesVersion(VERSION_2_3_0);
     }
 
     @Test
     public void test_downgradeClusterVersionAllowed_afterMinorVersionUpgrade() {
         upgradeInstances(clusterMembers, VERSION_2_2_0, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0);
-        assertClusterVersion(clusterMembers, VERSION_2_2_0);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_2);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_2);
         assertNodesVersion(VERSION_2_2_0);
         // revert cluster version to previous, to allow for 2.1.0 members to join
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_1_0);
-        assertClusterVersion(clusterMembers, VERSION_2_1_0);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_1);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_1);
         upgradeInstances(clusterMembers, VERSION_2_1_0, getConfig());
         assertNodesVersion(VERSION_2_1_0);
     }
@@ -117,18 +122,18 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
 
     @Test
     public void test_decreaseClusterVersion_allowedForCompatibleMinorVersions() {
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_0_5);
-        assertClusterVersion(clusterMembers, VERSION_2_0_5);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_0);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_0);
     }
 
     @Test
     public void test_decreaseClusterVersion_disallowedForIncompatibleMinorVersions() {
         upgradeInstances(clusterMembers, VERSION_2_2_0, getConfig());
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0);
-        assertClusterVersion(clusterMembers, VERSION_2_2_0);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_2);
+        assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_2);
         assertNodesVersion(VERSION_2_2_0);
         expectedException.expect(VersionMismatchException.class);
-        getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_0_5);
+        getClusterService(clusterMembers[0]).changeClusterVersion(CLUSTER_VERSION_2_0);
     }
 
     // when a member of version A attempts to join cluster at the same time as
@@ -145,7 +150,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
             private int count = 0;
 
             @Override
-            public void onClusterVersionChange(Version newVersion) {
+            public void onClusterVersionChange(ClusterVersion newVersion) {
                 count++;
                 if (count == 2) {
                     // first time invoked is on listener registration, sleep a lot during
@@ -199,7 +204,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
                     e.printStackTrace();
                 }
                 try {
-                    getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0);
+                    getClusterService(clusterMembers[0]).changeClusterVersion(VERSION_2_2_0.asClusterVersion());
                     finished.countDown();
                 }
                 catch (Exception e) {
@@ -214,15 +219,15 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
         if (failed.get()) {
             System.err.println(errors);
         } else {
-            assertClusterVersion(clusterMembers, VERSION_2_2_0);
+            assertClusterVersion(clusterMembers, CLUSTER_VERSION_2_2);
             assertEquals(CLUSTER_MEMBERS_COUNT, getClusterService(clusterMembers[0]).getMembers().size());
         }
     }
 
-    abstract HazelcastInstance createHazelcastInstance(Version version, Config config);
-    abstract void upgradeInstances(HazelcastInstance[] instances, Version version, Config config);
+    abstract HazelcastInstance createHazelcastInstance(MemberVersion version, Config config);
+    abstract void upgradeInstances(HazelcastInstance[] instances, MemberVersion version, Config config);
 
-    void assertNodesVersion(Version version) {
+    void assertNodesVersion(MemberVersion version) {
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             assertEquals(version, getNode(clusterMembers[i]).getVersion());
         }

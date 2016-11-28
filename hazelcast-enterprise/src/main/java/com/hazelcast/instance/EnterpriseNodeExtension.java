@@ -57,7 +57,7 @@ import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.Preconditions;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
@@ -477,7 +477,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     // validate that the joining member is at same major and >= minor version as the cluster version at which this cluster
     // operates
     private void validateJoiningMemberVersion(JoinMessage joinMessage) {
-        Version clusterVersion = node.getClusterService().getClusterVersion();
+        ClusterVersion clusterVersion = node.getClusterService().getClusterVersion();
 
         if (clusterVersion.getMajor() != joinMessage.getVersion().getMajor()
                 || clusterVersion.getMinor() > joinMessage.getVersion().getMinor()) {
@@ -495,7 +495,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
      * @return {@code true} if compatible, otherwise false.
      */
     @Override
-    public boolean isNodeVersionCompatibleWith(Version clusterVersion) {
+    public boolean isNodeVersionCompatibleWith(ClusterVersion clusterVersion) {
         Preconditions.checkNotNull(clusterVersion);
 
         // node can either work at its codebase version (native mode)
@@ -524,7 +524,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public void onClusterVersionChange(Version newVersion) {
+    public void onClusterVersionChange(ClusterVersion newVersion) {
         super.onClusterVersionChange(newVersion);
         if (hotRestartService != null) {
             hotRestartService.getClusterMetadataManager().onClusterVersionChange(newVersion);

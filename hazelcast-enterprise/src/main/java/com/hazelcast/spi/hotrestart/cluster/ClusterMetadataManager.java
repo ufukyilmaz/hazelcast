@@ -19,7 +19,7 @@ import com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatu
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.util.Clock;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 
 import java.io.File;
 import java.io.IOException;
@@ -134,7 +134,7 @@ public final class ClusterMetadataManager {
     public void prepare() {
         try {
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
-            Version clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
+            ClusterVersion clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
             if (clusterVersion != null) {
                 setClusterVersion(node.clusterService, clusterVersion);
             }
@@ -471,7 +471,7 @@ public final class ClusterMetadataManager {
         return hotRestartStatus;
     }
 
-    public void onClusterVersionChange(Version newClusterVersion) {
+    public void onClusterVersionChange(ClusterVersion newClusterVersion) {
         if (logger.isFineEnabled()) {
             logger.fine("Persisting cluster version: " + newClusterVersion);
         }

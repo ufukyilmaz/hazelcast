@@ -2,6 +2,7 @@ package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.Version;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -10,7 +11,7 @@ import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.version.Version;
+import com.hazelcast.version.ClusterVersion;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -31,7 +32,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 @Category({QuickTest.class, ParallelTest.class})
 public class EnterpriseDataSerializableSerializerTest {
 
-    private static Version V3_8 = Version.of(3, 8, 0);
+    private static ClusterVersion V3_8 = new ClusterVersion(3, 8);
+    private static Version SERIALIZATION_VERSION_3_8 = new Version(8);
 
     private StreamSerializer<DataSerializable> enterpriseSerializer;
 
@@ -67,7 +69,7 @@ public class EnterpriseDataSerializableSerializerTest {
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
-        calls.verify(output).setVersion(V3_8);
+        calls.verify(output).setVersion(SERIALIZATION_VERSION_3_8);
         calls.verify(output).writeByte(createHeader(false, true, false));
         calls.verify(output).writeUTF(TestVersionedDataSerializable.class.getName());
         calls.verify(output).writeInt(original.value);
@@ -97,7 +99,7 @@ public class EnterpriseDataSerializableSerializerTest {
         enterpriseSerializer.write(output, original);
 
         InOrder calls = inOrder(output);
-        calls.verify(output).setVersion(V3_8);
+        calls.verify(output).setVersion(SERIALIZATION_VERSION_3_8);
         calls.verify(output).writeByte(createHeader(true, true, false));
         calls.verify(output).writeInt(original.getFactoryId());
         calls.verify(output).writeInt(original.getId());
@@ -225,7 +227,7 @@ public class EnterpriseDataSerializableSerializerTest {
 
     private static class TestClusterVersionAware implements EnterpriseClusterVersionAware {
         @Override
-        public Version getClusterVersion() {
+        public ClusterVersion getClusterVersion() {
             return V3_8;
         }
     }

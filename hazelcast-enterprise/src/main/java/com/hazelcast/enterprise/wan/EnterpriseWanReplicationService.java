@@ -476,6 +476,11 @@ public class EnterpriseWanReplicationService
         endpoint.clearQueues();
     }
 
+    @Override
+    public void addWanReplicationConfig(WanReplicationConfig wanConfig) {
+        //Will be implemented with PR https://github.com/hazelcast/hazelcast-enterprise/pull/1151
+    }
+
     public void publishSyncEvent(String wanReplicationName, String targetGroupName,
                                  WanSyncEvent syncEvent) {
         WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);

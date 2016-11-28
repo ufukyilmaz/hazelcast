@@ -41,6 +41,7 @@ import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStar
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
+import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateKeyForPartition;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
@@ -447,7 +448,11 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         String excludedUuid = terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
         instances = restartInstances(addresses, listeners, PARTIAL_RECOVERY_MOST_COMPLETE);
-        assertInstancesJoined(nodeCount - 1, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
+        for (HazelcastInstance instance : instances) {
+            assertClusterSizeEventually(nodeCount, instance);
+        }
+
+        assertInstancesJoined(nodeCount, getAllInstances(), NodeState.ACTIVE, ClusterState.ACTIVE);
         assertEquals(excludedUuid, restartedUuid.get());
     }
 

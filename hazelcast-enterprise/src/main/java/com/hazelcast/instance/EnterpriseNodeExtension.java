@@ -621,4 +621,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
         return super.getCurrentClusterHotRestartStatus();
     }
+
+    @Override
+    public void resetHotRestartData() {
+        if (hotRestartService != null) {
+            hotRestartService.resetHotRestartData();
+        }
+    }
 }

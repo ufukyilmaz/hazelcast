@@ -271,7 +271,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             logger.info(String.format("Hot Restart procedure completed in %,d seconds",
                     MILLISECONDS.toSeconds(currentTimeMillis() - start)));
         } catch (ForceStartException e) {
-            handleForceStart();
+            handleForceStart(true);
         } catch (HotRestartException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -468,9 +468,71 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         } while (!doneLatch.await(1, TimeUnit.SECONDS));
     }
 
-    private void handleForceStart() {
+    /**
+     * resets local hot restart data and gets a new uuid, if the local node hasn't completed the start process and
+     * it is excluded in cluster start.
+     */
+    public void resetHotRestartData() {
+        if (isStartCompleted()) {
+            throw new HotRestartException("cannot reset hot restart data since node has already started!");
+        }
+
+        final Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        if (!excludedMemberUuids.contains(node.getThisUuid())) {
+            throw new HotRestartException("cannot reset hot restart data since this node is not excluded! excluded member uuids: "
+                    + excludedMemberUuids);
+        }
+
+        handleForceStart(false);
+    }
+
+    /**
+     * @param isAfterJoin if true, local node joins back to the cluster and completes the start process, after force-started.
+     *                    Otherwise, it only resets itself, clears the hot restart data and gets a new uuid.
+     */
+    private void handleForceStart(boolean isAfterJoin) {
+        if (!isAfterJoin && node.joined()) {
+            logger.info("No need to reset hot restart data since node is joined and it will force-start itself.");
+            return;
+        }
+
         logger.warning("Force start requested, skipping hot restart");
 
+        resetNode();
+
+        resetHotRestart(isAfterJoin);
+
+        logger.info("Resetting cluster state to ACTIVE");
+
+        setClusterState(node.getClusterService(), ClusterState.ACTIVE, false);
+
+        node.getJoiner().setTargetAddress(null);
+
+        setNewLocalMemberUuid();
+
+        if (isAfterJoin) {
+            try {
+                runRestarterPipeline(onHeapStores, true);
+                runRestarterPipeline(offHeapStores, true);
+            } catch (Throwable t) {
+                throw new HotRestartException("starting hot restart threads after force start failed", t);
+            }
+        }
+
+        // start connection-manager to setup and accept new connections
+        node.connectionManager.start();
+
+        if (isAfterJoin) {
+            logger.info("Joining back...");
+
+            // re-join to the target cluster
+            node.join();
+
+            clusterMetadataManager.forceStartCompleted();
+        }
+    }
+
+    private void resetNode() {
         logger.info("Stopping connection manager...");
         node.connectionManager.stop();
 
@@ -488,7 +550,9 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
             service.reset();
         }
+    }
 
+    private void resetHotRestart(boolean isAfterJoin) {
         logger.info("Closing Hot Restart stores");
         closeHotRestartStores();
 
@@ -499,35 +563,20 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         clusterMetadataManager.reset();
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
         persistentCacheDescriptors.reset();
+
+        if (!isAfterJoin) {
+            clusterMetadataManager.prepare();
+        }
+
         logger.info("Creating thread local hot restart stores");
         createHotRestartStores();
+    }
 
-        logger.info("Resetting cluster state to ACTIVE");
-
-        setClusterState(node.getClusterService(), ClusterState.ACTIVE, false);
-
-        node.getJoiner().setTargetAddress(null);
-
+    private void setNewLocalMemberUuid() {
         node.setNewLocalMember();
         node.getClusterService().reset();
         OperationServiceImpl operationService = (OperationServiceImpl) node.nodeEngine.getOperationService();
         operationService.initInvocationContext();
-
-        try {
-            runRestarterPipeline(onHeapStores, true);
-            runRestarterPipeline(offHeapStores, true);
-        } catch (Throwable t) {
-            throw new HotRestartException("starting hot restart threads after force start failed", t);
-        }
-
-        logger.info("Joining back...");
-
-        // start connection-manager to setup and accept new connections
-        node.connectionManager.start();
-        // re-join to the target cluster
-        node.join();
-
-        clusterMetadataManager.forceStartCompleted();
     }
 
     private OperationExecutor getOperationExecutor() {

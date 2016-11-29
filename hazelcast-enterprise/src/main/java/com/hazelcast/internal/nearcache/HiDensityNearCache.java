@@ -1,8 +1,8 @@
 package com.hazelcast.internal.nearcache;
 
-import com.hazelcast.internal.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.internal.nearcache.impl.DefaultNearCache;
+import com.hazelcast.internal.nearcache.impl.nativememory.HiDensitySegmentedNativeMemoryNearCacheRecordStore;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.memory.HazelcastMemoryManager;
@@ -173,5 +173,10 @@ public class HiDensityNearCache<K, V> extends DefaultNearCache<K, V> {
             // we are expecting to put next entries into Near Cache after compaction or after Near Cache invalidation
             logger.warning("Entry can not be put into Near Cache for this time");
         }
+    }
+
+    // just for testing
+    void setMemoryManager(HazelcastMemoryManager memoryManager) {
+        this.memoryManager = memoryManager;
     }
 }

@@ -23,6 +23,7 @@ public class WanSyncManager {
     private final IPartitionService partitionService;
     private final ClusterService clusterService;
     private final OperationService operationService;
+    private final EnterpriseWanReplicationService wanReplicationService;
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
@@ -32,6 +33,7 @@ public class WanSyncManager {
         partitionService = nodeEngine.getPartitionService();
         clusterService = nodeEngine.getClusterService();
         operationService = nodeEngine.getOperationService();
+        wanReplicationService = (EnterpriseWanReplicationService) nodeEngine.getWanReplicationService();
         this.nodeEngine = nodeEngine;
         logger = nodeEngine.getLogger(getClass());
     }
@@ -43,6 +45,8 @@ public class WanSyncManager {
     public void initiateSyncRequest(final String wanReplicationName,
                                        final String targetGroupName,
                                        final WanSyncEvent syncEvent) {
+        //First check if endpoint exists for the given wanReplicationName and targetGroupName
+        wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
         nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {

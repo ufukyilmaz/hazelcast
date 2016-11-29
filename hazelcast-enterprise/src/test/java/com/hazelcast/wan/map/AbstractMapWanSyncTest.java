@@ -5,19 +5,17 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
-import com.hazelcast.internal.management.ManagementCenterService;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Base class to test WAN sync feature
@@ -202,6 +200,16 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         assertKeysIn(clusterB, "map", 0, 1000);
         assertKeysIn(clusterB, "map2", 0, 2000);
         assertKeysIn(clusterB, "map3", 0, 3000);
+    }
+
+    @Test
+    public void tryToSyncNonExistingConfig() throws IOException {
+        startClusterA();
+        createDataIn(clusterA, "map", 0, 1000);
+        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
+        String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
+        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exists with WAN configuration name newWRConfigName " +
+                "and publisher target group name groupName\"}", result);
     }
 
     private void startClusterWithUniqueConfigObjects(HazelcastInstance[] cluster, Config config) {

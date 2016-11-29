@@ -40,15 +40,20 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
     private List<Data> keys;
 
     private boolean replaceExistingValues;
+    private boolean withUserSuppliedKeys;
 
     public HDLoadAllOperation() {
         keys = Collections.emptyList();
     }
 
-    public HDLoadAllOperation(String name, List<Data> keys, boolean replaceExistingValues) {
+    public HDLoadAllOperation(String name, List<Data> keys, boolean replaceExistingValues, boolean withUserSuppliedKeys) {
         super(name);
         this.keys = keys;
         this.replaceExistingValues = replaceExistingValues;
+        this.withUserSuppliedKeys = withUserSuppliedKeys;
+        // the withUserSuppliedKeys field piggy-backs on Operation flags for serialization
+        // as the field was introduced in a patch release
+        setFlag(withUserSuppliedKeys, BITMASK_LOAD_ALL_WITH_USER_SUPPLIED_KEYS);
     }
 
     @Override
@@ -59,7 +64,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
             removeExistingKeys(keys);
         }
 
-        recordStore.loadAllFromStore(keys);
+        recordStore.loadAllFromStore(keys, withUserSuppliedKeys);
     }
 
     private void removeExistingKeys(Collection<Data> keys) {
@@ -116,6 +121,7 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
     @Override
     protected void readInternal(ObjectDataInput in) throws IOException {
         super.readInternal(in);
+        withUserSuppliedKeys = isFlagSet(BITMASK_LOAD_ALL_WITH_USER_SUPPLIED_KEYS);
         final int size = in.readInt();
         if (size > 0) {
             keys = new ArrayList<Data>(size);

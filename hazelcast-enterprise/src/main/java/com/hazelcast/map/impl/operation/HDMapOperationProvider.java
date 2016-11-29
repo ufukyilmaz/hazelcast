@@ -223,8 +223,9 @@ public class HDMapOperationProvider implements MapOperationProvider {
     }
 
     @Override
-    public MapOperation createLoadAllOperation(String name, List<Data> keys, boolean replaceExistingValues) {
-        return new HDLoadAllOperation(name, keys, replaceExistingValues);
+    public MapOperation createLoadAllOperation(String name, List<Data> keys, boolean replaceExistingValues,
+                                               boolean withUserSuppliedKeys) {
+        return new HDLoadAllOperation(name, keys, replaceExistingValues, withUserSuppliedKeys);
     }
 
     @Override

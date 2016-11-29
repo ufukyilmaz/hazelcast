@@ -227,6 +227,10 @@ public class EnterpriseWanReplicationService
     public WanReplicationEndpoint getEndpoint(String wanReplicationName, String target) {
         WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
+        if (publisherDelegate == null) {
+            throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
+                    + wanReplicationName + " and publisher target group name " + target);
+        }
         Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
         return endpoints.get(target);
     }

@@ -8,6 +8,10 @@ import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
 import org.junit.Test;
 
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
+
 /**
  * Base class to test WAN sync feature
  */
@@ -62,5 +66,15 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
 
         assertKeysIn(clusterB, "map", 0, 1000);
 
+    }
+
+    @Test
+    public void tryToSyncNonExistingConfig() throws IOException {
+        startClusterA();
+        createDataIn(clusterA, "map", 0, 1000);
+        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
+        String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
+        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration name newWRConfigName " +
+                "and publisher target group name groupName\"}", result);
     }
 }

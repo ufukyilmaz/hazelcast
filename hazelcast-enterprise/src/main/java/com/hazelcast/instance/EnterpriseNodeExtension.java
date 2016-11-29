@@ -14,6 +14,7 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.hotrestart.HotRestartBackupService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
@@ -47,6 +48,7 @@ import com.hazelcast.nio.tcp.SymmetricCipherMemberWriteHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
+import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
@@ -62,6 +64,7 @@ import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -82,6 +85,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
 
     private final HotRestartService hotRestartService;
+    private final ClusterHotRestartBackupService clusterHotRestartBackupService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
@@ -92,6 +96,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public EnterpriseNodeExtension(Node node) {
         super(node);
         hotRestartService = createHotRestartService(node);
+        clusterHotRestartBackupService = createClusterHotRestartBackupService(node, hotRestartService);
+    }
+
+    private ClusterHotRestartBackupService createClusterHotRestartBackupService(Node node, HotRestartService hotRestartService) {
+        if (hotRestartService == null) {
+            return null;
+        }
+        final HotRestartPersistenceConfig config = node.getConfig().getHotRestartPersistenceConfig();
+        return config.getBackupDir() != null ? new ClusterHotRestartBackupService(node, hotRestartService) : null;
     }
 
     private HotRestartService createHotRestartService(Node node) {
@@ -439,12 +452,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (hotRestartService == null) {
             return services;
         }
+        if (clusterHotRestartBackupService == null) {
+            return Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
+        }
 
         if (services.isEmpty()) {
-            services = Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
-        } else {
-            services.put(HotRestartService.SERVICE_NAME, hotRestartService);
+            services = new HashMap<String, Object>(2);
         }
+        services.put(ClusterHotRestartBackupService.SERVICE_NAME, clusterHotRestartBackupService);
+        services.put(HotRestartService.SERVICE_NAME, hotRestartService);
+
         return services;
     }
 
@@ -567,6 +584,11 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
 
         return hotRestartService.triggerPartialStart();
+    }
+
+    @Override
+    public HotRestartBackupService getHotRestartBackupService() {
+        return clusterHotRestartBackupService;
     }
 
     @Override

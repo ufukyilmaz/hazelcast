@@ -12,6 +12,7 @@ import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.Address;
+import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.ForceStartException;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -193,6 +194,7 @@ public final class ClusterMetadataManager {
      * <ul>
      * <li>Awaits for all members to join if any metadata about members was loaded from disk</li>
      * <li>Validates the partition tables by sending them to the master</li>
+     * <li>Sets the initial partition table and partition state version</li>
      * <li>Registers itself as a partition listener for persisting state on replica changes</li>
      * <li>Notifies all {@link ClusterHotRestartEventListener}s for data load start</li>
      * </ul>
@@ -1355,6 +1357,18 @@ public final class ClusterMetadataManager {
         if (!homeDir.exists() && !homeDir.mkdirs()) {
             throw new HotRestartException("Cannot create Hot Restart base directory: " + homeDir.getAbsolutePath());
         }
+    }
+
+    /**
+     * Copies the contents of the persisted cluster metadata to a folder with the name {@link #DIR_NAME} under the
+     * {@code targetDir}. This method does not synchronize with the rest of the code so for consistent metadata it is
+     * necessary to ensure that no cluster metadata changes are in progress during the duration of backup (e.g. no replica
+     * or partition table changes).
+     *
+     * @param targetDir the directory under which the folder with the metadata will be copied
+     */
+    public void backup(File targetDir) {
+        IOUtil.copy(homeDir, targetDir);
     }
 
     public String readMemberUuid() {

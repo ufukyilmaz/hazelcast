@@ -2,6 +2,8 @@ package com.hazelcast.spi.hotrestart;
 
 import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
+import com.hazelcast.hotrestart.BackupTaskState;
+import com.hazelcast.hotrestart.BackupTaskStatus;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
@@ -44,6 +46,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hazelcast.hotrestart.BackupTaskState.FAILURE;
+import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
+import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
+import static com.hazelcast.hotrestart.HotRestartBackupService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
@@ -77,6 +83,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private final Map<String, RamStoreRegistry> ramStoreRegistryMap = new ConcurrentHashMap<String, RamStoreRegistry>();
     private final Map<Long, RamStoreDescriptor> ramStoreDescriptors = new ConcurrentHashMap<Long, RamStoreDescriptor>();
     private final File hotRestartHome;
+    private final File hotRestartBackupDir;
     private final Node node;
     private final ILogger logger;
     private final PersistentCacheDescriptors persistentCacheDescriptors;
@@ -96,6 +103,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         this.logger = node.getLogger(getClass());
         HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
         this.hotRestartHome = hrCfg.getBaseDir();
+        this.hotRestartBackupDir = hrCfg.getBackupDir();
         this.storeCount = hrCfg.getParallelism();
         this.clusterMetadataManager = new ClusterMetadataManager(node, hotRestartHome, hrCfg);
         this.persistentCacheDescriptors = new PersistentCacheDescriptors(hotRestartHome);
@@ -279,6 +287,116 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             throw new HotRestartException("Thread interrupted during the Hot Restart procedure", e);
         } catch (Throwable t) {
             throw new HotRestartException("Hot Restart procedure failed", t);
+        }
+    }
+
+    /**
+     * Creates a snapshot (backup) of the current state of the Hot Restart Store to a directory nested under the configured
+     * {@link HotRestartPersistenceConfig#getBackupDir()} with the name backup-{@code sequence}. The backup will contain all
+     * data managed by the Hot Restart service, including persistent cache descriptors, cluster metadata and partition data.
+     * <p>
+     * The completeness and consistency of the copied data is guaranteed if the cluster is in the {@link ClusterState#PASSIVE}
+     * state but can be called in any cluster state. If being called while the cluster is in the {@link ClusterState#ACTIVE}
+     * state, the user must make certain that no new persistent cache structures are being created or that there are no cluster
+     * metadata changes, such as:
+     * <ul>
+     * <li>partition table data changes (replica changes)</li>
+     * <li>cluster state changes</li>
+     * <li>membership changes (including losing members)</li>
+     * </ul>
+     * In other cases the snapshot data can be inconsistent.
+     * This method will return as soon as it has finished copying cache descriptor data, cluster metadata and started copying
+     * partition data. Partition data will be copied asynchronously.
+     *
+     * @param sequence the backup sequence. This will determine the directory name for the backup
+     * @return if the backup task was run
+     */
+    public boolean backup(long sequence) {
+        if (hotRestartBackupDir == null) {
+            logger.warning("Could not backup hot restart store, hot restart backup dir is not configured");
+            return false;
+        }
+        if (isBackupInProgress()) {
+            logger.fine("Backup is already in progress, aborting new backup");
+            return false;
+        }
+        final File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
+        ensureDir(backupDir);
+        persistentCacheDescriptors.backup(backupDir);
+        clusterMetadataManager.backup(backupDir);
+        backup(backupDir, onHeapStores, true);
+        backup(backupDir, offHeapStores, false);
+        return true;
+    }
+
+    /** Returns true if there is a backup task currently in progress */
+    public boolean isBackupInProgress() {
+        return isBackupInProgress(onHeapStores) || isBackupInProgress(offHeapStores);
+    }
+
+    private static boolean isBackupInProgress(HotRestartStore[] stores) {
+        if (stores != null) {
+            for (HotRestartStore store : stores) {
+                if (IN_PROGRESS.equals(store.getBackupTaskState())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void interruptBackupTask(HotRestartStore[] stores) {
+        if (stores != null) {
+            for (HotRestartStore store : stores) {
+                if (IN_PROGRESS.equals(store.getBackupTaskState())) {
+                    store.interruptBackupTask();
+                }
+            }
+        }
+    }
+
+    private static BackupTaskStatus getBackupTaskStatus(HotRestartStore[] stores) {
+        BackupTaskState state = null;
+        int completed = 0;
+        if (stores != null) {
+            for (HotRestartStore store : stores) {
+                final BackupTaskState storeBackupTaskState = store.getBackupTaskState();
+                if (IN_PROGRESS.equals(storeBackupTaskState)) {
+                    state = IN_PROGRESS;
+                    continue;
+                }
+                if (FAILURE.equals(storeBackupTaskState) && state == null) {
+                    state = FAILURE;
+                }
+                completed++;
+            }
+            return new BackupTaskStatus(state != null ? state : SUCCESS, completed, stores.length);
+        }
+        return new BackupTaskStatus(SUCCESS, 0, 0);
+    }
+
+    private void backup(File backupDir, HotRestartStore[] stores, boolean onHeap) {
+        if (stores != null) {
+            for (int i = 0; i < storeCount; i++) {
+                final File storeDir = storeDir(i, onHeap);
+                final File targetStoreDir = new File(backupDir, storeDir.getName());
+                ensureDir(targetStoreDir);
+                stores[i].backup(targetStoreDir);
+            }
+        }
+    }
+
+    private static void ensureDir(File dir) {
+        try {
+            final File canonicalDir = dir.getCanonicalFile();
+            if (canonicalDir.exists()) {
+                throw new HotRestartException("Path already exists : " + canonicalDir);
+            }
+            if (!canonicalDir.exists() && !canonicalDir.mkdirs()) {
+                throw new HotRestartException("Could not create the directory " + canonicalDir);
+            }
+        } catch (IOException e) {
+            throw new HotRestartException(e);
         }
     }
 
@@ -616,6 +734,31 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         assert b >= 0 : "b is negative";
         final long sum = a + b;
         return sum >= 0 ? sum : Long.MAX_VALUE;
+    }
+
+    /**
+     * Interrupts the backup task if one is currently running. The contents of the target backup directory will be left as-is
+     */
+    public void interruptBackupTask() {
+        interruptBackupTask(offHeapStores);
+        interruptBackupTask(onHeapStores);
+    }
+
+    /**
+     * Returns the local hot restart backup task status (not the cluster backup status).
+     */
+    public BackupTaskStatus getBackupTaskStatus() {
+        final BackupTaskStatus offHeapStatus = getBackupTaskStatus(offHeapStores);
+        final BackupTaskStatus onHeapStatus = getBackupTaskStatus(onHeapStores);
+
+        final BackupTaskState state =
+                IN_PROGRESS.equals(offHeapStatus.getState()) || IN_PROGRESS.equals(onHeapStatus.getState()) ? IN_PROGRESS
+                        : FAILURE.equals(offHeapStatus.getState()) || FAILURE.equals(onHeapStatus.getState()) ? FAILURE
+                        : SUCCESS;
+
+        return new BackupTaskStatus(state,
+                offHeapStatus.getCompleted() + onHeapStatus.getCompleted(),
+                offHeapStatus.getTotal() + onHeapStatus.getTotal());
     }
 
     private static class RamStoreDescriptor {

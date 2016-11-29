@@ -257,6 +257,14 @@ public class PrefixTombstoneManager {
         }
     }
 
+    /** Copies the prefix tombstone file to the target directory. */
+    public void backup(File targetDir) {
+        final File pfixTombstoneFile = new File(gcHelper.homeDir, PREFIX_TOMBSTONES_FILENAME);
+        if (pfixTombstoneFile.exists()) {
+            IOUtil.copy(pfixTombstoneFile, targetDir);
+        }
+    }
+
     /**
      * Manages the incremental sweeping process which visits each value chunk and propagates the effects
      * of all prefix tombstones to it.

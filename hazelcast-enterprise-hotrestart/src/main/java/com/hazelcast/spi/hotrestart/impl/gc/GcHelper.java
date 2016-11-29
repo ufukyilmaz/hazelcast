@@ -83,8 +83,10 @@ public abstract class GcHelper implements Disposable {
         this.logger = logger;
     }
 
-    /** Disposes the native memory block associated with the given {@link MappedByteBuffer}.
-     * Calls into OpenJDK's private API. */
+    /**
+     * Disposes the native memory block associated with the given {@link MappedByteBuffer}.
+     * Calls into OpenJDK's private API.
+     */
     public static void disposeMappedBuffer(MappedByteBuffer buf) {
         ((sun.nio.ch.DirectBuffer) buf).cleaner().clean();
     }
@@ -105,14 +107,18 @@ public abstract class GcHelper implements Disposable {
                 this);
     }
 
-    /** Creates a new active tombstone chunk file and returns an instance of
-     * {@link WriteThroughTombChunk} that wraps it. */
+    /**
+     * Creates a new active tombstone chunk file and returns an instance of
+     * {@link WriteThroughTombChunk} that wraps it.
+     */
     public WriteThroughTombChunk newActiveTombChunk() {
         return newWriteThroughTombChunk(ACTIVE_FNAME_SUFFIX);
     }
 
-    /** Creates a new tombstone chunk file with the given filename suffix and returns an instance of
-     * {@link WriteThroughTombChunk} that wraps it. */
+    /**
+     * Creates a new tombstone chunk file with the given filename suffix and returns an instance of
+     * {@link WriteThroughTombChunk} that wraps it.
+     */
     final WriteThroughTombChunk newWriteThroughTombChunk(String suffix) {
         final long seq = chunkSeq.incrementAndGet();
         return new WriteThroughTombChunk(seq, suffix, newTombstoneMap(),
@@ -156,6 +162,34 @@ public abstract class GcHelper implements Disposable {
     /** Deletes the chunk file associated with the given instance of {@link Chunk}. */
     public void deleteChunkFile(Chunk chunk) {
         final File toDelete = chunkFile(chunk, false);
+        deleteFile(toDelete);
+    }
+
+    /**
+     * Deletes chunk files with the given {@code chunkSeqs}.
+     *
+     * @param chunkSeqs    the sequences of the chunks to be deleted
+     * @param areValChunks if the chunk sequences are for value chunks
+     */
+    public void deleteChunkFiles(long[] chunkSeqs, boolean areValChunks) {
+        final String baseDir = areValChunks ? VAL_BASEDIR : TOMB_BASEDIR;
+        for (long seq : chunkSeqs) {
+            deleteFile(chunkFile(baseDir, seq, Chunk.FNAME_SUFFIX, false));
+        }
+    }
+
+    /**
+     * Deletes chunk file with the given {@code seq}.
+     *
+     * @param seq        the sequence of the chunk to be deleted
+     * @param isValChunk if the chunk is a value chunk
+     */
+    public void deleteChunkFile(long seq, boolean isValChunk) {
+        final String baseDir = isValChunk ? VAL_BASEDIR : TOMB_BASEDIR;
+        deleteFile(chunkFile(baseDir, seq, Chunk.FNAME_SUFFIX, false));
+    }
+
+    private static void deleteFile(File toDelete) {
         assert toDelete.exists() : "Attempt to delete non-existent file " + toDelete;
         delete(toDelete);
     }
@@ -180,7 +214,8 @@ public abstract class GcHelper implements Disposable {
      * @param mkdirs whether to also create any missing ancestor directories of the chunk file
      */
     public final File chunkFile(Chunk chunk, boolean mkdirs) {
-        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
+        final boolean active = chunk instanceof ActiveValChunk || chunk instanceof WriteThroughTombChunk;
+        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix() + (active ? ACTIVE_FNAME_SUFFIX : ""), mkdirs);
     }
 
     /**

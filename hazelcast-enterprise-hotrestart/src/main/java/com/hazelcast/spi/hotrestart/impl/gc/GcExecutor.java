@@ -7,6 +7,8 @@ import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.MutatorCatchup.CatchupRunnable;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 
+import java.io.File;
+
 /** Contains top-level control code for the GC thread. */
 // class non-final for mockability
 public class GcExecutor {
@@ -67,4 +69,7 @@ public class GcExecutor {
         }
     }
 
+    public void submitBackup(File targetDir) {
+        conveyor.submit(chunkMgr.new BackupChunks(targetDir));
+    }
 }

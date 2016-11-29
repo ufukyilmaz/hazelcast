@@ -1,5 +1,6 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
 import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.spi.hotrestart.HotRestartException;
@@ -8,11 +9,13 @@ import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
+import com.hazelcast.spi.hotrestart.impl.gc.BackupExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcLogger;
 import com.hazelcast.spi.hotrestart.impl.gc.Rebuilder;
 import com.hazelcast.util.concurrent.BackoffIdleStrategy;
 import com.hazelcast.util.concurrent.IdleStrategy;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +39,7 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
     private final PersistenceEngineLoop persistenceLoop;
     private final Thread persistenceThread;
     private final GcLogger logger;
+    private final BackupExecutor backupExecutor;
 
     @Inject
     private ConcurrentHotRestartStore(
@@ -43,7 +47,8 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
             @Name("storeName") String storeName,
             HotRestartPersistenceEngine persistence,
             @Name("persistenceConveyor") ConcurrentConveyorSingleQueue<RunnableWithStatus> persistenceConveyor,
-            DiContainer di
+            DiContainer di,
+            BackupExecutor backupExecutor
     ) {
         this.logger = logger;
         this.name = storeName;
@@ -52,13 +57,14 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         this.di = di;
         this.persistenceLoop = new PersistenceEngineLoop();
         this.persistenceThread = new Thread(persistenceLoop, storeName + ".persistence-engine");
+        this.backupExecutor = backupExecutor;
     }
 
     @Override
     public void hotRestart(
             boolean failIfAnyData, int storeCount, ConcurrentConveyor<RestartItem>[] keyConveyors,
             ConcurrentConveyor<RestartItem> keyHandleConveyor, ConcurrentConveyor<RestartItem>[] valueConveyors)
-    throws InterruptedException {
+            throws InterruptedException {
         new DiContainer(di).dep(Rebuilder.class)
                            .dep("storeCount", storeCount)
                            .dep("keyConveyors", keyConveyors)
@@ -93,6 +99,21 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
         } catch (InterruptedException e) {
             throw new HotRestartException("Interrupted while waiting for the persistence engine to shut down", e);
         }
+    }
+
+    @Override
+    public void backup(File targetDir) {
+        submitAndProceedWhenAllowed(persistence.new Backup(targetDir));
+    }
+
+    @Override
+    public BackupTaskState getBackupTaskState() {
+        return backupExecutor.getBackupTaskState();
+    }
+
+    @Override
+    public void interruptBackupTask() {
+        backupExecutor.interruptBackupTask(false);
     }
 
     @Override

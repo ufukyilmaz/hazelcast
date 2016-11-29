@@ -15,6 +15,8 @@ import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
 import com.hazelcast.spi.hotrestart.impl.gc.record.Record;
 
+import java.io.File;
+
 /**
  * Single-threaded persistence engine behind the {@link ConcurrentHotRestartStore}.
  * This class is not thread-safe. The caller must ensure a <i>happens-before</i>
@@ -57,6 +59,13 @@ public final class HotRestartPersistenceEngine {
         put0(key, null, needsFsync);
     }
 
+    void backup(File targetDir) {
+        pfixTombstoMgr.backup(targetDir);
+        replaceActiveChunk(activeValChunk, false);
+        replaceActiveChunk(activeTombChunk, true);
+        gcExec.submitBackup(targetDir);
+    }
+
     @SuppressWarnings("checkstyle:innerassignment")
     private void put0(HotRestartKey hrKey, byte[] value, boolean needsFsync) {
         if (activeValChunk == null) {
@@ -70,18 +79,22 @@ public final class HotRestartPersistenceEngine {
         gcExec.submitRecord(hrKey, seq, size, isTombstone);
         final boolean full = activeChunk.addStep1(seq, hrKey.prefix(), hrKey.bytes(), value);
         if (full) {
-            final ActiveChunk inactiveChunk = activeChunk;
-            if (isTombstone) {
-                activeTombChunk = null;
-                inactiveChunk.close();
-                activeTombChunk = activeChunk = gcHelper.newActiveTombChunk();
-            } else {
-                activeValChunk = null;
-                inactiveChunk.close();
-                activeValChunk = activeChunk = gcHelper.newActiveValChunk();
-            }
-            gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
+            replaceActiveChunk(activeChunk, isTombstone);
         }
+    }
+
+    private void replaceActiveChunk(ActiveChunk activeChunk, boolean isTombstone) {
+        final ActiveChunk inactiveChunk = activeChunk;
+        if (isTombstone) {
+            activeTombChunk = null;
+            inactiveChunk.close();
+            activeTombChunk = activeChunk = gcHelper.newActiveTombChunk();
+        } else {
+            activeValChunk = null;
+            inactiveChunk.close();
+            activeValChunk = activeChunk = gcHelper.newActiveValChunk();
+        }
+        gcExec.submitReplaceActiveChunk(inactiveChunk, activeChunk);
     }
 
     /**
@@ -164,6 +177,21 @@ public final class HotRestartPersistenceEngine {
             return String.format("Put: needsFsync %b key %s", needsFsync, key);
         }
     }
+
+    final class Backup extends RunnableWithStatus {
+        private final File targetDir;
+
+        Backup(File targetDir) {
+            super(true);
+            this.targetDir = targetDir;
+        }
+
+        @Override
+        public void run() {
+            backup(targetDir);
+        }
+    }
+
 
     final class Clear extends RunnableWithStatus {
         final long[] prefixes;

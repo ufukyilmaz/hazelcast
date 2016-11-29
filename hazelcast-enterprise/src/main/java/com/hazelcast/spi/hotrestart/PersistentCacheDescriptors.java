@@ -32,6 +32,7 @@ public class PersistentCacheDescriptors {
 
     private static final String CONFIG_SUFFIX = ".config";
     private static final String CONFIG_FOLDER = "configs";
+    private static final String TMP_SUFFIX = ".tmp";
 
     /**
      * Mappings from a combination of service name and distributed object name to cache descriptor
@@ -122,24 +123,37 @@ public class PersistentCacheDescriptors {
             final CacheDescriptor desc = new CacheDescriptor(serviceName, name, id);
             ObjectDataOutputStream out = null;
             try {
-                String configFileName = configFileName(serviceName, name);
-                File configFile = new File(configsDir, configFileName);
-                if (configFile.exists()) {
-                    throw new IllegalArgumentException(configFile + " already exists!");
-                }
-                out = createObjectDataOutputStream(new FileOutputStream(configFile), serializationService);
+                final String configFileName = configFileName(serviceName, name);
+                final File configFile = newFile(configsDir, configFileName);
+                final File tmpFile = newFile(configsDir, configFileName + TMP_SUFFIX);
+                final FileOutputStream fileOut = new FileOutputStream(tmpFile);
+
+                out = createObjectDataOutputStream(fileOut, serializationService);
                 out.writeUTF(serviceName);
                 out.writeInt(id);
                 out.writeUTF(name);
                 out.writeObject(config);
                 idToDesc.put(id, desc);
                 nameToDesc.put(cacheKey, desc);
+
+                out.flush();
+                fileOut.getFD().sync();
+                out.close();
+                IOUtil.rename(tmpFile, configFile);
             } catch (IOException e) {
                 throw ExceptionUtil.rethrow(e);
             } finally {
                 IOUtil.closeResource(out);
             }
         }
+    }
+
+    private static File newFile(File parent, String name) {
+        final File file = new File(parent, name);
+        if (file.exists()) {
+            throw new IllegalArgumentException(file + " already exists!");
+        }
+        return file;
     }
 
     private static String configFileName(String serviceName, String name) {
@@ -225,5 +239,16 @@ public class PersistentCacheDescriptors {
      */
     public static int toPartitionId(long prefix) {
         return extractInt(prefix, true);
+    }
+
+    /**
+     * Copies the contents of the persisted cache descriptors to a folder with the name {@link #CONFIG_FOLDER} under the
+     * {@code targetDir}. This method does not synchronize with the rest of the code so for consistent descriptors it is
+     * necessary to ensure that no cache descriptor changes or additions are in progress.
+     *
+     * @param targetDir the directory under which the folder with the descriptors will be copied
+     */
+    public void backup(File targetDir) {
+        IOUtil.copy(configsDir, targetDir);
     }
 }

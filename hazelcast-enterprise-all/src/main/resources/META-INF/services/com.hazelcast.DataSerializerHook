@@ -7,6 +7,7 @@ com.hazelcast.cache.operation.EnterpriseCacheDataSerializerHook
 com.hazelcast.map.impl.operation.EnterpriseMapDataSerializerHook
 com.hazelcast.enterprise.wan.EWRDataSerializerHook
 com.hazelcast.spi.hotrestart.cluster.HotRestartClusterSerializerHook
+com.hazelcast.spi.hotrestart.backup.HotRestartBackupSerializerHook
 
 # wm hook
 com.hazelcast.web.WebDataSerializerHook

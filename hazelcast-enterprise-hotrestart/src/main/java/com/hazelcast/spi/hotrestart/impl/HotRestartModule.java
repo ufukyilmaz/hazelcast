@@ -8,6 +8,7 @@ import com.hazelcast.logging.ILogger;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.di.DiContainer;
+import com.hazelcast.spi.hotrestart.impl.gc.BackupExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.ChunkManager;
 import com.hazelcast.spi.hotrestart.impl.gc.GcExecutor;
 import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
@@ -63,6 +64,7 @@ public final class HotRestartModule {
         }
         di.dep(di)
           .dep(HazelcastProperties.class, properties)
+          .dep(new BackupExecutor()).disposable()
           .dep("storeName", cfg.storeName())
           .dep("homeDir", cfg.homeDir())
           .dep(RamStoreRegistry.class, cfg.ramStoreRegistry())

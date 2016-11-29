@@ -47,9 +47,9 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
     public int keyRange;
     @Parameterized.Parameter(2)
     public boolean evictionEnabled;
-    String mapName;
-    private File baseDir;
-    private TestHazelcastInstanceFactory factory;
+    protected String mapName;
+    protected File baseDir;
+    protected TestHazelcastInstanceFactory factory;
 
     @BeforeClass
     public static void setupClass() throws UnknownHostException {

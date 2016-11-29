@@ -24,7 +24,12 @@ import com.hazelcast.spi.hotrestart.impl.gc.tracker.Tracker;
 import com.hazelcast.spi.hotrestart.impl.gc.tracker.TrackerMap;
 import com.hazelcast.util.collection.Long2ObjectHashMap;
 
+import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.metrics.ProbeLevel.MANDATORY;
 import static com.hazelcast.internal.util.counters.SwCounter.newSwCounter;
@@ -64,6 +69,7 @@ public class ChunkManager implements Disposable {
     @Probe(level = MANDATORY)
     final Counter tombGarbage = newSwCounter();
 
+    /** Stable chunks by chunk seq */
     final Long2ObjectHashMap<StableChunk> chunks = new Long2ObjectHashMap<StableChunk>();
     final TrackerMap trackers;
 
@@ -76,19 +82,23 @@ public class ChunkManager implements Disposable {
     private final DiContainer di;
     private final GcLogger logger;
     private final GcHelper gcHelper;
+    private final BackupExecutor backupExecutor;
     @Inject
     private Snapshotter snapshotter;
+    private Set<Long> chunkSeqsPendingDeletion = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+    private AtomicBoolean chunkDeletionInProgress = new AtomicBoolean();
 
     private long maxValLive;
 
     @Inject
     ChunkManager(GcHelper gcHelper, @Name("storeName") String storeName, MetricsRegistry metrics,
-                         GcLogger logger, DiContainer di
+                 GcLogger logger, DiContainer di, BackupExecutor backupExecutor
     ) {
         this.di = di;
         this.logger = logger;
         this.gcHelper = gcHelper;
         this.trackers = gcHelper.newTrackerMap();
+        this.backupExecutor = backupExecutor;
         final String metricsPrefix = "hot-restart." + storeName;
         metrics.scanAndRegister(this, metricsPrefix);
         metrics.scanAndRegister(trackers, metricsPrefix);
@@ -181,6 +191,42 @@ public class ChunkManager implements Disposable {
         @Override
         public String toString() {
             return String.format("(%s,%d,%d,%s)", keyHandle, recordSeq, size, isTombstone);
+        }
+    }
+
+    /** Backs up stable chunks in the target directory. While copying the GC will not run. */
+    class BackupChunks implements Runnable {
+        private final File targetDir;
+
+        BackupChunks(File targetDir) {
+            this.targetDir = targetDir;
+        }
+
+        @Override
+        public void run() {
+            if (backupExecutor.inProgress()) {
+                logger.fine("Hot restart backup is already in progress, skipping running another backup");
+                return;
+            }
+
+            int stableTombChunkCount = 0;
+            for (StableChunk chunk : chunks.values()) {
+                if (chunk instanceof StableTombChunk) {
+                    stableTombChunkCount++;
+                }
+            }
+            final long[] stableTombChunkSeqs = new long[stableTombChunkCount];
+            final long[] stableValChunkSeqs = new long[chunks.size() - stableTombChunkCount];
+            int valIdx = 0;
+            int tombIdx = 0;
+            for (StableChunk chunk : chunks.values()) {
+                if (chunk instanceof StableTombChunk) {
+                    stableTombChunkSeqs[tombIdx++] = chunk.seq;
+                } else {
+                    stableValChunkSeqs[valIdx++] = chunk.seq;
+                }
+            }
+            backupExecutor.run(di.wire(new BackupTask(targetDir, stableValChunkSeqs, stableTombChunkSeqs)));
         }
     }
 
@@ -309,7 +355,7 @@ public class ChunkManager implements Disposable {
     }
 
     /**
-     * Returns the chunk for the given {@code chunkSeq}.
+     * Returns the chunk for the given {@code chunkSeq}. During GC it can also return a survivor chunk.
      *
      * @param chunkSeq the chunk sequence
      * @return the chunk
@@ -332,7 +378,14 @@ public class ChunkManager implements Disposable {
         return GcParams.gcParams(valGarbage.get(), valOccupancy.get(), maxValLive, gcHelper.chunkSeq());
     }
 
-    /** Entry point to the ValueGC procedure (garbage collection of value chunks). */
+    /**
+     * Entry point to the ValueGC procedure (garbage collection of value chunks). ValueGC will be skipped if backup is
+     * in progress.
+     *
+     * @param gcp the parameters for this GC cycle
+     * @param mc  the mutator catchup
+     * @return if there was any gc done
+     */
     boolean valueGc(GcParams gcp, MutatorCatchup mc) {
         if (gcp == GcParams.ZERO) {
             return false;
@@ -353,11 +406,17 @@ public class ChunkManager implements Disposable {
             logger.fine("Forced ValueGC due to g/l %2.0f%%", garbagePercent);
         }
         di.wire(new ValEvacuator(srcChunks, start)).evacuate();
-        afterEvacuation("Value", srcChunks, valGarbage, valOccupancy, start, mc);
+        afterEvacuation(GcType.VALUE, srcChunks, valGarbage, valOccupancy, start, mc);
         return true;
     }
 
-    /** Entry point to the TombGC procedure (garbage collection of tombstone chunks). */
+    /**
+     * Entry point to the TombGC procedure (garbage collection of tombstone chunks). TombGC will be skipped if backup is
+     * in progress.
+     *
+     * @param mc the mutator catchup
+     * @return if there was any gc done
+     */
     boolean tombGc(MutatorCatchup mc) {
         final long start = System.nanoTime();
         final Collection<StableTombChunk> srcChunks = selectTombChunksToCollect(chunks.values(), mc);
@@ -369,18 +428,20 @@ public class ChunkManager implements Disposable {
         final long live = tombOccupancy.get() - garbage;
         logger.finest("Start TombGC: g/l %2.0f%% (%,d/%,d)", UNIT_PERCENTAGE * garbage / live, garbage, live);
         di.wire(new TombEvacuator(srcChunks)).evacuate();
-        afterEvacuation("Tomb", srcChunks, tombGarbage, tombOccupancy, start, mc);
+        afterEvacuation(GcType.TOMB, srcChunks, tombGarbage, tombOccupancy, start, mc);
         return true;
     }
 
     private void afterEvacuation(
-            String gcKind, Collection<? extends StableChunk> evacuatedChunks, Counter garbage, Counter occupancy,
+            GcType gcType, Collection<? extends StableChunk> evacuatedChunks, Counter garbage, Counter occupancy,
             long start, MutatorCatchup mc
     ) {
         long sizeBefore = 0;
+        final long[] evacuatedChunkSeqs = new long[evacuatedChunks.size()];
+        int evacuatedChunkSeqsIdx = 0;
         for (StableChunk evacuated : evacuatedChunks) {
             sizeBefore += evacuated.size();
-            gcHelper.deleteChunkFile(evacuated);
+            evacuatedChunkSeqs[evacuatedChunkSeqsIdx++] = evacuated.seq;
             mc.catchupNow();
             dismissGarbage(evacuated, mc);
             evacuated.dispose();
@@ -399,10 +460,73 @@ public class ChunkManager implements Disposable {
         final long garbageAfterGc = garbage.inc(-reclaimed);
         final long liveAfterGc = occupancy.inc(-reclaimed) - garbageAfterGc;
         logger.fine("%nDone %sGC: took %,3d ms; b/c %3.1f g/l %2.0f%% benefit %,d cost %,d garbage %,d live %,d",
-                gcKind, NANOSECONDS.toMillis(System.nanoTime() - start),
+                gcType, NANOSECONDS.toMillis(System.nanoTime() - start),
                 (double) reclaimed / sizeAfter, UNIT_PERCENTAGE * garbageAfterGc / liveAfterGc,
                 reclaimed, sizeAfter, garbageAfterGc, liveAfterGc);
-        assert garbageAfterGc >= 0 : String.format("%s garbage went below zero: %,d", gcKind, garbageAfterGc);
-        assert liveAfterGc >= 0 : String.format("%s live went below zero: %,d", gcKind, liveAfterGc);
+        assert garbageAfterGc >= 0 : String.format("%s garbage went below zero: %,d", gcType, garbageAfterGc);
+        assert liveAfterGc >= 0 : String.format("%s live went below zero: %,d", gcType, liveAfterGc);
+
+        final boolean isValueGc = GcType.VALUE.equals(gcType);
+        if (backupExecutor.inProgress()) {
+            coordinateChunkDeletion(evacuatedChunkSeqs, isValueGc);
+        } else {
+            gcHelper.deleteChunkFiles(evacuatedChunkSeqs, isValueGc);
+        }
+    }
+
+    private void coordinateChunkDeletion(long[] evacuatedChunkSeqs, boolean isValueGc) {
+        final long backupTaskMaxChunkSeq = backupExecutor.getBackupTaskMaxChunkSeq();
+        for (long seq : evacuatedChunkSeqs) {
+            if (seq <= backupTaskMaxChunkSeq) {
+                chunkSeqsPendingDeletion.add(isValueGc ? seq : -seq);
+            } else {
+                gcHelper.deleteChunkFile(seq, isValueGc);
+            }
+        }
+        if (backupExecutor.isBackupTaskDone()) {
+            deletePendingChunks();
+        }
+    }
+
+    void deletePendingChunks() {
+        if (chunkDeletionInProgress.compareAndSet(false, true)) {
+            try {
+                for (Long chunkSeq : chunkSeqsPendingDeletion) {
+                    final long seq = chunkSeq;
+                    final boolean valChunk = seq > 0;
+                    gcHelper.deleteChunkFile(valChunk ? seq : -seq, valChunk);
+                }
+                chunkSeqsPendingDeletion.clear();
+            } finally {
+                chunkDeletionInProgress.set(false);
+            }
+        }
+    }
+
+    /**
+     * Removes the chunk seq and returns true if the HR GC evacuated the chunk during hot restart backup and if it is pending
+     * deletion.
+     */
+    boolean removeChunkPendingDeletion(long seq, boolean isValChunk) {
+        return chunkSeqsPendingDeletion.remove(isValChunk ? seq : -seq);
+    }
+
+    /** Returns true if the HR GC evacuated the chunk during hot restart backup and if it is pending deletion */
+    boolean isChunkPendingDeletion(long seq, boolean isValChunk) {
+        return chunkSeqsPendingDeletion.contains(isValChunk ? seq : -seq);
+    }
+
+    private enum GcType {
+        VALUE("Value"), TOMB("Tomb");
+        private final String desc;
+
+        GcType(String desc) {
+            this.desc = desc;
+        }
+
+        @Override
+        public String toString() {
+            return desc;
+        }
     }
 }

@@ -124,6 +124,10 @@ public class GcLogger {
         logger.warning(message);
     }
 
+    public void warning(String message, Throwable thrown) {
+        logger.warning(message, thrown);
+    }
+
     public void severe(String message) {
         logger.severe(message);
     }

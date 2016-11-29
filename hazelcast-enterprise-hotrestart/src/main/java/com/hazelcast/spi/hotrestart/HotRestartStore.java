@@ -1,7 +1,10 @@
 package com.hazelcast.spi.hotrestart;
 
+import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.internal.util.concurrent.ConcurrentConveyor;
 import com.hazelcast.spi.hotrestart.impl.RestartItem;
+
+import java.io.File;
 
 /**
  * Persistent store of key-value mappings specifically tailored to support
@@ -99,4 +102,20 @@ public interface HotRestartStore {
      * @throws HotRestartException
      */
     void close() throws HotRestartException;
+
+    /**
+     * Copies the contents of this hot restart store to the target directory. This method will return as soon as copying
+     * has started. Further copying will be done after this method has returned.
+     *
+     * @param targetDir the directory under which backups for the stores will be created
+     */
+    void backup(File targetDir);
+
+    /** Returns the state of the hot restart backup task */
+    BackupTaskState getBackupTaskState();
+
+    /**
+     * Interrupts the backup task if one is currently running. The contents of the target backup directory will be left as-is
+     */
+    void interruptBackupTask();
 }

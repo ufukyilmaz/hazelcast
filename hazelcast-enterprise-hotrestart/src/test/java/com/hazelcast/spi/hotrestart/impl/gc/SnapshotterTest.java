@@ -64,6 +64,7 @@ public class SnapshotterTest {
                         .dep("homeDir", homeDir)
                         .dep("storeName", "test-hrstore")
                         .dep(GcHelper.class, OnHeap.class)
+                        .dep(BackupExecutor.class, mock(BackupExecutor.class))
                         .dep(MetricsRegistry.class, mock(MetricsRegistry.class))
                         .dep(ChunkManager.class)
                         .instantiate(Snapshotter.class);

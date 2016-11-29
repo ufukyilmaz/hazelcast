@@ -27,6 +27,10 @@ public class AskForPartitionTableValidationStatusOperation extends AbstractOpera
         Address caller = getCallerAddress();
         ILogger logger = getLogger();
         final Address master = nodeEngine.getMasterAddress();
+        if (master == null) {
+            logger.warning("Master is not known yet. Cannot answer for partition table completion status. Caller: " + caller);
+            return;
+        }
         if (!master.equals(caller)) {
             logger.warning("Non-master member: " + caller + " asked for partition table validation status. master: " + master);
             return;

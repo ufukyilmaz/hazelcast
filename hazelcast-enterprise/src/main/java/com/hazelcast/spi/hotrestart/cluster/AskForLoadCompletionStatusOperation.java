@@ -27,6 +27,10 @@ public class AskForLoadCompletionStatusOperation extends AbstractOperation imple
         Address caller = getCallerAddress();
         ILogger logger = getLogger();
         final Address master = nodeEngine.getMasterAddress();
+        if (master == null) {
+            logger.warning("Master is not known yet. Cannot answer for load completion status. Caller: " + caller);
+            return;
+        }
         if (!master.equals(caller)) {
             logger.warning("Non-master member: " + caller + " asked for load completion status. master: " + master);
             return;

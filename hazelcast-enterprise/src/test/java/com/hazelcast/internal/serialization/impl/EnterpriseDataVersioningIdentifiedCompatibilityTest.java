@@ -1,16 +1,17 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.SerializationServiceBuilder;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.Version;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -47,6 +48,9 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     EnterpriseSerializationService oldVersionedSS = ss(false, VERSIONED_FACTORY);
     EnterpriseSerializationService newVersionedSS = ss(true, VERSIONED_FACTORY);
 
+    SerializationService ossUnversionedSS = ossSS(UNVERSIONED_FACTORY);
+    SerializationService ossVersionedSS = ossSS(VERSIONED_FACTORY);
+
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
@@ -66,11 +70,24 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     public void newOld_Unversioned() {
         TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
 
-        // it can't work due to the factorId & classId compression
-        expected.expect(HazelcastSerializationException.class);
+        Data data = newUnversionedSS.toData(original);
+        TestIdentifiedDataSerializable deserialized = oldUnversionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_Unversioned() {
+        TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
 
         Data data = newUnversionedSS.toData(original);
-        oldUnversionedSS.toObject(data);
+        TestIdentifiedDataSerializable deserialized = ossUnversionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
     @Test
@@ -114,11 +131,24 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     public void newOld_Versioned() {
         TestVersionedIdentifiedDataSerializable original = new TestVersionedIdentifiedDataSerializable(123);
 
-        // it can't work due to the factorId & classId compression and version byte
-        expected.expect(HazelcastSerializationException.class);
+        Data data = newVersionedSS.toData(original);
+        TestVersionedIdentifiedDataSerializable deserialized = oldVersionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_Versioned() {
+        TestVersionedIdentifiedDataSerializable original = new TestVersionedIdentifiedDataSerializable(123);
 
         Data data = newVersionedSS.toData(original);
-        oldVersionedSS.toObject(data);
+        TestVersionedIdentifiedDataSerializable deserialized = ossVersionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
     @Test
@@ -163,11 +193,24 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     public void newOld_UnversionedToVersioned() {
         TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
 
-        // it can't work due to the factorId & classId compression and version byte
-        expected.expect(HazelcastSerializationException.class);
+        Data data = newUnversionedSS.toData(original);
+        TestVersionedIdentifiedDataSerializable deserialized = oldVersionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_UnversionedToVersioned() {
+        TestIdentifiedDataSerializable original = new TestIdentifiedDataSerializable(123);
 
         Data data = newUnversionedSS.toData(original);
-        oldVersionedSS.toObject(data);
+        TestVersionedIdentifiedDataSerializable deserialized = ossVersionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
     @Test
@@ -212,11 +255,24 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
     public void newOld_VersionedToUnversioned() {
         TestVersionedIdentifiedDataSerializable original = new TestVersionedIdentifiedDataSerializable(123);
 
-        // it can't work due to the factorId & classId compression and version byte
-        expected.expect(HazelcastSerializationException.class);
+        Data data = newVersionedSS.toData(original);
+        TestIdentifiedDataSerializable deserialized = oldUnversionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_VersionedToUnversioned() {
+        TestVersionedIdentifiedDataSerializable original = new TestVersionedIdentifiedDataSerializable(123);
 
         Data data = newVersionedSS.toData(original);
-        oldUnversionedSS.toObject(data);
+        TestIdentifiedDataSerializable deserialized = ossUnversionedSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
     @Test
@@ -250,6 +306,13 @@ public class EnterpriseDataVersioningIdentifiedCompatibilityTest {
         if (versionedSerializationEnabled) {
             builder.setClusterVersionAware(new TestClusterVersionAware()).setVersionedSerializationEnabled(versionedSerializationEnabled);
         }
+        builder.addDataSerializableFactory(1, factory);
+        return builder.build();
+    }
+
+    private SerializationService ossSS(DataSerializableFactory factory) {
+        SerializationServiceBuilder builder = new DefaultSerializationServiceBuilder()
+                .setVersion(InternalSerializationService.VERSION_1);
         builder.addDataSerializableFactory(1, factory);
         return builder.build();
     }

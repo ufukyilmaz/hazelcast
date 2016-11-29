@@ -136,6 +136,11 @@ public final class ClusterMetadataManager {
             clusterState = readClusterState(node.getLogger(ClusterStateReader.class), homeDir);
             ClusterVersion clusterVersion = readClusterVersion(node.getLogger(ClusterVersionReader.class), homeDir);
             if (clusterVersion != null) {
+                // validate current codebase version is compatible with the persisted cluster version
+                if (!node.getNodeExtension().isNodeVersionCompatibleWith(clusterVersion)) {
+                    throw new HotRestartException("Member cannot start: codebase version " + node.getVersion() + " is not "
+                            + "compatible with persisted cluster version " + clusterVersion);
+                }
                 setClusterVersion(node.clusterService, clusterVersion);
             }
             final Collection<MemberImpl> members = restoreMemberList();

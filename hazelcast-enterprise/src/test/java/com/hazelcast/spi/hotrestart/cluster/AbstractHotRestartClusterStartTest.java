@@ -23,6 +23,7 @@ import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.util.ExceptionUtil;
+import com.hazelcast.version.MemberVersion;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -149,6 +150,12 @@ public abstract class AbstractHotRestartClusterStartTest {
         return restartInstances(addresses, Collections.<Address, ClusterHotRestartEventListener>emptyMap());
     }
 
+    // restart instances at given codebase version
+    HazelcastInstance[] restartInstances(Address[] addresses, MemberVersion version) throws InterruptedException {
+        return restartInstances(addresses, Collections.<Address, ClusterHotRestartEventListener>emptyMap(),
+                HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY, version);
+    }
+
     HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners)
             throws InterruptedException {
         return restartInstances(addresses, listeners, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
@@ -156,6 +163,14 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners,
             final HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
+            throws InterruptedException {
+
+        return restartInstances(addresses, listeners, clusterStartPolicy, null);
+    }
+
+    HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners,
+                                         final HotRestartClusterDataRecoveryPolicy clusterStartPolicy,
+                                         final MemberVersion version)
             throws InterruptedException {
 
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
@@ -167,7 +182,7 @@ public abstract class AbstractHotRestartClusterStartTest {
                 @Override
                 public void run() {
                     try {
-                        HazelcastInstance instance = restartInstance(address, listener, clusterStartPolicy);
+                        HazelcastInstance instance = restartInstance(address, listener, clusterStartPolicy, version);
                         instancesList.add(instance);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -203,22 +218,43 @@ public abstract class AbstractHotRestartClusterStartTest {
         return restartInstance(address, null, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
+    HazelcastInstance restartInstance(Address address, MemberVersion codebaseVersion) {
+        return restartInstance(address, null, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY, codebaseVersion);
+    }
+
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener) {
         return restartInstance(address, listener, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
             HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        String instanceName = instanceNames.get(address);
-        assertNotNull(instanceName);
+        return restartInstance(address, listener, clusterStartPolicy, null);
+    }
 
-        Config config = newConfig(instanceName, listener, clusterStartPolicy);
+    HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
+                                      HotRestartClusterDataRecoveryPolicy clusterStartPolicy, MemberVersion codebaseVersion) {
+        String existingHazelcastVersionValue = System.getProperty("hazelcast.version");
+        try {
+            if (codebaseVersion != null) {
+                System.setProperty("hazelcast.version", codebaseVersion.toString());
+            }
+            String instanceName = instanceNames.get(address);
+            assertNotNull(instanceName);
 
-        Address newAddress = getRestartingAddress(address);
-        if (!address.equals(newAddress)) {
-            assertNull(instanceNames.putIfAbsent(newAddress, instanceName));
+            Config config = newConfig(instanceName, listener, clusterStartPolicy);
+
+            Address newAddress = getRestartingAddress(address);
+            if (!address.equals(newAddress)) {
+                assertNull(instanceNames.putIfAbsent(newAddress, instanceName));
+            }
+            return factory.newHazelcastInstance(newAddress, config);
+        } finally {
+            if (existingHazelcastVersionValue == null) {
+                System.clearProperty("hazelcast.version");
+            } else {
+                System.setProperty("hazelcast.version", existingHazelcastVersionValue);
+            }
         }
-        return factory.newHazelcastInstance(newAddress, config);
     }
 
     private Address getRestartingAddress(Address address) {

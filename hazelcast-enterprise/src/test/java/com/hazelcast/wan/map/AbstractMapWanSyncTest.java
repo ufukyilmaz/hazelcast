@@ -208,7 +208,7 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         createDataIn(clusterA, "map", 0, 1000);
         HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
         String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
-        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exists with WAN configuration name newWRConfigName " +
+        assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration name newWRConfigName " +
                 "and publisher target group name groupName\"}", result);
     }
 

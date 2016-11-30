@@ -8,8 +8,8 @@ import com.hazelcast.nio.Version;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
-import com.hazelcast.nio.serialization.HazelcastSerializationException;
 import com.hazelcast.nio.serialization.impl.Versioned;
+import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -44,6 +44,8 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     private EnterpriseSerializationService oldSS = ss(false);
     private EnterpriseSerializationService newSS = ss(true);
 
+    private SerializationService ossSS = ossSS();
+
     @Test
     public void oldNew_Unversioned() {
         TestDataSerializable original = new TestDataSerializable(123);
@@ -69,6 +71,18 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     }
 
     @Test
+    public void newOss_Unversioned() {
+        TestDataSerializable original = new TestDataSerializable(123);
+
+        Data data = newSS.toData(original);
+        TestDataSerializable deserialized = ossSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
     public void oldNew_Versioned() {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
 
@@ -85,10 +99,23 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
 
         Data data = newSS.toData(original);
+        TestVersionedDataSerializable deserialized = oldSS.toObject(data);
 
-        // this can't work since the old code does not understand the versioned serialization
-        expected.expect(HazelcastSerializationException.class);
-        oldSS.toObject(data);
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_Versioned() {
+        TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
+
+        Data data = newSS.toData(original);
+        TestVersionedDataSerializable deserialized = ossSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
     @Test
@@ -132,6 +159,54 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
     }
 
     @Test
+    public void newOld_UnversionedToVersioned() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = newSS.toData(original);
+        // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
+        // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
+        // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+
+        TestVersionedDataSerializable deserialized = oldSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_UnversionedToVersioned() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = newSS.toData(original);
+        // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
+        // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
+        // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+
+        TestVersionedDataSerializable deserialized = ossSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void ossNew_UnversionedToVersioned() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = ossSS.toData(original);
+        // we're just tricking the system since we're on one JVM and we can't have a class with the same name twice (one annotated and one not).
+        // In the byte stream we're changing className from `TestDataSerializable` to `TestVersionedDataSerializable`.
+        // so that the class annotated with @Versioned is deserialized using a identical class but without the @Versioned annotation.
+        data = adjustClassNameOfDSInData(TestDataSerializable.class, TestVersionedDataSerializable.class, data);
+
+        TestVersionedDataSerializable deserialized = newSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
     public void oldNew_UnversionedToVersioned_givingClassToDeserializeTo() {
         TestDataSerializable original = new TestDataSerializable(123);
         Data data = oldSS.toData(original);
@@ -142,6 +217,43 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
         assertEquals(Version.UNKNOWN, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
+
+    @Test
+    public void ossNew_UnversionedToVersioned_givingClassToDeserializeTo() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = ossSS.toData(original);
+
+        TestVersionedDataSerializable deserialized = newSS.toObject(data, TestVersionedDataSerializable.class);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOld_UnversionedToVersioned_givingClassToDeserializeTo() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = newSS.toData(original);
+
+        TestVersionedDataSerializable deserialized = oldSS.toObject(data, TestVersionedDataSerializable.class);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_UnversionedToVersioned_givingClassToDeserializeTo() {
+        TestDataSerializable original = new TestDataSerializable(123);
+        Data data = newSS.toData(original);
+
+        TestVersionedDataSerializable deserialized = ossSS.toObject(data, TestVersionedDataSerializable.class);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
 
     @Test
     public void newNew_UnversionedToVersioned() {
@@ -166,6 +278,45 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
 
         assertEquals(original.value, deserialized.value);
         assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void ossNew_VersionedToUnversioned() {
+        TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
+        Data data = ossSS.toData(original);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+
+        TestDataSerializable deserialized = newSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(Version.UNKNOWN, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOld_VersionedToUnversioned() {
+        TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
+        Data data = newSS.toData(original);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+
+        TestDataSerializable deserialized = oldSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
+        assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
+    }
+
+    @Test
+    public void newOss_VersionedToUnversioned() {
+        TestVersionedDataSerializable original = new TestVersionedDataSerializable(123);
+        Data data = newSS.toData(original);
+        data = adjustClassNameOfDSInData(TestVersionedDataSerializable.class, TestDataSerializable.class, data);
+
+        TestDataSerializable deserialized = ossSS.toObject(data);
+
+        assertEquals(original.value, deserialized.value);
+        assertEquals(SERIALIZATION_VERSION_3_8, original.serializationVersion);
         assertEquals(Version.UNKNOWN, deserialized.deserializationVersion);
     }
 
@@ -214,6 +365,11 @@ public class EnterpriseDataVersioningNonIdentifiedCompatibilityTest {
             builder.setClusterVersionAware(new TestClusterVersionAware()).setVersionedSerializationEnabled(versionedSerializationEnabled);
         }
         return builder.build();
+    }
+
+    private SerializationService ossSS() {
+        return new DefaultSerializationServiceBuilder()
+                .setVersion(InternalSerializationService.VERSION_1).build();
     }
 
     private static class TestDataSerializable implements DataSerializable {

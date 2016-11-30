@@ -505,9 +505,14 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     /**
-     * Check if this node's version is compatible with given cluster version. For rolling upgrades context, a node's version
-     * is considered compatible with cluster of same version or if cluster's minor version number is smaller by one versus
-     * node's minor version number.
+     * Check if this node's version is compatible with given cluster version.
+     * By default, For rolling upgrades context, a node's version is considered compatible with cluster of same version
+     * or if cluster's minor version number is smaller by one versus node's minor version number.
+     * Each version may overwrite it though by modifying this method.
+     *
+     * E.g.:
+     * 3.8 does not support any emulation at all. So it's compatible with 3.8 clusters only.
+     * 3.9 will be compatible with 3.8 and 3.9 cluster -> if not overwritten in 3.9 codebase.
      *
      * @param clusterVersion the cluster version to check against
      * @return {@code true} if compatible, otherwise false.
@@ -516,11 +521,27 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public boolean isNodeVersionCompatibleWith(ClusterVersion clusterVersion) {
         Preconditions.checkNotNull(clusterVersion);
 
-        // node can either work at its codebase version (native mode)
-        // or at a minor version that's smaller by one (emulated mode)
-        return (node.getVersion().getMajor() == clusterVersion.getMajor()
-                && (node.getVersion().getMinor() == clusterVersion.getMinor()
-                    || node.getVersion().getMinor() - clusterVersion.getMinor() == 1));
+        // there is no compatibility between major versions
+        ClusterVersion nodeVersion = node.getVersion().asClusterVersion();
+        if (node.getVersion().getMajor() != clusterVersion.getMajor()) {
+            return false;
+        }
+
+        // We don't have to check prior to "3.8" since 3.8 adds rolling-upgrade support
+        // and the check is invoked by the node for this particular node (so for the current codebase version).
+        // It means that this method didn't exist prior to 3.8.
+
+        if (nodeVersion.equals(ClusterVersion.of("3.8"))) {
+            // 3.8 can't emulate lower versions
+            return node.getVersion().getMinor() == clusterVersion.getMinor();
+        } else {
+            // node can either work at its codebase version (native mode)
+            // or at a minor version that's smaller by one (emulated mode)
+            // it may be overwritten by each version though
+            // so 3.10 may support emulating 3.8 or 3.9
+            return node.getVersion().getMinor() == clusterVersion.getMinor()
+                    || (node.getVersion().getMinor() - clusterVersion.getMinor() == 1);
+        }
     }
 
     @Override

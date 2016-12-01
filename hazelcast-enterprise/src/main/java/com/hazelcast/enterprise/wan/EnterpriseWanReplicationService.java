@@ -15,6 +15,7 @@ import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.LocalWanStats;
+import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.monitor.impl.LocalWanStatsImpl;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.serialization.Data;
@@ -500,6 +501,12 @@ public class EnterpriseWanReplicationService
             throw new UnsupportedOperationException("A WanReplicationConfig is already exists with the given name: "
                     + wanConfig.getName());
         }
+    }
+
+    @Override
+    public WanSyncState getWanSyncState() {
+        //Temporary until related PR is merged.
+        return null;
     }
 
     public boolean addWanReplicationConfigIfAbsent(WanReplicationConfig wanConfig) {

@@ -5,20 +5,17 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A marker event to initiate WAN sync
  */
 public class WanSyncEvent implements DataSerializable {
 
-    /**
-     * Marker to indicate if sync event is for all partitions.
-     */
-    public static final int ALL_PARTITIONS = -99;
-
     private WanSyncType type;
     private String name;
-    private int partitionId = ALL_PARTITIONS;
+    private Set<Integer> partitionSet = new HashSet<Integer>();
 
     private transient WanSyncOperation op;
 
@@ -59,25 +56,31 @@ public class WanSyncEvent implements DataSerializable {
         this.op = op;
     }
 
-    public int getPartitionId() {
-        return partitionId;
+    public Set<Integer> getPartitionSet() {
+        return partitionSet;
     }
 
-    public void setPartitionId(int partitionId) {
-        this.partitionId = partitionId;
+    public void setPartitionSet(Set<Integer> partitionSet) {
+        this.partitionSet = partitionSet;
     }
 
     @Override
     public void writeData(ObjectDataOutput out) throws IOException {
         out.writeInt(type.getType());
         out.writeUTF(name);
-        out.writeInt(partitionId);
+        out.writeInt(partitionSet.size());
+        for (Integer partitionId : partitionSet) {
+            out.writeInt(partitionId);
+        }
     }
 
     @Override
     public void readData(ObjectDataInput in) throws IOException {
         type = WanSyncType.getByType(in.readInt());
         name = in.readUTF();
-        partitionId = in.readInt();
+        int size = in.readInt();
+        for (int i = 0; i < size; i++) {
+            partitionSet.add(in.readInt());
+        }
     }
 }

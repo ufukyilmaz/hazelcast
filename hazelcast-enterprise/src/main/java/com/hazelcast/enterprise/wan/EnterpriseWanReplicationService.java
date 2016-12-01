@@ -299,6 +299,12 @@ public class EnterpriseWanReplicationService
     }
 
     @Override
+    public WanSyncState getWanSyncState() {
+        initializeSyncManagerIfNeeded();
+        return syncManager.getWanSyncState();
+    }
+
+    @Override
     public Operation getPostJoinOperation() {
         PostJoinWanOperation postJoinWanOperation = new PostJoinWanOperation();
         Map<String, WanReplicationConfig> wanConfigs = node.getConfig().getWanReplicationConfigs();

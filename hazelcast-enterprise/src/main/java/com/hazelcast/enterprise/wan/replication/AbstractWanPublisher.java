@@ -473,23 +473,38 @@ public abstract class AbstractWanPublisher
 
         private void sync(WanSyncEvent syncEvent) {
             WanSyncResult result = new WanSyncResult();
-            Set<Integer> syncedPartitions = result.getSyncedPartitions();
-            if (syncEvent.getPartitionId() == WanSyncEvent.ALL_PARTITIONS) {
-                for (IPartition partition : node.getPartitionService().getPartitions()) {
-                    if (!partition.isLocal()) {
-                        continue;
+            try {
+                Set<Integer> syncedPartitions = result.getSyncedPartitions();
+                if (syncEvent.getPartitionSet().isEmpty()) {
+                    for (IPartition partition : node.getPartitionService().getPartitions()) {
+                        syncPartition(syncEvent, syncedPartitions, partition);
                     }
-                    syncPartition(syncEvent, partition);
-                    syncedPartitions.add(partition.getPartitionId());
+                } else {
+                    for (Integer partitionIds : syncEvent.getPartitionSet()) {
+                        IPartition partition = node.getPartitionService().getPartition(partitionIds);
+                        syncPartition(syncEvent, syncedPartitions, partition);
+                    }
                 }
-            } else {
-                IPartition partition = node.getPartitionService().getPartition(syncEvent.getOp().getPartitionId());
-                if (partition.isLocal()) {
-                    syncPartition(syncEvent, partition);
-                    syncedPartitions.add(partition.getPartitionId());
-                }
+            } catch (Exception ex) {
+                logger.warning(ex);
+            } finally {
+                sendResponse(syncEvent, result);
             }
-            syncEvent.getOp().sendResponse(result);
+        }
+
+        private void syncPartition(WanSyncEvent syncEvent, Set<Integer> syncedPartitions, IPartition partition) {
+            if (partition.isLocal()) {
+                syncPartition(syncEvent, partition);
+                syncedPartitions.add(partition.getPartitionId());
+            }
+        }
+
+        private void sendResponse(WanSyncEvent syncEvent, WanSyncResult result) {
+            try {
+                syncEvent.getOp().sendResponse(result);
+            } catch (Exception ex) {
+                logger.warning(ex);
+            }
         }
 
         private void syncPartition(WanSyncEvent syncEvent, IPartition partition) {

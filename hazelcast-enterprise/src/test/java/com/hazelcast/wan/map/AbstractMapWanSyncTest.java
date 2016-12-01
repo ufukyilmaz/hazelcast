@@ -6,14 +6,18 @@ import com.hazelcast.config.WanPublisherConfig;
 import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
+import com.hazelcast.enterprise.wan.sync.SyncFailedException;
 import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.spi.properties.GroupProperty;
+import com.hazelcast.wan.WanReplicationService;
+import com.hazelcast.wan.WanSyncStatus;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
 
@@ -210,6 +214,44 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
         String result = communicator.syncMapOverWAN("newWRConfigName", "groupName", "mapName");
         assertEquals("{\"status\":\"fail\",\"message\":\"WAN Replication Config doesn't exist with WAN configuration name newWRConfigName " +
                 "and publisher target group name groupName\"}", result);
+    }
+
+    @Test(expected = SyncFailedException.class)
+    public void sendMultipleSyncRequests() throws IOException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
+        getWanReplicationService(clusterA[0]).syncMap("atob", configB.getGroupConfig().getName(), "map");
+    }
+
+    @Test
+    public void sendMultipleSyncRequestsWithREST() throws IOException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
+        communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
+        String result = communicator.syncMapsOverWAN("atob", configB.getGroupConfig().getName());
+        assertEquals("{\"status\":\"fail\",\"message\":\"Another sync request is already in progress.\"}", result);
+    }
+
+    @Test
+    public void checkWanSyncState() throws IOException {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        createDataIn(clusterA, "map",0, 1000);
+        final EnterpriseWanReplicationService service = getWanReplicationService(clusterA[0]);
+        service.syncMap("atob", configB.getGroupConfig().getName(), "map");
+
+        assertEquals(WanSyncStatus.IN_PROGRESS, service.getWanSyncState().getStatus());
+
+        startClusterB();
+        assertKeysIn(clusterB, "map", 0, 1000);
+        assertEqualsEventually(new Callable<WanSyncStatus>() {
+            @Override
+            public WanSyncStatus call() throws Exception {
+                return service.getWanSyncState().getStatus();
+            }
+        }, WanSyncStatus.READY);
     }
 
     private void startClusterWithUniqueConfigObjects(HazelcastInstance[] cluster, Config config) {

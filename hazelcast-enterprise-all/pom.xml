@@ -37,6 +37,107 @@
                                     <include>com.hazelcast.marketing:hazelcast-license-extractor</include>
                                 </includes>
                             </artifactSet>
+                            <transformers>
+                                <transformer
+                                        implementation="com.hazelcast.buildutils.HazelcastManifestTransformer">
+                                    <mainClass>com.hazelcast.console.ConsoleApp</mainClass>
+                                    <overrideInstructions>
+                                        <Import-Package>
+                                            org.hibernate.*;resolution:=optional,
+                                            org.springframework.*;resolution:=optional,
+                                            javax.servlet.*;resolution:=optional,
+                                            javax.security.*;resolution:=optional,
+                                            org.slf4j.*;resolution:=optional,
+                                            org.apache.log4j.*;resolution:=optional,
+                                            org.apache.logging.log4j;resolution:=optional,
+                                            org.apache.logging.log4j.*;resolution:=optional,
+                                            org.apache.commons.logging;resolution:=optional,
+                                            javax.script.*;resolution:=optional,
+                                            org.jclouds.*;resolution:=optional,
+                                            com.google.*;resolution:=optional,
+                                            sun.nio.ch;resolution:=optional,
+                                            sun.misc;resolution:=optional,
+                                            org.codehaus.groovy.jsr223;resolution:=optional,
+                                            org.codehaus.groovy.runtime;resolution:=optional,
+                                            org.springframework.beans;resolution:=optional,
+                                            javax.swing.table;resolution:=optional,
+                                            org.apache.http;resolution:=optional,
+                                            org.apache.http.util;resolution:=optional,
+                                            org.apache.http.impl.client;resolution:=optional,
+                                            org.apache.http.client.methods;resolution:=optional,
+                                            javax.swing.table;resolution:=optional,
+                                            org.apache.http.util;resolution:=optional,
+                                            net.spy.memcached.internal;resolution:=optional,
+                                            org.ops4j.pax.exam;resolution:=optional,
+                                            javax.swing.text;resolution:=optional,
+                                            javax.swing.border;resolution:=optional,
+                                            javax.swing.tree;resolution:=optional,
+                                            javax.swing.event;resolution:=optional,
+                                            org.reflections;resolution:=optional,
+                                            org.reflections.util;resolution:=optional,
+                                            org.reflections.scanners;resolution:=optional,
+                                            groovy.util;resolution:=optional,
+                                            org.codehaus.groovy.runtime.metaclass;resolution:=optional,
+                                            net.spy.memcached;resolution:=optional,
+                                            !org.powermock.api.mockito,
+                                            !org.powermock.core.classloader.annotations,
+                                            !org.mockito.asm.signature,
+                                            !org.ops4j.pax.exam.junit,
+                                            !org.openjdk.jmh.util,
+                                            !org.openjdk.jmh.results,
+                                            !org.openjdk.jmh.runner,
+                                            !org.openjdk.jmh.infra,
+                                            !org.openjdk.jmh.annotations,
+                                            !org.openjdk.jmh.runner.options,
+                                            !org.jsr107.tck.support,
+                                            !org.jsr107.tck.processor,
+                                            !org.jsr107.tck,
+                                            !org.jsr107.tck.expiry,
+                                            !org.jsr107.tck.management,
+                                            !org.jsr107.tck.spi,
+                                            !org.jsr107.tck.integration,
+                                            !org.jsr107.tck.event,
+                                            !org.eclipse.jetty.server,
+                                            !org.eclipse.jetty.webapp,
+                                            !org.eclipse.jetty.server.nio,
+                                            !com.atomikos.icatch.jta,
+                                            !com.atomikos.datasource.xa,
+                                            !com.sun.jdmk.comm,
+                                            !com.eclipsesource.json,
+                                            !org.ops4j.pax.exam.options,
+                                            !org.powermock.modules.junit4,
+                                            !org.apache.tools.ant,
+                                            !org.apache.tools.ant.types,
+                                            !org.ops4j.pax.exam.util,
+                                            !org.ops4j.pax.exam.spi.reactors,
+                                        </Import-Package>
+                                    </overrideInstructions>
+
+                                    <!-- fix OSGi metadata -->
+                                    <manifestEntries>
+                                        <CacheEntryImpl>com.hazelcast.cache.impl.CacheEntry</CacheEntryImpl>
+                                        <CacheImpl>com.hazelcast.cache.ICache</CacheImpl>
+                                        <CacheManagerImpl>com.hazelcast.cache.HazelcastCacheManager</CacheManagerImpl>
+                                        <Bundle-License>http://www.hazelcast.com/licenses/LICENSE.txt</Bundle-License>
+                                        <Bundle-SymbolicName>com.hazelcast.enterprise-all</Bundle-SymbolicName>
+                                        <Specification-Title>Hazelcast Enterprise(All)</Specification-Title>
+                                        <Implementation-Vendor-Id>com.hazelcast</Implementation-Vendor-Id>
+                                        <Bundle-DocURL>http://www.hazelcast.com/</Bundle-DocURL>
+                                        <Bundle-Name>Hazelcast Enterprise(All)</Bundle-Name>
+                                        <Bundle-Activator>com.hazelcast.osgi.impl.Activator</Bundle-Activator>
+                                        <Implementation-Title>Hazelcast Enterprise(All)</Implementation-Title>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Specification-Vendor>Hazelcast, Inc.</Specification-Vendor>
+                                        <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+                                        <Bundle-Vendor>Hazelcast, Inc.</Bundle-Vendor>
+                                        <Implementation-Vendor>Hazelcast, Inc.</Implementation-Vendor>
+                                        <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
+                                        <Specification-Version>${project.version}</Specification-Version>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -48,6 +149,27 @@
                                 </filter>
                             </filters>
                         </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.hazelcast</groupId>
+                        <artifactId>hazelcast-build-utils</artifactId>
+                        <version>[3.7,)</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>parse-version</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

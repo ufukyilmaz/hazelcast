@@ -99,6 +99,7 @@
                                     org.apache.logging.log4j;resolution:=optional,
                                     org.apache.logging.log4j.*;resolution:=optional,
                                     org.slf4j;resolution:=optional,
+                                    sun.nio.ch;resolution:=optional,
                                     *
                                 </Import-Package>
                                 <Fragment-Host>com.hazelcast.enterprise</Fragment-Host>

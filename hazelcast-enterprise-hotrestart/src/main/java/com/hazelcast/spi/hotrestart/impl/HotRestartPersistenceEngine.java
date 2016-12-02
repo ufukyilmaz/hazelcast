@@ -130,7 +130,7 @@ public final class HotRestartPersistenceEngine {
         }
         chunk.close();
         if (chunk.size() == 0) {
-            gcHelper.deleteChunkFile((Chunk) chunk);
+            gcHelper.deleteChunkFile(chunk.toStableChunk());
         }
     }
 

@@ -17,7 +17,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import static junit.framework.TestCase.fail;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -31,7 +30,6 @@ public class ChunkExceptionOnCloseTest {
         final WriteThroughTombChunk tombChunk = mock(WriteThroughTombChunk.class);
 
         doReturn(new CloseFailingActiveChunk()).when(helper).newActiveValChunk();
-        doNothing().when(helper).deleteChunkFile(tombChunk);
         doReturn(tombChunk).when(helper).newActiveTombChunk();
 
         final HotRestartPersistenceEngine engine =

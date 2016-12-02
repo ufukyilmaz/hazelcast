@@ -13,6 +13,7 @@ import com.hazelcast.enterprise.wan.operation.EWRPutOperation;
 import com.hazelcast.enterprise.wan.operation.EWRRemoveBackupOperation;
 import com.hazelcast.enterprise.wan.sync.GetMapPartitionDataOperation;
 import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
+import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.enterprise.wan.sync.WanSyncResult;
 import com.hazelcast.enterprise.wan.sync.WanSyncType;
 import com.hazelcast.instance.Node;
@@ -63,6 +64,7 @@ public abstract class AbstractWanPublisher
     protected String localGroupName;
     protected String wanReplicationName;
     protected Node node;
+    protected WanSyncManager syncManager;
     protected int queueCapacity;
     protected WANQueueFullBehavior queueFullBehavior;
 
@@ -98,8 +100,11 @@ public abstract class AbstractWanPublisher
         this.eventQueueContainer = new PublisherQueueContainer(node);
         this.stagingQueue = new ArrayBlockingQueue<WanReplicationEvent>(getStagingQueueSize());
         this.queueFullBehavior = publisherConfig.getQueueFullBehavior();
+        EnterpriseWanReplicationService wanReplicationService
+                = (EnterpriseWanReplicationService) node.nodeEngine.getWanReplicationService();
+        this.syncManager = wanReplicationService.getSyncManager();
 
-        node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller());
+        node.nodeEngine.getExecutionService().execute("hz:wan:poller", new QueuePoller(syncManager));
     }
 
     public int getStagingQueueSize() {
@@ -414,6 +419,11 @@ public abstract class AbstractWanPublisher
         private static final int MAX_SLEEP_MS = 2000;
         private static final int SLEEP_INTERVAL_MS = 200;
         private int emptyIterationCount;
+        private WanSyncManager syncManager;
+
+        public QueuePoller(WanSyncManager syncManager) {
+            this.syncManager = syncManager;
+        }
 
         @Override
         public void run() {
@@ -472,6 +482,7 @@ public abstract class AbstractWanPublisher
         }
 
         private void sync(WanSyncEvent syncEvent) {
+            syncManager.resetSyncedPartitionCount();
             WanSyncResult result = new WanSyncResult();
             try {
                 Set<Integer> syncedPartitions = result.getSyncedPartitions();
@@ -496,6 +507,7 @@ public abstract class AbstractWanPublisher
             if (partition.isLocal()) {
                 syncPartition(syncEvent, partition);
                 syncedPartitions.add(partition.getPartitionId());
+                syncManager.incrementSyncedPartitionCount();
             }
         }
 

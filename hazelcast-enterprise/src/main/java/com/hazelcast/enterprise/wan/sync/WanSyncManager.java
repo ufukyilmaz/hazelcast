@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -30,6 +31,8 @@ public class WanSyncManager {
     private static final int RETRY_INTERVAL_MILLIS = 5000;
     private static final AtomicReferenceFieldUpdater<WanSyncManager, WanSyncStatus> SYNC_STATUS
             = newUpdater(WanSyncManager.class, WanSyncStatus.class, "syncStatus");
+    private static final AtomicIntegerFieldUpdater<WanSyncManager> SYNCED_PARTITION_COUNT
+            = AtomicIntegerFieldUpdater.newUpdater(WanSyncManager.class, "syncedPartitionCount");
 
     private final IPartitionService partitionService;
     private final ClusterService clusterService;
@@ -38,9 +41,12 @@ public class WanSyncManager {
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
+    //Below fields are only accessed through updatet
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
+    private volatile int syncedPartitionCount;
 
     private volatile boolean running = true;
+
 
     public WanSyncManager(NodeEngine nodeEngine) {
         partitionService = nodeEngine.getPartitionService();
@@ -75,7 +81,7 @@ public class WanSyncManager {
     }
 
     public WanSyncState getWanSyncState() {
-        return new WanSyncStateImpl(SYNC_STATUS.get(this));
+        return new WanSyncStateImpl(SYNC_STATUS.get(this), SYNCED_PARTITION_COUNT.get(this));
     }
 
     public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
@@ -117,6 +123,14 @@ public class WanSyncManager {
         } finally {
             SYNC_STATUS.set(this, WanSyncStatus.READY);
         }
+    }
+
+    public void incrementSyncedPartitionCount() {
+        SYNCED_PARTITION_COUNT.incrementAndGet(this);
+    }
+
+    public void resetSyncedPartitionCount() {
+        SYNCED_PARTITION_COUNT.set(this, 0);
     }
 
     private void addResultOfOps(List<Future<WanSyncResult>> futures, Set<Integer> partitionIds) {

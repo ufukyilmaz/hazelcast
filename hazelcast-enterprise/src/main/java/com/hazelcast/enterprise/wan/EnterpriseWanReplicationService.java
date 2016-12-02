@@ -300,8 +300,7 @@ public class EnterpriseWanReplicationService
 
     @Override
     public WanSyncState getWanSyncState() {
-        initializeSyncManagerIfNeeded();
-        return syncManager.getWanSyncState();
+        return getSyncManager().getWanSyncState();
     }
 
     @Override
@@ -481,15 +480,13 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
-        initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncRequest(wanReplicationName, targetGroupName,
+        getSyncManager().initiateSyncRequest(wanReplicationName, targetGroupName,
                 new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName));
     }
 
     @Override
     public void syncAllMaps(String wanReplicationName, String targetGroupName) {
-        initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncRequest(wanReplicationName, targetGroupName,
+        getSyncManager().initiateSyncRequest(wanReplicationName, targetGroupName,
                 new WanSyncEvent(WanSyncType.ALL_MAPS));
     }
 
@@ -509,12 +506,6 @@ public class EnterpriseWanReplicationService
         }
     }
 
-    @Override
-    public WanSyncState getWanSyncState() {
-        //Temporary until related PR is merged.
-        return null;
-    }
-
     public boolean addWanReplicationConfigIfAbsent(WanReplicationConfig wanConfig) {
         WanReplicationConfig wanReplicationConfig = node.getConfig().getWanReplicationConfig(wanConfig.getName());
         if (wanReplicationConfig == null) {
@@ -531,8 +522,12 @@ public class EnterpriseWanReplicationService
     }
 
     public void populateSyncEventOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+        getSyncManager().populateSyncRequestOnMembers(wanReplicationName, targetGroupName, syncEvent);
+    }
+
+    public WanSyncManager getSyncManager() {
         initializeSyncManagerIfNeeded();
-        syncManager.populateSyncRequestOnMembers(wanReplicationName, targetGroupName, syncEvent);
+        return syncManager;
     }
 
     private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {

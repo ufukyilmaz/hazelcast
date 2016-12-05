@@ -1,47 +1,48 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
 import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
-import com.hazelcast.internal.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
+import com.hazelcast.internal.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.nio.Bits;
+
+import java.util.UUID;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
+import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
+import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
 
-public class HiDensityNativeMemoryNearCacheRecord
-        extends HiDensityNearCacheRecord {
+@SuppressWarnings("checkstyle:methodcount")
+public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheRecord {
 
     /**
      * Size of a Hi-Density Near Cache record.
      */
     public static final int SIZE;
     /**
-     * Size of a Hi-Density Near Cache record's header.
-     */
-    public static final int HEADER_SIZE = 8;
-    /**
      * Location of the value pointer in a Hi-Density Near Cache record.
      */
     public static final int VALUE_OFFSET;
 
     private static final int CREATION_TIME_OFFSET = 0;
-    private static final int ACCESS_TIME_OFFSET = Bits.LONG_SIZE_IN_BYTES;
+    private static final int ACCESS_TIME_OFFSET = LONG_SIZE_IN_BYTES;
     // "ACCESS_HIT_OFFSET" and "ACCESS_TIME_OFFSET` is the same for NearCacheRecord
     // since these fields (access hit count and access time) are not used at same time
     // (their usage scenario is based on eviction type (LRU or LFU))
     private static final int ACCESS_HIT_OFFSET = ACCESS_TIME_OFFSET;
-    private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + Bits.INT_SIZE_IN_BYTES;
+    private static final int TTL_OFFSET = ACCESS_HIT_OFFSET + INT_SIZE_IN_BYTES;
+    private static final int INVALIDATION_SEQUENCE_OFFSET = TTL_OFFSET + INT_SIZE_IN_BYTES;
+    private static final int UUID_MOST_SIG_BITS_OFFSET = INVALIDATION_SEQUENCE_OFFSET + LONG_SIZE_IN_BYTES;
+    private static final int UUID_LEAST_SIG_BITS_OFFSET = UUID_MOST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
 
     static {
-        VALUE_OFFSET = TTL_OFFSET + Bits.INT_SIZE_IN_BYTES;
-        SIZE = VALUE_OFFSET + HEADER_SIZE;
+        VALUE_OFFSET = UUID_LEAST_SIG_BITS_OFFSET + LONG_SIZE_IN_BYTES;
+        SIZE = VALUE_OFFSET + LONG_SIZE_IN_BYTES;
     }
 
     private HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor;
 
-    public HiDensityNativeMemoryNearCacheRecord(
-            HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> nearCacheRecordAccessor) {
-        this.nearCacheRecordAccessor = nearCacheRecordAccessor;
+    public HiDensityNativeMemoryNearCacheRecord(HiDensityRecordAccessor<HiDensityNativeMemoryNearCacheRecord> accessor) {
+        this.nearCacheRecordAccessor = accessor;
     }
 
     @Override
@@ -133,10 +134,7 @@ public class HiDensityNativeMemoryNearCacheRecord
 
     @Override
     public void clear() {
-        writeLong(CREATION_TIME_OFFSET, 0L);
-        setAccessTimeDiff(0);
-        setTtlMillis(0);
-        setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+        zero();
     }
 
     @Override
@@ -206,6 +204,32 @@ public class HiDensityNativeMemoryNearCacheRecord
     @Override
     public long getSequence() {
         return 0;
+    }
+
+    @Override
+    public long getInvalidationSequence() {
+        return readLong(INVALIDATION_SEQUENCE_OFFSET);
+    }
+
+    @Override
+    public void setInvalidationSequence(long sequence) {
+        writeLong(INVALIDATION_SEQUENCE_OFFSET, sequence);
+    }
+
+    @Override
+    public void setUuid(UUID uuid) {
+        writeLong(UUID_MOST_SIG_BITS_OFFSET, uuid == null ? 0 : uuid.getMostSignificantBits());
+        writeLong(UUID_LEAST_SIG_BITS_OFFSET, uuid == null ? 0 : uuid.getLeastSignificantBits());
+    }
+
+    @Override
+    public boolean hasSameUuid(UUID uuid) {
+        if (uuid == null) {
+            return false;
+        }
+
+        return readLong(UUID_MOST_SIG_BITS_OFFSET) == uuid.getMostSignificantBits()
+                && readLong(UUID_LEAST_SIG_BITS_OFFSET) == uuid.getLeastSignificantBits();
     }
 
     @Override

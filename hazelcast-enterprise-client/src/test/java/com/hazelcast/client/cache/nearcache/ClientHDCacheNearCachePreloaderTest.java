@@ -2,7 +2,6 @@ package com.hazelcast.client.cache.nearcache;
 
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
-import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.SampleLicense;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -17,9 +16,9 @@ public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePre
     @Parameters(name = "format:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
-                {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+//                {InMemoryFormat.BINARY},
+//                {InMemoryFormat.OBJECT},
+//                {InMemoryFormat.NATIVE},
         });
     }
 

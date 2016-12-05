@@ -12,7 +12,7 @@ import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
-import com.hazelcast.map.impl.nearcache.invalidation.NearCacheInvalidator;
+import com.hazelcast.map.impl.nearcache.invalidation.Invalidator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -65,7 +65,7 @@ abstract class AbstractHDOperationTest {
 
     private RecordStore recordStore;
     private HDEvictorImpl hdEvictor;
-    private NearCacheInvalidator nearCacheInvalidator;
+    private Invalidator nearCacheInvalidator;
 
     private NodeEngine nodeEngine;
 
@@ -100,10 +100,10 @@ abstract class AbstractHDOperationTest {
         MapEventPublisher mapEventPublisher = mock(MapEventPublisher.class);
         when(mapEventPublisher.hasEventListener(eq(getMapName()))).thenReturn(false);
 
-        nearCacheInvalidator = mock(NearCacheInvalidator.class);
+        nearCacheInvalidator = mock(Invalidator.class);
 
         EnterpriseMapNearCacheManager nearCacheManager = mock(EnterpriseMapNearCacheManager.class, RETURNS_DEEP_STUBS);
-        when(nearCacheManager.getNearCacheInvalidator()).thenReturn(nearCacheInvalidator);
+        when(nearCacheManager.getInvalidator()).thenReturn(nearCacheInvalidator);
 
         MapServiceContext mapServiceContext = mock(MapServiceContext.class);
         when(mapServiceContext.getPartitionContainer(anyInt())).thenReturn(partitionContainer);
@@ -269,13 +269,13 @@ abstract class AbstractHDOperationTest {
     }
 
     /**
-     * Verifies the {@link NearCacheInvalidator} mock after a {@link HDPutAllOperation#afterRun()} call.
+     * Verifies the {@link Invalidator} mock after a {@link HDPutAllOperation#afterRun()} call.
      */
     @SuppressWarnings("unchecked")
     void verifyNearCacheInvalidatorAfterOperation() {
         final int itemCount = getItemCount();
         ArgumentCaptor<Data> keysCaptor = ArgumentCaptor.forClass((Class) Data.class);
-        verify(nearCacheInvalidator, times(itemCount)).invalidate(keysCaptor.capture(), eq(getMapName()), anyString());
+        verify(nearCacheInvalidator, times(itemCount)).invalidateKey(keysCaptor.capture(), eq(getMapName()), anyString());
         verifyNoMoreInteractions(nearCacheInvalidator);
 
         assertEquals("NearCacheInvalidator should have received all keys", itemCount, keysCaptor.getAllValues().size());

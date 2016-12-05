@@ -10,13 +10,15 @@ import com.hazelcast.spi.ExecutionService;
  */
 public class HiDensityNearCacheManager extends DefaultNearCacheManager {
 
-    public HiDensityNearCacheManager(EnterpriseSerializationService ss, ExecutionService es, ClassLoader classLoader) {
+    public HiDensityNearCacheManager(EnterpriseSerializationService ss, ExecutionService es,
+                                     ClassLoader classLoader) {
         super(ss, es, classLoader);
     }
 
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
-        return new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
+        HiDensityNearCache<K, V> nearCache = new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
                 ((EnterpriseSerializationService) serializationService), executionService, classLoader);
+        return nearCache;
     }
 }

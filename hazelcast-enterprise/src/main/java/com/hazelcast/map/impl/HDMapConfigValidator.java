@@ -1,5 +1,6 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.config.EvictionConfig;
 import com.hazelcast.config.HotRestartConfig;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
@@ -33,6 +34,9 @@ public final class HDMapConfigValidator {
     private static final EnumSet<MaxSizeConfig.MaxSizePolicy> UNSUPPORTED_HD_MAP_MAXSIZE_POLICIES
             = EnumSet.of(FREE_HEAP_PERCENTAGE, FREE_HEAP_SIZE, USED_HEAP_PERCENTAGE, USED_HEAP_SIZE);
 
+    private static final EnumSet<EvictionConfig.MaxSizePolicy> SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES
+            = EnumSet.of(EvictionConfig.MaxSizePolicy.ENTRY_COUNT);
+
     private static final ILogger LOGGER = Logger.getLogger(MapConfig.class);
     private final int hotRestartMinFreeNativeMemoryPercentage;
 
@@ -48,6 +52,12 @@ public final class HDMapConfigValidator {
     public void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
         final InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE != inMemoryFormat) {
+            EvictionConfig.MaxSizePolicy maximumSizePolicy = nearCacheConfig.getEvictionConfig().getMaximumSizePolicy();
+            if (!SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES.contains(maximumSizePolicy)) {
+                throw new IllegalArgumentException(format("Near cache maximum size policy %s cannot be used with %s storage."
+                        + " Supported maximum size policies are: %s",
+                        maximumSizePolicy, inMemoryFormat, SUPPORTED_ON_HEAP_NEAR_CACHE_MAXSIZE_POLICIES));
+            }
             return;
         }
 

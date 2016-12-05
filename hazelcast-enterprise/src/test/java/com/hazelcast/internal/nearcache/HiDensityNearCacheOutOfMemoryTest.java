@@ -69,7 +69,8 @@ public class HiDensityNearCacheOutOfMemoryTest extends CommonNearCacheTestSuppor
         return nearCacheManager.getOrCreateNearCache(name, nearCacheConfig);
     }
 
-    @Test @Ignore
+    @Test
+    @Ignore
     public void putToNearCacheShouldNotGetOOMEIfNativeMemoryIsFullAndThereIsNoRecordToEvict() {
         NearCache<Integer, Object> nearCache1 = createNearCache("Near-Cache-1");
         NearCache<Integer, Object> nearCache2 = createNearCache("Near-Cache-2");

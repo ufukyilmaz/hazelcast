@@ -58,6 +58,7 @@ public class HDEvictAllOperation extends HDMapOperation implements BackupAwareOp
     @Override
     public void afterRun() throws Exception {
         super.afterRun();
+        invalidateAllKeysInNearCaches();
         hintMapEvent();
     }
 

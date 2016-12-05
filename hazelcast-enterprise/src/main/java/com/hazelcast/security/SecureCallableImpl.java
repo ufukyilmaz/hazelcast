@@ -37,6 +37,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import com.hazelcast.quorum.QuorumService;
 import com.hazelcast.ringbuffer.Ringbuffer;
+import com.hazelcast.scheduledexecutor.IScheduledExecutorService;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.AtomicLongPermission;
 import com.hazelcast.security.permission.AtomicReferencePermission;
@@ -339,6 +340,11 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         public CardinalityEstimator getCardinalityEstimator(String name) {
             checkPermission(new CardinalityEstimatorPermission(name, ActionConstants.ACTION_CREATE));
             return getProxy(new CardinalityEstimatorHandler(instance.getCardinalityEstimator(name)));
+        }
+
+        @Override
+        public IScheduledExecutorService getScheduledExecutorService(String s) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

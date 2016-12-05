@@ -228,7 +228,7 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     }
 
     @Override
-    protected HiDensityNativeMemoryNearCacheRecord getRecord(K key) {
+    public HiDensityNativeMemoryNearCacheRecord getRecord(K key) {
         return records.get(toData(key));
     }
 

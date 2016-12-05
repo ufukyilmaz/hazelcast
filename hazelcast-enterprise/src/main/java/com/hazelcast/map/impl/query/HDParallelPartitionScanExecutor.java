@@ -23,7 +23,7 @@ public class HDParallelPartitionScanExecutor extends ParallelPartitionScanExecut
 
     public HDParallelPartitionScanExecutor(
             PartitionScanRunner partitionScanRunner, OperationService operationService) {
-        super(partitionScanRunner, null);
+        super(partitionScanRunner, null, -1);
         this.operationService = operationService;
     }
 

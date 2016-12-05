@@ -15,6 +15,7 @@
  */
 package com.hazelcast.client.cache.nearcache;
 
+import com.hazelcast.client.cache.impl.nearcache.ClientNearCacheInvalidationTest;
 import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.Config;
@@ -39,8 +40,8 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.createFolder;
-import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.getBaseDir;
+import static com.hazelcast.cache.hotrestart.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.enterprise.SampleLicense.ENTERPRISE_HD_LICENSE;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 

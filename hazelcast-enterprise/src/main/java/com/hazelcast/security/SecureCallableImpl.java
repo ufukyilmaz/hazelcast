@@ -8,7 +8,6 @@ import com.hazelcast.core.ClientService;
 import com.hazelcast.core.Cluster;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.DistributedObjectListener;
-import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.core.Endpoint;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
@@ -29,6 +28,7 @@ import com.hazelcast.core.LifecycleService;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.core.PartitionService;
 import com.hazelcast.core.ReplicatedMap;
+import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.logging.LoggingService;
 import com.hazelcast.mapreduce.JobTracker;
@@ -52,6 +52,7 @@ import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.QueuePermission;
 import com.hazelcast.security.permission.ReplicatedMapPermission;
+import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
@@ -343,8 +344,9 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         }
 
         @Override
-        public IScheduledExecutorService getScheduledExecutorService(String s) {
-            throw new UnsupportedOperationException();
+        public IScheduledExecutorService getScheduledExecutorService(String name) {
+            checkPermission(new ScheduledExecutorPermission(name, ActionConstants.ACTION_CREATE));
+            return getProxy(new ScheduledExecutorHandler(instance.getScheduledExecutorService(name)));
         }
 
         @Override
@@ -855,6 +857,24 @@ public final class SecureCallableImpl<V> implements SecureCallable<V>, DataSeria
         @Override
         public String getStructureName() {
             return "cardinalityEstimator";
+        }
+    }
+
+    private class ScheduledExecutorHandler extends SecureInvocationHandler {
+        ScheduledExecutorHandler(DistributedObject distributedObject) {
+            super(distributedObject);
+        }
+        @Override
+        public Permission getPermission(Method method, Object[] args) {
+            final String action = getAction(method.getName());
+            if (action == null) {
+                return null;
+            }
+            return new ScheduledExecutorPermission(distributedObject.getName(), action);
+        }
+        @Override
+        public String getStructureName() {
+            return "scheduledExecutor";
         }
     }
 }

@@ -14,6 +14,7 @@ import com.hazelcast.security.permission.LockPermission;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.security.permission.MultiMapPermission;
 import com.hazelcast.security.permission.QueuePermission;
+import com.hazelcast.security.permission.ScheduledExecutorPermission;
 import com.hazelcast.security.permission.SemaphorePermission;
 import com.hazelcast.security.permission.SetPermission;
 import com.hazelcast.security.permission.TopicPermission;
@@ -65,6 +66,8 @@ public final class SecurityUtil {
                 return new DurableExecutorServicePermission(permissionConfig.getName(), actions);
             case CARDINALITY_ESTIMATOR:
                 return new CardinalityEstimatorPermission(permissionConfig.getName(), actions);
+            case SCHEDULED_EXECUTOR:
+                return new ScheduledExecutorPermission(permissionConfig.getName(), actions);
             case ALL:
                 return new AllPermissions();
             default:

@@ -464,12 +464,6 @@ public class EnterpriseWanReplicationService
         syncManager.initiateSyncMapRequest(wanReplicationName, targetGroupName, mapName);
     }
 
-    @Override
-    public void clearQueues(String wanReplicationName, String targetGroupName) {
-        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
-        endpoint.clearQueues();
-    }
-
     public void publishSyncEvent(String wanReplicationName, String targetGroupName,
                                  WanSyncEvent syncEvent) {
         WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);

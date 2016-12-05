@@ -377,9 +377,7 @@ public abstract class AbstractWanPublisher
     }
 
     private boolean isThrowExceptionBehavior(WANQueueFullBehavior queueFullBehavior) {
-        return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior
-                || (WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE == queueFullBehavior
-                && !paused);
+        return WANQueueFullBehavior.THROW_EXCEPTION == queueFullBehavior;
     }
 
     public String getTargetGroupName() {

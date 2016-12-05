@@ -3,6 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.enterprise.wan.replication.WanBatchReplication;
+import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.After;
@@ -16,6 +17,7 @@ import java.io.File;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
+
 
 /**
  * WAN replication tests for hot-restart enabled maps
@@ -50,8 +52,15 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
     @Test
     public void basicSyncTest() {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        configA.getMapConfig("default").getHotRestartConfig().setEnabled(true).setFsync(false);
-        startClusterA();
+
+        configA.getMapConfig("default")
+                .getHotRestartConfig()
+                .setEnabled(true)
+                .setFsync(false);
+        configA.getHotRestartPersistenceConfig()
+                .setEnabled(true);
+        startClusterAWithDifferentHotRestartConfigs();
+
         startClusterB();
 
         createDataIn(clusterA, "map", 0, 1000);
@@ -77,5 +86,13 @@ public class MapWRHotRestartEnabledTest extends MapWanReplicationTestSupport {
     @Override
     public InMemoryFormat getMemoryFormat() {
         return InMemoryFormat.NATIVE;
+    }
+
+    private void startClusterAWithDifferentHotRestartConfigs() {
+        for (int i = 0; i < clusterA.length; i++) {
+            configA.setInstanceName(configA.getInstanceName() + i);
+            configA.getHotRestartPersistenceConfig().setBaseDir(new File(folder, configA.getInstanceName()));
+            clusterA[i] = HazelcastInstanceFactory.newHazelcastInstance(configA);
+        }
     }
 }

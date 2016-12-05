@@ -76,34 +76,6 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         createDataIn(basicCluster, "map", 0, 1000);
     }
 
-    @Test(expected = WANReplicationQueueFullException.class)
-    public void testExceptionOnQueueOverrunIfReplicationActive() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
-        targetClusterConfig.setQueueCapacity(10);
-        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
-        initCluster(basicCluster, configA, factory);
-        createDataIn(basicCluster, "map", 0, 1000);
-    }
-
-    @Test
-    public void testExceptionOnQueueOverrunIfReplicationPassive() throws ExecutionException, InterruptedException {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
-        targetClusterConfig.setQueueCapacity(10);
-        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.THROW_EXCEPTION_ONLY_IF_REPLICATION_ACTIVE);
-        initCluster(basicCluster, configA, factory);
-        for (HazelcastInstance instance : basicCluster) {
-            ChangeWanStateOperation changeWanStateOperation = new ChangeWanStateOperation("atob",
-                    configB.getGroupConfig().getName(), false);
-            getOperationService(instance).createInvocationBuilder(EnterpriseWanReplicationService.SERVICE_NAME,
-                    changeWanStateOperation, getNode(instance).address).invoke().get();
-        }
-        createDataIn(basicCluster, "map", 0, 1000);
-    }
-
     @Test
     public void testPublisherProperties() {
         Config propTestConfig = getConfig();
@@ -119,32 +91,6 @@ public class MapWanReplicationQuickTest extends MapWanReplicationTestSupport {
         properties.put(WanReplicationProperties.RESPONSE_TIMEOUT_MILLIS.key(), "500");
         initCluster(basicCluster, propTestConfig, factory);
         createDataIn(basicCluster, "map", 0, 1000);
-    }
-
-    @Test
-    public void testClearQueues() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        WanReplicationConfig wanConfig = configA.getWanReplicationConfig("atob");
-        WanPublisherConfig targetClusterConfig = wanConfig.getWanPublisherConfigs().get(0);
-        targetClusterConfig.setQueueCapacity(1000);
-        targetClusterConfig.setQueueFullBehavior(WANQueueFullBehavior.DISCARD_AFTER_MUTATION);
-        initCluster(singleNodeA, configA, factory);
-        createDataIn(singleNodeA, "map", 0, 1000);
-        EnterpriseWanReplicationService wanReplicationService = getWanReplicationService(singleNodeA[0]);
-        final WanReplicationEndpoint endpoint = wanReplicationService.getEndpoint("atob", configB.getGroupConfig().getName());
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assert endpoint.getStats().getOutboundQueueSize() == 1000;
-            }
-        });
-        wanReplicationService.clearQueues("atob", configB.getGroupConfig().getName());
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run() throws Exception {
-                assert endpoint.getStats().getOutboundQueueSize() == 0;
-            }
-        });
     }
 
     @Override

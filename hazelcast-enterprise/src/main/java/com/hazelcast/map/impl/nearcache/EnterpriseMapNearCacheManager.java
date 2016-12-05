@@ -7,7 +7,6 @@ import com.hazelcast.map.impl.MapServiceContext;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.map.impl.nearcache.StaleReadPreventerNearCacheWrapper.asStaleReadPreventerNearCache;
 
 /**
  * Provides Near Cache specific functionality.
@@ -21,10 +20,8 @@ public class EnterpriseMapNearCacheManager extends MapNearCacheManager {
     @Override
     protected <K, V> NearCache<K, V> createNearCache(String name, NearCacheConfig nearCacheConfig) {
         if (NATIVE == nearCacheConfig.getInMemoryFormat()) {
-            HiDensityNearCache<K, V> nearCache = new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
-                    ((EnterpriseSerializationService) serializationService), executionService, classLoader);
-
-            return asStaleReadPreventerNearCache(nearCache, partitionCount);
+            return new HiDensityNearCache<K, V>(name, nearCacheConfig, this,
+                    (EnterpriseSerializationService) serializationService, executionService, classLoader);
         }
 
         return super.createNearCache(name, nearCacheConfig);

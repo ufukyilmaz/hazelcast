@@ -5,6 +5,7 @@ import com.hazelcast.config.NearCachePreloaderConfig;
 import com.hazelcast.internal.adapter.DataStructureAdapter;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecordStore;
+import com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector;
 import com.hazelcast.internal.nearcache.impl.preloader.NearCachePreloader;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.PoolingMemoryManager;
@@ -17,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
 import static java.lang.Runtime.getRuntime;
 
 /**
@@ -37,9 +39,10 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
     private final HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
-
     private final HiDensityNativeMemoryNearCacheRecordMap[] recordMaps;
     private final NearCachePreloader<Data> nearCachePreloader;
+
+    private volatile StaleReadDetector staleReadDetector = ALWAYS_FRESH;
 
     @SuppressWarnings("checkstyle:magicnumber")
     public HiDensitySegmentedNativeMemoryNearCacheRecordStore(String name,
@@ -268,6 +271,19 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     @Override
     public void storeKeys() {
         nearCachePreloader.storeKeys(recordMaps);
+    }
+
+    @Override
+    public void setStaleReadDetector(StaleReadDetector staleReadDetector) {
+        this.staleReadDetector = staleReadDetector;
+        for (HiDensityNativeMemoryNearCacheRecordStore<K, V> segment : segments) {
+            segment.setStaleReadDetector(staleReadDetector);
+        }
+    }
+
+    @Override
+    public StaleReadDetector getStaleReadDetector() {
+        return staleReadDetector;
     }
 
     @Override

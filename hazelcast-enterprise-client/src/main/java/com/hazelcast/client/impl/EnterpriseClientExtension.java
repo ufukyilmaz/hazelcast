@@ -44,10 +44,11 @@ import static com.hazelcast.license.util.LicenseHelper.checkLicenseKeyPerFeature
  */
 public class EnterpriseClientExtension extends DefaultClientExtension {
 
-    private volatile SocketInterceptor socketInterceptor;
-    private volatile License license;
     private final BuildInfo buildInfo = BuildInfoProvider.getBuildInfo();
     private final EnterpriseClientVersionAware versionAware = new EnterpriseClientVersionAware(buildInfo.getVersion());
+
+    private volatile SocketInterceptor socketInterceptor;
+    private volatile License license;
 
     @Override
     public void beforeStart(HazelcastClientInstanceImpl client) {

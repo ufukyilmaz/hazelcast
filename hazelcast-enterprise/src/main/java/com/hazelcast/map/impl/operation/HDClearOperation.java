@@ -51,6 +51,7 @@ public class HDClearOperation extends HDMapOperation implements BackupAwareOpera
     @Override
     public void afterRun() throws Exception {
         super.afterRun();
+        invalidateAllKeysInNearCaches();
         hintMapEvent();
 
         disposeDeferredBlocks();

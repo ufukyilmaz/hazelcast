@@ -19,7 +19,6 @@ import com.hazelcast.util.Clock;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -32,19 +31,17 @@ import java.util.Map;
 public final class CacheReplicationOperation
         extends com.hazelcast.cache.impl.operation.CacheReplicationOperation implements IdentifiedDataSerializable {
 
-    private Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource;
-    private Map<String, Map<Data, CacheRecordHolder>> offHeapDestination;
+    private final Map<String, Map<Data, HiDensityCacheRecord>> offHeapSource
+            = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
+    private final Map<String, Map<Data, CacheRecordHolder>> offHeapDestination
+            = new HashMap<String, Map<Data, CacheRecordHolder>>();
 
     private transient NativeOutOfMemoryError oome;
 
     public CacheReplicationOperation() {
-        offHeapDestination = new HashMap<String, Map<Data, CacheRecordHolder>>();
     }
 
     public CacheReplicationOperation(CachePartitionSegment segment, int replicaIndex) {
-        data = new HashMap<String, Map<Data, CacheRecord>>();
-        offHeapSource = new HashMap<String, Map<Data, HiDensityCacheRecord>>();
-
         Iterator<ICacheRecordStore> iter = segment.recordStoreIterator();
         while (iter.hasNext()) {
             ICacheRecordStore cacheRecordStore = iter.next();
@@ -60,7 +57,6 @@ public final class CacheReplicationOperation
             }
         }
 
-        configs = new ArrayList<CacheConfig>(segment.getCacheConfigs());
     }
 
     private void dispose() {

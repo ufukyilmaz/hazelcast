@@ -14,6 +14,7 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -95,6 +96,7 @@ public class HiDensityNearCacheRecordStoreTest extends NearCacheRecordStoreTestS
         clearRecordsOrDestroyStore(InMemoryFormat.NATIVE, false);
     }
 
+    @Ignore
     @Test(expected = IllegalStateException.class)
     public void destroyStoreFromHiDensityNativeMemoryNearCacheRecordStore() {
         clearRecordsOrDestroyStore(InMemoryFormat.NATIVE, true);

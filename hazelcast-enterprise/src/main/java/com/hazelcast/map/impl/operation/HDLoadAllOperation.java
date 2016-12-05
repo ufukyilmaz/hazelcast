@@ -80,6 +80,8 @@ public class HDLoadAllOperation extends HDMapOperation implements PartitionAware
     public void afterRun() throws Exception {
         super.afterRun();
 
+        invalidateNearCache(keys);
+
         disposeDeferredBlocks();
     }
 

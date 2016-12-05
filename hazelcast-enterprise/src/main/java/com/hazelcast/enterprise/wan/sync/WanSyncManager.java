@@ -41,11 +41,13 @@ public class WanSyncManager {
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
-    //Below fields are only accessed through updatet
+    //Below fields are only accessed through updater
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
     private volatile int syncedPartitionCount;
 
     private volatile boolean running = true;
+    private volatile String activeWanConfig;
+    private volatile String activePublisher;
 
 
     public WanSyncManager(NodeEngine nodeEngine) {
@@ -69,6 +71,8 @@ public class WanSyncManager {
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another sync request is already in progress.");
         }
+        activeWanConfig = wanReplicationName;
+        activePublisher = targetGroupName;
         nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
             @Override
             public void run() {
@@ -81,7 +85,7 @@ public class WanSyncManager {
     }
 
     public WanSyncState getWanSyncState() {
-        return new WanSyncStateImpl(SYNC_STATUS.get(this), SYNCED_PARTITION_COUNT.get(this));
+        return new WanSyncStateImpl(SYNC_STATUS.get(this), SYNCED_PARTITION_COUNT.get(this), activeWanConfig, activePublisher);
     }
 
     public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {

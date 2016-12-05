@@ -11,6 +11,7 @@ import com.hazelcast.instance.HazelcastInstanceFactory;
 import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.WanSyncStatus;
@@ -252,10 +253,13 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
                 return service.getWanSyncState().getStatus();
             }
         }, WanSyncStatus.READY);
-        int member1SyncCount = service.getWanSyncState().getSyncedPartitionCount();
+        WanSyncState syncState = service.getWanSyncState();
+        int member1SyncCount = syncState.getSyncedPartitionCount();
         int member2SyncCount = getWanReplicationService(clusterA[1]).getSyncManager().getWanSyncState().getSyncedPartitionCount();
         int totalCount = getPartitionService(clusterA[0]).getPartitionCount();
         assertEquals(totalCount, member1SyncCount + member2SyncCount);
+        assertEquals("atob", syncState.getActiveWanConfigName());
+        assertEquals(configB.getGroupConfig().getName(), syncState.getActivePublisherName());
     }
 
     private void startClusterWithUniqueConfigObjects(HazelcastInstance[] cluster, Config config) {

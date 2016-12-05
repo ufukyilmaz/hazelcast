@@ -48,7 +48,7 @@ final class TombEvacuator {
     }
 
     private void evacuate(StableTombChunk chunk) {
-        final TombFileAccessor tfa = new TombFileAccessor(gcHelper.chunkFile(chunk, false));
+        final TombFileAccessor tfa = new TombFileAccessor(gcHelper.stableChunkFile(chunk, false));
         final int[] filePositions = chunk.initFilePosToKeyHandle();
         try {
             for (int filePos : filePositions) {

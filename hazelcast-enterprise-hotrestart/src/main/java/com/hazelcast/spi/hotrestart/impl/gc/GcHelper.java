@@ -10,6 +10,7 @@ import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.gc.chunk.StableChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.SurvivorValChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.WriteThroughTombChunk;
 import com.hazelcast.spi.hotrestart.impl.gc.mem.MmapMalloc;
@@ -159,9 +160,9 @@ public abstract class GcHelper implements Disposable {
         return ++recordSeq;
     }
 
-    /** Deletes the chunk file associated with the given instance of {@link Chunk}. */
-    public void deleteChunkFile(Chunk chunk) {
-        final File toDelete = chunkFile(chunk, false);
+    /** Deletes the stable chunk file associated with the given instance of {@link StableChunk}. */
+    public void deleteChunkFile(StableChunk chunk) {
+        final File toDelete = stableChunkFile(chunk, false);
         deleteFile(toDelete);
     }
 
@@ -209,13 +210,12 @@ public abstract class GcHelper implements Disposable {
     }
 
     /**
-     * Returns a {@code File} instance representing the file associated with the given chunk.
-     * @param chunk the chunk
+     * Returns a {@code File} instance representing the file associated with the given stable chunk.
+     * @param chunk the stable chunk
      * @param mkdirs whether to also create any missing ancestor directories of the chunk file
      */
-    public final File chunkFile(Chunk chunk, boolean mkdirs) {
-        final boolean active = chunk instanceof ActiveValChunk || chunk instanceof WriteThroughTombChunk;
-        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix() + (active ? ACTIVE_FNAME_SUFFIX : ""), mkdirs);
+    public final File stableChunkFile(StableChunk chunk, boolean mkdirs) {
+        return chunkFile(chunk.base(), chunk.seq, chunk.fnameSuffix(), mkdirs);
     }
 
     /**

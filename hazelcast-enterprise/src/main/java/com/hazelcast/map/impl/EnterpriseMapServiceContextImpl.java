@@ -191,7 +191,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
                                              ResultProcessorRegistry resultProcessorRegistry) {
         PartitionScanRunner partitionScanRunner = new HDPartitionScanRunner(this);
         PartitionScanExecutor partitionScanExecutor = new HDParallelPartitionScanExecutor(
-                partitionScanRunner, operationService);
+                partitionScanRunner, operationService, HDParallelPartitionScanExecutor.DEFAULT_QUERY_EXECUTION_TIMEOUT_MINUTES);
         return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
     }
 

@@ -7,7 +7,6 @@ import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -64,7 +63,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testConsistentBackupsWhileMutation() throws IOException {
         resetFixture(-1, 1);
         final int keyCount = 100000;

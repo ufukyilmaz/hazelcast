@@ -120,6 +120,10 @@ public class GcLogger {
         }
     }
 
+    public void info(String message) {
+        logger.info(message);
+    }
+
     public void warning(String message) {
         logger.warning(message);
     }

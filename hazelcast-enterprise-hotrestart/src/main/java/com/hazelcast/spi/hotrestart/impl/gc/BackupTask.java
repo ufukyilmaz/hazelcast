@@ -4,14 +4,16 @@ import com.hazelcast.core.HazelcastException;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk;
+import com.hazelcast.spi.hotrestart.impl.io.DefaultCopyStrategy;
+import com.hazelcast.spi.hotrestart.impl.io.FileCopyStrategy;
+import com.hazelcast.spi.hotrestart.impl.io.HardLinkCopyStrategy;
+import com.hazelcast.util.ExceptionUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
 import static com.hazelcast.nio.IOUtil.closeResource;
-import static com.hazelcast.nio.IOUtil.copyFile;
 import static com.hazelcast.nio.IOUtil.deleteQuietly;
 import static com.hazelcast.nio.IOUtil.rename;
 import static com.hazelcast.spi.hotrestart.impl.gc.chunk.Chunk.TOMB_BASEDIR;
@@ -27,16 +29,23 @@ public class BackupTask implements Runnable {
     public static final String IN_PROGRESS_FILE = "inprogress";
     /** Name of the file which indicates that there was a failure during backup */
     public static final String FAILURE_FILE = "failure";
+    /**
+     * Property name to determine if hot backup should attempt to use hard links when performing backup. If not possible,
+     * it will revert to simple file copy.
+     */
+    private static final String PROPERTY_BACKUP_USE_HARD_LINKS = "hazelcast.hotrestart.backup.useHardLinks";
     private final File targetDir;
     private final long[] stableTombChunkSeqs;
     private final long[] stableValChunkSeqs;
     private final long maxChunkSeq;
+    private final boolean useHardLinks;
     @Inject
     private GcLogger logger;
     @Inject
     private GcHelper gcHelper;
     @Inject
     private ChunkManager chunkManager;
+    private FileCopyStrategy copyStrategy;
     private volatile BackupTaskState state = BackupTaskState.NOT_STARTED;
 
     BackupTask(File targetDir, long[] stableValChunkSeqs, long[] stableTombChunkSeqs) {
@@ -48,6 +57,8 @@ public class BackupTask implements Runnable {
         this.stableValChunkSeqs = stableValChunkSeqs;
         this.stableTombChunkSeqs = stableTombChunkSeqs;
         this.maxChunkSeq = Math.max(maxValChunkSeq, maxTombChunkSeq);
+        final String useHardLinksStr = System.getProperty(PROPERTY_BACKUP_USE_HARD_LINKS);
+        this.useHardLinks = useHardLinksStr == null || Boolean.parseBoolean(useHardLinksStr);
     }
 
     /**
@@ -68,35 +79,52 @@ public class BackupTask implements Runnable {
         } catch (Exception e) {
             failedBackup(inProgressFile, e);
         }
-        int valChunkArrayIdx = 0;
-        int tombChunkArrayIdx = 0;
         try {
-            while (!Thread.interrupted()
-                    && (valChunkArrayIdx < stableValChunkSeqs.length || tombChunkArrayIdx < stableTombChunkSeqs.length)) {
-                final boolean hasTombChunks = tombChunkArrayIdx < stableTombChunkSeqs.length;
-                final boolean hasValChunks = valChunkArrayIdx < stableValChunkSeqs.length;
-
-                final boolean nextChunkIsVal = !hasTombChunks
-                        || (hasValChunks && stableValChunkSeqs[valChunkArrayIdx] < stableTombChunkSeqs[tombChunkArrayIdx]);
-                final long nextChunkSeq = nextChunkIsVal ? stableValChunkSeqs[valChunkArrayIdx++]
-                        : stableTombChunkSeqs[tombChunkArrayIdx++];
-                final File chunkFile = stableChunkFile(nextChunkSeq, nextChunkIsVal);
-
-                if (chunkManager.isChunkPendingDeletion(nextChunkSeq, nextChunkIsVal)) {
-                    moveChunk(chunkFile, targetDir);
-                    chunkManager.removeChunkPendingDeletion(nextChunkSeq, nextChunkIsVal);
-                } else {
-                    copyChunk(chunkFile, targetDir, -1);
-                }
-            }
+            copyOrMoveChunks(stableValChunkSeqs, true);
+            copyOrMoveChunks(stableTombChunkSeqs, false);
             completedBackup(inProgressFile);
             state = BackupTaskState.SUCCESS;
         } catch (Throwable e) {
             state = BackupTaskState.FAILURE;
             failedBackup(inProgressFile, e);
+        } finally {
+            // we left the interrupt status unchanged while copying so we clear it here
+            Thread.interrupted();
         }
         chunkManager.deletePendingChunks();
-        logger.finest("Hot restart backup finished in " + NANOSECONDS.toMillis(System.nanoTime() - start));
+        logger.info("Hot restart backup finished in " + NANOSECONDS.toMillis(System.nanoTime() - start));
+    }
+
+    private void copyOrMoveChunks(long[] seqs, boolean areValChunks) {
+        for (long seq : seqs) {
+            if (Thread.currentThread().isInterrupted()) {
+                break;
+            }
+            final File chunkSourceFile = stableChunkFile(seq, areValChunks);
+            final File chunkTargetDir = ensureDirectory(chunkSourceFile, targetDir);
+
+            if (chunkManager.isChunkPendingDeletion(seq, areValChunks)) {
+                rename(chunkSourceFile, new File(chunkTargetDir, chunkSourceFile.getName()));
+                chunkManager.removeChunkPendingDeletion(seq, areValChunks);
+                continue;
+            }
+            if (copyStrategy == null && !useHardLinks) {
+                copyStrategy = new DefaultCopyStrategy();
+            }
+            if (copyStrategy != null) {
+                copyStrategy.copy(chunkSourceFile, chunkTargetDir);
+            } else {
+                try {
+                    copyStrategy = new HardLinkCopyStrategy();
+                    copyStrategy.copy(chunkSourceFile, chunkTargetDir);
+                } catch (Exception e) {
+                    logger.finest("Failed to use hard links for file copy : " + e.getMessage()
+                            + ", cause: " + ExceptionUtil.toString(e));
+                    copyStrategy = new DefaultCopyStrategy();
+                    copyStrategy.copy(chunkSourceFile, chunkTargetDir);
+                }
+            }
+        }
     }
 
     private void completedBackup(File inProgressFile) {
@@ -117,17 +145,12 @@ public class BackupTask implements Runnable {
         rename(inProgressFile, new File(inProgressFile.getParentFile(), FAILURE_FILE));
     }
 
-    private void copyChunk(File chunkFile, File targetBase, long sourceCount) throws IOException {
-        final File targetDir = getTargetDir(chunkFile, targetBase);
-        copyFile(chunkFile, targetDir, sourceCount);
-    }
-
-    private void moveChunk(File chunkFile, File targetBase) {
+    private File ensureDirectory(File chunkFile, File targetBase) {
         final File targetDir = getTargetDir(chunkFile, targetBase);
         if (!targetDir.exists() && !targetDir.mkdirs()) {
             throw new HazelcastException("Could not create the target directory " + targetDir);
         }
-        rename(chunkFile, new File(targetDir, chunkFile.getName()));
+        return targetDir;
     }
 
     private static File getTargetDir(File chunkFile, File targetBase) {

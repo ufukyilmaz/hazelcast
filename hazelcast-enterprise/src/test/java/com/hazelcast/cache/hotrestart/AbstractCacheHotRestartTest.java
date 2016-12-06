@@ -124,7 +124,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
         return instances;
     }
 
-    void restartInstances(int clusterSize) {
+    HazelcastInstance[] restartInstances(int clusterSize) {
         ClusterState state = ClusterState.ACTIVE;
         if (factory != null) {
             Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
@@ -160,6 +160,7 @@ public abstract class AbstractCacheHotRestartTest extends HazelcastTestSupport {
             HazelcastInstance instance = instances.iterator().next();
             instance.getCluster().changeClusterState(state);
         }
+        return instances.toArray(new HazelcastInstance[0]);
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {

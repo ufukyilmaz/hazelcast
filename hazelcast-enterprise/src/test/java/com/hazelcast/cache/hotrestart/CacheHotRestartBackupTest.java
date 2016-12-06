@@ -93,6 +93,27 @@ public class CacheHotRestartBackupTest extends AbstractCacheHotRestartTest {
         assertExpectedTotalCacheSize(instances, config.getNameWithPrefix());
     }
 
+    @Test
+    public void test_afterRestart() throws Exception {
+        HazelcastInstance[] instances = newInstances(clusterSize);
+        warmUpPartitions(instances);
+
+        for (HazelcastInstance instance : instances) {
+            cache = createCache(instance, backupCount);
+        }
+
+        Random random = new Random();
+        fillCacheAndRemoveRandom(random);
+
+        waitAllForSafeState(instances);
+
+        instances = restartInstances(clusterSize);
+        cache = createCache(instances[0], backupCount);
+
+        CacheConfig config = cache.getConfiguration(CacheConfig.class);
+        assertExpectedTotalCacheSize(instances, config.getNameWithPrefix());
+    }
+
     private void assertExpectedTotalCacheSize(final HazelcastInstance[] instances, final String nameWithPrefix) {
         int expectedSize = cache.size() * clusterSize;
         assertTrueEventually(new CacheOwnedEntryAssertTask(instances, nameWithPrefix, expectedSize));

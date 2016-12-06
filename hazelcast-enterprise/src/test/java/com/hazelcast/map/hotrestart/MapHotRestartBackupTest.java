@@ -87,6 +87,31 @@ public class MapHotRestartBackupTest extends AbstractMapHotRestartTest {
         assertExpectedTotalMapSize(maps);
     }
 
+    @Test
+    public void test_afterRestart() throws Exception {
+        HazelcastInstance[] instances = newInstances(clusterSize, backupCount);
+        warmUpPartitions(instances);
+
+        for (int i = 0; i < instances.length; i++) {
+            maps[i] = createMap(instances[i]);
+        }
+        map = maps[maps.length - 1];
+
+        Random random = new Random();
+        for (int i = 0; i < 1; i++) {
+            fillMapAndRemoveRandom(random);
+        }
+
+        waitAllForSafeState(instances);
+
+        instances = restartInstances(clusterSize, backupCount);
+        for (int i = 0; i < instances.length; i++) {
+            maps[i] = createMap(instances[i]);
+        }
+        map = maps[maps.length - 1];
+        assertExpectedTotalMapSize(maps);
+    }
+
     private void assertExpectedTotalMapSize(final IMap[] maps) {
         final int expectedSize = map.size() * clusterSize;
 

@@ -63,6 +63,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
+import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 
 /**
  * Contains enterprise specific implementations of {@link MapServiceContext}
@@ -190,8 +191,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private QueryRunner createMapQueryRunner(OperationService operationService, QueryOptimizer queryOptimizer,
                                              ResultProcessorRegistry resultProcessorRegistry) {
         PartitionScanRunner partitionScanRunner = new HDPartitionScanRunner(this);
+        int opTimeoutInMillis = nodeEngine.getProperties().getInteger(OPERATION_CALL_TIMEOUT_MILLIS);
         PartitionScanExecutor partitionScanExecutor = new HDParallelPartitionScanExecutor(
-                partitionScanRunner, operationService, HDParallelPartitionScanExecutor.DEFAULT_QUERY_EXECUTION_TIMEOUT_MINUTES);
+                partitionScanRunner, operationService, opTimeoutInMillis);
         return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
     }
 

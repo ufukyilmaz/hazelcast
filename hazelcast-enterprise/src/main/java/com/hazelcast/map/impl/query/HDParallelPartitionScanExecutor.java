@@ -13,13 +13,11 @@ import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 
 public class HDParallelPartitionScanExecutor extends ParallelPartitionScanExecutor {
 
-    public static final int DEFAULT_QUERY_EXECUTION_TIMEOUT_MINUTES = 5;
-
     private OperationService operationService;
 
     public HDParallelPartitionScanExecutor(
-            PartitionScanRunner partitionScanRunner, OperationService operationService, int timeoutInMinutes) {
-        super(partitionScanRunner, null, timeoutInMinutes);
+            PartitionScanRunner partitionScanRunner, OperationService operationService, int timeoutInMillis) {
+        super(partitionScanRunner, null, timeoutInMillis);
         this.operationService = operationService;
     }
 

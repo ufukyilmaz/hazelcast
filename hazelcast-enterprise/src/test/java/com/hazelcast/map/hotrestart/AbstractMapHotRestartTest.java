@@ -122,7 +122,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         restartInstances(clusterSize, 1);
     }
 
-    void restartInstances(int clusterSize, final int backupCount) {
+    HazelcastInstance[] restartInstances(int clusterSize, final int backupCount) {
         ClusterState state = ClusterState.ACTIVE;
         if (factory != null) {
             Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
@@ -158,6 +158,7 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             HazelcastInstance instance = instances.iterator().next();
             instance.getCluster().changeClusterState(state);
         }
+        return instances.toArray(new HazelcastInstance[0]);
     }
 
     HazelcastInstance restartHazelcastInstance(HazelcastInstance hz) {

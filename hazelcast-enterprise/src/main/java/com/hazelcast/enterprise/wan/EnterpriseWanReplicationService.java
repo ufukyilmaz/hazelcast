@@ -501,7 +501,7 @@ public class EnterpriseWanReplicationService
         if (addWanReplicationConfigIfAbsent(wanConfig)) {
             getWanReplicationPublisher(wanConfig.getName());
         } else {
-            throw new UnsupportedOperationException("A WanReplicationConfig is already exists with the given name: "
+            logger.warning("Ignoring new WAN config request. A WanReplicationConfig is already exists with the given name: "
                     + wanConfig.getName());
         }
     }

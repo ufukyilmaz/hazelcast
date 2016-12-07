@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart;
 import com.hazelcast.core.Member;
 import com.hazelcast.core.MemberLeftException;
 import com.hazelcast.hotrestart.BackupTaskStatus;
-import com.hazelcast.hotrestart.HotRestartBackupService;
+import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.internal.util.LockGuard;
 import com.hazelcast.nio.Address;
@@ -32,7 +32,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
 /**
  * Service for initiating a cluster-wide backup of hot restart data.
  */
-public class ClusterHotRestartBackupService implements HotRestartBackupService, TransactionalService {
+public class ClusterHotRestartBackupService implements HotRestartService, TransactionalService {
     /** Name of the Hot Restart backup service. */
     public static final String SERVICE_NAME = "hz:ee:clusterHotRestartBackupService";
     private static final TransactionOptions DEFAULT_TX_OPTIONS = new TransactionOptions()
@@ -43,9 +43,9 @@ public class ClusterHotRestartBackupService implements HotRestartBackupService, 
     private final Node node;
     private final Lock serviceLock = new ReentrantLock();
     private final AtomicReference<LockGuard> lockGuardRef = new AtomicReference<LockGuard>(LockGuard.NOT_LOCKED);
-    private final HotRestartService hotRestartService;
+    private final com.hazelcast.spi.hotrestart.HotRestartService hotRestartService;
 
-    public ClusterHotRestartBackupService(Node node, HotRestartService hotRestartService) {
+    public ClusterHotRestartBackupService(Node node, com.hazelcast.spi.hotrestart.HotRestartService hotRestartService) {
         this.node = node;
         this.hotRestartService = hotRestartService;
     }

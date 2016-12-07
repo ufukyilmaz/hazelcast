@@ -47,6 +47,6 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
 
 
     private void runClusterBackupOnInstance(long seq, HazelcastInstance instance) {
-        getNode(instance).getNodeExtension().getHotRestartBackupService().backup(seq);
+        instance.getCluster().getHotRestartService().backup(seq);
     }
 }

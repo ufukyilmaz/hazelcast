@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.hazelcast.hotrestart.BackupTaskState.FAILURE;
 import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
-import static com.hazelcast.hotrestart.HotRestartBackupService.BACKUP_DIR_PREFIX;
+import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
 import static com.hazelcast.spi.hotrestart.PersistentCacheDescriptors.toPartitionId;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;

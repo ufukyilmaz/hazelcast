@@ -7,8 +7,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
-import com.hazelcast.license.domain.Feature;
-import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
@@ -94,9 +92,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             hotRestartService = nodeExtension.getHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
-        if (nodeExtension.isFeatureEnabledForLicenseKey(Feature.CONTINUOUS_QUERY_CACHE)) {
-            queryCacheContext = new NodeQueryCacheContext(this);
-        }
+        queryCacheContext = new NodeQueryCacheContext(this);
     }
 
     @Override
@@ -146,10 +142,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
 
     @Override
     public QueryCacheContext getQueryCacheContext() {
-        if (queryCacheContext == null) {
-            throw new InvalidLicenseException("Continuous Query Cache is not enabled for your license key."
-                    + "Please contact sales@hazelcast.com");
-        }
         return queryCacheContext;
     }
 

@@ -14,7 +14,7 @@ import com.hazelcast.config.SocketInterceptorConfig;
 import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.hotrestart.HotRestartBackupService;
+import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
@@ -50,7 +50,6 @@ import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
 import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
@@ -84,7 +83,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
 
-    private final HotRestartService hotRestartService;
+    private final com.hazelcast.spi.hotrestart.HotRestartService hotRestartService;
     private final ClusterHotRestartBackupService clusterHotRestartBackupService;
     private volatile License license;
     private volatile SecurityContext securityContext;
@@ -99,7 +98,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         clusterHotRestartBackupService = createClusterHotRestartBackupService(node, hotRestartService);
     }
 
-    private ClusterHotRestartBackupService createClusterHotRestartBackupService(Node node, HotRestartService hotRestartService) {
+    private ClusterHotRestartBackupService createClusterHotRestartBackupService(
+            Node node, com.hazelcast.spi.hotrestart.HotRestartService hotRestartService) {
         if (hotRestartService == null) {
             return null;
         }
@@ -107,9 +107,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         return config.getBackupDir() != null ? new ClusterHotRestartBackupService(node, hotRestartService) : null;
     }
 
-    private HotRestartService createHotRestartService(Node node) {
+    private com.hazelcast.spi.hotrestart.HotRestartService createHotRestartService(Node node) {
         HotRestartPersistenceConfig hotRestartPersistenceConfig = node.getConfig().getHotRestartPersistenceConfig();
-        return hotRestartPersistenceConfig.isEnabled() ? new HotRestartService(node) : null;
+        return hotRestartPersistenceConfig.isEnabled() ? new com.hazelcast.spi.hotrestart.HotRestartService(node) : null;
     }
 
     @Override
@@ -391,7 +391,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
-    public HotRestartService getHotRestartService() {
+    public com.hazelcast.spi.hotrestart.HotRestartService getHotRestartService() {
         if (hotRestartService == null) {
             throw new HotRestartException("HotRestart is not enabled!");
         }
@@ -453,14 +453,15 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             return services;
         }
         if (clusterHotRestartBackupService == null) {
-            return Collections.<String, Object>singletonMap(HotRestartService.SERVICE_NAME, hotRestartService);
+            return Collections.<String, Object>singletonMap(com.hazelcast.spi.hotrestart.HotRestartService.SERVICE_NAME,
+                    hotRestartService);
         }
 
         if (services.isEmpty()) {
             services = new HashMap<String, Object>(2);
         }
         services.put(ClusterHotRestartBackupService.SERVICE_NAME, clusterHotRestartBackupService);
-        services.put(HotRestartService.SERVICE_NAME, hotRestartService);
+        services.put(com.hazelcast.spi.hotrestart.HotRestartService.SERVICE_NAME, hotRestartService);
 
         return services;
     }
@@ -509,7 +510,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
      * By default, For rolling upgrades context, a node's version is considered compatible with cluster of same version
      * or if cluster's minor version number is smaller by one versus node's minor version number.
      * Each version may overwrite it though by modifying this method.
-     *
+     * <p>
      * E.g.:
      * 3.8 does not support any emulation at all. So it's compatible with 3.8 clusters only.
      * 3.9 will be compatible with 3.8 and 3.9 cluster -> if not overwritten in 3.9 codebase.
@@ -608,7 +609,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public HotRestartBackupService getHotRestartBackupService() {
+    public HotRestartService getHotRestartBackupService() {
         return clusterHotRestartBackupService;
     }
 

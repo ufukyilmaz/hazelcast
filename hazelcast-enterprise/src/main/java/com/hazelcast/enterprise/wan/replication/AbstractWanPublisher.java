@@ -39,9 +39,11 @@ import com.hazelcast.wan.WanReplicationPublisher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +84,8 @@ public abstract class AbstractWanPublisher
 
     private final AtomicInteger currentElementCount = new AtomicInteger(0);
     private final AtomicInteger currentBackupElementCount = new AtomicInteger(0);
+
+    private final Map<Integer, AtomicInteger> counterMap = new ConcurrentHashMap<Integer, AtomicInteger>();
 
     private volatile boolean resetCounters;
 
@@ -193,8 +197,12 @@ public abstract class AbstractWanPublisher
     }
 
     public void removeReplicationEvent(WanReplicationEvent wanReplicationEvent) {
-
         if (wanReplicationEvent.getEventObject() instanceof EnterpriseMapReplicationSync) {
+            EnterpriseMapReplicationSync sync = (EnterpriseMapReplicationSync) wanReplicationEvent.getEventObject();
+            int remainingEventCount = counterMap.get(sync.getPartitionId()).decrementAndGet();
+            if (remainingEventCount == 0) {
+                syncManager.incrementSyncedPartitionCount();
+            }
             return;
         }
         removeLocal();
@@ -507,7 +515,6 @@ public abstract class AbstractWanPublisher
             if (partition.isLocal()) {
                 syncPartition(syncEvent, partition);
                 syncedPartitions.add(partition.getPartitionId());
-                syncManager.incrementSyncedPartitionCount();
             }
         }
 
@@ -520,25 +527,28 @@ public abstract class AbstractWanPublisher
         }
 
         private void syncPartition(WanSyncEvent syncEvent, IPartition partition) {
+            int partitionEventCount = 0;
             if (syncEvent.getType() == WanSyncType.ALL_MAPS) {
                 for (String mapName : mapService.getMapServiceContext().getMapContainers().keySet()) {
-                    syncPartitionForMap(mapName, partition);
+                    partitionEventCount += syncPartitionForMap(mapName, partition);
                 }
             } else {
-                syncPartitionForMap(syncEvent.getName(), partition);
+                partitionEventCount += syncPartitionForMap(syncEvent.getName(), partition);
             }
+            counterMap.put(partition.getPartitionId(), new AtomicInteger(partitionEventCount));
         }
 
-        private void syncPartitionForMap(String mapName, IPartition partition) {
+        private int syncPartitionForMap(String mapName, IPartition partition) {
             GetMapPartitionDataOperation op = new GetMapPartitionDataOperation(mapName);
             op.setPartitionId(partition.getPartitionId());
             Set<SimpleEntryView> set = (Set<SimpleEntryView>) invokeOp(op);
             for (SimpleEntryView simpleEntryView : set) {
                 EnterpriseMapReplicationSync sync = new EnterpriseMapReplicationSync(
-                        mapName, simpleEntryView);
+                        mapName, simpleEntryView, partition.getPartitionId());
                 WanReplicationEvent event = new WanReplicationEvent(MapService.SERVICE_NAME, sync);
                 offerToStagingQueue(event);
             }
+            return set.size();
         }
     }
 }

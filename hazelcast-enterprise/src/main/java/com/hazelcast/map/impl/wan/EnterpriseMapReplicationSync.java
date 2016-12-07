@@ -14,10 +14,12 @@ import java.io.IOException;
 public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject {
 
     private EntryView<Data, Data> entryView;
+    private transient int partitionId;
 
-    public EnterpriseMapReplicationSync(String mapName, EntryView entryView) {
+    public EnterpriseMapReplicationSync(String mapName, EntryView entryView, int partitionId) {
         super(mapName, 0);
         this.entryView = entryView;
+        this.partitionId = partitionId;
     }
 
     public EnterpriseMapReplicationSync() {
@@ -25,6 +27,10 @@ public class EnterpriseMapReplicationSync extends EnterpriseMapReplicationObject
 
     public EntryView<Data, Data> getEntryView() {
         return entryView;
+    }
+
+    public int getPartitionId() {
+        return partitionId;
     }
 
     @Override

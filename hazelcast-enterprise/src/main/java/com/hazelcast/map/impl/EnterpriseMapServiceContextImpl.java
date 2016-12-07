@@ -7,8 +7,6 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
-import com.hazelcast.license.domain.Feature;
-import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.map.impl.event.EnterpriseMapEventPublisherImpl;
 import com.hazelcast.map.impl.event.MapEventPublisherImpl;
@@ -27,8 +25,6 @@ import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
 import com.hazelcast.map.impl.query.ResultProcessorRegistry;
-import com.hazelcast.map.impl.querycache.NodeQueryCacheContext;
-import com.hazelcast.map.impl.querycache.QueryCacheContext;
 import com.hazelcast.map.impl.recordstore.DefaultRecordStore;
 import com.hazelcast.map.impl.recordstore.EnterpriseRecordStore;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -38,9 +34,6 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.DataType;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
-import com.hazelcast.spi.EventFilter;
-import com.hazelcast.spi.EventRegistration;
-import com.hazelcast.spi.EventService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -50,7 +43,6 @@ import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
 import com.hazelcast.spi.impl.NodeEngineImpl;
-import com.hazelcast.spi.impl.eventservice.impl.TrueEventFilter;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.ConcurrencyUtil;
@@ -91,7 +83,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartService hotRestartService;
-    private QueryCacheContext queryCacheContext;
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
@@ -101,9 +92,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         if (nodeExtension.isHotRestartEnabled()) {
             hotRestartService = nodeExtension.getHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
-        }
-        if (nodeExtension.isFeatureEnabledForLicenseKey(Feature.CONTINUOUS_QUERY_CACHE)) {
-            queryCacheContext = new NodeQueryCacheContext(this);
         }
         this.hdMapQueryRunner = createMapQueryRunner(nodeEngine.getOperationService(), getQueryOptimizer(),
                 getResultProcessorRegistry());
@@ -162,15 +150,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     }
 
     @Override
-    public QueryCacheContext getQueryCacheContext() {
-        if (queryCacheContext == null) {
-            throw new InvalidLicenseException("Continuous Query Cache is not enabled for your license key."
-                    + "Please contact sales@hazelcast.com");
-        }
-        return queryCacheContext;
-    }
-
-    @Override
     public MapFilterProvider getMapFilterProvider() {
         return mapFilterProvider;
     }
@@ -195,29 +174,6 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         PartitionScanExecutor partitionScanExecutor = new HDParallelPartitionScanExecutor(
                 partitionScanRunner, operationService, opTimeoutInMillis);
         return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
-    }
-
-    @Override
-    public String addListenerAdapter(String cacheName, ListenerAdapter listenerAdaptor) {
-        EventService eventService = getNodeEngine().getEventService();
-        EventRegistration registration
-                = eventService.registerListener(MapService.SERVICE_NAME,
-                cacheName, TrueEventFilter.INSTANCE, listenerAdaptor);
-        return registration.getId();
-    }
-
-    @Override
-    public String addListenerAdapter(ListenerAdapter listenerAdaptor, EventFilter eventFilter, String mapName) {
-        EventRegistration registration = getNodeEngine().getEventService().
-                registerListener(MapService.SERVICE_NAME, mapName, eventFilter, listenerAdaptor);
-        return registration.getId();
-    }
-
-    @Override
-    public String addLocalListenerAdapter(ListenerAdapter adapter, String mapName) {
-        EventService eventService = getNodeEngine().getEventService();
-        EventRegistration registration = eventService.registerLocalListener(MapService.SERVICE_NAME, mapName, adapter);
-        return registration.getId();
     }
 
     @Override

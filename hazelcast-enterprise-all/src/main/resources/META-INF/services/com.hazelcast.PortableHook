@@ -2,7 +2,6 @@
 # It needs to be added/removed from here manually
 
 # enterprise hooks
-com.hazelcast.map.impl.client.EnterpriseMapPortableHook
 
 # oss hooks
 com.hazelcast.spi.impl.SpiPortableHook
@@ -10,4 +9,4 @@ com.hazelcast.internal.partition.impl.PartitionPortableHook
 com.hazelcast.mapreduce.impl.MapReducePortableHook
 com.hazelcast.replicatedmap.impl.client.ReplicatedMapPortableHook
 com.hazelcast.ringbuffer.impl.client.RingbufferPortableHook
-
+com.hazelcast.map.impl.client.MapPortableHook

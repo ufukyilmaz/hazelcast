@@ -21,7 +21,6 @@ import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceB
 import com.hazelcast.license.domain.Feature;
 import com.hazelcast.license.domain.License;
 import com.hazelcast.license.domain.LicenseVersion;
-import com.hazelcast.license.exception.InvalidLicenseException;
 import com.hazelcast.license.util.LicenseHelper;
 import com.hazelcast.map.impl.MapService;
 import com.hazelcast.memory.FreeMemoryChecker;
@@ -162,13 +161,8 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            try {
-                checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(), Feature.CONTINUOUS_QUERY_CACHE);
-
-                return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
-            } catch (InvalidLicenseException e) {
-                return super.createServiceProxyFactory(service);
-            }
+            // TODO fix near cache config validation, so that it fails when (client && cacheLocalEntries) as in OSS
+            return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
         }
 
         throw new IllegalArgumentException("Proxy factory cannot be created. Unknown service : " + service);

@@ -100,7 +100,6 @@ public final class ClusterMetadataManager {
     private volatile boolean startCompleted;
     private volatile Set<String> excludedMemberUuids = Collections.emptySet();
     private volatile ClusterState clusterState = ClusterState.ACTIVE;
-    private volatile boolean addressChangeDetected;
     private volatile long validationStartTime;
     private volatile long dataLoadStartTime;
 
@@ -242,12 +241,9 @@ public final class ClusterMetadataManager {
         logger.info("Starting cluster member-list & partition table validation.");
         if (startWithHotRestart) {
             Map<Address, Address> addressMapping = awaitUntilAllMembersJoin();
-            if (addressMapping.size() > 0) {
-                addressChangeDetected = true;
-            }
             logger.info("Expected member list after await until all members join: " + expectedMemberUuidsRef.get());
             logAddressChanges(addressMapping);
-            fillMemberAddresses(addressMapping, restoredMembersRef);
+            repairRestoredMembers(addressMapping);
             repairPartitionTable(addressMapping);
         }
         for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
@@ -548,9 +544,7 @@ public final class ClusterMetadataManager {
                 return false;
             }
 
-            if (expectedMemberUuidsRef.get() == null) {
-                setCurrentMemberListToExpectedMembers();
-            } else {
+            if (!trySetCurrentMemberListToExpectedMembers()) {
                 tryPartialStart();
             }
 
@@ -560,7 +554,7 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private void setCurrentMemberListToExpectedMembers() {
+    private boolean trySetCurrentMemberListToExpectedMembers() {
         ClusterServiceImpl clusterService = node.getClusterService();
         Set<String> expectedMemberUuids = new HashSet<String>();
         for (MemberImpl restoredMember : restoredMembersRef.get()) {
@@ -568,8 +562,11 @@ public final class ClusterMetadataManager {
                 expectedMemberUuids.add(restoredMember.getUuid());
             }
         }
-        expectedMemberUuidsRef.set(unmodifiableSet(expectedMemberUuids));
-        logger.info("Expected member list is eagerly set to current member list uuids: " + expectedMemberUuids);
+        if (expectedMemberUuidsRef.compareAndSet(null, unmodifiableSet(expectedMemberUuids))) {
+            logger.info("Expected member list is eagerly set to current member list uuids: " + expectedMemberUuids);
+            return true;
+        }
+        return false;
     }
 
     public void reset() {
@@ -873,7 +870,6 @@ public final class ClusterMetadataManager {
         Collection<MemberImpl> members = r.getMembers();
 
         if (thisMember != null && !node.getThisAddress().equals(thisMember.getAddress())) {
-            addressChangeDetected = true;
             logger.warning("Local address change detected. Previous: " + thisMember.getAddress()
                     + ", Current: " + node.getThisAddress());
         }
@@ -927,13 +923,13 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private void fillMemberAddresses(Map<Address, Address> addressMapping, AtomicReference<Collection<MemberImpl>> ref) {
-        if (!addressChangeDetected) {
+    private void repairRestoredMembers(Map<Address, Address> addressMapping) {
+        if (addressMapping.isEmpty()) {
             return;
         }
 
         Collection<MemberImpl> updatedMembers = new HashSet<MemberImpl>();
-        for (MemberImpl member : ref.get()) {
+        for (MemberImpl member : restoredMembersRef.get()) {
             Address newAddress = addressMapping.get(member.getAddress());
             if (newAddress == null) {
                 updatedMembers.add(member);
@@ -942,15 +938,13 @@ public final class ClusterMetadataManager {
             }
         }
 
-        ref.set(updatedMembers);
+        restoredMembersRef.set(updatedMembers);
     }
 
     private void repairPartitionTable(Map<Address, Address> addressMapping) {
-        if (!addressChangeDetected) {
+        if (addressMapping.isEmpty()) {
             return;
         }
-
-        assert !addressMapping.isEmpty() : "Address mapping should not be empty when address change is detected";
 
         StringBuilder s = new StringBuilder("Replacing old addresses with the new ones in restored partition table:");
         for (Map.Entry<Address, Address> entry : addressMapping.entrySet()) {
@@ -984,61 +978,110 @@ public final class ClusterMetadataManager {
         logger.fine("Partition table repair has been completed.");
     }
 
+    /**
+     * Awaits until all or a subset of restored members are joined.
+     * <p>
+     * If {@code clusterDataRecoveryPolicy} is {@code FULL_RECOVERY_ONLY) then expected members to join
+     * will be all restored members. Otherwise, expected members are set to currently joined members
+     * when validation timeout occurs or it's explicitly set by partial start trigger. Non-master members
+     * periodically ask master for expected members to await.
+     * <p>
+     * When an unexpected member joins, a member that doesn't exist in restores members, await fails
+     * with {@code HotRestartException}.
+     *
+     * @return returns a mapping of old and new addresses of joined members if an address change is detected
+     */
     private Map<Address, Address> awaitUntilAllMembersJoin() throws InterruptedException {
-        Set<String> restoredMemberUuids = new HashSet<String>();
-        for (MemberImpl member : restoredMembersRef.get()) {
-            restoredMemberUuids.add(member.getUuid());
+        final Set<String> restoredMemberUuids = getRestoredMemberUuids();
+        if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
+            expectedMemberUuidsRef.set(restoredMemberUuids);
         }
-        restoredMemberUuids = unmodifiableSet(restoredMemberUuids);
 
         Map<Address, Address> addressMapping = new HashMap<Address, Address>();
 
         final ClusterServiceImpl clusterService = node.getClusterService();
         while (true) {
-            Collection<MemberImpl> members = clusterService.getMemberImpls();
+            sleep(SECONDS.toMillis(1));
 
-            if (isExpectedMembersJoined(addressMapping)) {
+            Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+            if (expectedMemberUuids == null) {
+                // means partial recovery policy is set
+                if (node.isMaster()) {
+                    // master node and clusterDataRecoveryPolicy is partial recovery
+                    expectedMemberUuids = restoredMemberUuids;
+                } else {
+                    sendIfNotThisMember(new AskForExpectedMembersOperation(), node.getMasterAddress());
+                }
+            }
+
+            if (isExpectedMembersJoined(expectedMemberUuids, addressMapping)) {
+                trySetRestoredMembersToExpectedMembers(restoredMemberUuids);
                 return addressMapping;
             }
 
-            hotRestartStatusLock.lock();
-            try {
-                failIfAwaitUntilAllMembersJoinDeadlineMissed(members);
+            Collection<MemberImpl> members = clusterService.getMemberImpls();
+            failIfUnexpectedMemberJoins(restoredMemberUuids, members);
+            failOrSetExpectedMembersIfValidationTimedOut(members);
 
-                for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-                    listener.beforeAllMembersJoin(members);
-                }
-
-                Address masterAddress = node.getMasterAddress();
-                if (node.isMaster()) {
-                    if (members.size() == restoredMemberUuids.size()
-                            && expectedMemberUuidsRef.compareAndSet(null, restoredMemberUuids)) {
-                        logger.info("All members are present. Expected member list is set to: " + restoredMemberUuids);
-                        broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
-                    }
-                } else if (masterAddress != null) {
-                        sendIfNotThisMember(new AskForExpectedMembersOperation(), masterAddress);
-                }
-            } finally {
-                hotRestartStatusLock.unlock();
+            for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+                listener.beforeAllMembersJoin(members);
             }
-
-            sleep(SECONDS.toMillis(1));
         }
     }
 
-    private void failIfAwaitUntilAllMembersJoinDeadlineMissed(Collection<MemberImpl> members) {
+    /**
+     * Fails with an {@code HotRestartException} if a member is joined but that doesn't exist in restored members.
+     *
+     * @param restoredMemberUuids restored member uuid set
+     * @param members current members
+     */
+    private void failIfUnexpectedMemberJoins(Set<String> restoredMemberUuids, Collection<MemberImpl> members) {
+        for (MemberImpl member : members) {
+            if (!restoredMemberUuids.contains(member.getUuid())) {
+                throw new HotRestartException("Unexpected member is joined: " + member
+                        + ". Restored member uuids: " + restoredMemberUuids);
+            }
+        }
+    }
+
+    private Set<String> getRestoredMemberUuids() {
+        Set<String> restoredMemberUuids = new HashSet<String>();
+        for (MemberImpl member : restoredMembersRef.get()) {
+            restoredMemberUuids.add(member.getUuid());
+        }
+        return unmodifiableSet(restoredMemberUuids);
+    }
+
+    private void trySetRestoredMembersToExpectedMembers(Set<String> restoredMemberUuids) {
+        if (!node.isMaster()) {
+            return;
+        }
+        if (expectedMemberUuidsRef.compareAndSet(null, restoredMemberUuids)) {
+            logger.info("All members are present. Expected member list is set to: " + restoredMemberUuids);
+            broadcast(new SendExpectedMemberUuidsOperation(restoredMemberUuids));
+        }
+    }
+
+    /**
+     * Checks for validation timeout. When timeout occurs, fails with {@code HotRestartException}
+     * if {@code clusterDataRecoveryPolicy} is {@code FULL_RECOVERY_ONLY). If not {@code FULL_RECOVERY_ONLY) then
+     * tries to set expected members to currently joined member list.
+     *
+     * @param members
+     */
+    private void failOrSetExpectedMembersIfValidationTimedOut(Collection<MemberImpl> members) {
         if (getRemainingValidationTimeMillis() == 0) {
             if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
                 throw new HotRestartException(
-                        "Expected members didn't join, validation phase timed-out!"
-                                + " Expected member-count: " + restoredMembersRef.get().size()
-                                + ", Actual member-count: " + members.size()
-                                + ". Start-time: " + new Date(validationStartTime)
-                                + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
-            } else if (node.isMaster() && isPartialStartPolicy() && expectedMemberUuidsRef.get() == null) {
-                setCurrentMemberListToExpectedMembers();
-                broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
+                        "Expected members didn't join, validation phase timed-out!" + " Expected member-count: "
+                                + restoredMembersRef.get().size() + ", Actual member-count: " + members.size()
+                                + ". Start-time: " + new Date(validationStartTime) + ", Timeout: " + MILLISECONDS
+                                .toSeconds(validationTimeout) + " sec.");
+            }
+            if (node.isMaster() && isPartialStartPolicy()) {
+                if (trySetCurrentMemberListToExpectedMembers()) {
+                    broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
+                }
             }
         } else if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
             throw new ForceStartException();
@@ -1047,11 +1090,12 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private boolean isExpectedMembersJoined(Map<Address, Address> addressMapping) {
+    private boolean isExpectedMembersJoined(Set<String> expectedMemberUuids, Map<Address, Address> addressMapping) {
         addressMapping.clear();
 
-        Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
         if (expectedMemberUuids == null) {
+            logger.info("Waiting for cluster formation... Expected members are still not known. "
+                    + "Cluster data recovery policy is " + clusterDataRecoveryPolicy);
             return false;
         }
 
@@ -1074,7 +1118,6 @@ public final class ClusterMetadataManager {
             if (!currentMember.getAddress().equals(missingMember.getAddress())) {
                 addressMapping.put(missingMember.getAddress(), currentMember.getAddress());
             }
-
         }
 
         return true;
@@ -1136,6 +1179,16 @@ public final class ClusterMetadataManager {
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
+                Set<String> restoredMemberUuids = getRestoredMemberUuids();
+                for (String expectedMemberUuid : expectedMemberUuids) {
+                    if (!restoredMemberUuids.contains(expectedMemberUuid)) {
+                        String message = "Invalid expected member uuids is received from master: " + sender + ", "
+                                + expectedMemberUuid + " doesn't exist in restored members: " + restoredMemberUuids;
+                        logger.severe(message);
+                        return;
+                    }
+                }
+
                 if (expectedMemberUuidsRef.compareAndSet(null, expectedMemberUuids)) {
                     logger.info("expected member uuids is set to " + expectedMemberUuids + " received from master: " + sender);
                     return;

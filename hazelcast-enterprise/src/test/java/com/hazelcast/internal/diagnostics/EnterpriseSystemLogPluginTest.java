@@ -33,11 +33,13 @@ import org.junit.runner.RunWith;
 @Category(QuickTest.class)
 public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
 
+    private static final String hazelcastVersionSystemPropName = "hazelcast.internal.override.version";
+
     @Test
     public void testClusterVersionChange() {
         MemberVersion currentVersion = getNode(hz).getVersion();
         ClusterVersion nextMinorVersion = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
-        System.setProperty("hazelcast.version", nextMinorVersion.toString());
+        System.setProperty(hazelcastVersionSystemPropName, nextMinorVersion.toString());
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
         waitAllForSafeState();
         hz.shutdown();
@@ -50,6 +52,6 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
                 assertContains("ClusterVersionChanged");
             }
         });
-        System.clearProperty("hazelcast.version");
+        System.clearProperty(hazelcastVersionSystemPropName);
     }
 }

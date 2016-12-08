@@ -64,6 +64,7 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     protected static final int PARTITION_COUNT = 50;
 
+    private static final String hazelcastVersionSystemPropName = "hazelcast.internal.override.version";
     private static final AtomicInteger instanceNameIndex = new AtomicInteger(0);
 
     public enum AddressChangePolicy {
@@ -233,10 +234,10 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
                                       HotRestartClusterDataRecoveryPolicy clusterStartPolicy, MemberVersion codebaseVersion) {
-        String existingHazelcastVersionValue = System.getProperty("hazelcast.version");
+        String existingHazelcastVersionValue = System.getProperty(hazelcastVersionSystemPropName);
         try {
             if (codebaseVersion != null) {
-                System.setProperty("hazelcast.version", codebaseVersion.toString());
+                System.setProperty(hazelcastVersionSystemPropName, codebaseVersion.toString());
             }
             String instanceName = instanceNames.get(address);
             assertNotNull(instanceName);
@@ -250,9 +251,9 @@ public abstract class AbstractHotRestartClusterStartTest {
             return factory.newHazelcastInstance(newAddress, config);
         } finally {
             if (existingHazelcastVersionValue == null) {
-                System.clearProperty("hazelcast.version");
+                System.clearProperty(hazelcastVersionSystemPropName);
             } else {
-                System.setProperty("hazelcast.version", existingHazelcastVersionValue);
+                System.setProperty(hazelcastVersionSystemPropName, existingHazelcastVersionValue);
             }
         }
     }

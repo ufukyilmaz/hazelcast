@@ -144,9 +144,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
             try {
-                LicenseHelper.checkLicenseKeyPerFeature(license.getKey(), buildInfo.getVersion(),
-                        Feature.CONTINUOUS_QUERY_CACHE);
-
                 return new EnterpriseMapClientProxyFactory(client.getClientExecutionService(),
                         client.getSerializationService(), client.getClientConfig(),
                         client.getClientPartitionService());

@@ -45,6 +45,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
@@ -64,7 +65,6 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     protected static final int PARTITION_COUNT = 50;
 
-    private static final String hazelcastVersionSystemPropName = "hazelcast.internal.override.version";
     private static final AtomicInteger instanceNameIndex = new AtomicInteger(0);
 
     public enum AddressChangePolicy {
@@ -234,10 +234,10 @@ public abstract class AbstractHotRestartClusterStartTest {
 
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
                                       HotRestartClusterDataRecoveryPolicy clusterStartPolicy, MemberVersion codebaseVersion) {
-        String existingHazelcastVersionValue = System.getProperty(hazelcastVersionSystemPropName);
+        String existingHazelcastVersionValue = System.getProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
         try {
             if (codebaseVersion != null) {
-                System.setProperty(hazelcastVersionSystemPropName, codebaseVersion.toString());
+                System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, codebaseVersion.toString());
             }
             String instanceName = instanceNames.get(address);
             assertNotNull(instanceName);
@@ -251,9 +251,9 @@ public abstract class AbstractHotRestartClusterStartTest {
             return factory.newHazelcastInstance(newAddress, config);
         } finally {
             if (existingHazelcastVersionValue == null) {
-                System.clearProperty(hazelcastVersionSystemPropName);
+                System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
             } else {
-                System.setProperty(hazelcastVersionSystemPropName, existingHazelcastVersionValue);
+                System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, existingHazelcastVersionValue);
             }
         }
     }

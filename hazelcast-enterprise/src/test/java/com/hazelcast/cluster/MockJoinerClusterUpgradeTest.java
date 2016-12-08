@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.test.TestClusterUpgradeUtils.newHazelcastInstance;
 import static com.hazelcast.test.TestClusterUpgradeUtils.upgradeClusterMembers;
 import static org.junit.Assert.assertEquals;
@@ -57,6 +58,6 @@ public class MockJoinerClusterUpgradeTest extends AbstractClusterUpgradeTest {
 
     @After
     public void tearDown() {
-        System.clearProperty("hazelcast.version");
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
     }
 }

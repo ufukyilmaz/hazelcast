@@ -224,7 +224,6 @@ public final class ClusterMetadataManager {
                         logger.fine("Cluster start ping...");
                         sleep(SECONDS.toMillis(1));
                     } catch (InterruptedException e) {
-                        currentThread().interrupt();
                         break;
                     }
                 }
@@ -328,7 +327,7 @@ public final class ClusterMetadataManager {
             try {
                 pingThread.join();
             } catch (InterruptedException e) {
-                logger.severe("interrupted while joined to ping thread");
+                logger.severe("Interrupted while joining to ping thread");
                 currentThread().interrupt();
             }
         }
@@ -380,7 +379,7 @@ public final class ClusterMetadataManager {
                 logger.fine("Waiting for result... Remaining time: " + remaining + " ms.");
             }
 
-           if (Clock.currentTimeMillis() > deadline) {
+            if (Clock.currentTimeMillis() > deadline) {
                 throw new HotRestartException("Excluded members have not left the cluster before timeout!");
             }
         }
@@ -429,7 +428,7 @@ public final class ClusterMetadataManager {
                 if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
                     Collection<MemberImpl> restoredMembers = restoredMembersRef.get();
                     if (restoredMembers == null) {
-                       return;
+                        return;
                     }
 
                     for (Member member : restoredMembers) {
@@ -535,12 +534,12 @@ public final class ClusterMetadataManager {
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus != CLUSTER_START_IN_PROGRESS) {
-                logger.warning("cannot trigger partial data recovery since cluster start status is " + hotRestartStatus);
+                logger.warning("Cannot trigger partial data recovery since cluster start status is " + hotRestartStatus);
                 return false;
             }
 
             if (restoredMembersRef.get() == null) {
-                logger.warning("cannot trigger partial data recovery since restored member list is not present");
+                logger.warning("Cannot trigger partial data recovery since restored member list is not present");
                 return false;
             }
 
@@ -760,7 +759,7 @@ public final class ClusterMetadataManager {
             return;
         }
 
-        logger.fine("auto partial data recovery attempt...");
+        logger.fine("Auto partial data recovery attempt...");
         tryPartialStart();
     }
 
@@ -781,7 +780,7 @@ public final class ClusterMetadataManager {
 
             MemberClusterStartInfo memberClusterStartInfo = memberClusterStartInfos.get(expectedMember.getAddress());
             if (memberClusterStartInfo.getDataLoadStatus() == LOAD_IN_PROGRESS) {
-                logger.fine("No partial data recovery attempt since member load status...");
+                logger.fine("No partial data recovery attempt since member load is in progress...");
                 return true;
             }
         }
@@ -1163,14 +1162,13 @@ public final class ClusterMetadataManager {
         }
     }
 
-    public void receiveExpectedMembersFromMaster(Address sender, Set<String> expectedMemberUuids) {
+    void receiveExpectedMembersFromMaster(Address sender, Set<String> expectedMemberUuids) {
         if (node.isMaster()) {
-            logger.warning("received expected member list from " + sender
-                    + " but this node is already master.");
+            logger.warning("Received expected member list from " + sender + " but this node is already master.");
             return;
         } else if (!sender.equals(node.getMasterAddress())) {
-            logger.warning("received expected member list from non-master member: " + sender
-                    + " master is " + node.getMasterAddress() + " expected member list: " + expectedMemberUuids);
+            logger.warning("Received expected member list from non-master member: " + sender
+                    + ", current master is " + node.getMasterAddress() + ", expected member list is " + expectedMemberUuids);
             return;
         }
 
@@ -1190,13 +1188,13 @@ public final class ClusterMetadataManager {
                 }
 
                 if (expectedMemberUuidsRef.compareAndSet(null, expectedMemberUuids)) {
-                    logger.info("expected member uuids is set to " + expectedMemberUuids + " received from master: " + sender);
+                    logger.info("Expected member uuids is set to " + expectedMemberUuids + " received from master: " + sender);
                     return;
                 }
 
                 Set<String> currentExpectedMemberUuids = expectedMemberUuidsRef.get();
                 if (!currentExpectedMemberUuids.equals(expectedMemberUuids)) {
-                    logger.severe("expected member uuids is already set to " + currentExpectedMemberUuids
+                    logger.severe("Expected member uuids is already set to " + currentExpectedMemberUuids
                             + " but a different one " + expectedMemberUuids + " is received from master: " + sender);
                 }
             } else {
@@ -1209,9 +1207,9 @@ public final class ClusterMetadataManager {
         }
     }
 
-    public void replyExpectedMemberUuidsQuestion(Address sender, String senderUuid) {
+    void replyExpectedMemberUuidsQuestion(Address sender, String senderUuid) {
         if (!node.isMaster()) {
-            logger.warning("won't reply expected member list question of sender: " + sender + " since this node is not master.");
+            logger.warning("Won't reply expected member list question of sender: " + sender + " since this node is not master.");
             return;
         }
 
@@ -1253,7 +1251,7 @@ public final class ClusterMetadataManager {
                     return;
                 }
 
-                throw new HotRestartException("cluster-wide data load timeout...");
+                throw new HotRestartException("Cluster-wide data load timeout...");
             }
 
             hotRestartStatusLock.lock();
@@ -1266,7 +1264,7 @@ public final class ClusterMetadataManager {
                     } else if (isPartialStartPolicy()) {
                         tryPartialStart();
                     } else {
-                        throw new IllegalStateException("invalid cluster start policy: " + clusterDataRecoveryPolicy);
+                        throw new IllegalStateException("Invalid cluster start policy: " + clusterDataRecoveryPolicy);
                     }
                 }
             } finally {
@@ -1317,7 +1315,9 @@ public final class ClusterMetadataManager {
             members.add(member.getUuid());
         }
 
-        logger.info("partition table version -> member uuids: " + membersUuidsByPartitionTableVersion);
+        if (logger.isFineEnabled()) {
+            logger.fine("Partition table version -> member uuids: " + membersUuidsByPartitionTableVersion);
+        }
 
         return membersUuidsByPartitionTableVersion;
     }

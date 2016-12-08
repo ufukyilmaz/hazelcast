@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapEntries;
@@ -12,6 +13,7 @@ import com.hazelcast.map.impl.event.MapEventPublisher;
 import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
+import com.hazelcast.map.impl.nearcache.invalidation.Invalidation;
 import com.hazelcast.map.impl.nearcache.invalidation.Invalidator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
@@ -22,13 +24,16 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.partition.IPartitionService;
-import org.mockito.ArgumentCaptor;
+import com.hazelcast.spi.serialization.SerializationService;
+import org.mockito.Matchers;
 import org.mockito.stubbing.OngoingStubbing;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT;
 import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT_ALL;
+import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,7 +41,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.atLeast;
@@ -65,11 +69,26 @@ abstract class AbstractHDOperationTest {
 
     private RecordStore recordStore;
     private HDEvictorImpl hdEvictor;
-    private Invalidator nearCacheInvalidator;
+    private TestInvalidator nearCacheInvalidator;
 
     private NodeEngine nodeEngine;
 
     public void setUp() {
+        IPartitionService partitionService = mock(IPartitionService.class);
+        when(partitionService.getPartitionCount()).thenReturn(getPartitionCount());
+
+        InternalOperationService operationService = mock(InternalOperationService.class);
+        when(operationService.getPartitionThreadCount()).thenReturn(getPartitionCount());
+
+        SerializationService serializationService = mock(SerializationService.class);
+        when(serializationService.toData(Matchers.any())).thenReturn(new HeapData());
+
+        nodeEngine = mock(NodeEngine.class);
+        when(nodeEngine.getLogger(any(Class.class))).thenReturn(Logger.getLogger(getClass()));
+        when(nodeEngine.getPartitionService()).thenReturn(partitionService);
+        when(nodeEngine.getOperationService()).thenReturn(operationService);
+        when(nodeEngine.getSerializationService()).thenReturn(serializationService);
+
         MapConfig mapConfig = new MapConfig();
         mapConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
 
@@ -100,30 +119,38 @@ abstract class AbstractHDOperationTest {
         MapEventPublisher mapEventPublisher = mock(MapEventPublisher.class);
         when(mapEventPublisher.hasEventListener(eq(getMapName()))).thenReturn(false);
 
-        nearCacheInvalidator = mock(Invalidator.class);
-
         EnterpriseMapNearCacheManager nearCacheManager = mock(EnterpriseMapNearCacheManager.class, RETURNS_DEEP_STUBS);
-        when(nearCacheManager.getInvalidator()).thenReturn(nearCacheInvalidator);
 
         MapServiceContext mapServiceContext = mock(MapServiceContext.class);
         when(mapServiceContext.getPartitionContainer(anyInt())).thenReturn(partitionContainer);
         when(mapServiceContext.getMapEventPublisher()).thenReturn(mapEventPublisher);
         when(mapServiceContext.getMapNearCacheManager()).thenReturn(nearCacheManager);
         when(mapServiceContext.getMapContainer(eq(getMapName()))).thenReturn(mapContainer);
+        when(mapServiceContext.getNodeEngine()).thenReturn(nodeEngine);
+
+        nearCacheInvalidator = new TestInvalidator(mapServiceContext);
+        when(nearCacheManager.getInvalidator()).thenReturn(nearCacheInvalidator);
 
         mapService = mock(MapService.class);
         when(mapService.getMapServiceContext()).thenReturn(mapServiceContext);
 
-        IPartitionService partitionService = mock(IPartitionService.class);
-        when(partitionService.getPartitionCount()).thenReturn(getPartitionCount());
+    }
 
-        InternalOperationService operationService = mock(InternalOperationService.class);
-        when(operationService.getPartitionThreadCount()).thenReturn(getPartitionCount());
+    private class TestInvalidator extends Invalidator {
+        private final AtomicInteger count = new AtomicInteger();
 
-        nodeEngine = mock(NodeEngine.class);
-        when(nodeEngine.getLogger(any(Class.class))).thenReturn(Logger.getLogger(getClass()));
-        when(nodeEngine.getPartitionService()).thenReturn(partitionService);
-        when(nodeEngine.getOperationService()).thenReturn(operationService);
+        public TestInvalidator(MapServiceContext mapServiceContext) {
+            super(mapServiceContext);
+        }
+
+        @Override
+        protected void invalidateInternal(Invalidation invalidation, int orderKey) {
+            count.incrementAndGet();
+        }
+
+        public int getCount() {
+            return count.get();
+        }
     }
 
     /**
@@ -231,6 +258,7 @@ abstract class AbstractHDOperationTest {
         operation.setMapService(mapService);
         operation.setService(mapService);
         operation.setNodeEngine(nodeEngine);
+        operation.setCallerUuid(newUnsecureUuidString());
     }
 
     /**
@@ -274,11 +302,7 @@ abstract class AbstractHDOperationTest {
     @SuppressWarnings("unchecked")
     void verifyNearCacheInvalidatorAfterOperation() {
         final int itemCount = getItemCount();
-        ArgumentCaptor<Data> keysCaptor = ArgumentCaptor.forClass((Class) Data.class);
-        verify(nearCacheInvalidator, times(itemCount)).invalidateKey(keysCaptor.capture(), eq(getMapName()), anyString());
-        verifyNoMoreInteractions(nearCacheInvalidator);
-
-        assertEquals("NearCacheInvalidator should have received all keys", itemCount, keysCaptor.getAllValues().size());
+        assertEquals("NearCacheInvalidator should have received all keys", nearCacheInvalidator.getCount(), itemCount);
     }
 
     /**

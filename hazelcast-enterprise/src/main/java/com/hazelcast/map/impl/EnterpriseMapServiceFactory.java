@@ -1,9 +1,8 @@
 package com.hazelcast.map.impl;
 
-import com.hazelcast.map.impl.event.EnterpriseMapEventPublishingService;
+import com.hazelcast.map.impl.event.MapEventPublishingService;
 import com.hazelcast.spi.ClientAwareService;
 import com.hazelcast.spi.EventPublishingService;
-import com.hazelcast.spi.PostJoinAwareService;
 import com.hazelcast.spi.RemoteService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.spi.SplitBrainHandlerService;
@@ -36,19 +35,13 @@ class EnterpriseMapServiceFactory extends DefaultMapServiceFactory {
     @Override
     ClientAwareService createClientAwareService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapClientAwareService(mapServiceContext);
+        return new MapClientAwareService(mapServiceContext);
     }
 
     @Override
     EventPublishingService createEventPublishingService() {
         EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapEventPublishingService(mapServiceContext);
-    }
-
-    @Override
-    PostJoinAwareService createPostJoinAwareService() {
-        EnterpriseMapServiceContext mapServiceContext = getEnterpriseMapServiceContext();
-        return new EnterpriseMapPostJoinAwareService(mapServiceContext);
+        return new MapEventPublishingService(mapServiceContext);
     }
 
     @Override

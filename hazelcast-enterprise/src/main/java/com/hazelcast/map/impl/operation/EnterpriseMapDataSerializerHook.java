@@ -109,7 +109,8 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
     public static final int SIZE_FACTORY = 65;
     public static final int MADE_PUBLISHABLE_FACTORY = 66;
     public static final int MAP_REPLICATION = 67;
-    public static final int POST_JOIN = 68;
+    // Since 3.8 continuous query cache was moved to open source, no need for an enterprise-specific post join operation
+    // public static final int POST_JOIN = 68;
     public static final int PARTITION_SCAN = 69;
     public static final int ACCUMULATOR_CONSUMER = 70;
     public static final int PUT_ALL_PARTITION_AWARE_FACTORY = 71;
@@ -454,11 +455,6 @@ public final class EnterpriseMapDataSerializerHook implements DataSerializerHook
         constructors[MAP_REPLICATION] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new EnterpriseMapReplicationOperation();
-            }
-        };
-        constructors[POST_JOIN] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
-            public IdentifiedDataSerializable createNew(Integer arg) {
-                return new EnterprisePostJoinMapOperation();
             }
         };
         constructors[PARTITION_SCAN] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {

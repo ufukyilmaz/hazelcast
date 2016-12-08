@@ -47,6 +47,15 @@ public class PersistentCacheDescriptors {
         }
     }
 
+    public void reset() {
+        synchronized (nameToDesc) {
+            nameToDesc.clear();
+            idToDesc.clear();
+            cacheIdSeq = 0;
+        }
+        ensureConfigDirectoryExists();
+    }
+
     public long getPrefix(String serviceName, String name, int partitionId) {
         final String key = toCacheKey(serviceName, name);
         final CacheDescriptor desc = nameToDesc.get(key);

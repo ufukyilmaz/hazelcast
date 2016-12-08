@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
+
 /**
  * Extends SystemLogPluginTest including test for logging of cluster version change.
  */
@@ -33,13 +35,11 @@ import org.junit.runner.RunWith;
 @Category(QuickTest.class)
 public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
 
-    private static final String hazelcastVersionSystemPropName = "hazelcast.internal.override.version";
-
     @Test
     public void testClusterVersionChange() {
         MemberVersion currentVersion = getNode(hz).getVersion();
         ClusterVersion nextMinorVersion = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
-        System.setProperty(hazelcastVersionSystemPropName, nextMinorVersion.toString());
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, nextMinorVersion.toString());
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
         waitAllForSafeState();
         hz.shutdown();
@@ -52,6 +52,6 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
                 assertContains("ClusterVersionChanged");
             }
         });
-        System.clearProperty(hazelcastVersionSystemPropName);
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
     }
 }

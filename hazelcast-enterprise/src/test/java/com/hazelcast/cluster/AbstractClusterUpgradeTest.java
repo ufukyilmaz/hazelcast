@@ -18,6 +18,7 @@ package com.hazelcast.cluster;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.instance.BuildInfoProvider;
 import com.hazelcast.internal.cluster.ClusterVersionListener;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -31,6 +32,7 @@ import org.junit.rules.ExpectedException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -63,7 +65,7 @@ public abstract class AbstractClusterUpgradeTest extends HazelcastTestSupport {
     @Before
     public final void setupCluster() {
         // Initialize a cluster at version 2.1.0
-        System.setProperty("hazelcast.version", VERSION_2_1_0.toString());
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, VERSION_2_1_0.toString());
         clusterMembers = new HazelcastInstance[CLUSTER_MEMBERS_COUNT];
         for (int i=0; i < CLUSTER_MEMBERS_COUNT; i++) {
             clusterMembers[i] = createHazelcastInstance(VERSION_2_1_0, getConfig());

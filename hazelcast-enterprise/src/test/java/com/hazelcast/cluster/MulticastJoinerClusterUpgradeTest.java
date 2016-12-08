@@ -27,6 +27,7 @@ import org.junit.After;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -38,9 +39,9 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
 
     @Override
     HazelcastInstance createHazelcastInstance(MemberVersion version, Config config) {
-        System.setProperty("hazelcast.version", version.toString());
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, version.toString());
         HazelcastInstance hz = Hazelcast.newHazelcastInstance(config);
-        System.clearProperty("hazelcast.version");
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
         return hz;
     }
 
@@ -65,7 +66,7 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
             }
         }
         finally {
-            System.clearProperty("hazelcast.version");
+            System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
         }
     }
 
@@ -87,6 +88,6 @@ public class MulticastJoinerClusterUpgradeTest extends AbstractClusterUpgradeTes
         for (HazelcastInstance hz : clusterMembers) {
             hz.shutdown();
         }
-        System.clearProperty("hazelcast.version");
+        System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
     }
 }

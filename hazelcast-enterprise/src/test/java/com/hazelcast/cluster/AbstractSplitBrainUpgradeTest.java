@@ -17,8 +17,12 @@
 package com.hazelcast.cluster;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.SplitBrainTestSupport;
+import com.hazelcast.version.MemberVersion;
 import org.junit.After;
+
+import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 
 /**
  * Abstract class for split-brain cluster upgrade tests
@@ -54,5 +58,19 @@ public abstract class AbstractSplitBrainUpgradeTest extends SplitBrainTestSuppor
         Config config = super.config();
         config.getGroupConfig().setName(groupName);
         return config;
+    }
+
+    protected HazelcastInstance createHazelcastInstanceInBrain(int brain, MemberVersion memberVersion) {
+        String existingValue = System.getProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+        System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, memberVersion.toString());
+        try {
+            return createHazelcastInstanceInBrain(brain);
+        } finally {
+            if (existingValue != null) {
+                System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, existingValue);
+            } else {
+                System.clearProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION);
+            }
+        }
     }
 }

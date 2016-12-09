@@ -66,7 +66,7 @@ public class SplitBrainUpgradeCase1Test extends AbstractSplitBrainUpgradeTest {
         waitAllForSafeState(firstBrain);
         assertEquals(CLUSTER_VERSION_2_2, firstBrain[1].getCluster().getClusterVersion());
         // upgrade just the first node of first brain (single 2.2.0 node to 2.3.0)
-        instances[0] = newHazelcastInstance(factory, VERSION_2_3_0, config());
+        instances[0] = createHazelcastInstanceInBrain(0, VERSION_2_3_0);
         firstBrain[0] = instances[0];
         // make sure we are still at 2.2 cluster version
         assertClusterVersion(firstBrain, CLUSTER_VERSION_2_2);

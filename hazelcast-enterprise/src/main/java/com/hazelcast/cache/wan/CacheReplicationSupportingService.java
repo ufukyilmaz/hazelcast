@@ -8,7 +8,6 @@ import com.hazelcast.cache.impl.operation.CacheCreateConfigOperation;
 import com.hazelcast.cache.impl.operation.MutableOperation;
 import com.hazelcast.cache.operation.EnterpriseCacheOperationProvider;
 import com.hazelcast.config.CacheConfig;
-import com.hazelcast.config.CacheSimpleConfig;
 import com.hazelcast.config.WanAcknowledgeType;
 import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.nio.serialization.Data;
@@ -18,8 +17,6 @@ import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
-
-import javax.cache.CacheException;
 
 /**
  * This class handles incoming WAN replication events.
@@ -87,16 +84,9 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
     private CacheConfig getCacheConfig(String cacheNameWithPrefix, String name) {
         CacheConfig cacheConfig = cacheService.getCacheConfig(cacheNameWithPrefix);
         if (cacheConfig == null) {
-            CacheSimpleConfig simpleConfig = cacheService.findCacheConfig(name);
-            if (simpleConfig != null) {
-                try {
-                    cacheConfig = new CacheConfig(simpleConfig);
-                    cacheConfig.setName(name);
-                    cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(name)));
-                } catch (Exception e) {
-                    //cannot create the actual configuration from the declarative one
-                    throw new CacheException(e);
-                }
+            cacheConfig = cacheService.findCacheConfig(name);
+            if (cacheConfig != null) {
+                cacheConfig.setManagerPrefix(cacheNameWithPrefix.substring(0, cacheNameWithPrefix.lastIndexOf(name)));
             }
         }
         return cacheConfig;

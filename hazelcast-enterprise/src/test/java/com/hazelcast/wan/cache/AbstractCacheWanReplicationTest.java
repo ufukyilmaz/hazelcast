@@ -3,10 +3,16 @@ package com.hazelcast.wan.cache;
 import com.hazelcast.cache.HazelcastExpiryPolicy;
 import com.hazelcast.cache.merge.HigherHitsCacheMergePolicy;
 import com.hazelcast.cache.merge.PassThroughCacheMergePolicy;
+import com.hazelcast.core.DistributedObject;
+import com.hazelcast.map.merge.PassThroughMergePolicy;
+import com.hazelcast.test.AssertTask;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.cache.expiry.ExpiryPolicy;
+import java.util.Collection;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicationTestSupport {
 
@@ -158,6 +164,25 @@ public abstract class AbstractCacheWanReplicationTest extends CacheWanReplicatio
         checkKeysNotIn(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 50, 100);
 
         resumeWanReplication(clusterA, "atob", configB.getGroupConfig().getName());
+        checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
+    }
+
+    @Test
+    public void testProxyCreation() {
+        initConfigA();
+        initConfigB();
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughCacheMergePolicy.class.getName(),
+                DEFAULT_CACHE_NAME);
+        startClusterA();
+        startClusterB();
+        createCacheDataIn(clusterA, classLoaderA, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, getMemoryFormat(), 0, 50, false);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
+                assertEquals(1, distributedObjects.size());
+            }
+        }, 10);
         checkCacheDataInFrom(clusterB, classLoaderB, DEFAULT_CACHE_MANAGER, DEFAULT_CACHE_NAME, 0, 50, clusterA);
     }
 

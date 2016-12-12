@@ -14,6 +14,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -30,10 +31,12 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
 
     private final EnterpriseCacheService cacheService;
     private final NodeEngine nodeEngine;
+    private final ProxyService proxyService;
 
     public CacheReplicationSupportingService(EnterpriseCacheService cacheService) {
         this.cacheService = cacheService;
         this.nodeEngine = cacheService.getNodeEngine();
+        this.proxyService = nodeEngine.getProxyService();
     }
 
     @Override
@@ -61,6 +64,12 @@ public class CacheReplicationSupportingService implements ReplicationSupportingS
                                 .invokeOnTarget(CacheService.SERVICE_NAME, op, nodeEngine.getThisAddress());
                 future.join();
             }
+
+            /** Proxies should be created to initialize listeners, etc. and to show WAN replicated caches in mancenter.
+             * Otherwise, users are forced to manually call cacheManager#getCache
+             * Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
+             */
+            proxyService.getDistributedObject(CacheService.SERVICE_NAME, cacheConfig.getNameWithPrefix());
 
             WanReplicationRef wanReplicationRef = cacheConfig.getWanReplicationRef();
             if (wanReplicationRef != null && wanReplicationRef.isRepublishingEnabled()) {

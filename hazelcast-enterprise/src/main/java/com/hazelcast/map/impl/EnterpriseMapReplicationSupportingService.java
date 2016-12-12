@@ -15,6 +15,7 @@ import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.ProxyService;
 import com.hazelcast.spi.ReplicationSupportingService;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -31,11 +32,13 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
     private final MapServiceContext mapServiceContext;
     private final NodeEngine nodeEngine;
     private final MapMergePolicy defaultSyncMergePolicy;
+    private final ProxyService proxyService;
 
     EnterpriseMapReplicationSupportingService(MapServiceContext mapServiceContext) {
         this.mapServiceContext = mapServiceContext;
         this.nodeEngine = mapServiceContext.getNodeEngine();
         this.defaultSyncMergePolicy = mapServiceContext.getMergePolicyProvider().getMergePolicy(DEFAULT_MERGE_POLICY);
+        this.proxyService = nodeEngine.getProxyService();
     }
 
     @Override
@@ -43,13 +46,20 @@ class EnterpriseMapReplicationSupportingService implements ReplicationSupporting
         Object eventObject = replicationEvent.getEventObject();
         if (eventObject instanceof EnterpriseMapReplicationObject) {
 
+            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
+            String mapName = mapReplicationObject.getMapName();
+
+            /** Proxies should be created to initialize listeners, indexes, etc. and to show WAN replicated maps in mancenter.
+             * Otherwise, users are forced to manually call IMap#get()
+             * Fixes https://github.com/hazelcast/hazelcast-enterprise/issues/1049
+            */
+            proxyService.getDistributedObject(MapService.SERVICE_NAME, mapName);
+
             if (eventObject instanceof EnterpriseMapReplicationSync) {
                 handleSyncObject((EnterpriseMapReplicationSync) eventObject);
                 return;
             }
 
-            EnterpriseMapReplicationObject mapReplicationObject = (EnterpriseMapReplicationObject) eventObject;
-            String mapName = mapReplicationObject.getMapName();
             MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
             WanReplicationRef wanReplicationRef = mapContainer.getMapConfig().getWanReplicationRef();
 

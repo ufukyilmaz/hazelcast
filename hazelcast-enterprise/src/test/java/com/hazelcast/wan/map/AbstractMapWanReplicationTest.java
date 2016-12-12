@@ -7,7 +7,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
-import com.hazelcast.internal.ascii.HTTPCommunicator;
 import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.EntryBackupProcessor;
 import com.hazelcast.map.EntryProcessor;
@@ -81,68 +80,6 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
 
         assertKeysNotIn(clusterC, "map", 0, 2000);
         assertDataSizeEventually(clusterC, "map", 0);
-    }
-
-    @Test
-    public void basicSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncMap("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
-    }
-
-    @Test
-    public void missingPartitionSyncTest() {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        EnterpriseWanReplicationService wanReplicationService
-                = (EnterpriseWanReplicationService) getNode(clusterA[0]).nodeEngine.getWanReplicationService();
-        wanReplicationService.syncMapTestMissingPartitions("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
-    }
-
-    @Test
-    public void syncUsingRestApi() throws Exception {
-        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
-        startClusterA();
-        startClusterB();
-
-        createDataIn(clusterA, "map", 0, 1000);
-        assertDataInFrom(clusterB, "map", 0, 1000, clusterA);
-
-        clusterB[0].getCluster().shutdown();
-
-        startClusterB();
-        assertKeysNotIn(clusterB, "map", 0, 1000);
-
-        HTTPCommunicator communicator = new HTTPCommunicator(clusterA[0]);
-        communicator.syncMapOverWAN("atob", "B", "map");
-
-        assertKeysIn(clusterB, "map", 0, 1000);
     }
 
     @Test
@@ -550,6 +487,25 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
         storedMap.loadAll(true);
 
         assertKeysIn(clusterB, "stored-map", 0, 10);
+    }
+
+    @Test
+    public void testStats() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", HigherHitsMapMergePolicy.class.getName());
+        setupReplicateFrom(configB, configA, clusterA.length, "btoa", HigherHitsMapMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+
+        createDataIn(clusterA, "map", 0, 10);
+        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
+
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                EnterpriseWanReplicationService ewrs = (EnterpriseWanReplicationService) getNodeEngineImpl(clusterA[0]).getWanReplicationService();
+                assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
+            }
+        });
     }
 
     private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {

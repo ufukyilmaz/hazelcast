@@ -7,7 +7,7 @@ import com.hazelcast.config.WanReplicationConfig;
 import com.hazelcast.enterprise.wan.operation.EWRQueueReplicationOperation;
 import com.hazelcast.enterprise.wan.operation.WanOperation;
 import com.hazelcast.enterprise.wan.replication.AbstractWanPublisher;
-import com.hazelcast.enterprise.wan.sync.PartitionSyncReplicationEventObject;
+import com.hazelcast.enterprise.wan.sync.WanSyncEvent;
 import com.hazelcast.enterprise.wan.sync.WanSyncManager;
 import com.hazelcast.instance.HazelcastThreadGroup;
 import com.hazelcast.instance.Node;
@@ -227,6 +227,10 @@ public class EnterpriseWanReplicationService
     public WanReplicationEndpoint getEndpoint(String wanReplicationName, String target) {
         WanReplicationPublisherDelegate publisherDelegate
                 = (WanReplicationPublisherDelegate) getWanReplicationPublisher(wanReplicationName);
+        if (publisherDelegate == null) {
+            throw new InvalidConfigurationException("WAN Replication Config doesn't exist with WAN configuration name "
+                    + wanReplicationName + " and publisher target group name " + target);
+        }
         Map<String, WanReplicationEndpoint> endpoints = publisherDelegate.getEndpoints();
         return endpoints.get(target);
     }
@@ -425,6 +429,9 @@ public class EnterpriseWanReplicationService
             consumer.shutdown();
         }
 
+        if (syncManager != null) {
+            syncManager.shutdown();
+        }
         StripedExecutor ex = executor;
         if (ex != null) {
             ex.shutdown();
@@ -451,26 +458,21 @@ public class EnterpriseWanReplicationService
         delegate.checkWanReplicationQueues();
     }
 
-    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
-        return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
-    }
-
-    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
-        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
-    }
-
     @Override
     public void syncMap(String wanReplicationName, String targetGroupName, String mapName) {
         initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, false);
+        syncManager.initiateSyncMapRequest(wanReplicationName, targetGroupName, mapName);
     }
 
-    /**
-     * DO NOT USE: This method is for testing purposes only.
-     */
-    public void syncMapTestMissingPartitions(String wanReplicationName, String targetGroupName, String mapName) {
+    public void publishSyncEvent(String wanReplicationName, String targetGroupName,
+                                 WanSyncEvent syncEvent) {
+        WanReplicationEndpoint endpoint = getEndpoint(wanReplicationName, targetGroupName);
+        endpoint.publishSyncEvent(syncEvent);
+    }
+
+    public void populateSyncEventOnMembers(String wanReplicationName, String targetGroupName, String mapName) {
         initializeSyncManagerIfNeeded();
-        syncManager.initiateSyncOnAllPartitions(wanReplicationName, targetGroupName, mapName, true);
+        syncManager.populateSyncRequestOnMembers(wanReplicationName, targetGroupName, mapName);
     }
 
     private void initializeSyncManagerIfNeeded() {
@@ -483,8 +485,12 @@ public class EnterpriseWanReplicationService
         }
     }
 
-    public void publishMapWanSyncEvent(PartitionSyncReplicationEventObject eventObject) {
-        WanReplicationEndpoint endpoint = getEndpoint(eventObject.getWanReplicationName(), eventObject.getTargetGroupName());
-        endpoint.publishMapSyncEvent(eventObject);
+    private ConcurrentHashMap<String, WanReplicationPublisherDelegate> initializeWanReplicationPublisherMapping() {
+        return new ConcurrentHashMap<String, WanReplicationPublisherDelegate>(2);
     }
+
+    private ConcurrentHashMap<String, WanReplicationConsumer> initializeCustomWanReplicationConsumerMapping() {
+        return new ConcurrentHashMap<String, WanReplicationConsumer>(2);
+    }
+
 }

@@ -112,5 +112,6 @@
 
     <!-- WAN Replication -->
     <suppress checks="NestedIfDepth" files="com/hazelcast/enterprise/wan/replication/AbstractWanReplication"/>
+    <suppress checks="MethodCountCheck" files="com/hazelcast/enterprise/wan/replication/AbstractWanPublisher"/>
 
 </suppressions>

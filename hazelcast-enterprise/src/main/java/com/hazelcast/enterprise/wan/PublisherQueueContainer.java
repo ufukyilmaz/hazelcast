@@ -49,4 +49,15 @@ public class PublisherQueueContainer {
     public Map<Integer, PartitionWanEventContainer> getPublisherEventQueueMap() {
         return publisherEventQueueMap;
     }
+
+    public void clearQueues() {
+        for (PartitionWanEventContainer partitionWanEventContainer : publisherEventQueueMap.values()) {
+            partitionWanEventContainer.clear();
+        }
+    }
+
+    public int size(int partitionId) {
+        PartitionWanEventContainer wanEventContainer = publisherEventQueueMap.get(partitionId);
+        return wanEventContainer.size();
+    }
 }

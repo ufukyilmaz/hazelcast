@@ -1,9 +1,9 @@
 package com.hazelcast.enterprise.wan.sync;
 
 import com.hazelcast.core.Member;
+import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.logging.ILogger;
-import com.hazelcast.map.impl.MapService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
@@ -23,78 +23,83 @@ public class WanSyncManager {
     private final IPartitionService partitionService;
     private final ClusterService clusterService;
     private final OperationService operationService;
+    private final EnterpriseWanReplicationService wanReplicationService;
+    private final NodeEngine nodeEngine;
     private final ILogger logger;
+
+    private volatile boolean running = true;
 
     public WanSyncManager(NodeEngine nodeEngine) {
         partitionService = nodeEngine.getPartitionService();
         clusterService = nodeEngine.getClusterService();
         operationService = nodeEngine.getOperationService();
+        wanReplicationService = (EnterpriseWanReplicationService) nodeEngine.getWanReplicationService();
+        this.nodeEngine = nodeEngine;
         logger = nodeEngine.getLogger(getClass());
     }
 
-    public SyncResult initiateSyncOnAllPartitions(String wanReplicationName,
-                                                  String targetGroupName,
-                                                  String mapName,
-                                                  boolean simulateMissingPartitions) {
-        Set<Integer> partitionIds = getAllPartitionIds();
-        SyncResult result = new SyncResult();
-
-        Set<Member> members = new HashSet<Member>(clusterService.getMembers());
-        if (simulateMissingPartitions) {
-           members.clear();
-        }
-        List<Future<SyncResult>> futures = startSyncOnMembers(wanReplicationName, targetGroupName, mapName, members);
-        addResultsOfOps(futures, result, partitionIds);
-
-        if (partitionIds.isEmpty()) {
-            return result;
-        }
-
-        futures = syncMissingPartitions(wanReplicationName, targetGroupName, mapName, partitionIds);
-        addResultsOfOps(futures, result, partitionIds);
-
-        return result;
+    public void shutdown() {
+        running = false;
     }
 
-    private void addResultsOfOps(List<Future<SyncResult>> futures, SyncResult result,  Set<Integer> partitionIds) {
-        try {
-            for (Future<SyncResult> future : futures) {
-                SyncResult syncResult = future.get();
-                Set<Integer> syncInitiatedPartitions = syncResult.getPartitionIds();
-                if (syncInitiatedPartitions != null) {
-                    partitionIds.removeAll(syncInitiatedPartitions);
-                    result.getPartitionIds().addAll(syncInitiatedPartitions);
+    public void initiateSyncMapRequest(final String wanReplicationName,
+                                       final String targetGroupName, final String mapName) {
+        //First check if endpoint exists for the given wanReplicationName and targetGroupName
+        wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
+        nodeEngine.getExecutionService().execute("hz:wan:sync:pool", new Runnable() {
+            @Override
+            public void run() {
+                Operation operation = new WanSyncStarterOperation(wanReplicationName, targetGroupName,
+                        new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName));
+                operationService.invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
+                        operation, clusterService.getThisAddress());
+            }
+        });
+        logger.info("WAN sync request has been sent");
+    }
+
+    public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, String mapName) {
+        Set<Member> members = clusterService.getMembers();
+        List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
+        for (Member member : clusterService.getMembers()) {
+            Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName,
+                    new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName));
+            Future<WanSyncResult> future = operationService.invokeOnTarget(EnterpriseWanReplicationService.SERVICE_NAME,
+                    operation, member.getAddress());
+            futures.add(future);
+        }
+
+        Set<Integer> partitionIds = getAllPartitionIds();
+        addResultOfOps(futures, partitionIds);
+
+        while (!partitionIds.isEmpty() && running) {
+            futures.clear();
+            logger.finest("WAN sync will retry missing partitions - " + partitionIds);
+            for (Integer partitionId : partitionIds) {
+                Operation operation = new WanSyncOperation(wanReplicationName, targetGroupName,
+                        new WanSyncEvent(WanSyncType.SINGLE_MAP, mapName, partitionId));
+                operation.setPartitionId(partitionId);
+                Future<WanSyncResult> future = operationService.invokeOnPartition(EnterpriseWanReplicationService.SERVICE_NAME,
+                        operation, partitionId);
+                futures.add(future);
+            }
+            addResultOfOps(futures, partitionIds);
+        }
+    }
+
+    private void addResultOfOps(List<Future<WanSyncResult>> futures, Set<Integer> partitionIds) {
+        boolean alreadyLogged = false;
+        for (Future<WanSyncResult> future : futures) {
+            try {
+                WanSyncResult result = future.get();
+                partitionIds.removeAll(result.getSyncedPartitions());
+            } catch (Exception ex) {
+                if (!alreadyLogged) {
+                    logger.warning("Exception occurred during WAN sync, missing partitions will be retried.", ex);
+                    alreadyLogged = true;
                 }
             }
-        } catch (Exception ex) {
-            logger.severe("Exception occurred while WAN sync initiation", ex);
         }
-    }
-
-    private List<Future<SyncResult>> startSyncOnMembers(String wanReplicationName,
-                                                        String targetGroupName,
-                                                        String mapName,
-                                                        Set<Member> members) {
-        List<Future<SyncResult>> futures = new ArrayList<Future<SyncResult>>(members.size());
-        for (Member member : members) {
-            Operation operation = new MemberMapSyncOperation(wanReplicationName, targetGroupName, mapName);
-            Future<SyncResult> future = operationService.invokeOnTarget(MapService.SERVICE_NAME, operation, member.getAddress());
-            futures.add(future);
-        }
-        return futures;
-    }
-
-    private List<Future<SyncResult>> syncMissingPartitions(String wanReplicationName,
-                                                           String targetGroupName,
-                                                           String mapName, Set<Integer> partitionIds) {
-        List<Future<SyncResult>> futures = new ArrayList<Future<SyncResult>>(partitionIds.size());
-        for (Integer partitionId : partitionIds) {
-            Operation op = new PartitionMapSyncOperation(wanReplicationName, targetGroupName, mapName);
-            op.setPartitionId(partitionId);
-            Future<SyncResult> future = operationService.invokeOnPartition(MapService.SERVICE_NAME, op, partitionId);
-            futures.add(future);
-        }
-        return futures;
     }
 
     private Set<Integer> getAllPartitionIds() {
@@ -109,5 +114,4 @@ public class WanSyncManager {
         }
         return partitionIds;
     }
-
 }

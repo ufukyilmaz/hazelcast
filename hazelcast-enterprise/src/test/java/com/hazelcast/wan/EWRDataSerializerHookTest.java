@@ -5,6 +5,7 @@ import com.hazelcast.cache.wan.CacheReplicationUpdate;
 import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.enterprise.wan.BatchWanReplicationEvent;
 import com.hazelcast.enterprise.wan.EWRDataSerializerHook;
+import com.hazelcast.enterprise.wan.sync.WanSyncOperation;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationRemove;
 import com.hazelcast.map.impl.wan.EnterpriseMapReplicationUpdate;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
@@ -40,6 +41,9 @@ public class EWRDataSerializerHookTest {
 
         IdentifiedDataSerializable mapRemove = hook.createFactory().create(EWRDataSerializerHook.MAP_REPLICATION_REMOVE);
         assertTrue(mapRemove instanceof EnterpriseMapReplicationRemove);
+
+        IdentifiedDataSerializable wanSyncOperation = hook.createFactory().create(EWRDataSerializerHook.WAN_SYNC_OPERATION);
+        assertTrue(wanSyncOperation instanceof WanSyncOperation);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -1,10 +1,10 @@
 package com.hazelcast.spi.hotrestart.impl.gc;
 
 import com.hazelcast.internal.util.collection.LongCursor;
+import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.spi.hotrestart.KeyHandle;
-import com.hazelcast.internal.util.concurrent.ConcurrentConveyorSingleQueue;
 import com.hazelcast.spi.hotrestart.impl.di.Inject;
 import com.hazelcast.spi.hotrestart.impl.di.Name;
 import com.hazelcast.spi.hotrestart.impl.gc.chunk.ActiveValChunk;
@@ -57,7 +57,7 @@ public class PrefixTombstoneManager {
     private Sweeper sweeper;
 
     @Inject
-    private PrefixTombstoneManager(
+    PrefixTombstoneManager(
             ChunkManager chunkMgr, GcHelper gcHelper, GcLogger logger,
             @Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> conveyor
     ) {
@@ -65,6 +65,21 @@ public class PrefixTombstoneManager {
         this.chunkMgr = chunkMgr;
         this.gcHelper = gcHelper;
         this.logger = logger;
+    }
+
+    /** Returns the maximum observed record seq in the collector prefix tombstone list, regardless of prefix */
+    public long maxRecordSeq() {
+        if (collectorPrefixTombstones == null) {
+            return 0;
+        }
+        long maxSeq = 0;
+        for (LongLongCursor cursor = collectorPrefixTombstones.cursor(); cursor.advance(); ) {
+            final long recordSeq = cursor.value();
+            if (recordSeq > maxSeq) {
+                maxSeq = recordSeq;
+            }
+        }
+        return maxSeq;
     }
 
     /** Initializes this object with the existing prefix tombstones reloaded from a file. */

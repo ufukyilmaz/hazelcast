@@ -29,6 +29,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 public class WanSyncManager {
 
     private static final int RETRY_INTERVAL_MILLIS = 5000;
+    private static final int MAX_RETRY_COUNT = 5;
     private static final AtomicReferenceFieldUpdater<WanSyncManager, WanSyncStatus> SYNC_STATUS
             = newUpdater(WanSyncManager.class, WanSyncStatus.class, "syncStatus");
     private static final AtomicIntegerFieldUpdater<WanSyncManager> SYNCED_PARTITION_COUNT
@@ -89,6 +90,7 @@ public class WanSyncManager {
     }
 
     public void populateSyncRequestOnMembers(String wanReplicationName, String targetGroupName, WanSyncEvent syncEvent) {
+        int retryCount = 0;
         try {
             Set<Member> members = clusterService.getMembers();
             List<Future<WanSyncResult>> futures = new ArrayList<Future<WanSyncResult>>(members.size());
@@ -102,7 +104,6 @@ public class WanSyncManager {
 
             Set<Integer> partitionIds = getAllPartitionIds();
             addResultOfOps(futures, partitionIds);
-
             while (!partitionIds.isEmpty() && running) {
                 futures.clear();
                 logger.info("WAN sync will retry missing partitions - " + partitionIds);
@@ -117,6 +118,10 @@ public class WanSyncManager {
                 }
                 addResultOfOps(futures, partitionIds);
                 if (!partitionIds.isEmpty()) {
+                    if (++retryCount == MAX_RETRY_COUNT) {
+                        logger.warning("Quitting retrying to sync missing partitions. WAN Sync has failed.");
+                        break;
+                    }
                     try {
                         Thread.sleep(RETRY_INTERVAL_MILLIS);
                     } catch (InterruptedException ignored) {
@@ -125,7 +130,7 @@ public class WanSyncManager {
                 }
             }
         } finally {
-            SYNC_STATUS.set(this, WanSyncStatus.READY);
+            SYNC_STATUS.set(this, retryCount == MAX_RETRY_COUNT ? WanSyncStatus.FAILED : WanSyncStatus.READY);
         }
     }
 

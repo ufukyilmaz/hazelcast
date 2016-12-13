@@ -2,6 +2,7 @@ package com.hazelcast.map.impl.operation;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.internal.nearcache.impl.invalidation.Invalidator;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.logging.Logger;
 import com.hazelcast.map.impl.MapContainer;
@@ -14,7 +15,6 @@ import com.hazelcast.map.impl.eviction.HDEvictorImpl;
 import com.hazelcast.map.impl.mapstore.MapDataStore;
 import com.hazelcast.map.impl.nearcache.EnterpriseMapNearCacheManager;
 import com.hazelcast.map.impl.nearcache.invalidation.Invalidation;
-import com.hazelcast.map.impl.nearcache.invalidation.Invalidator;
 import com.hazelcast.map.impl.record.Record;
 import com.hazelcast.map.impl.recordstore.RecordStore;
 import com.hazelcast.memory.NativeOutOfMemoryError;
@@ -31,6 +31,8 @@ import org.mockito.stubbing.OngoingStubbing;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.internal.nearcache.impl.invalidation.InvalidationUtils.TRUE_FILTER;
+import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT;
 import static com.hazelcast.map.impl.operation.AbstractHDOperationTest.OperationType.PUT_ALL;
 import static com.hazelcast.util.UuidUtil.newUnsecureUuidString;
@@ -137,19 +139,20 @@ abstract class AbstractHDOperationTest {
     }
 
     private class TestInvalidator extends Invalidator {
+
         private final AtomicInteger count = new AtomicInteger();
 
         public TestInvalidator(MapServiceContext mapServiceContext) {
-            super(mapServiceContext);
-        }
-
-        @Override
-        protected void invalidateInternal(Invalidation invalidation, int orderKey) {
-            count.incrementAndGet();
+            super(SERVICE_NAME, TRUE_FILTER, mapServiceContext.getNodeEngine());
         }
 
         public int getCount() {
             return count.get();
+        }
+
+        @Override
+        protected void invalidateInternal(Invalidation invalidation, int i) {
+            count.incrementAndGet();
         }
     }
 

@@ -15,7 +15,6 @@ import com.hazelcast.cache.impl.CacheEventListener;
 import com.hazelcast.cache.impl.CacheKeyIterationResult;
 import com.hazelcast.cache.impl.HazelcastServerCachingProvider;
 import com.hazelcast.cache.impl.ICacheService;
-import com.hazelcast.cache.impl.client.CacheSingleInvalidationMessage;
 import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.CacheConfiguration;
 import com.hazelcast.config.Config;
@@ -27,6 +26,7 @@ import com.hazelcast.enterprise.EnterpriseSerialJUnitClassRunner;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.HazelcastInstanceProxy;
 import com.hazelcast.instance.Node;
+import com.hazelcast.map.impl.nearcache.invalidation.Invalidation;
 import com.hazelcast.memory.MemoryStats;
 import com.hazelcast.nio.serialization.DataSerializableFactory;
 import com.hazelcast.test.AssertTask;
@@ -228,8 +228,8 @@ public class CacheTest extends AbstractCacheTest {
         registerInvalidationListener(new CacheEventListener() {
             @Override
             public void handleEvent(Object eventObject) {
-                if (eventObject instanceof CacheSingleInvalidationMessage) {
-                    CacheSingleInvalidationMessage event = (CacheSingleInvalidationMessage) eventObject;
+                if (eventObject instanceof Invalidation) {
+                    Invalidation event = (Invalidation) eventObject;
                     if (null == event.getKey() && cache.getPrefixedName().equals(event.getName())) {
                         counter.incrementAndGet();
                     }

@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /** Rebuilds the GC-related metadata during the Hot Restart procedure. */
-public final class Rebuilder {
+public class Rebuilder {
     private final ChunkManager cm;
     private final GcHelper gcHelper;
     private final GcLogger logger;
@@ -38,12 +38,16 @@ public final class Rebuilder {
     private long maxChunkSeq;
 
     @Inject
-    private Rebuilder(ChunkManager cm, GcHelper gcHelper, GcLogger logger) {
+    Rebuilder(ChunkManager cm, GcHelper gcHelper, GcLogger logger) {
         this.cm = cm;
         this.gcHelper = gcHelper;
         this.logger = logger;
         this.occupancy = cm.tombOccupancy;
         this.garbage = cm.tombGarbage;
+    }
+
+    public void setMaxSeq(long maxSeq) {
+        this.maxSeq = maxSeq;
     }
 
     /** @return the highest observed chunk seq number. Used to initialize the chunk seq counter. */

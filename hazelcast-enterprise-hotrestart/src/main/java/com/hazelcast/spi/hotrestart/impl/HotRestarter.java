@@ -97,7 +97,7 @@ public final class HotRestarter {
 
     @Inject
     @SuppressWarnings("checkstyle:parameternumber")
-    private HotRestarter(
+    HotRestarter(
             Rebuilder rebuilder, PrefixTombstoneManager pfixTombstoMgr, GcHelper gcHelper, RamStoreRegistry reg, GcLogger logger,
             @Name("homeDir") File homeDir, @Name("storeName") String storeName, @Name("storeCount") Integer storeCount,
             @Name("keyConveyors") ConcurrentConveyorSingleQueue<RestartItem>[] keySenders,
@@ -125,6 +125,7 @@ public final class HotRestarter {
             logger.finestVerbose("Reloaded prefix tombstones %s", prefixTombstones);
             pfixTombstoMgr.setPrefixTombstones(prefixTombstones);
             this.prefixTombstones = prefixTombstones;
+            rebuilder.setMaxSeq(pfixTombstoMgr.maxRecordSeq());
             final ChunkFilesetCursor tombCursor = new ChunkFilesetCursor.Tomb(sortedChunkFiles(TOMB_BASEDIR));
             final ChunkFilesetCursor valCursor = new ChunkFilesetCursor.Val(sortedChunkFiles(VAL_BASEDIR));
             if (failIfAnyData && (tombCursor.advance() || valCursor.advance())) {

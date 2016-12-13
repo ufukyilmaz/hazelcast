@@ -91,10 +91,10 @@ public final class SecurityUtil {
 
     private static boolean isSecureCall() {
         final Boolean value = SECURE_CALL.get();
-        return value != null && value.booleanValue();
+        return value != null && value;
     }
 
-    public static boolean addressMatches(final String address, final String pattern) {
+    public static boolean addressMatches(String address, String pattern) {
         return AddressUtil.matchInterface(address, pattern);
     }
 

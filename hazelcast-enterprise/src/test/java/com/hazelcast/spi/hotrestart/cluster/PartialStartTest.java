@@ -15,7 +15,6 @@ import com.hazelcast.internal.partition.impl.InternalPartitionServiceImpl;
 import com.hazelcast.nio.Address;
 import com.hazelcast.partition.PartitionLostEvent;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -42,8 +41,6 @@ import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStar
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateKeyForPartition;
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
@@ -449,18 +446,8 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         listeners.put(getAddress(instances[0]), new RestartOnComplete(restartedUuid));
         String excludedUuid = terminateWithOverwrittenACTIVEClusterState(instances[0]);
 
-        instances = restartInstances(addresses, listeners, PARTIAL_RECOVERY_MOST_COMPLETE);
-        for (HazelcastInstance instance : instances) {
-            assertClusterSizeEventually(nodeCount, instance);
-        }
-
-        assertTrueEventually(new AssertTask() {
-            @Override
-            public void run()
-                    throws Exception {
-                assertInstancesJoined(nodeCount, getAllInstances(), NodeState.ACTIVE, ClusterState.ACTIVE);
-            }
-        });
+        restartInstances(addresses, listeners, PARTIAL_RECOVERY_MOST_COMPLETE);
+        assertInstancesJoinedEventually(nodeCount, NodeState.ACTIVE, ClusterState.ACTIVE);
 
         assertEquals(excludedUuid, restartedUuid.get());
     }

@@ -3,6 +3,7 @@ package com.hazelcast.wan.map;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.core.DistributedObject;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapStore;
@@ -40,6 +41,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
+
+import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTestSupport {
 
@@ -506,6 +509,22 @@ public abstract class AbstractMapWanReplicationTest extends MapWanReplicationTes
                 assert ewrs.getStats().get("atob").getLocalWanPublisherStats().get("B").getOutboundQueueSize() == 0;
             }
         });
+    }
+
+    @Test
+    public void testProxyCreation() {
+        setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
+        startClusterA();
+        startClusterB();
+        createDataIn(clusterA, "map", 0, 10);
+        assertTrueEventually(new AssertTask() {
+            @Override
+            public void run() throws Exception {
+                Collection<DistributedObject> distributedObjects = clusterB[0].getDistributedObjects();
+                assertEquals(1, distributedObjects.size());
+            }
+        }, 10);
+        assertDataInFrom(clusterB, "map", 0, 10, clusterA);
     }
 
     private static class UpdatingEntryProcessor implements EntryProcessor<Object, Object>, EntryBackupProcessor<Object, Object> {

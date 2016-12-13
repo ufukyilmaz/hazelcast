@@ -1,10 +1,13 @@
 package com.hazelcast.spi.hotrestart.impl;
 
+import com.hazelcast.nio.IOUtil;
+import com.hazelcast.spi.hotrestart.impl.gc.GcHelper;
 import com.hazelcast.spi.hotrestart.impl.testsupport.MockStoreRegistry;
 import com.hazelcast.spi.hotrestart.impl.testsupport.TestProfile;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,6 +20,7 @@ import java.io.File;
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.isolatedFolder;
 import static com.hazelcast.spi.hotrestart.impl.testsupport.HotRestartTestUtil.hrStoreConfig;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -55,6 +59,25 @@ public class HotRestartStoreQuickTest {
         closeAndDispose(reg);
         reg = new MockStoreRegistry(cfg, null, false);
         removePutAll(reg);
+        closeAndDispose(reg);
+    }
+
+    @Test
+    public void checkMaxChunkSeqOnRestart() throws Exception {
+        final HotRestartStoreConfig cfg = hrStoreConfig(testingHome);
+        MockStoreRegistry reg = new MockStoreRegistry(cfg, null, true);
+        GcHelper helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
+        reg.put(1, 1, new byte[1]);
+        reg.put(1, 2, new byte[1]);
+        reg.put(1, 3, new byte[1]);
+        reg.clear(1);
+        assertEquals(3, helper.recordSeq());
+        closeAndDispose(reg);
+
+        IOUtil.delete(new File(testingHome, "value"));
+        reg = new MockStoreRegistry(cfg, null, true);
+        helper = ((ConcurrentHotRestartStore) reg.hrStore).getDi().get(GcHelper.class);
+        assertEquals(3, helper.recordSeq());
         closeAndDispose(reg);
     }
 

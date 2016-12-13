@@ -57,7 +57,7 @@ public class PrefixTombstoneManager {
     private Sweeper sweeper;
 
     @Inject
-    private PrefixTombstoneManager(
+    PrefixTombstoneManager(
             ChunkManager chunkMgr, GcHelper gcHelper, GcLogger logger,
             @Name("gcConveyor") ConcurrentConveyorSingleQueue<Runnable> conveyor
     ) {
@@ -71,6 +71,21 @@ public class PrefixTombstoneManager {
     public void setPrefixTombstones(Long2LongHashMap prefixTombstones) {
         this.mutatorPrefixTombstones = prefixTombstones;
         this.collectorPrefixTombstones = new Long2LongHashMap(prefixTombstones);
+    }
+
+    /** Returns the maximum observed record seq in the collector prefix tombstone list, regardless of prefix */
+    public long maxRecordSeq() {
+        if (collectorPrefixTombstones == null) {
+            return 0;
+        }
+        long maxSeq = 0;
+        for (LongLongCursor cursor = collectorPrefixTombstones.cursor(); cursor.advance(); ) {
+            final long recordSeq = cursor.value();
+            if (recordSeq > maxSeq) {
+                maxSeq = recordSeq;
+            }
+        }
+        return maxSeq;
     }
 
     /** Adds prefix tombstones for the given key prefixes. Called on the mutator thread. */

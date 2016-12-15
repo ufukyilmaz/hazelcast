@@ -213,6 +213,7 @@ public class EnterpriseCacheService
 
             hotRestartService.ensureHasConfiguration(SERVICE_NAME, name, cacheConfig);
             prefix = hotRestartService.registerRamStore(this, SERVICE_NAME, name, partitionId);
+            nodeEngine.getProxyService().initializeDistributedObject(SERVICE_NAME, name);
         }
         return isNative
                 ? newNativeRecordStore(name, partitionId, hotRestartConfig, prefix)

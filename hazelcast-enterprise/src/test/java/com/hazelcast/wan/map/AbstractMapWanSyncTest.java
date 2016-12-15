@@ -13,7 +13,6 @@ import com.hazelcast.internal.management.dto.WanReplicationConfigDTO;
 import com.hazelcast.map.merge.PassThroughMergePolicy;
 import com.hazelcast.monitor.WanSyncState;
 import com.hazelcast.spi.properties.GroupProperty;
-import com.hazelcast.wan.WanReplicationService;
 import com.hazelcast.wan.WanSyncStatus;
 import org.junit.Test;
 
@@ -239,13 +238,20 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
     public void checkWanSyncState() throws IOException {
         setupReplicateFrom(configA, configB, clusterB.length, "atob", PassThroughMergePolicy.class.getName());
         startClusterA();
+        startClusterB();
         createDataIn(clusterA, "map",0, 1000);
+        assertKeysIn(clusterB, "map", 0, 1000);
+
+        clusterB[0].getCluster().shutdown();
+
+        startClusterB();
+        assertKeysNotIn(clusterB, "map", 0, 1000);
+
         final EnterpriseWanReplicationService service = getWanReplicationService(clusterA[0]);
         service.syncMap("atob", configB.getGroupConfig().getName(), "map");
 
         assertEquals(WanSyncStatus.IN_PROGRESS, service.getWanSyncState().getStatus());
 
-        startClusterB();
         assertKeysIn(clusterB, "map", 0, 1000);
         assertEqualsEventually(new Callable<WanSyncStatus>() {
             @Override
@@ -253,9 +259,10 @@ public abstract class AbstractMapWanSyncTest extends MapWanReplicationTestSuppor
                 return service.getWanSyncState().getStatus();
             }
         }, WanSyncStatus.READY);
+
         WanSyncState syncState = service.getWanSyncState();
         int member1SyncCount = syncState.getSyncedPartitionCount();
-        int member2SyncCount = getWanReplicationService(clusterA[1]).getSyncManager().getWanSyncState().getSyncedPartitionCount();
+        int member2SyncCount = getWanReplicationService(clusterA[1]).getWanSyncState().getSyncedPartitionCount();
         int totalCount = getPartitionService(clusterA[0]).getPartitionCount();
         assertEquals(totalCount, member1SyncCount + member2SyncCount);
         assertEquals("atob", syncState.getActiveWanConfigName());

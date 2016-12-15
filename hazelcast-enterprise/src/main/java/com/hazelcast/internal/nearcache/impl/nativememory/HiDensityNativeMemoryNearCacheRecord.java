@@ -1,12 +1,12 @@
 package com.hazelcast.internal.nearcache.impl.nativememory;
 
-import com.hazelcast.cache.hidensity.impl.nativememory.HiDensityNativeMemoryCacheRecordStore;
 import com.hazelcast.internal.hidensity.HiDensityRecordAccessor;
 import com.hazelcast.internal.nearcache.HiDensityNearCacheRecord;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 
 import java.util.UUID;
 
+import static com.hazelcast.internal.hidensity.HiDensityRecordStore.NULL_PTR;
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.MEM;
 import static com.hazelcast.nio.Bits.INT_SIZE_IN_BYTES;
 import static com.hazelcast.nio.Bits.LONG_SIZE_IN_BYTES;
@@ -140,7 +140,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
     @Override
     public NativeMemoryData getValue() {
         long valueAddress = getValueAddress();
-        if (valueAddress == HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (valueAddress == NULL_PTR) {
             return null;
         } else {
             return nearCacheRecordAccessor.readData(valueAddress);
@@ -152,7 +152,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
         if (value != null) {
             setValueAddress(value.address());
         } else {
-            setValueAddress(HiDensityNativeMemoryCacheRecordStore.NULL_PTR);
+            setValueAddress(NULL_PTR);
         }
     }
 
@@ -256,7 +256,7 @@ public class HiDensityNativeMemoryNearCacheRecord extends HiDensityNearCacheReco
 
     @Override
     public String toString() {
-        if (address() > HiDensityNativeMemoryCacheRecordStore.NULL_PTR) {
+        if (address() > NULL_PTR) {
             return "HiDensityNearCacheNativeMemoryRecord{creationTime: " + getCreationTime()
                     + ", lastAccessTime: " + getAccessTimeDiff()
                     + ", ttl: " + getTtlMillis()

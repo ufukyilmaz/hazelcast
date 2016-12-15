@@ -4,8 +4,6 @@ import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.enterprise.SampleLicense;
-import org.junit.Ignore;
-import org.junit.Test;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.util.Arrays;
@@ -35,11 +33,5 @@ public class ClientHDMapNearCachePreloaderTest extends ClientMapNearCachePreload
         return super.getClientConfig()
                 .setLicenseKey(SampleLicense.UNLIMITED_LICENSE)
                 .setNativeMemoryConfig(createNativeMemoryConfig());
-    }
-
-    @Test
-    @Ignore
-    public void testCreateStoreFile_withInvalidFileName() {
-        // ignored
     }
 }

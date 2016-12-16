@@ -118,8 +118,8 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
         return instances;
     }
 
-    void restartInstances(int clusterSize) {
-        restartInstances(clusterSize, 1);
+    HazelcastInstance[] restartInstances(int clusterSize) {
+        return restartInstances(clusterSize, 1);
     }
 
     HazelcastInstance[] restartInstances(int clusterSize, final int backupCount) {

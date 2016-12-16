@@ -301,6 +301,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             String name = mapContainer.getName();
             hotRestartService.ensureHasConfiguration(MapService.SERVICE_NAME, name, null);
             prefix = hotRestartService.registerRamStore(this, MapService.SERVICE_NAME, name, partitionId);
+            nodeEngine.getProxyService().initializeDistributedObject(MapService.SERVICE_NAME, name);
         }
         return new EnterpriseRecordStore(mapContainer, partitionId, keyLoader, logger, hotRestartConfig, prefix);
     }

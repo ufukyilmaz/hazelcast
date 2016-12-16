@@ -1,7 +1,10 @@
 package com.hazelcast.cache.hotrestart;
 
 import com.hazelcast.cache.ICache;
+import com.hazelcast.cache.impl.ICacheService;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -16,8 +19,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
@@ -114,6 +119,22 @@ public class CacheHotRestartTest extends AbstractCacheHotRestartTest {
                 assertEquals("Invalid value in cache after restart", expected, cache.get(key));
             }
         }
+    }
+
+    @Test
+    public void cacheProxy_shouldBeCreated_afterHotRestart() throws Exception {
+        newInstances(clusterSize);
+        cache = createCache();
+        String fullCacheName = cache.getPrefixedName();
+        fillCache(new HashMap<Integer, String>());
+
+        HazelcastInstance[] instances = restartInstances(clusterSize);
+        for (HazelcastInstance instance : instances) {
+            InternalProxyService proxyService = getNodeEngineImpl(instance).getProxyService();
+            Collection<String> names = proxyService.getDistributedObjectNames(ICacheService.SERVICE_NAME);
+            assertThat(names, hasItem(fullCacheName));
+        }
+
     }
 
     private void fillCacheAndRemoveRandom(Map<Integer, String> expectedMap, Random random) {

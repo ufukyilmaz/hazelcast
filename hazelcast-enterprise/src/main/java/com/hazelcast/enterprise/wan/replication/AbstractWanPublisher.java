@@ -535,6 +535,9 @@ public abstract class AbstractWanPublisher
             } else {
                 partitionEventCount += syncPartitionForMap(syncEvent.getName(), partition);
             }
+            if (partitionEventCount == 0) {
+                syncManager.incrementSyncedPartitionCount();
+            }
             counterMap.put(partition.getPartitionId(), new AtomicInteger(partitionEventCount));
         }
 

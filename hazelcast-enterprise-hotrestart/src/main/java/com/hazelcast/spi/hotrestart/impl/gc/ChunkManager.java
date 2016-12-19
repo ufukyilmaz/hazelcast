@@ -194,7 +194,7 @@ public class ChunkManager implements Disposable {
         }
     }
 
-    /** Backs up stable chunks in the target directory. While copying the GC will not run. */
+    /** Backs up stable chunks in the target directory. */
     class BackupChunks implements Runnable {
         private final File targetDir;
 
@@ -205,7 +205,7 @@ public class ChunkManager implements Disposable {
         @Override
         public void run() {
             if (backupExecutor.inProgress()) {
-                logger.fine("Hot restart backup is already in progress, skipping running another backup");
+                logger.fine("Hot backup is already in progress, skipping running another backup");
                 return;
             }
 

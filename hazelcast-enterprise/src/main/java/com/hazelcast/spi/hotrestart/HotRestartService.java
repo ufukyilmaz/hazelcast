@@ -313,13 +313,14 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
      */
     public boolean backup(long sequence) {
         if (hotRestartBackupDir == null) {
-            logger.warning("Could not backup hot restart store, hot restart backup dir is not configured");
+            logger.warning("Aborting hot backup, backup dir is not configured");
             return false;
         }
         if (isBackupInProgress()) {
-            logger.fine("Backup is already in progress, aborting new backup");
+            logger.fine("Hot backup is already in progress, ignoring request for new backup");
             return false;
         }
+        logger.info("Starting new hot backup with sequence " + sequence);
         final File backupDir = new File(hotRestartBackupDir, BACKUP_DIR_PREFIX + sequence);
         ensureDir(backupDir);
         persistentCacheDescriptors.backup(backupDir);
@@ -337,7 +338,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private static boolean isBackupInProgress(HotRestartStore[] stores) {
         if (stores != null) {
             for (HotRestartStore store : stores) {
-                if (IN_PROGRESS.equals(store.getBackupTaskState())) {
+                if (store.getBackupTaskState().inProgress()) {
                     return true;
                 }
             }
@@ -348,7 +349,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     private static void interruptBackupTask(HotRestartStore[] stores) {
         if (stores != null) {
             for (HotRestartStore store : stores) {
-                if (IN_PROGRESS.equals(store.getBackupTaskState())) {
+                if (store.getBackupTaskState().inProgress()) {
                     store.interruptBackupTask();
                 }
             }
@@ -360,12 +361,12 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         int completed = 0;
         if (stores != null) {
             for (HotRestartStore store : stores) {
-                final BackupTaskState storeBackupTaskState = store.getBackupTaskState();
-                if (IN_PROGRESS.equals(storeBackupTaskState)) {
+                final BackupTaskState taskState = store.getBackupTaskState();
+                if (taskState.inProgress()) {
                     state = IN_PROGRESS;
                     continue;
                 }
-                if (FAILURE.equals(storeBackupTaskState) && state == null) {
+                if (taskState == FAILURE && state == null) {
                     state = FAILURE;
                 }
                 completed++;
@@ -745,15 +746,19 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     /**
-     * Returns the local hot restart backup task status (not the cluster backup status).
+     * Returns the local hot restart backup task status (not the cluster backup status). It will return
+     * {@link BackupTaskState#IN_PROGRESS} if any hot restart store is currently being in progress and
+     * {@link BackupTaskState#FAILURE} if any hot restart store failed to complete backup.
      */
     public BackupTaskStatus getBackupTaskStatus() {
         final BackupTaskStatus offHeapStatus = getBackupTaskStatus(offHeapStores);
         final BackupTaskStatus onHeapStatus = getBackupTaskStatus(onHeapStores);
+        final BackupTaskState offHeapState = offHeapStatus.getState();
+        final BackupTaskState onHeapState = onHeapStatus.getState();
 
         final BackupTaskState state =
-                IN_PROGRESS.equals(offHeapStatus.getState()) || IN_PROGRESS.equals(onHeapStatus.getState()) ? IN_PROGRESS
-                        : FAILURE.equals(offHeapStatus.getState()) || FAILURE.equals(onHeapStatus.getState()) ? FAILURE
+                offHeapState.inProgress() || onHeapState.inProgress() ? IN_PROGRESS
+                        : offHeapState == FAILURE || onHeapState == FAILURE ? FAILURE
                         : SUCCESS;
 
         return new BackupTaskStatus(state,

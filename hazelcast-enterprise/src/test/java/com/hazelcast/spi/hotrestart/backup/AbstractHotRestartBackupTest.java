@@ -190,4 +190,9 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
             assertEquals("Invalid value in map after restart", expected, map.get(key));
         }
     }
+
+    protected boolean runBackupOnNode(HazelcastInstance instance, long seq) {
+        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
+        return nodeExtension.getHotRestartService().backup(seq);
+    }
 }

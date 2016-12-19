@@ -2,8 +2,13 @@ package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.instance.EnterpriseNodeExtension;
+import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
+import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
+import com.hazelcast.transaction.TransactionException;
+import com.hazelcast.util.EmptyStatement;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -15,6 +20,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -43,6 +49,54 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         resetFixture(backupSeq, clusterSize);
         assertEquals(expectedMap.size(), map.size());
         assertContainsAll(map, expectedMap);
+    }
+
+    @Test
+    public void testClusterHotRestartBackupCommitFailed() throws IOException {
+        final int clusterSize = 3;
+        resetFixture(-1, clusterSize);
+
+        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        fillMap(expectedMap);
+
+        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
+
+        final int backupSeq = 0;
+        runBackupOnNode(instancesArr[2], backupSeq);
+        // wait until backups finish
+        waitForBackupToFinish(instances);
+
+        try {
+            runClusterBackupOnInstance(backupSeq, instancesArr[0]);
+            fail("Hot backup should have failed because it was launched with the same backup seq");
+        } catch (HotRestartException expected) {
+            EmptyStatement.ignore(expected);
+        }
+    }
+
+    @Test
+    public void testClusterHotRestartBackupRollback() throws IOException {
+        final int clusterSize = 3;
+        resetFixture(-1, clusterSize);
+
+        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        fillMap(expectedMap);
+
+        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
+
+        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instancesArr[1]).getNodeExtension();
+        final ClusterHotRestartBackupService backupService = (ClusterHotRestartBackupService)
+                nodeExtension.getHotRestartBackupService();
+        backupService.prepareBackup(getAddress(instancesArr[2]), "dummyTx", Long.MAX_VALUE);
+
+        try {
+            runClusterBackupOnInstance(0, instancesArr[0]);
+            fail("Hot backup should have failed because a different backup request was already in progress");
+        } catch (TransactionException expected) {
+            EmptyStatement.ignore(expected);
+        }
     }
 
 

@@ -51,8 +51,10 @@ public class BackupTask implements Runnable {
     BackupTask(File targetDir, long[] stableValChunkSeqs, long[] stableTombChunkSeqs) {
         Arrays.sort(stableValChunkSeqs);
         Arrays.sort(stableTombChunkSeqs);
-        final long maxValChunkSeq = stableValChunkSeqs[stableValChunkSeqs.length - 1];
-        final long maxTombChunkSeq = stableTombChunkSeqs[stableTombChunkSeqs.length - 1];
+        final long maxValChunkSeq = stableValChunkSeqs.length > 0
+                ? stableValChunkSeqs[stableValChunkSeqs.length - 1] : Long.MIN_VALUE;
+        final long maxTombChunkSeq = stableTombChunkSeqs.length > 0
+                ? stableTombChunkSeqs[stableTombChunkSeqs.length - 1] : Long.MIN_VALUE;
         this.targetDir = targetDir;
         this.stableValChunkSeqs = stableValChunkSeqs;
         this.stableTombChunkSeqs = stableTombChunkSeqs;

@@ -103,6 +103,10 @@ public final class ConcurrentHotRestartStore implements HotRestartStore {
 
     @Override
     public void backup(File targetDir) {
+        if (!backupExecutor.prepareForNewTask()) {
+            logger.fine("Another hot backup has already been run, aborting new backup");
+            return;
+        }
         submitAndProceedWhenAllowed(persistence.new Backup(targetDir));
     }
 

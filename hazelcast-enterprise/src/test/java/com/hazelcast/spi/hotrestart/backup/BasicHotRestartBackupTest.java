@@ -97,8 +97,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final boolean[] backupsRun = new boolean[instances.size()];
         int backupIdx = 0;
         for (HazelcastInstance instance : instances) {
-            final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
-            backupsRun[backupIdx++] = nodeExtension.getHotRestartService().backup(seq);
+            backupsRun[backupIdx++] = runBackupOnNode(instance, seq);
         }
         return backupsRun;
     }

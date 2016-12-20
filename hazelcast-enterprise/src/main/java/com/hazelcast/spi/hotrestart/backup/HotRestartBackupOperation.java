@@ -8,7 +8,7 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.ExceptionAction;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.exception.TargetNotMemberException;
-import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
+import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.transaction.TransactionException;
 import com.hazelcast.transaction.impl.Transaction;
@@ -91,7 +91,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
 
     @Override
     public void run() throws Exception {
-        final ClusterHotRestartBackupService service = getService();
+        final HotBackupService service = getService();
         switch (transactionPhase) {
             case PREPARING:
                 service.prepareBackup(initiator, txnId, leaseTime);
@@ -127,7 +127,7 @@ public class HotRestartBackupOperation extends Operation implements AllowedDurin
 
     @Override
     public String getServiceName() {
-        return ClusterHotRestartBackupService.SERVICE_NAME;
+        return HotBackupService.SERVICE_NAME;
     }
 
     @Override

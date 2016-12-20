@@ -2,7 +2,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 
 /**
  * Checks the master if this member is excluded in the final cluster start result,
@@ -12,7 +12,7 @@ public class AskForExpectedMembersOperation extends Operation implements JoinOpe
 
     @Override
     public void run() throws Exception {
-        HotRestartService service = getService();
+        HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.replyExpectedMemberUuidsQuestion(getCallerAddress(), getCallerUuid());
     }
@@ -24,7 +24,7 @@ public class AskForExpectedMembersOperation extends Operation implements JoinOpe
 
     @Override
     public String getServiceName() {
-        return HotRestartService.SERVICE_NAME;
+        return HotRestartIntegrationService.SERVICE_NAME;
     }
 
     @Override

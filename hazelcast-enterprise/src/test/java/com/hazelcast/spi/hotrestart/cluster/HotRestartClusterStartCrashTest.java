@@ -4,13 +4,13 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -210,8 +210,9 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                     PartitionTableView partitionTableView = new PartitionTableView(
                             new Address[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
                     MemberClusterStartInfo invalidMemberClusterStartInfo = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
-                    EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
-                    ClusterMetadataManager clusterMetadataManager = nodeExtension.getHotRestartService() .getClusterMetadataManager();
+                    final HotRestartIntegrationService hotRestartService =
+                            (HotRestartIntegrationService) node.getNodeExtension().getInternalHotRestartService();
+                    ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
                     clusterMetadataManager.receiveClusterStartInfoFromMember(sender, null, invalidMemberClusterStartInfo);
                     latch.countDown();
                 }

@@ -4,7 +4,7 @@ import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ public class SendMemberClusterStartInfoOperation extends Operation implements Jo
     @Override
     public void run()
             throws Exception {
-        HotRestartService service = getService();
+        HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.receiveClusterStartInfoFromMember(getCallerAddress(), getCallerUuid(), memberClusterStartInfo);
     }
@@ -40,7 +40,7 @@ public class SendMemberClusterStartInfoOperation extends Operation implements Jo
 
     @Override
     public String getServiceName() {
-        return HotRestartService.SERVICE_NAME;
+        return HotRestartIntegrationService.SERVICE_NAME;
     }
 
     @Override

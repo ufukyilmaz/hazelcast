@@ -4,10 +4,10 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.SlowTest;
 import org.junit.Before;
@@ -108,8 +108,9 @@ public class PartialStartSlowTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void onDataLoadStart(Address address) {
             if (!node.isMaster() && excludedUuid.compareAndSet(null, node.getThisUuid())) {
-                EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
-                ClusterMetadataManager clusterMetadataManager = nodeExtension.getHotRestartService().getClusterMetadataManager();
+                final HotRestartIntegrationService hotRestartService =
+                        (HotRestartIntegrationService) node.getNodeExtension().getInternalHotRestartService();
+                ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
                 while (clusterMetadataManager.getHotRestartStatus() == HotRestartClusterStartStatus.CLUSTER_START_IN_PROGRESS) {
                     sleepAtLeastMillis(100);
                     if (Thread.currentThread().isInterrupted()) {

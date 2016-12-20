@@ -10,15 +10,14 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.partition.PartitionTableView;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.hotrestart.HotRestartException;
-import com.hazelcast.spi.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.KeyHandle;
 import com.hazelcast.spi.hotrestart.RamStore;
 import com.hazelcast.spi.hotrestart.RamStoreRegistry;
@@ -287,14 +286,14 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         private static final String NAME = "_MockHotRestartService_";
 
         private volatile NodeEngineImpl nodeEngineImpl;
-        private volatile HotRestartService hotRestartService;
+        private volatile HotRestartIntegrationService hotRestartService;
         private final CountDownLatch loadStarted = new CountDownLatch(1);
 
         @Override
         public void init(NodeEngine nodeEngine, Properties properties) {
             nodeEngineImpl = (NodeEngineImpl) nodeEngine;
-            EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) nodeEngineImpl.getNode().getNodeExtension();
-            hotRestartService = nodeExtension.getHotRestartService();
+            hotRestartService =
+                    (HotRestartIntegrationService) nodeEngineImpl.getNode().getNodeExtension().getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(NAME, this);
         }
 
@@ -395,8 +394,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
             if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
-                NodeExtension extension = node.getNodeExtension();
-                extension.triggerForceStart();
+                node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
             }
         }
 
@@ -421,8 +419,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         public void onPartitionTableValidationResult(Address sender, boolean success) {
             if (success) {
                 if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
-                    NodeExtension extension = node.getNodeExtension();
-                    extension.triggerForceStart();
+                    node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                 }
             } else {
                 System.out.println("Partition table validation failed. this node: " + node.getThisAddress() + " sender: " + sender);
@@ -450,8 +447,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         public void onHotRestartDataLoadResult(Address sender, boolean success) {
             if (success) {
                 if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
-                    NodeExtension extension = node.getNodeExtension();
-                    extension.triggerForceStart();
+                    node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                 }
             } else {
                 System.out.println("Data load result failed. this node: " + node.getThisAddress() + " sender: " + sender);
@@ -507,8 +503,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             if (success) {
                 addresses.add(sender);
                 if (addresses.size() == expectedNodeCount && forceStart.compareAndSet(false, true)) {
-                    NodeExtension extension = node.getNodeExtension();
-                    extension.triggerForceStart();
+                    node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                     latch.countDown();
                 }
             } else {
@@ -543,8 +538,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void beforeAllMembersJoin(Collection<? extends Member> currentMembers) {
             if (currentMembers.size() == nodeCount - 1 && forceStart.compareAndSet(false, true)) {
-                NodeExtension extension = node.getNodeExtension();
-                extension.triggerForceStart();
+                node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
             }
         }
 
@@ -570,8 +564,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
                 public void run() {
                     MockHotRestartService service = node.getNodeEngine().getService(MockHotRestartService.NAME);
                     service.awaitLoadStart();
-                    NodeExtension extension = node.getNodeExtension();
-                    extension.triggerForceStart();
+                    node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                 }
             });
         }

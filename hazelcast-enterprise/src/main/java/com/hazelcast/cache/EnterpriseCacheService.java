@@ -36,7 +36,6 @@ import com.hazelcast.config.WanReplicationRef;
 import com.hazelcast.core.HazelcastException;
 import com.hazelcast.enterprise.wan.WanFilterEventType;
 import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.instance.Node;
 import com.hazelcast.internal.hidensity.HiDensityStorageInfo;
 import com.hazelcast.memory.NativeOutOfMemoryError;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
@@ -44,7 +43,7 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.PartitionReplicationEvent;
 import com.hazelcast.spi.ReplicationSupportingService;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.LoadedConfigurationListener;
 import com.hazelcast.spi.hotrestart.RamStore;
@@ -118,7 +117,7 @@ public class EnterpriseCacheService
     private CacheMergePolicyProvider cacheMergePolicyProvider;
     private CacheFilterProvider cacheFilterProvider;
     private CacheWanEventPublisher cacheWanEventPublisher;
-    private HotRestartService hotRestartService;
+    private HotRestartIntegrationService hotRestartService;
 
     @Override
     protected void postInit(NodeEngine nodeEngine, Properties properties) {
@@ -229,11 +228,11 @@ public class EnterpriseCacheService
         return hotRestartConfig != null ? hotRestartConfig : new HotRestartConfig().setEnabled(false);
     }
 
-    private HotRestartService getHotRestartService() {
+    private HotRestartIntegrationService getHotRestartService() {
         NodeEngineImpl nodeEngineImpl = (NodeEngineImpl) nodeEngine;
-        Node node = nodeEngineImpl.getNode();
-        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
-        return nodeExtension.isHotRestartEnabled() ? nodeExtension.getHotRestartService() : null;
+        EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) nodeEngineImpl.getNode().getNodeExtension();
+        return nodeExtension.isHotRestartEnabled()
+                ? (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService() : null;
     }
 
     private ICacheRecordStore newHeapRecordStore(String name, int partitionId, HotRestartConfig hotRestart, long prefix) {

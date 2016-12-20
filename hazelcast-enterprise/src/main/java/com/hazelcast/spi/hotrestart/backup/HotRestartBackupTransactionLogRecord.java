@@ -4,6 +4,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
+import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.transaction.impl.TargetAwareTransactionLogRecord;
 import com.hazelcast.util.Preconditions;
 
@@ -12,7 +13,7 @@ import java.io.IOException;
 /**
  * {@link com.hazelcast.transaction.impl.TransactionLogRecord} implementation for cluster-wide backup of hot restart data.
  *
- * @see com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService
+ * @see HotBackupService
  */
 public class HotRestartBackupTransactionLogRecord implements TargetAwareTransactionLogRecord {
 

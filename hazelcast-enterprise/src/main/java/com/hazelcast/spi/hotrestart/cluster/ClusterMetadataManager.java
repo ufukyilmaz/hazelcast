@@ -449,7 +449,7 @@ public final class ClusterMetadataManager {
         if (!node.joined()) {
             // Node is being shutdown.
             // Partition events at this point can be ignored,
-            // latest partition state will be persisted during HotRestartService shutdown.
+            // latest partition state will be persisted during HotRestartIntegrationService shutdown.
             logger.finest("Skipping partition table change event, "
                     + "because node is shutting down and latest state will be persisted during shutdown.");
             return;

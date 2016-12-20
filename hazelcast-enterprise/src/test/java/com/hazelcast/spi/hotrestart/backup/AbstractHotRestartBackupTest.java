@@ -8,8 +8,8 @@ import com.hazelcast.core.Cluster;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.nio.Address;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -169,8 +169,9 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
             @Override
             public Object call() throws Exception {
                 for (HazelcastInstance instance : instances) {
-                    final EnterpriseNodeExtension extension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
-                    if (extension.getHotRestartService().isBackupInProgress()) {
+                    final HotRestartIntegrationService hotRestartService =
+                            (HotRestartIntegrationService) getNode(instance).getNodeExtension().getInternalHotRestartService();
+                    if (hotRestartService.isBackupInProgress()) {
                         return false;
                     }
                 }
@@ -192,7 +193,8 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
     }
 
     protected boolean runBackupOnNode(HazelcastInstance instance, long seq) {
-        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
-        return nodeExtension.getHotRestartService().backup(seq);
+        final HotRestartIntegrationService hotRestartService = (HotRestartIntegrationService)
+                getNode(instance).getNodeExtension().getInternalHotRestartService();
+        return hotRestartService.backup(seq);
     }
 }

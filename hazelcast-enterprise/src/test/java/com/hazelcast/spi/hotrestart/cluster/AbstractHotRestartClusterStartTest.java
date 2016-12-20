@@ -8,7 +8,6 @@ import com.hazelcast.config.ListenerConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.SampleLicense;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
@@ -18,6 +17,7 @@ import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
@@ -329,8 +329,9 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     private File getHotRestartClusterDir(HazelcastInstance instance) {
-        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instance).getNodeExtension();
-        return nodeExtension.getHotRestartService().getClusterMetadataManager().getHomeDir();
+        final HotRestartIntegrationService hotRestartService =
+                (HotRestartIntegrationService) getNode(instance).getNodeExtension().getInternalHotRestartService();
+        return hotRestartService.getClusterMetadataManager().getHomeDir();
     }
 
     void terminateInstances() {

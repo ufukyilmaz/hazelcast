@@ -17,13 +17,13 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.core.PartitionAware;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.internal.serialization.impl.HeapData;
+import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.PoolingMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
-import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.partition.strategy.DefaultPartitioningStrategy;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
@@ -49,10 +49,11 @@ public class EnterpriseDataTest {
     private final Person person = new Person(111, 123L, 89.56d, "test-person", new Address("street", 987));
 
     private final PortablePerson portablePerson = new PortablePerson(222, 456L, "portable-person",
-                                                             new PortableAddress("street", 567));
+            new PortableAddress("street", 567));
 
     private EnterpriseSerializationServiceBuilder createSerializationServiceBuilder() {
         final PortableFactory portableFactory = new PortableFactory() {
+            @Override
             public Portable create(int classId) {
                 switch (classId) {
                     case 1:
@@ -107,15 +108,15 @@ public class EnterpriseDataTest {
                 Data data2 = ss.toData(object, DataType.NATIVE);
 
                 assertEquals("Types are not matching! Object: "
-                                            + object, data1.getType(), data2.getType());
+                        + object, data1.getType(), data2.getType());
                 assertEquals("Sizes are not matching! Object: "
-                                            + object, data1.dataSize(), data2.dataSize());
+                        + object, data1.dataSize(), data2.dataSize());
                 assertEquals("Hash codes are not matching! Object: "
-                                            + object, data1.hashCode(), data2.hashCode());
+                        + object, data1.hashCode(), data2.hashCode());
                 assertEquals("Hash64 codes are not matching! Object: "
-                                            + object, data1.hash64(), data2.hash64());
+                        + object, data1.hash64(), data2.hash64());
                 assertEquals("Partition hashes are not matching! Object: "
-                                            + object, data1.getPartitionHash(), data2.getPartitionHash());
+                        + object, data1.getPartitionHash(), data2.getPartitionHash());
 
                 assertEquals("Not equal! Object: " + object, data1, data2);  // compare both side of equals
                 assertEquals("Not equal! Object: " + object, data2, data1);  // compare both side of equals
@@ -123,7 +124,6 @@ public class EnterpriseDataTest {
                 ss.disposeData(data1);
                 ss.disposeData(data2);
             }
-
         } finally {
             memPool.dispose();
         }
@@ -182,6 +182,7 @@ public class EnterpriseDataTest {
     }
 
     private static class PartitionAwareDummyObject implements Serializable, PartitionAware {
+
         private final Object key;
 
         PartitionAwareDummyObject(Object key) {

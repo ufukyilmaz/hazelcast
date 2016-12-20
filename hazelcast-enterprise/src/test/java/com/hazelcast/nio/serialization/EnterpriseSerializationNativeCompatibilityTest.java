@@ -21,6 +21,7 @@ import java.io.IOException;
 public class EnterpriseSerializationNativeCompatibilityTest {
 
     private EnterpriseSerializationService serializationService;
+
     @Before
     public void setup() {
         EnterpriseSerializationServiceBuilder builder = new EnterpriseSerializationServiceBuilder();

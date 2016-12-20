@@ -70,11 +70,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-
 @RunWith(Parameterized.class)
 @Category(QuickTest.class)
-public class EnterpriseSerializationTest
-        extends HazelcastTestSupport {
+public class EnterpriseSerializationTest extends HazelcastTestSupport {
 
     private static ClusterVersion V3_8 = ClusterVersion.of("3.8");
 
@@ -88,19 +86,23 @@ public class EnterpriseSerializationTest
     public void testGlobalSerializer() {
         SerializationConfig serializationConfig = new SerializationConfig().setGlobalSerializerConfig(
                 new GlobalSerializerConfig().setImplementation(new StreamSerializer<DummyValue>() {
+                    @Override
                     public void write(ObjectDataOutput out, DummyValue v) throws IOException {
                         out.writeUTF(v.s);
                         out.writeInt(v.k);
                     }
 
+                    @Override
                     public DummyValue read(ObjectDataInput in) throws IOException {
                         return new DummyValue(in.readUTF(), in.readInt());
                     }
 
+                    @Override
                     public int getTypeId() {
                         return 123;
                     }
 
+                    @Override
                     public void destroy() {
                     }
                 }));
@@ -118,7 +120,7 @@ public class EnterpriseSerializationTest
     }
 
     @Test
-    public void test_callid_on_correct_stream_position() throws Exception {
+    public void test_callId_on_correct_stream_position() throws Exception {
         InternalSerializationService serializationService = builder()
                 .setClusterVersionAware(new TestVersionAware()).build();
         CancellationOperation operation = new CancellationOperation(newUnsecureUuidString(), true);
@@ -174,17 +176,21 @@ public class EnterpriseSerializationTest
         SerializationConfig serializationConfig = new SerializationConfig().addSerializerConfig(
                 new SerializerConfig().setTypeClass(SingletonValue.class)
                         .setImplementation(new StreamSerializer<SingletonValue>() {
+                            @Override
                             public void write(ObjectDataOutput out, SingletonValue v) throws IOException {
                             }
 
+                            @Override
                             public SingletonValue read(ObjectDataInput in) throws IOException {
                                 return new SingletonValue();
                             }
 
+                            @Override
                             public int getTypeId() {
                                 return 123;
                             }
 
+                            @Override
                             public void destroy() {
                             }
                         }));
@@ -311,6 +317,7 @@ public class EnterpriseSerializationTest
     }
 
     private static class Foo implements Serializable {
+
         public Bar bar;
 
         public Foo() {
@@ -329,7 +336,7 @@ public class EnterpriseSerializationTest
     }
 
     @Test
-    public void testMemberLeftException_usingMemberImpl() throws IOException, ClassNotFoundException {
+    public void testMemberLeftException_usingMemberImpl() throws Exception {
         String uuid = newUnsecureUuidString();
         String host = "127.0.0.1";
         int port = 5000;
@@ -340,7 +347,7 @@ public class EnterpriseSerializationTest
     }
 
     @Test
-    public void testMemberLeftException_usingSimpleMember() throws IOException, ClassNotFoundException {
+    public void testMemberLeftException_usingSimpleMember() throws Exception {
         String uuid = newUnsecureUuidString();
         String host = "127.0.0.1";
         int port = 5000;
@@ -349,8 +356,7 @@ public class EnterpriseSerializationTest
         testMemberLeftException(uuid, host, port, member);
     }
 
-    private void testMemberLeftException(String uuid, String host, int port, Member member)
-            throws IOException, ClassNotFoundException {
+    private void testMemberLeftException(String uuid, String host, int port, Member member) throws Exception {
 
         MemberLeftException exception = new MemberLeftException(member);
 
@@ -407,5 +413,4 @@ public class EnterpriseSerializationTest
             return V3_8;
         }
     }
-
 }

@@ -118,7 +118,7 @@ public class EnterprisePortableTest {
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
         ClassDefinitionBuilder builder = new ClassDefinitionBuilder(p.getFactoryId(), p.getClassId());
-        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition());
+        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
         final Data data = serializationService.toData(p);
@@ -143,7 +143,7 @@ public class EnterprisePortableTest {
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
         ClassDefinitionBuilder builder = new ClassDefinitionBuilder(p.getFactoryId(), p.getClassId());
-        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition());
+        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
         final Data data = serializationService.toData(p);
@@ -157,7 +157,7 @@ public class EnterprisePortableTest {
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
         ClassDefinitionBuilder builder = new ClassDefinitionBuilder(p.getFactoryId(), p.getClassId());
-        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition());
+        builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
         final Data data = serializationService.toData(p);
@@ -171,12 +171,12 @@ public class EnterprisePortableTest {
         serializationConfig.setPortableVersion(1);
         serializationConfig.addClassDefinition(
                 new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE).addLongField("l")
-                        .addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition()).build());
+                        .addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1)).build());
 
         try {
             new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).build();
             fail("Should throw HazelcastSerializationException!");
-        } catch (HazelcastSerializationException e) {
+        } catch (HazelcastSerializationException ignored) {
         }
 
         new EnterpriseSerializationServiceBuilder().setConfig(serializationConfig).setCheckClassDefErrors(false).build();
@@ -195,7 +195,7 @@ public class EnterprisePortableTest {
         serializationConfig
                 .addClassDefinition(
                         new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE)
-                                .addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition()).build())
+                                .addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1)).build())
                 .addClassDefinition(new ClassDefinitionBuilder(FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE).addUTFField("name")
                                 .addIntField("myint").build());
 
@@ -337,7 +337,7 @@ public class EnterprisePortableTest {
     }
 
     private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) throws IOException {
-        NamedPortableV2 p = new NamedPortableV2("test-portable", 123456789);
+        NamedPortableV2 p = new NamedPortableV2("test-portable", 123456789, 1);
         Data data = ss.toData(p, dataType);
 
         PortableContext portableContext = ss.getPortableContext();
@@ -387,6 +387,5 @@ public class EnterprisePortableTest {
         fd = portableContext.getFieldDefinition(classDefinition, "child.child.timestamp");
         assertNotNull(fd);
         assertEquals(FieldType.LONG, fd.getType());
-
     }
 }

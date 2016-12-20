@@ -37,7 +37,7 @@ import com.hazelcast.query.impl.predicates.QueryOptimizer;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
 import com.hazelcast.spi.hotrestart.RamStore;
@@ -82,7 +82,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     private final PartitionScanRunner hdPartitionScanRunner;
     private final MapFilterProvider mapFilterProvider;
 
-    private HotRestartService hotRestartService;
+    private HotRestartIntegrationService hotRestartService;
 
     EnterpriseMapServiceContextImpl(NodeEngine nodeEngine) {
         super(nodeEngine);
@@ -90,7 +90,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         Node node = ((NodeEngineImpl) nodeEngine).getNode();
         EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) node.getNodeExtension();
         if (nodeExtension.isHotRestartEnabled()) {
-            hotRestartService = nodeExtension.getHotRestartService();
+            hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
         this.hdMapQueryRunner = createMapQueryRunner(nodeEngine.getOperationService(), getQueryOptimizer(),

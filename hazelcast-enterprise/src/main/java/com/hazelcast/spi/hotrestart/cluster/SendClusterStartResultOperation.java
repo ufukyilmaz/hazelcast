@@ -6,7 +6,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -48,7 +48,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
     @Override
     public void run() throws Exception {
         Address caller = getCallerAddress();
-        HotRestartService service = getService();
+        HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.receiveHotRestartStatus(caller, result, excludedMemberUuids, clusterState);
     }
@@ -60,7 +60,7 @@ public class SendClusterStartResultOperation extends Operation implements JoinOp
 
     @Override
     public String getServiceName() {
-        return HotRestartService.SERVICE_NAME;
+        return HotRestartIntegrationService.SERVICE_NAME;
     }
 
     @Override

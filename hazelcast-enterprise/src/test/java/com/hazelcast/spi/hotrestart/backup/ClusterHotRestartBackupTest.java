@@ -2,8 +2,7 @@ package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.EnterpriseNodeExtension;
-import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
+import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -86,9 +85,8 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
         final HazelcastInstance[] instancesArr = instances.toArray(new HazelcastInstance[instances.size()]);
 
-        final EnterpriseNodeExtension nodeExtension = (EnterpriseNodeExtension) getNode(instancesArr[1]).getNodeExtension();
-        final ClusterHotRestartBackupService backupService = (ClusterHotRestartBackupService)
-                nodeExtension.getHotRestartBackupService();
+        final HotBackupService backupService = (HotBackupService) getNode(instancesArr[1])
+                .getNodeExtension().getHotRestartService();
         backupService.prepareBackup(getAddress(instancesArr[2]), "dummyTx", Long.MAX_VALUE);
 
         try {

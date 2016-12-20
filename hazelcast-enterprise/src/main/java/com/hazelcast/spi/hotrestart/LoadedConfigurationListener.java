@@ -11,7 +11,7 @@ public interface LoadedConfigurationListener {
     /**
      * Called after a node loads a configuration of a data-structure from a persistence store.
      * Configuration can be persisted via
-     * {@link HotRestartService#ensureHasConfiguration(String, String, Object)}.
+     * {@link HotRestartIntegrationService#ensureHasConfiguration(String, String, Object)}.
      *
      * @param serviceName   service this configuration belongs to
      * @param name          name of a data-structure

@@ -4,10 +4,12 @@ import com.hazelcast.cluster.ClusterState;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.hotrestart.BackupTaskState;
 import com.hazelcast.hotrestart.BackupTaskStatus;
+import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.internal.cluster.ClusterService;
+import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.nio.Address;
@@ -17,6 +19,7 @@ import com.hazelcast.spi.MemberAttributeServiceEvent;
 import com.hazelcast.spi.MembershipAwareService;
 import com.hazelcast.spi.MembershipServiceEvent;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
+import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus;
 import com.hazelcast.spi.hotrestart.cluster.TriggerForceStartOnMasterOperation;
@@ -61,18 +64,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Provides common services needed for Hot Restart.
- * HotRestartService is main integration point between Hot Restart infrastructure
+ * HotRestartIntegrationService is main integration point between Hot Restart infrastructure
  * and Hazelcast services. It manages RamStoreRegistry(s), is access point for
  * per thread on-heap and off-heap Hot Restart stores. Also, it's listener for
  * membership and cluster state events.
  */
 @SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling"})
-public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
+public class HotRestartIntegrationService implements RamStoreRegistry, MembershipAwareService, InternalHotRestartService {
 
     /**
      * Name of the Hot Restart service.
      */
-    public static final String SERVICE_NAME = "hz:ee:hotRestartService";
+    public static final String SERVICE_NAME = "hz:ee:internalHotRestartService";
 
     private static final char STORE_PREFIX = 's';
     private static final char ONHEAP_SUFFIX = '0';
@@ -98,7 +101,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
 
     private final DirectoryLock directoryLock;
 
-    public HotRestartService(Node node) {
+    public HotRestartIntegrationService(Node node) {
         this.node = node;
         this.logger = node.getLogger(getClass());
         HotRestartPersistenceConfig hrCfg = node.getConfig().getHotRestartPersistenceConfig();
@@ -405,6 +408,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return clusterMetadataManager.isStartCompleted();
     }
 
+    @Override
     public boolean triggerForceStart() {
         InternalOperationService operationService = node.nodeEngine.getOperationService();
         Address masterAddress = node.getMasterAddress();
@@ -418,6 +422,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
     }
 
+    @Override
     public boolean triggerPartialStart() {
         if (node.isMaster()) {
             return clusterMetadataManager.handlePartialStartRequest();
@@ -587,10 +592,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         } while (!doneLatch.await(1, TimeUnit.SECONDS));
     }
 
-    /**
-     * resets local hot restart data and gets a new uuid, if the local node hasn't completed the start process and
-     * it is excluded in cluster start.
-     */
+    @Override
     public void resetHotRestartData() {
         if (isStartCompleted()) {
             throw new HotRestartException("cannot reset hot restart data since node has already started!");
@@ -764,6 +766,31 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return new BackupTaskStatus(state,
                 offHeapStatus.getCompleted() + onHeapStatus.getCompleted(),
                 offHeapStatus.getTotal() + onHeapStatus.getTotal());
+    }
+
+    @Override
+    public boolean isMemberExcluded(Address memberAddress, String memberUuid) {
+        return getExcludedMemberUuids().contains(memberUuid);
+    }
+
+    @Override
+    public Set<String> getExcludedMemberUuids() {
+        return clusterMetadataManager.getExcludedMemberUuids();
+    }
+
+    @Override
+    public void handleExcludedMemberUuids(Address sender, Set<String> excludedMemberUuids) {
+        if (!excludedMemberUuids.contains(node.getThisUuid())) {
+            logger.warning("Should handle final cluster start result with excluded member uuids: " + excludedMemberUuids
+                    + " within hot restart service since this member is not excluded. sender: " + sender);
+            return;
+        }
+        clusterMetadataManager.receiveHotRestartStatus(sender, CLUSTER_START_SUCCEEDED, excludedMemberUuids, null);
+    }
+
+    @Override
+    public ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() {
+        return ClusterHotRestartStatusDTOUtil.create(clusterMetadataManager);
     }
 
     private static class RamStoreDescriptor {

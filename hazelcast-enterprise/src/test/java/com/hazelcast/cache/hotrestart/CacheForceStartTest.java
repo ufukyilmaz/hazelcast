@@ -8,7 +8,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.Member;
 import com.hazelcast.instance.Node;
-import com.hazelcast.instance.NodeExtension;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
@@ -77,8 +76,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
 
         @Override
         public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
-            NodeExtension extension = node.getNodeExtension();
-            extension.triggerForceStart();
+            node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
         }
 
         @Override

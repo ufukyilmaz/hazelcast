@@ -15,9 +15,10 @@ import com.hazelcast.config.SymmetricEncryptionConfig;
 import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
+import com.hazelcast.hotrestart.InternalHotRestartService;
+import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
-import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.internal.networking.ReadHandler;
 import com.hazelcast.internal.networking.SocketChannelWrapperFactory;
 import com.hazelcast.internal.networking.WriteHandler;
@@ -48,11 +49,10 @@ import com.hazelcast.nio.tcp.SymmetricCipherMemberWriteHandler;
 import com.hazelcast.nio.tcp.TcpIpConnection;
 import com.hazelcast.security.SecurityContext;
 import com.hazelcast.security.SecurityContextImpl;
-import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
+import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
-import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
-import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.memory.HotRestartPoolingMemoryManager;
 import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.properties.GroupProperty;
@@ -65,11 +65,9 @@ import com.hazelcast.wan.impl.WanReplicationServiceImpl;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
-import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.
@@ -80,11 +78,11 @@ import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.
         "checkstyle:methodcount"
 })
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
-
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
+    private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
 
-    private final com.hazelcast.spi.hotrestart.HotRestartService hotRestartService;
-    private final ClusterHotRestartBackupService clusterHotRestartBackupService;
+    private final HotRestartIntegrationService hotRestartService;
+    private final HotBackupService hotBackupService;
     private volatile License license;
     private volatile SecurityContext securityContext;
     private volatile MemberSocketInterceptor memberSocketInterceptor;
@@ -95,21 +93,21 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     public EnterpriseNodeExtension(Node node) {
         super(node);
         hotRestartService = createHotRestartService(node);
-        clusterHotRestartBackupService = createClusterHotRestartBackupService(node, hotRestartService);
+        hotBackupService = createHotBackupService(node, hotRestartService);
     }
 
-    private ClusterHotRestartBackupService createClusterHotRestartBackupService(
-            Node node, com.hazelcast.spi.hotrestart.HotRestartService hotRestartService) {
+    private HotBackupService createHotBackupService(
+            Node node, HotRestartIntegrationService hotRestartService) {
         if (hotRestartService == null) {
             return null;
         }
         final HotRestartPersistenceConfig config = node.getConfig().getHotRestartPersistenceConfig();
-        return config.getBackupDir() != null ? new ClusterHotRestartBackupService(node, hotRestartService) : null;
+        return config.getBackupDir() != null ? new HotBackupService(node, hotRestartService) : null;
     }
 
-    private com.hazelcast.spi.hotrestart.HotRestartService createHotRestartService(Node node) {
+    private HotRestartIntegrationService createHotRestartService(Node node) {
         HotRestartPersistenceConfig hotRestartPersistenceConfig = node.getConfig().getHotRestartPersistenceConfig();
-        return hotRestartPersistenceConfig.isEnabled() ? new com.hazelcast.spi.hotrestart.HotRestartService(node) : null;
+        return hotRestartPersistenceConfig.isEnabled() ? new HotRestartIntegrationService(node) : null;
     }
 
     @Override
@@ -391,9 +389,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
-    public com.hazelcast.spi.hotrestart.HotRestartService getHotRestartService() {
+    public InternalHotRestartService getInternalHotRestartService() {
         if (hotRestartService == null) {
-            throw new HotRestartException("HotRestart is not enabled!");
+            return NOOP_INTERNAL_HOT_RESTART_SERVICE;
         }
         return hotRestartService;
     }
@@ -452,16 +450,16 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         if (hotRestartService == null) {
             return services;
         }
-        if (clusterHotRestartBackupService == null) {
-            return Collections.<String, Object>singletonMap(com.hazelcast.spi.hotrestart.HotRestartService.SERVICE_NAME,
+        if (hotBackupService == null) {
+            return Collections.<String, Object>singletonMap(HotRestartIntegrationService.SERVICE_NAME,
                     hotRestartService);
         }
 
         if (services.isEmpty()) {
             services = new HashMap<String, Object>(2);
         }
-        services.put(ClusterHotRestartBackupService.SERVICE_NAME, clusterHotRestartBackupService);
-        services.put(com.hazelcast.spi.hotrestart.HotRestartService.SERVICE_NAME, hotRestartService);
+        services.put(HotBackupService.SERVICE_NAME, hotBackupService);
+        services.put(HotRestartIntegrationService.SERVICE_NAME, hotRestartService);
 
         return services;
     }
@@ -589,28 +587,8 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
     }
 
     @Override
-    public boolean triggerForceStart() {
-        if (hotRestartService == null) {
-            logger.warning("Ignoring force start request, hot restart is not enabled!");
-            return false;
-        }
-
-        return hotRestartService.triggerForceStart();
-    }
-
-    @Override
-    public boolean triggerPartialStart() {
-        if (hotRestartService == null) {
-            logger.warning("Ignoring partial start request, hot restart is not enabled!");
-            return false;
-        }
-
-        return hotRestartService.triggerPartialStart();
-    }
-
-    @Override
-    public HotRestartService getHotRestartBackupService() {
-        return clusterHotRestartBackupService;
+    public HotRestartService getHotRestartService() {
+        return hotBackupService;
     }
 
     @Override
@@ -622,55 +600,5 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
             }
         }
         return super.createMemberUuid(address);
-    }
-
-    @Override
-    public boolean isMemberExcluded(Address memberAddress, String memberUuid) {
-        if (hotRestartService != null) {
-            Set<String> excludedMemberUuids = hotRestartService.getClusterMetadataManager().getExcludedMemberUuids();
-            return excludedMemberUuids.contains(memberUuid);
-        }
-        return super.isMemberExcluded(memberAddress, memberUuid);
-    }
-
-    @Override
-    public Set<String> getExcludedMemberUuids() {
-        if (hotRestartService != null) {
-            return hotRestartService.getClusterMetadataManager().getExcludedMemberUuids();
-        }
-
-        return super.getExcludedMemberUuids();
-    }
-
-    @Override
-    public void handleExcludedMemberUuids(Address sender, Set<String> excludedMemberUuids) {
-        if (!excludedMemberUuids.contains(node.getThisUuid())) {
-            logger.warning("Should handle final cluster start result with excluded member uuids: " + excludedMemberUuids
-                    + " within hot restart service since this member is not excluded. sender: " + sender);
-            return;
-        }
-
-        if (hotRestartService != null) {
-            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
-            clusterMetadataManager.receiveHotRestartStatus(sender, CLUSTER_START_SUCCEEDED, excludedMemberUuids, null);
-        }
-
-        super.handleExcludedMemberUuids(sender, excludedMemberUuids);
-    }
-
-    @Override
-    public ClusterHotRestartStatusDTO getCurrentClusterHotRestartStatus() {
-        if (hotRestartService != null) {
-            ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
-            return ClusterHotRestartStatusDTOUtil.create(clusterMetadataManager);
-        }
-        return super.getCurrentClusterHotRestartStatus();
-    }
-
-    @Override
-    public void resetHotRestartData() {
-        if (hotRestartService != null) {
-            hotRestartService.resetHotRestartData();
-        }
     }
 }

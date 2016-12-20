@@ -3,7 +3,7 @@ package com.hazelcast.spi.hotrestart.cluster;
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
 import com.hazelcast.nio.Address;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 
 /**
  * Operation which is sent to master by members to initiate force start process on master.
@@ -15,7 +15,7 @@ public class TriggerForceStartOnMasterOperation extends Operation implements Joi
         Address caller = getCallerAddress();
         getLogger().warning("Received force start request from: " + caller);
 
-        HotRestartService service = getService();
+        HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         clusterMetadataManager.handleForceStartRequest();
     }
@@ -27,7 +27,7 @@ public class TriggerForceStartOnMasterOperation extends Operation implements Joi
 
     @Override
     public String getServiceName() {
-        return HotRestartService.SERVICE_NAME;
+        return HotRestartIntegrationService.SERVICE_NAME;
     }
 
     @Override

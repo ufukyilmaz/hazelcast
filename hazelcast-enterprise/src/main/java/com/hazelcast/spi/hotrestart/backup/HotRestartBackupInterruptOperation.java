@@ -7,7 +7,7 @@ import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.ExceptionAction;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.exception.TargetNotMemberException;
-import com.hazelcast.spi.hotrestart.ClusterHotRestartBackupService;
+import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.transaction.TransactionException;
 
@@ -27,7 +27,7 @@ public class HotRestartBackupInterruptOperation extends Operation implements All
 
     @Override
     public void run() throws Exception {
-        final ClusterHotRestartBackupService service = getService();
+        final HotBackupService service = getService();
         if (service != null) {
             service.interruptLocalBackupTask();
         }
@@ -52,7 +52,7 @@ public class HotRestartBackupInterruptOperation extends Operation implements All
 
     @Override
     public String getServiceName() {
-        return ClusterHotRestartBackupService.SERVICE_NAME;
+        return HotBackupService.SERVICE_NAME;
     }
 
     @Override

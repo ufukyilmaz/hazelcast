@@ -7,7 +7,7 @@ import com.hazelcast.nio.Address;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.OperationService;
-import com.hazelcast.spi.hotrestart.HotRestartService;
+import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 
 import java.util.Set;
 
@@ -33,7 +33,7 @@ public class AskForClusterStartResultOperation extends Operation implements Join
             return;
         }
 
-        HotRestartService service = getService();
+        HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
         OperationService operationService = nodeEngine.getOperationService();
 
@@ -56,7 +56,7 @@ public class AskForClusterStartResultOperation extends Operation implements Join
 
     @Override
     public String getServiceName() {
-        return HotRestartService.SERVICE_NAME;
+        return HotRestartIntegrationService.SERVICE_NAME;
     }
 
     @Override

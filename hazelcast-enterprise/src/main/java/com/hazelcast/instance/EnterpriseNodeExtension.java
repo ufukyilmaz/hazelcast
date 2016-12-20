@@ -389,6 +389,7 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         }
     }
 
+    @Override
     public InternalHotRestartService getInternalHotRestartService() {
         if (hotRestartService == null) {
             return NOOP_INTERNAL_HOT_RESTART_SERVICE;

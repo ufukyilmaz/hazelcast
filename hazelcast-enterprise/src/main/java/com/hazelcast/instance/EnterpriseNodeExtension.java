@@ -16,6 +16,7 @@ import com.hazelcast.core.PartitioningStrategy;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.hotrestart.InternalHotRestartService;
+import com.hazelcast.hotrestart.NoOpHotRestartService;
 import com.hazelcast.hotrestart.NoopInternalHotRestartService;
 import com.hazelcast.internal.cluster.impl.JoinMessage;
 import com.hazelcast.internal.cluster.impl.VersionMismatchException;
@@ -80,6 +81,7 @@ import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpri
 public class EnterpriseNodeExtension extends DefaultNodeExtension implements NodeExtension {
     private static final int SUGGESTED_MAX_NATIVE_MEMORY_SIZE_PER_PARTITION_IN_MB = 256;
     private static final NoopInternalHotRestartService NOOP_INTERNAL_HOT_RESTART_SERVICE = new NoopInternalHotRestartService();
+    private static final NoOpHotRestartService NO_OP_HOT_RESTART_SERVICE = new NoOpHotRestartService();
 
     private final HotRestartIntegrationService hotRestartService;
     private final HotBackupService hotBackupService;
@@ -589,6 +591,9 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
 
     @Override
     public HotRestartService getHotRestartService() {
+        if (hotBackupService == null) {
+            return NO_OP_HOT_RESTART_SERVICE;
+        }
         return hotBackupService;
     }
 

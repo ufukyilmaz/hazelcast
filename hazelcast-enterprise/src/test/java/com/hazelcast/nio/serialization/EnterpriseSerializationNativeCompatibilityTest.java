@@ -14,8 +14,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(QuickTest.class)
 public class EnterpriseSerializationNativeCompatibilityTest {
@@ -40,7 +38,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
     }
 
     @Test
-    public void testSampleEncodeDecode() throws IOException {
+    public void testSampleEncodeDecode() {
         SerializationV1Dataserializable testData = SerializationV1Dataserializable.createInstanceWithNonNullFields();
         Data data = this.serializationService.toData(testData, DataType.NATIVE);
         SerializationV1Dataserializable testDataFromSerializer = this.serializationService.toObject(data);
@@ -48,7 +46,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
     }
 
     @Test
-    public void testSampleEncodeDecode_with_null_arrays() throws IOException {
+    public void testSampleEncodeDecode_with_null_arrays() {
         SerializationV1Dataserializable testData = new SerializationV1Dataserializable();
         Data data = this.serializationService.toData(testData, DataType.NATIVE);
         SerializationV1Dataserializable testDataFromSerializer = this.serializationService.toObject(data);
@@ -56,7 +54,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
     }
 
     @Test
-    public void testSamplePortableEncodeDecode() throws IOException {
+    public void testSamplePortableEncodeDecode() {
         SerializationV1Portable testData = SerializationV1Portable.createInstanceWithNonNullFields();
         Data data = this.serializationService.toData(testData, DataType.NATIVE);
         SerializationV1Portable testDataFromSerializer = this.serializationService.toObject(data);
@@ -64,7 +62,7 @@ public class EnterpriseSerializationNativeCompatibilityTest {
     }
 
     @Test
-    public void testSamplePortableEncodeDecode_with_null_arrays() throws IOException {
+    public void testSamplePortableEncodeDecode_with_null_arrays() {
         SerializationV1Portable testDataw = SerializationV1Portable.createInstanceWithNonNullFields();
         this.serializationService.toData(testDataw, DataType.NATIVE);
         SerializationV1Portable testData = new SerializationV1Portable();

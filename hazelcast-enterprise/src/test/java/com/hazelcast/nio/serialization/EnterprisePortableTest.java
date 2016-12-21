@@ -17,20 +17,19 @@
 package com.hazelcast.nio.serialization;
 
 import com.hazelcast.config.SerializationConfig;
-import com.hazelcast.internal.serialization.PortableContext;
 import com.hazelcast.internal.serialization.InternalSerializationService;
+import com.hazelcast.internal.serialization.PortableContext;
+import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.memory.HazelcastMemoryManager;
 import com.hazelcast.memory.MemorySize;
 import com.hazelcast.memory.MemoryUnit;
 import com.hazelcast.memory.StandardMemoryManager;
-import com.hazelcast.internal.serialization.impl.EnterpriseSerializationServiceBuilder;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.nio.ByteOrder;
 
 import static com.hazelcast.nio.serialization.PortableTest.ChildPortableObject;
@@ -71,8 +70,8 @@ public class EnterprisePortableTest {
     }
 
     private void testBasics(ByteOrder order, boolean allowUnsafe) {
-        final InternalSerializationService serializationService = createSerializationService(1, order, allowUnsafe);
-        final InternalSerializationService serializationService2 = createSerializationService(2, order, allowUnsafe);
+        InternalSerializationService serializationService = createSerializationService(1, order, allowUnsafe);
+        InternalSerializationService serializationService2 = createSerializationService(2, order, allowUnsafe);
         Data data;
 
         NamedPortable[] nn = new NamedPortable[5];
@@ -113,7 +112,7 @@ public class EnterprisePortableTest {
 
     @Test
     public void testRawData() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         RawDataPortable p = new RawDataPortable(System.currentTimeMillis(), "test chars".toCharArray(),
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
@@ -121,24 +120,24 @@ public class EnterprisePortableTest {
         builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
-        final Data data = serializationService.toData(p);
+        Data data = serializationService.toData(p);
         assertEquals(p, serializationService.toObject(data));
     }
 
     @Test
     public void testRawDataWithoutRegistering() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         RawDataPortable p = new RawDataPortable(System.currentTimeMillis(), "test chars".toCharArray(),
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
 
-        final Data data = serializationService.toData(p);
+        Data data = serializationService.toData(p);
         assertEquals(p, serializationService.toObject(data));
     }
 
     @Test(expected = HazelcastSerializationException.class)
     public void testRawDataInvalidWrite() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         RawDataPortable p = new InvalidRawDataPortable(System.currentTimeMillis(), "test chars".toCharArray(),
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
@@ -146,13 +145,13 @@ public class EnterprisePortableTest {
         builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
-        final Data data = serializationService.toData(p);
+        Data data = serializationService.toData(p);
         assertEquals(p, serializationService.toObject(data));
     }
 
     @Test(expected = HazelcastSerializationException.class)
     public void testRawDataInvalidRead() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         RawDataPortable p = new InvalidRawDataPortable2(System.currentTimeMillis(), "test chars".toCharArray(),
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
@@ -160,7 +159,7 @@ public class EnterprisePortableTest {
         builder.addLongField("l").addCharArrayField("c").addPortableField("p", createNamedPortableClassDefinition(1));
         serializationService.getPortableContext().registerClassDefinition(builder.build());
 
-        final Data data = serializationService.toData(p);
+        Data data = serializationService.toData(p);
         assertEquals(p, serializationService.toObject(data));
     }
 
@@ -188,7 +187,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionConfig() throws Exception {
+    public void testClassDefinitionConfig() {
         SerializationConfig serializationConfig = new SerializationConfig();
         serializationConfig.addPortableFactory(FACTORY_ID, new TestPortableFactory());
         serializationConfig.setPortableVersion(1);
@@ -204,7 +203,7 @@ public class EnterprisePortableTest {
                 new NamedPortable("named portable", 34567),
                 9876, "Testing raw portable", new ByteArrayDataSerializable("test bytes".getBytes()));
 
-        final Data data = serializationService.toData(p);
+        Data data = serializationService.toData(p);
         assertEquals(p, serializationService.toObject(data));
     }
 
@@ -247,21 +246,23 @@ public class EnterprisePortableTest {
         }
     }
 
-    //https://github.com/hazelcast/hazelcast/issues/2172
+    /**
+     * Test for https://github.com/hazelcast/hazelcast/issues/2172
+     */
     @Test
     public void test_issue2172_WritePortableArray() {
-        final InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setInitialOutputBufferSize(16).build();
-        final TestObject2[] testObject2s = new TestObject2[100];
+        InternalSerializationService ss = new EnterpriseSerializationServiceBuilder().setInitialOutputBufferSize(16).build();
+        TestObject2[] testObject2s = new TestObject2[100];
         for (int i = 0; i < testObject2s.length; i++) {
             testObject2s[i] = new TestObject2();
         }
 
-        final TestObject1 testObject1 = new TestObject1(testObject2s);
+        TestObject1 testObject1 = new TestObject1(testObject2s);
         ss.toData(testObject1);
     }
 
     @Test
-    public void testClassDefinitionLookupBigEndianHeapData() throws IOException {
+    public void testClassDefinitionLookupBigEndianHeapData() throws Exception {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
                 .build();
@@ -270,7 +271,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupLittleEndianHeapData() throws IOException {
+    public void testClassDefinitionLookupLittleEndianHeapData() throws Exception {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
                 .build();
@@ -279,7 +280,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupNativeOrderHeapData() throws IOException {
+    public void testClassDefinitionLookupNativeOrderHeapData() throws Exception {
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
                 .build();
@@ -288,7 +289,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupBigEndianOffHeapData() throws IOException {
+    public void testClassDefinitionLookupBigEndianOffHeapData() throws Exception {
         HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.BIG_ENDIAN)
@@ -300,7 +301,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupLittleEndianOffHeapData() throws IOException {
+    public void testClassDefinitionLookupLittleEndianOffHeapData() throws Exception {
         HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setByteOrder(ByteOrder.LITTLE_ENDIAN)
@@ -312,7 +313,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupNativeOrderOffHeapData() throws IOException {
+    public void testClassDefinitionLookupNativeOrderOffHeapData() throws Exception {
         HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
@@ -324,7 +325,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() throws IOException {
+    public void testClassDefinitionLookupUnsafeNativeOrderOffHeapData() throws Exception {
         HazelcastMemoryManager memoryManager = new StandardMemoryManager(new MemorySize(1, MemoryUnit.MEGABYTES));
         EnterpriseSerializationService ss = new EnterpriseSerializationServiceBuilder()
                 .setUseNativeByteOrder(true)
@@ -336,7 +337,7 @@ public class EnterprisePortableTest {
         memoryManager.dispose();
     }
 
-    private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) throws IOException {
+    private void testClassDefinitionLookup(EnterpriseSerializationService ss, DataType dataType) throws Exception {
         NamedPortableV2 p = new NamedPortableV2("test-portable", 123456789, 1);
         Data data = ss.toData(p, dataType);
 
@@ -349,7 +350,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testSerializationService_createPortableReader() throws IOException {
+    public void testSerializationService_createPortableReader() throws Exception {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
 
         ChildPortableObject child = new ChildPortableObject(System.nanoTime());
@@ -365,7 +366,7 @@ public class EnterprisePortableTest {
     }
 
     @Test
-    public void testClassDefinition_getNestedField() throws IOException {
+    public void testClassDefinition_getNestedField() throws Exception {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().build();
         PortableContext portableContext = serializationService.getPortableContext();
 

@@ -52,7 +52,7 @@ public class EnterpriseDataTest {
             new PortableAddress("street", 567));
 
     private EnterpriseSerializationServiceBuilder createSerializationServiceBuilder() {
-        final PortableFactory portableFactory = new PortableFactory() {
+        PortableFactory portableFactory = new PortableFactory() {
             @Override
             public Portable create(int classId) {
                 switch (classId) {

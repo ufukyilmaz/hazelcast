@@ -8,8 +8,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
-
 import static com.hazelcast.nio.serialization.EnterprisePortableTest.createSerializationService;
 import static com.hazelcast.nio.serialization.PortableClassVersionTest.createInnerPortableClassDefinition;
 import static org.junit.Assert.assertEquals;
@@ -65,7 +63,7 @@ public class EnterprisePortableClassVersionTest {
     }
 
     @Test
-    public void testDifferentClassVersionsUsingDataWriteAndRead() throws IOException {
+    public void testDifferentClassVersionsUsingDataWriteAndRead() throws Exception {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder()
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     @Override
@@ -88,7 +86,7 @@ public class EnterprisePortableClassVersionTest {
     }
 
     @Test
-    public void testDifferentClassAndServiceVersionsUsingDataWriteAndRead() throws IOException {
+    public void testDifferentClassAndServiceVersionsUsingDataWriteAndRead() throws Exception {
         InternalSerializationService serializationService = new EnterpriseSerializationServiceBuilder().setPortableVersion(1)
                 .addPortableFactory(FACTORY_ID, new PortableFactory() {
                     @Override
@@ -112,10 +110,10 @@ public class EnterprisePortableClassVersionTest {
 
     @Test
     public void testPreDefinedDifferentVersionsWithInnerPortable() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         serializationService.getPortableContext().registerClassDefinition(createInnerPortableClassDefinition(1));
 
-        final InternalSerializationService serializationService2 = createSerializationService(2);
+        InternalSerializationService serializationService2 = createSerializationService(2);
         serializationService2.getPortableContext().registerClassDefinition(createInnerPortableClassDefinition(2));
 
         NamedPortable[] nn = new NamedPortable[1];
@@ -124,7 +122,7 @@ public class EnterprisePortableClassVersionTest {
                 new short[]{3, 4, 5}, new int[]{9, 8, 7, 6}, new long[]{0, 1, 5, 7, 9, 11},
                 new float[]{0.6543f, -3.56f, 45.67f}, new double[]{456.456, 789.789, 321.321}, nn);
 
-        final MainPortable mainWithInner = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
+        MainPortable mainWithInner = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
                 -897543.3678909d, "this is main portable object created for testing!", inner);
 
         testPreDefinedDifferentVersions(serializationService, serializationService2, mainWithInner);
@@ -132,13 +130,13 @@ public class EnterprisePortableClassVersionTest {
 
     @Test
     public void testPreDefinedDifferentVersionsWithNullInnerPortable() {
-        final InternalSerializationService serializationService = createSerializationService(1);
+        InternalSerializationService serializationService = createSerializationService(1);
         serializationService.getPortableContext().registerClassDefinition(createInnerPortableClassDefinition(1));
 
-        final InternalSerializationService serializationService2 = createSerializationService(2);
+        InternalSerializationService serializationService2 = createSerializationService(2);
         serializationService2.getPortableContext().registerClassDefinition(createInnerPortableClassDefinition(2));
 
-        final MainPortable mainWithNullInner = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
+        MainPortable mainWithNullInner = new MainPortable((byte) 113, true, 'x', (short) -500, 56789, -50992225L, 900.5678f,
                 -897543.3678909d, "this is main portable object created for testing!", null);
 
         testPreDefinedDifferentVersions(serializationService, serializationService2, mainWithNullInner);

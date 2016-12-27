@@ -28,5 +28,4 @@ public class HDMapAggregateTest extends MapAggregateTest {
 
         config.setNativeMemoryConfig(memoryConfig);
     }
-
 }

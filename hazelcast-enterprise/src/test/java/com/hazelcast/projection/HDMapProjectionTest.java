@@ -28,5 +28,4 @@ public class HDMapProjectionTest extends MapProjectionTest {
 
         config.setNativeMemoryConfig(memoryConfig);
     }
-
 }

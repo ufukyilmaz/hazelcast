@@ -19,6 +19,8 @@ package com.hazelcast.internal.management.request;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.HotRestartClusterDataRecoveryPolicy;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.hotrestart.InternalHotRestartService;
+import com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO;
 import com.hazelcast.nio.IOUtil;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -72,5 +74,10 @@ public abstract class HotRestartConsoleRequestTestSupport extends HazelcastTestS
         config.getHotRestartPersistenceConfig().setEnabled(true).setBaseDir(new File(baseDir, dir))
                 .setClusterDataRecoveryPolicy(HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE);
         return config;
+    }
+
+    public static ClusterHotRestartStatusDTO getClusterHotRestartStatus(HazelcastInstance instance){
+        InternalHotRestartService internalHotRestartService = getNode(instance).getNodeExtension().getInternalHotRestartService();
+        return internalHotRestartService.getCurrentClusterHotRestartStatus();
     }
 }

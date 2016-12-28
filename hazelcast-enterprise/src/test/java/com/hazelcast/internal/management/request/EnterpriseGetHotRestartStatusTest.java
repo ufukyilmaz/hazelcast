@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY;
 import static com.hazelcast.config.HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE;
-import static com.hazelcast.internal.management.GetHotRestartStatusRequestTest.getClusterHotRestartStatus;
 import static com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus.LOAD_IN_PROGRESS;
 import static com.hazelcast.internal.management.dto.ClusterHotRestartStatusDTO.MemberHotRestartStatus.PENDING;
 import static java.util.Collections.synchronizedCollection;
@@ -54,7 +53,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class EnterpriseGetHotRestartStatusRequestTest extends HotRestartConsoleRequestTestSupport {
+public class EnterpriseGetHotRestartStatusTest extends HotRestartConsoleRequestTestSupport {
 
     @Test
     public void testGetStatus_withoutHotRestart() throws Exception {

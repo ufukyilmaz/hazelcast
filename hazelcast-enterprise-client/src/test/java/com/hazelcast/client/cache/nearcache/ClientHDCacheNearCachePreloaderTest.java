@@ -14,12 +14,16 @@ import static com.hazelcast.cache.nearcache.HiDensityNearCacheTestUtils.getHDCon
 
 public class ClientHDCacheNearCachePreloaderTest extends ClientCacheNearCachePreloaderTest {
 
-    @Parameters(name = "format:{0}")
+    @Parameters(name = "format:{0} invalidationOnChange:{1}")
     public static Collection<Object[]> parameters() {
+        // FIXME: the Near Cache pre-loader doesn't work with enabled invalidations due to a known getAll() issue!
         return Arrays.asList(new Object[][]{
-                {InMemoryFormat.BINARY},
-                {InMemoryFormat.OBJECT},
-                {InMemoryFormat.NATIVE},
+                {InMemoryFormat.BINARY, false},
+                //{InMemoryFormat.BINARY, true},
+                {InMemoryFormat.OBJECT, false},
+                //{InMemoryFormat.OBJECT, true},
+                {InMemoryFormat.NATIVE, false},
+                //{InMemoryFormat.NATIVE, true},
         });
     }
 

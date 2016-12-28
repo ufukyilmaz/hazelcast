@@ -75,7 +75,7 @@ public class MapForceStartTest extends AbstractMapHotRestartTest {
 
         private Node node;
 
-        public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
+        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
         }
 

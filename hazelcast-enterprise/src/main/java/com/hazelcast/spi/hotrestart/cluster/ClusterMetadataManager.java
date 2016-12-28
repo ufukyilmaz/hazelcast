@@ -58,6 +58,8 @@ import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLo
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
+import static java.util.Collections.unmodifiableCollection;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -90,7 +92,7 @@ public final class ClusterMetadataManager {
     private final ConcurrentMap<Address, MemberClusterStartInfo> memberClusterStartInfos =
             new ConcurrentHashMap<Address, MemberClusterStartInfo>();
     private final AtomicReference<Collection<MemberImpl>> restoredMembersRef = new AtomicReference<Collection<MemberImpl>>();
-    private final AtomicReference<Set<String>> expectedMemberUuidsRef = new AtomicReference<Set<String>>();
+    private final AtomicReference<Map<String, Address>> expectedMembersRef = new AtomicReference<Map<String, Address>>();
     private final List<ClusterHotRestartEventListener> hotRestartEventListeners =
             new CopyOnWriteArrayList<ClusterHotRestartEventListener>();
     private Thread pingThread;
@@ -239,21 +241,16 @@ public final class ClusterMetadataManager {
         }
         logger.info("Starting cluster member-list & partition table validation.");
         if (startWithHotRestart) {
-            Map<Address, Address> addressMapping = awaitUntilAllMembersJoin();
-            logger.info("Expected member list after await until all members join: " + expectedMemberUuidsRef.get());
+            awaitUntilExpectedMembersJoin();
+            logger.info("Expected members set after members join: " + expectedMembersRef.get());
+
+            Map<Address, Address> addressMapping = getMemberAddressChangesMapping();
             logAddressChanges(addressMapping);
+
             repairRestoredMembers(addressMapping);
             repairPartitionTable(addressMapping);
         }
-        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
-            final Collection<MemberImpl> expectedMembers = new ArrayList<MemberImpl>();
-            for (MemberImpl member : restoredMembersRef.get()) {
-                if (expectedMemberUuidsRef.get().contains(member.getUuid())) {
-                    expectedMembers.add(member);
-                }
-            }
-            listener.afterAwaitUntilMembersJoin(expectedMembers);
-        }
+        callAfterExpectedMembersJoinListener();
 
         // THIS IS DONE HERE TO BE ABLE TO INVOKE LISTENERS
         Address thisAddress = node.getThisAddress();
@@ -263,6 +260,26 @@ public final class ClusterMetadataManager {
 
         if (hotRestartStatus == CLUSTER_START_FAILED) {
             throw new HotRestartException("Cluster-wide start failed!");
+        }
+    }
+
+    private void callAfterExpectedMembersJoinListener() {
+        if (hotRestartEventListeners.isEmpty()) {
+            return;
+        }
+
+        Collection<MemberImpl> members = new ArrayList<MemberImpl>();
+        Map<String, Address> expectedMembers = expectedMembersRef.get();
+        if (expectedMembers != null) {
+            for (MemberImpl member : restoredMembersRef.get()) {
+                if (expectedMembers.containsKey(member.getUuid())) {
+                    members.add(member);
+                }
+            }
+        }
+        members = unmodifiableCollection(members);
+        for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
+            listener.afterExpectedMembersJoin(members);
         }
     }
 
@@ -320,7 +337,7 @@ public final class ClusterMetadataManager {
             persistMembers();
             persistPartitions();
             restoredMembersRef.set(null);
-            expectedMemberUuidsRef.set(null);
+            expectedMembersRef.set(null);
             partitionTableRef.set(null);
             memberClusterStartInfos.clear();
         } finally {
@@ -521,12 +538,12 @@ public final class ClusterMetadataManager {
 
     public boolean handlePartialStartRequest() {
         if (!node.isMaster()) {
-            logger.warning("Partial data recovery attempt received but this node is not master!");
+            logger.warning("Partial data recovery request received but this node is not master!");
             return false;
         }
 
         if (!isPartialStartPolicy()) {
-            logger.warning("Cannot eagerly set expected member uuids because cluster start policy is "
+            logger.warning("Cannot trigger partial data recovery because cluster start policy is "
                     + clusterDataRecoveryPolicy);
             return false;
         }
@@ -554,15 +571,20 @@ public final class ClusterMetadataManager {
     }
 
     private boolean trySetCurrentMemberListToExpectedMembers() {
+        // early return if expectedMembersRef is already set
+        if (expectedMembersRef.get() != null) {
+            return false;
+        }
         ClusterServiceImpl clusterService = node.getClusterService();
-        Set<String> expectedMemberUuids = new HashSet<String>();
+        Map<String, Address> expectedMembers = new HashMap<String, Address>();
         for (MemberImpl restoredMember : restoredMembersRef.get()) {
-            if (clusterService.getMember(restoredMember.getUuid()) != null) {
-                expectedMemberUuids.add(restoredMember.getUuid());
+            MemberImpl currentMember = clusterService.getMember(restoredMember.getUuid());
+            if (currentMember != null) {
+                expectedMembers.put(currentMember.getUuid(), currentMember.getAddress());
             }
         }
-        if (expectedMemberUuidsRef.compareAndSet(null, unmodifiableSet(expectedMemberUuids))) {
-            logger.info("Expected member list is eagerly set to current member list uuids: " + expectedMemberUuids);
+        if (expectedMembersRef.compareAndSet(null, unmodifiableMap(expectedMembers))) {
+            logger.info("Expected members are explicitly set to current members: " + expectedMembers);
             return true;
         }
         return false;
@@ -572,7 +594,7 @@ public final class ClusterMetadataManager {
         hotRestartStatusLock.lock();
         try {
             restoredMembersRef.set(null);
-            expectedMemberUuidsRef.set(null);
+            expectedMembersRef.set(null);
             partitionTableRef.set(null);
             memberClusterStartInfos.clear();
             mkdirHome();
@@ -764,13 +786,13 @@ public final class ClusterMetadataManager {
     }
 
     private boolean checkPartialStart() {
-        Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
-        if (expectedMemberUuids == null) {
+        Map<String, Address> expectedMembers = expectedMembersRef.get();
+        if (expectedMembers == null) {
             return true;
         }
 
         for (MemberImpl expectedMember : restoredMembersRef.get()) {
-            if (!expectedMemberUuids.contains(expectedMember.getUuid())) {
+            if (!expectedMembers.containsKey(expectedMember.getUuid())) {
                 continue;
             }
 
@@ -877,25 +899,10 @@ public final class ClusterMetadataManager {
             logger.info("Cluster state not found on disk. Will not load Hot Restart data.");
             startWithHotRestart = false;
             members = Collections.singletonList(node.getLocalMember());
-        }
-        if (logger.isFineEnabled()) {
+        } else if (logger.isFineEnabled()) {
             logger.fine("Restored " + members.size() + " members -> " + members);
         }
         restoredMembersRef.set(members);
-        if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
-            hotRestartStatusLock.lock();
-            try {
-                logger.fine("Setting expected member uuids with members -> " + members);
-                final Set<String> uuids = new HashSet<String>();
-                for (MemberImpl member : restoredMembersRef.get()) {
-                    uuids.add(member.getUuid());
-                }
-                expectedMemberUuidsRef.set(unmodifiableSet(uuids));
-            } finally {
-                hotRestartStatusLock.unlock();
-            }
-        }
-
         return members;
     }
 
@@ -990,32 +997,24 @@ public final class ClusterMetadataManager {
      *
      * @return returns a mapping of old and new addresses of joined members if an address change is detected
      */
-    private Map<Address, Address> awaitUntilAllMembersJoin() throws InterruptedException {
+    private void awaitUntilExpectedMembersJoin() throws InterruptedException {
         final Set<String> restoredMemberUuids = getRestoredMemberUuids();
-        if (clusterDataRecoveryPolicy == FULL_RECOVERY_ONLY) {
-            expectedMemberUuidsRef.set(restoredMemberUuids);
-        }
-
-        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
-
         final ClusterServiceImpl clusterService = node.getClusterService();
-        while (true) {
-            sleep(SECONDS.toMillis(1));
+        Map<String, Address> expectedMembers = new HashMap<String, Address>();
 
-            Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
-            if (expectedMemberUuids == null) {
-                // means partial recovery policy is set
-                if (node.isMaster()) {
-                    // master node and clusterDataRecoveryPolicy is partial recovery
-                    expectedMemberUuids = restoredMemberUuids;
-                } else {
-                    sendIfNotThisMember(new AskForExpectedMembersOperation(), node.getMasterAddress());
+        while (expectedMembersRef.get() == null) {
+            if (node.isMaster()) {
+                expectedMembers.clear();
+                if (isExpectedMembersJoined(expectedMembers)) {
+                    trySetExpectedMembers(expectedMembers);
+                    return;
                 }
-            }
-
-            if (isExpectedMembersJoined(expectedMemberUuids, addressMapping)) {
-                trySetRestoredMembersToExpectedMembers(restoredMemberUuids);
-                return addressMapping;
+            } else {
+                logger.info("Waiting for cluster formation... Expected-Size: " + restoredMemberUuids.size()
+                        + ", Actual-Size: " + clusterService.getSize()
+                        + ". Start-time: " + new Date(validationStartTime)
+                        + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
+                sendIfNotThisMember(new AskForExpectedMembersOperation(), node.getMasterAddress());
             }
 
             Collection<MemberImpl> members = clusterService.getMemberImpls();
@@ -1025,6 +1024,8 @@ public final class ClusterMetadataManager {
             for (ClusterHotRestartEventListener listener : hotRestartEventListeners) {
                 listener.beforeAllMembersJoin(members);
             }
+
+            sleep(SECONDS.toMillis(1));
         }
     }
 
@@ -1038,7 +1039,7 @@ public final class ClusterMetadataManager {
         for (MemberImpl member : members) {
             if (!restoredMemberUuids.contains(member.getUuid())) {
                 throw new HotRestartException("Unexpected member is joined: " + member
-                        + ". Restored member uuids: " + restoredMemberUuids);
+                        + ". Restored members: " + restoredMembersRef.get());
             }
         }
     }
@@ -1051,13 +1052,14 @@ public final class ClusterMetadataManager {
         return unmodifiableSet(restoredMemberUuids);
     }
 
-    private void trySetRestoredMembersToExpectedMembers(Set<String> restoredMemberUuids) {
+    private void trySetExpectedMembers(Map<String, Address> expectedMembers) {
         if (!node.isMaster()) {
             return;
         }
-        if (expectedMemberUuidsRef.compareAndSet(null, restoredMemberUuids)) {
-            logger.info("All members are present. Expected member list is set to: " + restoredMemberUuids);
-            broadcast(new SendExpectedMemberUuidsOperation(restoredMemberUuids));
+
+        if (expectedMembersRef.compareAndSet(null, unmodifiableMap(expectedMembers))) {
+            logger.info("Expected members are set to: " + expectedMembers);
+            broadcast(new SendExpectedMembersOperation(expectedMembers));
         }
     }
 
@@ -1079,7 +1081,7 @@ public final class ClusterMetadataManager {
             }
             if (node.isMaster() && isPartialStartPolicy()) {
                 if (trySetCurrentMemberListToExpectedMembers()) {
-                    broadcast(new SendExpectedMemberUuidsOperation(expectedMemberUuidsRef.get()));
+                    broadcast(new SendExpectedMembersOperation(expectedMembersRef.get()));
                 }
             }
         } else if (hotRestartStatus == CLUSTER_START_SUCCEEDED && excludedMemberUuids.contains(node.getThisUuid())) {
@@ -1089,37 +1091,52 @@ public final class ClusterMetadataManager {
         }
     }
 
-    private boolean isExpectedMembersJoined(Set<String> expectedMemberUuids, Map<Address, Address> addressMapping) {
-        addressMapping.clear();
-
-        if (expectedMemberUuids == null) {
-            logger.info("Waiting for cluster formation... Expected members are still not known. "
-                    + "Cluster data recovery policy is " + clusterDataRecoveryPolicy);
-            return false;
-        }
-
+    private boolean isExpectedMembersJoined(Map<String, Address> expectedMembers) {
         ClusterServiceImpl clusterService = node.getClusterService();
+        Collection<MemberImpl> restoredMembers = restoredMembersRef.get();
 
-        for (Member missingMember : restoredMembersRef.get()) {
-            Member currentMember = clusterService.getMember(missingMember.getUuid());
+        for (Member restoredMember : restoredMembers) {
+            Member currentMember = clusterService.getMember(restoredMember.getUuid());
             if (currentMember == null) {
-                if (!expectedMemberUuids.contains(missingMember.getUuid())) {
-                    continue;
-                }
-
-                logger.info("Waiting for cluster formation... Expected-Size: " + expectedMemberUuids.size()
-                        + ", Actual-Size: " + clusterService.getSize()
-                        + ", Missing member: " + missingMember);
+                logger.info("Waiting for cluster formation... Expected-Size: " + restoredMembers.size()
+                        + ", Actual-Size: " + clusterService.getSize() + ", Missing member: " + restoredMember
+                        + ". Start-time: " + new Date(validationStartTime)
+                        + ", Timeout: " + MILLISECONDS.toSeconds(validationTimeout) + " sec.");
 
                 return false;
             }
 
-            if (!currentMember.getAddress().equals(missingMember.getAddress())) {
-                addressMapping.put(missingMember.getAddress(), currentMember.getAddress());
-            }
+            expectedMembers.put(currentMember.getUuid(), currentMember.getAddress());
         }
 
         return true;
+    }
+
+    private Map<Address, Address> getMemberAddressChangesMapping() {
+        Map<String, Address> expectedMembers = expectedMembersRef.get();
+
+        // once we repair member-list & partition table, we don't allow address change anymore
+        MemberImpl localMember = node.getLocalMember();
+        if (!localMember.getAddress().equals(expectedMembers.get(localMember.getUuid()))) {
+            throw new HotRestartException("Expected members doesn't contain local member"
+                    + " or local address has been changed after expected members are determined!"
+                    + " Expected member address: " + expectedMembers.get(localMember.getUuid())
+                    + ", Local member: " + localMember);
+        }
+
+        Map<Address, Address> addressMapping = new HashMap<Address, Address>();
+
+        for (Member restoredMember : restoredMembersRef.get()) {
+            Address expectedAddress = expectedMembers.get(restoredMember.getUuid());
+            if (expectedAddress == null) {
+                continue;
+            }
+
+            if (!expectedAddress.equals(restoredMember.getAddress())) {
+                addressMapping.put(restoredMember.getAddress(), expectedAddress);
+            }
+        }
+        return addressMapping;
     }
 
     private void sendLocalMemberClusterStartInfoToMaster() {
@@ -1162,43 +1179,41 @@ public final class ClusterMetadataManager {
         }
     }
 
-    void receiveExpectedMembersFromMaster(Address sender, Set<String> expectedMemberUuids) {
+    void receiveExpectedMembersFromMaster(Address sender, Map<String, Address> expectedMembers) {
         if (node.isMaster()) {
-            logger.warning("Received expected member list from " + sender + " but this node is already master.");
+            logger.warning("Received expected members from " + sender + " but this node is already master.");
             return;
         } else if (!sender.equals(node.getMasterAddress())) {
-            logger.warning("Received expected member list from non-master member: " + sender
-                    + ", current master is " + node.getMasterAddress() + ", expected member list is " + expectedMemberUuids);
+            logger.warning("Received expected members from non-master member: " + sender
+                    + ", current master is " + node.getMasterAddress() + ", expected member list is " + expectedMembers);
             return;
         }
-
-        expectedMemberUuids = unmodifiableSet(new HashSet<String>(expectedMemberUuids));
 
         hotRestartStatusLock.lock();
         try {
             if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
                 Set<String> restoredMemberUuids = getRestoredMemberUuids();
-                for (String expectedMemberUuid : expectedMemberUuids) {
+                for (String expectedMemberUuid : expectedMembers.keySet()) {
                     if (!restoredMemberUuids.contains(expectedMemberUuid)) {
-                        String message = "Invalid expected member uuids is received from master: " + sender + ", "
-                                + expectedMemberUuid + " doesn't exist in restored members: " + restoredMemberUuids;
+                        String message = "Invalid expected members are received from master: " + sender + ", "
+                                + expectedMemberUuid + " doesn't exist in restored members: " + restoredMembersRef.get();
                         logger.severe(message);
                         return;
                     }
                 }
 
-                if (expectedMemberUuidsRef.compareAndSet(null, expectedMemberUuids)) {
-                    logger.info("Expected member uuids is set to " + expectedMemberUuids + " received from master: " + sender);
+                if (expectedMembersRef.compareAndSet(null, unmodifiableMap(expectedMembers))) {
+                    logger.info("Expected members are set to " + expectedMembers + " received from master: " + sender);
                     return;
                 }
 
-                Set<String> currentExpectedMemberUuids = expectedMemberUuidsRef.get();
-                if (!currentExpectedMemberUuids.equals(expectedMemberUuids)) {
-                    logger.severe("Expected member uuids is already set to " + currentExpectedMemberUuids
-                            + " but a different one " + expectedMemberUuids + " is received from master: " + sender);
+                Map<String, Address> currentExpectedMembers = expectedMembersRef.get();
+                if (!currentExpectedMembers.equals(expectedMembers)) {
+                    logger.severe("Expected members are already set to " + currentExpectedMembers
+                            + " but a different one " + expectedMembers + " is received from master: " + sender);
                 }
             } else {
-                logger.warning("Ignored expected member uuids " + expectedMemberUuids + " received from master: " + sender
+                logger.warning("Ignored expected members " + expectedMembers + " received from master: " + sender
                         + " because cluster start status is set to " + hotRestartStatus
                         + " with excluded members: " + excludedMemberUuids);
             }
@@ -1207,9 +1222,9 @@ public final class ClusterMetadataManager {
         }
     }
 
-    void replyExpectedMemberUuidsQuestion(Address sender, String senderUuid) {
+    void replyExpectedMembersQuestion(Address sender, String senderUuid) {
         if (!node.isMaster()) {
-            logger.warning("Won't reply expected member list question of sender: " + sender + " since this node is not master.");
+            logger.warning("Won't reply expected members question of sender: " + sender + " since this node is not master.");
             return;
         }
 
@@ -1221,23 +1236,21 @@ public final class ClusterMetadataManager {
                 Operation op = new SendClusterStartResultOperation(hotRestartStatus, excludedMemberUuids, null);
                 sendIfNotThisMember(op, sender);
             } else if (hotRestartStatus == CLUSTER_START_IN_PROGRESS) {
-                Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
-                if (expectedMemberUuids != null) {
-                    sendIfNotThisMember(new SendExpectedMemberUuidsOperation(expectedMemberUuids), sender);
+                Map<String, Address> expectedMembers = expectedMembersRef.get();
+                if (expectedMembers != null) {
+                    sendIfNotThisMember(new SendExpectedMembersOperation(expectedMembers), sender);
                 }
             } else {
                 // cluster start is success. just send the current member list except the excluded ones
                 ClusterServiceImpl clusterService = node.getClusterService();
-                Set<String> expectedMemberUuids = new HashSet<String>();
+                Map<String, Address> expectedMembers = new HashMap<String, Address>();
                 for (Member member : clusterService.getCurrentMembersAndMembersRemovedWhileClusterIsNotActive()) {
                     if (excludedMemberUuids.contains(member.getUuid())) {
                         continue;
                     }
-
-                    expectedMemberUuids.add(member.getUuid());
+                    expectedMembers.put(member.getUuid(), member.getAddress());
                 }
-
-                sendIfNotThisMember(new SendExpectedMemberUuidsOperation(expectedMemberUuids), sender);
+                sendIfNotThisMember(new SendExpectedMembersOperation(expectedMembers), sender);
             }
         } finally {
             hotRestartStatusLock.unlock();
@@ -1294,9 +1307,9 @@ public final class ClusterMetadataManager {
 
     private Map<Integer, List<String>> collectLoadSucceededMemberUuidsByPartitionTableVersion() {
         Map<Integer, List<String>> membersUuidsByPartitionTableVersion = new HashMap<Integer, List<String>>();
-        final Set<String> expectedMemberUuids = expectedMemberUuidsRef.get();
+        final Map<String, Address> expectedMembers = expectedMembersRef.get();
         for (MemberImpl member : restoredMembersRef.get()) {
-            if (!expectedMemberUuids.contains(member.getUuid())) {
+            if (!expectedMembers.containsKey(member.getUuid())) {
                 continue;
             }
 
@@ -1332,19 +1345,21 @@ public final class ClusterMetadataManager {
                 if (partitionTableVersion > selectedPartitionTableVersion) {
                     selectedPartitionTableVersion = partitionTableVersion;
                     selectedMembers = members;
-                    logger.info("Picking partition table version = " + selectedPartitionTableVersion
-                            + " with members: " + selectedMembers);
                 }
             } else if (clusterDataRecoveryPolicy == PARTIAL_RECOVERY_MOST_COMPLETE) {
                 if (members.size() > selectedMembers.size()
                         || (members.size() == selectedMembers.size() && partitionTableVersion > selectedPartitionTableVersion)) {
                     selectedPartitionTableVersion = partitionTableVersion;
                     selectedMembers = members;
-                    logger.info("Picking partition table version = " + selectedPartitionTableVersion
-                            + " with members: " + selectedMembers);
                 }
             }
+            logger.fine("Candidate members " + selectedMembers
+                    + " with partition table version: " + selectedPartitionTableVersion);
         }
+
+        logger.info("Picking members " + selectedMembers
+                + " with partition table version: " + selectedPartitionTableVersion);
+
         Set<String> excludedMemberUuids = new HashSet<String>();
         for (Member member : restoredMembersRef.get()) {
             if (!selectedMembers.contains(member.getUuid())) {

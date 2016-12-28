@@ -1,35 +1,36 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.internal.cluster.impl.operations.JoinOperation;
+import com.hazelcast.nio.Address;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.spi.Operation;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Sends the list of members, that is sufficient to pass await join step,
  * to the cluster members, when partial data recovery is triggered
  */
-public class SendExpectedMemberUuidsOperation extends Operation implements JoinOperation {
+public class SendExpectedMembersOperation extends Operation implements JoinOperation {
 
-    private Set<String> expectedMemberUuids;
+    private Map<String, Address> expectedMembers;
 
-    public SendExpectedMemberUuidsOperation() {
+    public SendExpectedMembersOperation() {
     }
 
-    public SendExpectedMemberUuidsOperation(Set<String> expectedMemberUuids) {
-        this.expectedMemberUuids = expectedMemberUuids;
+    public SendExpectedMembersOperation(Map<String, Address> expectedMembers) {
+        this.expectedMembers = expectedMembers;
     }
 
     @Override
     public void run() throws Exception {
         HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.receiveExpectedMembersFromMaster(getCallerAddress(), expectedMemberUuids);
+        clusterMetadataManager.receiveExpectedMembersFromMaster(getCallerAddress(), expectedMembers);
     }
 
     @Override
@@ -46,9 +47,10 @@ public class SendExpectedMemberUuidsOperation extends Operation implements JoinO
     protected void writeInternal(ObjectDataOutput out)
             throws IOException {
         super.writeInternal(out);
-        out.writeInt(expectedMemberUuids.size());
-        for (String uuid : expectedMemberUuids) {
-            out.writeUTF(uuid);
+        out.writeInt(expectedMembers.size());
+        for (Map.Entry<String, Address> entry : expectedMembers.entrySet()) {
+            out.writeUTF(entry.getKey());
+            out.writeObject(entry.getValue());
         }
     }
 
@@ -57,9 +59,11 @@ public class SendExpectedMemberUuidsOperation extends Operation implements JoinO
             throws IOException {
         super.readInternal(in);
         int size = in.readInt();
-        expectedMemberUuids = new HashSet<String>();
+        expectedMembers = new HashMap<String, Address>(size);
         for (int i = 0; i < size; i++) {
-            expectedMemberUuids.add(in.readUTF());
+            String uuid = in.readUTF();
+            Address address = in.readObject();
+            expectedMembers.put(uuid, address);
         }
     }
 

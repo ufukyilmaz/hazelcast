@@ -60,18 +60,19 @@ import static org.junit.Assert.assertTrue;
 @Category({QuickTest.class, ParallelTest.class})
 public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
-    protected static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();
+    private static final Map<Address, ClusterHotRestartEventListener> NO_LISTENERS = Collections.emptyMap();
 
     @Parameterized.Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
         return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
-
     private final int nodeCount = 5;
 
     @Before
     public void init() {
+        // Most of the tests in this class don't depend on validation timeout.
+        validationTimeoutInSeconds = Integer.MAX_VALUE;
         dataLoadTimeoutInSeconds = 60;
     }
 
@@ -138,6 +139,9 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     private void testTimeoutOnMissingMember(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
             throws Exception {
+        // this test depends on validation timeout
+        validationTimeoutInSeconds = 15;
+
         checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
                 "invalid cluster start policy for partial start test");
 

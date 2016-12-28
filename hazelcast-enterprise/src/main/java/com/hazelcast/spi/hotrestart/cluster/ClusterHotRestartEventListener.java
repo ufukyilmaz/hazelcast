@@ -46,7 +46,7 @@ public abstract class ClusterHotRestartEventListener implements EventListener {
      *
      * @param members expected member list
      */
-    public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
+    public void afterExpectedMembersJoin(Collection<? extends Member> members) {
 
     }
 

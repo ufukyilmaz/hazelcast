@@ -19,7 +19,7 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     public static final int ASK_FOR_EXPECTED_MEMBERS = 1;
     public static final int SEND_CLUSTER_START_RESULT = 2;
     public static final int SEND_MEMBER_CLUSTER_START_INFO = 3;
-    public static final int TRIGGER_FORCE_START_ON_MASTER = 4;
+    public static final int TRIGGER_FORCE_START = 4;
     public static final int SEND_EXPECTED_MEMBERS = 5;
 
     private static final int LEN = SEND_EXPECTED_MEMBERS + 1;
@@ -57,7 +57,7 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
                 return new SendMemberClusterStartInfoOperation();
             }
         };
-        constructors[TRIGGER_FORCE_START_ON_MASTER] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+        constructors[TRIGGER_FORCE_START] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new TriggerForceStartOnMasterOperation();
@@ -66,7 +66,7 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
         constructors[SEND_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendExpectedMemberUuidsOperation();
+                return new SendExpectedMembersOperation();
             }
         };
 

@@ -75,7 +75,7 @@ public class CacheForceStartTest extends AbstractCacheHotRestartTest {
         private Node node;
 
         @Override
-        public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
+        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
         }
 

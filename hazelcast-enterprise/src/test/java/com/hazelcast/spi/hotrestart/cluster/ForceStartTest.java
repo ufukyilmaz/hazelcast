@@ -392,7 +392,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         }
 
         @Override
-        public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
+        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
                 node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
             }

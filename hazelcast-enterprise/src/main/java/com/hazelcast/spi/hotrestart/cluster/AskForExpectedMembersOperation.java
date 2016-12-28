@@ -14,7 +14,7 @@ public class AskForExpectedMembersOperation extends Operation implements JoinOpe
     public void run() throws Exception {
         HotRestartIntegrationService service = getService();
         ClusterMetadataManager clusterMetadataManager = service.getClusterMetadataManager();
-        clusterMetadataManager.replyExpectedMemberUuidsQuestion(getCallerAddress(), getCallerUuid());
+        clusterMetadataManager.replyExpectedMembersQuestion(getCallerAddress(), getCallerUuid());
     }
 
     @Override

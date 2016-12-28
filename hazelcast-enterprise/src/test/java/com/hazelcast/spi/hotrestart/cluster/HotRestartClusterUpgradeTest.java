@@ -10,21 +10,24 @@ import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.version.MemberVersion;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import static com.hazelcast.test.HazelcastTestSupport.getAddress;
 import static com.hazelcast.test.HazelcastTestSupport.getClusterService;
 import static com.hazelcast.test.HazelcastTestSupport.getNode;
+import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
 import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
+import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -52,7 +55,7 @@ public class HotRestartClusterUpgradeTest
         Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
-        terminateInstances();
+        shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -82,7 +85,7 @@ public class HotRestartClusterUpgradeTest
         Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
-        terminateInstances();
+        shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -92,7 +95,7 @@ public class HotRestartClusterUpgradeTest
         // upgrade cluster version to next minor version
         getClusterService(instances[0]).changeClusterVersion(nextMinorVersion.asClusterVersion());
         assertClusterVersion(instances, nextMinorVersion.asClusterVersion());
-        terminateInstances();
+        shutdownCluster();
 
         instances = restartInstances(addresses, nextMinorVersion);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -124,7 +127,7 @@ public class HotRestartClusterUpgradeTest
         final Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
-        terminateInstances();
+        shutdownCluster();
 
         instances[0] = restartInstance(addresses[0], null,
                  HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE,
@@ -164,7 +167,7 @@ public class HotRestartClusterUpgradeTest
         final Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
-        terminateInstances();
+        shutdownCluster();
 
         // instance with codebase version minor-1 will fail due to incompatibility with cluster version
         expectedException.expect(HotRestartException.class);
@@ -182,7 +185,7 @@ public class HotRestartClusterUpgradeTest
         Address address = getAddress(instance);
         warmUpPartitions(instance);
         MemberVersion originalCodebaseVersion = getNode(instance).getVersion();
-        terminateInstances();
+        shutdownCluster();
 
         MemberVersion nextMajorVersion = MemberVersion.of(originalCodebaseVersion.getMajor() + 1,
                 originalCodebaseVersion.getMinor(),
@@ -192,4 +195,10 @@ public class HotRestartClusterUpgradeTest
         restartInstance(address, nextMajorVersion);
     }
 
+    private void shutdownCluster() {
+        Collection<HazelcastInstance> instances = getAllInstances();
+        assertThat(instances, Matchers.not(Matchers.<HazelcastInstance>empty()));
+        waitAllForSafeState(instances);
+        instances.iterator().next().getCluster().shutdown();
+    }
 }

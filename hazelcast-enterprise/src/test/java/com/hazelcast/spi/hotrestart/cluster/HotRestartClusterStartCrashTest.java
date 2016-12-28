@@ -156,7 +156,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
 
 
         @Override
-        public void afterAwaitUntilMembersJoin(Collection<? extends Member> members) {
+        public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             final Node node = getNode(instance);
             boolean shouldCrash = (crashMaster && node.isMaster()) || (!crashMaster && !node.isMaster());
             if (shouldCrash && crash.compareAndSet(false, true)) {

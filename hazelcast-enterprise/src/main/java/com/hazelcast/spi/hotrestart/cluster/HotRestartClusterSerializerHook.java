@@ -66,7 +66,7 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
         constructors[SEND_EXPECTED_MEMBERS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
-                return new SendExpectedMemberUuidsOperation();
+                return new SendExpectedMembersOperation();
             }
         };
 

@@ -56,6 +56,8 @@ import java.util.concurrent.locks.LockSupport;
 import static com.hazelcast.instance.TestUtil.warmUpPartitions;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
+import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
 import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
 import static com.hazelcast.test.HazelcastTestSupport.generateKeyOwnedBy;
@@ -73,7 +75,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
     @Parameterized.Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[] {ALL});
+        return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
     }
 
     private final int nodeCount = 3;
@@ -393,7 +395,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         @Override
         public void afterExpectedMembersJoin(Collection<? extends Member> members) {
-            if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
+            if (forceStartFlag.compareAndSet(false, true)) {
                 node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
             }
         }
@@ -418,7 +420,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void onPartitionTableValidationResult(Address sender, boolean success) {
             if (success) {
-                if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
+                if (forceStartFlag.compareAndSet(false, true)) {
                     node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                 }
             } else {
@@ -446,7 +448,7 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
         @Override
         public void onHotRestartDataLoadResult(Address sender, boolean success) {
             if (success) {
-                if (node.isMaster() && forceStartFlag.compareAndSet(false, true)) {
+                if (forceStartFlag.compareAndSet(false, true)) {
                     node.getNodeExtension().getInternalHotRestartService().triggerForceStart();
                 }
             } else {
@@ -555,10 +557,6 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
 
         @Override
         public void onDataLoadStart(final Address address) {
-            if (!node.isMaster()) {
-                return;
-            }
-
             spawn(new Runnable() {
                 @Override
                 public void run() {

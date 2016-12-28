@@ -538,12 +538,12 @@ public final class ClusterMetadataManager {
 
     public boolean handlePartialStartRequest() {
         if (!node.isMaster()) {
-            logger.warning("Partial data recovery attempt received but this node is not master!");
+            logger.warning("Partial data recovery request received but this node is not master!");
             return false;
         }
 
         if (!isPartialStartPolicy()) {
-            logger.warning("Cannot eagerly set expected members set because cluster start policy is "
+            logger.warning("Cannot trigger partial data recovery because cluster start policy is "
                     + clusterDataRecoveryPolicy);
             return false;
         }

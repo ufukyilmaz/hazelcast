@@ -28,8 +28,12 @@ public class AskForClusterStartResultOperation extends Operation implements Join
         Address caller = getCallerAddress();
         ILogger logger = getLogger();
         Address master = nodeEngine.getMasterAddress();
+        if (master == null) {
+            logger.warning("Master is not known yet. Cannot answer for cluster start result. Caller: " + caller);
+            return;
+        }
         if (!master.equals(caller)) {
-            logger.warning("Non-master member: " + caller + " asked for partition table validation status. master: " + master);
+            logger.warning("Non-master member: " + caller + " asked for cluster start result. master: " + master);
             return;
         }
 

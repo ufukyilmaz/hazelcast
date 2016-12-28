@@ -413,9 +413,11 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         InternalOperationService operationService = node.nodeEngine.getOperationService();
         Address masterAddress = node.getMasterAddress();
         if (node.isMaster()) {
+            logger.info("Force start has been requested. Handling request...");
             return clusterMetadataManager.handleForceStartRequest();
         } else if (masterAddress != null) {
-            return operationService.send(new TriggerForceStartOnMasterOperation(), masterAddress);
+            logger.info("Force start has been requested. Delegating request to master " + masterAddress);
+            return operationService.send(new TriggerForceStartOnMasterOperation(false), masterAddress);
         } else {
             logger.warning("Force start not triggered because there is no master member");
             return false;
@@ -424,10 +426,16 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
     @Override
     public boolean triggerPartialStart() {
+        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        Address masterAddress = node.getMasterAddress();
         if (node.isMaster()) {
+            logger.info("Partial start has been requested. Handling request...");
             return clusterMetadataManager.handlePartialStartRequest();
+        } else if (masterAddress != null) {
+            logger.info("Partial start has been requested. Delegating request to master " + masterAddress);
+            return operationService.send(new TriggerForceStartOnMasterOperation(true), masterAddress);
         } else {
-            logger.warning("Partial data recovery not triggered because this node is not master");
+            logger.warning("Partial start not triggered because there is no master member");
             return false;
         }
     }
@@ -666,6 +674,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         logger.fine("Resetting all services...");
         Collection<ManagedService> managedServices = node.nodeEngine.getServices(ManagedService.class);
         for (ManagedService service : managedServices) {
+            // ClusterService is going to be reset later while setting new local member. See #setNewLocalMemberUuid().
             if (service instanceof ClusterService) {
                 continue;
             }

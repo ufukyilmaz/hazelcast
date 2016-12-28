@@ -45,11 +45,12 @@ public class PartialStartSlowTest extends AbstractHotRestartClusterStartTest {
         return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
     }
 
-
     private final int nodeCount = 5;
 
     @Before
     public void init() {
+        // Tests in this class don't depend on validation timeout.
+        validationTimeoutInSeconds = Integer.MAX_VALUE;
         dataLoadTimeoutInSeconds = 30;
     }
 

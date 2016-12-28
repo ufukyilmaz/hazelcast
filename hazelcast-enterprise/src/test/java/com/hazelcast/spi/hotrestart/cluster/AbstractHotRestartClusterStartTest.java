@@ -122,28 +122,11 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     HazelcastInstance[] startNewInstances(int numberOfInstances, final HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-        final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
-        final CountDownLatch latch = new CountDownLatch(numberOfInstances);
-
+        List<HazelcastInstance> instancesList = new ArrayList<HazelcastInstance>();
         for (int i = 0; i < numberOfInstances; i++) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        HazelcastInstance instance = startNewInstance(null, clusterStartPolicy);
-                        instancesList.add(instance);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        latch.countDown();
-                    }
-
-                }
-            }).start();
+            HazelcastInstance instance = startNewInstance(null, clusterStartPolicy);
+            instancesList.add(instance);
         }
-
-        assertOpenEventually(latch);
-
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 

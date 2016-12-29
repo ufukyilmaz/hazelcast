@@ -215,7 +215,6 @@ public abstract class AbstractMapHotRestartTest extends HazelcastTestSupport {
             return;
         }
         mapConfig.setEvictionPolicy(EvictionPolicy.LFU);
-        mapConfig.setMinEvictionCheckMillis(0);
         mapConfig.setMaxSizeConfig(new MaxSizeConfig().setMaxSizePolicy(PER_PARTITION).setSize(50));
     }
 }

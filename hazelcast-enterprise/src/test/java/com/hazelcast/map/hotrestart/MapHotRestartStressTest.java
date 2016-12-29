@@ -173,8 +173,6 @@ public class MapHotRestartStressTest extends HazelcastTestSupport {
         MapConfig mapConfig = config.getMapConfig("native*")
                 .setInMemoryFormat(NATIVE)
                 .setEvictionPolicy(LFU)
-                .setEvictionPercentage(10)
-                .setMinEvictionCheckMillis(0)
                 .setMaxSizeConfig(maxSizeConfig);
         mapConfig.getHotRestartConfig()
                 .setEnabled(true);

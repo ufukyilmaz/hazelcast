@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.hazelcast.internal.memory.GlobalMemoryAccessorRegistry.AMEM;
+import static java.lang.String.format;
 
 /**
  * Singleton global memory manager used for all allocations requests done on a thread which was not
@@ -318,13 +319,13 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         assert QuickMath.isPowerOfTwo(size) : "Invalid size -> " + size + " is not power of two";
         assert size >= minBlockSize : "Invalid size -> "
                 + size + " cannot be smaller than minimum block size " + minBlockSize;
-        assert offset >= 0 : "Invalid offset -> " + offset + " is negative";
 
         int header = initHeader(size);
-        long headerAddress = toHeaderAddress(address, offset);
+        long headerAddress = getHeaderAddress(address);
         if (!AMEM.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
-                    + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
+                    + ", Size: " + size + ", Header: " + getSizeFromAddress(address)
+                    + ", Offset: " + offset);
         }
         AMEM.putIntVolatile(null, address, offset);
     }
@@ -382,7 +383,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         }
         int size = getSizeFromHeader(header);
         assert pageBase + pageSize >= address + size
-                : String.format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
+                : format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
                 address, address + size - 1,
                 pageBase, pageBase + pageSize - 1);
         int pageOffset = (int) (address - pageBase);

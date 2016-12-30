@@ -35,13 +35,9 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     // Using sign bit as block is allocated externally from page allocator (OS) directly.
     // for allocations bigger than page size.
     private static final int EXTERNAL_BLOCK_BIT = Integer.SIZE - 1;
-    // Using sign bit as available bit, since offset is already positive
+    // Using sign bit as available bit
     // so the first bit represents that is this memory block is available or not (in use already)
     private static final int AVAILABLE_BIT = EXTERNAL_BLOCK_BIT - 1;
-    // The second bit represents that is this memory block has offset value to its owner page
-    private static final int PAGE_OFFSET_EXIST_BIT = AVAILABLE_BIT - 1;
-    // Extra required native memory when page offset is stored
-    private static final int MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED = HEADER_SIZE + Bits.INT_SIZE_IN_BYTES;
     // We store size as encoded by shifting it 3 bit since it is always multiply of 8.
     private static final int SIZE_SHIFT_COUNT = 3;
 
@@ -72,7 +68,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
      * +------------------------+----------------------+
      * | <RESERVED>             |   1 bit              |
      * +------------------------+----------------------+
-     * | PAGE_OFFSET_EXIST_BIT  |   1 bit              |
+     * | <RESERVED>             |   1 bit              |
      * +------------------------+----------------------+
      * | AVAILABLE_BIT          |   1 bit              |
      * +------------------------+----------------------+
@@ -101,8 +97,6 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
      * | Usable Memory Region   |   <size>             |
      * +------------------------+----------------------+
      * | Internal Fragmentation |                      |
-     * +------------------------+----------------------+
-     * | Page Offset            |   4 bytes (int)      | ==> If `PAGE_OFFSET_EXIST_BIT` is set in the header
      * +------------------------+----------------------+
      * | Header of BLOCK N+1    |   4 bytes (int)      |
      * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -207,9 +201,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     }
 
     private static int getSizeFromHeader(int header) {
-        int size;
-        size = Bits.clearBit(header, AVAILABLE_BIT);
-        size = Bits.clearBit(size, PAGE_OFFSET_EXIST_BIT);
+        int size = Bits.clearBit(header, AVAILABLE_BIT);
         return decodeSize(size);
     }
 
@@ -224,17 +216,6 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
     private static int makeHeaderUnavailable(int header) {
         return Bits.clearBit(header, AVAILABLE_BIT);
-    }
-
-    private long getPageOffsetAddressByHeader(long address, int header) {
-        int size = getSizeFromHeader(header);
-        // We keep the page offset (if there is enough space) at the end of block as aligned
-        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
-    }
-
-    private static long getPageOffsetAddressBySize(long address, int size) {
-        // We keep the page offset (if there is enough space) at the end of block as aligned
-        return address + size - MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED;
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
@@ -324,10 +305,8 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         long headerAddress = getHeaderAddress(address);
         if (!AMEM.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
-                    + ", Size: " + size + ", Header: " + getSizeFromAddress(address)
-                    + ", Offset: " + offset);
+                    + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
         }
-        AMEM.putIntVolatile(null, address, offset);
     }
 
     @Override
@@ -377,7 +356,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
         int header = AMEM.getIntVolatile(null, headerAddress);
         assert !isHeaderAvailable(header) : "Address " + address + " has been already marked as available!";
 
-        long pageBase = getOwningPage(address, header);
+        long pageBase = getOwningPage(address);
         if (pageBase == NULL_ADDRESS) {
             throw new IllegalArgumentException("Address " + address + " does not belong to this memory pool!");
         }
@@ -386,15 +365,9 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
                 : format("Block [%,d-%,d] partially overlaps page [%,d-%,d]",
                 address, address + size - 1,
                 pageBase, pageBase + pageSize - 1);
-        int pageOffset = (int) (address - pageBase);
-        assert pageOffset >= 0 : "Invalid offset -> " + pageOffset + " is negative!";
-
         int availableHeader = makeHeaderAvailable(header);
-        availableHeader = Bits.clearBit(availableHeader, PAGE_OFFSET_EXIST_BIT);
 
         AMEM.putIntVolatile(null, headerAddress, availableHeader);
-        AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, size), 0);
-        AMEM.putIntVolatile(null, address, pageOffset);
     }
 
     @Override
@@ -412,25 +385,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
         int availableHeader = makeHeaderAvailable(header);
         int unavailableHeader = makeHeaderUnavailable(header);
-        boolean pageOffsetExist = false;
-        if (internalSize - usedSize >= MEMORY_OVERHEAD_WHEN_PAGE_OFFSET_IS_STORED) {
-            // If there is enough space for storing page offset,
-            // set the header as page offset is stored in the memory block.
-            unavailableHeader = Bits.setBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
-            pageOffsetExist = true;
-        } else {
-            unavailableHeader = Bits.clearBit(unavailableHeader, PAGE_OFFSET_EXIST_BIT);
-        }
-        if (AMEM.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader)) {
-            int offset = getOffsetWithinPage(address);
-            if (pageOffsetExist) {
-                // If page offset will be stored, write it to the unused part of the memory block.
-                AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, internalSize), offset);
-            }
-            AMEM.putIntVolatile(null, address, 0);
-            return true;
-        }
-        return false;
+        return AMEM.compareAndSwapInt(null, headerAddress, availableHeader, unavailableHeader);
     }
 
     @Override
@@ -444,12 +399,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
 
         long headerAddress = getHeaderAddress(address);
         int expectedHeader = initHeader(expectedSize);
-        if (AMEM.compareAndSwapInt(null, headerAddress, expectedHeader, 0)) {
-            AMEM.putIntVolatile(null, getPageOffsetAddressBySize(address, expectedSize), 0);
-            AMEM.putIntVolatile(null, address, 0);
-            return true;
-        }
-        return false;
+        return AMEM.compareAndSwapInt(null, headerAddress, expectedHeader, 0);
     }
 
     @Override
@@ -468,12 +418,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
             return false;
         }
 
-        int offset = getOffsetWithinPage(address);
-        if (offset < 0 || QuickMath.modPowerOfTwo(offset, size) != 0) {
-            return false;
-        }
-
-        return isPageBaseAddress(address - offset);
+        return true;
     }
 
     private long findSizeExternal(long address) {
@@ -513,32 +458,19 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
             if (isHeaderAvailable(header) || !QuickMath.isPowerOfTwo(size) || size < minBlockSize) {
                 return SIZE_INVALID;
             }
-            long page = getOwningPage(address, header);
+            long page = getOwningPage(address);
             return page != NULL_ADDRESS && page + pageSize >= address + size ? size : SIZE_INVALID;
         }
     }
 
     @Override
     protected int getOffsetWithinPage(long address) {
-        return AMEM.getIntVolatile(null, address);
+        return (int) (address - getOwningPage(address));
     }
 
-    private long getOwningPage(long address, int header) {
-        if (Bits.isBitSet(header, PAGE_OFFSET_EXIST_BIT)) {
-            // If page offset is stored in the memory block, get the offset directly from there
-            // and calculate page address by using this offset.
-
-            int pageOffset = AMEM.getIntVolatile(null, getPageOffsetAddressByHeader(address, header));
-            if (pageOffset < 0 || pageOffset > (pageSize - minBlockSize)) {
-                throw new IllegalArgumentException("Invalid page offset for address " + address + ": " + pageOffset
-                        + ". Because page offset cannot be `< 0` or `> (pageSize - minBlockSize)`"
-                        + " where pageSize is " + pageSize + " and minBlockSize is " + minBlockSize);
-            }
-            return address - pageOffset;
-        } else {
-            Long pageBase = pageAllocations.floorKey(address);
-            return pageBase != null && pageBase + pageSize - 1 >= address ? pageBase : NULL_ADDRESS;
-        }
+    private long getOwningPage(long address) {
+        Long pageBase = pageAllocations.floorKey(address);
+        return pageBase != null && pageBase + pageSize - 1 >= address ? pageBase : NULL_ADDRESS;
     }
 
     @Override

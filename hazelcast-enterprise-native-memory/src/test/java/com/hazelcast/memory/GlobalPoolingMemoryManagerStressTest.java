@@ -111,6 +111,7 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
                     doStep(r);
                 }
             } catch (Throwable t) {
+                t.printStackTrace();
                 throwable = t;
             }
         }
@@ -123,7 +124,7 @@ public class GlobalPoolingMemoryManagerStressTest extends HazelcastTestSupport {
                 allocatedBlockQueue.add(new AllocatedBlock(address, size));
             }
 
-            blockCount = r.nextInt(110) + 5;
+            blockCount = r.nextInt(105) + 5;
             for (int i = 0; i < blockCount; i++) {
                 AllocatedBlock allocatedBlock = allocatedBlockQueue.poll();
                 if (allocatedBlock == null) {

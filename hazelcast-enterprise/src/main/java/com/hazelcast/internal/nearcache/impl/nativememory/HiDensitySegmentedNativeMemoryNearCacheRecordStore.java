@@ -13,12 +13,15 @@ import com.hazelcast.monitor.NearCacheStats;
 import com.hazelcast.monitor.impl.NearCacheStatsImpl;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
+import com.hazelcast.spi.serialization.SerializationService;
 
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.hazelcast.internal.nearcache.impl.invalidation.StaleReadDetector.ALWAYS_FRESH;
+import static com.hazelcast.nio.IOUtil.closeResource;
 import static java.lang.Runtime.getRuntime;
 
 /**
@@ -39,7 +42,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     private final NearCacheStatsImpl nearCacheStats;
     private final HazelcastMemoryManager memoryManager;
     private final HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments;
-    private final HiDensityNativeMemoryNearCacheRecordMap[] recordMaps;
     private final NearCachePreloader<Data> nearCachePreloader;
 
     private volatile StaleReadDetector staleReadDetector = ALWAYS_FRESH;
@@ -69,14 +71,7 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         HiDensityStorageInfo storageInfo = new HiDensityStorageInfo(nearCacheConfig.getName());
         this.segments = createSegments(nearCacheConfig, nearCacheStats, storageInfo, segmentSize);
 
-        NearCachePreloaderConfig preloaderConfig = nearCacheConfig.getPreloaderConfig();
-        if (preloaderConfig.isEnabled()) {
-            this.recordMaps = createRecordMaps(segments);
-            this.nearCachePreloader = new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService);
-        } else {
-            this.recordMaps = null;
-            this.nearCachePreloader = null;
-        }
+        this.nearCachePreloader = createPreloader(name, nearCacheConfig.getPreloaderConfig(), serializationService);
     }
 
     @Override
@@ -105,13 +100,12 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         return segments;
     }
 
-    private HiDensityNativeMemoryNearCacheRecordMap[] createRecordMaps(
-            HiDensityNativeMemoryNearCacheRecordStore<K, V>[] segments) {
-        HiDensityNativeMemoryNearCacheRecordMap[] recordMaps = new HiDensityNativeMemoryNearCacheRecordMap[segments.length];
-        for (int i = 0; i < segments.length; i++) {
-            recordMaps[i] = segments[i].getRecords();
+    private NearCachePreloader<Data> createPreloader(String name, NearCachePreloaderConfig preloaderConfig,
+                                                     SerializationService serializationService) {
+        if (preloaderConfig.isEnabled()) {
+            return new NearCachePreloader<Data>(name, preloaderConfig, nearCacheStats, serializationService);
         }
-        return recordMaps;
+        return null;
     }
 
     @SuppressWarnings("checkstyle:magicnumber")
@@ -274,7 +268,12 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     public void storeKeys() {
-        nearCachePreloader.storeKeys(recordMaps);
+        LockableNearCacheRecordStoreSegmentIterator iterator = new LockableNearCacheRecordStoreSegmentIterator(segments);
+        try {
+            nearCachePreloader.storeKeys(iterator);
+        } finally {
+            closeResource(iterator);
+        }
     }
 
     @Override
@@ -298,7 +297,9 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
     /**
      * Represents a segment block (lockable by a thread) in this Near Cache storage.
      */
-    private class HiDensityNativeMemoryNearCacheRecordStoreSegment extends HiDensityNativeMemoryNearCacheRecordStore<K, V> {
+    class HiDensityNativeMemoryNearCacheRecordStoreSegment
+            extends HiDensityNativeMemoryNearCacheRecordStore<K, V>
+            implements LockableNearCacheRecordStoreSegment {
 
         private static final long READ_LOCK_TIMEOUT_IN_MILLISECONDS = 25;
 
@@ -406,6 +407,21 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
             } finally {
                 lock.unlock();
             }
+        }
+
+        @Override
+        public Iterator<Data> getKeySetIterator() {
+            return records.keySet().iterator();
+        }
+
+        @Override
+        public void lock() {
+            lock.lock();
+        }
+
+        @Override
+        public void unlock() {
+            lock.unlock();
         }
     }
 }

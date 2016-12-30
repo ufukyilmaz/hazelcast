@@ -412,11 +412,6 @@ public class ThreadLocalPoolingMemoryManager extends AbstractPoolingMemoryManage
         return address - HEADER_SIZE;
     }
 
-    private long toHeaderAddress(long blockBase, int pageOffset) {
-        // Header of the block at zero offset is at the end of the page; otherwise it is just before the block
-        return (pageOffset == 0 ? pageSize : 0) + blockBase - headerSize();
-    }
-
     private boolean isLegalInternalBlockSize(int size) {
         return size >= minBlockSize && size <= pageSize;
     }

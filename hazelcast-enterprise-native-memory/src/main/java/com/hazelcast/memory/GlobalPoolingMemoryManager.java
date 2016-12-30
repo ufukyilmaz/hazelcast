@@ -302,7 +302,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
                 + size + " cannot be smaller than minimum block size " + minBlockSize;
 
         int header = initHeader(size);
-        long headerAddress = getHeaderAddress(address);
+        long headerAddress = toHeaderAddress(address, offset);
         if (!AMEM.compareAndSwapInt(null, headerAddress, 0, header)) {
             throw new IllegalArgumentException("Wrong size, cannot initialize! Address: " + address
                     + ", Size: " + size + ", Header: " + getSizeFromAddress(address));
@@ -397,7 +397,7 @@ final class GlobalPoolingMemoryManager extends AbstractPoolingMemoryManager {
     protected boolean markInvalid(long address, int expectedSize, int offset) {
         assertValidAddress(address);
 
-        long headerAddress = getHeaderAddress(address);
+        long headerAddress = toHeaderAddress(address, offset);
         int expectedHeader = initHeader(expectedSize);
         return AMEM.compareAndSwapInt(null, headerAddress, expectedHeader, 0);
     }

@@ -202,6 +202,11 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
         return address;
     }
 
+    protected final long toHeaderAddress(long blockBase, int pageOffset) {
+        // Header of the block at zero offset is at the end of the page; otherwise it is just before the block
+        return (pageOffset != 0 ? 0 : pageSize) + blockBase - headerSize();
+    }
+
     protected final void compact(AddressQueue queue) {
         int remaining = queue.remaining();
         if (remaining == 0) {

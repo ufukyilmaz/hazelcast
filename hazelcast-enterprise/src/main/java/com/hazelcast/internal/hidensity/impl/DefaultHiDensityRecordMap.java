@@ -106,6 +106,7 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
         decreaseEntryCount(sizeBeforeClear);
     }
 
+    @Override
     protected NativeOutOfMemoryError onOome(NativeOutOfMemoryError e) {
         return new NativeOutOfMemoryError("Cannot expand internal cache map -> " + e.getMessage(), e);
     }
@@ -119,5 +120,4 @@ public class DefaultHiDensityRecordMap<R extends HiDensityRecord>
     public SlottableIterator<Map.Entry<Data, R>> iterator(int slot) {
         return entryIter(slot);
     }
-
 }

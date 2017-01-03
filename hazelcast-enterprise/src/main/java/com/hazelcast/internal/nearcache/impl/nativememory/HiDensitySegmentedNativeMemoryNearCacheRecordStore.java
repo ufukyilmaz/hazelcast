@@ -175,6 +175,10 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         for (int i = 0; i < segments.length; i++) {
             segments[i] = null;
         }
+
+        if (nearCachePreloader != null) {
+            nearCachePreloader.destroy();
+        }
     }
 
     @Override

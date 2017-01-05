@@ -140,7 +140,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     private void testTimeoutOnMissingMember(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
             throws Exception {
         // this test depends on validation timeout
-        validationTimeoutInSeconds = 15;
+        validationTimeoutInSeconds = 30;
 
         checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
                 "invalid cluster start policy for partial start test");

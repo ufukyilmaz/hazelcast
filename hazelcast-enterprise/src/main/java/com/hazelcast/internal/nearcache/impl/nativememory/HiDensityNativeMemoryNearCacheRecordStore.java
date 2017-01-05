@@ -127,10 +127,6 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         }
     }
 
-    HiDensityNativeMemoryNearCacheRecordMap getRecords() {
-        return records;
-    }
-
     private NativeMemoryData toNativeMemoryData(Object data) {
         NativeMemoryData nativeMemoryData;
         if (!(data instanceof Data)) {

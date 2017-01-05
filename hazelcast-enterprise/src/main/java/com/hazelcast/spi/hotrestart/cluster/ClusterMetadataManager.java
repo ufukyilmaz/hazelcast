@@ -980,8 +980,9 @@ public final class ClusterMetadataManager {
                 versionInc++;
             }
         }
-        partitionTableRef.set(new PartitionTableView(newAddresses, table.getVersion() + versionInc));
-        logger.fine("Partition table repair has been completed.");
+        int version = table.getVersion() + versionInc;
+        partitionTableRef.set(new PartitionTableView(newAddresses, version));
+        logger.fine("Partition table repair has been completed. New partition table version: " + version);
     }
 
     /**

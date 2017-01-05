@@ -175,7 +175,7 @@ public abstract class AbstractHotRestartClusterStartTest {
                     }
 
                 }
-            }).start();
+            }, "Restart thread for " + address).start();
         }
 
         assertOpenEventually(latch);
@@ -444,16 +444,17 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     void startNodeAfterTermination(final Node node) {
+        final Address address = node.getThisAddress();
         startNodeFuture = spawn(new Runnable() {
             @Override
             public void run() {
                 try {
-                    Address address = node.getThisAddress();
                     assertNodeStateEventually(node, NodeState.SHUT_DOWN);
                     // we can't change address anymore after cluster restart is initiated
                     addressChangePolicy = AddressChangePolicy.NONE;
                     restartInstance(address);
-                } catch (Exception e) {
+                } catch (Throwable e) {
+                    System.err.println("Restart for " + address + " failed! -> " + e.getMessage());
                     e.printStackTrace();
                 }
             }

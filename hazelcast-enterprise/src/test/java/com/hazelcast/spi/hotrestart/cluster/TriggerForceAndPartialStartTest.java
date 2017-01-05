@@ -26,7 +26,6 @@ import com.hazelcast.core.Member;
 import com.hazelcast.hotrestart.InternalHotRestartService;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
-import com.hazelcast.internal.partition.InternalPartition;
 import com.hazelcast.internal.partition.InternalPartitionService;
 import com.hazelcast.nio.Address;
 import com.hazelcast.test.HazelcastParallelClassRunner;
@@ -50,8 +49,6 @@ import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -99,13 +96,10 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
 
     private void checkStartResult(boolean partialStart, HazelcastInstance instance) {
         InternalPartitionService partitionService = getNodeEngineImpl(instance).getPartitionService();
-        InternalPartition partition = partitionService.getPartition(0, false);
         if (partialStart) {
             assertThat(partitionService.getPartitionStateVersion(), greaterThan(0));
-            assertNotNull("Partition should have owner after partial start", partition.getOwnerOrNull());
         } else {
             assertEquals(0, partitionService.getPartitionStateVersion());
-            assertNull("Partitions shouldn't have owner after force start", partition.getOwnerOrNull());
         }
     }
 

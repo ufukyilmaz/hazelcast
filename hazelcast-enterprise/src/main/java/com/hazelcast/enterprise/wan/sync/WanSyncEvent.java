@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A marker event to initiate WAN sync
+ * A marker event to initiate WAN sync.
  */
 public class WanSyncEvent implements DataSerializable {
 
@@ -19,6 +19,7 @@ public class WanSyncEvent implements DataSerializable {
 
     private transient WanSyncOperation op;
 
+    @SuppressWarnings("unused")
     public WanSyncEvent() {
     }
 
@@ -36,16 +37,8 @@ public class WanSyncEvent implements DataSerializable {
         return type;
     }
 
-    public void setType(WanSyncType type) {
-        this.type = type;
-    }
-
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public WanSyncOperation getOp() {

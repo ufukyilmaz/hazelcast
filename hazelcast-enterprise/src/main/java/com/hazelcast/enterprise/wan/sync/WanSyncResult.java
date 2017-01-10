@@ -15,7 +15,8 @@ public class WanSyncResult implements DataSerializable {
 
     private Set<Integer> syncedPartitions = new HashSet<Integer>();
 
-    public WanSyncResult() { }
+    public WanSyncResult() {
+    }
 
     public Set<Integer> getSyncedPartitions() {
         return syncedPartitions;

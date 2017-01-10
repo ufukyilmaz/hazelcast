@@ -17,7 +17,8 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
 
     private Set<SimpleEntryView> recordSet;
 
-    public GetMapPartitionDataOperation() { }
+    public GetMapPartitionDataOperation() {
+    }
 
     public GetMapPartitionDataOperation(String name) {
         super(name);
@@ -34,9 +35,8 @@ public class GetMapPartitionDataOperation extends MapOperation implements Readon
     }
 
     private SimpleEntryView<Object, Object> createSimpleEntryView(Record record) {
-        SimpleEntryView<Object, Object> simpleEntryView
-                = new SimpleEntryView<Object, Object>(mapServiceContext.toData(record.getKey()),
-                        mapServiceContext.toData(record.getValue()));
+        SimpleEntryView<Object, Object> simpleEntryView = new SimpleEntryView<Object, Object>(
+                mapServiceContext.toData(record.getKey()), mapServiceContext.toData(record.getValue()));
         simpleEntryView.setVersion(record.getVersion());
         simpleEntryView.setHits(record.getHits());
         simpleEntryView.setLastAccessTime(record.getLastAccessTime());

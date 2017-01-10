@@ -18,7 +18,8 @@ public class WanSyncOperation extends Operation implements IdentifiedDataSeriali
     private String targetGroupName;
     private WanSyncEvent syncEvent;
 
-    public WanSyncOperation() { }
+    public WanSyncOperation() {
+    }
 
     public WanSyncOperation(String wanReplicationName, String targetGroupName,
                             WanSyncEvent syncEvent) {

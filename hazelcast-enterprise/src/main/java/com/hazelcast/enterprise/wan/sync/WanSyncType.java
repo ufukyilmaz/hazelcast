@@ -17,7 +17,7 @@ public enum WanSyncType {
 
     private int type;
 
-    private WanSyncType(final int type) {
+    WanSyncType(final int type) {
         this.type = type;
     }
 

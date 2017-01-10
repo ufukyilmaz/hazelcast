@@ -42,14 +42,13 @@ public class WanSyncManager {
     private final NodeEngine nodeEngine;
     private final ILogger logger;
 
-    //Below fields are only accessed through updater
+    // below fields are only accessed through updater
     private volatile WanSyncStatus syncStatus = WanSyncStatus.READY;
     private volatile int syncedPartitionCount;
 
     private volatile boolean running = true;
     private volatile String activeWanConfig;
     private volatile String activePublisher;
-
 
     public WanSyncManager(NodeEngine nodeEngine) {
         partitionService = nodeEngine.getPartitionService();
@@ -65,9 +64,9 @@ public class WanSyncManager {
     }
 
     public void initiateSyncRequest(final String wanReplicationName,
-                                       final String targetGroupName,
-                                       final WanSyncEvent syncEvent) {
-        //First check if endpoint exists for the given wanReplicationName and targetGroupName
+                                    final String targetGroupName,
+                                    final WanSyncEvent syncEvent) {
+        // first check if endpoint exists for the given wanReplicationName and targetGroupName
         wanReplicationService.getEndpoint(wanReplicationName, targetGroupName);
         if (!SYNC_STATUS.compareAndSet(this, WanSyncStatus.READY, WanSyncStatus.IN_PROGRESS)) {
             throw new SyncFailedException("Another sync request is already in progress.");

@@ -14,14 +14,14 @@ import java.util.Map;
 public final class WanReplicationProperties {
 
     /**
-     * Property to define maximum batch size that can be sent to target cluster.
+     * Defines the maximum batch size that can be sent to target cluster.
      * Valid when used with {@link WanBatchReplication} implementation.
      */
     public static final PropertyDefinition BATCH_SIZE
             = property("batch.size", PropertyTypeConverter.INTEGER);
 
     /**
-     * Property to define maximum amount of time to be waited before sending a batch of events to target cluster
+     * Defines the maximum amount of time to be waited before sending a batch of events to target cluster,
      * if {@link #BATCH_SIZE} of events are not arrived within this duration.
      */
     public static final PropertyDefinition BATCH_MAX_DELAY_MILLIS
@@ -43,6 +43,7 @@ public final class WanReplicationProperties {
 
     /**
      * Determines acknowledgement waiting type of WAN replication operation invocation.
+     *
      * @see com.hazelcast.config.WanAcknowledgeType for valid values.
      */
     public static final PropertyDefinition ACK_TYPE
@@ -55,8 +56,7 @@ public final class WanReplicationProperties {
             = property("group.password", false, PropertyTypeConverter.STRING);
 
     /**
-     * Comma seperated list of target cluster members.
-     * For example: 127.0.0.1:5701, 127.0.0.1:5702
+     * Comma separated list of target cluster members, e.g. {@code 127.0.0.1:5701, 127.0.0.1:5702}.
      */
     public static final PropertyDefinition ENDPOINTS
             = property("endpoints", false, PropertyTypeConverter.STRING);
@@ -78,7 +78,7 @@ public final class WanReplicationProperties {
     }
 
     public static <T extends Comparable> T getProperty(PropertyDefinition propertyDefinition,
-                                                             Map<String, Comparable> propertyMap, T defaultValue) {
+                                                       Map<String, Comparable> propertyMap, T defaultValue) {
         Comparable value = propertyMap.get(propertyDefinition.key());
         if (value == null) {
             if (!propertyDefinition.optional()) {

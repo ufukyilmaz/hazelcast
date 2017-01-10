@@ -28,15 +28,11 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 
 /**
  * WAN replication publisher that sends events in batches.
- * <p>
- * Basically, it publishes events either when a pre-defined
- * (see {@link }) number of events are enqueued
- * or enqueued events are waited enough (see {@link }).
- * </p>
+ *
+ * Basically, it publishes events either when {@value DEFAULT_BATCH_SIZE} events are enqueued
+ * or enqueued events have waited for {@value STRIPED_RUNNABLE_TIMEOUT_SECONDS} seconds.
  */
-public class WanBatchReplication
-        extends AbstractWanReplication
-        implements Runnable {
+public class WanBatchReplication extends AbstractWanReplication implements Runnable {
 
     private static final int DEFAULT_BATCH_SIZE = 500;
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
@@ -49,7 +45,6 @@ public class WanBatchReplication
     private volatile long lastBatchSendTime = System.currentTimeMillis();
 
     private boolean snapshotEnabled;
-
 
     @Override
     public void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig) {
@@ -74,6 +69,7 @@ public class WanBatchReplication
         return getProperty(BATCH_SIZE, publisherConfig.getProperties(), DEFAULT_BATCH_SIZE);
     }
 
+    @Override
     public void run() {
         while (running) {
             Map<String, BatchWanReplicationEvent> batchReplicationEventMap;
@@ -111,7 +107,7 @@ public class WanBatchReplication
             }
             WanReplicationEvent event = null;
             try {
-                 event = stagingQueue.poll(batchMaxDelayMillis, TimeUnit.MILLISECONDS);
+                event = stagingQueue.poll(batchMaxDelayMillis, TimeUnit.MILLISECONDS);
             } catch (InterruptedException ignored) {
                 EmptyStatement.ignore(ignored);
             }
@@ -165,8 +161,7 @@ public class WanBatchReplication
     }
 
     /**
-     * {@link StripedRunnable} implementation to send Batch of WAN replication events to
-     * target cluster.
+     * {@link StripedRunnable} implementation to send Batch of WAN replication events to target cluster.
      */
     private class BatchStripedRunnable implements StripedRunnable, TimeoutRunnable {
 
@@ -219,6 +214,5 @@ public class WanBatchReplication
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
-
     }
 }

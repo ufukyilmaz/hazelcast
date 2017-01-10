@@ -31,7 +31,6 @@ import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.partition.IPartition;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.EmptyStatement;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.wan.ReplicationEventObject;
 import com.hazelcast.wan.WANReplicationQueueFullException;
 import com.hazelcast.wan.WanReplicationEvent;
@@ -48,11 +47,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.hazelcast.util.ExceptionUtil.rethrow;
+
 /**
  * Abstract WAN event publisher implementation.
  */
-public abstract class AbstractWanPublisher
-        implements WanReplicationPublisher, WanReplicationEndpoint {
+public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);
     private static final int DEFAULT_STAGING_QUEUE_SIZE = 100;
@@ -116,7 +116,7 @@ public abstract class AbstractWanPublisher
     }
 
     protected int getPartitionId(Object key) {
-        return  node.nodeEngine.getPartitionService().getPartitionId(key);
+        return node.nodeEngine.getPartitionService().getPartitionId(key);
     }
 
     @Override
@@ -303,6 +303,7 @@ public abstract class AbstractWanPublisher
         }
     }
 
+    @Override
     public final void shutdown() {
         running = false;
         afterShutdown();
@@ -358,6 +359,7 @@ public abstract class AbstractWanPublisher
         }
     }
 
+    @Override
     public void publishReplicationEvent(WanReplicationEvent wanReplicationEvent) {
         EnterpriseReplicationEventObject replicationEventObject
                 = (EnterpriseReplicationEventObject) wanReplicationEvent.getEventObject();
@@ -374,7 +376,7 @@ public abstract class AbstractWanPublisher
             node.nodeEngine.getOperationService()
                     .invokeOnPartition(serviceName, operation, partitionId).get();
         } catch (Throwable t) {
-            throw ExceptionUtil.rethrow(t);
+            throw rethrow(t);
         }
     }
 
@@ -387,7 +389,7 @@ public abstract class AbstractWanPublisher
                     .invoke();
             return future.get();
         } catch (Throwable t) {
-            throw ExceptionUtil.rethrow(t);
+            throw rethrow(t);
         }
     }
 
@@ -406,7 +408,7 @@ public abstract class AbstractWanPublisher
         try {
             syncRequests.put(event);
         } catch (InterruptedException e) {
-            ExceptionUtil.rethrow(e);
+            throw rethrow(e);
         }
     }
 
@@ -429,7 +431,7 @@ public abstract class AbstractWanPublisher
         private int emptyIterationCount;
         private WanSyncManager syncManager;
 
-        public QueuePoller(WanSyncManager syncManager) {
+        QueuePoller(WanSyncManager syncManager) {
             this.syncManager = syncManager;
         }
 

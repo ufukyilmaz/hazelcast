@@ -30,8 +30,7 @@ import static com.hazelcast.enterprise.wan.replication.WanReplicationProperties.
 /**
  * Abstract WAN event publisher implementation.
  */
-public abstract class AbstractWanReplication
-        extends AbstractWanPublisher {
+public abstract class AbstractWanReplication extends AbstractWanPublisher {
 
     private static final int DEFAULT_BATCH_SIZE = 500;
     private static final long DEFAULT_BATCH_MAX_DELAY_MILLIS = 1000;

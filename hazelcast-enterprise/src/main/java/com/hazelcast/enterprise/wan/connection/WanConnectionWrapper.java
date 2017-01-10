@@ -28,5 +28,4 @@ public class WanConnectionWrapper {
     public Connection getConnection() {
         return connection;
     }
-
 }

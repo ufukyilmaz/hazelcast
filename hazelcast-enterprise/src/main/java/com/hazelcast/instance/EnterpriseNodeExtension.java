@@ -69,6 +69,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import static com.hazelcast.map.impl.EnterpriseMapServiceConstructor.getEnterpriseMapServiceConstructor;
+import static com.hazelcast.util.StringUtil.isNullOrEmpty;
 
 /**
  * This class is the enterprise system hook to allow injection of enterprise services into Hazelcast subsystems.
@@ -179,6 +180,13 @@ public class EnterpriseNodeExtension extends DefaultNodeExtension implements Nod
         String revision = buildInfo.getRevision();
         if (!revision.isEmpty()) {
             build += " - " + revision;
+            BuildInfo upstreamBuildInfo = buildInfo.getUpstreamBuildInfo();
+            if (upstreamBuildInfo != null) {
+                String upstreamRevision = upstreamBuildInfo.getRevision();
+                if (!isNullOrEmpty(upstreamRevision)) {
+                    build += ", " + upstreamRevision;
+                }
+            }
         }
 
         systemLogger.info("Hazelcast Enterprise " + buildInfo.getVersion()

@@ -28,15 +28,14 @@ import com.hazelcast.wan.WanReplicationPublisher;
  * Implementations of this interface represent a replication endpoint, normally another
  * Hazelcast cluster only reachable over a Wide Area Network (WAN).
  */
-public interface WanReplicationEndpoint
-        extends WanReplicationPublisher {
+public interface WanReplicationEndpoint extends WanReplicationPublisher {
 
     /**
      * Initializes the endpoint using the given arguments.
      *
-     * @param node      the current node that tries to connect
-     * @param wanReplicationConfig  {@link com.hazelcast.config.WanReplicationConfig} config
-     * @param wanPublisherConfig  this endpoint will be initialized using this {@link WanPublisherConfig} instance
+     * @param node                 the current node that tries to connect
+     * @param wanReplicationConfig {@link com.hazelcast.config.WanReplicationConfig} config
+     * @param wanPublisherConfig   this endpoint will be initialized using this {@link WanPublisherConfig} instance
      */
     void init(Node node, WanReplicationConfig wanReplicationConfig, WanPublisherConfig wanPublisherConfig);
 
@@ -67,11 +66,11 @@ public interface WanReplicationEndpoint
     void pause();
 
     /**
-     *  This method re-enables WAN event queue polling for a paused {@link WanReplicationEndpoint} instance.
+     * This method re-enables WAN event queue polling for a paused {@link WanReplicationEndpoint} instance.
      *
-     *  Calling this method on already running {@link WanReplicationEndpoint} instances will have no effect.
+     * Calling this method on already running {@link WanReplicationEndpoint} instances will have no effect.
      *
-     *  @see #pause()
+     * @see #pause()
      */
     void resume();
 
@@ -82,6 +81,7 @@ public interface WanReplicationEndpoint
      */
     LocalWanPublisherStats getStats();
 
+    @Override
     void checkWanReplicationQueues();
 
     void publishSyncEvent(WanSyncEvent syncRequest);

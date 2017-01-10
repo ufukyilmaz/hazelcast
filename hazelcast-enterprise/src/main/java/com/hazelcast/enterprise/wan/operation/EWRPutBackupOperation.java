@@ -14,15 +14,14 @@ import java.io.IOException;
 /**
  * Publishes backup of a WAN event.
  */
-public class EWRPutBackupOperation extends EWRBaseOperation
-        implements BackupOperation, IdentifiedDataSerializable {
+public class EWRPutBackupOperation extends EWRBaseOperation implements BackupOperation, IdentifiedDataSerializable {
 
     private Data event;
 
-    public EWRPutBackupOperation() { }
+    public EWRPutBackupOperation() {
+    }
 
-    public EWRPutBackupOperation(String wanReplicationName,
-                                 String targetName, Data event) {
+    public EWRPutBackupOperation(String wanReplicationName, String targetName, Data event) {
         super(wanReplicationName, targetName);
         this.event = event;
     }

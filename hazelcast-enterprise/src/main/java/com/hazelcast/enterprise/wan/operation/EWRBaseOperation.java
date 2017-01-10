@@ -13,8 +13,7 @@ import java.io.IOException;
 /**
  * Base class for WAN replication operations.
  */
-public abstract class EWRBaseOperation extends Operation
-        implements PartitionAwareOperation, IdentifiedDataSerializable {
+public abstract class EWRBaseOperation extends Operation implements PartitionAwareOperation, IdentifiedDataSerializable {
 
     protected transient Object response;
 
@@ -22,7 +21,8 @@ public abstract class EWRBaseOperation extends Operation
     String targetName;
     String serviceName;
 
-    protected EWRBaseOperation() { }
+    protected EWRBaseOperation() {
+    }
 
     protected EWRBaseOperation(String wanReplicationName, String targetName) {
         this.wanReplicationName = wanReplicationName;
@@ -49,10 +49,12 @@ public abstract class EWRBaseOperation extends Operation
     }
 
     @Override
-    public void beforeRun() throws Exception { }
+    public void beforeRun() throws Exception {
+    }
 
     @Override
-    public void afterRun() throws Exception { }
+    public void afterRun() throws Exception {
+    }
 
     @Override
     public int getFactoryId() {

@@ -22,7 +22,6 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
     private EWRMigrationContainer ewrMigrationContainer = new EWRMigrationContainer();
 
     public EWRQueueReplicationOperation() {
-
     }
 
     public EWRQueueReplicationOperation(EWRMigrationContainer ewrMigrationContainer, int partitionId, int replicaIndex) {
@@ -90,5 +89,4 @@ public class EWRQueueReplicationOperation extends Operation implements Identifie
             }
         }
     }
-
 }

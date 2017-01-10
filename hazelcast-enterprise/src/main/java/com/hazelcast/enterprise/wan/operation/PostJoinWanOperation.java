@@ -20,7 +20,8 @@ public class PostJoinWanOperation extends Operation implements IdentifiedDataSer
 
     private List<WanReplicationConfig> wanReplicationConfigs = new ArrayList<WanReplicationConfig>();
 
-    public PostJoinWanOperation() { }
+    public PostJoinWanOperation() {
+    }
 
     public PostJoinWanOperation(List<WanReplicationConfig> wanReplicationConfigs) {
         this.wanReplicationConfigs = wanReplicationConfigs;

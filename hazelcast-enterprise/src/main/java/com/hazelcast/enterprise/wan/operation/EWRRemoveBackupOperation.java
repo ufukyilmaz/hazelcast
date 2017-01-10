@@ -11,15 +11,13 @@ import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
 
-/**
- * Created by emrah on 11/08/15.
- */
 public class EWRRemoveBackupOperation extends EWRBaseOperation
         implements BackupOperation, IdentifiedDataSerializable {
 
     private Data event;
 
-    public EWRRemoveBackupOperation() { }
+    public EWRRemoveBackupOperation() {
+    }
 
     public EWRRemoveBackupOperation(String wanReplicationName, String targetName, Data event) {
         super(wanReplicationName, targetName);

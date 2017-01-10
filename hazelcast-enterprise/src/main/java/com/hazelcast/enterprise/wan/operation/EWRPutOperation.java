@@ -15,19 +15,16 @@ import java.io.IOException;
 /**
  * Used to put forwarded WAN events to event queue.
  */
-public class EWRPutOperation extends EWRBackupAwareOperation
-        implements IdentifiedDataSerializable {
+public class EWRPutOperation extends EWRBackupAwareOperation implements IdentifiedDataSerializable {
 
     Data event;
 
-    public EWRPutOperation() { }
+    public EWRPutOperation() {
+    }
 
-    public EWRPutOperation(String wanReplicationName,
-                           String targetName,
-                           Data event, int backupCount) {
+    public EWRPutOperation(String wanReplicationName, String targetName, Data event, int backupCount) {
         super(wanReplicationName, targetName, backupCount);
         this.event = event;
-
     }
 
     @Override

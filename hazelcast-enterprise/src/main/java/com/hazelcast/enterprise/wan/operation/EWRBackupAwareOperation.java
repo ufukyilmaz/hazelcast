@@ -13,7 +13,8 @@ public abstract class EWRBackupAwareOperation extends EWRBaseOperation implement
 
     int backupCount = 1;
 
-    protected EWRBackupAwareOperation() { }
+    protected EWRBackupAwareOperation() {
+    }
 
     protected EWRBackupAwareOperation(String wanReplicationName, String targetName, int backupCount) {
         super(wanReplicationName, targetName);

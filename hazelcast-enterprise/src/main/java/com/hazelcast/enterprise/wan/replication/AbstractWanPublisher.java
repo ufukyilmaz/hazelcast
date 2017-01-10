@@ -52,6 +52,7 @@ import static com.hazelcast.util.ExceptionUtil.rethrow;
 /**
  * Abstract WAN event publisher implementation.
  */
+@SuppressWarnings("checkstyle:methodcount")
 public abstract class AbstractWanPublisher implements WanReplicationPublisher, WanReplicationEndpoint {
 
     private static final int QUEUE_LOGGER_PERIOD_MILLIS = (int) TimeUnit.MINUTES.toMillis(5);

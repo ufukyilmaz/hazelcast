@@ -48,9 +48,8 @@ import static com.hazelcast.config.ExecutorConfig.DEFAULT_POOL_SIZE;
 /**
  * Enterprise implementation for WAN replication.
  */
-public class EnterpriseWanReplicationService
-        implements WanReplicationService, MigrationAwareService, PostJoinAwareService {
-
+@SuppressWarnings("checkstyle:methodcount")
+public class EnterpriseWanReplicationService implements WanReplicationService, MigrationAwareService, PostJoinAwareService {
 
     private static final int STRIPED_RUNNABLE_TIMEOUT_SECONDS = 10;
     private static final int STRIPED_RUNNABLE_JOB_QUEUE_SIZE = 1000;
@@ -145,7 +144,6 @@ public class EnterpriseWanReplicationService
 
     @Override
     public void beforeMigration(PartitionMigrationEvent event) {
-
     }
 
     @Override
@@ -278,7 +276,6 @@ public class EnterpriseWanReplicationService
             logger.warning("Can not handle incoming wan replication event.", ree);
             op.sendResponse(false);
         }
-
     }
 
     @Override
@@ -321,9 +318,7 @@ public class EnterpriseWanReplicationService
 
         WanReplicationEvent event;
 
-        WanEventRunnable(WanReplicationEvent event,
-                         WanOperation operation,
-                         int partitionId) {
+        WanEventRunnable(WanReplicationEvent event, WanOperation operation, int partitionId) {
             super(operation, partitionId);
             this.event = event;
         }
@@ -351,8 +346,7 @@ public class EnterpriseWanReplicationService
 
         BatchWanReplicationEvent batchEvent;
 
-        BatchWanEventRunnable(BatchWanReplicationEvent batchEvent,
-                              WanOperation operation, int partitionId) {
+        BatchWanEventRunnable(BatchWanReplicationEvent batchEvent, WanOperation operation, int partitionId) {
             super(operation, partitionId);
             this.batchEvent = batchEvent;
         }
@@ -398,7 +392,6 @@ public class EnterpriseWanReplicationService
         public TimeUnit getTimeUnit() {
             return TimeUnit.SECONDS;
         }
-
     }
 
     private int getPartitionId(BatchWanReplicationEvent batchWanReplicationEvent) {

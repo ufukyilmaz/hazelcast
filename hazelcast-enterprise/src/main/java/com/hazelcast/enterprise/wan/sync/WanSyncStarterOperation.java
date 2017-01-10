@@ -3,6 +3,9 @@ package com.hazelcast.enterprise.wan.sync;
 import com.hazelcast.enterprise.wan.EnterpriseWanReplicationService;
 import com.hazelcast.spi.Operation;
 
+/**
+ * Operation to start a WAN synchronization.
+ */
 public class WanSyncStarterOperation extends Operation {
 
     private String wanReplicationName;

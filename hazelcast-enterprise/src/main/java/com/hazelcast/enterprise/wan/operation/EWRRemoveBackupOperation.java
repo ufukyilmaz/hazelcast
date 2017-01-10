@@ -11,8 +11,10 @@ import com.hazelcast.wan.WanReplicationEvent;
 
 import java.io.IOException;
 
-public class EWRRemoveBackupOperation extends EWRBaseOperation
-        implements BackupOperation, IdentifiedDataSerializable {
+/**
+ * Removes backup of a WAN event.
+ */
+public class EWRRemoveBackupOperation extends EWRBaseOperation implements BackupOperation, IdentifiedDataSerializable {
 
     private Data event;
 

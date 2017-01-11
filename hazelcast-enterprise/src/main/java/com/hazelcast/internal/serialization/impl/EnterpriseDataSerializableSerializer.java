@@ -1,7 +1,6 @@
 package com.hazelcast.internal.serialization.impl;
 
 import com.hazelcast.internal.serialization.DataSerializerHook;
-import com.hazelcast.logging.Logger;
 import com.hazelcast.nio.ClassLoaderUtil;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -14,7 +13,6 @@ import com.hazelcast.nio.serialization.StreamSerializer;
 import com.hazelcast.nio.serialization.TypedStreamDeserializer;
 import com.hazelcast.nio.serialization.impl.Versioned;
 import com.hazelcast.nio.serialization.impl.VersionedDataSerializableFactory;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.ServiceLoader;
 import com.hazelcast.util.collection.Int2ObjectHashMap;
 import com.hazelcast.version.ClusterVersion;
@@ -28,6 +26,8 @@ import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializab
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isIdentifiedDataSerializable;
 import static com.hazelcast.internal.serialization.impl.EnterpriseDataSerializableHeader.isVersioned;
 import static com.hazelcast.internal.serialization.impl.SerializationConstants.CONSTANT_TYPE_DATA_SERIALIZABLE;
+import static com.hazelcast.logging.Logger.getLogger;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 
 /**
  * The {@link StreamSerializer} that handles:
@@ -67,16 +67,16 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
                                          ClassLoader classLoader, EnterpriseClusterVersionAware clusterVersionAware) {
         this.clusterVersionAware = clusterVersionAware;
         try {
-            final Iterator<DataSerializerHook> hooks = ServiceLoader.iterator(DataSerializerHook.class, FACTORY_ID, classLoader);
+            Iterator<DataSerializerHook> hooks = ServiceLoader.iterator(DataSerializerHook.class, FACTORY_ID, classLoader);
             while (hooks.hasNext()) {
                 DataSerializerHook hook = hooks.next();
-                final DataSerializableFactory factory = hook.createFactory();
+                DataSerializableFactory factory = hook.createFactory();
                 if (factory != null) {
                     register(hook.getFactoryId(), factory);
                 }
             }
         } catch (Exception e) {
-            throw ExceptionUtil.rethrow(e);
+            throw rethrow(e);
         }
 
         if (dataSerializableFactories != null) {
@@ -87,10 +87,10 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private void register(int factoryId, DataSerializableFactory factory) {
-        final DataSerializableFactory current = factories.get(factoryId);
+        DataSerializableFactory current = factories.get(factoryId);
         if (current != null) {
             if (current.equals(factory)) {
-                Logger.getLogger(getClass()).warning("DataSerializableFactory[" + factoryId + "] is already registered! Skipping "
+                getLogger(getClass()).warning("DataSerializableFactory[" + factoryId + "] is already registered! Skipping "
                         + factory);
             } else {
                 throw new IllegalArgumentException("DataSerializableFactory[" + factoryId + "] is already registered! "
@@ -99,6 +99,11 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         } else {
             factories.put(factoryId, factory);
         }
+    }
+
+    @Override
+    public void destroy() {
+        factories.clear();
     }
 
     @Override
@@ -116,7 +121,6 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
                 throw new HazelcastSerializationException("Requested class " + clazz + " could not be instantiated.", e);
             }
         }
-
         return doRead(in, instance);
     }
 
@@ -158,9 +162,8 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
             return ds;
         } catch (Exception ex) {
-            rethrowIdsReadException(factoryId, classId, ex);
+            throw rethrowIdsReadException(factoryId, classId, ex);
         }
-        return null;
     }
 
     private Version readVersion(ObjectDataInput in) throws IOException {
@@ -171,30 +174,15 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
     }
 
     private DataSerializable createIdentifiedDataSerializable(Version version, int factoryId, int classId) {
-        DataSerializable ds;
-        final DataSerializableFactory dsf = factories.get(factoryId);
+        DataSerializableFactory dsf = factories.get(factoryId);
         if (dsf == null) {
             throw new HazelcastSerializationException("No DataSerializerFactory registered for namespace: " + factoryId);
         }
         if (dsf instanceof VersionedDataSerializableFactory) {
-            ds = ((VersionedDataSerializableFactory) dsf).create(classId, version);
+            return ((VersionedDataSerializableFactory) dsf).create(classId, version);
         } else {
-            ds = dsf.create(classId);
+            return dsf.create(classId);
         }
-        return ds;
-    }
-
-    private static void rethrowIdsReadException(int factoryId, int classId, Exception e) throws IOException {
-        if (e instanceof IOException) {
-            throw (IOException) e;
-        }
-        if (e instanceof HazelcastSerializationException) {
-            throw (HazelcastSerializationException) e;
-        }
-        throw new HazelcastSerializationException("Problem while reading IdentifiedDataSerializable, namespace: "
-                + factoryId
-                + ", classId: " + classId
-                + ", exception: " + e.getMessage(), e);
     }
 
     private DataSerializable readDataSerializable(ObjectDataInput in, byte header, DataSerializable instance) throws IOException {
@@ -209,27 +197,14 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
 
             return ds;
         } catch (Exception ex) {
-            rethrowDsReadException(className, ex);
+            throw rethrowDsReadException(className, ex);
         }
-        return null;
-    }
-
-    private static IOException rethrowDsReadException(String className, Exception e) throws IOException {
-        if (e instanceof IOException) {
-            throw (IOException) e;
-        }
-        if (e instanceof HazelcastSerializationException) {
-            throw (HazelcastSerializationException) e;
-        }
-        throw new HazelcastSerializationException("Problem while reading DataSerializable, class-name: "
-                + className
-                + ", exception: " + e.getMessage(), e);
     }
 
     @Override
     public void write(ObjectDataOutput out, DataSerializable obj) throws IOException {
         Version version = (obj instanceof Versioned) ? Version.of(clusterVersionAware.getClusterVersion().getMinor())
-                                                        : Version.UNKNOWN;
+                : Version.UNKNOWN;
         setOutputVersion(out, version);
 
         if (obj instanceof IdentifiedDataSerializable) {
@@ -287,9 +262,26 @@ public final class EnterpriseDataSerializableSerializer implements StreamSeriali
         ((VersionedObjectDataInput) in).setVersion(version);
     }
 
-    @Override
-    public void destroy() {
-        factories.clear();
+    private static IOException rethrowIdsReadException(int factoryId, int classId, Exception e) throws IOException {
+        if (e instanceof IOException) {
+            throw (IOException) e;
+        }
+        if (e instanceof HazelcastSerializationException) {
+            throw (HazelcastSerializationException) e;
+        }
+        throw new HazelcastSerializationException("Problem while reading IdentifiedDataSerializable, namespace: " + factoryId
+                + ", classId: " + classId
+                + ", exception: " + e.getMessage(), e);
     }
 
+    private static IOException rethrowDsReadException(String className, Exception e) throws IOException {
+        if (e instanceof IOException) {
+            throw (IOException) e;
+        }
+        if (e instanceof HazelcastSerializationException) {
+            throw (HazelcastSerializationException) e;
+        }
+        throw new HazelcastSerializationException("Problem while reading DataSerializable, class-name: " + className
+                + ", exception: " + e.getMessage(), e);
+    }
 }

@@ -71,7 +71,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * and storing these metadata when they change during runtime.
  */
 @SuppressWarnings({"checkstyle:classdataabstractioncoupling", "checkstyle:methodcount", "checkstyle:classfanoutcomplexity"})
-public final class ClusterMetadataManager {
+public class ClusterMetadataManager {
 
     private static final String DIR_NAME = "cluster";
 

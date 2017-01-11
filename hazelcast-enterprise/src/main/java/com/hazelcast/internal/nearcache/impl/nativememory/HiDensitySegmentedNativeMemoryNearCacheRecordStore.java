@@ -166,10 +166,6 @@ public class HiDensitySegmentedNativeMemoryNearCacheRecordStore<K, V>
         nearCacheStats.setOwnedEntryCount(0);
         nearCacheStats.setOwnedEntryMemoryCost(0L);
 
-        for (int i = 0; i < segments.length; i++) {
-            segments[i] = null;
-        }
-
         if (nearCachePreloader != null) {
             nearCachePreloader.destroy();
         }

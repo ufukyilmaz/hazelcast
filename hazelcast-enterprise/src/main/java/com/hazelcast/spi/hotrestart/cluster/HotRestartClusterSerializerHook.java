@@ -21,8 +21,9 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
     public static final int SEND_MEMBER_CLUSTER_START_INFO = 3;
     public static final int TRIGGER_FORCE_START = 4;
     public static final int SEND_EXPECTED_MEMBERS = 5;
+    public static final int SEND_EXCLUDED_MEMBER_UUIDS = 6;
 
-    private static final int LEN = SEND_EXPECTED_MEMBERS + 1;
+    private static final int LEN = SEND_EXCLUDED_MEMBER_UUIDS + 1;
 
     @Override
     public int getFactoryId() {
@@ -67,6 +68,12 @@ public class HotRestartClusterSerializerHook implements DataSerializerHook {
             @Override
             public IdentifiedDataSerializable createNew(Integer arg) {
                 return new SendExpectedMembersOperation();
+            }
+        };
+        constructors[SEND_EXCLUDED_MEMBER_UUIDS] = new ConstructorFunction<Integer, IdentifiedDataSerializable>() {
+            @Override
+            public IdentifiedDataSerializable createNew(Integer arg) {
+                return new SendExcludedMemberUuidsOperation();
             }
         };
 

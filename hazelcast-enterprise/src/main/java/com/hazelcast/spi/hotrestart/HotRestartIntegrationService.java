@@ -22,6 +22,7 @@ import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartEventListener;
 import com.hazelcast.spi.hotrestart.cluster.ClusterHotRestartStatusDTOUtil;
 import com.hazelcast.spi.hotrestart.cluster.ClusterMetadataManager;
 import com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus;
+import com.hazelcast.spi.hotrestart.cluster.SendExcludedMemberUuidsOperation;
 import com.hazelcast.spi.hotrestart.cluster.TriggerForceStartOnMasterOperation;
 import com.hazelcast.spi.hotrestart.impl.HotRestartStoreConfig;
 import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
@@ -333,7 +334,9 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         return true;
     }
 
-    /** Returns true if there is a backup task currently in progress */
+    /**
+     * Returns true if there is a backup task currently in progress
+     */
     public boolean isBackupInProgress() {
         return isBackupInProgress(onHeapStores) || isBackupInProgress(offHeapStores);
     }
@@ -785,6 +788,13 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
     @Override
     public Set<String> getExcludedMemberUuids() {
         return clusterMetadataManager.getExcludedMemberUuids();
+    }
+
+    @Override
+    public void notifyExcludedMember(Address memberAddress) {
+        Set<String> excludedMemberUuids = clusterMetadataManager.getExcludedMemberUuids();
+        InternalOperationService operationService = node.nodeEngine.getOperationService();
+        operationService.send(new SendExcludedMemberUuidsOperation(excludedMemberUuids), memberAddress);
     }
 
     @Override

@@ -27,7 +27,7 @@ public class EnterpriseMapClientProxyFactory implements ClientProxyFactory {
     public ClientProxy create(String id) {
         NearCacheConfig nearCacheConfig = clientConfig.getNearCacheConfig(id);
         if (nearCacheConfig != null) {
-            hdMapConfigValidator.checkHDConfig(nearCacheConfig, clientConfig.getNativeMemoryConfig());
+            hdMapConfigValidator.checkHDConfig(nearCacheConfig, clientConfig.getNativeMemoryConfig(), true);
             return new EnterpriseNearCachedClientMapProxyImpl(SERVICE_NAME, id);
         } else {
             return new EnterpriseClientMapProxyImpl(SERVICE_NAME, id);

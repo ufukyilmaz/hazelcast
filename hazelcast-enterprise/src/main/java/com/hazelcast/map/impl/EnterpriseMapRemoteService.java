@@ -29,7 +29,7 @@ class EnterpriseMapRemoteService extends MapRemoteService {
         hdMapConfigValidator.checkHDConfig(mapConfig, config.getNativeMemoryConfig());
 
         if (mapConfig.isNearCacheEnabled()) {
-            hdMapConfigValidator.checkHDConfig(mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig());
+            hdMapConfigValidator.checkHDConfig(mapConfig.getNearCacheConfig(), config.getNativeMemoryConfig(), false);
 
             return new EnterpriseNearCachedMapProxyImpl(name, mapServiceContext.getService(), nodeEngine, mapConfig);
         } else {

@@ -4,6 +4,7 @@ import com.hazelcast.internal.util.concurrent.ManyToOneConcurrentArrayQueue;
 import com.hazelcast.internal.util.concurrent.OneToOneConcurrentArrayQueue;
 import com.hazelcast.internal.util.concurrent.QueuedPipe;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.Before;
@@ -30,41 +31,48 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 @Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class ConcurrentArrayQueueTest {
+public class ConcurrentArrayQueueTest extends HazelcastTestSupport {
+
     @Parameters(name = "manyToOne == {0}")
     public static Collection<Object[]> params() {
-        return asList(new Object[][] { {false}, {true} });
+        return asList(new Object[][]{{false}, {true}});
     }
 
-    @Parameter public boolean manyToOne;
+    @Parameter
+    public boolean manyToOne;
 
     private QueuedPipe<Integer> q;
 
-    @Before public void setup() {
+    @Before
+    public void setup() {
         this.q = manyToOne ? new ManyToOneConcurrentArrayQueue<Integer>(2)
-                           : new OneToOneConcurrentArrayQueue<Integer>(2);
+                : new OneToOneConcurrentArrayQueue<Integer>(2);
     }
 
-    @Test public void when_offer_then_pollInOrder() {
+    @Test
+    public void when_offer_then_pollInOrder() {
         q.offer(1);
         q.offer(2);
         assertEquals(1, (Object) q.poll());
         assertEquals(2, (Object) q.poll());
     }
 
-    @Test public void when_offerTooMany_then_rejectWithFalse() {
+    @Test
+    public void when_offerTooMany_then_rejectWithFalse() {
         assertTrue(q.offer(1));
         assertTrue(q.offer(2));
         assertFalse(q.offer(3));
     }
 
-    @Test public void when_pollTooMany_then_getNull() {
+    @Test
+    public void when_pollTooMany_then_getNull() {
         q.offer(1);
         assertNotNull(q.poll());
         assertNull(q.poll());
     }
 
-    @Test public void when_offer_then_drainToList() {
+    @Test
+    public void when_offer_then_drainToList() {
         q.offer(1);
         q.offer(2);
         final List<Integer> drained = new ArrayList<Integer>();
@@ -72,7 +80,8 @@ public class ConcurrentArrayQueueTest {
         assertEquals(drained, asList(1, 2));
     }
 
-    @Test public void when_add_then_removeInOrder() {
+    @Test
+    public void when_add_then_removeInOrder() {
         q.add(1);
         q.add(2);
         assertEquals(1, (Object) q.remove());
@@ -93,35 +102,41 @@ public class ConcurrentArrayQueueTest {
         q.remove();
     }
 
-    @Test public void when_addAndRemove_then_addedCountTracksTotalAdded() {
+    @Test
+    public void when_addAndRemove_then_addedCountTracksTotalAdded() {
         q.add(4);
         q.remove();
         q.add(3);
         assertEquals(2, q.addedCount());
     }
 
-    @Test public void when_instantiateWithCapacityX_then_capacityReportsX() {
+    @Test
+    public void when_instantiateWithCapacityX_then_capacityReportsX() {
         assertEquals(2, q.capacity());
     }
 
-    @Test public void when_clear_then_pollNull() {
+    @Test
+    public void when_clear_then_pollNull() {
         q.add(1);
         q.clear();
         assertNull(q.poll());
     }
 
-    @Test public void when_add_then_contains() {
+    @Test
+    public void when_add_then_contains() {
         q.add(1);
-        assertTrue(q.contains(1));
+        assertContains(q, 1);
     }
 
-    @Test public void when_addSome_thenContainsAll() {
+    @Test
+    public void when_addSome_thenContainsAll() {
         q.add(1);
         q.add(2);
-        assertTrue(q.containsAll(asList(1, 2)));
+        assertContainsAll(q, asList(1, 2));
     }
 
-    @Test public void when_add_then_elementGetsIt() {
+    @Test
+    public void when_add_then_elementGetsIt() {
         q.add(1);
         assertEquals(1, (Object) q.element());
     }
@@ -133,7 +148,8 @@ public class ConcurrentArrayQueueTest {
         q.element();
     }
 
-    @Test public void when_empty_then_isEmptyGetsTrue() {
+    @Test
+    public void when_empty_then_isEmptyGetsTrue() {
         assertTrue(q.isEmpty());
     }
 
@@ -142,12 +158,14 @@ public class ConcurrentArrayQueueTest {
         q.iterator();
     }
 
-    @Test public void when_add_then_peek() {
+    @Test
+    public void when_add_then_peek() {
         q.add(1);
         assertEquals(1, (Object) q.peek());
     }
 
-    @Test public void when_add_then_remaningCapacityReduced() {
+    @Test
+    public void when_add_then_remaningCapacityReduced() {
         q.add(1);
         assertEquals(1, q.remainingCapacity());
     }
@@ -164,13 +182,15 @@ public class ConcurrentArrayQueueTest {
         q.removeAll(singletonList(1));
     }
 
-    @Test public void when_addAndRemove_thenRemovedCountTracksTotalRemoved() {
+    @Test
+    public void when_addAndRemove_thenRemovedCountTracksTotalRemoved() {
         q.add(1);
         q.remove();
         assertEquals(1, q.removedCount());
     }
 
-    @Test public void when_addAndRemove_thenSizeZero() {
+    @Test
+    public void when_addAndRemove_thenSizeZero() {
         q.add(1);
         q.remove();
         assertEquals(0, q.size());

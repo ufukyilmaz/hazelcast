@@ -178,8 +178,9 @@ public final class HotRestarter {
                 prefixTombstones.put(byteBuf.getLong(0), byteBuf.getLong(LONG_SIZE_IN_BYTES));
             }
         } catch (IOException e) {
-            IOUtil.closeResource(in);
             throw new HotRestartException("Error restoring prefix tombstones", e);
+        } finally {
+            IOUtil.closeResource(in);
         }
         return prefixTombstones;
     }

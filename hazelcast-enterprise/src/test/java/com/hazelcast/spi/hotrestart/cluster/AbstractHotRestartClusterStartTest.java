@@ -11,7 +11,6 @@ import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.instance.Node;
 import com.hazelcast.instance.NodeState;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.partition.PartitionLostListenerStressTest.EventCollectingPartitionLostListener;
 import com.hazelcast.spi.InternalCompletableFuture;
 import com.hazelcast.spi.NodeEngine;
@@ -21,6 +20,7 @@ import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
+import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
 import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.version.MemberVersion;
@@ -28,7 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,21 +47,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.hazelcast.instance.BuildInfoProvider.HAZELCAST_INTERNAL_OVERRIDE_VERSION;
 import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.changeClusterStateEventually;
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
-import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
-import static com.hazelcast.test.HazelcastTestSupport.spawn;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static java.util.Collections.synchronizedList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public abstract class AbstractHotRestartClusterStartTest {
+@SuppressWarnings({"WeakerAccess", "SameParameterValue"})
+public abstract class AbstractHotRestartClusterStartTest extends HazelcastTestSupport {
 
     protected static final int PARTITION_COUNT = 50;
 
@@ -83,7 +78,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     @Rule
     public TestName testName = new TestName();
 
-    @Parameterized.Parameter
+    @Parameter
     public volatile AddressChangePolicy addressChangePolicy = AddressChangePolicy.NONE;
 
     protected File baseDir;
@@ -91,9 +86,9 @@ public abstract class AbstractHotRestartClusterStartTest {
     private ConcurrentMap<Address, String> instanceNames = new ConcurrentHashMap<Address, String>();
 
     @Before
-    public void before() throws IOException {
+    public void before() {
         baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        IOUtil.delete(baseDir);
+        delete(baseDir);
 
         if (!baseDir.mkdir()) {
             throw new IllegalStateException("Failed to create hot-restart directory!");
@@ -101,7 +96,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     @After
-    public void after() throws IOException {
+    public void after() {
         if (startNodeFuture != null) {
             try {
                 // Nothing to do with test's correctness.
@@ -114,10 +109,10 @@ public abstract class AbstractHotRestartClusterStartTest {
         }
 
         factory.terminateAll();
-        IOUtil.delete(baseDir);
+        delete(baseDir);
     }
 
-    HazelcastInstance[] startNewInstances(int numberOfInstances) throws InterruptedException {
+    HazelcastInstance[] startNewInstances(int numberOfInstances) {
         return startNewInstances(numberOfInstances, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
@@ -130,33 +125,28 @@ public abstract class AbstractHotRestartClusterStartTest {
         return instancesList.toArray(new HazelcastInstance[instancesList.size()]);
     }
 
-    HazelcastInstance[] restartInstances(Address[] addresses) throws InterruptedException {
+    HazelcastInstance[] restartInstances(Address[] addresses) {
         return restartInstances(addresses, Collections.<Address, ClusterHotRestartEventListener>emptyMap());
     }
 
     // restart instances at given codebase version
-    HazelcastInstance[] restartInstances(Address[] addresses, MemberVersion version) throws InterruptedException {
+    HazelcastInstance[] restartInstances(Address[] addresses, MemberVersion version) {
         return restartInstances(addresses, Collections.<Address, ClusterHotRestartEventListener>emptyMap(),
                 HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY, version);
     }
 
-    HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners)
-            throws InterruptedException {
+    HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners) {
         return restartInstances(addresses, listeners, HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY);
     }
 
     HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners,
-            final HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
-            throws InterruptedException {
-
+                                         final HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         return restartInstances(addresses, listeners, clusterStartPolicy, null);
     }
 
     HazelcastInstance[] restartInstances(Address[] addresses, Map<Address, ClusterHotRestartEventListener> listeners,
                                          final HotRestartClusterDataRecoveryPolicy clusterStartPolicy,
-                                         final MemberVersion version)
-            throws InterruptedException {
-
+                                         final MemberVersion version) {
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(addresses.length);
 
@@ -188,7 +178,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     HazelcastInstance startNewInstance(ClusterHotRestartEventListener listener,
-            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+                                       HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Address address = factory.nextAddress();
 
         String instanceName = "instance_" + instanceNameIndex.getAndIncrement();
@@ -211,7 +201,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     HazelcastInstance restartInstance(Address address, ClusterHotRestartEventListener listener,
-            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+                                      HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         return restartInstance(address, listener, clusterStartPolicy, null);
     }
 
@@ -253,7 +243,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         throw new IllegalStateException("Should not reach here!");
     }
 
-    Address startAndTerminateInstance() throws InterruptedException {
+    Address startAndTerminateInstance() {
         HazelcastInstance instance = startNewInstance();
 
         warmUpPartitions(instance);
@@ -272,7 +262,7 @@ public abstract class AbstractHotRestartClusterStartTest {
         return address;
     }
 
-    Address[] startAndTerminateInstances(int numberOfInstances) throws InterruptedException {
+    Address[] startAndTerminateInstances(int numberOfInstances) {
         HazelcastInstance[] instances = startNewInstances(numberOfInstances);
         assertInstancesJoined(numberOfInstances, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
@@ -365,7 +355,7 @@ public abstract class AbstractHotRestartClusterStartTest {
 
         File hotRestartDir = new File(baseDir, hotRestartDirName);
         assertTrue("HotRestart dir doesn't exist: " + hotRestartDir.getAbsolutePath(), hotRestartDir.exists());
-        IOUtil.delete(hotRestartDir);
+        delete(hotRestartDir);
     }
 
     void assertInstancesJoined(int numberOfInstances, NodeState nodeState, ClusterState clusterState) {
@@ -375,7 +365,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     }
 
     static void assertInstancesJoined(int numberOfInstances, HazelcastInstance[] instances, NodeState expectedNodeState,
-            ClusterState expectedClusterState) {
+                                      ClusterState expectedClusterState) {
         assertInstancesJoined(numberOfInstances, Arrays.asList(instances), expectedNodeState, expectedClusterState);
     }
 
@@ -394,8 +384,7 @@ public abstract class AbstractHotRestartClusterStartTest {
     void assertInstancesJoinedEventually(final int numberOfInstances, final NodeState nodeState, final ClusterState clusterState) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() throws Exception {
                 Collection<HazelcastInstance> allHazelcastInstances = getAllInstances();
                 HazelcastInstance[] instances = allHazelcastInstances.toArray(new HazelcastInstance[allHazelcastInstances.size()]);
                 assertInstancesJoined(numberOfInstances, instances, nodeState, clusterState);

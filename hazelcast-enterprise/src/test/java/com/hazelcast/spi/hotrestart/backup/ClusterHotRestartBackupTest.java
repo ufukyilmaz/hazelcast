@@ -13,7 +13,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -24,8 +23,9 @@ import static org.junit.Assert.fail;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
+
     @Test
-    public void testClusterHotRestartBackup() throws IOException {
+    public void testClusterHotRestartBackup() {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
@@ -51,7 +51,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testClusterHotRestartBackupCommitFailed() throws IOException {
+    public void testClusterHotRestartBackupCommitFailed() {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
@@ -75,7 +75,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testClusterHotRestartBackupRollback() throws IOException {
+    public void testClusterHotRestartBackupRollback() {
         final int clusterSize = 3;
         resetFixture(-1, clusterSize);
 
@@ -97,8 +97,7 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         }
     }
 
-
-    private void runClusterBackupOnInstance(long seq, HazelcastInstance instance) {
+    private static void runClusterBackupOnInstance(long seq, HazelcastInstance instance) {
         instance.getCluster().getHotRestartService().backup(seq);
     }
 }

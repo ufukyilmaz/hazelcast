@@ -3,7 +3,6 @@ package com.hazelcast.spi.hotrestart.backup;
 import com.hazelcast.config.HotRestartPersistenceConfig;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
-import com.hazelcast.instance.EnterpriseNodeExtension;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.annotation.ParallelTest;
 import com.hazelcast.test.annotation.QuickTest;
@@ -11,7 +10,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,29 +20,30 @@ import static org.junit.Assert.assertFalse;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
+
     @Test
     public void testSingleNodePut() {
         resetFixture(-1, 1);
-        final Map<Integer, String> backupedMap = new HashMap<Integer, String>();
-        final Map<Integer, String> notBackupedMap = new HashMap<Integer, String>();
+        final Map<Integer, String> mapWithBackup = new HashMap<Integer, String>();
+        final Map<Integer, String> mapWithoutBackup = new HashMap<Integer, String>();
 
-        fillMap(backupedMap);
+        fillMap(mapWithBackup);
         final int backupSeq = 0;
         runBackupOnEachNode(backupSeq);
 
-        fillMap(notBackupedMap);
+        fillMap(mapWithoutBackup);
 
         resetFixture(backupSeq, 1);
-        assertEquals(backupedMap.size(), map.size());
-        assertContainsAll(map, backupedMap);
+        assertEquals(mapWithBackup.size(), map.size());
+        assertContainsAll(map, mapWithBackup);
 
         resetFixture(-1, 1);
-        assertEquals(notBackupedMap.size(), map.size());
-        assertContainsAll(map, notBackupedMap);
+        assertEquals(mapWithoutBackup.size(), map.size());
+        assertContainsAll(map, mapWithoutBackup);
     }
 
     @Test(expected = HotRestartException.class)
-    public void testFailBackupFolderAlreadyExists() throws IOException {
+    public void testFailBackupFolderAlreadyExists() {
         resetFixture(-1, 1);
         fillMap(null);
         final int backupSeq = 0;
@@ -54,7 +53,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testFailBackupNotConfigured() throws IOException {
+    public void testFailBackupNotConfigured() {
         resetFixture(-1, 1, false);
         fillMap(null);
         final boolean[] backupResults = runBackupOnEachNode(0);
@@ -64,7 +63,7 @@ public class BasicHotRestartBackupTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testConsistentBackupsWhileMutation() throws IOException {
+    public void testConsistentBackupsWhileMutation() {
         resetFixture(-1, 1);
         final int keyCount = 100000;
         for (int i = 0; i < keyCount; i++) {

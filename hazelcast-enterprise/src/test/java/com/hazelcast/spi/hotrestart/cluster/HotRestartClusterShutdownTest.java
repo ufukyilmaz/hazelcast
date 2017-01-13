@@ -12,8 +12,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -23,16 +25,15 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterShutdownTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "clusterState:{1},nodeState:{2},addressChangePolicy:{0}")
+    @Parameters(name = "clusterState:{1},nodeState:{2},addressChangePolicy:{0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {NONE, ClusterState.ACTIVE, NodeState.ACTIVE},
                 {NONE, ClusterState.FROZEN, NodeState.ACTIVE},
                 {NONE, ClusterState.PASSIVE, NodeState.PASSIVE},
@@ -42,17 +43,17 @@ public class HotRestartClusterShutdownTest extends AbstractHotRestartClusterStar
                 {ALL, ClusterState.ACTIVE, NodeState.ACTIVE},
                 {ALL, ClusterState.FROZEN, NodeState.ACTIVE},
                 {ALL, ClusterState.PASSIVE, NodeState.PASSIVE}
-                });
+        });
     }
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public ClusterState clusterState;
 
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public NodeState nodeState;
 
     @Test
-    public void test_clusterShutdown_respectsClusterState() throws IOException, InterruptedException {
+    public void test_clusterShutdown_respectsClusterState() {
         HazelcastInstance[] instances = startNewInstances(4);
         Address[] addresses = getAddresses(instances);
 
@@ -71,5 +72,4 @@ public class HotRestartClusterShutdownTest extends AbstractHotRestartClusterStar
         instances = restartInstances(addresses);
         assertInstancesJoined(addresses.length, instances, nodeState, clusterState);
     }
-
 }

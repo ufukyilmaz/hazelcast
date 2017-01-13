@@ -21,7 +21,6 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -33,24 +32,28 @@ import static com.hazelcast.nio.IOUtil.toFileName;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport {
+
     private static final String MAP_NAME = "mappy";
     private static final int KEY_COUNT = 10 * 1000;
     private static InetAddress localAddress;
+
     @Rule
     public TestName testName = new TestName();
-    private File baseDir;
-    private long startFromBackupSeq;
-    private boolean setBackupDir;
+
     protected IMap<Integer, Object> map;
     protected TestHazelcastInstanceFactory factory;
 
+    private File baseDir;
+    private long startFromBackupSeq;
+    private boolean setBackupDir;
+
     @BeforeClass
-    public static void setupClass() throws UnknownHostException {
+    public static void setupClass() throws Exception {
         localAddress = InetAddress.getLocalHost();
     }
 
     @Before
-    public final void setup() throws UnknownHostException {
+    public final void setup() {
         baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
         delete(baseDir);
         if (!baseDir.mkdir() && !baseDir.exists()) {
@@ -124,11 +127,11 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
         final HotRestartPersistenceConfig persistenceConfig = config.getHotRestartPersistenceConfig();
         persistenceConfig.setEnabled(true);
 
-        final File persistanceBaseDir = new File(this.baseDir, toFileName(address.getHost() + ":" + address.getPort()));
-        final File nodeBackupDir = new File(persistanceBaseDir, "backup");
+        final File persistenceBaseDir = new File(this.baseDir, toFileName(address.getHost() + ":" + address.getPort()));
+        final File nodeBackupDir = new File(persistenceBaseDir, "backup");
 
         if (startFromBackupSeq < 0) {
-            persistenceConfig.setBaseDir(new File(persistanceBaseDir, "original"));
+            persistenceConfig.setBaseDir(new File(persistenceBaseDir, "original"));
         } else {
             persistenceConfig.setBaseDir(new File(nodeBackupDir, "backup-" + startFromBackupSeq));
         }
@@ -138,7 +141,6 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
 
         return config;
     }
-
 
     void resetFixture(long backupSeqToLoad, int clusterSize) {
         resetFixture(backupSeqToLoad, clusterSize, true);
@@ -150,7 +152,6 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
         restartInstances(clusterSize);
         map = factory.getAllHazelcastInstances().iterator().next().getMap(MAP_NAME);
     }
-
 
     void fillMap(Map<Integer, String> expectedMap) {
         for (int i = 0; i < 3; i++) {
@@ -192,7 +193,7 @@ public abstract class AbstractHotRestartBackupTest extends HazelcastTestSupport 
         }
     }
 
-    protected boolean runBackupOnNode(HazelcastInstance instance, long seq) {
+    static boolean runBackupOnNode(HazelcastInstance instance, long seq) {
         final HotRestartIntegrationService hotRestartService = (HotRestartIntegrationService)
                 getNode(instance).getNodeExtension().getInternalHotRestartService();
         return hotRestartService.backup(seq);

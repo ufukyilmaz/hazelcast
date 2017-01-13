@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import com.hazelcast.enterprise.SampleLicense;
 import com.hazelcast.nio.Address;
-import com.hazelcast.nio.IOUtil;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.TestHazelcastInstanceFactory;
@@ -21,12 +20,12 @@ import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
 import static java.util.Collections.synchronizedList;
 import static org.hamcrest.Matchers.arrayWithSize;
@@ -47,22 +46,22 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     private TestHazelcastInstanceFactory factory = new TestHazelcastInstanceFactory();
 
     @Before
-    public void before() throws IOException {
+    public void before() {
         baseDir = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
-        IOUtil.delete(baseDir);
+        delete(baseDir);
         if (!baseDir.mkdir()) {
             throw new IllegalStateException("Failed to create hot-restart directory!");
         }
     }
 
     @After
-    public void after() throws IOException {
+    public void after() {
         factory.terminateAll();
-        IOUtil.delete(baseDir);
+        delete(baseDir);
     }
 
     @Test
-    public void hotRestart_fails_when_members_join_unknown_master() throws InterruptedException {
+    public void hotRestart_fails_when_members_join_unknown_master() {
         Address unknownAddress = factory.nextAddress();
 
         HazelcastInstance[] instances = new HazelcastInstance[3];
@@ -89,7 +88,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void hotRestart_fails_when_stale_members_join_master() throws InterruptedException {
+    public void hotRestart_fails_when_stale_members_join_master() {
         HazelcastInstance[] instances = new HazelcastInstance[4];
         Address[] addresses = new Address[instances.length];
 
@@ -124,7 +123,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void hotRestart_with_unknown_member() throws InterruptedException {
+    public void hotRestart_with_unknown_member() {
         Address unknownAddress = factory.nextAddress();
 
         HazelcastInstance[] instances = new HazelcastInstance[3];
@@ -161,7 +160,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void hotRestart_with_stale_member() throws InterruptedException {
+    public void hotRestart_with_stale_member() {
         HazelcastInstance[] instances = new HazelcastInstance[3];
         Address[] addresses = new Address[instances.length];
 
@@ -217,8 +216,7 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
         }
     }
 
-    private HazelcastInstance[] startInstances(Address[] addresses)
-            throws InterruptedException {
+    private HazelcastInstance[] startInstances(Address[] addresses) {
         final List<HazelcastInstance> instancesList = synchronizedList(new ArrayList<HazelcastInstance>());
         final CountDownLatch latch = new CountDownLatch(addresses.length);
 
@@ -242,8 +240,8 @@ public class HotRestartClusterJoinTest extends HazelcastTestSupport {
     }
 
     private Config newConfig(Address address) {
-        Config config = new Config();
-        config.setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
+        Config config = new Config()
+                .setLicenseKey(SampleLicense.UNLIMITED_LICENSE);
 
         config.getHotRestartPersistenceConfig().setEnabled(true)
                 .setBaseDir(new File(baseDir, toFileName(address.getHost() + ":" + address.getPort())))

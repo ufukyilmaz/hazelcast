@@ -17,6 +17,7 @@
 package com.hazelcast.spi.hotrestart.cluster;
 
 import com.hazelcast.nio.Address;
+import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,15 +25,12 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Random;
 
 import static com.hazelcast.nio.IOUtil.delete;
 import static com.hazelcast.nio.IOUtil.toFileName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
-public abstract class MetadataReaderWriterTestBase {
+public abstract class MetadataReaderWriterTestBase extends HazelcastTestSupport {
 
     @Rule
     public final TestName testName = new TestName();
@@ -41,7 +39,7 @@ public abstract class MetadataReaderWriterTestBase {
     protected File folder;
 
     @Before
-    public final void setup() throws UnknownHostException {
+    public final void setup() throws Exception {
         localAddress = InetAddress.getLocalHost();
         folder = new File(toFileName(getClass().getSimpleName()) + '_' + toFileName(testName.getMethodName()));
         delete(folder);
@@ -51,7 +49,8 @@ public abstract class MetadataReaderWriterTestBase {
         setupInternal();
     }
 
-    void setupInternal() {}
+    void setupInternal() {
+    }
 
     @After
     public final void tearDown() {
@@ -62,7 +61,8 @@ public abstract class MetadataReaderWriterTestBase {
         tearDownInternal();
     }
 
-    void tearDownInternal() {}
+    void tearDownInternal() {
+    }
 
     final Address[] initializeAddresses(int len) {
         Address[] addresses = new Address[len];
@@ -75,13 +75,5 @@ public abstract class MetadataReaderWriterTestBase {
 
     final File getNonExistingFolder() {
         return new File(folder.getParentFile(), "I-dont-exist");
-    }
-
-    static void assertAddressEquals(Address address1, Address address2) {
-        if (address1 == null) {
-            assertNull(address2);
-        } else {
-            assertEquals(address1, address2);
-        }
     }
 }

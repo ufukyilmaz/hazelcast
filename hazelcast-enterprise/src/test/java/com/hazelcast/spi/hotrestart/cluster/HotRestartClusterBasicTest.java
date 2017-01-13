@@ -16,10 +16,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.io.IOException;
 
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
@@ -31,7 +28,7 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
     private String explicitBaseDir = null;
 
     @Test
-    public void testFreshStart() throws IOException, InterruptedException {
+    public void testFreshStart() {
         HazelcastInstance[] instances = startNewInstances(4);
         assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -57,6 +54,7 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
             restartInstance(address);
             fail("Hot restart should fail!");
         } catch (HotRestartException expected) {
+            ignore(expected);
         }
     }
 
@@ -73,6 +71,7 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
             restartInstance(address);
             fail("Hot restart should fail!");
         } catch (HotRestartException expected) {
+            ignore(expected);
         }
     }
 
@@ -88,6 +87,7 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
             restartInstance(address);
             fail("Hot restart should fail!");
         } catch (HotRestartException expected) {
+            ignore(expected);
         }
     }
 
@@ -103,12 +103,13 @@ public class HotRestartClusterBasicTest extends AbstractHotRestartClusterStartTe
             restartInstance(address);
             fail("Hot restart should fail!");
         } catch (HotRestartException expected) {
+            ignore(expected);
         }
     }
 
     @Override
     protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
+                               HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         final Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
         config.setProperty(GroupProperty.PARTITION_COUNT.getName(), String.valueOf(partitionCount));
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), String.valueOf(partitionThreadCount));

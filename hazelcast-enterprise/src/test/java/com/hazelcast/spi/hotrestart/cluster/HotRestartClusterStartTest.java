@@ -15,8 +15,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
@@ -25,30 +26,22 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
-import static com.hazelcast.test.HazelcastTestSupport.assertTrueAllTheTime;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.spawn;
-import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
+        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
     @Test
-    public void testSingleMemberRestart() throws IOException, InterruptedException {
+    public void testSingleMemberRestart() {
         Address address = startAndTerminateInstance();
         HazelcastInstance hz = restartInstance(address);
         assertInstancesJoined(1, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -56,7 +49,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestart_whenClusterState_ACTIVE() throws IOException, InterruptedException {
+    public void test_hotRestart_whenClusterState_ACTIVE() {
         Address[] addresses = startAndTerminateInstances(4);
 
         HazelcastInstance[] instances = restartInstances(addresses);
@@ -65,7 +58,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestart_withMigration() throws Exception{
+    public void test_hotRestart_withMigration() {
         HazelcastInstance[] instances1 = startNewInstances(2);
         warmUpPartitions(instances1);
 
@@ -88,7 +81,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestart_whenClusterState_FROZEN() throws IOException, InterruptedException {
+    public void test_hotRestart_whenClusterState_FROZEN() {
         HazelcastInstance[] instances = startNewInstances(4);
 
         assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -105,7 +98,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestart_whenClusterState_PASSIVE() throws IOException, InterruptedException {
+    public void test_hotRestart_whenClusterState_PASSIVE() {
         HazelcastInstance[] instances = startNewInstances(4);
 
         assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -122,7 +115,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestartFails_withMissingHotRestartDirectory_forOneNode() throws IOException, InterruptedException {
+    public void test_hotRestartFails_withMissingHotRestartDirectory_forOneNode() {
         Address[] addresses = startAndTerminateInstances(4);
 
         Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
@@ -139,9 +132,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory()
-            throws IOException, InterruptedException {
-
+    public void test_hotRestartFails_whenNodeStartsBeforeOthers_withMissingHotRestartDirectory()  {
         Address[] addresses = startAndTerminateInstances(4);
 
         Address randomAddress = addresses[RandomPicker.getInt(addresses.length)];
@@ -169,7 +160,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_hotRestartFails_withUnknownNode() throws IOException, InterruptedException {
+    public void test_hotRestartFails_withUnknownNode() {
         Address[] addresses = startAndTerminateInstances(4);
 
         HazelcastInstance unknownNode = startNewInstance();
@@ -180,9 +171,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
     }
 
     @Test
-    public void test_cannotChangeClusterState_beforeHotRestartProcessCompletes()
-            throws IOException, InterruptedException {
-
+    public void test_cannotChangeClusterState_beforeHotRestartProcessCompletes() {
         HazelcastInstance[] instances = startNewInstances(4);
         assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
@@ -228,6 +217,7 @@ public class HotRestartClusterStartTest extends AbstractHotRestartClusterStartTe
                     masterInstance.getCluster().changeClusterState(ClusterState.ACTIVE);
                     fail("Should not be able to change cluster state when hot restart is not completed yet!");
                 } catch (IllegalStateException expected) {
+                    ignore(expected);
                 }
             }
         }, 5);

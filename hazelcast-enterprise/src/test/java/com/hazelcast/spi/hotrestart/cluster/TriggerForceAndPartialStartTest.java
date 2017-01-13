@@ -41,10 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.getNodeEngineImpl;
-import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.not;
@@ -56,26 +52,26 @@ import static org.junit.Assert.assertThat;
 public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterStartTest {
 
     @Test
-    public void test_triggerForceStart_onMaster() throws InterruptedException {
-        test_triggerForceStart(false,true);
+    public void test_triggerForceStart_onMaster() {
+        test_triggerForceStart(false, true);
     }
 
     @Test
-    public void test_triggerForceStart_onNonMaster() throws InterruptedException {
-        test_triggerForceStart(false,false);
+    public void test_triggerForceStart_onNonMaster() {
+        test_triggerForceStart(false, false);
     }
 
     @Test
-    public void test_triggerPartialStart_onMaster() throws InterruptedException {
-        test_triggerForceStart(true,true);
+    public void test_triggerPartialStart_onMaster() {
+        test_triggerForceStart(true, true);
     }
 
     @Test
-    public void test_triggerPartialStart_onNonMaster() throws InterruptedException {
-        test_triggerForceStart(true,false);
+    public void test_triggerPartialStart_onNonMaster() {
+        test_triggerForceStart(true, false);
     }
 
-    private void test_triggerForceStart(boolean partialStart, boolean onMaster) throws InterruptedException {
+    private void test_triggerForceStart(boolean partialStart, boolean onMaster) {
         int numberOfInstances = 3;
         HazelcastInstance[] instances = startNewInstances(numberOfInstances);
         assertInstancesJoined(numberOfInstances, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -105,11 +101,10 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
 
     @Override
     protected Config newConfig(String instanceName, ClusterHotRestartEventListener listener,
-            HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
-
+                               HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         Config config = super.newConfig(instanceName, listener, clusterStartPolicy);
         HotRestartPersistenceConfig hotRestartPersistenceConfig = config.getHotRestartPersistenceConfig();
-        // Tests don't depend on validation timeout, we explicitly trigger force & partial start.
+        // tests don't depend on validation timeout, we explicitly trigger force & partial start
         hotRestartPersistenceConfig.setValidationTimeoutSeconds(Integer.MAX_VALUE);
         return config;
     }
@@ -120,9 +115,8 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
         instances[0].getCluster().shutdown();
     }
 
-    private static Map<Address, ClusterHotRestartEventListener> createListenerMap(Address[] addresses,
-            boolean partialStart, boolean onMaster, int expectedMemberCount) {
-
+    private static Map<Address, ClusterHotRestartEventListener> createListenerMap(Address[] addresses, boolean partialStart,
+                                                                                  boolean onMaster, int expectedMemberCount) {
         Map<Address, ClusterHotRestartEventListener> listenerMap =
                 new HashMap<Address, ClusterHotRestartEventListener>(addresses.length);
         for (Address address : addresses) {
@@ -132,10 +126,13 @@ public class TriggerForceAndPartialStartTest extends AbstractHotRestartClusterSt
     }
 
     private static class TriggerForceStartListener extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+
         private final AtomicBoolean flag = new AtomicBoolean(false);
+
         private final boolean partialStart;
         private final boolean onMaster;
         private final int expectedMemberCount;
+
         private volatile Node node;
 
         TriggerForceStartListener(boolean partialStart, boolean onMaster, int expectedMemberCount) {

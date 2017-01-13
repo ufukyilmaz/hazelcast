@@ -18,6 +18,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,30 +37,27 @@ import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStar
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
 import static com.hazelcast.spi.hotrestart.cluster.MemberClusterStartInfo.DataLoadStatus.LOAD_IN_PROGRESS;
-import static com.hazelcast.test.HazelcastTestSupport.assertOpenEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
+        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
     @Test
-    public void testClusterHotRestartEventListenerRegistration() throws InterruptedException {
+    public void testClusterHotRestartEventListenerRegistration() {
         Address address = startAndTerminateInstance();
 
         final CountDownLatch latch = new CountDownLatch(1);
         final ClusterHotRestartEventListener listener = new ClusterHotRestartEventListener() {
             @Override
             public void onPrepareComplete(Collection<? extends Member> members, PartitionTableView partitionTable,
-                    boolean startWithHotRestart) {
+                                          boolean startWithHotRestart) {
                 latch.countDown();
             }
         };
@@ -69,7 +68,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     @Test
-    public void testMasterRestartAfterNodesJoin() throws InterruptedException {
+    public void testMasterRestartAfterNodesJoin() {
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -84,7 +83,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     @Test
-    public void testMemberRestartAfterNodesJoin() throws InterruptedException {
+    public void testMemberRestartAfterNodesJoin() {
         Address[] addresses = startAndTerminateInstances(4);
 
         final AtomicBoolean crash = new AtomicBoolean(false);
@@ -99,8 +98,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     @Test
-    public void testByzantineFailPartitionTableAfterPartitionTablesValidated()
-            throws InterruptedException {
+    public void testByzantineFailPartitionTableAfterPartitionTablesValidated() {
         final int nodeCount = 4;
         Address[] addresses = startAndTerminateInstances(nodeCount);
 
@@ -115,7 +113,7 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
     }
 
     @Test
-    public void testMemberRestartAfterReceivesLoadSuccessfulFromMaster() throws InterruptedException {
+    public void testMemberRestartAfterReceivesLoadSuccessfulFromMaster() {
         HazelcastInstance[] instances = startNewInstances(4);
 
         assertInstancesJoined(4, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
@@ -154,7 +152,6 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             this.instance = instance;
         }
 
-
         @Override
         public void afterExpectedMembersJoin(Collection<? extends Member> members) {
             final Node node = getNode(instance);
@@ -166,7 +163,8 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
         }
     }
 
-    private static class ByzantineFailPartitionTableAfterPartitionTableValidationCompleted extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+    private static class ByzantineFailPartitionTableAfterPartitionTableValidationCompleted
+            extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final CountDownLatch latch = new CountDownLatch(1);
 
@@ -209,7 +207,8 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                 if (addresses.size() == expectedNodeCount && firstCrash.compareAndSet(false, true)) {
                     PartitionTableView partitionTableView = new PartitionTableView(
                             new Address[PARTITION_COUNT][InternalPartition.MAX_REPLICA_COUNT], 0);
-                    MemberClusterStartInfo invalidMemberClusterStartInfo = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
+                    MemberClusterStartInfo invalidMemberClusterStartInfo
+                            = new MemberClusterStartInfo(partitionTableView, LOAD_IN_PROGRESS);
                     final HotRestartIntegrationService hotRestartService =
                             (HotRestartIntegrationService) node.getNodeExtension().getInternalHotRestartService();
                     ClusterMetadataManager clusterMetadataManager = hotRestartService.getClusterMetadataManager();
@@ -220,10 +219,10 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
                 System.err.println("Invalid ptable from " + sender);
             }
         }
-
     }
 
-    private class CrashAfterLoadCompletedStatusReceivedFromMaster extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
+    private class CrashAfterLoadCompletedStatusReceivedFromMaster
+            extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
         private final AtomicBoolean firstCrash;
 
@@ -247,5 +246,4 @@ public class HotRestartClusterStartCrashTest extends AbstractHotRestartClusterSt
             }
         }
     }
-
 }

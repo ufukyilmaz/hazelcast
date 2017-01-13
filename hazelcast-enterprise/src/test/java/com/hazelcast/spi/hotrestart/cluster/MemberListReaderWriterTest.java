@@ -13,7 +13,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -42,7 +41,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     }
 
     @Test
-    public void test_readNotExistingFolder() throws IOException {
+    public void test_readNotExistingFolder() throws Exception {
         MemberListReader reader = new MemberListReader(getNonExistingFolder());
         reader.read();
 
@@ -51,7 +50,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     }
 
     @Test
-    public void test_readEmptyFolder() throws IOException {
+    public void test_readEmptyFolder() throws Exception {
         MemberListReader reader = new MemberListReader(folder);
         reader.read();
 
@@ -60,13 +59,13 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     }
 
     @Test(expected = FileNotFoundException.class)
-    public void test_writeNotExistingFolder() throws IOException {
+    public void test_writeNotExistingFolder() throws Exception {
         MemberListWriter writer = new MemberListWriter(getNonExistingFolder(), node);
         writer.write(Collections.<Member>emptyList());
     }
 
     @Test
-    public void test_EmptyWriteRead() throws IOException {
+    public void test_EmptyWriteRead() throws Exception {
         MemberListWriter writer = new MemberListWriter(folder, node);
         writer.write(Collections.<Member>emptyList());
 
@@ -78,7 +77,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
     }
 
     @Test
-    public void test_WriteRead() throws IOException {
+    public void test_WriteRead() throws Exception {
         Collection<Member> members = initializeMembers(100);
         MemberListWriter writer = new MemberListWriter(folder, node);
         writer.write(members);
@@ -94,6 +93,7 @@ public class MemberListReaderWriterTest extends MetadataReaderWriterTestBase {
         assertEquals(members, readMembers);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private Collection<Member> initializeMembers(int memberCount) {
         Address[] addresses = initializeAddresses(memberCount - 1);
         Collection<Member> members = new HashSet<Member>(memberCount);

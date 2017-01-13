@@ -23,6 +23,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutput;
@@ -37,7 +40,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBase {
 
@@ -45,9 +48,9 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
 
     private static final int BUFFER_SIZE = 100;
 
-    @Parameterized.Parameters(name = "dataSize: {0}")
+    @Parameters(name = "dataSize: {0}")
     public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
+        return Arrays.asList(new Object[][]{
                 {BUFFER_SIZE / 2},
                 {BUFFER_SIZE - INT_SIZE_IN_BYTES},
                 {BUFFER_SIZE},
@@ -55,7 +58,7 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
         });
     }
 
-    @Parameterized.Parameter
+    @Parameter
     public int dataSize;
 
     private byte[] data;
@@ -68,7 +71,7 @@ public class AbstractMetadataReaderWriterTest extends MetadataReaderWriterTestBa
     }
 
     @Test
-    public void test() throws IOException {
+    public void test() throws Exception {
         SampleWriter writer = new SampleWriter(folder);
         writer.write(data);
 

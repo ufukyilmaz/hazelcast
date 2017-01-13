@@ -30,7 +30,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -54,24 +53,24 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
     }
 
     @Test
-    public void test_readNotExistingFolder() throws IOException {
+    public void test_readNotExistingFolder() throws Exception {
         assertNull(ClusterVersionReader.readClusterVersion(logger, getNonExistingFolder()));
     }
 
     @Test
-    public void test_readEmptyFolder() throws IOException {
+    public void test_readEmptyFolder() throws Exception {
         assertNull(ClusterVersionReader.readClusterVersion(logger, folder));
     }
 
     @Test
-    public void test_writeNotExistingFolder() throws IOException {
+    public void test_writeNotExistingFolder() throws Exception {
         ClusterVersionWriter writer = new ClusterVersionWriter(getNonExistingFolder());
         expectedException.expect(FileNotFoundException.class);
         writer.write(version);
     }
 
     @Test
-    public void test_NullWriteRead() throws IOException {
+    public void test_NullWriteRead() throws Exception {
         ClusterVersionWriter writer = new ClusterVersionWriter(folder);
         writer.write(null);
 
@@ -79,7 +78,7 @@ public class ClusterVersionReadWriteTest extends MetadataReaderWriterTestBase {
     }
 
     @Test
-    public void test_WriteRead() throws IOException {
+    public void test_WriteRead() throws Exception {
         ClusterVersionWriter writer = new ClusterVersionWriter(folder);
         writer.write(version);
 

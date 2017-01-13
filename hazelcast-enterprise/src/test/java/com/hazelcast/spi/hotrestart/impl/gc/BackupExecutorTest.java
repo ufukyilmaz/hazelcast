@@ -10,7 +10,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.assertEquals;
@@ -20,8 +19,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith(EnterpriseParallelJUnitClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class BackupExecutorTest extends AbstractHotRestartBackupTest {
+
     @Test
-    public void testExecutor() throws IOException {
+    public void testExecutor() {
         final BackupExecutor executor = new BackupExecutor();
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -41,7 +41,7 @@ public class BackupExecutorTest extends AbstractHotRestartBackupTest {
     }
 
     @Test
-    public void testTaskInterrupt() throws IOException {
+    public void testTaskInterrupt() {
         final BackupExecutor executor = new BackupExecutor();
         executor.run(new InterruptableBackupTask());
         assertFalse(executor.isBackupTaskDone());
@@ -51,7 +51,9 @@ public class BackupExecutorTest extends AbstractHotRestartBackupTest {
     }
 
     private static class CustomBackupTask extends BackupTask {
+
         private final CountDownLatch latch;
+
         private BackupTaskState state = BackupTaskState.NOT_STARTED;
 
         CustomBackupTask(CountDownLatch latch) {
@@ -88,7 +90,7 @@ public class BackupExecutorTest extends AbstractHotRestartBackupTest {
 
         @Override
         public void run() {
-            while (!Thread.interrupted()){
+            while (!Thread.interrupted()) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {

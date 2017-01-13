@@ -11,6 +11,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,18 +22,14 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static com.hazelcast.test.HazelcastTestSupport.assertClusterSizeEventually;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.waitClusterForSafeState;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "clusterState:{1},addressChangePolicy:{0}")
+    @Parameters(name = "clusterState:{1},addressChangePolicy:{0}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
                 {NONE, ClusterState.FROZEN},
@@ -42,13 +41,13 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
         });
     }
 
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public ClusterState clusterState;
 
     private int nodeCount = 3;
 
     @Test
-    public void test_rollingRestart_withoutPartitionAssignment() throws Exception {
+    public void test_rollingRestart_withoutPartitionAssignment() {
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
 
         for (int i = 0; i < nodeCount; i++) {
@@ -59,7 +58,7 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
     }
 
     @Test
-    public void test_rollingRestart_withPartitionAssignment_atTheEnd() throws Exception {
+    public void test_rollingRestart_withPartitionAssignment_atTheEnd() {
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
 
         for (int i = 0; i < nodeCount; i++) {
@@ -72,7 +71,7 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
     }
 
     @Test
-    public void test_rollingRestart_withPartitionAssignment_duringStartup() throws Exception {
+    public void test_rollingRestart_withPartitionAssignment_duringStartup() {
         final HazelcastInstance[] instances = new HazelcastInstance[nodeCount];
 
         instances[0] = startNewInstance();
@@ -108,6 +107,5 @@ public class HotRestartClusterRollingRestartTest extends AbstractHotRestartClust
             assertClusterSizeEventually(nodeCount, instance);
             assertEquals(clusterState, instance.getCluster().getClusterState());
         }
-
     }
 }

@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -41,12 +42,6 @@ import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStar
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
 import static com.hazelcast.spi.hotrestart.cluster.HotRestartClusterStartStatus.CLUSTER_START_SUCCEEDED;
-import static com.hazelcast.test.HazelcastTestSupport.generateKeyForPartition;
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.getPartitionService;
-import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.util.Preconditions.checkFalse;
 import static java.lang.System.arraycopy;
 import static org.junit.Assert.assertEquals;
@@ -56,7 +51,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category({QuickTest.class, ParallelTest.class})
 public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
@@ -71,25 +66,22 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
     @Before
     public void init() {
-        // Most of the tests in this class don't depend on validation timeout.
+        // most of the tests in this class don't depend on validation timeout
         validationTimeoutInSeconds = Integer.MAX_VALUE;
         dataLoadTimeoutInSeconds = 60;
     }
 
     @Test
-    public void trigger_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE()
-            throws Exception {
+    public void trigger_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE() {
         testTriggerOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_RECENT);
     }
 
     @Test
-    public void trigger_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
-            throws Exception {
+    public void trigger_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE() {
         testTriggerOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_COMPLETE);
     }
 
-    private void testTriggerOnMissingLoadStatus(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
-            throws Exception {
+    private void testTriggerOnMissingLoadStatus(HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
                 "invalid cluster start policy for partial start test");
 
@@ -121,24 +113,21 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         for (HazelcastInstance instance : instances) {
             final InternalHotRestartService hotRestartService =
                     getNode(instance).getNodeExtension().getInternalHotRestartService();
-            assertTrue(hotRestartService.getExcludedMemberUuids().contains(excludedUuid));
+            assertContains(hotRestartService.getExcludedMemberUuids(), excludedUuid);
         }
     }
 
     @Test
-    public void timeout_onMissingMember_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE()
-            throws Exception {
+    public void timeout_onMissingMember_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE() {
         testTimeoutOnMissingMember(PARTIAL_RECOVERY_MOST_RECENT);
     }
 
     @Test
-    public void timeout_onMissingMember_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
-            throws Exception {
+    public void timeout_onMissingMember_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE() {
         testTimeoutOnMissingMember(PARTIAL_RECOVERY_MOST_COMPLETE);
     }
 
-    private void testTimeoutOnMissingMember(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
-            throws Exception {
+    private void testTimeoutOnMissingMember(HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         // this test depends on validation timeout
         validationTimeoutInSeconds = 30;
 
@@ -168,13 +157,12 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         for (HazelcastInstance instance : instances) {
             final InternalHotRestartService hotRestartService =
                     getNode(instance).getNodeExtension().getInternalHotRestartService();
-            assertTrue(hotRestartService.getExcludedMemberUuids().contains(excludedUuid));
+            assertContains(hotRestartService.getExcludedMemberUuids(), excludedUuid);
         }
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE() {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
@@ -193,8 +181,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_ACTIVE()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_ACTIVE() {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
@@ -226,8 +213,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE() {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
@@ -241,12 +227,11 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         instances = restartInstances(addresses, NO_LISTENERS, PARTIAL_RECOVERY_MOST_RECENT);
         assertInstancesJoined(1, instances, NodeState.PASSIVE, ClusterState.PASSIVE);
-        assertFalse(excludedUuids.contains(getNode(instances[0]).getThisUuid()));
+        assertNotContains(excludedUuids, getNode(instances[0]).getThisUuid());
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterStateACTIVE_withMapData()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterStateACTIVE_withMapData() {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
@@ -257,7 +242,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         int partitionCount = getPartitionService(instances[0]).getPartitionCount();
         String[] keys = new String[partitionCount];
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             HazelcastInstance instance = instances[0];
             String key = generateKeyForPartition(instance, partitionId);
             keys[partitionId] = key;
@@ -285,19 +270,19 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
             assertNotEquals(excludedUuid, getNode(instance).getThisUuid());
         }
         waitAllForSafeState(instances);
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             String key = keys[partitionId];
             final int survivingReplicaIndex = survivingInstanceReplicaIndices[partitionId];
             for (int i = survivingReplicaIndex; i < InternalPartition.MAX_REPLICA_COUNT; i++) {
                 boolean success = instances[0].getMap(mapNames[i]).containsKey(key);
-                assertTrue("key: " + key + " in partitionId=" + partitionId + " map=" + mapNames[i] + " survived replica index=" + survivingReplicaIndex, success);
+                assertTrue("key: " + key + " in partitionId=" + partitionId + " map=" + mapNames[i]
+                        + " survived replica index=" + survivingReplicaIndex, success);
             }
         }
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE_withMapData()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE_withMapData() {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
@@ -306,7 +291,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         int partitionCount = getPartitionService(instances[0]).getPartitionCount();
         String[] keys = new String[partitionCount];
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             HazelcastInstance instance = instances[0];
             String key = generateKeyForPartition(instance, partitionId);
             keys[partitionId] = key;
@@ -332,22 +317,22 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         assertInstancesJoined(nodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         for (HazelcastInstance instance : instances) {
-            assertFalse(excludedUuids.contains(getNode(instance).getThisUuid()));
+            assertNotContains(excludedUuids, getNode(instance).getThisUuid());
         }
         waitAllForSafeState(instances);
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             String key = keys[partitionId];
             final int survivingReplicaIndex = survivingInstanceReplicaIndices[partitionId];
             for (int i = survivingReplicaIndex; i < InternalPartition.MAX_REPLICA_COUNT; i++) {
                 boolean success = instances[0].getMap(mapNames[i]).containsKey(key);
-                assertTrue("key: " + key + " in partitionId=" + partitionId + " map=" + mapNames[i] + " survived replica index=" + survivingReplicaIndex, success);
+                assertTrue("key: " + key + " in partitionId=" + partitionId + " map=" + mapNames[i]
+                        + " survived replica index=" + survivingReplicaIndex, success);
             }
         }
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE_withCacheData()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE_withCacheData() {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
@@ -356,7 +341,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         int partitionCount = getPartitionService(instances[0]).getPartitionCount();
         String[] keys = new String[partitionCount];
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             HazelcastInstance instance = instances[0];
             String key = generateKeyForPartition(instance, partitionId);
             keys[partitionId] = key;
@@ -382,22 +367,22 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
 
         assertInstancesJoined(nodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         for (HazelcastInstance instance : instances) {
-            assertFalse(excludedUuids.contains(getNode(instance).getThisUuid()));
+            assertNotContains(excludedUuids, getNode(instance).getThisUuid());
         }
         waitAllForSafeState(instances);
-        for (int partitionId = 0; partitionId < partitionCount; partitionId++ ) {
+        for (int partitionId = 0; partitionId < partitionCount; partitionId++) {
             String key = keys[partitionId];
             final int survivingReplicaIndex = survivingInstanceReplicaIndices[partitionId];
             for (int i = survivingReplicaIndex; i < InternalPartition.MAX_REPLICA_COUNT; i++) {
                 boolean success = instances[0].getCacheManager().getCache(cacheNames[i]).containsKey(key);
-                assertTrue("key: " + key + " in partitionId=" + partitionId + " cache=" + cacheNames[i] + " survived replica index=" + survivingReplicaIndex, success);
+                assertTrue("key: " + key + " in partitionId=" + partitionId + " cache=" + cacheNames[i]
+                        + " survived replica index=" + survivingReplicaIndex, success);
             }
         }
     }
 
     @Test
-    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE()
-            throws Exception {
+    public void PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_ACTIVE() {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         Address[] addresses = getAddresses(instances);
         warmUpPartitions(instances);
@@ -423,7 +408,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         assertInstancesJoined(nodeCount, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
 
         for (HazelcastInstance instance : instances) {
-            assertFalse(excludedUuids.contains(getNode(instance).getThisUuid()));
+            assertNotContains(excludedUuids, getNode(instance).getThisUuid());
         }
 
         waitAllForSafeState(instances);
@@ -436,7 +421,7 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
     }
 
     @Test
-    public void missingNodeCanJoinBackOnPartialStart() throws InterruptedException {
+    public void missingNodeCanJoinBackOnPartialStart() {
         HazelcastInstance[] instances = startInstancesAndChangeClusterState(ClusterState.PASSIVE);
         Address[] addresses = getAddresses(instances);
 
@@ -471,7 +456,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
                 }
             }
         }
-
         return survivingInstanceReplicaIndices;
     }
 
@@ -498,13 +482,12 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         return uuid;
     }
 
-    protected HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) throws InterruptedException {
+    private HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         warmUpPartitions(instances);
         changeClusterStateEventually(instances[0], clusterState);
         return instances;
     }
-
 
     private class TriggerPartialStart extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
 
@@ -527,7 +510,6 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         public void setHazelcastInstance(HazelcastInstance instance) {
             node = getNode(instance);
         }
-
     }
 
     private class RestartOnComplete extends ClusterHotRestartEventListener implements HazelcastInstanceAware {
@@ -553,7 +535,5 @@ public class PartialStartTest extends AbstractHotRestartClusterStartTest {
         public void setHazelcastInstance(HazelcastInstance instance) {
             node = getNode(instance);
         }
-
     }
-
 }

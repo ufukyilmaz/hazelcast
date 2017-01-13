@@ -8,7 +8,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
 import static com.hazelcast.spi.hotrestart.cluster.PartitionThreadCountReader.readPartitionThreadCount;
 import static com.hazelcast.spi.hotrestart.cluster.PartitionThreadCountWriter.writePartitionThreadCount;
@@ -21,22 +20,22 @@ public class ThreadCountReaderWriterTest extends MetadataReaderWriterTestBase {
     private final int mockThreadCount = 7;
 
     @Test
-    public void when_folderNotExist_thenReadReturn0() throws IOException {
+    public void when_folderNotExist_thenReadReturn0() throws Exception {
         assertEquals(0, readPartitionThreadCount(folder));
     }
 
     @Test
-    public void when_folderEmpty_thenReadReturn0() throws IOException {
+    public void when_folderEmpty_thenReadReturn0() throws Exception {
         assertEquals(0, readPartitionThreadCount(getNonExistingFolder()));
     }
 
     @Test(expected = FileNotFoundException.class)
-    public void when_folderNotExist_thenWriteFails() throws IOException {
+    public void when_folderNotExist_thenWriteFails() throws Exception {
         writePartitionThreadCount(getNonExistingFolder(), mockThreadCount);
     }
 
     @Test
-    public void when_writeCount_threaReadAsWritten() throws IOException {
+    public void when_writeCount_thenReadAsWritten() throws Exception {
         writePartitionThreadCount(folder, mockThreadCount);
         assertEquals(mockThreadCount, readPartitionThreadCount(folder));
     }

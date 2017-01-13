@@ -15,6 +15,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
+import org.junit.runners.Parameterized.UseParametersRunnerFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,46 +30,40 @@ import static com.hazelcast.internal.cluster.impl.AdvancedClusterStateTest.chang
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.ALL;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.NONE;
 import static com.hazelcast.spi.hotrestart.cluster.AbstractHotRestartClusterStartTest.AddressChangePolicy.PARTIAL;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.sleepAtLeastMillis;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.util.Preconditions.checkFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
-@Parameterized.UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
+@UseParametersRunnerFactory(HazelcastParametersRunnerFactory.class)
 @Category(SlowTest.class)
 public class PartialStartSlowTest extends AbstractHotRestartClusterStartTest {
 
-    @Parameterized.Parameters(name = "addressChangePolicy:{0}")
+    @Parameters(name = "addressChangePolicy:{0}")
     public static Collection<Object> parameters() {
-        return Arrays.asList(new Object[] {NONE, PARTIAL, ALL});
+        return Arrays.asList(new Object[]{NONE, PARTIAL, ALL});
     }
 
     private final int nodeCount = 5;
 
     @Before
     public void init() {
-        // Tests in this class don't depend on validation timeout.
+        // tests in this class don't depend on validation timeout
         validationTimeoutInSeconds = Integer.MAX_VALUE;
         dataLoadTimeoutInSeconds = 30;
     }
 
     @Test
-    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE()
-            throws Exception {
+    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_RECENT_whenClusterState_PASSIVE() {
         testTimeoutOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_RECENT);
     }
 
     @Test
-    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE()
-            throws Exception {
+    public void timeout_onMissingLoadStatus_PARTIAL_RECOVERY_MOST_COMPLETE_whenClusterState_PASSIVE() {
         testTimeoutOnMissingLoadStatus(PARTIAL_RECOVERY_MOST_COMPLETE);
     }
 
-    private void testTimeoutOnMissingLoadStatus(HotRestartClusterDataRecoveryPolicy clusterStartPolicy)
-            throws Exception {
+    private void testTimeoutOnMissingLoadStatus(HotRestartClusterDataRecoveryPolicy clusterStartPolicy) {
         checkFalse(clusterStartPolicy == HotRestartClusterDataRecoveryPolicy.FULL_RECOVERY_ONLY,
                 "invalid cluster start policy for partial start test");
 
@@ -89,7 +85,7 @@ public class PartialStartSlowTest extends AbstractHotRestartClusterStartTest {
         }
     }
 
-    protected HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) throws InterruptedException {
+    private HazelcastInstance[] startInstancesAndChangeClusterState(ClusterState clusterState) {
         HazelcastInstance[] instances = startNewInstances(nodeCount);
         warmUpPartitions(instances);
         changeClusterStateEventually(instances[0], clusterState);
@@ -125,8 +121,5 @@ public class PartialStartSlowTest extends AbstractHotRestartClusterStartTest {
         public void setHazelcastInstance(HazelcastInstance instance) {
             node = getNode(instance);
         }
-
     }
-
-
 }

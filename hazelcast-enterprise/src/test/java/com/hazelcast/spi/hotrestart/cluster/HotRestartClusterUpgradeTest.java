@@ -17,22 +17,15 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.Collection;
 
-import static com.hazelcast.test.HazelcastTestSupport.getAddress;
-import static com.hazelcast.test.HazelcastTestSupport.getClusterService;
-import static com.hazelcast.test.HazelcastTestSupport.getNode;
-import static com.hazelcast.test.HazelcastTestSupport.waitAllForSafeState;
-import static com.hazelcast.test.HazelcastTestSupport.warmUpPartitions;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertClusterVersion;
 import static com.hazelcast.test.TestClusterUpgradeUtils.assertNodesVersion;
 import static org.junit.Assert.assertThat;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HotRestartClusterUpgradeTest
-        extends AbstractHotRestartClusterStartTest {
+public class HotRestartClusterUpgradeTest extends AbstractHotRestartClusterStartTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -41,8 +34,7 @@ public class HotRestartClusterUpgradeTest
     // nodes are terminated, upgraded to codebase version V+1 then restarted
     // the cluster should restart and still operate at cluster version V
     @Test
-    public void test_hotRestart_afterRollingUpgrade_toNextMinorVersion_withOriginalClusterVersion()
-            throws IOException, InterruptedException {
+    public void test_hotRestart_afterRollingUpgrade_toNextMinorVersion_withOriginalClusterVersion() {
         HazelcastInstance[] instances = startNewInstances(2);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -52,7 +44,7 @@ public class HotRestartClusterUpgradeTest
                 originalCodebaseVersion.getMinor() + 1,
                 originalCodebaseVersion.getPatch());
 
-        Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
+        Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
         shutdownCluster();
@@ -63,7 +55,6 @@ public class HotRestartClusterUpgradeTest
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
     }
 
-
     // cluster of nodes starts at codebase/cluster version V
     // nodes are terminated, upgraded to codebase version V+1 then restarted
     // cluster restarts and operates at cluster version V
@@ -71,8 +62,7 @@ public class HotRestartClusterUpgradeTest
     // nodes are terminated
     // cluster should restart and operate at cluster version V+1
     @Test
-    public void test_hotRestart_afterRollingUpgrade_toNextMinorVersion_withUpgradedClusterVersion()
-            throws IOException, InterruptedException {
+    public void test_hotRestart_afterRollingUpgrade_toNextMinorVersion_withUpgradedClusterVersion() {
         HazelcastInstance[] instances = startNewInstances(2);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -82,7 +72,7 @@ public class HotRestartClusterUpgradeTest
                 originalCodebaseVersion.getMinor() + 1,
                 originalCodebaseVersion.getPatch());
 
-        Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
+        Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
         shutdownCluster();
@@ -109,8 +99,7 @@ public class HotRestartClusterUpgradeTest
     // the cluster restarts with partial restart policy and operates at cluster version V with just one member
     // V-1 member does not start because its version is incompatible with the stored cluster version
     @Test
-    public void test_hotRestartPartialSucceeds_whenOneMember_hasIncompatibleCodebaseVersion()
-            throws IOException, InterruptedException {
+    public void test_hotRestartPartialSucceeds_whenOneMember_hasIncompatibleCodebaseVersion() {
         final HazelcastInstance[] instances = startNewInstances(2);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -124,13 +113,13 @@ public class HotRestartClusterUpgradeTest
                 originalCodebaseVersion.getMinor() - 1,
                 originalCodebaseVersion.getPatch());
 
-        final Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
+        final Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
         shutdownCluster();
 
         instances[0] = restartInstance(addresses[0], null,
-                 HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE,
+                HotRestartClusterDataRecoveryPolicy.PARTIAL_RECOVERY_MOST_COMPLETE,
                 nextMinorVersion);
 
         expectedException.expect(HotRestartException.class);
@@ -149,8 +138,7 @@ public class HotRestartClusterUpgradeTest
     // V-1 member does not start because its version is incompatible with the stored cluster version
     // V+1 member does not start because its missing one member of the cluster
     @Test
-    public void test_hotRestartFullRecoveryFails_whenOneMember_hasIncompatibleCodebaseVersion()
-            throws IOException, InterruptedException {
+    public void test_hotRestartFullRecoveryFails_whenOneMember_hasIncompatibleCodebaseVersion() {
         final HazelcastInstance[] instances = startNewInstances(2);
         assertInstancesJoined(2, instances, NodeState.ACTIVE, ClusterState.ACTIVE);
         invokeDummyOperationOnAllPartitions(instances);
@@ -164,7 +152,7 @@ public class HotRestartClusterUpgradeTest
                 originalCodebaseVersion.getMinor() - 1,
                 originalCodebaseVersion.getPatch());
 
-        final Address[] addresses = new Address[] {getAddress(instances[0]), getAddress(instances[1])};
+        final Address[] addresses = new Address[]{getAddress(instances[0]), getAddress(instances[1])};
         assertNodesVersion(instances, originalCodebaseVersion);
         assertClusterVersion(instances, originalCodebaseVersion.asClusterVersion());
         shutdownCluster();
@@ -176,7 +164,6 @@ public class HotRestartClusterUpgradeTest
         // instance with codebase minor+1 will fail due to full recovery policy and member being unavailable
         expectedException.expect(IllegalStateException.class);
         instances[0] = restartInstance(addresses[0], nextMinorVersion);
-
     }
 
     @Test

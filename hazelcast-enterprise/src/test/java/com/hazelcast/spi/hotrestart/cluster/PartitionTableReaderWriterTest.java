@@ -23,14 +23,14 @@ import static org.junit.Assert.fail;
 public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase {
 
     @Test
-    public void test_readNotExistingFolder() throws IOException {
+    public void test_readNotExistingFolder() throws Exception {
         PartitionTableReader reader = new PartitionTableReader(getNonExistingFolder(), 100);
         reader.read();
         assertPartitionTableEmpty(reader.getTable());
     }
 
     @Test
-    public void test_readEmptyFolder() throws IOException {
+    public void test_readEmptyFolder() throws Exception {
         PartitionTableReader reader = new PartitionTableReader(folder, 100);
         reader.read();
         PartitionTableView table = reader.getTable();
@@ -47,28 +47,28 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
     }
 
     @Test(expected = FileNotFoundException.class)
-    public void test_writeNotExistingFolder() throws IOException {
+    public void test_writeNotExistingFolder() throws Exception {
         PartitionTableView partitions = new PartitionTableView(new Address[100][InternalPartition.MAX_REPLICA_COUNT], 0);
         PartitionTableWriter writer = new PartitionTableWriter(getNonExistingFolder());
         writer.write(partitions);
     }
 
     @Test
-    public void test_EmptyWriteRead() throws IOException {
+    public void test_EmptyWriteRead() throws Exception {
         test_WriteRead(0);
     }
 
     @Test
-    public void test_WriteRead_fewMembers() throws IOException {
+    public void test_WriteRead_fewMembers() throws Exception {
         test_WriteRead(3);
     }
 
     @Test
-    public void test_WriteRead_manyMembers() throws IOException {
+    public void test_WriteRead_manyMembers() throws Exception {
         test_WriteRead(100);
     }
 
-    private void test_WriteRead(int memberCount) throws IOException {
+    private void test_WriteRead(int memberCount) throws Exception {
         Address[] members = initializeAddresses(memberCount);
 
         final int partitionCount = 100;
@@ -85,7 +85,7 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
     }
 
     @Test
-    public void test_withIncreasingPartitionCount() throws IOException {
+    public void test_withIncreasingPartitionCount() throws Exception {
         Address[] members = initializeAddresses(0);
         int partitionCount = 100;
 
@@ -101,11 +101,12 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
             reader.read();
             fail("Should fail to read partition table!");
         } catch (IOException expected) {
+            ignore(expected);
         }
     }
 
     @Test
-    public void test_withDecreasingPartitionCount() throws IOException {
+    public void test_withDecreasingPartitionCount() throws Exception {
         Address[] members = initializeAddresses(0);
         int partitionCount = 100;
 
@@ -121,6 +122,7 @@ public class PartitionTableReaderWriterTest extends MetadataReaderWriterTestBase
             reader.read();
             fail("Should fail to read partition table!");
         } catch (IOException expected) {
+            ignore(expected);
         }
     }
 

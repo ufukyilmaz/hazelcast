@@ -304,7 +304,6 @@ abstract class AbstractPoolingMemoryManager implements HazelcastMemoryManager, M
                     throw new NativeOutOfMemoryError("Not enough contiguous memory available,"
                             + " cannot acquire " + MemorySize.toPrettyString(memorySize));
                 }
-
                 offset = getOffsetWithinPage(address);
             } while (!markInvalid(address, nextQ.getMemorySize(), offset));
 

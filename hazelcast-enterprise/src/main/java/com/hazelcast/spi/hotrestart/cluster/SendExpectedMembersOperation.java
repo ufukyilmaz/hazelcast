@@ -76,5 +76,4 @@ public class SendExpectedMembersOperation extends Operation implements JoinOpera
     public int getId() {
         return HotRestartClusterSerializerHook.SEND_EXPECTED_MEMBERS;
     }
-
 }

@@ -32,25 +32,23 @@ public class HiDensityClientCacheThroughHazelcastInstanceTest extends ClientCach
 
     @Override
     protected CacheSimpleConfig createCacheSimpleConfig(String cacheName) {
-        EvictionConfig evictionConfig = new EvictionConfig();
-        evictionConfig.setSize(99);
-        evictionConfig.setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(99)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
-        CacheSimpleConfig cacheSimpleConfig = super.createCacheSimpleConfig(cacheName);
-        cacheSimpleConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheSimpleConfig.setEvictionConfig(evictionConfig);
-
-        return cacheSimpleConfig;
+        return super.createCacheSimpleConfig(cacheName)
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig);
     }
 
     @Override
     protected CacheConfig createCacheConfig(String cacheName) {
-        CacheConfig cacheConfig = super.createCacheConfig(cacheName);
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
-        cacheConfig.setEvictionConfig(
-                new EvictionConfig()
-                        .setSize(99)
-                        .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE));
-        return cacheConfig;
+        EvictionConfig evictionConfig = new EvictionConfig()
+                .setSize(99)
+                .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
+
+        return super.createCacheConfig(cacheName)
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
+                .setEvictionConfig(evictionConfig);
     }
 }

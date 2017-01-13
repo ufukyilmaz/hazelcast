@@ -36,11 +36,9 @@ public class HiDensityCacheThroughHazelcastInstanceTest extends CacheThroughHaze
                 .setSize(99)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
-        CacheSimpleConfig cacheSimpleConfig = super.createCacheSimpleConfig(cacheName);
-        cacheSimpleConfig
+        return super.createCacheSimpleConfig(cacheName)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
-        return cacheSimpleConfig;
     }
 
     @Override
@@ -49,9 +47,8 @@ public class HiDensityCacheThroughHazelcastInstanceTest extends CacheThroughHaze
                 .setSize(99)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
-        CacheConfig cacheConfig = super.createCacheConfig(cacheName);
-        cacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE)
+        return super.createCacheConfig(cacheName)
+                .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
-        return cacheConfig;
     }
 }

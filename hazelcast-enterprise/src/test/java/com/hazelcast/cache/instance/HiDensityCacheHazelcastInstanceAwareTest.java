@@ -30,15 +30,13 @@ public class HiDensityCacheHazelcastInstanceAwareTest extends CacheHazelcastInst
     }
 
     @Override
-    protected CacheConfig createCacheConfig(String cacheName) {
+    protected CacheConfig<Integer, Integer> createCacheConfig(String cacheName) {
         EvictionConfig evictionConfig = new EvictionConfig()
                 .setSize(99)
                 .setMaximumSizePolicy(EvictionConfig.MaxSizePolicy.USED_NATIVE_MEMORY_PERCENTAGE);
 
-        CacheConfig cacheConfig = super.createCacheConfig(cacheName);
-        cacheConfig
+        return super.createCacheConfig(cacheName)
                 .setInMemoryFormat(InMemoryFormat.NATIVE)
                 .setEvictionConfig(evictionConfig);
-        return cacheConfig;
     }
 }

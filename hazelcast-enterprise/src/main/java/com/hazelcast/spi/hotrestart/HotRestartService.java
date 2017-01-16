@@ -188,6 +188,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             }
             clusterMetadataManager.writePartitionThreadCount(partitionThreadCount);
         }
+        persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
         clusterMetadataManager.prepare();
         createHotRestartStores();
     }
@@ -196,7 +197,6 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         try {
             logger.info("Starting hot-restart service...");
             clusterMetadataManager.start();
-            persistentCacheDescriptors.restore(node.getSerializationService(), loadedConfigurationListeners);
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
             logger.info(allowData ? "Starting the Hot Restart procedure."
                                   : "Initializing Hot Restart stores, not expecting to reload any data.");
@@ -402,7 +402,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         logger.fine("Resetting hot restart cluster metadata");
         clusterMetadataManager.reset();
         clusterMetadataManager.writePartitionThreadCount(getOperationExecutor().getPartitionThreadCount());
-        persistentCacheDescriptors.ensureConfigDirectoryExists();
+        persistentCacheDescriptors.reset();
         logger.fine("Creating thread local hot restart stores");
         createHotRestartStores();
         try {

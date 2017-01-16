@@ -67,6 +67,10 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
     @Override
     public NearCache getOrNullNearCache(String mapName) {
         NearCacheConfig nearCacheConfig = getNearCacheConfig(mapName);
+        if (nearCacheConfig == null) {
+            return null;
+        }
+
         InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE == inMemoryFormat) {
             return nearCacheManager.getNearCache(mapName);
@@ -87,7 +91,7 @@ public class EnterpriseNearCacheProvider extends NearCacheProvider {
         }
     }
 
-    protected NearCacheConfig getNearCacheConfig(String mapName) {
+    private NearCacheConfig getNearCacheConfig(String mapName) {
         MapContainer mapContainer = mapServiceContext.getMapContainer(mapName);
         MapConfig mapConfig = mapContainer.getMapConfig();
         return mapConfig.getNearCacheConfig();

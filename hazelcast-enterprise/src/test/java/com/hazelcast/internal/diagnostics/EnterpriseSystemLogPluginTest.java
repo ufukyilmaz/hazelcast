@@ -41,9 +41,9 @@ public class EnterpriseSystemLogPluginTest extends SystemLogPluginTest {
         ClusterVersion nextMinorVersion = new ClusterVersion(currentVersion.getMajor(), currentVersion.getMinor() + 1);
         System.setProperty(HAZELCAST_INTERNAL_OVERRIDE_VERSION, nextMinorVersion.toString());
         HazelcastInstance instance = hzFactory.newHazelcastInstance(config);
-        waitAllForSafeState();
+        waitAllForSafeState(hz, instance);
         hz.shutdown();
-        waitAllForSafeState();
+        waitAllForSafeState(instance);
         getClusterService(instance).changeClusterVersion(nextMinorVersion);
         assertTrueEventually(new AssertTask() {
             @Override

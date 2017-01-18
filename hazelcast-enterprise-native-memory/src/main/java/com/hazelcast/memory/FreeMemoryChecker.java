@@ -3,12 +3,14 @@ package com.hazelcast.memory;
 import com.hazelcast.spi.properties.HazelcastProperties;
 import com.hazelcast.spi.properties.HazelcastProperty;
 
+import static com.hazelcast.memory.MemorySize.toPrettyString;
 import static com.hazelcast.memory.MemoryStatsSupport.freePhysicalMemory;
 import static com.hazelcast.memory.MemoryStatsSupport.totalPhysicalMemory;
+import static java.lang.String.format;
 
 /**
  * Class which checks if there is enough free native memory for allocation.
- * <p>
+ *
  * If disabled, acts as if the check for free memory succeeded.
  */
 public final class FreeMemoryChecker {
@@ -26,7 +28,7 @@ public final class FreeMemoryChecker {
     private final boolean enabled;
 
     FreeMemoryChecker() {
-        final String enabledStr = FREE_MEMORY_CHECKER_ENABLED.getSystemProperty();
+        String enabledStr = FREE_MEMORY_CHECKER_ENABLED.getSystemProperty();
         this.enabled = Boolean.parseBoolean(enabledStr != null ? enabledStr : "true");
     }
 
@@ -45,7 +47,6 @@ public final class FreeMemoryChecker {
         if (!enabled) {
             return;
         }
-
         long totalMem = totalPhysicalMemory();
         if (totalMem < 0) {
             return;
@@ -55,14 +56,13 @@ public final class FreeMemoryChecker {
             return;
         }
         if (size > freeMem) {
-            throw new NativeOutOfMemoryError(String.format("Not enough free physical memory available! "
-                    + "Cannot allocate " + MemorySize.toPrettyString(size) + "!"
-                    + "Total physical memory: " + MemorySize.toPrettyString(totalMem)
-                    + " Free physical memory: " + MemorySize.toPrettyString(freeMem) + "%n"
-                    + "Depending on the operating system or virtualization technology the memory check may report incorrect "
-                    + "total or free amount of memory.%n"
-                    + "You can disable the check by adding the following runtime switch "
-                    + "'-Dhazelcast.hidensity.check.freememory=false'"));
+            throw new NativeOutOfMemoryError(format("Not enough free physical memory available!"
+                            + " Cannot allocate %s! Total physical memory: %s Free physical memory: %s"
+                            + "%nDepending on the operating system or virtualization technology"
+                            + " the memory check may report incorrect total or free amount of memory."
+                            + "%nYou can disable the check by adding the following runtime switch"
+                            + " '-Dhazelcast.hidensity.check.freememory=false'",
+                    toPrettyString(size), toPrettyString(totalMem), toPrettyString(freeMem)));
         }
     }
 }

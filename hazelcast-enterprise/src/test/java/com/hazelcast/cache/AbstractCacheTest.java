@@ -108,7 +108,6 @@ public abstract class AbstractCacheTest extends HazelcastTestSupport {
         config.setProperty(GroupProperty.MAX_WAIT_SECONDS_BEFORE_JOIN.getName(), "0");
         config.setProperty(GroupProperty.GENERIC_OPERATION_THREAD_COUNT.getName(), "2");
         config.setProperty(GroupProperty.PARTITION_OPERATION_THREAD_COUNT.getName(), "4");
-        config.setProperty(GroupProperty.LOGGING_TYPE.getName(), "log4j");
         config.setProperty(GroupProperty.HEALTH_MONITORING_LEVEL.getName(), HealthMonitorLevel.OFF.name());
     }
 

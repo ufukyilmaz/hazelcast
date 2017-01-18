@@ -1,8 +1,6 @@
 package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.core.MemberLeftException;
-import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
 import com.hazelcast.spi.ExceptionAction;
 import com.hazelcast.spi.Operation;
@@ -10,8 +8,6 @@ import com.hazelcast.spi.exception.TargetNotMemberException;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.impl.AllowedDuringPassiveState;
 import com.hazelcast.transaction.TransactionException;
-
-import java.io.IOException;
 
 /**
  * Operation for interruption of the member hot restart backup task.
@@ -56,18 +52,13 @@ public class HotRestartBackupInterruptOperation extends Operation implements All
     }
 
     @Override
-    protected void writeInternal(ObjectDataOutput out) throws IOException {
-        super.writeInternal(out);
-    }
-
-    @Override
-    protected void readInternal(ObjectDataInput in) throws IOException {
-        super.readInternal(in);
-    }
-
-    @Override
     public int getFactoryId() {
         return HotRestartBackupSerializerHook.F_ID;
+    }
+
+    @Override
+    public boolean returnsResponse() {
+        return false;
     }
 
     @Override

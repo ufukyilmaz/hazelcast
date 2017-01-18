@@ -755,6 +755,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
      * Interrupts the backup task if one is currently running. The contents of the target backup directory will be left as-is
      */
     public void interruptBackupTask() {
+        logger.info("Interrupting hot backup tasks");
         interruptBackupTask(offHeapStores);
         interruptBackupTask(onHeapStores);
     }

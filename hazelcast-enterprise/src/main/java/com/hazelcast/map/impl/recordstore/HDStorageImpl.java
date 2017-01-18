@@ -26,6 +26,11 @@ import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
+    /**
+     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     */
+    private static final int SLOT_COST_IN_BYTES = 16;
+
     private final HiDensityRecordProcessor recordProcessor;
     private final OwnedEntryCostEstimator<NativeMemoryData, HDRecord> ownedEntryCostEstimator;
     private final HDStorageSCHM map;
@@ -33,7 +38,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
-        this.ownedEntryCostEstimator = new NativeMapOwnedEntryCostEstimator();
+        this.ownedEntryCostEstimator = new NativeMapOwnedEntryCostEstimator(recordProcessor);
         this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
 
@@ -53,7 +58,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         addDeferredDispose(key);
         addDeferredDispose(oldRecord);
 
-        updateCostEstimate(-calculateEntryCost((NativeMemoryData) key, record));
         setEntryCount(map.size());
     }
 
@@ -81,13 +85,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
             }
         }
 
-        if (oldRecord == null) {
-            updateCostEstimate(calculateEntryCost(nativeKey, record));
-        } else {
-            updateCostEstimate(-calculateRecordCost(oldRecord));
-            updateCostEstimate(calculateRecordCost(record));
-        }
-
         setEntryCount(map.size());
     }
 
@@ -96,8 +93,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         Data oldValue = null;
         Data newValue = null;
         boolean succeed = false;
-
-        updateCostEstimate(-calculateRecordCost(record));
 
         try {
             oldValue = record.getValue();
@@ -112,8 +107,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
                 addDeferredDispose(newValue);
             }
         }
-
-        updateCostEstimate(calculateRecordCost(record));
     }
 
     @Override
@@ -135,11 +128,12 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         }
         map.clear();
         setEntryCount(0);
-        ownedEntryCostEstimator.reset();
     }
 
     private void setEntryCount(int value) {
+        ownedEntryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
         entryCount = value;
+        ownedEntryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
     }
 
     @Override
@@ -222,18 +216,6 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
 
     public long getNativeKeyAddress(Data key) {
         return map.getNativeKeyAddress(key);
-    }
-
-    private void updateCostEstimate(long adjustment) {
-        ownedEntryCostEstimator.adjustEstimateBy(adjustment);
-    }
-
-    private long calculateRecordCost(HDRecord record) {
-        return ownedEntryCostEstimator.calculateCost(record);
-    }
-
-    private long calculateEntryCost(NativeMemoryData key, HDRecord record) {
-        return ownedEntryCostEstimator.calculateEntryCost(key, record);
     }
 
 }

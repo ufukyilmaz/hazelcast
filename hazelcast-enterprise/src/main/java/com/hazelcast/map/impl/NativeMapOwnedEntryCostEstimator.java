@@ -1,47 +1,43 @@
 package com.hazelcast.map.impl;
 
+import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
 
 public class NativeMapOwnedEntryCostEstimator
         implements OwnedEntryCostEstimator<NativeMemoryData, HDRecord> {
 
-    /**
-     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
-     */
-    private static final int SLOT_COST_IN_BYTES = 16;
+    private volatile long additionalCostOfBehmSlots;
 
-    private volatile long estimate;
+    private final HiDensityRecordProcessor recordProcessor;
 
-    public NativeMapOwnedEntryCostEstimator() {
+    public NativeMapOwnedEntryCostEstimator(HiDensityRecordProcessor recordProcessor) {
+        this.recordProcessor = recordProcessor;
     }
 
     @Override
     public long getEstimate() {
-        return estimate;
+        return recordProcessor.getUsedMemory() + additionalCostOfBehmSlots;
     }
 
     @Override
     public void adjustEstimateBy(long adjustment) {
-        this.estimate += adjustment;
+        additionalCostOfBehmSlots += adjustment;
     }
 
     @Override
     public void reset() {
-        estimate = 0L;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long calculateCost(HDRecord value) {
-        return value.size();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long calculateEntryCost(NativeMemoryData key, HDRecord value) {
-        long totalEntryCost = key.size();
-        totalEntryCost += value.size();
-        totalEntryCost += SLOT_COST_IN_BYTES;
-        return totalEntryCost;
+        throw new UnsupportedOperationException();
     }
 
 }

@@ -1,10 +1,11 @@
 package com.hazelcast.elastic.map;
 
 import com.hazelcast.internal.memory.MemoryAllocator;
+import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
+import com.hazelcast.internal.util.ThreadLocalRandomProvider;
 import com.hazelcast.memory.MemoryBlock;
 import com.hazelcast.memory.MemoryBlockAccessor;
-import com.hazelcast.internal.memory.MemoryBlockProcessor;
 import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -18,34 +19,25 @@ import static com.hazelcast.util.QuickMath.nextPowerOfTwo;
 
 /**
  * Variant of the {@link BinaryElasticHashMap} that allows quick random sampling of its entries.
+ *
  * @param <V> type of value
  */
 public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElasticHashMap<V> {
 
-    // due to the constraints of JDK6 compatibility
-    // we cannot use "java.util.concurrent.ThreadLocalRandom" (valid for JDK7+ versions)
-    private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM =
-            new ThreadLocal<Random>() {
-                @Override
-                protected Random initialValue() {
-                    return new Random();
-                }
-            };
-
     public SampleableElasticHashMap(EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                    MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         super(serializationService, memoryBlockAccessor, malloc);
     }
 
     public SampleableElasticHashMap(int initialCapacity,
-            EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                    EnterpriseSerializationService serializationService,
+                                    MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         super(initialCapacity, serializationService, memoryBlockAccessor, malloc);
     }
 
     public SampleableElasticHashMap(int initialCapacity, float loadFactor,
-            EnterpriseSerializationService serializationService,
-            MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
+                                    EnterpriseSerializationService serializationService,
+                                    MemoryBlockAccessor<V> memoryBlockAccessor, MemoryAllocator malloc) {
         super(initialCapacity, loadFactor, serializationService, memoryBlockAccessor, malloc);
     }
 
@@ -54,7 +46,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
     }
 
     public SampleableElasticHashMap(int initialCapacity, float loadFactor,
-            MemoryBlockProcessor<V> memoryBlockProcessor) {
+                                    MemoryBlockProcessor<V> memoryBlockProcessor) {
         super(initialCapacity, loadFactor, memoryBlockProcessor);
     }
 
@@ -85,8 +77,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
      * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
      */
     @SuppressFBWarnings("PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS")
-    public class IterableSamplingEntry
-            extends SamplingEntry
+    public class IterableSamplingEntry extends SamplingEntry
             implements Iterable<IterableSamplingEntry>, Iterator<IterableSamplingEntry> {
 
         private boolean iterated;
@@ -118,7 +109,6 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
         public void remove() {
             throw new UnsupportedOperationException("Removing is supported");
         }
-
     }
 
     protected <E extends SamplingEntry> E createSamplingEntry(final int slot) {
@@ -142,8 +132,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
      *
      * NOTE: Assumed that it is not accessed by multiple threads. So there is synchronization.
      */
-    private final class LazySamplingEntryIterableIterator<E extends SamplingEntry>
-            implements Iterable<E>, Iterator<E> {
+    private final class LazySamplingEntryIterableIterator<E extends SamplingEntry> implements Iterable<E>, Iterator<E> {
 
         private final int maxSampleCount;
         private final int end;
@@ -164,7 +153,7 @@ public class SampleableElasticHashMap<V extends MemoryBlock> extends BinaryElast
             assert isPowerOfTwo(end);
             this.segmentCount = Math.min(nextPowerOfTwo(maxSampleCount * 2), end);
             this.segmentSize = end / segmentCount;
-            final Random random = THREAD_LOCAL_RANDOM.get();
+            final Random random = ThreadLocalRandomProvider.get();
             this.randomSegment = random.nextInt(segmentCount);
             this.randomIndex = random.nextInt(segmentSize);
             this.currentSegmentNo = randomSegment;

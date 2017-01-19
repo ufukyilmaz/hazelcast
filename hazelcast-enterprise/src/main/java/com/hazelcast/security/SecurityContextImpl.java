@@ -26,7 +26,7 @@ import java.util.logging.Level;
 
 public class SecurityContextImpl implements SecurityContext {
 
-    private static final ThreadLocal<ParametersImpl> PARAMS_THREADLOCAL = new ThreadLocal<ParametersImpl>();
+    private static final ThreadLocal<ParametersImpl> THREAD_LOCAL_PARAMETERS = new ThreadLocal<ParametersImpl>();
 
     private final ILogger logger;
     private final Node node;
@@ -188,17 +188,17 @@ public class SecurityContextImpl implements SecurityContext {
         if (args == null) {
             return emptyParameters;
         }
-        ParametersImpl params = PARAMS_THREADLOCAL.get();
+        ParametersImpl params = THREAD_LOCAL_PARAMETERS.get();
         if (params == null) {
             params = new ParametersImpl(node.getSerializationService());
-            PARAMS_THREADLOCAL.set(params);
+            THREAD_LOCAL_PARAMETERS.set(params);
         }
         params.setArgs(args);
         return params;
     }
 
     static Parameters getArguments() {
-        return PARAMS_THREADLOCAL.get();
+        return THREAD_LOCAL_PARAMETERS.get();
     }
 
     private Object createImplInstance(ClassLoader cl, final String className) {

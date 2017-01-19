@@ -708,8 +708,6 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
     private void setNewLocalMemberUuid() {
         node.setNewLocalMember();
         node.getClusterService().reset();
-        OperationServiceImpl operationService = (OperationServiceImpl) node.nodeEngine.getOperationService();
-        operationService.initInvocationContext();
     }
 
     private OperationExecutor getOperationExecutor() {

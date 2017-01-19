@@ -98,12 +98,16 @@ public class HotBackupService implements HotRestartService, TransactionalService
     @Override
     public void interruptBackupTask() {
         broadcast(new HotRestartBackupInterruptOperation());
+        interruptLocalBackupTask();
     }
 
     private void broadcast(Operation operation) {
         final InternalOperationService operationService = node.getNodeEngine().getOperationService();
         for (Member member : node.getClusterService().getMembers()) {
-            operationService.send(operation, member.getAddress());
+            final Address target = member.getAddress();
+            if (!node.getThisAddress().equals(target)) {
+                operationService.send(operation, target);
+            }
         }
     }
 

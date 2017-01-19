@@ -13,6 +13,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -48,6 +49,21 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         resetFixture(backupSeq, clusterSize);
         assertEquals(expectedMap.size(), map.size());
         assertContainsAll(map, expectedMap);
+    }
+
+    @Test
+    public void testClusterHotRestartBackupInterrupt() throws IOException {
+        final int clusterSize = 3;
+        resetFixture(-1, clusterSize);
+        final HashMap<Integer, String> expectedMap = new HashMap<Integer, String>();
+        fillMap(expectedMap);
+        final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
+        final int backupSeq = 0;
+        final HazelcastInstance firstNode = instances.iterator().next();
+
+        runClusterBackupOnInstance(backupSeq, firstNode);
+        firstNode.getCluster().getHotRestartService().interruptBackupTask();
+        waitForBackupToFinish(instances);
     }
 
     @Test

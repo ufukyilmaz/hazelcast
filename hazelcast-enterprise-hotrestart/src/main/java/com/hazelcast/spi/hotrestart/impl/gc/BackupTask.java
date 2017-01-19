@@ -78,10 +78,6 @@ public class BackupTask implements Runnable {
                 throw new IllegalStateException("Hot restart backup is currently not running but the " + IN_PROGRESS_FILE
                         + " file exists. Changing the file to mark failed backup");
             }
-        } catch (Exception e) {
-            failedBackup(inProgressFile, e);
-        }
-        try {
             copyOrMoveChunks(stableValChunkSeqs, true);
             copyOrMoveChunks(stableTombChunkSeqs, false);
             completedBackup(inProgressFile);

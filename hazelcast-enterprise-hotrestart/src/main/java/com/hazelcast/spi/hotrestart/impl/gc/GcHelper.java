@@ -225,7 +225,7 @@ public abstract class GcHelper implements Disposable {
      * @param suffix filename suffix
      * @param mkdirs whether to also create any missing ancestor directories of the chunk file
      */
-    public final File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
+    public File chunkFile(String base, long seq, String suffix, boolean mkdirs) {
         final String bucketDirname = String.format(BUCKET_DIRNAME_FORMAT, seq & BUCKET_DIR_MASK);
         final String chunkFilename = String.format(CHUNK_FNAME_FORMAT, seq, suffix);
         final File bucketDir = new File(new File(homeDir, base), bucketDirname);

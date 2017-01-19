@@ -4,14 +4,14 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
 import com.hazelcast.map.impl.record.HDRecord;
 
-public class NativeMapOwnedEntryCostEstimator
-        implements OwnedEntryCostEstimator<NativeMemoryData, HDRecord> {
+public class NativeMapEntryCostEstimator
+        implements EntryCostEstimator<NativeMemoryData, HDRecord> {
 
     private volatile long additionalCostOfBehmSlots;
 
     private final HiDensityRecordProcessor recordProcessor;
 
-    public NativeMapOwnedEntryCostEstimator(HiDensityRecordProcessor recordProcessor) {
+    public NativeMapEntryCostEstimator(HiDensityRecordProcessor recordProcessor) {
         this.recordProcessor = recordProcessor;
     }
 
@@ -31,7 +31,7 @@ public class NativeMapOwnedEntryCostEstimator
     }
 
     @Override
-    public long calculateCost(HDRecord value) {
+    public long calculateValueCost(HDRecord value) {
         throw new UnsupportedOperationException();
     }
 

@@ -4,8 +4,8 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.NativeMapOwnedEntryCostEstimator;
-import com.hazelcast.map.impl.OwnedEntryCostEstimator;
+import com.hazelcast.map.impl.NativeMapEntryCostEstimator;
+import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -32,13 +32,13 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     private static final int SLOT_COST_IN_BYTES = 16;
 
     private final HiDensityRecordProcessor recordProcessor;
-    private final OwnedEntryCostEstimator<NativeMemoryData, HDRecord> ownedEntryCostEstimator;
+    private final EntryCostEstimator<NativeMemoryData, HDRecord> entryCostEstimator;
     private final HDStorageSCHM map;
     private volatile int entryCount;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
-        this.ownedEntryCostEstimator = new NativeMapOwnedEntryCostEstimator(recordProcessor);
+        this.entryCostEstimator = new NativeMapEntryCostEstimator(recordProcessor);
         this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
 
@@ -131,9 +131,9 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     private void setEntryCount(int value) {
-        ownedEntryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
+        entryCostEstimator.adjustEstimateBy(-entryCount * SLOT_COST_IN_BYTES);
         entryCount = value;
-        ownedEntryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
+        entryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
     }
 
     @Override
@@ -168,11 +168,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         setEntryCount(0);
     }
 
-    public OwnedEntryCostEstimator getOwnedEntryCostEstimator() {
-        return ownedEntryCostEstimator;
+    public EntryCostEstimator getEntryCostEstimator() {
+        return entryCostEstimator;
     }
 
-    public void setOwnedEntryCostEstimator(OwnedEntryCostEstimator ownedEntryCostEstimator) {
+    public void setEntryCostEstimator(EntryCostEstimator entryCostEstimator) {
         throw new UnsupportedOperationException();
     }
 

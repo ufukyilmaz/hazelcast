@@ -48,8 +48,10 @@ public final class HDMapConfigValidator {
      * Checks preconditions to create a map proxy with Near Cache.
      *
      * @param nearCacheConfig the nearCacheConfig
+     * @param nativeMemoryConfig native memory configuration
+     * @param client {@code true} when invoked from a client side context, otherwise {@code false}
      */
-    public void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig) {
+    public void checkHDConfig(NearCacheConfig nearCacheConfig, NativeMemoryConfig nativeMemoryConfig, boolean client) {
         final InMemoryFormat inMemoryFormat = nearCacheConfig.getInMemoryFormat();
         if (NATIVE != inMemoryFormat) {
             EvictionConfig.MaxSizePolicy maximumSizePolicy = nearCacheConfig.getEvictionConfig().getMaximumSizePolicy();
@@ -62,6 +64,11 @@ public final class HDMapConfigValidator {
         }
 
         checkTrue(nativeMemoryConfig.isEnabled(), "Enable native memory config to use NATIVE in-memory-format for Near Cache");
+
+        if (client && nearCacheConfig.isCacheLocalEntries()) {
+            LOGGER.warning("The Near Cache option `cache-local-entries` is not supported in client configurations. "
+                    + "Remove this option from your client configuration, future versions may fail startup with an exception.");
+        }
     }
 
     /**

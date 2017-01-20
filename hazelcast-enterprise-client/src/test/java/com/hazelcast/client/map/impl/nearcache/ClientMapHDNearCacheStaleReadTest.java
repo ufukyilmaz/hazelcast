@@ -31,7 +31,6 @@ public class ClientMapHDNearCacheStaleReadTest extends ClientMapNearCacheStaleRe
         evictionConfig.setSize(90);
         nearCacheConfig.setInMemoryFormat(InMemoryFormat.NATIVE);
         nearCacheConfig.setInvalidateOnChange(true);
-        nearCacheConfig.setCacheLocalEntries(true);
         nearCacheConfig.setName(mapName);
 
         ClientConfig clientConfig = new ClientConfig();

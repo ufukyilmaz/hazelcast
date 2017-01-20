@@ -161,7 +161,6 @@ public class EnterpriseClientExtension extends DefaultClientExtension {
     @Override
     public <T> ClientProxyFactory createServiceProxyFactory(Class<T> service) {
         if (MapService.class.isAssignableFrom(service)) {
-            // TODO fix near cache config validation, so that it fails when (client && cacheLocalEntries) as in OSS
             return new EnterpriseMapClientProxyFactory(client.getClientConfig(), client.getProperties());
         }
 

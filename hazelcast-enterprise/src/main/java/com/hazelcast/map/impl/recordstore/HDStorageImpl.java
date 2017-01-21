@@ -4,7 +4,8 @@ import com.hazelcast.internal.hidensity.HiDensityRecordProcessor;
 import com.hazelcast.internal.hidensity.impl.DefaultHiDensityRecordProcessor;
 import com.hazelcast.internal.serialization.impl.HeapData;
 import com.hazelcast.internal.serialization.impl.NativeMemoryData;
-import com.hazelcast.map.impl.SizeEstimator;
+import com.hazelcast.map.impl.NativeMapEntryCostEstimator;
+import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.HDRecord;
@@ -17,9 +18,7 @@ import com.hazelcast.spi.serialization.SerializationService;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static com.hazelcast.config.InMemoryFormat.NATIVE;
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
-import static com.hazelcast.map.impl.SizeEstimatorFactory.createMapSizeEstimator;
 
 /**
  * Hi-Density backed {@code Storage} implementation for {@link com.hazelcast.core.IMap}.
@@ -27,14 +26,19 @@ import static com.hazelcast.map.impl.SizeEstimatorFactory.createMapSizeEstimator
  */
 public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<HDRecord> {
 
+    /**
+     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     */
+    private static final int SLOT_COST_IN_BYTES = 16;
+
     private final HiDensityRecordProcessor recordProcessor;
-    private final SizeEstimator sizeEstimator;
+    private final EntryCostEstimator<NativeMemoryData, HDRecord> entryCostEstimator;
     private final HDStorageSCHM map;
     private volatile int entryCount;
 
     public HDStorageImpl(HiDensityRecordProcessor<HDRecord> recordProcessor, SerializationService serializationService) {
         this.recordProcessor = recordProcessor;
-        this.sizeEstimator = createMapSizeEstimator(NATIVE);
+        this.entryCostEstimator = new NativeMapEntryCostEstimator(recordProcessor);
         this.map = new HDStorageSCHM(recordProcessor, serializationService);
     }
 
@@ -89,6 +93,7 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         Data oldValue = null;
         Data newValue = null;
         boolean succeed = false;
+
         try {
             oldValue = record.getValue();
             newValue = toNative(value);
@@ -126,7 +131,9 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     }
 
     private void setEntryCount(int value) {
+        entryCostEstimator.adjustEstimateBy(-entryCount * SLOT_COST_IN_BYTES);
         entryCount = value;
+        entryCostEstimator.adjustEstimateBy(entryCount * SLOT_COST_IN_BYTES);
     }
 
     @Override
@@ -161,13 +168,11 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
         setEntryCount(0);
     }
 
-    @Override
-    public SizeEstimator getSizeEstimator() {
-        return sizeEstimator;
+    public EntryCostEstimator getEntryCostEstimator() {
+        return entryCostEstimator;
     }
 
-    @Override
-    public void setSizeEstimator(SizeEstimator sizeEstimator) {
+    public void setEntryCostEstimator(EntryCostEstimator entryCostEstimator) {
         throw new UnsupportedOperationException();
     }
 
@@ -212,4 +217,5 @@ public class HDStorageImpl implements Storage<Data, HDRecord>, ForcedEvictable<H
     public long getNativeKeyAddress(Data key) {
         return map.getNativeKeyAddress(key);
     }
+
 }

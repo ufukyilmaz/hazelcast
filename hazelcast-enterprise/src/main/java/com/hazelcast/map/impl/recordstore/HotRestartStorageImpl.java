@@ -2,7 +2,7 @@ package com.hazelcast.map.impl.recordstore;
 
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.map.impl.EnterpriseMapServiceContext;
-import com.hazelcast.map.impl.SizeEstimator;
+import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.iterator.MapEntriesWithCursor;
 import com.hazelcast.map.impl.iterator.MapKeysWithCursor;
 import com.hazelcast.map.impl.record.Record;
@@ -127,14 +127,12 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
         return storage.isEmpty();
     }
 
-    @Override
-    public final SizeEstimator getSizeEstimator() {
-        return storage.getSizeEstimator();
+    public final EntryCostEstimator getEntryCostEstimator() {
+        return storage.getEntryCostEstimator();
     }
 
-    @Override
-    public final void setSizeEstimator(SizeEstimator sizeEstimator) {
-        storage.setSizeEstimator(sizeEstimator);
+    public final void setEntryCostEstimator(EntryCostEstimator entryCostEstimator) {
+        storage.setEntryCostEstimator(entryCostEstimator);
     }
 
     @Override

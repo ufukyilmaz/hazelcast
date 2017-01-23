@@ -185,7 +185,9 @@ public class HDEntryOperation extends HDLockAwareOperation implements BackupAwar
     }
 
     private Map.Entry createMapEntry(Data key, Object value) {
-        return new LazyMapEntry(key, value, (InternalSerializationService) getNodeEngine().getSerializationService());
+        InternalSerializationService serializationService
+                = (InternalSerializationService) getNodeEngine().getSerializationService();
+        return new LazyMapEntry(key, value, serializationService, mapContainer.getExtractors());
     }
 
     private LocalMapStatsImpl getLocalMapStats() {

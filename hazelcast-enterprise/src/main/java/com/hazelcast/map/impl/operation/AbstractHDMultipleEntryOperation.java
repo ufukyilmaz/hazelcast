@@ -74,7 +74,9 @@ abstract class AbstractHDMultipleEntryOperation extends HDMapOperation implement
     }
 
     protected Map.Entry createMapEntry(Data key, Object value) {
-        return new LazyMapEntry(key, value, (InternalSerializationService) getNodeEngine().getSerializationService());
+        InternalSerializationService serializationService
+                = (InternalSerializationService) getNodeEngine().getSerializationService();
+        return new LazyMapEntry(key, value, serializationService, mapContainer.getExtractors());
     }
 
     protected boolean hasRegisteredListenerForThisMap() {

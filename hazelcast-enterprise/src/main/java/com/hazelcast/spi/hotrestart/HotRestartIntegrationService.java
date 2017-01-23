@@ -640,7 +640,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
         node.getJoiner().setTargetAddress(null);
 
-        setNewLocalMemberUuid();
+        node.getClusterService().reset();
 
         if (isAfterJoin) {
             try {
@@ -703,11 +703,6 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
         logger.info("Creating thread local hot restart stores");
         createHotRestartStores();
-    }
-
-    private void setNewLocalMemberUuid() {
-        node.setNewLocalMember();
-        node.getClusterService().reset();
     }
 
     private OperationExecutor getOperationExecutor() {

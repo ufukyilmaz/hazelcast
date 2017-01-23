@@ -133,7 +133,9 @@ public class HDEntryBackupOperation extends HDKeyBasedMapOperation implements Ba
     }
 
     private Map.Entry createMapEntry(Data key, Object value) {
-        return new LazyMapEntry(key, value, (InternalSerializationService) getNodeEngine().getSerializationService());
+        InternalSerializationService serializationService
+                = (InternalSerializationService) getNodeEngine().getSerializationService();
+        return new LazyMapEntry(key, value, serializationService, mapContainer.getExtractors());
     }
 
     @Override

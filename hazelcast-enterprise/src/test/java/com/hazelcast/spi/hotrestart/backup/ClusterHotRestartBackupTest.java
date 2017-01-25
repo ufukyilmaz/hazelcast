@@ -2,6 +2,9 @@ package com.hazelcast.spi.hotrestart.backup;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.enterprise.EnterpriseParallelJUnitClassRunner;
+import com.hazelcast.hotrestart.BackupTaskState;
+import com.hazelcast.hotrestart.BackupTaskStatus;
+import com.hazelcast.hotrestart.HotRestartService;
 import com.hazelcast.spi.hotrestart.HotBackupService;
 import com.hazelcast.spi.hotrestart.HotRestartException;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -36,10 +39,19 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         final Collection<HazelcastInstance> instances = factory.getAllHazelcastInstances();
 
         final int backupSeq = 0;
-        runClusterBackupOnInstance(backupSeq, instances.iterator().next());
+        final HazelcastInstance firstInstance = instances.iterator().next();
+        final HotRestartService service = firstInstance.getCluster().getHotRestartService();
+        BackupTaskStatus status = service.getBackupTaskStatus();
+        assertEquals(0, status.getCompleted());
+        assertEquals(BackupTaskState.NO_TASK, status.getState());
+        runClusterBackupOnInstance(backupSeq, firstInstance);
 
         // wait until backups finish
         waitForBackupToFinish(instances);
+
+        status = service.getBackupTaskStatus();
+        assertEquals(status.getTotal(), status.getCompleted());
+        assertEquals(BackupTaskState.SUCCESS, status.getState());
 
         for (HazelcastInstance instance : instances) {
             final File nodeBackupDir = getNodeBackupDir(instance, backupSeq);
@@ -82,8 +94,13 @@ public class ClusterHotRestartBackupTest extends AbstractHotRestartBackupTest {
         // wait until backups finish
         waitForBackupToFinish(instances);
 
+        final HazelcastInstance firstInstance = instancesArr[0];
+        final HotRestartService service = firstInstance.getCluster().getHotRestartService();
         try {
-            runClusterBackupOnInstance(backupSeq, instancesArr[0]);
+            final BackupTaskStatus status = service.getBackupTaskStatus();
+            assertEquals(0, status.getCompleted());
+            assertEquals(BackupTaskState.NO_TASK, status.getState());
+            runClusterBackupOnInstance(backupSeq, firstInstance);
             fail("Hot backup should have failed because it was launched with the same backup seq");
         } catch (HotRestartException expected) {
             EmptyStatement.ignore(expected);

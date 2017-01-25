@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hazelcast.hotrestart.BackupTaskState.FAILURE;
 import static com.hazelcast.hotrestart.BackupTaskState.IN_PROGRESS;
+import static com.hazelcast.hotrestart.BackupTaskState.NO_TASK;
 import static com.hazelcast.hotrestart.BackupTaskState.SUCCESS;
 import static com.hazelcast.hotrestart.HotRestartService.BACKUP_DIR_PREFIX;
 import static com.hazelcast.internal.cluster.impl.ClusterStateManagerAccessor.setClusterState;
@@ -365,21 +366,30 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
     private static BackupTaskStatus getBackupTaskStatus(HotRestartStore[] stores) {
         BackupTaskState state = null;
         int completed = 0;
-        if (stores != null) {
-            for (HotRestartStore store : stores) {
-                final BackupTaskState taskState = store.getBackupTaskState();
-                if (taskState.inProgress()) {
-                    state = IN_PROGRESS;
-                    continue;
-                }
-                if (taskState == FAILURE && state == null) {
-                    state = FAILURE;
-                }
-                completed++;
-            }
-            return new BackupTaskStatus(state != null ? state : SUCCESS, completed, stores.length);
+        if (stores == null) {
+            return new BackupTaskStatus(NO_TASK, 0, 0);
         }
-        return new BackupTaskStatus(SUCCESS, 0, 0);
+        for (HotRestartStore store : stores) {
+            final BackupTaskState taskState = store.getBackupTaskState();
+            switch (taskState) {
+                case NO_TASK:
+                    break;
+                case NOT_STARTED:
+                case IN_PROGRESS:
+                    state = IN_PROGRESS;
+                    break;
+                case FAILURE:
+                case SUCCESS:
+                    if (state == null) {
+                        state = taskState;
+                    }
+                    completed++;
+                    break;
+                default:
+                    throw new IllegalStateException("Unsupported hot backup task state : " + taskState);
+            }
+        }
+        return new BackupTaskStatus(state != null ? state : NO_TASK, completed, stores.length);
     }
 
     private void backup(File backupDir, HotRestartStore[] stores, boolean onHeap) {
@@ -767,6 +777,7 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         final BackupTaskState state =
                 offHeapState.inProgress() || onHeapState.inProgress() ? IN_PROGRESS
                         : offHeapState == FAILURE || onHeapState == FAILURE ? FAILURE
+                        : (offHeapState == NO_TASK && onHeapState == NO_TASK) ? NO_TASK
                         : SUCCESS;
 
         return new BackupTaskStatus(state,

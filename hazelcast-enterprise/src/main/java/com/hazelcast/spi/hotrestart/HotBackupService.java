@@ -101,6 +101,11 @@ public class HotBackupService implements HotRestartService, TransactionalService
         interruptLocalBackupTask();
     }
 
+    @Override
+    public boolean isHotBackupEnabled() {
+        return true;
+    }
+
     private void broadcast(Operation operation) {
         final InternalOperationService operationService = node.getNodeEngine().getOperationService();
         for (Member member : node.getClusterService().getMembers()) {

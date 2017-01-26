@@ -17,7 +17,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -29,27 +29,27 @@ import static org.mockito.Mockito.when;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
-public class HDParallelPartitionScanExecutorTest {
+public class HDPartitionScanExecutorTest {
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
-    private HDParallelPartitionScanExecutor executor(PartitionScanRunner runner) {
+    private HDPartitionScanExecutor executor(HDPartitionScanRunner runner) {
         OperationService operationService = mock(OperationService.class);
         InvocationBuilder builder = mock(InvocationBuilder.class);
         when(builder.invoke()).thenReturn(new CompletedFuture<Object>(null, new ArrayList(), null));
 
         when(operationService.createInvocationBuilder(anyString(), any(Operation.class), anyInt())).thenReturn(builder);
-        return new HDParallelPartitionScanExecutor(runner, operationService, 60000);
+        return new HDPartitionScanExecutor(runner);
     }
 
     @Test
     public void execute_success() throws Exception {
-        PartitionScanRunner runner = mock(PartitionScanRunner.class);
-        HDParallelPartitionScanExecutor executor = executor(runner);
+        HDPartitionScanRunner runner = mock(HDPartitionScanRunner.class);
+        HDPartitionScanExecutor executor = executor(runner);
         Predicate predicate = Predicates.equal("attribute", 1);
 
-        List<QueryableEntry> result = executor.execute("Map", predicate, asList(1, 2, 3));
+        Collection<QueryableEntry> result = executor.execute("Map", predicate, asList(1));
         assertEquals(0, result.size());
     }
 

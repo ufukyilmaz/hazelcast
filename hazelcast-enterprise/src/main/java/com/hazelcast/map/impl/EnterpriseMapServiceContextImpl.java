@@ -19,8 +19,9 @@ import com.hazelcast.map.impl.operation.HDBaseRemoveOperation;
 import com.hazelcast.map.impl.operation.HDGetOperation;
 import com.hazelcast.map.impl.operation.MapOperationProvider;
 import com.hazelcast.map.impl.operation.MapOperationProviders;
-import com.hazelcast.map.impl.query.HDParallelPartitionScanExecutor;
+import com.hazelcast.map.impl.query.HDPartitionScanExecutor;
 import com.hazelcast.map.impl.query.HDPartitionScanRunner;
+import com.hazelcast.map.impl.query.HDQueryRunner;
 import com.hazelcast.map.impl.query.PartitionScanExecutor;
 import com.hazelcast.map.impl.query.PartitionScanRunner;
 import com.hazelcast.map.impl.query.QueryRunner;
@@ -36,7 +37,6 @@ import com.hazelcast.nio.serialization.EnterpriseSerializationService;
 import com.hazelcast.query.impl.predicates.QueryOptimizer;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.Operation;
-import com.hazelcast.spi.OperationService;
 import com.hazelcast.spi.hotrestart.HotRestartIntegrationService;
 import com.hazelcast.spi.hotrestart.HotRestartStore;
 import com.hazelcast.spi.hotrestart.PersistentCacheDescriptors;
@@ -55,7 +55,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 
 /**
  * Contains enterprise specific implementations of {@link MapServiceContext}
@@ -79,7 +78,7 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
     };
 
     private final QueryRunner hdMapQueryRunner;
-    private final PartitionScanRunner hdPartitionScanRunner;
+    private final HDPartitionScanRunner hdPartitionScanRunner;
     private final MapFilterProvider mapFilterProvider;
 
     private HotRestartIntegrationService hotRestartService;
@@ -93,13 +92,9 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
             hotRestartService = (HotRestartIntegrationService) nodeExtension.getInternalHotRestartService();
             hotRestartService.registerRamStoreRegistry(MapService.SERVICE_NAME, this);
         }
-        this.hdMapQueryRunner = createMapQueryRunner(nodeEngine.getOperationService(), getQueryOptimizer(),
+        this.hdPartitionScanRunner = new HDPartitionScanRunner(this);
+        this.hdMapQueryRunner = createHDMapQueryRunner(hdPartitionScanRunner, getQueryOptimizer(),
                 getResultProcessorRegistry());
-        this.hdPartitionScanRunner = createPartitionScanRunner();
-    }
-
-    private PartitionScanRunner createPartitionScanRunner() {
-        return new HDPartitionScanRunner(this);
     }
 
     @Override
@@ -167,13 +162,10 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         return hdMapQueryRunner;
     }
 
-    private QueryRunner createMapQueryRunner(OperationService operationService, QueryOptimizer queryOptimizer,
-                                             ResultProcessorRegistry resultProcessorRegistry) {
-        PartitionScanRunner partitionScanRunner = new HDPartitionScanRunner(this);
-        int opTimeoutInMillis = nodeEngine.getProperties().getInteger(OPERATION_CALL_TIMEOUT_MILLIS);
-        PartitionScanExecutor partitionScanExecutor = new HDParallelPartitionScanExecutor(
-                partitionScanRunner, operationService, opTimeoutInMillis);
-        return new QueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
+    private QueryRunner createHDMapQueryRunner(HDPartitionScanRunner runner, QueryOptimizer queryOptimizer,
+                                               ResultProcessorRegistry resultProcessorRegistry) {
+        PartitionScanExecutor partitionScanExecutor = new HDPartitionScanExecutor(runner);
+        return new HDQueryRunner(this, queryOptimizer, partitionScanExecutor, resultProcessorRegistry);
     }
 
     @Override

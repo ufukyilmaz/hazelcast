@@ -116,6 +116,12 @@ The following are the issues solved for 3.8 release.
 - When stopping WAN replication on a member, this should be logged. [1119]
 - Poor error message when Native Memory is disabled yet High-Density backed IMap is used. [573]
 
-4. Removed/Deprecated Features
+4. Known Issues
+
+Following is a known issue for 3.8-RC1:
+
+- Client fails to start when it has a near cache preloader configured and when wildcards are used for configuration: Near cache preloader configuration has a file where near cache keys are persisted. When you use wildcards in a configuration, e.g., `NearCache*`, then multiple near caches will attempt to use the same file.
+
+5. Removed/Deprecated Features
 
 - Aggregators feature is deprecated. Instead, Fast-Aggregations feature should be used.

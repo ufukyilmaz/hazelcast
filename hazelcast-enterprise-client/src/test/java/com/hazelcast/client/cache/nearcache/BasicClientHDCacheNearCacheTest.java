@@ -31,11 +31,11 @@ public class BasicClientHDCacheNearCacheTest extends BasicClientCacheNearCacheTe
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][]{
                 {InMemoryFormat.BINARY, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.BINARY, LocalUpdatePolicy.CACHE},
+                {InMemoryFormat.BINARY, LocalUpdatePolicy.CACHE_ON_UPDATE},
                 {InMemoryFormat.OBJECT, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.OBJECT, LocalUpdatePolicy.CACHE},
+                {InMemoryFormat.OBJECT, LocalUpdatePolicy.CACHE_ON_UPDATE},
                 {InMemoryFormat.NATIVE, LocalUpdatePolicy.INVALIDATE},
-                {InMemoryFormat.NATIVE, LocalUpdatePolicy.CACHE},
+                {InMemoryFormat.NATIVE, LocalUpdatePolicy.CACHE_ON_UPDATE},
         });
     }
 

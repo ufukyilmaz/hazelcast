@@ -31,7 +31,6 @@ import com.hazelcast.util.Clock;
 
 import static com.hazelcast.internal.memory.MemoryAllocator.NULL_ADDRESS;
 import static com.hazelcast.internal.nearcache.NearCache.NULL_OBJECT;
-import static com.hazelcast.internal.serialization.impl.NativeMemoryData.NATIVE_MEMORY_DATA_OVERHEAD;
 
 /**
  * @param <K> the type of the key stored in Near Cache.
@@ -43,6 +42,11 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         implements HiDensityNearCacheRecordStore<K, V, HiDensityNativeMemoryNearCacheRecord> {
 
     private static final int DEFAULT_INITIAL_CAPACITY = 256;
+
+    /**
+     * See {@link com.hazelcast.elastic.map.BehmSlotAccessor#SLOT_LENGTH}
+     */
+    private static final int SLOT_COST_IN_BYTES = 16;
 
     private HazelcastMemoryManager memoryManager;
     private HiDensityNativeMemoryNearCacheRecordAccessor recordAccessor;
@@ -193,14 +197,14 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
 
     @Override
     protected long getKeyStorageMemoryCost(K key) {
-        // because the key will be saved as native memory data with native memory data header
-        // and this is not covered at "totalSize()" method
-        return key instanceof Data ? NATIVE_MEMORY_DATA_OVERHEAD + ((Data) key).totalSize() : 0L;
+        long slotKeyCost = SLOT_COST_IN_BYTES / 2;
+        return key instanceof MemoryBlock ? slotKeyCost + recordAccessor.getSize((MemoryBlock) key) : 0L;
     }
 
     @Override
     protected long getRecordStorageMemoryCost(HiDensityNativeMemoryNearCacheRecord record) {
-        return record.size();
+        long slotValueCost = SLOT_COST_IN_BYTES / 2;
+        return slotValueCost + recordAccessor.getSize(record);
     }
 
     @Override
@@ -233,6 +237,10 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
         NativeMemoryData keyData = toNativeMemoryData(key);
         HiDensityNativeMemoryNearCacheRecord oldRecord = records.put(keyData, record);
         nearCacheStats.incrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, record));
+        if (oldRecord != null) {
+            long oldRecordMemoryCost = getTotalStorageMemoryCost((K) keyData, oldRecord);
+            nearCacheStats.decrementOwnedEntryMemoryCost(oldRecordMemoryCost);
+        }
         return oldRecord;
     }
 
@@ -248,9 +256,12 @@ public class HiDensityNativeMemoryNearCacheRecordStore<K, V>
     @Override
     protected HiDensityNativeMemoryNearCacheRecord removeRecord(K key) {
         Data keyData = toData(key);
+        NativeMemoryData nativeKeyData = new NativeMemoryData();
+        nativeKeyData.reset(records.getNativeKeyAddress(keyData));
+
         HiDensityNativeMemoryNearCacheRecord removedRecord = records.remove(keyData);
         if (removedRecord != null) {
-            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) keyData, removedRecord));
+            nearCacheStats.decrementOwnedEntryMemoryCost(getTotalStorageMemoryCost((K) nativeKeyData, removedRecord));
         }
         return removedRecord;
     }

@@ -24,13 +24,13 @@ public class HotRestartHDStorageImpl extends HotRestartStorageImpl<HDRecord> imp
     private final Object mutex = new Object();
 
     public HotRestartHDStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory recordFactory,
-                                   InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
-        super(mapServiceContext, recordFactory, inMemoryFormat, fsync, prefix);
+                                   InMemoryFormat inMemoryFormat, boolean fsync, long prefix, int partitionId) {
+        super(mapServiceContext, recordFactory, inMemoryFormat, fsync, prefix, partitionId);
     }
 
     @Override
-    public HotRestartStore getHotRestartStore() {
-        return mapServiceContext.getOffHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore getHotRestartStore(int partitionId) {
+        return mapServiceContext.getOffHeapHotRestartStoreForPartition(partitionId);
     }
 
     @Override

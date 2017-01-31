@@ -29,7 +29,6 @@ import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
-import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 
@@ -134,15 +133,15 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
 
     @Override
     public int prefixToThreadId(long prefix) {
-        return toPartitionId(prefix) % partitionThreadCount;
+        return getOperationExecutor().getPartitionThreadId(toPartitionId(prefix));
     }
 
-    public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
-        return onHeapStores[storeIndexForCurrentThread()];
+    public HotRestartStore getOnHeapHotRestartStoreForPartition(int partitionId) {
+        return onHeapStores[storeIndexForPartition(partitionId)];
     }
 
-    public HotRestartStore getOffHeapHotRestartStoreForCurrentThread() {
-        return offHeapStores[storeIndexForCurrentThread()];
+    public HotRestartStore getOffHeapHotRestartStoreForPartition(int partitionId) {
+        return offHeapStores[storeIndexForPartition(partitionId)];
     }
 
     /**
@@ -725,8 +724,8 @@ public class HotRestartIntegrationService implements RamStoreRegistry, Membershi
         return new File(hotRestartHome, "" + STORE_PREFIX + storeId + (onheap ? ONHEAP_SUFFIX : OFFHEAP_SUFFIX));
     }
 
-    private int storeIndexForCurrentThread() {
-        return ((PartitionOperationThread) currentThread()).getThreadId() % storeCount;
+    private int storeIndexForPartition(int partitionId) {
+        return getOperationExecutor().getPartitionThreadId(partitionId) % storeCount;
     }
 
     private void closeHotRestartStores() {

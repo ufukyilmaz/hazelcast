@@ -1,9 +1,11 @@
 package com.hazelcast.map.hotrestart;
 
+import com.hazelcast.aggregation.Aggregators;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.query.TruePredicate;
 import com.hazelcast.spi.impl.proxyservice.InternalProxyService;
 import com.hazelcast.test.HazelcastParametersRunnerFactory;
 import com.hazelcast.test.annotation.ParallelTest;
@@ -18,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
@@ -131,6 +134,51 @@ public class MapHotRestartTest extends AbstractMapHotRestartTest {
             Collection<String> names = proxyService.getDistributedObjectNames(MapService.SERVICE_NAME);
             assertThat(names, hasItem(mapName));
         }
+    }
+
+    @Test
+    public void testKeySet_emptyMap_issue1270() throws Exception {
+        resetFixture();
+
+        // hr-store created on non-partition thread
+        Set result = map.keySet();
+        assertEquals(0, result.size());
+
+        // verify hr-store worked properly
+        map.put(1, "value");
+        assertEquals(1, map.size());
+        resetFixture();
+        assertEquals("value", map.get(1));
+    }
+
+    @Test
+    public void testQuery_emptyMap_issue1270() throws Exception {
+        resetFixture();
+
+        // hr-store created on non-partition thread
+        Collection result = map.values(TruePredicate.INSTANCE);
+        assertEquals(0, result.size());
+
+        // verify hr-store worked properly
+        map.put(1, "value");
+        assertEquals(1, map.size());
+        resetFixture();
+        assertEquals("value", map.get(1));
+    }
+
+    @Test
+    public void testAggregation_emptyMap_issue1270() throws Exception {
+        resetFixture();
+
+        // hr-store created on non-partition thread
+        String result = map.aggregate(Aggregators.<Map.Entry<Integer, String>, String>comparableMax());
+        assertNull(result);
+
+        // verify hr-store worked properly
+        map.put(1, "value");
+        assertEquals(1, map.size());
+        resetFixture();
+        assertEquals("value", map.get(1));
     }
 
     private void fillMapAndRemoveRandom(Map<Integer, String> expectedMap, Random random) {

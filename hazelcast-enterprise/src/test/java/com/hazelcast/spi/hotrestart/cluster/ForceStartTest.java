@@ -310,15 +310,15 @@ public class ForceStartTest extends AbstractHotRestartClusterStartTest {
             OperationServiceImpl operationService = (OperationServiceImpl) nodeEngineImpl.getOperationService();
             final OperationExecutor operationExecutor = operationService.getOperationExecutor();
             final CountDownLatch latch = new CountDownLatch(operationExecutor.getPartitionThreadCount());
+            final int partitionId = 123;
 
             operationExecutor.executeOnPartitionThreads(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        PartitionOperationThread thread = (PartitionOperationThread) Thread.currentThread();
                         RamStoreRegistry registry = MockHotRestartService.this;
-                        long prefix = hotRestartService.registerRamStore(registry, NAME, name, thread.getThreadId());
-                        HotRestartStore store = hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
+                        long prefix = hotRestartService.registerRamStore(registry, NAME, name, partitionId);
+                        HotRestartStore store = hotRestartService.getOnHeapHotRestartStoreForPartition(partitionId);
                         byte[] bytes = "value".getBytes();
                         store.put(new KeyOnHeap(prefix, bytes), bytes, false);
                     } finally {

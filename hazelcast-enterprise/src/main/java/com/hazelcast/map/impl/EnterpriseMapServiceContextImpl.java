@@ -102,14 +102,12 @@ class EnterpriseMapServiceContextImpl extends MapServiceContextImpl
         return new EnterpriseMapOperationProviders(this);
     }
 
-    @Override
-    public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
-        return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore getOnHeapHotRestartStoreForPartition(int partitionId) {
+        return hotRestartService.getOnHeapHotRestartStoreForPartition(partitionId);
     }
 
-    @Override
-    public HotRestartStore getOffHeapHotRestartStoreForCurrentThread() {
-        return hotRestartService.getOffHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore getOffHeapHotRestartStoreForPartition(int partitionId) {
+        return hotRestartService.getOffHeapHotRestartStoreForPartition(partitionId);
     }
 
     @Override

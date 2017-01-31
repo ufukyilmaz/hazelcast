@@ -29,7 +29,7 @@ public class HotRestartEnterpriseCacheRecordStore extends DefaultEnterpriseCache
         super(name, partitionId, nodeEngine, cacheService);
         this.fsync = fsync;
         this.prefix = keyPrefix;
-        this.hotRestartStore = cacheService.onHeapHotRestartStoreForCurrentThread();
+        this.hotRestartStore = cacheService.onHeapHotRestartStoreForPartition(partitionId);
         assert hotRestartStore != null;
     }
 

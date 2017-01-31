@@ -10,7 +10,7 @@ public interface EnterpriseMapServiceContext extends MapServiceContext {
 
     MapFilterProvider getMapFilterProvider();
 
-    HotRestartStore getOnHeapHotRestartStoreForCurrentThread();
+    HotRestartStore getOnHeapHotRestartStoreForPartition(int partitionId);
 
-    HotRestartStore getOffHeapHotRestartStoreForCurrentThread();
+    HotRestartStore getOffHeapHotRestartStoreForPartition(int partitionId);
 }

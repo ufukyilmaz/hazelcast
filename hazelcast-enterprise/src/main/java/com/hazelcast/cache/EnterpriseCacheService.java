@@ -164,12 +164,12 @@ public class EnterpriseCacheService
         throw new UnsupportedOperationException();
     }
 
-    public HotRestartStore onHeapHotRestartStoreForCurrentThread() {
-        return hotRestartService.getOnHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore onHeapHotRestartStoreForPartition(int partitionId) {
+        return hotRestartService.getOnHeapHotRestartStoreForPartition(partitionId);
     }
 
-    public HotRestartStore offHeapHotRestartStoreForCurrentThread() {
-        return hotRestartService.getOffHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore offHeapHotRestartStoreForPartition(int partitionId) {
+        return hotRestartService.getOffHeapHotRestartStoreForPartition(partitionId);
     }
 
     /**

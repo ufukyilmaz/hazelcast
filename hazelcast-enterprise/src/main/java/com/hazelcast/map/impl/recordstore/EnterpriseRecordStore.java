@@ -110,7 +110,7 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
 
             if (hotRestartConfig.isEnabled()) {
                 return new HotRestartHDStorageImpl(mapServiceContext, recordFactory,
-                        inMemoryFormat, hotRestartConfig.isFsync(), prefix);
+                        inMemoryFormat, hotRestartConfig.isFsync(), prefix, partitionId);
             }
 
             HiDensityRecordProcessor<HDRecord> recordProcessor = ((HDRecordFactory) recordFactory).getRecordProcessor();
@@ -118,7 +118,8 @@ public class EnterpriseRecordStore extends DefaultRecordStore {
         }
 
         if (hotRestartConfig.isEnabled()) {
-            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat, hotRestartConfig.isFsync(), prefix);
+            return new HotRestartStorageImpl(mapServiceContext, recordFactory, memoryFormat,
+                    hotRestartConfig.isFsync(), prefix, partitionId);
         }
         return super.createStorage(recordFactory, memoryFormat);
     }

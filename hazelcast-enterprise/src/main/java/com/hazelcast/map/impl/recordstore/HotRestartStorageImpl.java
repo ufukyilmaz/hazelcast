@@ -28,16 +28,16 @@ public class HotRestartStorageImpl<R extends Record> implements Storage<Data, R>
     protected final long prefix;
 
     HotRestartStorageImpl(EnterpriseMapServiceContext mapServiceContext, RecordFactory<R> recordFactory,
-                          InMemoryFormat inMemoryFormat, boolean fsync, long prefix) {
+                          InMemoryFormat inMemoryFormat, boolean fsync, long prefix, int partitionId) {
         this.mapServiceContext = mapServiceContext;
         this.fsync = fsync;
-        this.hotRestartStore = getHotRestartStore();
+        this.hotRestartStore = getHotRestartStore(partitionId);
         this.storage = createStorage(recordFactory, inMemoryFormat);
         this.prefix = prefix;
     }
 
-    public HotRestartStore getHotRestartStore() {
-        return mapServiceContext.getOnHeapHotRestartStoreForCurrentThread();
+    public HotRestartStore getHotRestartStore(int partitionId) {
+        return mapServiceContext.getOnHeapHotRestartStoreForPartitionId(partitionId);
     }
 
     public Storage createStorage(RecordFactory recordFactory, InMemoryFormat inMemoryFormat) {

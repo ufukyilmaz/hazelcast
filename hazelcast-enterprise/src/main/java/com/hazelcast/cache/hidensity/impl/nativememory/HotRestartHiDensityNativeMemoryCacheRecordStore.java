@@ -59,7 +59,7 @@ public class HotRestartHiDensityNativeMemoryCacheRecordStore
         super(partitionId, name, cacheService, nodeEngine);
         this.fsync = fsync;
         this.prefix = keyPrefix;
-        this.hotRestartStore = cacheService.offHeapHotRestartStoreForCurrentThread();
+        this.hotRestartStore = cacheService.offHeapHotRestartStoreForPartition(partitionId);
         assert hotRestartStore != null;
 
         HotRestartHiDensityNativeMemoryCacheRecordMap recordMap =

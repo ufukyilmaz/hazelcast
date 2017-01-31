@@ -22,7 +22,6 @@ import com.hazelcast.spi.hotrestart.impl.RamStoreRestartLoop;
 import com.hazelcast.spi.impl.NodeEngineImpl;
 import com.hazelcast.spi.impl.operationexecutor.OperationExecutor;
 import com.hazelcast.spi.impl.operationexecutor.impl.OperationThread;
-import com.hazelcast.spi.impl.operationexecutor.impl.PartitionOperationThread;
 import com.hazelcast.spi.impl.operationservice.InternalOperationService;
 import com.hazelcast.spi.impl.operationservice.impl.OperationServiceImpl;
 
@@ -54,7 +53,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * per thread on-heap and off-heap HotRestart stores. Also, it's listener for
  * membership and cluster state events.
  */
-@SuppressWarnings({ "checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling" })
+@SuppressWarnings({"checkstyle:classfanoutcomplexity", "checkstyle:methodcount", "checkstyle:classdataabstractioncoupling"})
 public class HotRestartService implements RamStoreRegistry, MembershipAwareService {
 
     /**
@@ -113,12 +112,12 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return toPartitionId(prefix) % partitionThreadCount;
     }
 
-    public HotRestartStore getOnHeapHotRestartStoreForCurrentThread() {
-        return onHeapStores[storeIndexForCurrentThread()];
+    public HotRestartStore getOnHeapHotRestartStoreForPartition(int partitionId) {
+        return onHeapStores[storeIndexForPartition(partitionId)];
     }
 
-    public HotRestartStore getOffHeapHotRestartStoreForCurrentThread() {
-        return offHeapStores[storeIndexForCurrentThread()];
+    public HotRestartStore getOffHeapHotRestartStoreForPartition(int partitionId) {
+        return offHeapStores[storeIndexForPartition(partitionId)];
     }
 
     public long registerRamStore(RamStoreRegistry ramStoreRegistry, String serviceName, String name, int partitionId) {
@@ -154,7 +153,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
     }
 
     @Override
-    public void memberAttributeChanged(MemberAttributeServiceEvent event) { }
+    public void memberAttributeChanged(MemberAttributeServiceEvent event) {
+    }
 
     public void addClusterHotRestartEventListener(final ClusterHotRestartEventListener listener) {
         this.clusterMetadataManager.addClusterHotRestartEventListener(listener);
@@ -171,14 +171,14 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             if (storeCount != persistedStoreCount) {
                 throw new HotRestartException(String.format(
                         "Mismatch between configured and actual level of parallelism in Hot Restart Persistence."
-                        + " Configured %d, actual %d",
+                                + " Configured %d, actual %d",
                         storeCount, persistedStoreCount));
             }
             final int persistedPartitionThreadCount = clusterMetadataManager.readPartitionThreadCount();
             if (partitionThreadCount != persistedPartitionThreadCount) {
                 throw new HotRestartException(String.format(
                         "Mismatch between the current number of partition operation threads and"
-                        + " the number persisted in the Hot Restart data. Current %d, persisted %d",
+                                + " the number persisted in the Hot Restart data. Current %d, persisted %d",
                         partitionThreadCount, persistedPartitionThreadCount));
             }
         } else {
@@ -199,7 +199,7 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
             clusterMetadataManager.start();
             boolean allowData = clusterMetadataManager.isStartWithHotRestart();
             logger.info(allowData ? "Starting the Hot Restart procedure."
-                                  : "Initializing Hot Restart stores, not expecting to reload any data.");
+                    : "Initializing Hot Restart stores, not expecting to reload any data.");
             long start = currentTimeMillis();
             Throwable failure = null;
             try {
@@ -287,8 +287,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         HazelcastMemoryManager memMgr = ((EnterpriseNodeExtension) node.getNodeExtension()).getMemoryManager();
         final HotRestartStoreConfig cfg = new HotRestartStoreConfig();
         cfg.setRamStoreRegistry(this)
-           .setLoggingService(node.loggingService)
-           .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
+                .setLoggingService(node.loggingService)
+                .setMetricsRegistry(node.nodeEngine.getMetricsRegistry());
         onHeapStores = new HotRestartStore[storeCount];
         for (int i = 0; i < storeCount; i++) {
             onHeapStores[i] = newOnHeapHotRestartStore(cfg.setHomeDir(storeDir(i, true)));
@@ -333,7 +333,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         }
         final CountDownLatch doneLatch = new CountDownLatch(partitionThreadCount);
         getOperationExecutor().executeOnPartitionThreads(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 try {
                     loop.run(((OperationThread) currentThread()).getThreadId());
                 } catch (Throwable t) {
@@ -426,8 +427,8 @@ public class HotRestartService implements RamStoreRegistry, MembershipAwareServi
         return new File(hotRestartHome, "" + STORE_PREFIX + storeId + (onheap ? ONHEAP_SUFFIX : OFFHEAP_SUFFIX));
     }
 
-    private int storeIndexForCurrentThread() {
-        return ((PartitionOperationThread) currentThread()).getThreadId() % storeCount;
+    private int storeIndexForPartition(int partitionId) {
+        return (partitionId % partitionThreadCount) % storeCount;
     }
 
     private void closeHotRestartStores() {

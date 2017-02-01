@@ -1,5 +1,7 @@
 package info.jerrinot.compatibilityguardian;
 
+import com.hazelcast.core.Hazelcast;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -32,7 +34,8 @@ class ProxyInvocationHandler implements InvocationHandler {
         //at this point we know the delegate return something loaded by
         //different class then the proxy -> we need to proxy the result
         Class<?>[] interfaces = getInterfaceForResultProxy(returnType);
-        Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, interfaces);
+        ClassLoader targetClassLoader = Hazelcast.class.getClassLoader();
+        Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, targetClassLoader, interfaces);
         printInfoAboutResultProxy(resultingProxy);
         return resultingProxy;
     }

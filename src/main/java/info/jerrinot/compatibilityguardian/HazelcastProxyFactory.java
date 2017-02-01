@@ -9,17 +9,17 @@ import java.lang.reflect.Proxy;
 public class HazelcastProxyFactory {
     public static HazelcastInstance proxy(Object hazelcastDelegate) {
         Class<HazelcastInstance> expectedInterface = HazelcastInstance.class;
-        HazelcastInstance proxy = generateProxyForInterface(hazelcastDelegate, expectedInterface);
+        ClassLoader targetClassloader = HazelcastProxyFactory.class.getClassLoader();
+        HazelcastInstance proxy = generateProxyForInterface(hazelcastDelegate, targetClassloader, expectedInterface);
         return proxy;
     }
 
-    public static <T> T generateProxyForInterface(Object delegate, Class<?>...expectedInterfaces) {
+    public static <T> T generateProxyForInterface(Object delegate, ClassLoader targetClassloader, Class<?>...expectedInterfaces) {
         if (!checkImplementInterfaces(delegate, expectedInterfaces)) {
             throw new GuardianException("Cannot create proxy for class " + delegate);
         }
         InvocationHandler myInvocationHandler = new ProxyInvocationHandler(delegate);
-        ClassLoader classloader = HazelcastProxyFactory.class.getClassLoader();
-        return (T) Proxy.newProxyInstance(classloader, expectedInterfaces, myInvocationHandler);
+        return (T) Proxy.newProxyInstance(targetClassloader, expectedInterfaces, myInvocationHandler);
     }
 
     private static boolean checkImplementInterfaces(Object o, Class<?>...ifaces) {

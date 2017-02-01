@@ -69,6 +69,7 @@ class ProxyInvocationHandler implements InvocationHandler {
     private Object invokeMethodDelegate(Method methodDelegate, Object[] args) throws Throwable {
         Object delegateResult;
         try {
+            methodDelegate.setAccessible(true);
             delegateResult = methodDelegate.invoke(delegate, args);
         } catch (IllegalAccessException e) {
             throw rethrow(e);

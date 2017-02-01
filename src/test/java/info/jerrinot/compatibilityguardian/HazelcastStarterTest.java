@@ -49,4 +49,15 @@ public class HazelcastStarterTest {
         assertEquals(2, (int)memberMap.get(1));
     }
 
+    @Test
+    public void testAdvancedClientMap() throws InterruptedException {
+        HazelcastInstance memberInstance = HazelcastStarter.startHazelcastVersion("3.7");
+        HazelcastInstance clientInstance = HazelcastStarter.startHazelcastClientVersion("3.7.2");
+
+        System.out.println("About to terminate the client");
+        clientInstance.getLifecycleService().terminate();
+        System.out.println("Client terminated");
+
+    }
+
 }

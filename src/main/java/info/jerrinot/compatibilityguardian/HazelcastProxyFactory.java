@@ -3,12 +3,7 @@ package info.jerrinot.compatibilityguardian;
 import com.hazelcast.core.HazelcastInstance;
 
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-
-import static info.jerrinot.compatibilityguardian.Utils.*;
-import static info.jerrinot.compatibilityguardian.Utils.debug;
 
 
 public class HazelcastProxyFactory {
@@ -18,11 +13,11 @@ public class HazelcastProxyFactory {
         return proxy;
     }
 
-    private static <T> T generateProxyForInterface(Object delegate, Class<?>...expectedInterfaces) {
+    public static <T> T generateProxyForInterface(Object delegate, Class<?>...expectedInterfaces) {
         if (!checkImplementInterfaces(delegate, expectedInterfaces)) {
             throw new GuardianException("Cannot create proxy for class " + delegate);
         }
-        InvocationHandler myInvocationHandler = new MyInvocationHandler(delegate);
+        InvocationHandler myInvocationHandler = new ProxyInvocationHandler(delegate);
         ClassLoader classloader = HazelcastProxyFactory.class.getClassLoader();
         return (T) Proxy.newProxyInstance(classloader, expectedInterfaces, myInvocationHandler);
     }
@@ -46,77 +41,4 @@ public class HazelcastProxyFactory {
         return false;
     }
 
-    private static class MyInvocationHandler implements InvocationHandler {
-        private final Object delegate;
-
-
-        private MyInvocationHandler(Object delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            debug("Proxy " + this + " called. Method: " + method);
-            Class<?> delegateClass = delegate.getClass();
-            Method methodDelegate = getMethodDelegate(method, delegateClass);
-            Object delegateResult = invokeMethodDelegate(methodDelegate, args);
-            Class<?> returnType = method.getReturnType();
-            // if there return types are equals -> they are loaded
-            // by the same classloader -> no need to proxy what it returns
-            if (methodDelegate.getReturnType().equals(returnType) || delegateResult == null) {
-                return delegateResult;
-            }
-
-            //at this point we know the delegate return something loaded by
-            //different class then the proxy -> we need to proxy the result
-            Class<?>[] interfaces = getInterfaceForResultProxy(returnType);
-            Object resultingProxy = HazelcastProxyFactory.generateProxyForInterface(delegateResult, interfaces);
-            printInfoAboutResultProxy(resultingProxy);
-            return resultingProxy;
-        }
-
-        private Object invokeMethodDelegate(Method methodDelegate, Object[] args) throws Throwable {
-            Object delegateResult;
-            try {
-                delegateResult = methodDelegate.invoke(delegate, args);
-            } catch (IllegalAccessException e) {
-                throw rethrow(e);
-            } catch (InvocationTargetException e) {
-                throw e.getTargetException();
-            }
-            return delegateResult;
-        }
-
-        private Method getMethodDelegate(Method method, Class<?> delegateClass) {
-            Method methodDelegate;
-            try {
-                methodDelegate = delegateClass.getMethod(method.getName(), method.getParameterTypes());
-            } catch (NoSuchMethodException e) {
-                throw rethrow(e);
-            }
-            return methodDelegate;
-        }
-
-        private Class<?>[] getInterfaceForResultProxy(Class<?> returnType) {
-            Class<?>[] interfaces = returnType.getInterfaces();
-            //if the return type itself is an interface then we have to add it
-            //to the list of interfaces implemented by the proxy
-            if (returnType.isInterface()) {
-                interfaces = concatItems(interfaces, returnType);
-            }
-            return interfaces;
-        }
-
-        private static void printInfoAboutResultProxy(Object resultingProxy) {
-            if (!Utils.DEBUG_ENABLED) {
-                return;
-            }
-            debug("Returning proxy " + resultingProxy + ", loaded by " + resultingProxy.getClass().getClassLoader());
-            Class<?>[] ifaces = resultingProxy.getClass().getInterfaces();
-            debug("The proxy implementes intefaces: ");
-            for (Class<?> iface : ifaces) {
-                debug(iface + ", loaded by " + iface.getClassLoader());
-            }
-        }
-    }
 }
